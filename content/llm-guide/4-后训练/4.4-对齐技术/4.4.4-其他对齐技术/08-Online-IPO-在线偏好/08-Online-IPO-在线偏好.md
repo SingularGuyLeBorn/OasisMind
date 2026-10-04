@@ -2,327 +2,370 @@
 title: "08 · Online IPO:在线偏好"
 published: true
 tags: ["Online IPO", "IPO-MD", "Nash-MD", "在线偏好", "自对弈", "几何混合"]
-excerpt: "Online IPO 不换 IPO 的平方损失.它换的是数据从哪来:两条回答都从当前策略采,用已经训好的偏好模型 p_\\phi 标成对,再优化那条平方."
+excerpt: "Online IPO 保留 IPO 的平方损失, 把成对数据改成从当前策略采样并由偏好模型打分, 驻点随之变成正则偏好博弈的 Nash 均衡; IPO-MD 再把采样换成与参考策略的几何混合."
 ---
 # 08 Online IPO:在线偏好
 
-Online IPO 不换 [IPO](../03-IPO-身份偏好优化/03-IPO-身份偏好优化.md) 的平方损失.它换的是数据从哪来:两条回答都从当前策略采,用已经训好的偏好模型 $p_\phi$ 标成对,再优化那条平方.离线 IPO 吃预先采好的对,最优对着固定行为策略;在线之后驻点变成正则偏好博弈的 Nash.
+材料是 Calandriello, Guo, Munos 等的 *Human Alignment of Large Language Models through Online Preference Optimisation* ([arXiv:2403.08635](https://arxiv.org/abs/2403.08635)). 问题是: [IPO](../03-IPO-身份偏好优化/03-IPO-身份偏好优化.md) 的平方损失原本用在离线偏好数据上, 如果改成用当前策略在线采样, 它优化的目标会变成什么, 与 [Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md) 有什么关系.
 
-第二件事才是 IPO-MD.采样改成当前策略与参考 $\pi_{\mathrm{ref}}$ 的几何混合.$\beta=0$ 退回 Online IPO,$\beta=1$ 对着固定参考.驻点和 [Nash-MD-PG](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md) 的 $\beta$ 族相同,$\beta>0$ 时梯度不同:一边只对当前 $\pi$ 采的动作回梯度,一边对着混合物采的动作更新.
+## 1. 离线 IPO 的最优解依赖采样分布
 
-本篇跟 Calandriello,Guo,Munos 等 *Human Alignment of Large Language Models through Online Preference Optimisation*([arXiv:2403.08635](https://arxiv.org/abs/2403.08635),ICML 2024,[PMLR 235:5409–5435](https://proceedings.mlr.press/v235/calandriello24a.html)).公式和表以 [arXiv HTML](https://arxiv.org/html/2403.08635) 为准.**不是** 离线 IPO:靶心 $\tau^{-1}/2$ 怎么从 ΨPO 推出来,见 [03-IPO](../03-IPO-身份偏好优化/03-IPO-身份偏好优化.md).**不是** [OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md):OAIF 用 LLM 当场标,再套任意 DAP.**不是** Nash-MD 原文的几何混合主算法.那边是 Nash-MD-PG;这边 Online IPO 是 $\beta=0$ 自对弈,IPO-MD 才混.
+### 1.1 离线损失
 
-## 1. 离线平方对着固定 $\mu$,在线之后最优变成自己
-
-Azar 的 IPO 从「直接优化成对偏好,再减 KL」出发,把最优策略反解成对数比上的方程,再用成对输赢收成平方.总体损失吃的是固定行为策略 $\mu$ 采出来的对:
+Azar 等的 IPO 从「直接优化成对偏好, 再减 KL」出发, 最终得到一个平方回归. 论文式 (10) 把它写成总体损失:
 
 $$
-\mathbb{E}_{Y,Y'\sim\mu,\;Y^{+},Y^{-}\sim\lambda_p(Y,Y')}
-\Biggl[
-\Biggl(
-\log\frac{\pi(Y^{+})\,\pi_{\mathrm{ref}}(Y^{-})}{\pi(Y^{-})\,\pi_{\mathrm{ref}}(Y^{+})}
--
-\frac{\tau^{-1}}{2}
-\Biggr)^2
-\Biggr].
+\mathbb{E}_{Y,Y'\sim\mu,\;Y^+,Y^-\sim\lambda_p(Y,Y')}
+\Biggl[\Biggl(\log\frac{\pi(Y^+)\,\pi_{\mathrm{ref}}(Y^-)}{\pi(Y^-)\,\pi_{\mathrm{ref}}(Y^+)}-\frac{\tau^{-1}}{2}\Biggr)^2\Biggr].
 \tag{1}
 $$
 
-$\lambda_p$ 按 $p(y\succ y')$ 把 $(y,y')$ 排成赢输.平方里那个 $\tau^{-1}/2$ 是离线手续的代数中点,不是本篇要讲的新靶心.离线最优写出来是
+$\mu$ 是产生数据的行为策略, $\lambda_p$ 按偏好概率 $p(y\succ y')$ 把一对回答排成胜者 $Y^+$ 和败者 $Y^-$. 记对数比差 $h=\log\frac{\pi(y)}{\pi_{\mathrm{ref}}(y)}-\log\frac{\pi(y')}{\pi_{\mathrm{ref}}(y')}$, 损失要求胜者相对败者的 $h$ 回归到 $\tau^{-1}/2$.
+
+离线 IPO 的最优策略满足
 
 $$
-\pi^*(y)
-\propto
-\pi_{\mathrm{ref}}(y)
-\exp\bigl(\tau^{-1}\mathbb{E}_{Y'\sim\mu}[p(y\succ Y')]\bigr).
-$$
-
-它对 $\mu$ 是封闭的.$\mu$ 冻死,最优就钉在「对这份行为策略更赢,再被 $\pi_{\mathrm{ref}}$ 拉住」上.Nash-MD-PG 问的是另一件事:两个玩家同时选策略,报酬是成对偏好减自己的 KL,加对手的 KL.均衡不依赖某份事先采好的 $\mu$.
-
-论文 Table 1 把轴拆成三条:对比损失还是策略梯度,数据离线还是在线,采样要不要正则混合.离线 IPO 对比,离线,不混.Nash-MD-PG 不对比,在线,要混.中间空着「对比 + 在线」和「对比 + 在线 + 混」.Online IPO 填前一个空,IPO-MD 填后一个.
-
-对比损失让赢输两条都进梯度;Nash-MD-PG 只更新被采成动作的那一支.离线还有另一层病:经验损失只在 $\mu$ 的支撑上有约束,策略跑到支撑外可以损失很低,偏好很差.在线把训练分布钉在当前 $\pi$ 附近,这份错位会小一些.当然在线要能当场采,当场问 $p_\phi$,不是所有场景都给得起.
-
-$\tau$ 越大,越不敢离开 $\pi_{\mathrm{ref}}$.这只旋钮在离线 IPO 里同时出现在平方靶心和 KL 温度里;本篇主结果里,它是正则博弈的温度.损失印刷体仍写 $\tau^{-1}/2$,那是 Azar 平方的写法被原样搬进在线采样.
-
-## 2. 当前 $\pi$ 采两条,$p_\phi$ 打分,再走 IPO 平方
-
-把式 (1) 里红色的 $\mu$ 换成当前策略,并且对采样停梯度,就得到 Online IPO 的总体损失:
-
-$$
-\mathbb{E}_{Y,Y'\sim\mathrm{SG}[\pi],\;Y^{+},Y^{-}\sim\lambda_p(Y,Y')}
-\Biggl[
-\Biggl(
-\log\frac{\pi(Y^{+})\,\pi_{\mathrm{ref}}(Y^{-})}{\pi(Y^{-})\,\pi_{\mathrm{ref}}(Y^{+})}
--
-\frac{\tau^{-1}}{2}
-\Biggr)^2
-\Biggr].
+\pi^*(y)\propto\pi_{\mathrm{ref}}(y)\exp\bigl(\tau^{-1}\,\mathbb{E}_{Y'\sim\mu}[p(y\succ Y')]\bigr).
 \tag{2}
 $$
 
-$\mathrm{SG}[\pi]$ 的意思是:数据从 $\pi$ 出,反传不穿过采样.样本版看起来仍是 Azar 的式 (8),只是 $(y^{+}_i,y^{-}_i)$ 改从当前 $\pi$ 抽.停梯度不能省.若对采样也反传,梯度会混进「怎么把概率质量推到更容易被采到的 $y$」那条通道,和「在已采到的对上做平方回归」缠在一起.论文把数据生成和损失估值拆开,后面 Proposition 4.2 的期望对齐才写得干净.
+指数里是 $y$ 对行为策略 $\mu$ 的平均胜率. $\mu$ 固定, 最优解就是「对 $\mu$ 更能赢, 同时被 $\pi_{\mathrm{ref}}$ 拉住」的策略. 换一份数据, 最优解也换.
 
-语言模型实验里 $p$ 不是人当场打勾.先在成对偏好集上按 Munos 等的手续训好 $p_\phi$,策略环里用它给新采的两条打分.对每个 prompt $x$,从 $\pi_\theta(\cdot|x)$ 采 $y,y'$,算 $p_i=p_\phi(y\succ y'|x)$,再按软标签拼损失:
+用三个回答算一次. 偏好取循环结构: $p(1\succ2)=p(2\succ3)=p(3\succ1)=5/9$, 反方向是 $4/9$. $\pi_{\mathrm{ref}}$ 均匀, $\tau=0.1$, 数据由 $\mu=(0.6,0.3,0.1)$ 生成. 三个回答对 $\mu$ 的平均胜率是
+
+- $p(1\succ\mu)=0.6\times\frac12+0.3\times\frac59+0.1\times\frac49\approx0.511$,
+- $p(2\succ\mu)=0.6\times\frac49+0.3\times\frac12+0.1\times\frac59\approx0.472$,
+- $p(3\succ\mu)=0.6\times\frac59+0.3\times\frac49+0.1\times\frac12\approx0.517$.
+
+代入式 (2), 相对权重 $\exp(10\,(p-\frac12))$ 约为 $1.116$, $0.756$, $1.185$, 归一化后 $\pi^*\approx(0.365,0.247,0.388)$. 行为策略偏向回答 1, 离线最优就偏向能赢回答 1 的回答 3, 压低被回答 1 克制的回答 2. 换 $\mu=(0.1,0.3,0.6)$, 偏向会整体换位. 这个偏好的博弈均衡是均匀分布, 对均匀对手每个回答胜率都是 $1/2$, 与数据怎么采无关; 第 3 节会说明 Online IPO 的驻点正是它.
+
+两个回答时情况特殊. 设 $p(1\succ2)=0.7$, 对任意分布 $\nu$ 都有 $p(1\succ\nu)-p(2\succ\nu)=\nu_1(0.5-0.3)+\nu_2(0.7-0.5)=0.2$, 胜率差与 $\nu$ 无关, 所以离线 IPO 和在线 IPO 给出同一个解. 采样分布的影响要到三个以上的回答才出现.
+
+### 1.2 三个维度
+
+论文 Table 1 用三个性质给方法分类: 损失是否对比式 (胜者败者同时进梯度), 数据是否在线, 采样是否经过正则混合.
+
+| 方法 | 对比式 | 在线 | 正则采样 |
+|---|---|---|---|
+| 离线 IPO | 是 | 否 | 否 |
+| Nash-MD-PG | 否 | 是 | 是 |
+| Online IPO | 是 | 是 | 否 |
+| IPO-MD | 是 | 是 | 是 |
+
+前两行是已有方法, 后两行是本文填的空位. 附录 A 的相关工作部分给出了这样分类的理由: 实践中更要紧的区分是在线与离线, 强化学习与监督学习的二分反而次要; 在线策略生成的样本可能明显偏离原始数据集, 带来分布偏移. Munos 等和 Swamy 等的二人博弈视角同时覆盖在线与离线, 可以用一个超参数在两者之间平滑过渡, IPO-MD 的 $\beta$ 就是这样的超参数. 离线数据还有一个问题: 经验损失只约束 $\mu$ 支撑集上的回答, 策略可以把概率移到支撑集外, 损失很低而真实偏好很差. 在线采样让训练数据始终来自当前策略附近, 这种错位会减轻. 代价是每一步都要现场生成, 现场调用偏好模型.
+
+## 2. Online IPO
+
+### 2.1 损失
+
+把式 (1) 中的 $\mu$ 换成当前策略, 并对采样停梯度, 就是 Online IPO 的总体损失 (论文式 (11)):
 
 $$
-\frac1B\sum_{i=1}^B
-\Bigl[
-p_i\,\mathcal{L}_{\mathrm{IPO}}(\theta,x_i,y_i,y'_i)
-+
-(1-p_i)\,\mathcal{L}_{\mathrm{IPO}}(\theta,x_i,y'_i,y_i)
-\Bigr].
+\mathbb{E}_{Y,Y'\sim\mathrm{SG}[\pi],\;Y^+,Y^-\sim\lambda_p(Y,Y')}
+\Biggl[\Biggl(\log\frac{\pi(Y^+)\,\pi_{\mathrm{ref}}(Y^-)}{\pi(Y^-)\,\pi_{\mathrm{ref}}(Y^+)}-\frac{\tau^{-1}}{2}\Biggr)^2\Biggr].
 \tag{3}
 $$
 
-硬 0/1 只是 $p_i\in\{0,1\}$ 的特例.同一套加权,论文也拿去跑在线 DPO 和在线 SLiC,方便和 IPO-MD,Nash-MD-PG 对读.代码里 IPO 还用过展开平方,丢掉与 $\theta$ 无关项之后的等价形:
+$\mathrm{SG}[\pi]$ 表示数据从 $\pi$ 采, 但梯度不经过采样过程. 如果对采样分布也求导, 梯度里会多出一项「如何改变哪些回答更容易被采到」, 与「在已采到的对上做回归」混在一起. 停梯度后, 损失只在给定样本上求导, 第 3 节的期望梯度等式才成立.
+
+### 2.2 实现
+
+实验中的偏好 $p$ 来自预先训练好的偏好模型 $p_\phi$, 不是人在环里实时标注. 每个 prompt $x_i$ 从 $\pi_\theta$ 采两条 $y_i,y'_i$, 计算 $p_i=p_\phi(y_i\succ y'_i|x_i)$, 用软标签加权:
 
 $$
--\log\frac{\pi_\theta(y|x)}{\pi_\theta(y'|x)}
-+
-\tau
-\Biggl(
-\log\frac{\pi_\theta(y|x)\,\pi_{\mathrm{ref}}(y'|x)}{\pi_\theta(y'|x)\,\pi_{\mathrm{ref}}(y|x)}
-\Biggr)^2.
+\frac1B\sum_{i=1}^B\Bigl[p_i\,\mathcal{L}_{\mathrm{IPO}}(\theta,x_i,y_i,y'_i)+(1-p_i)\,\mathcal{L}_{\mathrm{IPO}}(\theta,x_i,y'_i,y_i)\Bigr].
 \tag{4}
 $$
 
-与 $(h-\tau^{-1}/2)^2$ 只差一个正的尺度,最小点相同.这是实现注记,不是另一条理论损失.
-
-![当前策略采两条回答,训好的偏好模型打分,再进 IPO 平方](./images/fig-online-ipo-self-play.png)
-
-> 图 1:prompt $x$ 进当前 $\pi_\theta$,停梯度采出 $y,y'$;已训好的 $p_\phi$ 给这对打分,再进 IPO 平方.全程单向.
-
-**图 1 解析**
-
-- 最左奶油框只有 prompt $x$.
-- 桃框是可训 $\pi_\theta$,两条回答都从这里出,不是一条来自参考,一条来自自己.
-- 冰蓝框写 $y,y'\sim\mathrm{SG}[\pi]$,采样对 $\theta$ 停梯度.
-- 薄荷框是已经训好的 $p_\phi$,策略环里冻着.
-- 珊瑚框是式 (2) 的平方,对比损失对赢输两条都走梯度.
-
-## 3. 驻点是正则 Nash,期望梯度对齐 Self-Play
-
-离线 IPO 的分析还在:梯度为零当且仅当对数比钉在「对采样分布的期望偏好」上.采样分布换成 $\pi$ 自己之后,条件变成不动点
+硬标签是 $p_i\in\{0,1\}$ 的特例. 同样的软标签加权也用于在线 DPO 和在线 SLiC, 便于比较. 单条样本的 IPO 损失, 代码里用展开平方并去掉与 $\theta$ 无关项后的形式:
 
 $$
-\pi(y)
-\propto
-\pi_{\mathrm{ref}}(y)
-\exp\bigl(\tau^{-1}p(y\succ\pi)\bigr),
+\mathcal{L}_{\mathrm{IPO}}(\theta,x,y,y')=-\log\frac{\pi_\theta(y|x)}{\pi_\theta(y'|x)}+\tau\Biggl(\log\frac{\pi_\theta(y|x)\,\pi_{\mathrm{ref}}(y'|x)}{\pi_\theta(y'|x)\,\pi_{\mathrm{ref}}(y|x)}\Biggr)^2.
 \tag{5}
 $$
 
-其中 $p(y\succ\pi)=\mathbb{E}_{Y'\sim\pi}[p(y\succ Y')]$.$\pi$ 同时出现在两边.这正是正则二人博弈里「对自己的最佳回应」.
+验证一下等价性: $(h-\frac{1}{2\tau})^2=h^2-\frac{h}{\tau}+\frac{1}{4\tau^2}$, 乘以 $\tau$ 得 $\tau h^2-h+\mathrm{const}$. $h$ 与 $\log\frac{\pi_\theta(y)}{\pi_\theta(y')}$ 只差 $\pi_{\mathrm{ref}}$ 的常数项, 所以式 (5) 与平方损失差一个正的倍数和常数, 最小点相同. 式 (5) 的第一项是「拉开胜者与败者的概率」, 第二项是「对数比差不要太大」, $\tau$ 越大第二项越重.
 
-博弈的报酬是
+![当前策略采两条回答,训好的偏好模型打分,再进 IPO 平方](./images/fig-online-ipo-self-play.png)
+
+> 图 1: prompt $x$ 进入当前 $\pi_\theta$, 停梯度采出 $y,y'$; 训练好的 $p_\phi$ 给这一对打分, 再进入 IPO 平方损失.
+
+**图 1 解析**
+
+- 最左是 prompt $x$.
+- 两条回答都由可训练的 $\pi_\theta$ 生成, 没有一条来自参考策略或数据集.
+- $y,y'\sim\mathrm{SG}[\pi]$ 的标注对应式 (3) 的停梯度.
+- 偏好模型 $p_\phi$ 在策略训练中是冻结的, 只负责打分.
+- 最右是式 (3) 的平方损失, 对比式损失让 $y$ 和 $y'$ 都产生梯度.
+
+## 3. Online IPO 求的是 Nash 均衡
+
+### 3.1 驻点
+
+离线分析里, 梯度为零的条件是式 (2). 采样分布换成 $\pi$ 自己, 条件变成不动点 (论文式 (12)):
 
 $$
-\mathbb{E}_{Y\sim\pi_i,\,Y'\sim\pi_{-i}}[p(Y\succ Y')]
--
-\tau\,\mathrm{KL}(\pi_i\Vert\pi_{\mathrm{ref}})
-+
-\tau\,\mathrm{KL}(\pi_{-i}\Vert\pi_{\mathrm{ref}}).
+\pi(y)\propto\pi_{\mathrm{ref}}(y)\exp\bigl(\tau^{-1}p(y\succ\pi)\bigr),\qquad p(y\succ\pi)=\mathbb{E}_{Y'\sim\pi}[p(y\succ Y')].
 \tag{6}
 $$
 
-把对手钉死在 $\mu$ 上,式 (6) 就退回离线 IPO 的目标.两边一起动,Nash 是自己对自己最佳回应.**Proposition 4.1**:Online IPO 总体目标的最小点,就是式 (6) 这份正则博弈的 Nash.
-
-还可以把期望更新方向写出来.Self-Play 是对自己做梯度上升,对手那一支停梯度:
+$\pi$ 出现在等式两边. 考虑正则偏好博弈, 玩家 $i$ 的报酬是
 
 $$
-\nabla_\pi
-\mathbb{E}_{Y\sim\pi,\,Y'\sim\mathrm{SG}[\pi]}
-\bigl[p(Y\succ Y')-\tau\,\mathrm{KL}(\pi\Vert\pi_{\mathrm{ref}})\bigr].
+\mathbb{E}_{Y\sim\pi_i,\,Y'\sim\pi_{-i}}[p(Y\succ Y')]-\tau\,\mathrm{KL}(\pi_i\Vert\pi_{\mathrm{ref}})+\tau\,\mathrm{KL}(\pi_{-i}\Vert\pi_{\mathrm{ref}}).
 \tag{7}
 $$
 
-**Proposition 4.2**:式 (2) 的期望梯度与式 (7) 相同.期望上这就是 Nash-MD-PG 取 $\beta=0$ 的那一支.差别在估计:Online IPO 是对比损失,赢输两条都进梯度;Nash-MD-PG 的 Self-Play 只更新被采成 $y$ 的那一支.附录 D 给了一个对比估计方差更小的充分条件,不是无条件更稳.
+对手固定为 $\pi_{-i}$ 时, 玩家 $i$ 的最佳回应正是 $\pi_{\mathrm{ref}}\exp(\tau^{-1}p(y\succ\pi_{-i}))$ 的归一化. 式 (6) 说的是 $\pi$ 是对自己的最佳回应, 即对称 Nash 均衡. Proposition 4.1: Online IPO 总体损失的最小点就是式 (7) 博弈的 Nash 均衡. 对手固定为 $\mu$ 时式 (7) 退化为离线 IPO 的目标, 这也是式 (2) 的来历.
 
-在线 DPO 没有这条免费的 Nash.附录 F:**Lemma F.5** 写出正则 Nash 也是在线 DPO 驻点的充要条件;**Theorem F.6** 说两个动作时,除开 $p(1\succ 2)=1/2$ 这种均匀偏好,条件不成立.**Theorem F.7**:偏好若服从 Bradley-Terry,RLHF 闭式解是在线 DPO 的驻点,和离线 DPO 重合.把 DAP 改成在线,并不自动把 DPO 变成找 Nash.石头剪刀布那种均匀循环是例外:$\pi_{\mathrm{ref}}$ 均匀,Nash 也均匀时,Lemma F.5 的等式能成立(Remark F.8).这是特例,不能拿来宣称在线 DPO 一般等于 Online IPO.
+继续用两个回答, $p(1\succ2)=0.7$, $\pi_{\mathrm{ref}}$ 均匀. 由式 (6), $\pi_1/\pi_2=\exp((p(1\succ\pi)-p(2\succ\pi))/\tau)=\exp(0.2/\tau)$. $\tau=1$ 时比值 $1.22$, $\pi_1\approx0.55$; $\tau=0.1$ 时比值 $e^2\approx7.39$, $\pi_1\approx0.88$. 对照 BT 下的 RLHF 解 $\pi\propto\pi_{\mathrm{ref}}\exp(r/\tau)$: 奖励差是 $\mathrm{logit}(0.7)\approx0.847$, $\tau=1$ 时 $\pi_1\approx0.70$, $\tau=0.1$ 时比值 $e^{8.47}\approx4.8\times10^3$, $\pi_1$ 几乎是 1. 同样的 $\tau$ 下, IPO 均衡在指数里用的是胜率差 ($0.2$), RLHF 用的是 logit 差 ($0.847$), 前者有界, 后者在偏好接近 0 或 1 时趋于无穷. 偏好越确定, 两者差得越远. 这是 Azar 等说 IPO 正则更强的一个直接体现.
 
-## 4. IPO-MD:采样改成几何混合
+### 3.2 期望梯度与 Self-Play 相同
 
-既然 Online IPO 对齐的是 $\beta=0$ 的自对弈,下一步就是把 Nash-MD 的正则采样借过来.几何混合
-
-$$
-\pi^{1-\beta}(\pi_{\mathrm{ref}})^{\beta}(y)
-\propto
-\pi(y)^{1-\beta}\,\pi_{\mathrm{ref}}(y)^{\beta},
-\qquad
-\beta\in[0,1],
-$$
-
-替换式 (2) 里的采样分布,总体损失变成
+Self-Play 对自己做梯度上升, 对手一侧停梯度:
 
 $$
-\mathbb{E}_{Y,Y'\sim\mathrm{SG}\bigl[\pi^{1-\beta}(\pi_{\mathrm{ref}})^{\beta}\bigr],\;Y^{+},Y^{-}\sim\lambda_p}
-\Biggl[
-\Biggl(
-\log\frac{\pi(Y^{+})\,\pi_{\mathrm{ref}}(Y^{-})}{\pi(Y^{-})\,\pi_{\mathrm{ref}}(Y^{+})}
--
-\frac{\tau^{-1}}{2}
-\Biggr)^2
-\Biggr].
+\nabla_\pi\Bigl[\mathbb{E}_{Y\sim\pi,\,Y'\sim\mathrm{SG}[\pi]}[p(Y\succ Y')]-\tau\,\mathrm{KL}(\pi\Vert\pi_{\mathrm{ref}})\Bigr].
 \tag{8}
 $$
 
-$\beta=0$ 退回 Online IPO.$\beta=1$ 对着固定 $\pi_{\mathrm{ref}}$ 采,像一份「打参考」的 IPO.$\beta$ 从 0 扫到 1,采样从「完全是自己」走到「完全是参考」.中间值是 Nash-MD 想要的那种既像自己,又被参考拉住的对手.若混合物改成 $\pi^{1-\beta}\mu^{\beta}$,$\beta=1$ 会回到离线 IPO;实践里往往拿不到 $\mu$,实验走的是与 $\pi_{\mathrm{ref}}$ 混.附录 E 在三个动作,偏好接近循环的表格游戏里画过不同 $\beta$ 的轨迹,$\tau=0.1$,$\pi_{\mathrm{ref}}$ 取均匀.那是直觉图,不是语言模型实验.
+Proposition 4.2: 式 (3) 的期望更新方向与式 (8) 相同. 附录 C 的证明把式 (3) 的梯度拆成两部分. 含 $\tau^{-1}$ 的部分利用 $p(y\succ y')=1-p(y'\succ y)$ 合并成 $-\tau^{-1}\sum_y\pi(y)p(y\succ\pi)\nabla\log\pi(y)$; 不含 $\tau$ 的部分化简为 $\sum_y\pi(y)\log\frac{\pi(y)}{\pi_{\mathrm{ref}}(y)}\nabla\log\pi(y)$, 正是 KL 项的梯度. 两部分合起来与式 (8) 成比例.
 
-序列级归一化要对整个回答集合求和,语言模型做不到.实现和 Nash-MD 附录同一条路:逐步把当前 logits 与参考 logits 做 $\beta$ 加权,再 softmax 出下一个 token,
+Self-Play 就是 Nash-MD-PG 取 $\beta=0$. 所以在期望意义下, Online IPO 等于 $\beta=0$ 的 Nash-MD-PG; 区别在于估计方式, 前者是对比式的, 后者只对被采成 $y$ 的那条回答求梯度.
+
+### 3.3 对比式估计的方差
+
+附录 D 比较两种单样本梯度估计. 记 $f(y,y')=p(y\succ y')-\frac12-\tau\log\frac{\pi(y)}{\pi_{\mathrm{ref}}(y)}+\tau\log\frac{\pi(y')}{\pi_{\mathrm{ref}}(y')}$, 它满足 $f(y,y')=-f(y',y)$. 令 $X_1=-\nabla\log\pi(y)f(y,y')$, $X_2=\nabla\log\pi(y')f(y,y')$. 非对比估计是 $X_1$, 对比估计是 $(X_1+X_2)/2$. $y,y'$ 独立同分布时 $X_1$ 与 $X_2$ 同分布, 于是
 
 $$
-\log\hat\pi_\beta(\cdot|y_{0:n-1},x)
-=
-(1-\beta)\log\pi_\theta(\cdot|y_{0:n-1},x)
-+
-\beta\log\pi_{\mathrm{ref}}(\cdot|y_{0:n-1},x)
-+
-C(y_{0:n-1},x).
+\mathrm{Var}\Bigl(\frac{X_1+X_2}{2}\Bigr)=\frac12\bigl(\mathrm{Var}(X_1)+\mathrm{Cov}(X_1,X_2)\bigr).
 \tag{9}
 $$
 
-$C$ 随前缀变.逐步边缘的乘积不等于序列级几何混合,差在路径相关的归一化.论文把差别交给 Munos 等已经写过的那一段,实验走逐步这一条.
+只要 $\mathrm{Cov}(X_1,X_2)\le\mathrm{Var}(X_1)$, 对比估计的方差就不超过非对比估计; 协方差为负时更小, 这是对偶变量 (antithetic variates) 降方差的原理. Proposition D.1 给出充分条件 $\mathbb{E}[\nabla\log\pi(y)\nabla\log\pi(y')f(y,y')^2]\ge0$. 这个条件取决于策略参数化和偏好模型, 论文没有声称它总成立.
 
-## 5. 驻点相同,$\beta>0$ 时梯度不同
+一个两动作的小例子说明条件可能不满足. 策略 $\pi_1=\sigma(\theta)$, 于是 $\nabla\log\pi(1)=\pi_2$, $\nabla\log\pi(2)=-\pi_1$. 取 $\pi_1=\pi_2=0.5$, $\pi_{\mathrm{ref}}$ 均匀 (此时 KL 项为零), $p(1\succ2)=0.7$, 所以 $f(1,2)=0.2$, $f(2,1)=-0.2$, 同一动作配对时 $f=0$. 四种 $(y,y')$ 组合各占 $1/4$:
 
-沿用离线 IPO 的固定点分析,IPO-MD$(\beta)$ 的任何驻点 $\pi^*_\beta$ 必须满足
+- $(1,2)$: $X_1=-0.5\times0.2=-0.1$, $X_2=-0.5\times0.2=-0.1$;
+- $(2,1)$: $X_1=-(-0.5)\times(-0.2)=-0.1$, $X_2=0.5\times(-0.2)=-0.1$;
+- $(1,1)$, $(2,2)$: 两者都是 $0$.
+
+非对比估计 $X_1$ 与对比估计 $(X_1+X_2)/2$ 的分布完全相同, 方差都是 $0.0025$. 检查充分条件: $\nabla\log\pi(y)\nabla\log\pi(y')f^2$ 在 $(1,2)$ 和 $(2,1)$ 上都是 $-0.01$, 期望为 $-0.005<0$, 条件不满足, 对比式没有带来降方差. 两条回答各自的梯度方向相反, 而 $f$ 也反号, 两项正好同向叠加, 起不到相互抵消的作用.
+
+### 3.4 在线 DPO 不求 Nash
+
+把 DPO 改成在线, 能不能得到同样的结论? 附录 F 的回答是一般不能.
+
+出发点是离线 DPO 目标的梯度 (Lemma F.3, 附录式 (15)). 在单纯形内部,
 
 $$
-\pi^*_\beta(y)
-\propto
-\pi_{\mathrm{ref}}(y)
-\exp\bigl(\tau^{-1}p\bigl(y\succ(\pi^*_\beta)^{1-\beta}(\pi_{\mathrm{ref}})^{\beta}\bigr)\bigr).
+\nabla J_{\mathrm{DPO}}(\pi)_y=2\tau\frac{\mu(y)}{\pi(y)}\sum_{y'}\mu(y')\Bigl(p(y\succ y')-\sigma\Bigl(\tau\log\frac{\pi(y)\pi_{\mathrm{ref}}(y')}{\pi(y')\pi_{\mathrm{ref}}(y)}\Bigr)\Bigr).
+\tag{9a}
+$$
+
+括号里是「真实偏好减去 DPO 隐式 BT 模型给出的偏好」. DPO 要让每一对的 sigmoid 去拟合 $p(y\succ y')$, 而 IPO 的驻点只要求对数比与平均胜率成线性关系. 偏好偏离 BT 形式时, sigmoid 无法对所有对同时拟合, 驻点由 $\mu$ 加权的折中决定. 在线 DPO 把 $\mu$ 换成 $\pi$, 检查正则 Nash 是否满足这个折中, 就得到下面的条件.
+
+Lemma F.5: 正则 Nash $\pi^*$ 是在线 DPO 驻点的充要条件是
+
+$$
+p(y\succ\pi^*)=\sum_{y'}\pi^*(y')\,\sigma\bigl(p(y\succ\pi^*)-p(y'\succ\pi^*)\bigr)\quad\forall y.
 \tag{10}
 $$
 
-也就是对着自己的几何混合做最佳回应.Nash-MD-PG$(\beta)$ 的驻点条件是同一行.固定点重合.
+Theorem F.6: 两个动作时, 除了 $p(y_1\succ y_2)=1/2$, 式 (10) 都不成立. 证明里设 $\pi^*=(\alpha,1-\alpha)$, $p=p(y_2\succ y_1)$, 两个动作的胜率差恰好是 $\frac12-p$, 动作 1 上式 (10) 两边之差化简为 $(1-\alpha)(1-p-\sigma(\frac12-p))$. 代入 $p=0.7$: $1-p=0.3$, $\sigma(-0.2)\approx0.450$, 差是 $-0.15(1-\alpha)$, 除非 $\alpha=1$ 否则不为零; 而动作 2 上的差是 $-\alpha$ 乘同一个因子, 两者不能同时为零.
 
-梯度不重合.**Proposition 5.1** 把两条更新写成对同一只向量场 $g(y)$ 的不同期望.记混合物 $\pi'=\pi^{1-\beta}(\pi_{\mathrm{ref}})^{\beta}$,
+Theorem F.7: 偏好服从 Bradley-Terry 时, RLHF 的闭式解 $\pi^r\propto\pi_{\mathrm{ref}}\exp(r/\tau)$ 是在线 DPO 的驻点. 也就是说, 在线 DPO 在 BT 成立时仍在找 RLHF 解. Remark F.8 给出一个例外: 石头剪刀布式的偏好, $\pi_{\mathrm{ref}}$ 均匀时 Nash 也是均匀的, 每个动作胜率都是 $1/2$, 式 (10) 成立. Remark F.9 还指出离线 DPO 的解在 $\mu$ 有零概率回答时不唯一: 对那些回答可以任意赋概率, 其余回答整体乘以任意正数, 目标值不变.
 
-$$
-g(y)
-=
-\nabla\log\pi(y)
-\Biggl(
-p(y\succ\pi')
--
-\tau\log\frac{\pi(y)}{\pi_{\mathrm{ref}}(y)}
-\Biggr),
-$$
+## 4. IPO-MD: 从几何混合采样
 
-则
+### 4.1 损失
+
+Online IPO 对应 $\beta=0$ 的 Self-Play, 下一步是借用 Nash-MD 的正则采样. 把式 (3) 的采样分布换成几何混合 $\pi^{1-\beta}\pi_{\mathrm{ref}}^\beta$:
 
 $$
-g_{\mathrm{Nash\text{-}MD\text{-}PG}(\beta)}
-=
--\mathbb{E}_{y\sim\pi}[g(y)],
-\qquad
-g_{\mathrm{IPO\text{-}MD}(\beta)}
-=
--\frac2\tau\,\mathbb{E}_{y\sim\pi'}[g(y)].
+\mathbb{E}_{Y,Y'\sim\mathrm{SG}[\pi^{1-\beta}\pi_{\mathrm{ref}}^{\beta}],\;Y^+,Y^-\sim\lambda_p}
+\Biggl[\Biggl(\log\frac{\pi(Y^+)\,\pi_{\mathrm{ref}}(Y^-)}{\pi(Y^-)\,\pi_{\mathrm{ref}}(Y^+)}-\frac{\tau^{-1}}{2}\Biggr)^2\Biggr].
 \tag{11}
 $$
 
-$\beta=0$ 时 $\pi'=\pi$,两条梯度只差正的尺度,这与 Proposition 4.2 合上.$\beta>0$ 时,Nash-MD-PG 只对当前 $\pi$ 采到的 $y$ 回梯度,是 on-policy;IPO-MD 对着混合物采到的动作更新 $\pi$,是 off-policy.对比损失还让 $y$ 和 $y'$ 都进梯度,策略梯度只碰 $y$.
+$\beta=0$ 回到 Online IPO; $\beta=1$ 时两条回答都从固定的 $\pi_{\mathrm{ref}}$ 采. 如果把混合对象换成行为策略 $\mu$, 即 $\pi^{1-\beta}\mu^\beta$, 那么 $\beta=1$ 就是离线 IPO, $\beta$ 在在线和离线之间插值. 实践中往往拿不到 $\mu$ 的概率, 所以实验与 $\pi_{\mathrm{ref}}$ 混合.
 
-**Proposition 5.2** 再转一步:把驻点策略与参考再混一次,得到 $\pi'_\beta=(\pi^*_\beta)^{1-\beta}(\pi_{\mathrm{ref}})^{\beta}$.这份混合物是式 (6) 里把温度改成 $\tau(1-\beta)^{-1}$ 之后的 Nash.$\beta$ 靠近 1,有效温度变大,均衡更贴参考.
+几何混合把当前策略往参考方向拉, 拉的方式是对数空间里的加权平均. 三个回答, $\pi=(0.6,0.3,0.1)$, $\pi_{\mathrm{ref}}$ 均匀, $\beta=0.5$ 时混合正比于 $\sqrt{\pi}$, 即 $(0.775,0.548,0.316)$, 归一化后约 $(0.473,0.334,0.193)$. 原先概率最小的回答从 $0.1$ 升到约 $0.19$, 概率最大的从 $0.6$ 降到约 $0.47$. 这样采出来的对子更常包含当前策略不太会写的回答, 偏好信号覆盖的区域更宽. 代价是这些回答并非来自 $\pi$ 本身, 第 5.2 节的 off-policy 差别就来自这里.
+
+### 4.2 逐 token 实现
+
+序列级几何混合的归一化要对所有回答求和. 实现沿用 Nash-MD 附录的逐步做法, 每生成一个 token 混合一次:
+
+$$
+\log\hat\pi_\beta(\cdot|y_{0:n-1},x)=(1-\beta)\log\pi_\theta(\cdot|y_{0:n-1},x)+\beta\log\pi_{\mathrm{ref}}(\cdot|y_{0:n-1},x)+C(y_{0:n-1},x).
+\tag{12}
+$$
+
+$C$ 随前缀变化. 逐步混合的乘积一般不等于序列级混合, 差别来自各前缀上的归一化. 每个 token 都要同时算策略和参考模型的前向.
+
+### 4.3 表格例子
+
+附录 E 在一个三动作, 偏好呈循环的表格游戏上画了不同 $\beta$ 下的训练轨迹 (Figure 6), $\tau=0.1$, $\pi_{\mathrm{ref}}$ 均匀. 图中同时画了在线, 离线和 MD 三种 IPO 变体, 用来展示 $\beta$ 如何改变轨迹形状.
+
+## 5. 驻点相同, 梯度不同
+
+### 5.1 IPO-MD 与 Nash-MD-PG 的驻点
+
+沿用第 3.1 节的推理, IPO-MD$(\beta)$ 的驻点满足 (论文式 (13))
+
+$$
+\pi^*_\beta(y)\propto\pi_{\mathrm{ref}}(y)\exp\Bigl(\tau^{-1}p\bigl(y\succ(\pi^*_\beta)^{1-\beta}\pi_{\mathrm{ref}}^{\beta}\bigr)\Bigr),
+\tag{13}
+$$
+
+即对自己的几何混合做最佳回应. Nash-MD-PG$(\beta)$ 的驻点条件是同一个方程.
+
+Proposition 5.2 换了一个角度: 把驻点再与参考混一次, $\pi'_\beta=(\pi^*_\beta)^{1-\beta}\pi_{\mathrm{ref}}^\beta$, 这个混合策略是式 (7) 博弈在温度 $\tau(1-\beta)^{-1}$ 下的 Nash 均衡. 取 $\tau=1$, $\beta=0.125$ (第 6 节选中的 IPO-MD 超参), 有效温度是 $1/0.875\approx1.14$; $\beta=0.5$ 时有效温度翻倍. $\beta$ 越接近 1, 均衡越贴近参考策略.
+
+两个回答的例子可以直接验证这两条结论. 仍取 $p(1\succ2)=0.7$, $\pi_{\mathrm{ref}}$ 均匀. 第 1 节算过, 对任意对手 $\nu$, 两个回答的胜率差恒为 $0.2$, 所以式 (13) 的解与 $\beta$ 无关, 总是 $\pi^*_1/\pi^*_2=\exp(0.2/\tau)$. 再与参考混合, $\pi'_\beta$ 的比值是 $\exp(0.2(1-\beta)/\tau)$, 正是温度 $\tau/(1-\beta)$ 下的均衡. $\tau=0.1$, $\beta=0.5$ 时, $\pi^*_1\approx0.88$, $\pi'_{\beta,1}=e^1/(1+e^1)\approx0.73$. 三个以上回答时胜率差依赖对手, $\pi^*_\beta$ 才会随 $\beta$ 变化.
+
+### 5.2 Proposition 5.1
+
+记混合策略 $\pi'=\pi^{1-\beta}\pi_{\mathrm{ref}}^\beta$ 和向量场
+
+$$
+g(y)=\nabla\log\pi(y)\Bigl(p(y\succ\pi')-\frac12-\tau\log\frac{\pi(y)}{\pi_{\mathrm{ref}}(y)}\Bigr).
+\tag{14}
+$$
+
+两种算法的期望梯度是
+
+$$
+g_{\mathrm{Nash\text{-}MD\text{-}PG}(\beta)}=-\mathbb{E}_{y\sim\pi}[g(y)],\qquad
+g_{\mathrm{IPO\text{-}MD}(\beta)}=-\frac{2}{\tau}\,\mathbb{E}_{y\sim\pi'}[g(y)].
+\tag{15}
+$$
+
+被积函数相同, 差在 $y$ 的分布. Nash-MD-PG 在当前策略上取期望, 是 on-policy; IPO-MD 在混合策略上取期望, 用混合策略采到的回答更新 $\pi$, 是 off-policy. 附录 C 的推导中有一步用到 $\mathbb{E}_{y\sim\pi'}[\nabla\log\pi(y)]=\frac{1}{1-\beta}\mathbb{E}_{y\sim\pi'}[\nabla\log\pi'(y)]=0$, 这让 IPO-MD 梯度里一个额外项消失. $\beta=0$ 时 $\pi'=\pi$, 两者只差正的倍数 $2/\tau$, 与 Proposition 4.2 一致.
 
 ![左:IPO-MD 从几何混合采样再走对比损失;右:Nash-MD-PG 只对 π 采样做正则策略梯度](./images/fig-ipo-md-vs-nash.png)
 
-> 图 2:左侧 IPO-MD 从几何混合采 $y,y'$,对比损失对着混合物上的动作更新 $\pi$;右侧 Nash-MD-PG 由 $\pi$ 采 $y$,混合物采 $y'$,正则策略梯度只回 $y$ 这一支.页脚标明 $\beta=0$ 时期望梯度对齐,$\beta>0$ 时驻点相同,梯度不同.
+> 图 2: 左侧 IPO-MD 从几何混合采 $y,y'$, 对比损失用混合策略上的回答更新 $\pi$; 右侧 Nash-MD-PG 从 $\pi$ 采 $y$, 从混合策略采 $y'$, 正则策略梯度只经过 $y$. 页脚标明 $\beta=0$ 时期望梯度一致, $\beta>0$ 时驻点相同而梯度不同.
 
 **图 2 解析**
 
-- 左列绿框是几何混合,两条回答都从混合物出,不是一条 on-policy,一条对手.
-- 左列珊瑚框写对比 IPO,更新落在混合物采到的动作上,所以是 off-policy.
-- 右列桃框是可训 $\pi_\theta$ 采 $y$;灰框是混合物采 $y'$,对 $y'$ 停梯度.
-- 右列紫框是正则策略梯度,页脚写明梯度只乘 $y\sim\pi$.
-- 底栏两行是 Proposition 4.2 与 5.1 的句子,不是另造的实验结论.
+- 左列: 两条回答都从几何混合生成, 随后进入对比式 IPO 损失, 更新落在混合策略采到的回答上.
+- 右列: 可训练的 $\pi_\theta$ 生成 $y$, 混合策略生成 $y'$ 且停梯度, 正则策略梯度只乘 $\nabla\log\pi_\theta(y)$.
+- 底栏两行对应 Proposition 4.2 和 5.1, 分别是 $\beta=0$ 的期望梯度等式和 $\beta>0$ 的梯度差别.
 
-## 6. 摘要成对表:只看均值时 IPO 赢,计入标准差后与 IPO-MD 不可分
+## 6. 摘要实验
 
-实验是文章摘要.偏好模型和奖励模型都在 Stiennon 等从 Reddit TL;DR 挖出来的训练集 $D_{\mathrm{Train}}$ 上拟合,该集 **92820** 条.在线策略的 prompt 来自 **XSum** 训练集.评测用 XSum 的验证 / 测试 prompt,手续与 Munos 等相同.裁判是 PaLM 2 成对偏好,提示写成:你是专家摘要评分员,给定正文和两条摘要,输出 1 或 2,表示哪一条更好.HTML 里这段提示是英文原文.偏好模型和奖励模型的拟合手续与 Munos 等附录 G 相同:偏好模型吃正文加两条摘要,奖励模型只吃正文加一条,末位 logit 过 sigmoid 或当标量.
+### 6.1 数据与模型
 
-策略是 T5X-L 编码器–解码器,约 770M,从同一份 SFT 初始化,这份 SFT 也是 $\pi_{\mathrm{ref}}$.SFT 用的是 Stiennon 等描述的 OpenAI 摘要数据.偏好 / 奖励模型是 T5X-XL,约 3B,在高置信测试集 $D_{\mathrm{Test}}$ 上按与人标的一致率选检查点.策略环里每个 prompt 现采两条全新回答,不复用训练集里现成的 $y$.对照名单:正则策略梯度 RL,在线 IPO,在线 DPO,在线 SLiC,Nash-MD-PG,IPO-MD.RL 不走 PPO 的完整演员–评论家,走带 KL 的正则策略梯度:从 $\pi_\theta$ 采 $y$,用 $r_\phi(y|x)-\tau\mathrm{KL}(\pi_\theta(\cdot|x),\pi_{\mathrm{ref}}(\cdot|x))$ 乘 $\nabla\log\pi_\theta$.偏好类算法吃 $p_\phi$,RL 吃标量 $r_\phi$,两边模型质量本身不可比.正文 Table 2 只报在线版本,离线 DAP 放附录.附录观察:这个设定从已经会摘要的 SFT 出发,在线方法第一步就能采到像样的摘要,离线明显吃亏.不要拿附录离线表当主结论.
+任务是摘要. 偏好模型和奖励模型在 Stiennon 等基于 Reddit TL;DR 构建的偏好数据训练集 $D_{\mathrm{Train}}$ 上训练, 共 92820 条, 在高置信测试集 $D_{\mathrm{Test}}$ 上按与人工标注的一致率选检查点. 在线训练的 prompt 来自 XSum 训练集. 评估用 XSum 验证集和测试集的 prompt, 与 Munos 等的流程相同.
 
-RL 基线扫 $\tau\in\{0.01,0.02,0.05,0.1,0.15,0.2\}$,对照 SFT,1 万步,按 Munos 等的手续钉死一份 RL 检查点.其余算法每个检查点都对这份 RL 打(每 2000 步存一次,共 3 万步),$\tau$ 扫 $\{0.1,0.5,1.0,5.0,10.0\}$;IPO-MD 与 Nash-MD-PG 另扫 $\beta\in\{0.125,0.25\}$.选好超参后每个方法 3 个 seed,方法两两之间做 $3\times 3$ 共 9 次成对评,每次 2000 条 prompt,报表内格子的均值和标准差.这 2000 条来自另一份验证划分,和选检查点时对 RL 打的那 2000 条不是同一份.
+策略是 T5X-L 编码器-解码器 (770M), 在 Stiennon 等的 OpenAI 摘要数据上 SFT, 这个 SFT 模型是所有方法的初始化和 $\pi_{\mathrm{ref}}$. 偏好模型和奖励模型都是 T5X-XL (3B). 裁判是 PaLM2, 提示是「You are an expert summary rater. Given a piece of text and two of its possible summaries, output 1 or 2 to indicate which summary is better.」
 
-默认学习率 $10^{-4}$,batch 32,AdaFactor,decay $0.8$,没有 warmup,$\tau$ 全程恒定.硬件是 TPU v5e:离线 $2\times 4$,在线 $4\times 4$.在线大约 0.25 step/s,2 万步大约 24 小时.这是工程注记,不是主数字.
+RL 基线采用带 KL 的正则策略梯度, 用奖励模型的标量分. 偏好类方法用 $p_\phi$, RL 用 $r_\phi$, 两类模型的质量本身不可直接比较.
 
-附录 B.3 列出 Table 2 用到的选中超参.RL:$\tau=0.05$,学习率 $10^{-4}$.IPO:$\tau=1.0$,学习率 $10^{-4}$.DPO:$\tau=5.0$,学习率 $10^{-4}$.SLiC:$\tau=10.0$,学习率 $10^{-4}$.IPO-MD:$\tau=1.0$,学习率 $10^{-4}$,$\beta=0.125$.Nash-MD-PG:$\tau=0.008$,学习率 $3\times 10^{-5}$,$\beta=0.125$.Nash-MD-PG 的 $\tau=0.008$ 不在正文写的那组五值网格里,倒是 Nash-MD 原文主表用过的温度;学习率也比默认小.网格本来就不可对读.
+把以上设定串起来, Online IPO 的一步训练是:
 
-Table 2 是行对列的平均偏好 $p(y\succ y')$,数字抄 HTML,括号里是 9 次比较的标准差.对角是 0.500.
+1. 取 32 个 prompt.
+2. 每个 prompt 从当前策略 (IPO-MD 则从式 (12) 的逐 token 混合) 采两条摘要, 不保留梯度.
+3. 冻结的 T5X-XL 偏好模型给每对打出 $p_i$.
+4. 用当前策略和参考策略分别算两条摘要的对数概率, 按式 (4), (5) 求损失.
+5. AdaFactor 更新策略参数, $\pi_{\mathrm{ref}}$ 和 $p_\phi$ 保持不变.
 
-| $p(y\succ y')$ | IPO | IPO-MD | DPO | Nash-MD-PG | SLiC | RL |
+与离线 IPO 相比, 多出的是第 2, 3 步; 与 RL 基线相比, 标量奖励换成了成对偏好概率, 损失换成了对比式平方损失.
+
+### 6.2 训练与选模
+
+硬件是 TPU v5e, 离线实验 $2\times4$, 在线实验 $4\times4$, 速度约 0.25 step/s, 即 20000 步约 24 小时. 默认学习率 $10^{-4}$, 总步数 30000, batch 32, $\tau$ 全程不变, 不用 warmup, 优化器 AdaFactor, decay $0.8$.
+
+选模分三步. 第一步固定 RL 基线: 扫 $\tau\in\{0.01,0.02,0.05,0.1,0.15,0.2\}$ 共 6 个值, 训练 10000 步后与 SFT 比较, 选出一个检查点. 第二步, 其他方法的每个检查点都与这个 RL 检查点在 2000 条验证 prompt 上比较; 每 2000 步存一次检查点, 共 30000 步; $\tau$ 扫 $\{0.1,0.5,1.0,5.0,10.0\}$; IPO-MD 和 Nash-MD-PG 另扫 $\beta\in\{0.125,0.25\}$. 第三步, 用选中的超参每种方法跑 3 个随机种子, 每对方法做 $3\times3=9$ 次一对一比较, 每次用另一份验证划分的 2000 条 prompt, 报告 9 次的均值和标准差.
+
+附录 B.3 列出 Table 2 的选中超参:
+
+| 方法 | $\tau$ | 学习率 | $\beta$ |
+|---|---|---|---|
+| RL | $0.05$ | $10^{-4}$ | - |
+| IPO | $1.0$ | $10^{-4}$ | - |
+| DPO | $5.0$ | $10^{-4}$ | - |
+| SLiC | $10.0$ | $10^{-4}$ | - |
+| IPO-MD | $1.0$ | $10^{-4}$ | $0.125$ |
+| Nash-MD-PG | $0.008$ | $3\times10^{-5}$ | $0.125$ |
+
+Nash-MD-PG 的 $\tau=0.008$ 与 Nash-MD 原文主表的取值相同, 不在第二步的五值网格里, 学习率也低于默认值. 各方法的 $\tau$ 作用位置不同 (DPO 的 $\tau$ 在 sigmoid 里, IPO 的在平方目标里, Nash-MD-PG 的在 KL 惩罚里), 数值不能横向比较.
+
+### 6.3 Table 2
+
+格子是行方法对列方法的平均偏好, 括号里是 9 次比较的标准差:
+
+| 行 \ 列 | IPO | IPO-MD | DPO | Nash-MD-PG | SLiC | RL |
 |---|---|---|---|---|---|---|
 | IPO | 0.500 | 0.515 (0.024) | 0.608 (0.038) | 0.621 (0.030) | 0.608 (0.025) | 0.791 (0.012) |
-| IPO-MD | 0.485 (0.024) | 0.500 | 0.600 (0.028) | 0.608 (0.026) | 0.594 (0.020) | 0.778 (0.004) |
-| DPO | 0.392 (0.038) | 0.400 (0.028) | 0.500 | 0.520 (0.041) | 0.493 (0.040) | 0.727 (0.020) |
-| Nash-MD-PG | 0.379 (0.030) | 0.392 (0.026) | 0.480 (0.041) | 0.500 | 0.479 (0.029) | 0.729 (0.020) |
-| SLiC | 0.392 (0.025) | 0.406 (0.020) | 0.507 (0.040) | 0.521 (0.029) | 0.500 | 0.728 (0.010) |
-| RL | 0.209 (0.012) | 0.222 (0.004) | 0.273 (0.020) | 0.271 (0.020) | 0.272 (0.010) | 0.500 |
+| IPO-MD | 0.485 | 0.500 | 0.600 (0.028) | 0.608 (0.026) | 0.594 (0.020) | 0.778 (0.004) |
+| DPO | 0.392 | 0.400 | 0.500 | 0.520 (0.041) | 0.493 (0.040) | 0.727 (0.020) |
+| Nash-MD-PG | 0.379 | 0.392 | 0.480 | 0.500 | 0.479 (0.029) | 0.729 (0.020) |
+| SLiC | 0.392 | 0.406 | 0.507 | 0.521 | 0.500 | 0.728 (0.010) |
+| RL | 0.209 | 0.222 | 0.273 | 0.271 | 0.272 | 0.500 |
 
-正文自己的读法:只看均值,IPO 打赢其余每一列;计入标准差之后,IPO 与 IPO-MD 统计上不可分,两者都打赢其余.IPO 对 IPO-MD 是 0.515 (0.024),区间盖住 0.5.IPO 对 DPO 是 0.608 (0.038),对 Nash-MD-PG 是 0.621 (0.030),对 SLiC 是 0.608 (0.025),对 RL 是 0.791 (0.012).IPO-MD 对 DPO 是 0.600 (0.028),对 Nash-MD-PG 是 0.608 (0.026),对 SLiC 是 0.594 (0.020),对 RL 是 0.778 (0.004).DPO,SLiC,Nash-MD-PG 三家互相比,均值贴着 0.5,标准差大约 0.03 到 0.04.RL 对其余都在 0.22 上下.
+只看均值, IPO 对每一列都超过 $0.5$. IPO 对 IPO-MD 是 $0.515$, 标准差 $0.024$, 一个标准差的范围覆盖 $0.5$, 论文据此说两者统计上不可分, 且都稳定胜过其余方法: 对 DPO, Nash-MD-PG, SLiC 都在 $0.59$ 到 $0.62$ 之间, 对 RL 接近 $0.78$ 到 $0.79$. DPO, SLiC, Nash-MD-PG 三者两两之间的均值在 $0.48$ 到 $0.52$, 标准差 $0.03$ 到 $0.04$, 分不出高下. 所有偏好类方法对 RL 都在 $0.72$ 以上.
 
-论文把这件事写成:IPO 与 IPO-MD 更接近 Nash,比其余稳健.任务只有摘要,模型只有 770M,结论第 7 节自己把后续写成对话智能体和千亿参数.
+从 RL 这一行看, 它对五种偏好类方法的胜率在 $0.209$ 到 $0.273$ 之间, 输给 IPO 最多. RL 用的是标量奖励模型 $r_\phi$, 其余方法用偏好模型 $p_\phi$, 两类模型训练在同一份数据上, 但质量本身没有被单独比较, 所以这一行的差距混合了算法和打分模型两方面的因素. 表格是反对称的, 下三角只是 $1$ 减上三角, 论文只给上三角的标准差.
 
-Figure 1 扫 $\tau$ 对 RL 的胜率:正则弱时在线 IPO 和在线 DPO 走得很近,正则加大之后 IPO 掉得更快.这和 Azar 说的「IPO 的平方正则比 DPO 分类更硬」对得上.Figure 2 是 Online IPO 对 RL 随步数的曲线:$\tau$ 越大,爬到最好点要的步数越多.附录 Figure 5 另扫 IPO-MD 的 $\beta$,学习率改成 $3\times 10^{-5}$,$\tau=1$,在 1.2 万 / 1.6 万 / 2 万步上看,混合物多数时候仍有帮助.那张图不是 Table 2 的选中检查点,别混.
+再看 IPO 与 DPO 的差: 两者都在线采样, 都用同一个 $p_\phi$, 差别只在损失形式. IPO 对 DPO 的 $0.608$ 是在这一控制下得到的, 与第 3.4 节的理论一致: 在线 DPO 的驻点在 BT 成立时是 RLHF 解, 一般情况下两者都偏离 Nash 均衡, 而在线 IPO 的驻点就是正则 Nash 均衡. 这组对比把采样方式和打分模型都固定住了, 剩下的变量只有损失函数, 是全表里控制最干净的一组.
 
-## 7. 不是离线 IPO,不是 OAIF,不是 Nash-MD 原文,不是 SPIN
+论文的解读是 IPO 和 IPO-MD 更接近 Nash 均衡, 更稳健. 结论第 7 节写明了限制: 只有摘要一个任务, 策略只有 770M, 需要在对话模型和 100B 以上的规模上验证.
 
-[03-IPO](../03-IPO-身份偏好优化/03-IPO-身份偏好优化.md) 的训练期不对语言模型再采样.数据是预先标好的 $(y_w,y_l)$,最优对着 $\mu$.本篇的平方印刷体几乎一样,采样源换成当前 $\pi$ 或几何混合之后,驻点方程换成式 (5) 或式 (10).$\tau^{-1}/2$ 还在损失里,故事已经不是「把 $h_\theta$ 回归到离线中点」.
+### 6.4 消融
 
-[OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 用另一份 LLM 当场判 $y^+,y^-$,损失可以是 DPO,IPO 或 SLiC.本篇的标签来自训好的 $p_\phi$,不是 PaLM 2 当标注器坐在训练环里.OAIF 自己的 Table 3 有一行 Online IPO,TL;DR 上 win/tie/loss 是 64.81 / 31.48 / 3.71.那是 OAIF 的实验,标注器,策略尺寸,评测协议都不同,不要抄进本篇 Table 2.本篇评测是 PaLM 2 成对偏好的连续分数,不是人评三栏百分比.
+Figure 1 扫 $\tau$, 看 IPO 和 DPO 对 RL 的胜率. 正则较弱时两者接近; $\tau$ 增大后 IPO 下降得更快, 与 Azar 等「IPO 的正则效果比 DPO 强得多」的分析一致. Figure 2 是 Online IPO 对 RL 胜率随训练步数的曲线: 正则越强, 达到最好成绩所需的步数越多.
 
-[Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md) 的主算法是对几何混合对手做正则策略梯度.几何混合在那篇里是对手选择;在本篇里,Online IPO 根本不混,IPO-MD 才把混合物当作**两条回答的采样源**.等价发生在 $\beta=0$ 的期望梯度,以及 IPO-MD$(\beta)$ 与 Nash-MD-PG$(\beta)$ 的驻点.
+附录 Figure 5 扫 IPO-MD 的 $\beta$, 固定学习率 $3\times10^{-5}$, $\tau=1$, 在 12k, 16k, 20k 步三个检查点上画曲线. 这些设置不是 Table 2 的最优检查点, 用来说明在多数情况下混合采样仍有帮助.
 
-[SPIN](../../4.4.2-无奖励模型的对齐DPO-KTO/05-SPIN-自对弈微调/05-SPIN-自对弈微调.md) 的 winner 永远是 SFT 人标,loser 是上一轮自生成,logistic 往 $p_{\mathrm{data}}$ 上推.Online IPO 的两条都从当前 $\pi$ 出,分由 $p_\phi$ 打,目标分布是正则偏好博弈的均衡.Self-Play 三个字两边都用过,不是同一个算法.
+附录 B.1 的正则扫描 (Figure 3, 4) 同时画了在线和离线版本的 DPO 与 IPO, 分别对 RL 和对 SFT. 在线版本明显优于离线版本. 论文的解释是这个设定天然有利于在线方法: 初始策略已经在摘要数据上微调过, 在线方法第一个检查点就能采到不错的摘要, 很容易拿到高偏好分, 再在此基础上继续优化.
 
-[DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md) 离线是 Bradley-Terry 分类.在线 DPO 在本篇附录里跟 Nash 对不上号,BT 成立时它更像还在找 RLHF 解.[SLiC](../01-SLiC-序列似然校准/01-SLiC-序列似然校准.md) 是 hinge.本篇拿它们当在线对照损失,不把 hinge 或 $-\log\sigma$ 说成 Nash 求解器.
+## 7. 与相邻方法的关系
 
-| | 采样 | 标签 | 损失 | 驻点 |
-|--|------|------|------|------|
-| 离线 IPO | 固定 $\mu$ | 预先人标 | 平方 | 对 $\mu$ 的正则最优 |
-| Online IPO | $y,y'\sim\pi$ | 训好的 $p_\phi$ | 平方 | 正则 Nash($\beta=0$) |
-| IPO-MD$(\beta)$ | $y,y'\sim\pi^{1-\beta}\pi_{\mathrm{ref}}^{\beta}$ | $p_\phi$ | 平方 | 与 Nash-MD-PG$(\beta)$ 相同 |
-| Nash-MD-PG$(\beta)$ | $y\sim\pi$,$y'\sim$ 混合 | $p_\phi$ | 正则 PG | 同上,梯度不同 |
-| OAIF | $y,y'\sim\pi$ | LLM 当场标 | 任意 DAP | 取决于套进去的损失 |
-| SPIN | 人标 vs 自生成 | 人标当赢 | logistic | $p_{\mathrm{data}}$ |
+| 方法 | 采样 | 标签 | 损失 | 驻点 |
+|---|---|---|---|---|
+| 离线 IPO | 固定 $\mu$ | 预先标注 | 平方 | 对 $\mu$ 的正则最优, 式 (2) |
+| Online IPO | $y,y'\sim\pi$ | $p_\phi$ | 平方 | 正则 Nash, 式 (6) |
+| IPO-MD$(\beta)$ | $y,y'\sim\pi^{1-\beta}\pi_{\mathrm{ref}}^\beta$ | $p_\phi$ | 平方 | 式 (13) |
+| Nash-MD-PG$(\beta)$ | $y\sim\pi$, $y'\sim$ 混合 | $p_\phi$ | 正则策略梯度 | 式 (13) |
+| 在线 DPO | $y,y'\sim\pi$ | $p_\phi$ | BT 分类 | BT 下为 RLHF 解 |
+| OAIF | $y,y'\sim\pi$ | LLM 现场标注 | 任意 DAP | 取决于所用损失 |
+| SPIN | 人工回答对自生成 | 人工回答为胜 | logistic | $p_{\mathrm{data}}$ |
 
-## 8. 失效与边界
+[03-IPO](../03-IPO-身份偏好优化/03-IPO-身份偏好优化.md) 推导了 $\tau^{-1}/2$ 这个目标值的来历. 在线版本的损失形式完全相同, 驻点方程从式 (2) 变成式 (6), 差别全部来自采样分布.
 
-| 现象 | 机制 | 说明 |
-|------|------|------|
-| 当成离线 IPO | 忽略采样源换成 $\pi$ | 驻点从对 $\mu$ 变成 Nash |
-| 把 $\tau^{-1}/2$ 焊成主结果 | 损失印刷体没变 | $\tau$ 在本篇是正则温度 |
-| 当成 OAIF | LLM 标注器 vs $p_\phi$ | 不要抄 OAIF Table 3 的 64.81% |
-| 当成 Nash-MD 原文 | 几何混合的位置不同 | Online IPO 不混;IPO-MD 才混 |
-| 当成 SPIN | $p_{\mathrm{data}}$ vs 偏好均衡 | $\beta=0$ 只是自对弈对手 |
-| 把在线 DPO 写成同样找 Nash | 附录 F | 两动作时一般不成立 |
-| 逐步 softmax 当成序列级混合 | 路径归一化不同 | 与 Nash-MD 附录同一条缝 |
-| 用 Table 2 宣称全面碾压 Nash-MD | $\tau$ 网格和学习率不可对读 | 正文读法是均值 + 标准差 |
-| 770M 摘要表外推到对话 | 论文自己写了限制 | 单任务,小模型 |
-| 对比损失无条件方差更小 | 附录 D 是充分条件 | 依赖策略表示和 $p$ |
+[OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 也在线采样, 但用另一个 LLM 现场判断胜负, 并把这个流程套在 DPO, IPO, SLiC 等任意直接对齐损失上. 本文的标签来自预训练的偏好模型, 并且只有 IPO 一族在理论上对应 Nash 均衡.
 
-Online IPO 不是万能药.它把 Azar 的平方接到当前策略自己采的对上,让驻点从「对固定 $\mu$ 更赢」变成正则偏好博弈的 Nash;IPO-MD 再把采样换成与参考的几何混合,固定点和 Nash-MD-PG 同族,梯度在 $\beta>0$ 时分叉.前提是愿意维护一份偏好模型,接受逐步 logits 混合只是序列级几何混合的工程近似,并且把 Table 2 读成「这份超参手续下的摘要成对表」,不是 DAP 对策略梯度的终局判决.
+[Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md) 用几何混合当对手; IPO-MD 用几何混合作为两条回答的共同来源. 两者在 $\beta=0$ 时期望梯度一致, 在任意 $\beta$ 下驻点一致, 在 $\beta>0$ 时梯度的采样分布不同.
 
-离线平方和靶心 $\tau^{-1}/2$ 的正本在 [03-IPO](../03-IPO-身份偏好优化/03-IPO-身份偏好优化.md).几何混合对手和 Nash-MD-PG 在 [06-Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md).LLM 当场标,套任意 DAP 在 [06-OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md).节地图在 [4.4.4](../4.4.4-其他对齐技术.md).
+[SPIN](../../4.4.2-无奖励模型的对齐DPO-KTO/05-SPIN-自对弈微调/05-SPIN-自对弈微调.md) 的胜者固定是人工回答, 目标是逼近人类数据分布. Online IPO 的两条回答都来自当前策略, 胜负由偏好模型决定, 目标是偏好博弈的均衡. [DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md) 和 [SLiC](../01-SLiC-序列似然校准/01-SLiC-序列似然校准.md) 在本文中只作为在线对照损失.
+
+## 8. 失效模式与边界
+
+**偏好模型是上限.** Online IPO 的驻点是 $p_\phi$ 定义的博弈的均衡. $p_\phi$ 在策略漂移到训练分布之外后会出错, 策略会追着这些错误走. 正则 $\tau$ 和几何混合把策略留在 $\pi_{\mathrm{ref}}$ 附近, 只是减轻这一点.
+
+**$\tau$ 对 IPO 更敏感.** Figure 1 显示 $\tau$ 加大后 IPO 退化得比 DPO 快. 第 6.3 节中各方法的选中 $\tau$ 跨了三个数量级, 每种方法都要单独扫.
+
+**换损失不能随意.** 第 3.4 节说明, 同样在线采样, 换成 DPO 的 logistic 损失后驻点就离开了 Nash 均衡, 两动作时除了 $p=1/2$ 都不成立. 所以「在线 + 任意直接对齐损失」这种组合不自动继承 Online IPO 的理论性质. 偏好模型如果近似满足 BT, 在线 DPO 收敛到 RLHF 解, 与 Nash 均衡的差别也随之变小; 偏好里存在循环时, 差别才明显.
+
+**理论与实现之间的近似.** 期望梯度等式要求精确的 $p$ 和无限样本; 逐 token 混合不等于序列级混合; 附录 D 的方差优势只在充分条件下成立.
+
+**成本.** 每一步要为每个 prompt 生成两条回答, IPO-MD 的生成还要同时跑参考模型, 每对回答要过一次 3B 偏好模型. 在线训练用 $4\times4$ TPU v5e, 按论文给的 20000 步约 24 小时计, 默认的 30000 步约 36 小时.
+
+**评估范围.** 一个摘要任务, 一个策略规模, 评估全靠 PaLM2 裁判, 没有人工评估. 附录 B.1 自己承认实验设定偏向在线方法.
 
 ## 参考文献
 
-1. Calandriello, D., Guo, D., Munos, R., Rowland, M., Tang, Y., Avila Pires, B., Richemond, P. H., Le Lan, C., Valko, M., Liu, T., Joshi, R., Zheng, Z., & Piot, B. (2024). [Human Alignment of Large Language Models through Online Preference Optimisation](https://arxiv.org/abs/2403.08635). *ICML*,PMLR 235:5409–5435.[arXiv HTML](https://arxiv.org/html/2403.08635);[PMLR](https://proceedings.mlr.press/v235/calandriello24a.html).
-2. Azar, M. G., Rowland, M., Piot, B., Guo, D., Calandriello, D., Valko, M., & Munos, R. (2024). [A General Theoretical Paradigm to Understand Learning from Human Preferences](https://arxiv.org/abs/2310.12036). *ICML*.(离线 IPO;$\tau^{-1}/2$)
-3. Munos, R., Valko, M., Calandriello, D., et al. (2024). [Nash Learning from Human Feedback](https://arxiv.org/abs/2312.00886). *ICML*,PMLR 235:36743–36768.(Nash-MD-PG;几何混合)
+1. Calandriello, D., Guo, D., Munos, R., Rowland, M., Tang, Y., Avila Pires, B., Richemond, P. H., Le Lan, C., Valko, M., Liu, T., Joshi, R., Zheng, Z., & Piot, B. (2024). [Human Alignment of Large Language Models through Online Preference Optimisation](https://arxiv.org/abs/2403.08635). *ICML*. [arXiv HTML](https://arxiv.org/html/2403.08635).
+2. Azar, M. G., Rowland, M., Piot, B., Guo, D., Calandriello, D., Valko, M., & Munos, R. (2024). [A General Theoretical Paradigm to Understand Learning from Human Preferences](https://arxiv.org/abs/2310.12036). *AISTATS*.
+3. Munos, R., Valko, M., Calandriello, D., et al. (2023). [Nash Learning from Human Feedback](https://arxiv.org/abs/2312.00886). arXiv:2312.00886.
 4. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.
-5. Zhao, Y., Joshi, R., Liu, T., Khalman, M., Saleh, M., & Liu, P. J. (2023). [SLiC-HF: Sequence Likelihood Calibration with Human Feedback](https://arxiv.org/abs/2305.10425).
-6. Guo, S., Zhang, B., Liu, T., et al. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792).(OAIF;LLM 标注器,不是本篇 $p_\phi$)
-7. Chen, Z., Deng, Y., Yuan, H., Ji, K., & Gu, Q. (2024). [Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models](https://arxiv.org/abs/2401.01335). *ICML*.(SPIN 对照)
-8. Stiennon, N., et al. (2020). [Learning to summarize with human feedback](https://arxiv.org/abs/2009.01325). *NeurIPS*.($D_{\mathrm{Train}}$ 92820)
+5. Zhao, Y., Joshi, R., Liu, T., Khalman, M., Saleh, M., & Liu, P. J. (2023). SLiC-HF: Sequence Likelihood Calibration with Human Feedback.
+6. Guo, S., Zhang, B., Liu, T., et al. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792).
+7. Chen, Z., Deng, Y., Yuan, H., Ji, K., & Gu, Q. (2024). [Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models](https://arxiv.org/abs/2401.01335). *ICML*.
+8. Stiennon, N., et al. (2020). [Learning to summarize with human feedback](https://arxiv.org/abs/2009.01325). *NeurIPS*.
 9. Völske, M., Potthast, M., Syed, S., & Stein, B. (2017). TL;DR: Mining Reddit to learn automatic summarization. *Workshop on New Frontiers in Summarization*.
-10. Narayan, S., Cohen, S. B., & Lapata, M. (2018). [Don't Give Me the Details, Just the Summary! Topic-Aware Convolutional Neural Networks for Extreme Summarization](https://arxiv.org/abs/1808.08745). *EMNLP*.(XSum;在线策略的 prompt)
-11. Anil, R., et al. (2023). [PaLM 2 Technical Report](https://arxiv.org/abs/2305.10403).(Table 2 裁判)
-12. Roberts, A., et al. (2022). [Scaling Up Models and Data with t5x and seqio](https://arxiv.org/abs/2203.17189).(T5X-L / XL)
-13. Bradley, R. A., & Terry, M. E. (1952). Rank analysis of incomplete block designs: I. The method of paired comparisons. *Biometrika*, 39(3/4), 324–345.
-14. Ouyang, L., et al. (2022). [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155). *NeurIPS*.
-15. Shazeer, N., & Stern, M. (2018). [Adafactor: Adaptive Learning Rates with Sublinear Memory Cost](https://arxiv.org/abs/1804.04235). *ICML*.
+10. Narayan, S., Cohen, S. B., & Lapata, M. (2018). Don't Give Me the Details, Just the Summary! Topic-Aware Convolutional Neural Networks for Extreme Summarization. *EMNLP*.
+11. Anil, R., et al. (2023). [PaLM 2 Technical Report](https://arxiv.org/abs/2305.10403).
+12. Shazeer, N., & Stern, M. (2018). Adafactor: Adaptive Learning Rates with Sublinear Memory Cost. *ICML*.

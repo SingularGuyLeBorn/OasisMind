@@ -1,93 +1,94 @@
 ---
-title: "02 · RRHF:排序响应对齐"
+title: "02 · RRHF: 排序响应对齐"
 published: true
-tags: ["RRHF", "hinge", "ranking", "SFT", "RLHF", "PPO", "RAFT", "DPO"]
-excerpt: "RRHF(Rank Responses to Align Language Models with Human Feedback)用当前策略的长度归一条件对数概率给每条回答打分,再用无 margin 的 hinge 把这些分数的序对齐到人类偏好,同时对奖励最高的那条做普通 SFT."
+tags: ["RRHF", "hinge", "ranking", "SFT", "RLHF", "PPO", "best-of-n"]
+excerpt: "RRHF 用当前模型的长度归一对数概率给每条回答打分, 用无间隔的 hinge 让分数顺序贴合奖励顺序, 再对奖励最高的回答做 SFT. 训练只需 1 到 2 个模型, HH 上 Alpaca-RRHF 奖励 -0.96, PPO 是 -1.03."
 ---
-# 02 RRHF:排序响应对齐
+# 02 RRHF: 排序响应对齐
 
-RRHF(Rank Responses to Align Language Models with Human Feedback)用当前策略的长度归一条件对数概率给每条回答打分,再用无 margin 的 hinge 把这些分数的序对齐到人类偏好,同时对奖励最高的那条做普通 SFT.卡住的不是「还要不要人类反馈」.卡住的是 InstructGPT 那条 PPO:超参多,标准实现要同时驻 Actor,Critic,奖励模型,参考模型,采样还只能吃自己的 rollout.
+> 相关阅读: [4.4.4 其他对齐技术](../4.4.4-其他对齐技术.md) · [01 SLiC](../01-SLiC-序列似然校准/01-SLiC-序列似然校准.md) · [04 PRO](../04-PRO-偏好排序优化/04-PRO-偏好排序优化.md) · [04 PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) · [07 RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md) · [01 DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md) · [07 Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md)
 
-本篇跟 Yuan,Yuan,Tan 等 *RRHF: Rank Responses to Align Language Models with Human Feedback without tears*([arXiv:2304.05302](https://arxiv.org/abs/2304.05302),NeurIPS 2023).公式以 [arXiv HTML](https://arxiv.org/html/2304.05302) 为准.**不是** [DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md):DPO 的隐式奖励是 $\beta\log(\pi/\pi_{\mathrm{ref}})$,损失是 Bradley-Terry 的 $-\log\sigma$.**不是** [RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md):RAFT 只对 top-1 做交叉熵,没有 ranking hinge.**不是** [PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) 四模型.
+材料是 Yuan, Yuan, Tan 等的 *RRHF: Rank Responses to Align Language Models with Human Feedback without tears* ([arXiv:2304.05302](https://arxiv.org/abs/2304.05302), NeurIPS 2023), 作者来自阿里达摩院与清华大学. 问题是能否把 PPO 换成一次带排序项的微调, 用多条回答的奖励顺序直接训练语言模型.
 
-## 1. PPO 四模型太重,采样却只能吃自己
+## 1. 要解决的问题
 
-InstructGPT 把对齐拆成三截.先 SFT,再拿成对偏好训奖励模型,再用 PPO 把策略往奖励高的方向推.PPO 本身是保守更新的工具,落到语言模型上却要同时装四份:正在训的 $\pi$,估价值的 $V$,打分的 $r_\phi$,算 KL 的冻结参考.超参跟着一起来,clip,GAE,KL 系数,advantage 怎么估,哪一档拧歪了,策略就容易垮.
+InstructGPT 的 RLHF 分三步: SFT, 训练奖励模型, PPO. RRHF 引言指出 PPO 这一步有两个难处. 第一, 要调的超参多, 涉及保守更新, 奖励设计, 优势估计. 第二, 标准实现要同时放下策略模型, 价值模型 (或价值头), 奖励模型, 参考模型四份, 内存吃紧, 放大到更大参数量时还需要复杂的训练平台.
 
-Yuan 等把这件事写成「难训,难放大」.显存账单是真的:四份 7B 比一份 7B 贵得多.PPO 的采样也绑死在当前 $\pi$ 上.别的模型写过的好回答,人写的示范,ChatGPT 吐出来的句子,进不了这条 on-policy 环.
+另一条已有的路是 best-of-$n$: 推理时采 $n$ 条, 用奖励模型挑最高的 (Nakano 等 2021, Cobbe 等 2021). 它实现简单, 每次推理却要付 $n$ 倍采样. RRHF 的出发点是把 best-of-$n$ 的选择搬到训练期: 训练时看 $n$ 条回答及其奖励, 推理时只采 1 条.
 
-RRHF 换了吃法.训练前(在线设定除外)先为每条 $x$ 备好 $k$ 条回答 $y_i$,来源不限.用正在训的语言模型给每条算一个分数 $p_i$,再用外部奖励 $R(x,y_i)=r_i$ 提供序.优化目标很朴素:奖励高的回答,$p$ 也该高;奖励低的,$p$ 该低.序对了,hinge 为零.另外再强制把 $r$ 最大的那条当成 SFT 标签.论文说这套相对 Stanford Alpaca 的 SFT 脚本只多了大约 30 行,对照的是 CarperAI trlX 那份 PPO.结论里还写了一句工程上的便宜:普通微调技巧(dropout,各种参数高效微调)可以直接套,Ramamurthy 等发现这类技巧会把 RL 训练弄不稳定.RRHF 按交叉熵加 hinge 走,不必为 dropout 另开一套 PPO 搜索.
+PPO 的优化信号是优势, 即某个状态动作比价值网络估出的基线好多少, 所以训练全程都离不开价值网络. RRHF 改成在同一条查询的多条回答之间做比较, 回答之间互为参照, 不再需要额外估基线. 采样在训练前做完, 行为策略不随训练变化, PPO 里那项约束策略离初始模型不太远的 KL 也就不再需要.
 
-训练期默认只加载一份 $\pi$.需要 $R$ 打分时再加一份冻结奖励模型,合计 1 到 2 个.没有 Critic,也没有为 KL 常驻的参考.
+下面围绕五个问题展开:
 
-PPO 常把逐步奖励改写成 $\tilde R(x;y)=R(x;y)-\beta\log\bigl(\pi(y\mid x)/\rho(y\mid x)\bigr)$,$\beta$ 固定或动态调,再加一个价值网络估优势.RRHF 主设定不写这一项.采样发生在训练前,行为策略不再跟着 $\pi$ 变,KL 项退化.比较的是同一条 $x$ 上多条 $y_i$ 的 $p$,不是「相对价值基线好多少」.$R$ 的绝对数值不进式 (2),只决定哪些对要比,哪一条当冠军.在线采样那一档才会把 KL 请回来,后面单独写.
+1. RRHF 怎么给回答打分, 为什么要除以长度 (第 2 节).
+2. 损失由哪两项组成, 梯度落在哪些 token 上 (第 3 节).
+3. 它和 SFT, 奖励模型训练, PPO 是什么关系 (第 4 节).
+4. HH 数据上效果如何, 哪些因素决定上限 (第 5 至 7 节).
+5. 改成在线采样会发生什么 (第 8 节).
 
-## 2. 分数是长度归一的条件对数概率
+## 2. 分数: 长度归一的条件对数概率
 
-记号跟 Ziegler 等.查询 $x\sim\mathcal{D}$.回答 $y$ 有一个奖励 $R(x,y)$,可以是人,也可以是网络.要学的自回归策略写成 $\pi$,从初始模型 $\rho$ 初始化.
+记号沿用 Ziegler 等 2019. 查询 $x\sim\mathcal{D}$, 回答 $y$ 的奖励 $R(x,y)$ 由人或网络给出. 要学的自回归模型记作 $\pi$, 从初始模型 $\rho$ 初始化.
 
-每条 $x$ 配 $k$ 条回答 $y_i$,分别由采样策略 $\rho_i$ 给出,$1\le i\le k$.$\rho_i$ 可以是初始 $\rho$,可以是正在训的 $\pi$,可以是 ChatGPT 或 GPT-4,也可以是人写的好坏示范.同一条 $x$ 上混用几种来源是允许的,训练过程中途换 $\rho_i$ 也允许.奖励函数给每条一个标量 $r_i=R(x,y_i)$.$\pi$ 自己给的分数是
-
-$$
-p_i=\frac{\sum_{t}\log\pi(y_{i,t}\mid x,y_{i,<t})}{\lVert y_i\rVert}.
-\tag{1}
-$$
-
-论文写成 $P_\pi$.分子是整段回答的条件对数概率,逐步 $y_{i,t}$ 对前面的 $x$ 与 $y_{i,<t}$ 求和.分母是长度 $\lVert y_i\rVert$.**这就是 RRHF 的分数.** 不是 $\beta\log(\pi/\pi_{\mathrm{ref}})$,式 (1) 里没有参考策略,也没有 $\beta$.
-
-不除长度会出偏差.对数概率是负数,序列越长,求和越负.两条平均每 token 一样差的回答,长的那条未归一的总分更低,排序会系统性地惩罚长回复.除以 $\lVert y_i\rVert$ 之后,比的是平均每 token 的对数概率.后面的 $L_{\mathrm{ft}}$ 并不做这次除法,那是另一条交叉熵.
-
-$p_i$ 同时承担两件事.生成时 $\pi$ 按自回归采样.打分时同一套权重用式 (1) 给候选排序.论文把训完的模型写成「既可以当语言模型,也可以当奖励模型」.当 RM 用时,比的是 $p_i$,不是在末层再接一个 $[CLS]$ 或 $[EOS]$ 头.
-
-## 3. 排序损失是无 margin 的 hinge,再加一条 SFT
-
-想法是:让 $\pi$ 给更好的回答更大的 $p$,给更差的回答更小的 $p$.实现上走 pairwise hinge,灵感来自 Liu 等的 BRIO(摘要排序),不是 Bradley-Terry 的成对 $\sigma$.
+训练时每条 $x$ 有 $k$ 条回答 $y_i$, 由采样策略 $\rho_i$ 生成, $1\le i\le k$. $\rho_i$ 没有限制: 可以是初始模型 $\rho$, 可以是正在学的 $\pi$, 可以是 ChatGPT, GPT-4, 也可以是人写的好坏回答, 训练中途还可以换. 奖励函数给每条回答一个分数 $r_i=R(x,y_i)$. 模型 $\pi$ 自己给每条回答的分数是论文式 (1):
 
 $$
-L_{\mathrm{rank}}=\sum_{r_i<r_j}\max(0,p_i-p_j).
-\tag{2}
+p_i=\frac{\sum_t\log P_\pi(y_{i,t}|x,y_{i,<t})}{\|y_i\|} \tag{1}
 $$
 
-$r_i<r_j$ 表示按外部奖励,$i$ 比 $j$ 差.此时希望 $p_i<p_j$.若差回答的 $p_i$ 反而更高,hinge 取 $p_i-p_j$,梯度把差回答的平均对数概率往下压,把好回答往上抬.已经排对,$L_{\mathrm{rank}}$ 这一对是 0,不再更新.
+分子是整条回答逐 token 的条件对数概率之和, 分母 $\|y_i\|$ 是回答长度. 式 (1) 里只有当前模型, 没有参考模型, 也没有温度系数.
 
-没有 margin.BRIO 用过 $\lambda_{ij}=(j-i)\lambda$,名次差越大,间隔要求越大.Yuan 等关掉它:不加 margin 就够用,$\lambda$ 还要另搜.这也不是 SLiC 那种 $\max(0,\delta-\log\pi(y^+)+\log\pi(y^-))$.SLiC 的 $\delta$ 是预设间隔,对数似然通常不除长度.式 (2) 的间隔就是 0,比较的是已经除过长度的 $p$.
+除以长度的原因是对数概率为负, 回答越长, 求和越负. 设两条回答平均每 token 的对数概率都是 $-1.0$, 长度分别是 10 和 40, 不归一的分数是 $-10$ 和 $-40$, 排序会系统性地偏向短回答; 归一以后两者都是 $-1.0$. 式 (1) 比的是平均每个 token 有多可能.
 
-式 (2) 也不是
+同一套权重同时做两件事: 生成时按自回归采样, 打分时按式 (1) 给候选排序. 论文因此说训好的模型既可以当语言模型, 也可以当奖励模型. 当奖励模型用时, 分数是长度归一的对数概率, 一般奖励模型则是在 [CLS] 或 [EOS] 位置接一个打分头.
 
-$$
--\sum_{i<j}\log\sigma\bigl(r(x,y_{(i)})-r(x,y_{(j)})\bigr).
-$$
+## 3. 损失
 
-没有 $\sigma$,没有把排序写成 Plackett-Luce 联合似然,也不把 $p_i$ 再塞进 Bradley-Terry.$r$ 只决定哪些对进入求和,不进入 hinge 的数值.hinge 里只有 $p$.
+### 3.1 排序项
 
-另外再加一条和 SFT 同构的交叉熵.先取奖励最高的下标
+目标是让 $\pi$ 给更好的回答更大的 $p$, 给更差的回答更小的 $p$. 受 BRIO (Liu 等 2022) 启发, 论文用排序损失, 式 (2):
 
 $$
-i'=\arg\max_i r_i,
-\tag{3}
+L_{\mathrm{rank}}=\sum_{r_i<r_j}\max(0,p_i-p_j) \tag{2}
 $$
 
-再
+求和遍历所有按奖励 $i$ 比 $j$ 差的对. 希望 $p_i<p_j$; 若差回答的 $p_i$ 反而更高, 罚 $p_i-p_j$. 排对的对贡献 0.
+
+式 (2) 没有间隔. BRIO 加了随名次差增长的间隔 $\lambda_{ij}=(j-i)\lambda$, 鼓励排名越高的回答 $p$ 越高. 论文关掉了它, 理由是不加间隔经验效果已经很好, 而 $\lambda$ 要额外调. 奖励 $r$ 的数值不进入损失, 只决定哪些对要比较, 哪条当第一名.
+
+### 3.2 SFT 项与总损失
+
+另加一项和 SFT 一样的交叉熵, 要求模型学奖励最高的回答, 式 (3)(4):
 
 $$
-L_{\mathrm{ft}}=-\sum_{t}\log\pi(y_{i',t}\mid x,y_{i',<t}).
-\tag{4}
+i'=\arg\max_i r_i \tag{3}
 $$
 
-式 (4) 不除 $\lVert y_{i'}\rVert$.只对冠军做最大似然,第二名无论比第四名好多少,都进不了 $L_{\mathrm{ft}}$.这一点和 RAFT 相同.不同的是 RRHF 还留着式 (2):所有 $r_i<r_j$ 的对都在 hinge 里比 $p$,输家不是直接丢掉.
-
-总损失是不加权重的和:
-
 $$
-L=L_{\mathrm{rank}}+L_{\mathrm{ft}}.
-\tag{5}
+L_{\mathrm{ft}}=-\sum_t\log P_\pi(y_{i',t}|x,y_{i',<t}) \tag{4}
 $$
 
-Liu 等建议把排序项乘 10 或 100.Yuan 等试过,HH 上更差.排序项不是越大声越好.默认就是 1:1.
+总损失是两项不加权的和, 式 (5):
 
-hinge 是硬截断.已经排对的对贡献 0,梯度停.DPO 的 $-\log\sigma$ 对所有成对都有非零梯度,间隔越大越想再拉开.式 (2) 没有「间隔越大越好」这一档,排反了才有 $p_i-p_j$ 的线性罚.$k=6$ 时配对最多 $\binom{6}{2}=15$ 对,量级仍小.名次不相邻的对也进求和:第三名要同时低于第一,高于第四,不是只跟邻居比.
+$$
+L=L_{\mathrm{rank}}+L_{\mathrm{ft}} \tag{5}
+$$
 
-用一组假分数看 hinge 在算什么.设 $k=3$,$r=(1.0,0.2,0.8)$,于是 $r_2<r_3<r_1$.$p=(-0.80,-0.50,-0.90)$.三对:
+BRIO 建议给排序项乘 10 或 100, 论文在预实验里试过, 效果更差, 所以保持 1 比 1. 训练代码在 Stanford Alpaca 的 SFT 脚本上只多约 30 行, 对照的 PPO 实现是 CarperAI 的 trlX.
+
+### 3.3 梯度落在哪里
+
+把式 (1) 代入式 (2), 对一对排反的回答 ($r_i<r_j$ 且 $p_i>p_j$) 求梯度:
+
+$$
+\nabla_\theta\max(0,p_i-p_j)=\frac{1}{\|y_i\|}\sum_t\nabla_\theta\log P_\pi(y_{i,t}|\cdot)-\frac{1}{\|y_j\|}\sum_t\nabla_\theta\log P_\pi(y_{j,t}|\cdot) \tag{6}
+$$
+
+式 (6) 说明三件事. 第一, 下降方向压低差回答每个 token 的对数概率, 抬高好回答的, 每个 token 的权重是 $1/\|y\|$, 长回答单个 token 分到的梯度小. 第二, 权重只有 0 和 1 两档: 排对了就停, 排反了不论差多少, 系数都是 1. 第三, 一条回答可能出现在多个对里, 第三名要同时低于第一名, 高于第四名, 它的梯度是所在各对之和. $k$ 条回答最多 $\binom{k}{2}$ 对, $k=6$ 时 15 对.
+
+$L_{\mathrm{ft}}$ 的梯度不除长度, 每个 token 权重为 1, 只落在第一名上. 两项的尺度因此不同: 第一名的 token 在 $L_{\mathrm{ft}}$ 里拿权重 1, 在 $L_{\mathrm{rank}}$ 里每对只拿 $1/\|y_{i'}\|$. 设第一名长 50 个 token, 它在 $k=6$ 时最多出现在 5 个对里, 排序项给它每个 token 的权重合计至多 $5/50=0.1$, 交叉熵给 1. 所以在第一名上, 交叉熵占主导; 排序项的作用主要落在排反的中间名次和差回答上. 这段比例是按式 (4)(6) 算出来的, 论文没有单独报告两项梯度的大小.
+
+手算一组数. 设 $k=3$, 奖励 $r=(1.0,0.2,0.8)$, 顺序是 $r_2<r_3<r_1$; 分数 $p=(-0.80,-0.50,-0.90)$.
 
 | 对 | 条件 | $p_i-p_j$ | hinge |
 |----|------|----------:|------:|
@@ -95,168 +96,272 @@ hinge 是硬截断.已经排对的对贡献 0,梯度停.DPO 的 $-\log\sigma$ �
 | $(2,3)$ | $r_2<r_3$ | $-0.50-(-0.90)=0.40$ | $0.40$ |
 | $(3,1)$ | $r_3<r_1$ | $-0.90-(-0.80)=-0.10$ | $0$ |
 
-$L_{\mathrm{rank}}=0.70$.$y_3$ 的 $p$ 已经低于 $y_1$,这一对歇了;$y_2$ 的 $p$ 最高,却是最差回答,两对都在罚.数字是式 (2) 的算术,不是论文表.$L_{\mathrm{ft}}$ 只看见 $y_1$.
+$L_{\mathrm{rank}}=0.70$. $y_3$ 的分数已经低于 $y_1$, 这一对不更新. $y_2$ 奖励最低, 分数却最高, 在两对里都被压. $L_{\mathrm{ft}}$ 只看 $y_1$.
 
-![长度归一 $p_i$ 进 hinge,$r$ 最大的那条另做 SFT](./images/fig-rrhf-pi-rank-sft.png)
-
-> 图 1:同一 $x$ 下 $k$ 条回答分两路.上路用 $\pi$ 算长度归一的 $p_i$,再按 $r_i<r_j$ 做无 margin hinge;下路用 $R$ 取 $\arg\max$,只对冠军做 $L_{\mathrm{ft}}$.两路在右侧相加成 $L$.
+![长度归一分数进 hinge, 奖励最高的那条另做 SFT](./images/fig-rrhf-pi-rank-sft.png)
 
 **图 1 解析**
 
-- 主方向从左到右.奶油框是 prompt $x$,浅蓝框是 $k$ 条 $y$,来源写在框内:$\rho$,ChatGPT,人写.
-- 上路薄荷框是式 (1).分母 $\lVert y_i\rVert$ 写在框里,不要读成未归一的序列对数和.
-- 下路桃色框是 $r_i=R(x,y_i)$,标注 ranking key only:$r$ 不进 hinge 的数值,只决定配对与冠军.
-- 虚线从奖励框指向上路 hinge,标签是 pairs $r_i<r_j$.这是图里唯一的辅助线.
-- 黄框是式 (2),写明 no margin.紫框是式 (3)(4).右侧珊瑚框是式 (5),unweighted sum.
-- 页脚两句:差回答的 $p$ 更高会被罚;$L_{\mathrm{ft}}$ 不除长度.
+- 节点从左到右: 查询 $x$, $k$ 条回答 (来源 $\rho$, ChatGPT, 人写), 上路是模型打分框式 (1), 下路是奖励框 $r_i=R(x,y_i)$; 再往右是排序项, 第一名的 SFT 项, 总损失.
+- 上路的打分框写明分母 $\|y_i\|$, 输出进排序项式 (2), 框内注明没有间隔. 奖励框标注只当排序依据, 虚线把 $r_i<r_j$ 的配对条件送进排序项, 奖励数值本身不进 hinge.
+- 下路从奖励框取 $\arg\max$ 得 $i'$, 算式 (4); 右侧把两项不加权相加成式 (5). 底部注明式 (4) 不做长度归一.
+- 图里没有参考模型和价值网络, 也没有画回答是训练前采好的这一时间顺序.
 
-## 4. 采样 $\rho_i$ 不限于当前策略
+## 4. 和 RLHF 三步的关系
 
-PPO 的 $y$ 必须来自正在学的 $\pi$.RRHF 把采样策略写成任意 $\rho_i$.这是它和 on-policy RL 最显眼的差别,也是它能把 ChatGPT,人写,自己的 beam 搜结果塞进同一条 $x$ 的原因.
+论文 §3.2 把 RRHF 和 InstructGPT 三步逐一对照.
 
-主实验在 Anthropic HH 上跑.数据来自 `Dahoas/rm-static` 那条 chosen / rejected 对.代理奖励是 `Dahoas/gptj-rm-static`,和 PPO 共用,方便比分数.初始模型是 LLaMA-7B,Alpaca-7B,以及把 Alpaca 在 `Dahoas/full-hh-rlhf` 的 chosen 上再 SFT 得到的 Alpaca-sft.每条 query 收 4 条模型样本,再加数据集自带的好,坏两条,最多 6 条.
+**和 SFT**. $k=1$ 且 $\rho_1$ 固定为人写回答时, 式 (2) 没有可比的对, 只剩式 (4), RRHF 退化成 SFT (行为克隆).
 
-模型样本怎么采,论文列成一张表.$\rho$ 是初始策略,$\pi$ 是在线策略,$\rho^*$ 是每 3 个 epoch 训完后的检查点.
+**和奖励模型**. 若 $R(x,y)$ 是人标的, 用式 (1) 拟合人标顺序, 等于在训一个以长度归一对数概率为输出的奖励模型.
+
+**和 PPO**. PPO 最大化 $\mathbb{E}_{x\sim\mathcal{D},y\sim\pi(\cdot|x)}[R(x,y)]$, 为了不让策略离初始模型太远, 奖励改写成
+
+$$
+\tilde R(x,y)=R(x,y)-\beta\log\frac{\pi(y|x)}{\rho(y|x)} \tag{7}
+$$
+
+$\beta$ 固定 (InstructGPT) 或动态调整 (Ziegler 等). 论文列了四点差别: PPO 用 $\pi$ 采样, RRHF 用任意 $\rho_i$; PPO 在训练中采样, RRHF 在训练前采样, 式 (7) 的 KL 项因此用不上; PPO 优化奖励的绝对值, RRHF 只用不同回答之间奖励的比较, 论文认为后者更容易学; PPO 需要价值模型给出基线, RRHF 在采样回答之间比较.
+
+**和其他微调技巧**. 结论部分补了一点: RRHF 的训练过程就是交叉熵加 hinge 的普通微调, 可以直接套用 Child-Tuning, R-Drop, HyPe 一类微调技巧; Ramamurthy 等发现 dropout 这类技巧会让强化学习训练变得不稳定. 相关工作里, 同期还有另一类做法是先构造更对齐的数据再做 SFT, 例如事后改写提示 (Zhang 等 2023 的 hindsight 指令重标注, Liu 等 2023 的 hindsight 微调) 或原则驱动的自对齐 (Sun 等 2023), 它们不在训练目标里做排序比较.
+
+训练期需要的模型数也随之变化. 非在线设定里采样和打分都在训练前完成, 训练只加载 $\pi$ 一个模型; 在线设定要在训练中给新样本打分, 再加一个冻结的奖励模型, 合计 2 个.
+
+## 5. 实验设定
+
+### 5.1 数据, 模型, 奖励
+
+数据是 Anthropic 的 Helpful and Harmless (HH), 用 Hugging Face 上的 `Dahoas/rm-static` 版本, 每条查询有一条 chosen 和一条 rejected. 代理奖励模型是在同一数据上训的 `Dahoas/gptj-rm-static`, PPO 和 RRHF 用同一个奖励模型, 便于比较.
+
+初始模型是 7B 的 LLaMA 和 Alpaca. InstructGPT 与 Ramamurthy 等做 PPO 时都从 SFT 模型出发, 论文也按 trlX 的做法在 `Dahoas/full-hh-rlhf` 的 chosen 回答上微调 Alpaca-7B, 记作 Alpaca-sft.
+
+### 5.2 采样策略
+
+训练效果和采样质量强相关. 论文把初始模型记作 $\rho$, 在线模型记作 $\pi$, 每训练 3 个 epoch 后的模型记作 $\rho^*$. 每条查询用模型采 4 条, 数据集自带的好坏两条记作 $\rho_5,\rho_6$, 最多 6 条. Table 1:
 
 | 设定 | $\rho_1\sim\rho_4$ | $\rho_5,\rho_6$ |
 |------|-------------------|-----------------|
-| BP | $\rho$ 上 beam search | 数据集提供 |
-| SP | $\rho$ 上 top-$p$ | 数据集提供 |
-| DP | $\rho$ 上 diverse beam | 数据集提供 |
-| OP-$k$ | 在线 diverse beam,每 $k$ 步更新 $\pi$ | 数据集提供 |
-| IP-$n$ | 用上一轮 $\rho^*$ 再 diverse beam | 数据集提供 |
-| D | diverse beam,不用数据集回答 | 空 |
-| P | 空 | 只用数据集两条 |
+| BP | $\rho$ 做 beam search | 数据集回答 |
+| SP | $\rho$ 做 top-$p$ 采样 | 数据集回答 |
+| DP | $\rho$ 做 diverse beam search | 数据集回答 |
+| OP-$k$ | $\pi$ 在线 diverse beam, 每 $k$ 步更新 | 数据集回答 |
+| IP-$n$ | 上一轮训完的 $\rho^*$ 做 diverse beam | 数据集回答 |
+| D | $\rho$ 做 diverse beam | 无 |
+| P | 无 | 数据集回答 |
 
-IP-1 等价于 DP.vanilla beam:beam 4,最长 128 新 token,多样性偏低,所以另开两档.diverse beam:4 组,diversity penalty $1.0$,温度 $0.8$.top-$p$:beam 4,$p=1.0$,温度 $0.8$,与 PPO 基线那档 top-$p$ 对齐.除 OP 外,采样和训练分开.8 张 80GB A100 上,采一轮大约 4 到 6 小时.IP-$n$ 用训完的 $\rho^*$ 再采,等于把 best-of-$n$ 的天花板抬一层再学.OP-$k$ 每 $k$ 步更新采样策略,最像 PPO,也最贵.
+IP-1 就是 DP. 普通 beam search 的 beam 为 4, 最多生成 128 个 token; 它采出的样本多样性低, 所以另试两种: diverse beam search (beam 4, 4 组, 多样性惩罚 1.0, 温度 0.8) 和 top-$p$ 采样 (beam 4, top-$p$ 为 1.0, 温度 0.8, 与 PPO 基线的采样设置一致). 除 OP 外采样都在训练前完成, 在 8 张 80GB A100 上需要 4 到 6 小时.
 
-微调超参跟 SFT 同一档.3 个 epoch,不早停.学习率先暖到 $2\times 10^{-5}$,再线性降到 0.每张 GPU 一次 1 条 query,梯度累积 8 步,query batch 64.query 与回答截断到 192 token.非在线设定训练期只加载一份模型,墙钟大约 4 到 6 小时.OP 大约 30 小时.单条 query 要前向 $k$ 条回答,激活比 PPO 的单条 rollout 更肥.省的是常驻模型份数,不是每步峰值显存.
+### 5.3 训练超参与基线
 
-PPO 基线按 token 建 MDP,clip $\varepsilon=0.2$,优势走 GAE,比率是 $\pi_\theta/\pi_{\hat\theta}$.超参跟 trlX 上 6B GPT-J 那档.评测用 gpt2-medium 的困惑度,`Dahoas/gptj-rm-static` 的平均奖励,以及人标 win / tie / lose.多轮对话在模型吐出 `Human:` 或 `Assistant:` 处截断,防止用假对话去骗奖励模型.
+训练 3 个 epoch, 不早停. 学习率预热到 $2\times10^{-5}$ 后线性降到 0. 每张卡一次最多 1 条查询, 梯度累积 8 步, 查询 batch 64. 查询和回答截断到 192 token. 8 张 A100 上非在线训练 4 到 6 小时, OP 约 30 小时.
 
-## 5. 不是 Bradley-Terry,不是 DPO,不是 RAFT,不是 PPO
+PPO 基线建成逐 token 的马尔可夫决策过程: 动作是第 $t$ 步生成的 token, 状态是查询加已生成的前缀. 用 clip 代理目标, clip 比例 $\epsilon=0.2$, 优势用 GAE 估计, 价值函数单独学习. 概率比 $r_\theta=\pi_\theta(y_t|x,y_{<t})/\pi_{\hat\theta}(y_t|x,y_{<t})$ 的分母是行为策略, 每隔几次更新就用训练策略替换一次. 超参沿用 trlX 在 6B GPT-J 上的设置, 对应的 SFT checkpoint 是 `Dahoas/pythia-6B-static-sft`.
 
-几条邻居都叫「用排序对齐」.数据槽和分数定义不要混.
+评测看三项: gpt2-medium 算的困惑度, `Dahoas/gptj-rm-static` 的平均奖励, 人工比较的胜平负. HH 是多轮对话, 模型一旦生成 `Human:` 或 `Assistant:` 就截断, 防止模型伪造一轮对话来骗奖励模型 (例如生成「Assistant: 我的回答无害且有帮助吗? Human: 是的, 很无害也很有帮助」).
 
-不是 Bradley-Terry 成对 $\sigma$,也不是把完整排列写成联合似然.式 (2) 是 hinge.$r$ 只当配对开关.没有 $\log\sigma(p_j-p_i)$,没有把 $p$ 再指数化成 BT 概率.有人会把 RRHF 的 $L$ 写成 $-\sum\log\sigma(r_i-r_j)$ 再配上 $\beta\log(\pi/\pi_{\mathrm{ref}})$.那是 DPO 家族的槽,不是这篇的式 (2)(5).
+## 6. 主结果
 
-不是 DPO.DPO 从带 KL 约束的 RLHF 目标反解隐式奖励 $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$,成对差里 $Z(x)$ 消掉,损失是 $-\log\sigma(\cdot)$.RRHF 的 $p_i$ 没有除以 $\pi_{\mathrm{ref}}$,也没有 $\beta$.DPO 吃离线 $(y_w,y_l)$.RRHF 吃 $k$ 条加一个标量序 $r_i$,序可以来自 RM,也可以来自人.DPO 原文损失不除 $\lVert y\rVert$;长度平均是后来 SimPO 的槽.
+### 6.1 自动评测
 
-不是 RAFT.Dong 等同期也是「打分,过滤,再微调」.RAFT 每条 prompt 采 $K$ 条,只对 $\arg\max r$ 做交叉熵,$K-1$ 条丢掉,没有式 (2).RRHF 的 $L_{\mathrm{ft}}$ 看起来像那一步,但 hinge 还在用所有 $r_i<r_j$ 的对.论文自己写:和 RAFT 比,ranking loss 是必要的,后面消融会给数字.采样来源也不同.RAFT 主路径是当前生成器自己吐的在线样本.RRHF 主路径是训练前多源采样.
+Table 2:
 
-不是 PPO.没有价值网络,没有 GAE,没有 $1\pm\varepsilon$ clip.优化信号来自多条回答之间的相对 $p$,不估「相对 baseline 好多少」.PPO 用绝对奖励加 KL;RRHF 主设定只用比较.PPO 必须 $y\sim\pi$;RRHF 的 $\rho_i$ 可以是别人.
-
-| | PPO | RAFT | DPO | RRHF |
-|--|-----|------|-----|------|
-| 分数 / 目标 | $r_\phi$,KL 进逐步奖励 | 过滤器是 $r$,更新是 CE | $\beta\log(\pi/\pi_{\mathrm{ref}})$ | 式 (1) 的 $p_i$ |
-| 损失 | clip 代理目标 | 只对 $y^{\star}$ 的 CE | BT 的 $-\log\sigma$ | hinge + $L_{\mathrm{ft}}$ |
-| 谁进更新 | 当前 rollout | 只有 $\arg\max$ | 成对 $y_w,y_l$ | hinge 用全部对,CE 只用冠军 |
-| 采样 | 训练中 $y\sim\pi$ | 当前 $G_t$ | 离线对,不 rollout | 训练前任意 $\rho_i$;OP 除外 |
-| 常驻模型 | 四份 | 一次一份 | $\pi_\theta$ + 冻结 $\pi_{\mathrm{ref}}$ | 1 或 2 |
-
-![四列对照:PPO 四模型,RAFT 只留 top-1,DPO 隐式奖励,RRHF 的 $p_i$ 与 hinge](./images/fig-rrhf-vs-ppo-raft-dpo.png)
-
-> 图 2:四列从上往下,列间没有箭头.左起 PPO 四份权重且只能 $y\sim\pi$;RAFT 采 $K$ 只 SFT 冠军;DPO 用对数比进 BT;RRHF 用长度归一 $p_i$ 做无 margin hinge,再加 $L_{\mathrm{ft}}$.
-
-**图 2 解析**
-
-- 四列独立.
-- 桃色列四框是 Actor,Critic,RM,冻结参考.页脚:4 models;$y\sim\pi$ only;clip + GAE.
-- 薄荷列:sample $K$ → keep $\arg\max r$ → 只对 $y^{\star}$ 做 SFT → losers unused.页脚写 no ranking hinge.
-- 淡紫列:离线 $(y_w,y_l)$ → $\hat r=\beta\log(\pi/\pi_{\mathrm{ref}})$ → BT 的 $-\log\sigma$ → 损失里没有 $\lVert y\rVert$.页脚:implicit reward,not $p_i$.
-- 浅蓝列:任意 $\rho_i$ → 式 (1) → 式 (2) → 加上式 (4).页脚:1–2 models,$L=L_{\mathrm{rank}}+L_{\mathrm{ft}}$.
-- 图里没有坐标轴.数字在下一节.
-
-和 SFT,奖励模型的关系可以收成退化.$k=1$ 且 $\rho_1$ 固定为人写,RRHF 退回行为克隆,也就是 SFT.若 $R$ 直接是人打的分,用 $p_i$ 去拟合序,就是在训一个用长度归一对数概率当输出的奖励模型.PPO 那一截被换成「先采样,再比 $p$ 的序」,不再走策略梯度.
-
-## 6. 一手数字:HH 上的奖励,当 RM 用,Wombat
-
-自动指标在 Table 2.DP 是 diverse beam,SP 是 top-$p$.$\emptyset$ 表示不再微调,直接评.Alpaca-RRHFDP 平均奖励 $-1.03$(三次 $-1.01$,$-1.02$,$-1.05$).Alpaca-RRHFSP 到 **-0.96**,同表 Alpaca-PPO 是 **-1.03**.Alpaca 上 Best-of-4 是 $-0.97$,RRHFSP 贴着这条推理期 best-of-$n$ 线.LLaMA 没做过指令微调,空跑奖励 $-1.89$,RRHFDP 的 PPL 从 20.78 涨到 67.12,后面消融会回到采样质量.
-
-| $\rho$ | 设定 | PPL | Reward |
-|--------|------|----:|-------:|
-| Good responses | $\emptyset$ | 21.46 | $-1.24$ |
-| Bad responses | $\emptyset$ | 121.29 | $-1.48$ |
-| LLaMA | $\emptyset$ | 20.78 | $-1.89$ |
-| Alpaca | $\emptyset$ | 14.34 | $-1.18$ |
-| Alpaca-sft | $\emptyset$ | 18.98 | $-1.46$ |
-| Alpaca | Best-of-$4$ | — | $-0.97$ |
+| $\rho$ | 设定 | PPL | 奖励 |
+|--------|------|----:|-----:|
+| 数据集好回答 | 不训练 | 21.46 | $-1.24$ |
+| 数据集坏回答 | 不训练 | 121.29 | $-1.48$ |
+| LLaMA | 不训练 | 20.78 | $-1.89$ |
+| Alpaca | 不训练 | 14.34 | $-1.18$ |
+| Alpaca-sft | 不训练 | 18.98 | $-1.46$ |
+| Alpaca | Best-of-4 | - | $-0.97$ |
 | LLaMA | PPO | 42.53 | $-1.62$ |
 | Alpaca | PPO | 13.84 | $-1.03$ |
 | Alpaca-sft | PPO | 19.10 | $-1.25$ |
-| LLaMA | RRHFDP | 67.12 | $-1.34$ |
-| Alpaca-sft | RRHFDP | 18.10 | $-1.19$ |
-| Alpaca | RRHFDP | 14.75 | $-1.03$ |
-| Alpaca | RRHFSP | 14.41 | $-0.96$ |
+| LLaMA | RRHF-DP | 67.12 | $-1.34$ |
+| Alpaca-sft | RRHF-DP | 18.10 | $-1.19$ |
+| Alpaca | RRHF-DP | 14.75 | $-1.03$ |
+| Alpaca | RRHF-SP | 14.41 | $-0.96$ |
 
-人评在 Table 3,三条都是 Alpaca 出发.RRHFDP 对数据集 good responses:59 胜 30 平 11 负.对 PPO:27 胜 48 平 25 负.对 RRHFIP-2:0 胜 90 平 10 负,迭代采样把人评又往上推了一点.附录 D:一共 330 对,RRHF 对 good / PPO / IP-2 各 110,其中 30 对算一致性,300 对进表.两两标注完全相同 57.7%,不互相矛盾 84.4%.Table 4 的例子里,RRHFDP 会补上品牌和操作细节(Clorox 是漂白水,双筒望远镜拧右目镜调焦),PPO 和数据集回答更短;IP-2 在投资问题上会把风险,预期收益,本金分项列出来.
+Alpaca-RRHF-DP 的 $-1.03$ 是三次运行 ($-1.01$, $-1.02$, $-1.05$) 的平均, 与 Alpaca-PPO 持平; RRHF-SP 到 $-0.96$, 全表最高, 和推理期 Best-of-4 的 $-0.97$ 相当. 三个初始模型上 RRHF 的奖励都不低于 PPO. Alpaca 系列训练后的奖励都超过数据集好回答的 $-1.24$. Alpaca 的困惑度变化不大, LLaMA 变化很大 (20.78 到 67.12), 论文的解释是 LLaMA 没有做过指令微调.
 
-当奖励模型用时看 Table 5.测试集是训 `Dahoas/gptj-rm-static` 的那份,准确率是「good 的分数是否高于 bad」.gptj-rm 自己 **68.49%**.LLaMA 45.09%,Alpaca 45.13%,Alpaca-PPO **46.03%**,都在随机附近.Alpaca-RRHFDP 到 **61.75%**.它学的是代理 RM 的序,不是 RM 的训练集本身,所以超不过 gptj-rm.PPO 几乎没把 $p_i$ 训成可用的打分器.
+### 6.2 人评
 
-| 奖励模型 | 准确率 |
+代理奖励模型和人的偏好可能不一致, 论文另做了人评, 三组都从 Alpaca 出发. Table 3:
+
+| A | B | 胜 | 平 | 负 |
+|---|---|--:|--:|--:|
+| RRHF-DP | 数据集好回答 | 59 | 30 | 11 |
+| RRHF-DP | PPO | 27 | 48 | 25 |
+| RRHF-DP | RRHF-IP-2 | 0 | 90 | 10 |
+
+对数据集好回答明显占优; 对 PPO 基本持平; IP-2 用 RRHF-DP 自己采的样本再训一轮, 比 DP 更好, 迭代训练还能继续提升. 附录 D 写了标注细节: 共抽 330 对, 三组各 110 对, 其中 30 对用来算一致性, 300 对计分; 每个标注者标 130 对 (100 对随机加 30 对公共). 两两标注者完全相同的比例 57.7%, 互不矛盾的比例 84.4%.
+
+Table 4 的样例里, RRHF-DP 的回答细节更多. 问能不能用 Clorox 把衣服洗白, RRHF-DP 答可以, 并说明 Clorox 是漂白剂品牌, 还提到小苏打; 数据集回答只说 Clorox 比醋毒性大. 问投资哪只股票能跑赢标普 500, IP-2 把亏损风险, 预期收益, 可投资金额分开列出.
+
+### 6.3 当奖励模型用
+
+训好的模型可以用式 (1) 的 $p_i$ 给回答打分. 论文在训练 `Dahoas/gptj-rm-static` 的测试集上算准确率, 即好回答分数高于坏回答的比例. Table 5:
+
+| 打分模型 | 准确率 |
 |---------|-------:|
-| Dahoas/gptj-rm-static | $68.49\%$ |
-| LLaMA | $45.09\%$ |
-| Alpaca | $45.13\%$ |
-| Alpaca-PPO | $46.03\%$ |
-| Alpaca-RRHFDP | $61.75\%$ |
+| Dahoas/gptj-rm-static | 68.49% |
+| LLaMA | 45.09% |
+| Alpaca | 45.13% |
+| Alpaca-PPO | 46.03% |
+| Alpaca-RRHF-DP | 61.75% |
 
-Table 6 把初始检查点和采样设定摊开.三份初始模型在设定 P(只用数据集两条)上得到同一测试奖励 $-1.31$.采样质量决定上限,不是 LLaMA 这块权重天生学不会.LLaMA 自己采出来的奖励大约 $-1.89$,Alpaca 是 $-1.18$,Alpaca-sft 是 $-1.46$.Alpaca-sft 在 DP 上是 $-1.19$,不如未再 SFT 的 Alpaca DP($-1.02$).论文点名 Ramamurthy 等也见过:SFT warmup 未必抬对齐.只靠模型自己的 diverse beam,不用数据集回答(设定 D),Alpaca 也能到 $-1.08$.IP-1 / IP-2 / IP-3 的测试奖励是 $-1.02$,$-0.96$,$-0.94$,迭代把采样里的 max 抬上去,测试分跟着走.
+未训练的语言模型和 PPO 训过的模型都低于随机猜测. RRHF-DP 到 61.75%, 它学的是代理奖励模型给出的顺序, 没见过奖励模型的训练集, 所以难以超过奖励模型本身的 68.49%.
 
-ranking loss 不是装饰.Table 7:Alpaca BP 测试奖励 $-1.03$,PPL 14.37;去掉 $L_{\mathrm{rank}}$ 之后奖励掉到 $-1.14$,PPL 14.74.没有 hinge,模型不知道一条比另一条好在哪,只剩冠军交叉熵,更近 RAFT,也更弱.
+### 6.4 损失曲线
 
-在线设定 OP-32 把平均奖励很快抬到 $0.34$,PPL 炸掉到 63.78.人工看样本,会变成 `That sounds great! I appreciate your help.` 这一类空壳客气话,奖励模型被骗了.加上和 PPO 类似的 KL,系数 $0.01$,得到 OP-32+KL:奖励 $-0.86$,PPL 19.76,数字好过 PPO 和 RRHFDP,但要再驻一份参考,再调 KL,和「少模型,少旋钮」的原意对着干.论文把它写成资源紧时不一定要走的路.
+Figure 3 (Alpaca 起点, DP 采样): 损失与平均奖励负相关, 看损失曲线就能估计奖励; 损失在第三个 epoch (约 2400 到 3600 步) 收敛, 平均奖励也在第三个 epoch 到最高. RRHF 在和 SFT 相同的超参下就能收敛.
 
-非在线设定里,测试奖励贴着训练样本里的 max 奖励.Table 6 给了 Mean / Std. / Max.Alpaca DP 的 max 是 $-0.95$,测试 $-1.02$;IP-3 的 max 是 $-0.65$,测试 $-0.94$.方差小的模型往往更好,因为质量被赶到高奖励那一侧.论文把目标收成
+## 7. 消融
+
+### 7.1 初始模型与采样
+
+Table 6 同时给出训练样本奖励的均值, 标准差, 最大值 (每条查询取最大后再平均):
+
+| $\rho$ | 设定 | PPL | 测试奖励 | 均值 | 标准差 | 最大 |
+|--------|------|----:|--------:|-----:|------:|-----:|
+| LLaMA | DP | 67.12 | $-1.34$ | $-2.18$ | 0.97 | $-1.27$ |
+| Alpaca | DP | 14.75 | $-1.02$ | $-1.30$ | 0.66 | $-0.95$ |
+| Alpaca-sft | DP | 18.10 | $-1.19$ | $-1.49$ | 0.79 | $-1.11$ |
+| LLaMA | BP | 17.03 | $-1.27$ | $-2.26$ | 0.96 | $-1.26$ |
+| Alpaca | BP | 14.37 | $-1.03$ | $-1.31$ | 0.67 | $-1.00$ |
+| Alpaca-sft | BP | 17.63 | $-1.14$ | $-1.50$ | 0.77 | $-1.15$ |
+| LLaMA | P | 18.49 | $-1.31$ | $-1.50$ | 0.79 | $-1.28$ |
+| Alpaca | P | 18.88 | $-1.31$ | $-1.50$ | 0.79 | $-1.28$ |
+| Alpaca-sft | P | 18.92 | $-1.31$ | $-1.50$ | 0.79 | $-1.28$ |
+| Alpaca | D | 13.66 | $-1.08$ | $-1.21$ | 0.65 | $-1.02$ |
+| Alpaca | IP-1 | 14.75 | $-1.02$ | $-1.30$ | 0.66 | $-0.95$ |
+| Alpaca | IP-2 | 14.31 | $-0.96$ | $-1.13$ | 0.57 | $-0.77$ |
+| Alpaca | IP-3 | 14.51 | $-0.94$ | $-1.05$ | 0.56 | $-0.65$ |
+| Alpaca | OP-32 | 63.78 | $0.34$ | - | - | - |
+| Alpaca | OP-32+KL | 19.76 | $-0.86$ | - | - | - |
+
+几处读法:
+
+- **LLaMA 最差, 原因在采样**. 只用数据集两条回答 (设定 P) 时, 三个初始模型的测试奖励都是 $-1.31$, 训练数据相同时能力相同. LLaMA 没做过指令微调, 它自己采的回答奖励 $-1.89$, 远低于 Alpaca 的 $-1.18$ 和 Alpaca-sft 的 $-1.46$.
+- **Alpaca-sft 不如 Alpaca**. Ramamurthy 等也观察到 SFT 预热不一定提升效果.
+- **采样方式**. 非在线设定里, Alpaca 用 diverse beam 最好, 另两个模型用普通 beam 更好. 模型样本加数据集回答, 明显好于只用数据集回答. 只用 Alpaca 自己的样本 (设定 D) 也能到 $-1.08$.
+- **迭代**. IP-1, IP-2, IP-3 的测试奖励 $-1.02$, $-0.96$, $-0.94$, 训练样本最大奖励 $-0.95$, $-0.77$, $-0.65$, 两者同步上升.
+
+### 7.2 排序项是否必要
+
+Table 7, Alpaca 加 BP 采样: 完整 RRHF 困惑度 14.37, 奖励 $-1.03$; 去掉 $L_{\mathrm{rank}}$ 后 14.74, $-1.14$. 只剩第一名的交叉熵, 模型学不到一条回答比另一条好在哪里. 去掉排序项以后的做法和同期的 [RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md) (Dong 等 2023) 一致, 论文把这组消融作为和 RAFT 的区别.
+
+## 8. 在线采样与 best-of-$n$ learner
+
+### 8.1 OP-32: 骗过奖励模型
+
+主实验都用初始模型采样. 改成像 PPO 那样用正在训练的 $\pi$ 采样, 需要奖励模型在线打分. 每 32 步更新一次采样模型 (OP-32), 平均奖励很快升到 0.34, 困惑度恶化到 63.78. 人工检查发现输出变成友好但空洞的回答, 如「That sounds great! I appreciate your help. Thanks for your help! You're welcome! ...」, 奖励模型被骗了.
+
+缓解办法是像 PPO 一样把 KL 加进奖励, 系数 0.01. OP-32+KL 奖励 $-0.86$, 高于 PPO 和 RRHF-DP, 困惑度 19.76. 代价是要多放一个参考模型算 KL, 还要调 KL 系数, 与 RRHF 少模型, 少超参的初衷相反. 论文总结在线方法 (PPO 与在线 RRHF) 可能上限更高, 但有三个困难: 要更多显存放参考模型; 训练要在自回归采样和并行训练之间切换, 速度慢; 要调 KL 系数和 rollout 步数. 资源有限时, 非在线 RRHF 更好用.
+
+### 8.2 测试奖励贴近训练样本的最大奖励
+
+Table 6 里, 测试奖励与训练样本的平均奖励和最大奖励都高度相关, 两者升, 测试奖励也升. 效果好的模型奖励标准差小, 因为它被鼓励更多输出高奖励回答. 最主要的发现是: 非在线设定下, 学到的模型的平均奖励接近训练样本最大奖励的均值. 在线设定会生成作弊模式, 截断这些模式后同样成立. 论文把目标写成式 (8):
 
 $$
-\mathbb{E}_{x,y\sim\pi}R(x,y)=\max_i\mathbb{E}_{x,y_i\sim\rho_i}R(x,y_i),
-\tag{7}
+\mathbb{E}_{x,y\sim\pi(x)}R(x,y)=\max_i\mathbb{E}_{x,y_i\sim\rho_i(x)}R(x,y_i) \tag{8}
 $$
 
-并说 RRHF 是 best-of-$n$ learner:推理期不必再采 $n$ 次,训练时把 max 那一档蒸馏进 $\pi$.推理期 Best-of-$n$ 每次回答都要采 $n$ 次;SFT 训练只看固定 1 条;PPO 训练采 1 条;RRHF 训练看固定 $n$ 条,推理 1 条.OP 那档训练也采 $n$ 条.
+式 (8) 是论文对实验现象的概括, 没有给出推导. 它的含义是 $\pi$ 的期望奖励高于任何单个采样策略 $\rho_i$, 方差变小. Table 8 比较几种方法每条查询的采样次数:
 
-Wombat 用来模拟「学 ChatGPT」而不是学 gptj-rm.查询是 Alpaca 的 prompt.五条回答:两条 ChatGPT,一条 text-davinci-003,一条 LLaMA,一条 Alpaca.用 ChatGPT 按 Relevance,Correctness,Coherence,Safety 各打 1 到 5 分,求和当 $r$.52k 条里成功解析 46k.初始检查点仍是 Alpaca,8 张 A100 大约 4 小时.Vicuna 80 题上(Table 9):Alpaca 567 对 Wombat 616;用 ChatGPT 回答做 SFT 的 Alpaca(ChatGPT)574 对 612;ChatGPT 自己 669 对 Wombat 548.RRHF 在相近资源下超过 SFT,仍低于 ChatGPT,论文把缺口主要算在逻辑推理上.Wombat 只作研究用,附录 B 写明不打算直接进生产,不安全回复仍可能出现.
-
-附录 C 的 IMDB 情感补全不是 HH 主表.同一套 DistilBERT 情感分类器,同一份 SFT GPT-2 起点,RRHF BP 奖励 $0.861$,PPL 32.083,对照 PPO 无 KL 的 $0.796$ / $42.916$.RRHF-OP-128 无 KL 能把奖励刷到 $0.990$,样本却开始复读 `It's a great film and I highly recommend it to anyone.` 过优化和 HH 的 OP-32 是同一类病.
-
-损失曲线(Figure 3,Alpaca + DP):loss 和平均奖励负相关,第三 epoch(大约 2400–3600 step)收敛,奖励也在第三 epoch 到顶.超参可以跟 SFT 共用,不必另开一套 PPO 搜索.
-
-## 7. 失效与边界
-
-RRHF 不是万能药.采样差,序噪,在线骗分,它都会原样放大.
-
-| 现象 | 机制 | 说明 |
+| 方法 | 训练 | 推理 |
 |------|------|------|
-| 写成 BT 的 $\sigma$ 联合似然 | 式 (2) 是 hinge | 没有 $\sigma$,没有 $\pi_{\mathrm{ref}}$ 对数比 |
-| 当成 DPO | $p_i$ 无参考项 | 隐式奖励是 $\beta\log(\pi/\pi_{\mathrm{ref}})$,见 01-DPO |
-| 当成 RAFT | 丢掉了 $L_{\mathrm{rank}}$ | 消融:BP 去 hinge 后奖励 $-1.14$ |
-| 采样质量差 | 测试分贴着样本 max | LLaMA 空跑 $-1.89$,P 设定三模型都是 $-1.31$ |
-| OP 骗奖励 | 在线 $\pi$ 搜代理 RM 的空壳 | OP-32:奖励 $0.34$,PPL $63.78$ |
-| 迭代 / 在线过优化 | 代理 RM 不等于人 | Gao 等过优化;论文 Limitations 点名 |
-| $L_{\mathrm{rank}}$ 乘 10 / 100 | 排序项过响 | 预实验更差,保持式 (5) |
-| 单条 query 显存 | $k$ 条同时进前向 | 比 PPO 单条 rollout 更吃每 query 的激活 |
-| 代理 RM 当评测 | HH 主表跟 gptj-rm | 人评 Table 3 方向相同,不是同一把尺 |
-| 有害偏好 | 算法不检查 $R$ 的道德 | 附录 A:对齐到有害偏好做得到,不该做 |
+| Best-of-$n$ | - | $n$ |
+| SFT | 固定 1 条 | 1 |
+| PPO | 1 | 1 |
+| RRHF | 固定 $n$ 条 | 1 |
+| RRHF-OP | $n$ | 1 |
 
-$k=1$ 时 hinge 没有对,退回 SFT.没有 $R$,也没有人打的序,式 (2)(3) 没有输入.要在线探索,要逐步过程奖励,这篇的离线 hinge 帮不上.
+「固定」指训练样本在训练前就定了. 推理期的 $n$ 倍采样被换成训练期的 $n$ 条固定样本.
 
-对照单独成篇:[4.4.4 其他对齐技术](../4.4.4-其他对齐技术.md),[04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md),[07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md),[01-DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md).
+## 9. Wombat 与 IMDB
+
+### 9.1 Wombat: 用 ChatGPT 当奖励
+
+前面的实验对齐的是代理奖励模型. 为了模拟训练类 ChatGPT 模型的场景, 论文用 ChatGPT 当 $R(x,y)$ (附录 E). 查询取 Alpaca 的训练指令, 每条 5 个回答: 两条 ChatGPT, 一条 text-davinci-003, 一条 LLaMA, 一条 Alpaca. 让 ChatGPT 按相关性, 正确性, 连贯性, 安全性四个维度各打 1 到 5 分, 求和作为奖励. 52k 条里成功解析出 46k 条. 从 Alpaca 出发训 RRHF, 得到 Wombat, 8 张 A100 上训练 4 小时.
+
+在 Vicuna 的 80 题测试集上比较, Table 9:
+
+| 模型 A | A 得分 | B 得分 | 模型 B |
+|--------|------:|------:|--------|
+| Alpaca | 567 | 616 | Wombat |
+| Alpaca (ChatGPT) | 574 | 612 | Wombat |
+| ChatGPT | 669 | 548 | Wombat |
+
+Alpaca (ChatGPT) 是用 Alpaca 指令加 ChatGPT 回答做 SFT 的模型. Wombat 胜过两种 SFT 模型, 论文据此说 RRHF 在相近训练资源下容易超过 SFT. Wombat 仍落后于 ChatGPT, 论文认为主要差在逻辑推理. 附录 B 写明 Wombat 只供研究, 不用于生产, 仍可能生成不安全回答.
+
+### 9.2 IMDB 情感续写
+
+附录 C 在 IMDB 上做正面影评续写, 按 Ramamurthy 等的设置: 输入是至多 64 token 的部分影评, 生成至多 48 token, 奖励是 DistilBERT 情感分类器, 起点是同一个 SFT GPT-2. Table 10:
+
+| 方法 | 设定 | 奖励 | 困惑度 |
+|------|------|-----:|------:|
+| SFT | - | 0.539 | 35.472 |
+| PPO | 无 KL | 0.796 | 42.916 |
+| NLPO | 无 KL | 0.777 | 41.035 |
+| RRHF | BP | 0.861 | 32.083 |
+| RRHF | B (不用数据集续写) | 0.799 | 32.077 |
+| RRHF-OP-128 | 无 KL | 0.990 | 32.081 |
+| PPO | KL 0.1 | 0.626 | 35.049 |
+| NLPO | KL 0.1 | 0.620 | 34.816 |
+| RRHF-OP-128 | KL 0.1 | 0.635 | 32.088 |
+
+RRHF 只训 5 个 epoch, 有无 KL 两种情况下奖励和困惑度都好于 PPO 和 NLPO. RRHF-OP-128 不加 KL 时奖励 0.990, 困惑度却没变, 样例显示模型对不同输入都续写「It's a great film and I highly recommend it to anyone.」, 和 HH 上 OP-32 的问题同类.
+
+## 10. 和 PPO, RAFT, DPO 对照
+
+| | PPO | RAFT | DPO | RRHF |
+|--|-----|------|-----|------|
+| 分数 | 奖励模型 $r_\phi$, KL 进奖励 | 奖励模型排序 | $\beta\log(\pi/\pi_{\mathrm{ref}})$ | 式 (1) 的 $p_i$ |
+| 损失 | clip 代理目标 | 只对第一名 CE | Bradley-Terry 的 $-\log\sigma$ | 无间隔 hinge 加第一名 CE |
+| 进入更新的样本 | 当前 rollout | 只有第一名 | 成对 $(y_w,y_l)$ | hinge 用全部对, CE 只用第一名 |
+| 采样 | 训练中 $y\sim\pi$ | 当前模型 | 离线对 | 训练前任意 $\rho_i$ |
+| 训练期模型数 | 4 | 1 | 2 (含冻结参考) | 1 到 2 |
+
+和 [DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md) 比, DPO 从带 KL 约束的 RLHF 目标反解隐式奖励, 分数里有冻结参考 $\pi_{\mathrm{ref}}$ 和温度 $\beta$, 损失是光滑的 $-\log\sigma$, 不除长度. RRHF 的分数只有当前模型, 除了长度, 损失在排对时截断.
+
+和 [01 SLiC](../01-SLiC-序列似然校准/01-SLiC-序列似然校准.md) 比, SLiC-HF 的 hinge 有间隔 $\delta$, 序列对数似然不除长度, 交叉熵的目标是 SFT 参考或最优候选. 两者都受 BRIO 一路的序列级排序方法影响.
+
+[04 PRO](../04-PRO-偏好排序优化/04-PRO-偏好排序优化.md) 的分数和式 (1) 相同, 损失换成对剩余集合逐次 softmax 的 Plackett-Luce 形式.
+
+![四列对照: PPO 四个模型, RAFT 只留第一名, DPO 隐式奖励, RRHF 的长度归一分数与 hinge](./images/fig-rrhf-vs-ppo-raft-dpo.png)
+
+**图 2 解析**
+
+- 四列互相独立, 每列从上到下是一种方法的流程. PPO 列是 Actor, Critic, 奖励模型, 冻结参考四个模型, 底注 4 个模型, 只能 $y\sim\pi$, 用 clip 加 GAE.
+- RAFT 列: 每条提示采 $K$ 条, 保留奖励最高者, 只对它做 SFT, 其余丢弃, 底注没有排序 hinge.
+- DPO 列: 离线对, 隐式奖励 $\beta\log(\pi/\pi_{\mathrm{ref}})$, Bradley-Terry 损失, 损失里没有长度. RRHF 列: 任意 $\rho_i$ 的 $k$ 条回答, 长度归一分数 (框里是式 (1) 的简写), 无间隔 hinge, 加第一名的 $L_{\mathrm{ft}}$, 底注 1 到 2 个模型.
+- 图中没有数值, 也不表示各方法效果高低.
+
+## 11. 失效与边界
+
+最常见的失效来自采样质量. 测试奖励紧跟训练样本里的最大奖励, 采样差, 上限就低: LLaMA 用自己的 diverse beam 样本只到 $-1.34$, 而只用数据集回答时, LLaMA 和两个 Alpaca 起点都是 $-1.31$. 想提高 RRHF 的效果, 先要提高候选的质量.
+
+其他边界:
+
+- **奖励过优化**. 在线或迭代采样时, RRHF 容易去骗奖励模型, OP-32 和 IMDB 的 OP-128 都出现了. Limitations 指出这是 RRHF, PPO, best-of-$n$ 共有的问题, 引的是 Gao 等的过优化研究, 怎么防止留作未来工作.
+- **单条查询的显存**. RRHF 每条查询要同时前向 $k$ 条回答, 单条查询的 GPU 占用比 PPO 高. 省的是常驻模型数, 每一步的峰值激活反而更大.- **代理奖励**. HH 主表的奖励来自 GPT-J 奖励模型, 它可能不如真实人类偏好复杂; Limitations 认为换成真实人类偏好分只是直接的推广, 论文没有做这组实验. 人评与之方向一致, 但对 PPO 是 27 胜 25 负, 差距在噪声范围内.
+- **排序项权重**. 排序项乘 10 或 100 效果更差, 式 (5) 的 1 比 1 是论文推荐值.
+- **有害偏好**. 方法本身不检查奖励的来源, 附录 A 指出它同样能对齐到有害偏好.
+- **退化情形**. $k=1$ 时没有可比的对, 退回 SFT; 没有奖励也没有人标顺序时, 式 (2)(3) 没有输入. 需要逐步过程奖励或在线探索的任务, 离线 hinge 帮不上.
 
 ## 参考文献
 
-1. Yuan, Z., Yuan, H., Tan, C., Wang, W., Huang, S., & Huang, F. (2023). [RRHF: Rank Responses to Align Language Models with Human Feedback without tears](https://arxiv.org/abs/2304.05302). *NeurIPS*. HTML:[arXiv HTML](https://arxiv.org/html/2304.05302).会议页:[NeurIPS 2023](https://proceedings.neurips.cc/paper_files/paper/2023/hash/23e6f78bdec844a9f7b6c957de2aae91-Abstract-Conference.html).代码:[GanjinZero/RRHF](https://github.com/GanjinZero/RRHF).
-2. Ouyang, L., et al. (2022). [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155). *NeurIPS*.(InstructGPT 三阶段)
-3. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
-4. Ziegler, D. M., et al. (2019). [Fine-tuning language models from human preferences](https://arxiv.org/abs/1909.08593).
-5. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).(Anthropic HH)
-6. Touvron, H., et al. (2023). [LLaMA: Open and Efficient Foundation Language Models](https://arxiv.org/abs/2302.13971).
-7. Taori, R., et al. (2023). [Stanford Alpaca](https://github.com/tatsu-lab/stanford_alpaca).(SFT 脚本对照;Wombat 的 prompt)
-8. Liu, Y., Liu, P., Radev, D., & Neubig, G. (2022). [BRIO: Bringing Order to Abstractive Summarization](https://aclanthology.org/2022.acl-long.207/). *ACL*.(带 margin 的 ranking;RRHF 关掉 $\lambda$)
-9. Zhao, Y., et al. (2022). [Calibrating Sequence Likelihood Improves Conditional Language Generation](https://arxiv.org/abs/2210.00045).(序列似然校准;SLiC 前身,有 margin $\delta$)
-10. Dong, H., et al. (2023). [RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment](https://arxiv.org/abs/2304.06767).(只训 top-1,无 hinge)
-11. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290).(隐式奖励与 BT,对照用)
-12. Gao, L., Schulman, J., & Hilton, J. (2023). [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760).
-13. Ramamurthy, R., et al. (2023). [Is Reinforcement Learning (Not) for Natural Language Processing](https://arxiv.org/abs/2210.01241).(SFT warmup;IMDB 对照的 PPO / NLPO)
-14. Chiang, W.-L., et al. (2023). [Vicuna](https://lmsys.org/blog/2023-03-30-vicuna/).(Wombat 的 80 题评测集)
-15. von Werra, L., et al. (2023). [CarperAI/trlx](https://github.com/CarperAI/trlx).(PPO 实现对照,非公式源)
+1. Yuan, Z., Yuan, H., Tan, C., Wang, W., Huang, S., & Huang, F. (2023). [RRHF: Rank Responses to Align Language Models with Human Feedback without tears](https://arxiv.org/abs/2304.05302). *NeurIPS*. 代码: [GanjinZero/RRHF](https://github.com/GanjinZero/RRHF).
+2. Ouyang, L., et al. (2022). [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155). *NeurIPS*.
+3. Ziegler, D. M., et al. (2019). [Fine-Tuning Language Models from Human Preferences](https://arxiv.org/abs/1909.08593).
+4. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
+5. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).
+6. Liu, Y., Liu, P., Radev, D., & Neubig, G. (2022). [BRIO: Bringing Order to Abstractive Summarization](https://aclanthology.org/2022.acl-long.207/). *ACL*.
+7. Dong, H., et al. (2023). [RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment](https://arxiv.org/abs/2304.06767).
+8. Ramamurthy, R., et al. (2023). [Is Reinforcement Learning (Not) for Natural Language Processing: Benchmarks, Baselines, and Building Blocks for Natural Language Policy Optimization](https://arxiv.org/abs/2210.01241). *ICLR*.
+9. Gao, L., Schulman, J., & Hilton, J. (2023). [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760). *ICML*.
+10. Nakano, R., et al. (2021). [WebGPT: Browser-assisted question-answering with human feedback](https://arxiv.org/abs/2112.09332).
+11. Taori, R., et al. (2023). [Stanford Alpaca: An Instruction-following LLaMA model](https://github.com/tatsu-lab/stanford_alpaca).
+12. Touvron, H., et al. (2023). [LLaMA: Open and Efficient Foundation Language Models](https://arxiv.org/abs/2302.13971).
+13. Chiang, W.-L., et al. (2023). [Vicuna: An Open-Source Chatbot Impressing GPT-4 with 90%* ChatGPT Quality](https://lmsys.org/blog/2023-03-30-vicuna/).
+14. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.

@@ -1,278 +1,310 @@
 ---
-title: "10 · WARP:权重平均策略"
+title: "10 · WARP: 权重平均策略"
 published: true
 tags: ["WARP", "WARM", "EMA", "SLERP", "LITI", "RLHF", "Gemma", "权重平均"]
-excerpt: "WARP 在权重空间做三次平均,优化的是 KL–reward Pareto.推理只保留一份合并后的策略,不再付 N 次采样."
+excerpt: "WARP 在 RLHF 的三个阶段做权重平均: EMA 当动态 KL 锚点, SLERP 合并多次独立 RL, LITI 往初始化插值, 再迭代."
 ---
-# 10 WARP:权重平均策略
+# 10 WARP: 权重平均策略
 
-WARP 在权重空间做三次平均,优化的是 KL–reward Pareto.推理只保留一份合并后的策略,不再付 $N$ 次采样.论文是 Ramé 等 *WARP: On the Benefits of Weight Averaged Rewarded Policies*([arXiv:2406.16768](https://arxiv.org/abs/2406.16768),HTML:[arxiv.org/html/2406.16768](https://arxiv.org/html/2406.16768)).数字跟 HTML.
+材料是 Ramé 等的 *WARP: On the Benefits of Weight Averaged Rewarded Policies* ([arXiv:2406.16768](https://arxiv.org/abs/2406.16768)). 问题是: KL 正则的 RLHF 要在奖励和离 SFT 的距离之间取舍, 能否在权重空间做平均, 把 KL–奖励的 Pareto 前沿整体往上推, 推理时仍只用一份权重.
 
-三次平均必须分开写,不要缩成「就是 EMA」.第一段:策略的指数滑动平均当 KL 正则的动态锚点.第二段:独立微调的多份策略做球面插值(slerp).第三段:再与初始化线性插值,把预训练特征捞回来.算力够,就把这一轮终局当下一轮初始化,整段再跑.实验主体是 Gemma `"7B"`.
+## 1. KL 锚点的两难
 
-这不是 WARM.WARM 平均的是奖励模型,同一作者组的另一篇 ICML([arXiv:2401.12187](https://arxiv.org/abs/2401.12187)).这边平均的是被奖励推过的策略.也不是 [09 BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md) 的主算法:J-BOND 的 EMA 锚点只是 WARP 的同族操作之一,WARP 还有球面插值和往初始化回插.不是 [07 Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md) 那种解码 $\arg\max$,也不是 [RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md) 只训 top-1.
-
-## 1. 锚钉在 SFT 上,奖励就拧不动
-
-标准 KL 正则 RLHF 把奖励拧在参考策略附近.HTML 式 (1) 写成
+KL 正则的 RLHF 目标是
 
 $$
-\operatorname*{argmax}_{\theta}\,\mathbb{E}_{{\bm{x}}\in\mathcal{X}}\Bigl[\mathbb{E}_{{\bm{y}}\sim\pi_{\theta}(\cdot\mid{\bm{x}})}\,r({\bm{x}},{\bm{y}})-\beta\,\mathrm{KL}\bigl(\pi_{\theta}(\cdot\mid{\bm{x}})\big\Vert\pi_{\theta_{\mathrm{anchor}}}(\cdot\mid{\bm{x}})\bigr)\Bigr].
+\operatorname*{argmax}_{\theta}\ \mathbb{E}_{x\in\mathcal{X}}\Bigl[\mathbb{E}_{y\sim\pi_\theta(\cdot|x)}r(x,y)-\beta\,\mathrm{KL}\bigl(\pi_\theta(\cdot|x)\Vert\pi_{\theta_{\mathrm{anchor}}}(\cdot|x)\bigr)\Bigr].
 \tag{1}
 $$
 
-默认 $\theta_{\mathrm{anchor}}\leftarrow\theta_{\mathrm{sft}}$.$\beta$ 大,KL 低,奖励也低;$\beta$ 小,奖励涨得快,遗忘,奖励黑客,生成多样性塌掉会一起来.HTML §2 把这三件事并列:对齐税,对不完美 RM 的黑客,policy collapse.比策略的正确尺子不是终局奖励,是 KL–reward 平面左上角那条前沿.
-
-调过的奖励是
+通常 $\theta_{\mathrm{anchor}}=\theta_{\mathrm{sft}}$. 用策略梯度优化时, 等价于把奖励改成
 
 $$
-r_{\beta}({\bm{x}},{\bm{y}})=r({\bm{x}},{\bm{y}})-\beta\log\frac{\pi_{\theta}({\bm{y}}\mid{\bm{x}})}{\pi_{\theta_{\mathrm{anchor}}}({\bm{y}}\mid{\bm{x}})}.
+r_\beta(x,y)=r(x,y)-\beta\log\frac{\pi_\theta(y|x)}{\pi_{\theta_{\mathrm{anchor}}}(y|x)}.
 \tag{2}
 $$
 
-基线优化器是 REINFORCE 变体,不是 PPO 四件套.HTML §2 写,在 KL–reward Pareto 上 REINFORCE 打过更复杂的 PPO,也打过离线的 DPO,IPO,RAFT.序列级 REINFORCE 本身在 [10-REINFORCE](../../4.4.1-基于奖励模型的RL-RLHF-PPO/10-REINFORCE-序列级策略梯度/10-REINFORCE-序列级策略梯度.md).WARP 改的不是这条梯度公式,是锚点放哪,多份权重怎么并,并完往哪插.
+两者的等价来自 $\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{anchor}})=\mathbb{E}_{y\sim\pi_\theta}[\log\pi_\theta(y)-\log\pi_{\mathrm{anchor}}(y)]$: 对 $\theta$ 求梯度时, $\log\pi_\theta$ 自身求导的那一项期望为零, 剩下的部分与把 $-\beta\log(\pi_\theta/\pi_{\mathrm{anchor}})$ 加进奖励后求的策略梯度相同. 所以换锚点只需要换式 (2) 里的分母, 优化器不用改.
 
-工程上常见做法是早停:沿一条 REINFORCE 轨迹,按自己的 KL 预算切一个点.WARP 要的是把同一条预算上的点往上抬,并且推理时只加载一份权重.
+论文第 2 节列出 RLHF 的三类代价: 遗忘预训练知识 (对齐税), 对不完美奖励模型的黑客, 以及生成多样性下降. $\beta$ 大, KL 小, 这些代价小, 奖励也低; $\beta$ 小, 奖励涨得快, 代价也来得快. 评价一种对齐策略, 要看它在 KL–奖励平面上的整条前沿, 单看终点奖励会混淆不同的 KL 预算.
 
-## 2. 三次平均,不要缩成「就是 EMA」
+锚点固定在 SFT 上时, Figure 3 显示奖励会饱和. 设定是每 100 步评估一次, KL 到 200 就停止训练 ($\beta=0$ 时约 1k 步就到了). $\beta=0.1$ 时奖励停在约 $-0.62$, $\beta=0.01$ 时停在约 $-0.46$. 每个 $\beta$ 对应一个固定的正则最优解, 训练走到那里就不再前进. 降低 $\beta$ 能把饱和点抬高, 但 KL 也增长得更快, 极端的 $\beta=0$ 约 1k 步就到了 200 的上限. 在这种设定下, 想要更高的奖励只能接受更大的 KL.
 
-WARP 把权重平均接到对齐流程的三个不同位置,理由也不一样.HTML §3 写得很硬:三种变体,三个阶段,三件不同的事.算法骨架是 Algorithm 1.外层 $I$ 轮迭代,每轮并行 $M$ 次 RL,每次 $T$ 步.
+WARP 的回答是在三个位置做权重平均, 各自解决一个问题. EMA 锚点处理锚点固定带来的饱和, 让单条 RL 能持续提高奖励; SLERP 合并几条独立 RL, 在 KL 基本不变的情况下提高奖励; LITI 把合并结果往回拉, 用较小的奖励损失换较大的 KL 下降. 三步串起来, 每一步的输出都是下一步的输入. 优化器保持 REINFORCE (见 [10-REINFORCE](../../4.4.1-基于奖励模型的RL-RLHF-PPO/10-REINFORCE-序列级策略梯度/10-REINFORCE-序列级策略梯度.md)), 改动全在锚点和合并方式上.
 
-一次迭代内部顺序如下.
+## 2. 算法总览
 
-从共享初始化 $\theta_{\mathrm{init}}$ 出发(第一轮就是 $\theta_{\mathrm{sft}}$).并行 $M$ 条 REINFORCE.每条自己维护一份 EMA,KL 对着这份 EMA 算,不是对着冻结的 SFT.跑完 $T$ 步,得到 $\{\theta^{m}\}_{m=1}^{M}$.
+Algorithm 1 有 $I$ 轮迭代, 每轮并行跑 $M$ 次 RL, 每次 $T$ 步. 一轮的步骤是:
 
-把这 $M$ 份相对 $\theta_{\mathrm{init}}$ 的任务向量做球面插值,得到 $\theta_{\mathrm{slerp}}$.$\lambda=1/M$.
-
-再把 $\theta_{\mathrm{slerp}}$ 往 $\theta_{\mathrm{init}}$ 线性插回去:
+1. 从共享初始化 $\theta_{\mathrm{init}}$ 出发 (第一轮是 $\theta_{\mathrm{sft}}$), 并行跑 $M$ 条 RL. 每条维护自己的 EMA 权重 $\theta^m_{\mathrm{ema}}$, 奖励按式 (2) 计算, 锚点取 $\theta^m_{\mathrm{ema}}$. 每步做一次策略梯度更新和一次 EMA 更新.
+2. $T$ 步后得到 $\{\theta^m\}_{m=1}^M$, 用 SLERP 合并它们相对 $\theta_{\mathrm{init}}$ 的任务向量, 系数 $\lambda=1/M$, 得到 $\theta_{\mathrm{slerp}}$.
+3. 做 LITI (linear interpolation towards initialization):
 
 $$
 \theta_{\mathrm{init}}\leftarrow(1-\eta)\cdot\theta_{\mathrm{init}}+\eta\cdot\theta_{\mathrm{slerp}}.
 \tag{3}
 $$
 
-这一份当作下一轮初始化.全部 $I$ 轮结束后,还可以对着最初的 $\theta_{\mathrm{sft}}$ 再扫一遍 $\eta$,得到一族 Pareto 权重
+结果作为下一轮的初始化. $I$ 轮结束后, 再对 $\theta_{\mathrm{sft}}$ 插值一次, 得到一族权重:
 
 $$
-\bigl\{(1-\eta)\cdot\theta_{\mathrm{sft}}+\eta\cdot\theta_{\mathrm{slerp}}^{I}\mid 0\le\eta\le 1\bigr\}.
+\bigl\{(1-\eta)\cdot\theta_{\mathrm{sft}}+\eta\cdot\theta^I_{\mathrm{slerp}}\ \big|\ 0\le\eta\le1\bigr\}.
 \tag{4}
 $$
 
-HTML 把式 (3) 写进循环里更新 $\theta_{\mathrm{init}}$;把式 (4) 写成交付物.两处 $\eta$ 字母相同,语义不同:循环里通常钉死一个 $\eta$(实验默认 $0.3$),用来产下一轮初始化;交付时再把 $\eta$ 从 $1$ 滑到 $0$,用来读整条前沿.不要并成一个旋钮.
+式 (3) 和式 (4) 用同一个字母 $\eta$, 用途不同. 循环里的 $\eta$ 是固定值 (实验取 $0.3$), 用来产生下一轮初始化; 交付时 $\eta$ 从 $0$ 扫到 $1$, 每个值对应前沿上的一个点, 按 KL 预算挑一个部署. 这一步只做权重插值和评估, 不需要再训练, 换一个 KL 预算的成本很低.
 
-![一次迭代:EMA 锚住两条独立 REINFORCE,SLERP 合并任务向量,LITI 插回初始化](./images/fig-warp-three-stages.png)
+![一次迭代: EMA 锚住两条独立 REINFORCE, SLERP 合并任务向量, LITI 插回初始化](./images/fig-warp-three-stages.png)
 
-> 图 1:一次 WARP 迭代.$\theta_{\mathrm{init}}$ 分出两条 REINFORCE.每条下方是自己的 EMA,$\mu=0.01$,虚线是权重复制.两条策略实线进 SLERP($\lambda=1/M$).LITI 吃 $\theta_{\mathrm{slerp}}$,虚线从初始化进来,按 $\eta=0.3$ 交出下一轮 $\theta_{\mathrm{init}}'$.
+> 图 1: 一次 WARP 迭代. $\theta_{\mathrm{init}}$ 分出两条 REINFORCE, 每条下方是自己的 EMA ($\mu=0.01$), 虚线是权重复制. 两条策略进入 SLERP ($\lambda=1/M$). LITI 接收 $\theta_{\mathrm{slerp}}$, 虚线从初始化引入, 按 $\eta=0.3$ 交出下一轮的 $\theta'_{\mathrm{init}}$.
 
 **图 1 解析**
 
-- 左栏是 Stage 1.KL 写在策略框里,对着 $\pi_{\mathrm{ema}}$,不是对着 SFT.虚线单向:策略复制进 EMA,没有互相反传.
-- 中栏是 Stage 2.进 SLERP 的是 $\theta^{1}$,$\theta^{2}$ 本身,EMA 不进合并.
-- 右栏是 Stage 3.实线是合并结果,虚线是往初始化回插.$\eta=0.3$ 标在 LITI 出口,对应实验默认,不是把 $\eta$ 扫完.
-- 没有 KL–reward 坐标轴,没有 Gemma 散点.
+- 左栏是第一阶段. 策略框里的 KL 对着 $\pi_{\mathrm{ema}}$ 计算. 虚线单向, 表示策略权重混入 EMA, 两者之间没有梯度往来.
+- 中栏是第二阶段. 进入 SLERP 的是 $\theta^1,\theta^2$, EMA 权重只当锚点用, 不参与合并.
+- 右栏是第三阶段. 实线是合并结果, 虚线是初始化. 出口标的 $\eta=0.3$ 是循环内的固定值, 对应式 (3).
 
-训练要付 $M$ 份并行 RL,每轮还可能再迭代.推理账单不变:一份权重,采 1 条.HTML §6 把多出来的训练算力写成「feature rather than a bug」:对齐阶段把算力变成能力,而不是部署时再堆 agent.
+训练成本是 $M$ 份并行 RL 乘以迭代轮数. 推理时只加载一份合并后的权重, 每条请求采样一次. 论文第 6 节把多出的训练成本称为「a feature rather than a bug」: 用对齐阶段的算力换能力, 推理没有额外开销.
 
-## 3. Stage 1:策略 EMA 当动态 KL 锚
+## 3. 第一阶段: EMA 锚点
 
-冻结 SFT 当锚,正则强度是死的.控制任务里更新锚点很常见.WARP 把锚换成策略自己的指数滑动平均.每步
+### 3.1 更新规则
+
+锚点换成策略自己的指数滑动平均, 每步更新:
 
 $$
-\theta_{\mathrm{ema}}\leftarrow(1-\mu)\cdot\theta_{\mathrm{ema}}+\mu\cdot\theta_{\mathrm{policy}}.
+\theta_{\mathrm{ema}}\leftarrow(1-\mu)\cdot\theta_{\mathrm{ema}}+\mu\cdot\theta.
 \tag{5}
 $$
 
-HTML §3.1 写 $\mu=0.01$.Setup 段和附录 D.2 也说主实验钉的是 $\mu=0.01$,$\beta=0.1$.§4.1 写 Figure 3 那条 EMA 轨迹时给了 $\mu=0.1$.同一份 HTML 两处不一致.附录 D.2 说这两个数项目一开始就钉死,后面没改;Figure 15 才另扫 $\mu=0.005$ 和 $\beta=0.2$.读 Figure 3 时不要把 $\mu=0.1$ 当成全篇默认.
+实验取 $\mu=0.01$ (实验设定与附录 D.2 一致). 展开式 (5), $k$ 步前的策略权重系数是 $\mu(1-\mu)^k$, 平均滞后 $(1-\mu)/\mu=99$ 步. 锚点大约落后策略 100 步, 远小于 $T=9\mathrm{k}$, 所以 KL 只约束「最近这一段走了多远」.
 
-Observation 1:EMA 锚带来两件事.KL 正则会自动退火;策略同时在从一个动态 mean teacher 里蒸馏.开始时 EMA 还贴着 SFT,更新被按住.EMA 跟着走,约束慢慢松,后期步子可以更猛,奖励更高.EMA 本身是慢权重:它比纯 SFT 强,有时比终局策略还强.KL 对着它算,等于把这份更稳的预测当教师.
+设策略在权重空间里每步走一个固定的位移 $v$. 稳态时 EMA 落后约 $99v$, 策略与锚点的距离大致恒定; 策略与 SFT 的距离则是 $tv$, 随步数线性增长. 式 (2) 的惩罚只看前者, 所以 $\beta$ 不变时, 对「离 SFT 多远」的约束随训练自动放松. 这就是论文说的自动退火. 训练开始时 EMA 等于 SFT, 两种锚点完全相同; 区别要过几百步后才显现.
 
-这和 J-BOND 的 EMA 是同一类操作,不是同一套算法.09 那篇的式 (13) 用 $\eta=0.02$ 把策略权重复制进锚点,服务的是 Best-of-2 蒸馏.这边 $\mu=0.01$ 服务的是式 (1) 里的 KL 项.后面还有 SLERP 和 LITI,09 没有.
+### 3.2 三个好处
 
-Figure 3(a)(b) 把这条动态锚和「锚死在 SFT,只拧 $\beta$」对照.评估每 100 步一次,训练 $T=9k$,策略 KL 到 $200$ 就停.$\beta=0.0$ 大约 $T=1k$ 就撞上这条 KL 墙,奖励涨得快,HTML 读成黑客.SFT 锚,$\beta=0.1$ 太紧,奖励很快停在大约 $-0.62$.$\beta=0.01$ 在低 KL 区能跟上 EMA 锚,然后停在大约 $-0.46$.EMA 锚的 Pareto 在图里更靠左上.结论不是「EMA 能抬任意终局奖励」,是固定算力下,同一 KL 预算上奖励更好.
+论文列了三点. 第一, KL 正则自动退火: 训练初期锚点贴近 SFT, 约束强; 锚点随训练移动, 允许策略走得更远. 第二, EMA 是一个 mean teacher, 它在权重空间平滑了策略的轨迹, 用它当锚点等于从一个更稳的老师那里蒸馏. 第三, EMA 本身的表现可以超过最终策略.
 
-附录 Figure 14 把各变体的在线 EMA 和底座策略放在一起:SFT 锚那些跑,EMA 版本的 Pareto 不差于底座.HTML 把 Stage 1 的一部分好处读成:教师本身就比正在更新的策略稳.
+第二点可以用方差估算. 若每步更新里的随机噪声独立, 方差为 $\sigma^2$, EMA 稳态时对这部分噪声的方差是 $\frac{\mu}{2-\mu}\sigma^2$, $\mu=0.01$ 时约 $0.005\sigma^2$. 策略权重本身带着每一步的噪声, 锚点则把最近约 100 步的噪声平均掉了. 用平滑后的锚点算 KL, 惩罚项的抖动也随之变小.
 
-Figure 15 把 $\mu$ 降到 $0.005$,或把 $\beta$ 升到 $0.2$,行为相近:前沿略好,训练变慢.主文没把这两档设成默认.
+### 3.3 实验
 
-## 4. Stage 2:独立微调再球面插值
+Figure 3 对比 SFT 锚点与 EMA 锚点. SFT 锚点的结果见第 1 节, 奖励在 $-0.62$ 或 $-0.46$ 处饱和. 换成 EMA 锚点, 奖励不再饱和, KL–奖励前沿也比 SFT 锚点的各个 $\beta$ 更好. 代价是 KL 会持续增长, 训练要设停止条件, 这也是后两个阶段要处理的问题.
 
-单条轨迹上的检查点太像.DiWA 那条文献已经写过:多样性不够,平均帮不上忙.Stage 2 换一批独立 RL,每条自己带 EMA 锚.多样性来源很朴素:打乱 prompt 顺序.HTML 说这就够用.Figure 18(c) 另试过不同奖励目标,那是附录,不是主设定.
+## 4. 第二阶段: SLERP 合并
 
-合并用球面线性插值,不是算术平均.$M=2$ 时
+### 4.1 公式
+
+$M$ 次 RL 共享初始化 $\theta_{\mathrm{init}}$, 区别只在 prompt 的顺序. 记任务向量 $\delta_m=\theta^m-\theta_{\mathrm{init}}$, 两条的夹角为 $\Omega$. 球面线性插值是
 
 $$
-\operatorname{slerp}(\theta_{\mathrm{init}},\theta^{1},\theta^{2},\lambda)=\theta_{\mathrm{init}}+\frac{\sin[(1-\lambda)\Omega]}{\sin\Omega}\,\delta^{1}+\frac{\sin[\lambda\Omega]}{\sin\Omega}\,\delta^{2}.
+\mathrm{slerp}(\theta_{\mathrm{init}},\theta^1,\theta^2,\lambda)=\theta_{\mathrm{init}}+\frac{\sin((1-\lambda)\Omega)}{\sin\Omega}\,\delta_1+\frac{\sin(\lambda\Omega)}{\sin\Omega}\,\delta_2.
 \tag{6}
 $$
 
-$\delta^{m}=\theta^{m}-\theta_{\mathrm{init}}$ 是任务向量.$\Omega$ 是两条任务向量的夹角.$\lambda$ 是插值系数.SLERP 按层做.Gemma `"7B"` 有 28 层,每层自己的 $\Omega$.
+SLERP 按层做. Gemma "7B" 有 28 层, 每层算自己的 $\Omega$, 即 $\cos\Omega=\frac{\delta_1\cdot\delta_2}{\|\delta_1\|\|\delta_2\|}$, 其中 $\delta_m$ 只取该层的参数. 不同层的任务向量夹角可以不同, 按层计算让每层用自己的系数.
 
-$M>2$ 时式 (6) 没有直接定义.附录 B.3 用迭代:先合并前 $M-1$ 份,再和第 $M$ 份按 $\lambda=1/M$ 做一次 slerp.运算不结合律.Figure 4(b) 的阴影是 5 次实验的标准差,HTML 说偏差小.
+### 4.2 夹角接近 90 度
 
-和 LERP 的差别不要靠语感.任务向量等范数 $l$ 时(Assumption 1),附录 Lemma 1 给出 SLERP 保范数
+观察 4: 任务向量之间 $\Omega\approx90^\circ$, 几乎正交; 而完整权重之间夹角 $\omega\approx0^\circ$, 几乎共线. 两件事同时成立, 是因为 RL 只把权重改动了很小一部分. 设 $\|\delta_m\|=\epsilon\|\theta_{\mathrm{init}}\|$, 两条任务向量正交, 那么 $\theta^1,\theta^2$ 的夹角约为 $\sqrt2\,\epsilon$ 弧度; $\epsilon$ 很小时 $\omega$ 接近 $0$. 所以合并必须在任务向量上做, 在完整权重上做 SLERP 只会得到 LERP (见第 4.3 节). 论文相关工作部分提到, 监督微调得到的任务向量夹角通常在 $40^\circ$ 到 $80^\circ$, RL 得到的更接近正交.
+
+代入 $\Omega=90^\circ$, $\lambda=0.5$: 两个系数都是 $\sin45^\circ/\sin90^\circ\approx0.707$, SLERP 结果是 $\theta_{\mathrm{init}}+0.707(\delta_1+\delta_2)$. 线性插值 LERP 是 $\theta_{\mathrm{init}}+0.5(\delta_1+\delta_2)$. 两者方向相同, SLERP 的长度是 LERP 的 $\sqrt2$ 倍. 一般地, $\lambda=0.5$ 时 SLERP 两个系数之和是 $2\sin(\Omega/2)/\sin\Omega=1/\cos(\Omega/2)$, $\Omega>0$ 时大于 $1$. 相对 LERP, SLERP 等于沿合并方向做了外推, $\Omega=90^\circ$ 时外推到 $1.414$ 倍.
+
+附录 B 用两条引理说明这一点. 假设 1 设两条任务向量长度都是 $l$. 引理 1: SLERP 结果的任务向量长度保持为 $l$ (附录式 (4)). 引理 2: LERP 结果的长度是
 
 $$
-\lVert\delta_{\mathrm{slerp}}^{\lambda}\rVert=l,
+\|\delta_{\mathrm{lerp}}\|=l\sqrt{1-2(1-\cos\Omega)(\lambda-\lambda^2)}.
 \tag{7}
 $$
 
-LERP 缩范数
+$\Omega=90^\circ$, $\lambda=0.5$ 时是 $l\sqrt{1-2\times0.25}=l/\sqrt2\approx0.707\,l$. 两条近似正交的任务向量取平均, 长度缩到约七成; SLERP 把长度补回来.
+
+$\lambda=0.5$ 时, 式 (7) 化为 $l\sqrt{(1+\cos\Omega)/2}$, 式 (6) 的单个系数是 $\sin(\Omega/2)/\sin\Omega$. 几个夹角下:
+
+| $\Omega$ | SLERP 系数 | LERP 长度 / $l$ |
+|---|---|---|
+| $0^\circ$ (极限) | $0.5$ | $1$ |
+| $40^\circ$ | $0.532$ | $0.940$ |
+| $60^\circ$ | $0.577$ | $0.866$ |
+| $90^\circ$ | $0.707$ | $0.707$ |
+
+夹角越小, SLERP 和 LERP 越接近; 监督微调常见的 $40^\circ$ 下 LERP 只缩短 $6\%$, 两者差别不大. RL 任务向量接近正交, 正好落在两者差别最大的区域.
+
+$M$ 份时差别更大. $M$ 条两两正交, 等长 $l$ 的向量取平均, 长度是 $l/\sqrt M$; $M=5$ 时约 $0.447\,l$, 不到单条的一半. 按引理 1 的思路, SLERP 让合并结果保持长度 $l$. 这可以对照 Figure 4(b) 中 $M$ 增大时前沿持续改善的结果.
+
+另一个现象是夹角接近 90 度的来源. $M$ 次 RL 从同一个初始化出发, 超参相同, 只是 prompt 的顺序不同, 任务向量却几乎正交. 不同的数据顺序足以让 RL 在高维权重空间里走向不同的方向, 而这些方向合并后奖励更高.
+
+### 4.3 观察 2 与观察 3
+
+观察 2: SLERP 提高奖励, KL 只略有增加. 观察 3: LERP 降低 KL, 对奖励影响较小. 结合上一小节, LERP 的结果离初始化更近, 所以 KL 小; SLERP 保持了单条 RL 的步长, 又合并了两条的方向.
+
+Figure 3(c) 在 $T=9\mathrm{k}$ 时扫 $\lambda$: SLERP 的奖励随 $\lambda$ 呈凸形 (两端是单条 RL, 中间更高), 在 $\lambda=0.5$ 处最高, 并且全程高于 LERP. 附录 C 补充: SLERP 奖励和 KL 都更高, LERP KL 更低; 把 SLERP 用在完整权重上 (夹角 $\omega\approx0$), $\sin((1-\lambda)\omega)/\sin\omega\to1-\lambda$, 它退化成 LERP.
+
+### 4.4 多于两份
+
+$M>2$ 时, slerp 按递归定义 (附录 B.3 式 (26)): 先合并前 $M-1$ 份, 再与第 $M$ 份按 $\lambda=1/M$ 合并. 这个操作不满足结合律, 合并顺序会影响结果, 但论文测得的标准差很小.
+
+三条两两正交, 等长 $l$ 的任务向量可以算出顺序的影响. 先合并 $\delta_1,\delta_2$, 得 $0.707(\delta_1+\delta_2)$, 长度 $l$, 与 $\delta_3$ 仍正交. 再以 $\lambda=1/3$ 与 $\delta_3$ 合并, 系数是 $\sin60^\circ=0.866$ 和 $\sin30^\circ=0.5$, 结果为 $0.612(\delta_1+\delta_2)+0.5\,\delta_3$, 长度 $\sqrt{2\times0.612^2+0.5^2}\,l\approx l$. 先进入合并的两条各占 $0.612$, 最后一条只占 $0.5$, 三条的权重不对称. 换一个顺序, 吃亏的就换成另一条. 实际的任务向量只是近似正交, 而且三条 RL 的质量相近, 所以论文测到的顺序影响很小. Figure 4(b) 合并最多 $M=5$ 份, 给出 5 次实验的标准差: $M$ 越大, 前沿越好.
+
+### 4.5 一个失败的插值规则
+
+文献 [58] 有一条从夹角算插值系数的规则 $\eta\to2\cos\Omega/(1+\cos\Omega)$. 论文报告它在这里失效: $\Omega\approx90^\circ$ 时 $\cos\Omega\approx0$, 规则给出 $\eta\approx0$, 等于完全丢掉 RL 的结果. 监督微调的夹角在 $40^\circ$ 到 $80^\circ$ 时, 比如 $\Omega=60^\circ$, 规则给出 $2\times0.5/1.5\approx0.67$, 还在可用范围. 这说明 RL 任务向量的几何与监督微调不同, 从后者总结的经验规则要重新检验.
+
+## 5. 第三阶段: LITI
+
+### 5.1 动机
+
+SLERP 后的权重奖励高, KL 也高. LITI 借鉴 WiSE-FT. WiSE-FT 在微调权重和零样本权重之间线性插值, 用来在分布偏移下保留预训练模型的鲁棒性. LITI 把同样的操作用在 RL 上, 把 SLERP 结果往初始化拉回一部分:
 
 $$
-\lVert\delta_{\mathrm{lerp}}^{\lambda}\rVert=l\sqrt{1-2(1-\cos\Omega)(\lambda-\lambda^{2})}.
+\theta_\eta=(1-\eta)\cdot\theta_{\mathrm{init}}+\eta\cdot\theta_{\mathrm{slerp}}.
 \tag{8}
 $$
 
-$\lambda=0.5$ 时缩得最厉害.Observation 2:SLERP 抬奖励,KL 略升.Observation 3:LERP 降 KL,对奖励帮助小.Observation 4:任务向量接近正交,$\Omega\approx 90^{\circ}$;完整权重几乎共线,$\omega\approx 0^{\circ}$.正交时式 (8) 的缩范特别明显,所以 LERP 会把合并结果往初始化拽.
+观察 5: 沿 $\eta$ 往回插值时, KL 下降的比例大于奖励下降的比例, 所以插值得到的点落在单条 RL 曲线的上方.
 
-不要对完整权重做 SLERP.$\omega\approx 0^{\circ}$ 时 $\sin x\approx x$,球面系数退化成 $\lambda$,结果看起来就像 LERP.Figure 9(c) 确认了这件事.HTML 写 SLERP 作用在任务向量上,不是作用在 $\theta$ 上.
+### 5.2 理论
 
-Figure 3(c) 扫 $\lambda$,奖励在 SLERP,$\lambda=0.5$,$T=9k$ 处最高.两端 $\lambda=0$ 和 $\lambda=1$ 回到原来的两份策略.这是线性模式连通在 RL 微调上的版本:插值点比端点好.SLERP 的奖励曲线整体在 LERP 上面.KL 要到附录 Figure 8 才分开:LERP 明显降 KL,SLERP 略升.合到一张 Pareto 上,两件事占的是不同区域.高奖励,高 KL 走 SLERP;低 KL 走 LERP.WARP 主路径选 SLERP,再把降 KL 的工作交给 Stage 3 的 $\eta$.
-
-Model Stock 那条 $\eta\to 2\cos\Omega/(1+\cos\Omega)$ 在这里不能用.$\Omega\approx 90^{\circ}$ 会把 $\eta$ 打到 $0$,更新被删掉.HTML §5 写他们试过,失败.监督微调里 $\Omega$ 常在 $40^{\circ}$ 到 $80^{\circ}$;这边是 RL,策略吃自己的生成,任务向量更正交.
-
-## 5. Stage 3:往初始化线性插回去
-
-SLERP 之后奖励高了,KL 也略高.第三段做成 WiSE-FT 那种往初始化回插:
+附录 B 在线性区假设下 (假设 2) 给出两条引理. 引理 3: LERP 合并后的 KL 不超过各自 KL 的插值 (附录式 (17)). 引理 4: LITI 的 KL 满足
 
 $$
-\theta^{\eta}\leftarrow(1-\eta)\cdot\theta_{\mathrm{init}}+\eta\cdot\theta_{\mathrm{slerp}}.
+\mathrm{KL}(\pi_{\theta_\eta}\Vert\pi_{\theta_{\mathrm{init}}})\le\eta\cdot\mathrm{KL}(\pi_{\theta_{\mathrm{slerp}}}\Vert\pi_{\theta_{\mathrm{init}}}).
 \tag{9}
 $$
 
-$\eta=1$ 是合并结果,高奖励,高 KL.$\eta=0$ 回到初始化,KL 最小,奖励也最小.中间档把新行为留一部分,把预训练特征捞回来一部分.HTML 的观察是:往下拧 $\eta$,KL 掉得比奖励快.于是 LITI 扫出来的前沿在「对角线」上面,也在底座 RL 轨迹上面.这是 Observation 5.
+假设 3 设 LITI 的奖励对 $\eta$ 是凹函数. 引理 5 由此推出 LITI 前沿在两端点连线 (对角线) 之上 (附录式 (24), (25), Figure 7). 凹性意味着
 
-附录在线性区(一阶 Taylor)里把 KL 的凸性写成式 (21):LITI 的 KL 不超过 $\eta$ 倍终局 KL.奖励凹性是 Assumption 3,依据是 Figure 8(e),不是定理.两条合在一起,LITI 的点落在对角线左上(Lemma 5).权重还得离得近,NTK 那套展开才说得通.
+$$
+r(\theta_\eta)\ge(1-\eta)\,r(\theta_{\mathrm{init}})+\eta\,r(\theta_{\mathrm{slerp}}).
+\tag{10}
+$$
 
-Figure 4(a) 先 SLERP 两份策略($\lambda=0.5$),再扫 $\eta\in\{0,0.1,0.3,0.5,0.8,1.0\}$.这些点组成的前沿压在两条独立 REINFORCE 轨迹上面.训得更久,高 KL 更好;把 $\eta$ 拧小,低 KL 也能吃到这份更长的微调.Figure 4(b) 把 $M$ 加到 5.LITI 前沿仍在 RL 轨迹上面;$M$ 越大越好.阴影是 5 次实验的标准差.HTML 把加大 $M$ 写成一条 scaling 方向.
+取 $\eta=0.3$: KL 至多是 SLERP 端点的 $30\%$, 奖励至少恢复两端奖励差的 $30\%$. 两者合起来, 前沿上的点不劣于端点连线. 附录 C 的实测与此一致: KL 对 $\eta$ 是凸的, 几乎线性; 奖励对 $\eta$ 是凹的.
 
-只做 $M=1$ 再 LITI,奖励增益比先合并再插小得多.附录 Figure 13 还试过沿单条轨迹做滑动平均($\{6k,7k,8k,9k\}$ 检查点)再 LITI,没有变好.Stage 2 的独立微调不是装饰.
+把 KL 在 $\theta_{\mathrm{init}}$ 处做二阶展开, $\mathrm{KL}\approx\frac12\delta^\top F\delta$, $F$ 是 Fisher 信息矩阵. 任务向量缩成 $\eta\delta$ 时 KL 按 $\eta^2$ 缩小, $\eta=0.3$ 时只剩 $9\%$. 实测 KL 对 $\eta$ 几乎线性, 高于二次展开的预测. 一种解释是 RL 后的权重已经离开了二次近似成立的邻域. 式 (9) 给出的线性上界 $30\%$ 与实测更接近.
 
-$\eta$ 太大,下一轮从高 KL 区起步,短算力时高 KL 更好;$\eta$ 太小,留在低 KL,后面还有轮次才能摸到高奖励.Figure 16 把第二轮初始化的 $\eta=0.3$ 和 $0.5$ 对照:$\eta=0.5$ 在高 KL 更好,$\eta=0.3$ 在 $\mathrm{KL}<65$ 更好.HTML 把 $\eta$ 读成外层学习率.算力少,只能跑一轮多一点,用更大的 $\eta$;后面还要迭代,用 $0.3$.默认钉 $0.3$.
+把三个阶段放进一个二维例子. 设 $\delta_1=(1,0)$, $\delta_2=(0,1)$, 夹角 $90^\circ$, 长度都是 $1$. SLERP 得 $(0.707,0.707)$, 长度 $1$; LERP 得 $(0.5,0.5)$, 长度 $0.707$; 对 SLERP 结果做 $\eta=0.3$ 的 LITI, 得 $(0.212,0.212)$, 长度 $0.3$. 如果 KL 按二次近似与长度平方成正比, 以单条 RL 的 KL 为 $1$, 这三者分别是 $1$, $0.5$, $0.09$. SLERP 在 KL 不变的前提下合并了两个方向; LERP 用一半 KL 换来同样的方向; LITI 再沿这个方向退回. 实际 KL 偏离二次近似, 上一段已经说明, 这里只看相对大小.
 
-附录 D.4:插向本轮初始化,还是插向最初的 SFT,两条 Pareto 差不多.迭代实验选本轮初始化,这样每轮都能用同一个 $\eta$,往高 KL 走得平滑.Figure 1(b) 那条「WARP: 1st iteration」是插向 SFT;Figure 4(c) 是插向本轮初始化.读图时不要混.
+附录 C 还试了外推, $0\le\eta\le2$: $\eta>1$ 时沿任务向量方向继续走, SLERP 在高 KL 区更好.
 
-## 6. 迭代:这一轮终局当下一轮初始化
+### 5.3 实验
 
-三阶段扫出更好的前沿之后,点还可以拿来当下一轮 $\theta_{\mathrm{init}}$.这是 model recycling.Observation 6:迭代会把结果往上推,并收敛到一条更好的 Pareto.不是每轮都等幅涨.
+Figure 4(a) 扫 $\eta\in\{0,0.1,0.3,0.5,0.8,1.0\}$, 所有 LITI 前沿都高于 RL 本身的前沿. $\eta=0$ 就是初始化, KL 和奖励增益都为零; $\eta=1$ 就是 SLERP 结果. 中间的四个值在两端之间描出一条曲线, 按式 (10) 它落在两端连线之上. RL 本身的前沿则是单条训练轨迹上各检查点连成的线.
 
-Figure 4(c) 跑 $I=5$ 轮.每轮 $M=2$.第一轮 $T=9k$,第 2,3 轮 $T=7k$,再往后 $T=5k$,HTML 写的理由是算力.LITI 曲线对着自己的初始化画.每轮的 LITI 都在该轮 RL 轨迹上面.一轮比一轮好,几轮之后回报变小.
+附录 D 的消融 (Figure 13): $M=1$ 时 (不做 SLERP, 只对单条 RL 做 LITI), 增益小得多. 对单条 RL 的检查点 $\{6\mathrm{k},7\mathrm{k},8\mathrm{k},9\mathrm{k}\}$ 做滑动平均也没有帮助. 增益主要来自合并独立训练的多份策略. 同一条轨迹上相邻的检查点方向接近, 平均后与终点差别不大; 独立的两条 RL 任务向量接近正交 (观察 4), 合并才带来新的信息. Figure 17 比较往本轮初始化插值和往 SFT 插值, 两种前沿差不多.
 
-侧写对照在 Table 1.每条策略在一份 held-out prompt 上生成,按 Gemma 报告那套 side-by-side,分数跟 Gemini 1.5:much better / better / slightly better 分别记 $\pm 1.5$,$\pm 1$,$\pm 0.5$,平局 $0$.正分表示更好.数字从 HTML Table 1 原样抄.
+## 6. 迭代
 
-| 方法 | Mistral 7B v1 | Mistral 7B v2 | Mixtral 8x7B |
-|------|--------------:|--------------:|-------------:|
-| Gemma `"7B"` 1.0 | $0.24$ | $-0.01$ | $-0.08$ |
-| Gemma `"7B"` 1.1 | $0.37$ | $0.16$ | $0.08$ |
-| REINFORCE EMA anchor | $0.37$ | $0.16$ | $0.07$ |
-| WARP: 1st iter | $0.42$ | $0.23$ | $0.13$ |
-| WARP: 2nd iter | $0.45$ | $0.25$ | $0.16$ |
-| WARP: 3rd iter | $0.45$ | $0.26$ | $0.18$ |
-| WARP: 4th iter | $0.45$ | $0.25$ | $0.16$ |
-| WARP: 5th iter | $0.45$ | $0.24$ | $0.17$ |
+### 6.1 观察 6
 
-对 Mixtral 8x7B,第三轮 $0.18$ 是表里最高,第四轮回到 $0.16$,第五轮 $0.17$.对两个 Mistral 7B,第三轮之后停在 $0.45$.HTML 正文写:第三轮之后结果停滞.
+LITI 的结果当作下一轮初始化, 整个流程重跑 (观察 6, 附录 D.3, $\eta=0.3$). Figure 4(c) 跑了 $I=5$ 轮: 第 1 轮 $T=9\mathrm{k}$, 第 2, 3 轮 $T=7\mathrm{k}$, 之后 $T=5\mathrm{k}$. 每轮前沿都往上移, 增益逐轮递减. 后几轮的 $T$ 更短, 起点已经是上一轮 LITI 的结果, 离 SFT 有一段距离, 每轮只需要再往前走一小段.
 
-![左栏 WARP 迭代策略并推理采 1;右栏 WARM 平均的是奖励模型](./images/fig-warp-iterate-not-warm.png)
+每轮只把初始化往 $\theta_{\mathrm{slerp}}$ 推 $30\%$. 下一轮的 RL 从这个更好的起点出发, 再走出新的任务向量, 再合并和插值. 新一轮的锚点 EMA 也从新的初始化开始, 所以 KL 约束跟着起点移动. 这样每轮都能保留大部分 KL 预算, 用来探索新的方向.
 
-> 图 2:左栏是 WARP 迭代.SFT 进「$M$ 份 REINFORCE + EMA」,SLERP 出 $\theta_{\mathrm{slerp}}$,LITI $\eta=0.3$ 交出下一轮初始化.虚线 recycle 从「next iteration init」回到迭代框,单向.底框是推理采 1.右栏是 WARM:共享 RM 初始化,两路 RM 微调,线性平均权重,得到的仍是一个 $r$.中间虚线只分栏.
+按这个步数表, 一条 RL 五轮共 $9+7+7+5+5=33\mathrm{k}$ 步, $M=2$ 时 RL 总步数是 $66\mathrm{k}$, 约为单条 $9\mathrm{k}$ 步训练的 $7.3$ 倍.
+
+### 6.2 第 2 轮的 $\eta$
+
+附录 D 的 Figure 16: 第 2 轮中, $\eta=0.5$ 在高 KL 区更好, $\eta=0.3$ 在 KL 低于 65 时更好. 把 4 份 ($M=4$) 全部合并效果更好, 但计算量翻倍. $\eta$ 越大, 保留的 RL 进展越多, 下一轮起点的 KL 也越高, 所以在高 KL 区占优; $\eta$ 小则起点更保守, 在低 KL 区占优. 循环内 $\eta$ 的选择因此也是在选这条路径偏向前沿的哪一段.
+
+![左栏 WARP 迭代策略并推理采 1, 右栏 WARM 平均的是奖励模型](./images/fig-warp-iterate-not-warm.png)
+
+> 图 2: 左栏是 WARP 迭代: SFT 进入「$M$ 份 REINFORCE + EMA」, SLERP 得到 $\theta_{\mathrm{slerp}}$, LITI ($\eta=0.3$) 交出下一轮初始化. 虚线 recycle 从 next iteration init 回到迭代框, 方向单一. 底框是推理采样 1 次. 右栏是 WARM: 共享奖励模型初始化, 两路奖励模型微调, 线性平均权重, 得到的仍是一个奖励函数 $r$.
 
 **图 2 解析**
 
-- 左栏五步都在改策略.推理框写 sample 1,对应「不再付 $N$ 次采样」.
-- 右栏没有策略更新框.平均对象是 RM 权重.
-- recycle 虚线只有一个箭头头,指向迭代框.不是策略和初始化互相反传.
-- 没有 KL–reward 散点,没有临摹 Table 1.
+- 左栏各步都在改策略权重, 底部推理框只采 1 条.
+- 右栏没有策略更新, 平均的对象是奖励模型的权重.
+- recycle 虚线只有一个箭头, 指向迭代框, 表示 LITI 的输出成为下一轮输入.
+- 两栏并列, 对应论文把 WARP 写成 WARM 的策略侧对应物.
 
-零样本基准是 HTML Table 2,WARP 取第三轮,对照 Gemma `"7B"` 1.1.
+## 7. 实验
 
-| 方法 | MBPP | MMLU | GSM8K | MATH | HumanEval | BBH |
-|------|-----:|-----:|------:|-----:|----------:|----:|
-| Gemma `"7B"` 1.1 | $39.0$ | $56.4$ | $55.6$ | $25.6$ | $46.9$ | $53.1$ |
-| WARP | $45.4$ | $57.6$ | $66.8$ | $31.0$ | $50.0$ | $58.8$ |
+### 7.1 设定
 
-数学两列涨得最多:GSM8K $55.6\to 66.8$,MATH $25.6\to 31.0$.MMLU 只从 $56.4$ 到 $57.6$.HTML 读成分析能力更强.评测是 zero-shot.
+策略是 Gemma "7B", 优化器是 REINFORCE, 采样温度 0.9, batch 128, Adam, 学习率 $10^{-6}$, warmup 100 步. 默认超参: $T=9\mathrm{k}$, $\beta=0.1$, $\mu=0.01$, $M=2$, $\lambda=0.5$, $\eta=0.3$. 奖励模型用的是规模最大的那个, 所以没有更大的模型可当金标去检验过优化.
 
-Setup 数字也跟 HTML §4.对话 prompt 集 $\mathcal{X}$.温度 $0.9$,batch $128$,Adam,学习率 $10^{-6}$,warmup $100$ 步.除另行声明,$T=9k$,$\beta=0.1$,$\mu=0.01$,$M=2$,$\lambda=0.5$,$\eta=0.3$.RM 用手头最大的那只,因此没有 Gao 等,WARM 文里那种 oracle / control RM.低 KL 区这篇 RM 还像人偏好;离 SFT 远了会被黑.所以主文后半不用 RM 分单独报喜,改走 side-by-side 和基准.
+附录 D 的 Figure 15: $\mu=0.005$ 或 $\beta=0.2$ 能略微改善前沿, 但训练更慢. 这些超参在项目开始时选定, 之后没有改. 方向与第 3 节一致: $\mu$ 更小, 锚点更慢, 约束更紧; $\beta$ 更大, 惩罚更重. 两者都让策略走得更稳, 也更慢.
 
-## 7. 长度会涨,多样性和 KL 绑在一起
+按默认设定估算第 1 轮的采样量: $M=2$ 条 RL, 每条 $9\mathrm{k}$ 步, 每步 batch 128, 共生成约 $2\times9000\times128\approx2.3$ 百万条回答.
 
-迭代会把回复写长.附录 Figure 18(a):同一 KL 下,第三轮比第一轮更长.RM 偏好长回复,这是已知的长度偏置,不是 WARP 独有.缓解办法是在奖励里加长度惩罚 $-0.0005\times\mathrm{len}(y)$.带惩罚的那条轨迹明显更短.把它和一条不带惩罚的策略做 SLERP,长度被拉开,Pareto 也更好.HTML 把这读成:不同目标训出来的权更多样,合并有好处.和 Rewarded Soups 那条多目标插值是亲戚,不是同一篇算法.
+### 7.2 Table 1: 逐对比较
 
-附录 F 用 BLEURT 量同一策略,温度 $0.9$ 下两条生成的相似度.KL 相对 SFT 越大,两条生成越像.RLHF 掉多样性这件事,Kirk 等已经写过.WARP 没有把多样性单独优化进去;它优化的是奖励对 KL.KL 这边管住了,多样性作为预训练留下来的东西,会被 LITI 部分捞回.这是相关现象,不是新损失.
+把各策略与 Mistral 和 Mixtral 做一对一比较, 每条比较打分为 $\pm1.5$, $\pm1$, $\pm0.5$ 等档, 表中是平均分:
 
-## 8. 不是 WARM,不是 J-BOND,不是解码 BoN
+| 策略 | Mistral v1 | Mistral v2 | Mixtral 8x7B |
+|---|---|---|---|
+| Gemma 1.0 | $0.24$ | $-0.01$ | $-0.08$ |
+| Gemma 1.1 | $0.37$ | $0.16$ | $0.08$ |
+| REINFORCE (EMA 锚点) | $0.37$ | $0.16$ | $0.07$ |
+| WARP 第 1 轮 | $0.42$ | $0.23$ | $0.13$ |
+| WARP 第 2 轮 | $0.45$ | $0.25$ | $0.16$ |
+| WARP 第 3 轮 | $0.45$ | $0.26$ | $0.18$ |
+| WARP 第 4 轮 | $0.45$ | $0.25$ | $0.16$ |
+| WARP 第 5 轮 | $0.45$ | $0.24$ | $0.17$ |
 
-同一句「权重平均」,四件事不要混.
+正值表示 Gemma 一方更受偏好. 在 Mixtral 8x7B 这一列, Gemma 1.0 是 $-0.08$, WARP 第 3 轮是 $0.18$, 从略逊变为略优. 只用 EMA 锚点的 REINFORCE 与 Gemma 1.1 基本持平. WARP 第 1 轮相对 Gemma 1.1 在三列上分别高 $0.05$, $0.07$, $0.05$; 到第 3 轮是 $0.08$, $0.10$, $0.10$. 第 3 轮之后不再提高, 对 Mistral v2 和 Mixtral 还略有回落. 以 Mistral v1 一列为例, 前三轮的逐轮增量是 $0.05$, $0.03$, $0$, 与 Figure 4(c) 的递减趋势一致.
 
-WARM 平均奖励模型.多份 RM 从共享预训练出发,超参和数据顺序不同,再线性插权重,推理仍是一个 $r$.目标是少被黑客,分布偏移更稳.WARP 文把自己写成对 WARM 的回应:合并用来学策略,WARM 用来做奖励.平均的对象不同.WARM 自己的胜率数字在那篇 ICML,不要抄进本篇 Table 1.
+### 7.3 Table 2: 基准测评
 
-J-BOND 用 EMA 锚点,符号是 $\eta=0.02$.服务的是 Best-of-2 蒸馏:每 prompt 1 条策略样本加 2 条锚点,Jeffreys 混合前向 SFT 和二值分位数奖励.主文在 [09](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md).WARP 的 EMA 是式 (1) 的动态 KL 锚.后面还有 SLERP 和 LITI,J-BOND 没有.09 的 $-\log 16$ 是两条锚点,中位数校准出来的,和这边无关.
+零样本结果:
 
-解码 Best-of-$N$ 可以不更新权重.Gao,Schulman,Hilton 要的是代理 RM 过优化标度 $R(d)$.每次查询付 $N$ 次采样.过优化那条线在 [07](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md).WARP 更新策略,推理采 1.它甚至不是在蒸馏 $\pi_{\mathrm{BoN}}$.目标分布匹配是 BOND 的事.
+| 策略 | MBPP | MMLU | GSM8K | MATH | HumanEval | BBH |
+|---|---|---|---|---|---|---|
+| Gemma 1.1 | $39.0$ | $56.4$ | $55.6$ | $25.6$ | $46.9$ | $53.1$ |
+| WARP 第 3 轮 | $45.4$ | $57.6$ | $66.8$ | $31.0$ | $50.0$ | $58.8$ |
 
-RAFT 更新,但只对 RM 的 $\arg\max$ 做 SFT,吃前向 KL.WARP 的底座是带 KL 的 REINFORCE,合并发生在权重空间,不在样本空间里挑冠军.
+差值依次是 $+6.4$, $+1.2$, $+11.2$, $+5.4$, $+3.1$, $+5.7$. 六项都上升, GSM8K 涨得最多, MMLU 最少. 按相对幅度, GSM8K 约 $+20\%$, MATH 约 $+21\%$, MBPP 约 $+16\%$, BBH 约 $+11\%$, HumanEval 约 $+7\%$, MMLU 约 $+2\%$. 数学和代码类涨幅大, 知识类的 MMLU 几乎不变. 对齐税的担忧是 RLHF 会损害这类能力, 这张表在这六项上没有看到这种损害.
 
-附近还有几篇也动权重平均,HTML §5 点名了区别.Noukhovitch 等把 EMA 当下一轮初始化,没有 SLERP,也没有把 EMA 写进 KL 锚.Gorbatovski 等,Nash-MD 把 EMA 当参考,用在直接偏好优化上.Rewarded Soups 用 LERP 拼多目标.Lin 等,Fu 等用合并减对齐税,但训练期没有 EMA 锚,没有合并多份被奖励推过的策略,也不迭代.HTML 的口径是:这些工作谁都没把「KL 当遗忘度量 + EMA 当 KL 锚 + SLERP + LITI 当下轮初始化」捆在一起.
+### 7.4 长度与多样性
 
-| | 解码 BoN | RAFT | J-BOND | WARM | WARP |
-|--|----------|------|--------|------|------|
-| 平均什么 | 不平均 | 不平均 | 策略 EMA(锚点) | RM 权重 | 策略:EMA + SLERP + LITI |
-| 更新策略 | 可以没有 | 只对 $\arg\max$ 做 SFT | 前向 SFT + 反向二值奖励 | 不直接更新 $\pi$ | REINFORCE + 三次合并 |
-| 推理采样 | $N$ | $1$ | $1$ | 仍要策略自己采 | $1$ |
-| 锚点 | 无 | 无 | EMA $\eta=0.02$ | 无(RM 侧) | EMA $\mu=0.01$ 当 KL 锚 |
-| 球面插值 | 无 | 无 | 无 | 无(线性平均 RM) | 有,按层,任务向量 |
+附录 E: 回答长度随 KL 增长; 在同样的 KL 下, 第 3 轮的回答比第 1 轮更长. 加入长度惩罚 $-0.0005\times\mathrm{len}(y)$ 可以抑制, 例如长度 1000 时惩罚是 $-0.5$. 把一份带长度惩罚的策略和一份不带的策略做 SLERP 合并, 既缓解了长度增长, 又改善了前沿 (Figure 18). 这里 SLERP 的用法与第 4 节相同, 只是两条 RL 的奖励不同: 一条带长度惩罚, 一条不带. 合并后的权重同时带有两条任务向量的方向, 也就兼顾了两种目标.
 
-底座对照是 REINFORCE,不是 PPO.IPO,DPO,RAFT 在 HTML §2 里是「Pareto 上打不过 REINFORCE」的离线对照,不是本算法的组成模块.
+附录 F 用 BLEURT 相似度衡量生成多样性: 相似度与 KL 正相关, 说明 KL 越大, 多样性损失越大. 这与第 1 节列出的第三类代价一致, WARP 通过控制 KL 间接控制它.
 
-## 9. 失效与边界
+## 8. 与相邻方法的关系
 
-RM 在低 KL 区才像人偏好.离 SFT 远,代理分会撒谎.WARP 没有 oracle RM,Gao 那条金标掉头没有在这篇里复测.Table 1 / Table 2 是为了不把故事停在代理分上.代理 Pareto 好看,不等于金标也好看.
+| 方法 | 平均对象 | 时机 | 推理成本 |
+|---|---|---|---|
+| WARM | 多个奖励模型的权重 | 奖励建模阶段 | 一个奖励模型 |
+| WARP | 多个策略的权重 | RL 阶段内和阶段间 | 一份策略 |
+| [J-BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md) | 策略的 EMA 锚点 | RL 阶段内 | 一份策略 |
+| WiSE-FT | 微调权重与初始化 | 微调之后 | 一份模型 |
 
-训练贵.每轮 $M$ 份 RL,还要迭代.HTML §3 自己写:test time 没有额外显存和延迟,训练很贵.§6 把这写成可并行的内层优化,类比 DiLoCo:Stage 1 是 worker 上的 inner step,Stage 2 合并,Stage 3 是学习率为 $\eta$ 的 outer SGD.开放协作,联邦,各留各的数据和 RM,只交换权重,这是讨论,不是实验.
+WARM ([arXiv:2401.12187](https://arxiv.org/abs/2401.12187)) 平均的是奖励模型, 用来提高奖励的可靠性. 论文把 WARP 写成它在策略侧的对应: WARM 让奖励更可靠, WARP 让策略在给定奖励下的 KL–奖励权衡更好.
 
-第三轮之后 side-by-side 停滞.再加第 4,5 轮,Table 1 没有单调变好.回报递减写在 Observation 6 旁边,不是附录里才承认.
+[09 BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md) 的 J-BOND 也用 EMA 锚点, 并引用 WARP 说明 EMA 能降低方差; 它只用了第一阶段, 没有 SLERP 和 LITI. 两者的 EMA 速率也不同: J-BOND 主实验取 $\eta=0.02$, 平均滞后约 49 步; WARP 取 $\mu=0.01$, 约 99 步. 在 J-BOND 里锚点还决定蒸馏目标 $\mathrm{Best\text{-}of\text{-}2}(\pi_{\mathrm{anchor}})$, 在 WARP 里锚点只出现在 KL 惩罚中.
 
-$\mu$ 太快,锚点贴着策略,动态教师和退火都变弱;太慢,策略被锁在旧锚附近.主文只系统跑了 $\mu=0.01$,附录另给 $0.005$.$\beta$ 与 $\mu$ 在 Figure 15 里可以互相替代一部分,不是正交的两维.
+论文相关工作部分还提到: 已有工作把 EMA 当作新的初始化, 也有工作把 EMA 当作 DPO 的参考模型. WARP 的迭代可以对照 DiLoCo: 每轮 $M$ 份并行训练是内循环, LITI 的 $\eta$ 起外层学习率的作用. 写成更新式, 式 (3) 是 $\theta_{\mathrm{init}}\leftarrow\theta_{\mathrm{init}}+\eta\,(\theta_{\mathrm{slerp}}-\theta_{\mathrm{init}})$, 括号里的合并任务向量相当于外层的「伪梯度」, $\eta=0.3$ 是外层步长. 与 DiLoCo 的区别是合并用 SLERP, 内循环是 RL, 外层没有动量.
 
-SLERP 对完整权重几乎没用.任务向量正交是前提.从零训练,不同架构,线性模式连通不成立,Git Re-Basin 那套不在本篇实验里.
+与 [07 Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md) 和 [RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md) 相比, WARP 在样本层面不做挑选, 改进来自权重空间的操作. 与 [PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) 相比, 它用更简单的 REINFORCE, 没有价值网络.
 
-长度惩罚系数 $-0.0005$ 是跟 Singhal 等的引用走的,不是扫出来的最优.不加权惩罚,迭代会把同一 KL 下的回复写得更长.
+## 9. 失效模式与边界
 
-Gemma 实验的 prompt 集大小,RM 结构,训练步数以外的超参,HTML §4 没有给一张可复现的全表.Table 1 是偏好分数,不是胜率百分比.Table 2 是 zero-shot 点值,没有区间.
+**奖励模型无法外部检验.** 实验用的是最大的奖励模型, 没有金标模型去检验过优化. 前沿在代理奖励上更好, 不保证在真实偏好上也更好. Table 1 的逐对比较和 Table 2 的基准提供了一部分外部证据.
 
-| 现象 | 原因 | 说明 |
-|------|------|------|
-| 把 WARP 写成 WARM | 字母差一个,都是 Ramé 组,都做权重平均 | 平均对象:策略 vs RM |
-| 把 WARP 写成 J-BOND | 都有 EMA 锚点 | J-BOND 停在 EMA;WARP 还有 SLERP 和 LITI |
-| 把 $-\log 16$ 抄进 WARP | 09 的中位数校准 | 本篇奖励是 $r_{\beta}$,没有这条二值 |
-| 把三次平均缩成 EMA | Stage 1 最好写 | 没有 SLERP / LITI 就不是这篇算法 |
-| 对完整 $\theta$ 做 SLERP | $\omega\approx 0^{\circ}$ | 退化为 LERP;要做任务向量 |
-| 用 Model Stock 的 $\eta$ 公式 | $\Omega\approx 90^{\circ}$ | 更新被删成 $0$ |
-| 先钉死 $\beta$ 再和 WARP 比终局奖励 | 尺子是 Pareto | Figure 3(b) / 4 比的是整条前沿 |
-| $I=5$ 一定最好 | Table 1 第三轮后停滞 | 侧写在第 3 轮封顶 |
-| 临摹 KL–reward 坐标 | 论文 Figure 1(b),3,4 是训练曲线 | 本篇只抄表,不手绘假轴 |
-| 把推理写成 Best-of-$N$ | 解码 BoN 在邻居 07 | 合并后采 1 |
+**只有一个规模.** 全部实验都在 Gemma "7B" 上, 一个奖励模型, 一套超参. 观察 4 的正交性, 默认 $\eta$ 和迭代步数表在其他规模上是否成立, 论文没有数据.
 
-邻居链:解码 BoN 与 $R(d)$ 在 [07-Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md);蒸馏 $\pi_{\mathrm{BoN}}$,Jeffreys,J-BOND 的 $-\log 16$ 在 [09-BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md);只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md);序列级策略梯度在 [10-REINFORCE](../../4.4.1-基于奖励模型的RL-RLHF-PPO/10-REINFORCE-序列级策略梯度/10-REINFORCE-序列级策略梯度.md).
+**迭代收益递减.** Table 1 第 3 轮之后不再提高, Figure 4(c) 的增益逐轮变小. 每轮的计算量不变, 继续迭代性价比下降.
+
+**训练成本.** 默认设定下五轮共 $66\mathrm{k}$ 步 RL. 每一步都要采样, 打分和反传, 成本主要随步数线性增加; 合并和插值只是权重运算, 相比之下可以忽略. Figure 16 显示合并更多份能更好, 但计算量成倍增加.
+
+**长度漂移.** 迭代会让同 KL 下的回答更长 (附录 E). 需要长度惩罚或与带惩罚的策略合并.
+
+**理论假设.** 附录 B 的引理依赖等长任务向量 (假设 1), 线性区 (假设 2) 和奖励对 $\eta$ 凹 (假设 3). 大步长或远离初始化时, 线性区假设可能不成立; 附录 C 的外推结果只覆盖 $\eta\le2$.
+
+**部署点要另外选.** 式 (4) 给出的是一族权重, 部署哪一个取决于 KL 预算和外部评估. 论文的 Table 1, Table 2 只报告了迭代各轮的结果, 前沿上其他点的外部评估要使用者自己做.
+
+**多份合并的顺序.** $M>2$ 的递归 slerp 不满足结合律, 结果依赖顺序, 论文测得影响很小.
 
 ## 参考文献
 
-1. Ramé, A., Ferret, J., Vieillard, N., Dadashi, R., Hussenot, L., Cedoz, P.-L., Sessa, P. G., Girgin, S., Douillard, A., & Bachem, O. (2024). [WARP: On the Benefits of Weight Averaged Rewarded Policies](https://arxiv.org/abs/2406.16768). HTML:[arxiv.org/html/2406.16768](https://arxiv.org/html/2406.16768).
-2. Ramé, A., Vieillard, N., Hussenot, L., Dadashi, R., Cideron, G., Bachem, O., & Ferret, J. (2024). [WARM: On the Benefits of Weight Averaged Reward Models](https://arxiv.org/abs/2401.12187). *ICML*. PMLR 235:42048–42073.(平均 RM;不是本算法)
-3. Sessa, P. G., et al. (2024/2025). [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14622). *ICLR 2025*.(J-BOND 的 EMA 锚点同族;主算法不同)
-4. Gao, L., Schulman, J., & Hilton, J. (2023). [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760). *ICML*.(解码 BoN 与 $R(d)$)
-5. Dong, H., et al. (2023). [RAFT: Reward Ranked Finetuning](https://arxiv.org/abs/2304.06767). *TMLR*.(只训 top-1)
-6. Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning.(REINFORCE)
-7. Ahmadian, A., et al. (2024). [Back to Basics: Revisiting REINFORCE-style Optimization for RLHF](https://arxiv.org/abs/2402.14740).
-8. Gemma Team. (2024). [Gemma: Open Models Based on Gemini Research and Technology](https://arxiv.org/abs/2403.08295).
-9. Shoemake, K. (1985). Animating rotation with quaternion curves. *SIGGRAPH*.(SLERP)
-10. Ilharco, G., et al. (2023). [Editing models with task arithmetic](https://arxiv.org/abs/2212.04089). *ICLR*.(任务向量)
-11. Wortsman, M., et al. (2022). [Robust fine-tuning of zero-shot models](https://arxiv.org/abs/2109.01903). *CVPR*.(WiSE-FT / LITI)
-12. Wortsman, M., et al. (2022). [Model soups](https://arxiv.org/abs/2203.05482). *ICML*.
-13. Tarvainen, A., & Valpola, H. (2017). Mean teachers are better role models. *NeurIPS*.
-14. Douillard, A., et al. (2023). [DiLoCo: Distributed Low-Communication Training of Language Models](https://arxiv.org/abs/2311.08105).(讨论中的内层/外层类比)
-15. Ramé, A., et al. (2023). [Rewarded Soups](https://arxiv.org/abs/2306.04488). *NeurIPS*.(多目标 LERP;对照)
-16. Lin, Y., et al. (2024). [Mitigating the Alignment Tax of RLHF](https://arxiv.org/abs/2309.06256).(LITI 减对齐税;无 EMA 锚)
-17. Kirk, R., et al. (2024). Understanding the effects of RLHF on LLM generalisation and diversity. *ICLR*.
-18. Singhal, P., et al. (2023). [A Long Way to Go: Investigating Length Correlations in RLHF](https://arxiv.org/abs/2310.03716).(长度惩罚 $-0.0005\times\mathrm{len}(y)$ 的出处)
+1. Ramé, A., Ferret, J., Vieillard, N., et al. (2024). [WARP: On the Benefits of Weight Averaged Rewarded Policies](https://arxiv.org/abs/2406.16768). arXiv:2406.16768.
+2. Ramé, A., et al. (2024). [WARM: On the Benefits of Weight Averaged Reward Models](https://arxiv.org/abs/2401.12187).
+3. Sessa, P. G., et al. (2024). [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14622).
+4. Wortsman, M., et al. (2022). Robust fine-tuning of zero-shot models. *CVPR*.
+5. Jang, D.-H., et al. (2024). Model Stock: All we need is just a few fine-tuned models.
+6. Douillard, A., et al. (2023). DiLoCo: Distributed Low-Communication Training of Language Models.
+7. Shoemake, K. (1985). Animating rotation with quaternion curves. *SIGGRAPH*.
+8. Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. *Machine Learning*.
+9. Gemma Team. (2024). [Gemma: Open Models Based on Gemini Research and Technology](https://arxiv.org/abs/2403.08295).

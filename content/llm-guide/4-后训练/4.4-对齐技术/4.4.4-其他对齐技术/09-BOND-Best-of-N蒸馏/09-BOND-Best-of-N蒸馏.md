@@ -1,279 +1,400 @@
 ---
-title: "09 · BOND:Best-of-N 蒸馏"
+title: "09 · BOND: Best-of-N 蒸馏"
 published: true
 tags: ["BOND", "J-BOND", "Best-of-N", "Jeffreys", "RLHF", "蒸馏", "Gemma"]
-excerpt: "Best-of-N(BoN)解码很强:同一条 prompt 从参考策略采 N 条,奖励模型挑最高的那条."
+excerpt: "把 Best-of-N 采样的输出分布蒸馏进策略, 推理只采一条; 迭代 BOND 和 J-BOND 让 N 不必事先选定."
 ---
-# 09 BOND:Best-of-N 蒸馏
+# 09 BOND: Best-of-N 蒸馏
 
-Best-of-$N$(BoN)解码很强:同一条 prompt 从参考策略采 $N$ 条,奖励模型挑最高的那条.代价也硬,每次回答都要付 $N$ 次采样.BOND 把这件事收成训练期的分布匹配:让策略分布靠近 BoN 分布,推理只采 1 条.论文是 Sessa 等 *BOND: Aligning LLMs with Best-of-N Distillation*([arXiv:2407.14622](https://arxiv.org/abs/2407.14622),HTML:[arxiv.org/html/2407.14622](https://arxiv.org/html/2407.14622),ICLR 2025).数字跟 HTML.
+材料是 Sessa 等的 *BOND: Aligning LLMs with Best-of-N Distillation* ([arXiv:2407.14622](https://arxiv.org/abs/2407.14622)). 问题是: Best-of-$N$ 采样效果好, 但每次推理都要生成 $N$ 条回答, 能否把它的输出分布蒸馏进策略本身, 推理时只采一条.
 
-这不是 Gao,Schulman,Hilton 那条解码 BoN([arXiv:2210.10760](https://arxiv.org/abs/2210.10760)).那边量的是代理奖励模型过优化,$R(d)$ 标度,策略权重可以一动不动.过优化那条线在 [07 Best-of-N:奖励模型过优化](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md).BOND 要更新策略,推理不再付 $N$ 次采样.解码 BoN 相对参考策略的 KL 闭式 $\mathrm{KL}_{\mathrm{bon}}=\log n-(n-1)/n$ 已经在那篇里写过,这里不重推.
+## 1. 从 Best-of-N 到分布匹配
 
-也不是 [RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md).RAFT 对 RM 的 top-1 做 SFT,吃的是前向 KL,是模仿冠军样本.BOND 把前向 KL,反向 KL 和 Jeffreys 分开写:前向是 mode-covering,反向是不依赖奖励尺度的分位数优势(mode-seeking),Jeffreys 折中.
-
-## 1. 推理付 $N$ 次,训练摊成采 1 次
-
-标准 RLHF 优化期望奖励,再加一项对着参考策略的 KL:
+KL 正则的 RLHF 目标是
 
 $$
-\pi_{\mathrm{RL}}=\operatorname*{argmax}_{\pi}\,\mathbb{E}_{\pi}[r(y)]-\beta_{\mathrm{RL}}\cdot\mathrm{KL}(\pi\Vert\pi_{\mathrm{ref}}).
+\pi_{\mathrm{RL}}=\operatorname*{argmax}_{\pi}\ \mathbb{E}_{\pi}[r(y)]-\beta_{\mathrm{RL}}\cdot\mathrm{KL}(\pi\Vert\pi_{\mathrm{ref}}).
 \tag{1}
 $$
 
-$\beta_{\mathrm{RL}}\ge 0$ 把策略按在 $\pi_{\mathrm{ref}}$ 附近,用来减遗忘,减奖励黑客.HTML §2 写,在线算法通常打过离线;简单方法反而好用,REINFORCE 配采样 baseline 可以打过 PPO.
+$\beta_{\mathrm{RL}}$ 控制策略离参考策略 $\pi_{\mathrm{ref}}$ 多远. 它要在训练前选定, 选大了奖励涨不上去, 选小了容易奖励黑客.
 
-BoN 是另一条路.它不改权重,改的是推理手续:从 $\pi_{\mathrm{ref}}$ 采 $N$ 条,RM 取 $\arg\max$.奖励–KL 前沿经常好看,理论侧也有 Pareto 最优的说法.问题在账单.$N$ 条自回归生成,大致就是 $N$ 倍算力.部署时这条账单每天都来.Stiennon 等 2020 把 BoN 写成推理期手续.后来 WebGPT,Llama 2,Gao 等的过优化标度,都拿它当强基线.强归强,$N$ 是乘数.BOND 要付的是训练期蒸馏,把乘数从每次查询挪到一次微调.
+Best-of-$N$ (BoN) 走另一条路: 对一个 prompt 从 $\pi_{\mathrm{ref}}$ 采 $N$ 条回答, 用奖励模型打分, 返回最高分的那条. 权重不动, 代价落在推理上, 每次查询要做 $N$ 次自回归生成, 再调用 $N$ 次奖励模型. $N=16$ 时, 生成成本是普通采样的 $16$ 倍, 部署后每条请求都要付这笔成本. 它的好处是不需要选 $\beta_{\mathrm{RL}}$, 只有 $N$ 一个旋钮, 而且结果对奖励的尺度不敏感 (第 3 节). [07 Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md) 讨论过它相对 $\pi_{\mathrm{ref}}$ 的 KL, 连续情形下是 $\log N-(N-1)/N$, $N=8$ 时约 $1.20$ nat.
 
-BOND 的目标不是再发明一种策略梯度.它把「采 $N$ 选 1」看成一个分布 $\pi_{\mathrm{BoN}}$,再让可采样的 $\pi$ 去贴这个分布.贴上了,推理采 1 条就够.
-
-## 2. BoN 分布是对 $\pi_{\mathrm{ref}}$ 的重加权
-
-HTML §3.1 先把 prompt $x$ 从记号里拿掉,并假定奖励在所有回复上给出严格序(同分用任意严格序打破).对任意回复 $y$,定义
+BOND 把 BoN 的输出看成一个分布 $\pi_{\mathrm{BoN}}$, 训练一个策略去逼近它:
 
 $$
-p_{<}(y)=\mathbb{P}_{y'\sim\pi_{\mathrm{ref}}}\bigl[r(y')<r(y)\bigr],
+\pi_{\mathrm{BOND}}=\operatorname*{argmin}_{\pi\in\Pi}\ D(\pi\Vert\pi_{\mathrm{BoN}}).
 \tag{2}
 $$
 
+$D$ 是某个分布散度, 第 4 节讨论怎么选. 训练好以后, 从 $\pi_{\mathrm{BOND}}$ 采一条就近似等于做一次 BoN. 要落地, 需要先知道 $\pi_{\mathrm{BoN}}$ 长什么样.
+
+![左栏解码 BoN 采 N 选 1, 右栏把 BoN 分布蒸馏进策略后推理只采 1 条](./images/fig-bond-distill-bon.png)
+
+> 图 1: 左栏是推理期的 Best-of-$N$: 从 $\pi_{\mathrm{ref}}$ 采 $N$ 条, 冻结的奖励模型打分, $\arg\max$ 留下 $y^{\star}$, 每次查询付 $N$ 次采样. 右栏是 BOND: 把 $\pi_{\mathrm{ref}}$ 重加权成 $\pi_{\mathrm{BoN}}$, 让 $\pi$ 匹配这个分布并更新权重, 推理只采 1 条.
+
+**图 1 解析**
+
+- 左栏各步都在推理期完成, 没有反向传播. 被淘汰的 $N-1$ 条只参与比较, 不改任何参数.
+- 右栏在 distill / update weights 一步改 $\pi$ 的权重. $\pi_{\mathrm{BoN}}$ 在这里是训练目标.
+- 两栏都从 prompt $x$ 出发, 左栏每次查询结束于 $N$ 选 1, 右栏结束于采 1 条.
+- 两栏之间的分隔线只是排版, 两个流程没有先后依赖.
+
+## 2. BoN 分布的闭式
+
+论文第 3 节先把 prompt $x$ 从记号里省掉, 并假设奖励在所有回答上给出严格序 (同分时任意定一个次序). 对回答 $y$ 定义
+
 $$
+p_{<}(y)=\mathbb{P}_{y'\sim\pi_{\mathrm{ref}}}\bigl[r(y')<r(y)\bigr],\qquad
 p_{\le}(y)=\mathbb{P}_{y'\sim\pi_{\mathrm{ref}}}\bigl[r(y')\le r(y)\bigr].
 \tag{3}
 $$
 
-$p_{<}$ 是「随机再采一条,严格更差」的概率;$p_{\le}$ 把打平也算进去.Theorem 1 给出 $y$ 被 BoN 选中的概率:
+$p_{\le}(y)$ 是 $y$ 在参考分布下的奖励分位数. Theorem 1 给出 BoN 选中 $y$ 的概率:
 
 $$
-\pi_{\mathrm{BoN}}(y)=\pi_{\mathrm{ref}}(y)\times\underbrace{p_{\le}(y)^{N-1}}_{\mathtt{(A)}}\times\underbrace{\sum_{i=1}^{N}\Bigl[\frac{p_{<}(y)}{p_{\le}(y)}\Bigr]^{i-1}}_{\mathtt{(B)}}.
+\pi_{\mathrm{BoN}}(y)=\pi_{\mathrm{ref}}(y)\times\underbrace{p_{\le}(y)^{N-1}}_{(A)}\times\underbrace{\sum_{i=1}^{N}\Bigl[\frac{p_{<}(y)}{p_{\le}(y)}\Bigr]^{i-1}}_{(B)}.
 \tag{4}
 $$
 
-这是重加权,不是另起一个生成器.(A) 随 $N$ 指数压低差样本:同一 prompt 下比 $y$ 更差或打平的比例越高,$N$ 一大,$y$ 就越难被留下.(B) 是碰撞修正,落在 $[1,N]$ 里.最差的那条 $y_{-}$ 有 $p_{<}(y_{-})=0$,于是 (B) 取到 $1$,并且 $\pi_{\mathrm{BoN}}(y_{-})=\pi_{\mathrm{ref}}(y_{-})^{N}$:要连着抽中它 $N$ 次才可能出线.好样本,且单条概率很低时,$p_{<}$ 几乎等于 $p_{\le}$,(B) 靠近 $N$.
+附录 A.1 的证明把「$y$ 被选中」拆成互斥事件 $A_i$: 前 $i-1$ 条严格比 $y$ 差, 第 $i$ 条恰好是 $y$, 后 $N-i$ 条都不比 $y$ 好. $A_i$ 的概率是 $p_<^{i-1}\cdot\pi_{\mathrm{ref}}(y)\cdot p_\le^{N-i}$, 对 $i$ 求和并提出 $p_\le^{N-1}$ 就得到式 (4).
 
-附录 A.1 把「$y$ 被选中」拆成互斥事件 $A_i(y)$:$y$ 是最好的一条,并且第一次抽到它的下标是 $i$.$A_i$ 发生当且仅当前 $i-1$ 条严格更差,第 $i$ 条正好是 $y$,后面 $N-i$ 条不更好.概率乘起来再对 $i$ 求和,得到式 (4).离散回复会撞车,所以 $p_{<}$ 和 $p_{\le}$ 要同时留着.连续极限里两者相等,求和变成 $N$,式 (4) 回到「$N$ 个 i.i.d. 变量取 max」的密度 $f\,F^{N-1}N$.
+(A) 按分位数的 $N-1$ 次方压低差回答. (B) 处理重复采到 $y$ 的情况, 取值在 $[1,N]$ 里 (论文式 (5)). 最差的回答 $p_<=0$, (B) 取 $1$, 同时 $p_\le=\pi_{\mathrm{ref}}(y)$, 于是 $\pi_{\mathrm{BoN}}(y)=\pi_{\mathrm{ref}}(y)^N$: 只有 $N$ 次都采到它, 它才会被选中. 附录 A.2 说明, 对连续分布 $p_<=p_\le$, (B) 等于 $N$, 式 (4) 退化为 $N$ 个独立同分布变量取最大值的密度 $f\,F^{N-1}N$.
 
-BOND 的目标写成分布匹配:
+用三个回答验证一次. $\pi_{\mathrm{ref}}=(0.5,0.3,0.2)$, 奖励从低到高依次是 $y_1,y_2,y_3$, $N=2$.
+
+| 回答 | $\pi_{\mathrm{ref}}$ | $p_<$ | $p_\le$ | (B) | $\pi_{\mathrm{BoN}}$ |
+|---|---|---|---|---|---|
+| $y_1$ | $0.5$ | $0$ | $0.5$ | $1$ | $0.5\times0.5\times1=0.25$ |
+| $y_2$ | $0.3$ | $0.5$ | $0.8$ | $1.625$ | $0.3\times0.8\times1.625=0.39$ |
+| $y_3$ | $0.2$ | $0.8$ | $1$ | $1.8$ | $0.2\times1\times1.8=0.36$ |
+
+直接算: 两次都采到 $y_1$ 的概率 $0.25$; 最大值是 $y_3$ 的概率 $1-0.8^2=0.36$; 剩下 $0.39$ 给 $y_2$. 三项与表一致, 加起来为 $1$. BoN 把 $y_3$ 的概率从 $0.2$ 提到 $0.36$, 把 $y_1$ 从 $0.5$ 压到 $0.25$.
+
+这个分布相对 $\pi_{\mathrm{ref}}$ 的 KL 是
 
 $$
-\pi_{\texttt{BOND}}=\arg\min_{\pi\in\Pi}\,D(\pi\Vert\pi_{\mathrm{BoN}}).
-\tag{5}
+0.25\log\frac{0.25}{0.5}+0.39\log\frac{0.39}{0.3}+0.36\log\frac{0.36}{0.2}\approx-0.173+0.102+0.212=0.141\ \text{nat}.
 $$
 
-$D$ 还没钉死.前向 KL,反向 KL,Jeffreys 都会进这一格.后面会看到,选哪一种 $D$,策略长得完全不一样.
+连续公式在 $N=2$ 时给出 $\log2-\frac12\approx0.193$ nat. 离散情形会重复采到同一个回答, 重复时 BoN 等于没有挑选, 所以 KL 比连续上界小. 回答空间越大, 单条回答概率越低, $p_<$ 越接近 $p_\le$, 两者的差距越小. 语言模型的回答空间极大, 实际中通常按连续情形估计.
 
-![左栏解码 BoN 采 N 选 1;右栏把 BoN 分布蒸馏进策略后推理只采 1](./images/fig-bond-distill-bon.png)
+## 3. 对应的 RLHF 奖励
 
-> 图 1:左栏是解码期 Best-of-$N$:从 $\pi_{\mathrm{ref}}$ 采 $N$ 条,冻结 RM 打分,$\arg\max$ 留下 $y^{\star}$,每次查询付 $N$ 次采样.右栏是 BOND:先把 $\pi_{\mathrm{ref}}$ 重加权成 $\pi_{\mathrm{BoN}}$,再让 $\pi$ 去匹配这个分布并更新权重,推理只采 1 条.两栏各自从上到下,中间没有箭头.
-
-**图 1 解析**
-
-- 左栏六步都停在解码:没有反传,没有「更新权重」框.$N-1$ 条低分样本参与了比较,不改任何参数.
-- 右栏在「distill / update weights」那里改 $\pi$.$\pi_{\mathrm{BoN}}$ 是目标分布,不是再采 $N$ 条给用户看.
-- 两栏都从 prompt $x$ 出发,但结束条件不同:左边结束于 $y^{\star}$(付 $N$),右边结束于采 1.
-- 中间虚线只分栏,不是数据流.不要读成「先解码 BoN 再蒸馏」的流水线.
-
-和 [07 Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md) 的分界就在右栏那一步.那边可以永远停在左栏,用来量过优化.这边必须走进右栏.
-
-## 3. 对应到一条特殊的 RLHF 奖励
-
-标准 KL 正则 RLHF 的最优策略长这样:
+式 (1) 的最优解是
 
 $$
 \pi_{\mathrm{RL}}(y)\propto\pi_{\mathrm{ref}}(y)\exp\bigl(r(y)/\beta_{\mathrm{RL}}\bigr).
+\tag{5}
+$$
+
+把式 (4) 写成同样的形式, BoN 分布等于用下面的奖励和 $\beta_{\mathrm{BOND}}=1/(N-1)$ 解式 (1):
+
+$$
+r_{\mathrm{BOND}}(y)=\underbrace{\log p_{\le}(y)}_{(A)}+\underbrace{\frac{1}{N-1}\log\sum_{i=1}^{N}\Bigl[\frac{p_{<}(y)}{p_{\le}(y)}\Bigr]^{i-1}}_{(B)}.
 \tag{6}
 $$
 
-把式 (4) 对上式 (6),BoN 等价于用下面这条奖励,以及 $\beta_{\texttt{BOND}}=1/(N-1)$ 去解式 (1):
+推导只需取对数. 由式 (4),
 
 $$
-r_{\texttt{BOND}}(y)=\underbrace{\log p_{\le}(y)}_{\texttt{(A)}}+\underbrace{\frac{1}{N-1}\log\sum_{i=1}^{N}\Bigl[\frac{p_{<}(y)}{p_{\le}(y)}\Bigr]^{i-1}}_{\texttt{(B)}}.
-\tag{7}
+\log\pi_{\mathrm{BoN}}(y)=\log\pi_{\mathrm{ref}}(y)+(N-1)\Bigl[\log p_\le(y)+\frac{1}{N-1}\log(B)\Bigr]=\log\pi_{\mathrm{ref}}(y)+\frac{r_{\mathrm{BOND}}(y)}{1/(N-1)}.
 $$
 
-(B) 对所有 $y$ 落在 $\bigl[0,\tfrac{\log N}{N-1}\bigr]$.(A) 落在 $(-\infty,0]$.两件事实跟着出来.
+与式 (5) 对照, 指数里的奖励是 $r_{\mathrm{BOND}}$, 温度是 $1/(N-1)$. 式 (4) 本身已经归一化, 所以这里的配分函数等于 $1$, 后面求反向 KL 梯度时用得上.
 
-$N$ 本身就是正则强度.$N$ 越大,$\beta_{\texttt{BOND}}$ 越小,策略离 $\pi_{\mathrm{ref}}$ 可以更远.这和式 (1) 里拧 $\beta_{\mathrm{RL}}$ 是同一类旋钮,只是 BoN 把旋钮焊在采样次数上.选太大的 $N$,过优化会从这条旋钮里钻出来;选太小,BoN 分布几乎还是 $\pi_{\mathrm{ref}}$.后面的迭代和小 $n$,就是为了不在训练开始时把这个 $N$ 钉死.
+(A) 的取值在 $(-\infty,0]$, (B) 在 $[0,\log N/(N-1)]$. 上一节的例子 $N=2$, $\beta_{\mathrm{BOND}}=1$, 三个回答的 $r_{\mathrm{BOND}}$ 分别是 $\log0.5\approx-0.693$, $\log0.8+\log1.625\approx0.262$, $\log1.8\approx0.588$, 代入式 (5) 正好得到 $\pi_{\mathrm{BoN}}$.
 
-$r_{\texttt{BOND}}$ 优化的是对数奖励分位数:这条回复比参考分布里随机一条更好的对数似然.对数是凹的,它对「别出太差的」比「再挤一点高分」更敏感.它只看排序,对 $r(\cdot)$ 的单调变换不变.HTML §3.3 猜想这两点让它比直接拧标量奖励更不容易被黑客.这是猜想,主实验没有单独量「抗黑客」.
+论文从式 (6) 读出两点.
 
-## 4. 前向 KL 是模仿,反向 KL 是分位数优势
+第一, $N$ 决定 KL 正则强度. $N=4$ 时 $\beta_{\mathrm{BOND}}=1/3$, $N=8$ 时 $1/7$, $N=16$ 时 $1/15$. $N$ 越大, 策略允许离 $\pi_{\mathrm{ref}}$ 越远. 用连续公式算, 这三个 $N$ 对应的 BoN 分布离 $\pi_{\mathrm{ref}}$ 分别约 $0.64$, $1.20$, $1.84$ nat. KL 只随 $\log N$ 增长, $N$ 翻一倍, KL 增加不到 $0.7$ nat. 所以要离 $\pi_{\mathrm{ref}}$ 走得更远, $N$ 必须按指数增长, 这正是第 5 节迭代的动机.
 
-分位数 $p_{\le}(y)$ 不知道.最笨也够用的办法是 Monte-Carlo:从 $\pi_{\mathrm{ref}}$ 再采 $k$ 条,
+第二, 忽略 (B), BoN 在最大化期望对数分位数 $\mathbb{E}[\log p_\le(y)]$. 对数是凹函数, 把分位数从 $0.1$ 提到 $0.2$ 带来的增益 ($\log2\approx0.69$) 远大于从 $0.8$ 提到 $0.9$ ($\approx0.12$), 所以避开差回答比挤出更高分更重要. 分位数只依赖排序, 对奖励做任意单调变换, $r_{\mathrm{BOND}}$ 不变. 式 (5) 的 RLHF 解没有这个性质: 把 $r$ 换成 $2r$, 等于把 $\beta_{\mathrm{RL}}$ 减半, 最优策略随之改变; 换成 $e^r$, 高分回答之间的差距被拉大, 解的形状也变. 用 BoN 时, 奖励模型输出的尺度和校准都不影响结果, 只有排序起作用. 论文据此猜想这种奖励更不容易被黑客利用, 主实验没有单独检验这一点.
+
+## 4. 估计分位数, 选择散度
+
+### 4.1 三个困难
+
+直接优化式 (2) 有三个困难 (论文第 4 节): 分位数 $p_\le$ 未知; $\pi_{\mathrm{BoN}}$ 难以直接采样; 散度的选择会改变解的性质.
+
+分位数用 Monte-Carlo 估计. 对每个 prompt 从 $\pi_{\mathrm{ref}}$ 另采 $k$ 条回答:
 
 $$
 \hat{p}_{\le}(y)=\frac{1}{k}\sum_{i=1}^{k}\mathbb{I}\{r(y_i)\le r(y)\}.
+\tag{7}
+$$
+
+附录 B.1 还试了学一个分位数模型: 以 prompt 和回答为输入, 用二元交叉熵 (附录式 (25)) 预测「参考样本是否不比它好」, 每个 prompt 只需一条参考样本. Figure 9 显示它与 MC 估计结果相当. 两种做法的成本结构不同: MC 每个 prompt 要多生成 $k$ 条参考回答再逐条打分; 分位数模型把这部分成本换成训练和调用一个额外模型, 每个 prompt 只需一条参考样本当训练标签.
+
+### 4.2 Jeffreys 散度
+
+论文用 Jeffreys 散度的加权形式:
+
+$$
+J^{\beta}_{\mathrm{effreys}}(p\Vert q)=(1-\beta)\cdot\mathrm{KL}(q\Vert p)+\beta\cdot\mathrm{KL}(p\Vert q),\qquad\beta\in[0,1].
 \tag{8}
 $$
 
-XSum 实验训练用 $k=16$,评估每 500 步用 $k=32$ 去估策略和 $\pi_{\mathrm{BoN}}$ 之间的前向,反向 KL.附录 B.1 试过学一个分位数模型,主文仍走 MC.
-
-散度怎么选,HTML 用的是 Jeffreys 的加权形式,符号是 $\beta$,不是 $\alpha$:
+取 $p=\pi$, $q=\pi_{\mathrm{BoN}}$. 第一项是前向 KL, 期望在 $\pi_{\mathrm{BoN}}$ 上:
 
 $$
-J_{\mathrm{effreys}}^{\beta}(p\Vert q):=(1-\beta)\,\underbrace{\mathrm{KL}(q\Vert p)}_{\text{forward KL}}+\beta\,\underbrace{\mathrm{KL}(p\Vert q)}_{\text{backward KL}}.
+\nabla_\pi\mathrm{KL}(\pi_{\mathrm{BoN}}\Vert\pi)=-\mathbb{E}_{y\sim\pi_{\mathrm{BoN}}}\bigl[\nabla_\pi\log\pi(y)\bigr].
 \tag{9}
 $$
 
-$\beta\in[0,1]$.BOND 要最小化 $J_{\mathrm{effreys}}^{\beta}(\pi\Vert\pi_{\mathrm{BoN}})$.拆开写:
+实现上就是跑一次 BoN, 对选出的回答做 SFT. RAFT 和 Llama 2 在 BoN 样本上做 SFT, 用的就是这一项. 前向 KL 倾向于覆盖 $\pi_{\mathrm{BoN}}$ 的所有高概率区域 (mode-covering).
 
-前向 $\mathrm{KL}(\pi_{\mathrm{BoN}}\Vert\pi)$.期望在 $\pi_{\mathrm{BoN}}$ 上.实现就是真去跑一遍 BoN(从 $\pi_{\mathrm{ref}}$ 采 $N$ 条,留最好的),再对这条样本做 SFT:
+第二项是反向 KL, 期望在 $\pi$ 自己的样本上. 附录 A.3 证明它的梯度是一个策略梯度:
 
 $$
-\nabla_{\pi}\mathrm{KL}(\pi_{\mathrm{BoN}}\Vert\pi)=-\mathbb{E}_{y\sim\pi_{\mathrm{BoN}}}\nabla\log\pi(y).
+\nabla_\pi\mathrm{KL}(\pi\Vert\pi_{\mathrm{BoN}})=-(N-1)\,\mathbb{E}_{y\sim\pi}\Bigl[\nabla_\pi\log\pi(y)\Bigl(r_{\mathrm{BOND}}(y)-\beta_{\mathrm{BOND}}\log\frac{\pi(y)}{\pi_{\mathrm{ref}}(y)}\Bigr)\Bigr].
 \tag{10}
 $$
 
-这就是模仿.$\pi_{\mathrm{BoN}}$ 觉得可能的回复,$\pi$ 都得盖住.mode-covering.RAFT 的「只对 $\arg\max$ 做交叉熵」走的是这一格:董等和 Llama 2 都写过「在 BoN 数据上 SFT」.BOND 不把故事停在这里.
+括号里是带 KL 惩罚的 $r_{\mathrm{BOND}}$, 与式 (1) 的策略梯度形式一致, 差一个常数 $N-1$.
 
-反向 $\mathrm{KL}(\pi\Vert\pi_{\mathrm{BoN}})$.期望在 $\pi$ 自己的样本上.HTML 附录 A.3 证明,它的梯度就是带 $r_{\texttt{BOND}}$ 和 $\beta_{\texttt{BOND}}$ 的策略梯度,差一个常数倍 $(N-1)$.实现上他们丢掉式 (7) 里的碰撞修正 (B),用 $\hat{p}_{\le}(y)$ 代替 $r_{\texttt{BOND}}$,再用 batch 里其他回复的平均回报当 baseline.这是 mode-seeking:$\pi$ 被赶到 $\pi_{\mathrm{BoN}}$ 认为高概率的那些峰上.奖励尺度不进这条优势,进的是分位数.
-
-$\beta=0$ 只做前向,分布容易铺太开.$\beta=1$ 只做反向,容易塌熵,塌到少数模式.Jeffreys 把两头加起来.实验取 $\beta=0.5$.
-
-Figure 2 的设定是 XSum 摘要,$\pi_{\mathrm{ref}}$ 是 T5 SFT,奖励是 T5 NLI RM(Roit 等,2023).$N=8$.$\beta\in\{0,0.5,1\}$.训练每条 prompt 用 16 条 MC 估分位数;评估每 500 步用 32 条 MC 估策略和 $\pi_{\mathrm{BoN}}$ 之间的前向,反向 KL.左图反向 KL,中图前向 KL,右图是评估 batch 上的平均奖励对数分位数.$\beta=0.5$ 在左右两张 KL 图上都往下走;分位数涨幅接近 $\beta=1$,把只做前向的 $\beta=0$ 甩在后面.它不是把两条 KL 曲线画成重合,是两边都比单用一头更可控.附录 B.2 对 $N=4$ 和 $N=16$ 画了同样三张图,方向一致.这里不手绘那些曲线.
-
-## 5. 一次蒸馏不够,就迭代地蒸小 $n$
-
-$N$ 不好选.太大,过优化会来(还是 Gao 等那条标度);$\pi_{\mathrm{BoN}}\propto p_{\le}^{N-1}$,分位数一估偏,$N$ 会把误差放大;前向 KL 还要真从 $\pi_{\mathrm{BoN}}$ 采样,$N$ 大就采不起.
-
-迭代 BOND 靠一条组合律:对一个分布做 Best-of-$N$,再对结果做 Best-of-$N$,等于对原分布做 Best-of-$N^{M}$(HTML 式 (16) 的 informal 写法).于是可以钉死一个小 $n$,比如 $n=2$,引入锚点策略 $\pi_{\mathrm{anchor}}$,初始化成 $\pi_{\mathrm{ref}}$.每一步蒸的是「当前锚点的 Best-of-$n$」.蒸一段时间,把锚点换成当前 $\pi$.$N$ 不必事先钉死,样本复杂度按小 $n$ 走.
-
-Figure 4 仍在 XSum 上,目标钉成 $J_{\mathrm{effreys}}^{0.5}$.迭代组 $n\in\{2,4\}$,锚点每 1000 步硬更新.非迭代对照 $N\in\{4,8,16\}$.非迭代的奖励和对数分位数会早早饱和,$N$ 越小饱和越早;迭代组继续涨.奖励–KL 前沿和一次到位的大 $N$ 差不多,但每步只用小 $n$,离 $\pi_{\mathrm{ref}}$ 是慢慢走出去的.
-
-这还不是可落地的账单.XSum 消融里估散度用了 16 条 MC.自回归采样才是在线 RLHF 的瓶颈.HTML §5 把「把每步采样压到最少」写成设计目标:每条 prompt 压到 1 条策略样本加 2 条锚点.少样本换来的是更噪的分位数,所以下一节不再用 $\log\hat{p}_{\le}$,改成校准过的二值奖励.
-
-## 6. J-BOND:每 prompt 1 条策略 + 2 条锚点
-
-J-BOND 是迭代 BOND 的可跑实现:$n=2$,散度用 Jeffreys.名字里的 J 就是这个.每条 prompt 只生成 1 条策略样本 $y\sim\pi_{t}$,以及 2 条锚点样本 $y'_1,y'_2\sim\pi_{\mathrm{anchor}}^{t}$.
-
-前向 KL 按 §4 的 SFT 来:两条锚点里奖励更高的那条 $y'_{\mathrm{Bo2}}=\arg\max r(y')$,对它做
+证明的骨架是把第 3 节的对数式代进反向 KL:
 
 $$
-G_{\mathrm{FW}}(x,\pi_t)=-\nabla_{\pi_t}\log\pi_t(x,y'_{\mathrm{Bo2}}).
+\mathrm{KL}(\pi\Vert\pi_{\mathrm{BoN}})=\mathbb{E}_{y\sim\pi}\Bigl[\log\frac{\pi(y)}{\pi_{\mathrm{ref}}(y)}-(N-1)\,r_{\mathrm{BOND}}(y)\Bigr].
 $$
 
-反向 KL 不再用 $\log\hat{p}_{\le}$.两条锚点估分位数太噪.HTML 正文式 (17) 改成一条校准过的二值奖励:
+配分函数为 $1$, 没有额外常数. 对 $\pi$ 求梯度时用 $\mathbb{E}_\pi[\nabla\log\pi]=0$ 消掉 $\log\pi$ 自身求导带出的那一项, 剩下 $\mathbb{E}_\pi[\nabla\log\pi(y)(\log\frac{\pi}{\pi_{\mathrm{ref}}}-(N-1)r_{\mathrm{BOND}})]$, 提出 $-(N-1)$ 就是式 (10). $r_{\mathrm{BOND}}$ 依赖 $\pi_{\mathrm{ref}}$ 而不依赖 $\pi$, 求导时当常数. 反向 KL 倾向于集中到 $\pi_{\mathrm{BoN}}$ 的峰上 (mode-seeking). 实现时有三处简化: 用式 (7) 的估计代替真实分位数; 丢掉 (B) 项; 用 batch 内其他样本的平均回报作 baseline 降方差.
+
+丢掉 (B) 的代价很小. 连续情形下 $p_<=p_\le$, (B) 恒等于 $\log N/(N-1)$, 是一个常数, 对所有回答加同一个常数不改变策略梯度的期望 (减 baseline 后完全抵消). 离散情形下 (B) 只在单条回答概率较大时偏离这个常数, 语言模型里这种情况少见. $N=8$ 时 (B) 的上界是 $\log8/7\approx0.297$. baseline 取其他样本的回报, 与当前样本独立, 所以不引入偏差.
+
+$\beta=0$ 只有前向, $\beta=1$ 只有反向. 两者的偏向相反, Jeffreys 用 $\beta$ 在中间取折中.
+
+策略族表达不了 $\pi_{\mathrm{BoN}}$ 时, 两种 KL 的差别才显出来. 沿用第 2 节的三个回答, 设策略族只有一个参数 $q$: $\pi_q(y_3)=q$, 其余 $1-q$ 按参考策略的比例 $0.625:0.375$ 分给 $y_1,y_2$. $\pi_{\mathrm{BoN}}$ 在 $y_1,y_2$ 上的比例是 $0.25:0.39$, 这个族拟合不了. 两种 KL 都可以拆成「$y_3$ 与其余两条之间的二元 KL」加「其余两条内部的 KL」:
+
+- 前向 KL 的内部项按 $\pi_{\mathrm{BoN}}$ 的质量 $0.64$ 加权, 与 $q$ 无关, 最优解是 $q=0.36$, 与 $\pi_{\mathrm{BoN}}(y_3)$ 相等.
+- 反向 KL 的内部项约 $0.112$ nat, 按策略自己的质量 $1-q$ 加权. 对 $q$ 求导得 $\log\frac{q}{1-q}=\log\frac{0.36}{0.64}+0.112$, 解出 $q\approx0.386$.
+
+反向 KL 发现 $y_1,y_2$ 一侧拟合不好, 就把概率挪向能拟合的 $y_3$, 这是 mode-seeking 的具体表现; 前向 KL 只要求总质量对齐. Jeffreys 取 $\beta=0.5$ 时, 解落在两者之间.
+
+### 4.3 XSum 实验
+
+设定: XSum 摘要任务, $\pi_{\mathrm{ref}}$ 是 T5 的 SFT 模型, 奖励是 Roit 等 (2023) 的 T5 NLI 奖励模型. $\beta\in\{0,0.5,1\}$. 训练时每个 prompt 用 16 条 MC 样本估分位数; 每 500 步评估一次, 用 32 条 MC 样本估策略与 $\pi_{\mathrm{BoN}}$ 之间的前向和反向 KL. 正文 Figure 2 用 $N=8$, 附录 B.2 的 Figure 10 给出 $N=4$ 和 $N=16$.
+
+按这个设定, 每个 prompt 的采样量可以粗算. 前向项要一条 BoN 样本, 即从 $\pi_{\mathrm{ref}}$ 采 $8$ 条; 反向项要一条策略样本, 外加 $16$ 条参考样本估它的分位数. 合计约 $25$ 次生成, 这是第 6 节要压缩的对象.
+
+结果: $\beta=0.5$ 让两种 KL 都下降; 它的平均对数分位数接近 $\beta=1$, 明显高于只用前向的 $\beta=0$. 只用一种 KL 时, 另一种往往降不下来.
+
+## 5. 迭代 BOND
+
+### 5.1 为什么不一次蒸大 N
+
+$N$ 的选择有三重约束 (论文第 5 节). 第一, $N$ 决定正则强度, 第 3 节已算过. 第二, $\pi_{\mathrm{BoN}}\propto\pi_{\mathrm{ref}}\,p_\le^{N-1}$, 分位数的估计误差会被 $N-1$ 次方放大. 第三, 前向 KL 要从 $\pi_{\mathrm{BoN}}$ 采样, 每条样本要生成 $N$ 条, $N$ 越大成本越高.
+
+第二点可以量化. 分位数相对误差 $\delta p/p$ 传到 $\pi_{\mathrm{BoN}}$ 上大约放大 $N-1$ 倍. 设某条回答真实分位数 $0.9$, 用 $k=16$ 条样本估计, 标准误约 $\sqrt{0.9\times0.1/16}\approx0.075$. 若估成 $0.95$, $N=16$ 时权重偏大 $(0.95/0.9)^{15}\approx2.25$ 倍; 若估成 $0.85$, 权重偏小到 $(0.85/0.9)^{15}\approx0.42$ 倍. 同样的误差在 $N=2$ 时只是 $1.06$ 倍和 $0.94$ 倍.
+
+### 5.2 组合律
+
+BoN 有一条组合性质 (论文式 (16) 的非正式表述): 对 Best-of-$N$ 分布再做一次 Best-of-$N$, 等于对原分布做 Best-of-$N^2$. 推广到 $M$ 次是 Best-of-$N^M$.
+
+用累积分布函数看最直接. 设奖励在某分布下的 CDF 是 $F$, $N$ 个独立样本的最大值不超过 $t$, 当且仅当每个都不超过 $t$, 所以 Best-of-$N$ 的 CDF 是 $F^N$. 对它再做 Best-of-$N$, CDF 变成 $(F^N)^N=F^{N^2}$, 与 Best-of-$N^2$ 相同.
+
+按连续公式, Best-of-$2^M$ 相对 $\pi_{\mathrm{ref}}$ 的 KL 是 $M\log2-(2^M-1)/2^M$:
+
+| $M$ | 等效 $N$ | KL (nat) |
+|---|---|---|
+| $1$ | $2$ | $0.193$ |
+| $2$ | $4$ | $0.636$ |
+| $3$ | $8$ | $1.204$ |
+| $4$ | $16$ | $1.835$ |
+
+$M$ 稍大以后, 每多迭代一轮, KL 增加接近 $\log2\approx0.69$ nat. 锚点按固定节奏更新时, KL 大致随步数线性增长, 可以对照第 7.4 节 Figure 7 中 J-BOND 的 KL 曲线形状.
+
+于是可以固定一个小的 $n$, 引入锚点策略 $\pi_{\mathrm{anchor}}$, 初始化为 $\pi_{\mathrm{ref}}$. 每一轮让 $\pi$ 蒸馏 $\mathrm{Best\text{-}of\text{-}}n(\pi_{\mathrm{anchor}})$, 一段时间后把锚点换成当前的 $\pi$ (Algorithm 1). $M$ 轮后, 策略近似 $\mathrm{Best\text{-}of\text{-}}n^M(\pi_{\mathrm{ref}})$. $n=2$ 时, 10 轮对应 $2^{10}=1024$. 每轮只需要 $n$ 条锚点样本, 总的 $N$ 也不必事先确定, 训练多久就走多远. 直接蒸馏 Best-of-1024, 前向项的每条样本都要生成 $1024$ 条回答, 分位数误差还要放大 $1023$ 次方; 迭代版每个 prompt 只生成两条锚点回答, 误差放大只有 $1$ 次方. 代价是要多轮训练, 而且每轮的蒸馏误差会累积.
+
+### 5.3 Figure 4
+
+设定仍是 XSum, 目标 $J^{0.5}_{\mathrm{effreys}}$. 迭代组 $n\in\{2,4\}$, 每 1000 步更新一次锚点; 对照是非迭代的 $N\in\{4,8,16\}$. 非迭代各组的奖励和对数分位数会饱和, 饱和高度随 $N$ 增大; 迭代组持续上升, 奖励与 KL 的权衡和非迭代组相同. 迭代 BOND 可以看成一条逐步远离 $\pi_{\mathrm{ref}}$ 的路径, 停在哪里由训练步数决定.
+
+组合律成立的前提是每一轮都蒸馏到位. 实际训练中, 锚点每 1000 步更新一次, 这时 $\pi$ 只是近似 $\mathrm{Best\text{-}of\text{-}}n(\pi_{\mathrm{anchor}})$, 误差会随迭代累积. 所以 $k$ 次锚点更新后的策略只能粗略看作 Best-of-$n^k$, 实际走到哪里要看 Figure 4 测出来的 KL 和分位数.
+
+## 6. J-BOND
+
+### 6.1 采样预算
+
+在线 RLHF 的瓶颈是自回归采样. 第 4 节的 XSum 实验每个 prompt 用 16 条 MC 样本, 规模一大就负担不起. J-BOND (J 指 Jeffreys) 把采样压到每个 prompt 3 条: 1 条来自当前策略 $y\sim\pi_t$, 2 条来自锚点 $y'_1,y'_2\sim\pi_{\mathrm{anchor}}^t$. 迭代用 $n=2$ (Algorithm 2).
+
+### 6.2 前向项
+
+两条锚点样本中奖励较高的一条 $y'_{\mathrm{Bo2}}$ 就是锚点的 Best-of-2 样本, 对它做 SFT:
 
 $$
-r_{\texttt{J-BOND}}(y)=\begin{cases}
--\log(16) & \text{if }r(y)<\min\{r(y'_1),r(y'_2)\}\\
-0 & \text{otherwise.}
-\end{cases}
+G_{\mathrm{FW}}=-\nabla_{\pi_t}\log\pi_t(y'_{\mathrm{Bo2}}).
 \tag{11}
 $$
 
-只在策略样本比两条锚点都差时给负奖励,否则为 0.$-\log 16$ 不是拍的.附录 A.4 证明:若 $p_{\le}(y)=0.5$(相对锚点分布正好是中位数),两条锚点下 $r_{\texttt{J-BOND}}$ 的期望等于理想值 $\log p_{\le}(y)=\log\tfrac{1}{2}$.令阈值情形的取值是 $\alpha$,期望是 $\alpha(1-p_{\le})^2$;代入 $p_{\le}=0.5$ 得到 $\alpha\cdot\tfrac{1}{4}=\log\tfrac{1}{2}$,即 $\alpha=-\log 16$.设计意图是学对数分位数的凹形:中间档再给正奖励,实验里没看到好处.HTML Figure 8 把这条期望画成 $p_{\le}$ 的函数,和 $\log p_{\le}$ 只在中位数处相交;两端是分开的.两条锚点撑不住完整分位数曲线,只能在中位数附近对齐.
+这一项不需要估计分位数: 两条锚点样本取较优者, 得到的正好是 $\mathrm{Best\text{-}of\text{-}2}(\pi^t_{\mathrm{anchor}})$ 的一个精确样本, 只要奖励模型能比较两条回答即可.
 
-正文式 (17) 用严格小于 $<$.附录 A.4 把同一条奖励写成 $\le$.细差以正文为准.
+### 6.3 反向项与 $-\log16$
 
-回报还要减一项对着锚点的即时 KL:
-
-$$
-R(x,y)=r_{\texttt{J-BOND}}(x,y)-\bigl(\log\pi_t(x,y)-\log\pi_{\mathrm{anchor}}^{t}(x,y)\bigr).
-$$
-
-可选 baseline $B$ 取 batch 里其他回复的平均回报.反向梯度是 $G_{\mathrm{BW}}=-\nabla\log\pi_t\cdot(R-B)$.还可以再加一项 $\gamma\cdot\mathrm{KL}(\pi_t\Vert\pi_{\mathrm{anchor}}^{t})$.HTML 脚注写明:反向 KL 里已经有正则,这项是额外的,用来把更新看成带约束的算子:
+两条样本估分位数太粗, 直接用 $\log\hat p_\le$ 的噪声很大. J-BOND 换成一个二值奖励 (论文式 (17)):
 
 $$
-\pi_{t+1}=\arg\min_{\pi}J_{\mathrm{effreys}}^{\beta}\bigl(\pi\Vert\mathrm{Best\text{-}of\text{-}2}(\pi_{\mathrm{anchor}}^{t})\bigr)+\gamma\cdot\mathrm{KL}(\pi_t\Vert\pi_{\mathrm{anchor}}^{t}).
+r_{\mathrm{J\text{-}BOND}}(y)=\begin{cases}-\log16, & r(y)<\min\{r(y'_1),r(y'_2)\},\\[2pt] 0, & \text{其他}.\end{cases}
 \tag{12}
 $$
 
-总更新是
+只在策略样本比两条锚点都差时惩罚. 目的是模仿 $\log p_\le$ 的凹形: 差回答受罚重, 中等和好回答一样对待. 论文提到给中间情况额外奖励没有带来提升.
+
+$-\log16$ 的来历在附录 A.4. 设惩罚值为 $\alpha$, 策略样本比两条锚点都差的概率是 $(1-p_\le)^2$, 期望奖励是 $\alpha(1-p_\le)^2$. 要求它在中位数 $p_\le=0.5$ 处等于理想值 $\log p_\le$:
 
 $$
-\mathbb{E}_{x\sim\mathcal{D}_t}\bigl[(1-\beta)G_{\mathrm{FW}}+\beta\,G_{\mathrm{BW}}+\gamma\,G_{\mathrm{Reg}}\bigr].
-$$
-
-$\gamma=0$ 出现在 Figure 5 的 EMA 对照里.Gemma 主对照 Figure 7 没有把 $\gamma$ 写成必选项;Figure 6 才扫 $\gamma\in\{0,0.5,1,2\}$.
-
-锚点不用 1000 步硬切.每步做权重的指数滑动平均:
-
-$$
-\theta_{\mathrm{anchor}}^{t+1}\leftarrow(1-\eta)\,\theta_{\mathrm{anchor}}^{t}+\eta\,\theta_{t+1}.
+\alpha\cdot(1-0.5)^2=\log0.5\ \Rightarrow\ \alpha=4\log0.5=-\log16\approx-2.773.
 \tag{13}
 $$
 
-和 [10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md)(Ramé 等,[arXiv:2406.16768](https://arxiv.org/abs/2406.16768))是同一类操作:锚点在权重空间里跟着走,方差更小.WARP 还有球面插值和往初始化回插两步,J-BOND 只用了 EMA 这一截.
+Figure 8 把期望奖励与 $\log p_\le$ 画在一起. 几个点的数值:
 
-Figure 5 在 Gemma 7B,$\gamma=0$ 上把 $\eta=0.02$ 的 EMA 和每 50 步硬更新对照.左图平均奖励几乎重合,$\eta=0.02$ 并没有让奖励涨得更慢.中图 KL:EMA 明显更低.右图是奖励对 KL.论文把这读成稳定性:同样的奖励剖面,KL 更省.不是读成「EMA 能抬终局奖励」.
+| $p_\le$ | $\alpha(1-p_\le)^2$ | $\log p_\le$ |
+|---|---|---|
+| $0.1$ | $-2.246$ | $-2.303$ |
+| $0.25$ | $-1.560$ | $-1.386$ |
+| $0.5$ | $-0.693$ | $-0.693$ |
+| $0.9$ | $-0.028$ | $-0.105$ |
 
-![Jeffreys 把前向 SFT 与反向 J-BOND 奖励合在一起,锚点用 EMA 跟踪策略](./images/fig-jbond-jeffreys-ema.png)
+两条曲线在 $p_\le=0.5$ 和 $p_\le=1$ 处相等, 低分位数一侧也比较接近; 高分位数一侧二值奖励的惩罚偏轻.
 
-> 图 2:一条 prompt 分出两路.策略采 1 条进反向支路;锚点采 2 条,较好者进前向 SFT,两条的最小奖励虚线送进 $r_{\texttt{J-BOND}}$.Jeffreys $\beta=0.5$ 混合两条梯度后更新 $\pi$.虚线 EMA $\eta=0.02$ 把策略权重复制进锚点,单向.
+套到第 2 节的三个回答上, 锚点取 $\pi_{\mathrm{ref}}$. 两条锚点都严格更好的概率是 $(1-p_\le)^2$, 三个回答依次是 $0.25$, $0.04$, $0$, 期望奖励是 $-0.693$, $-0.111$, $0$; 对应的 $\log p_\le$ 是 $-0.693$, $-0.223$, $0$. 排序一致, $y_1$ 恰好处在中位数, 两者相等; $y_2$ 的惩罚只有理想值的一半左右.
+
+$R(y)$ 里对数比的系数是 $1$. 这与第 3 节一致: $n=2$ 时 $\beta_{\mathrm{BOND}}=1/(n-1)=1$, 锚点在这里取代了 $\pi_{\mathrm{ref}}$ 的位置.
+
+回报再减去对锚点的对数比:
+
+$$
+R(y)=r_{\mathrm{J\text{-}BOND}}(y)-\bigl(\log\pi_t(y)-\log\pi_{\mathrm{anchor}}^t(y)\bigr),\qquad
+G_{\mathrm{BW}}=-\nabla_{\pi_t}\log\pi_t(y)\,(R(y)-B).
+\tag{14}
+$$
+
+$B$ 是可选的 baseline. 还可以加一项额外正则 $G_{\mathrm{Reg}}=\nabla\mathrm{KL}(\pi_t\Vert\pi^t_{\mathrm{anchor}})$. 总更新是
+
+$$
+\mathbb{E}_x\bigl[(1-\beta)\,G_{\mathrm{FW}}+\beta\,G_{\mathrm{BW}}+\gamma\,G_{\mathrm{Reg}}\bigr].
+\tag{15}
+$$
+
+加上 $\gamma$ 后, 每一步可以写成带约束的形式 (论文式 (19)):
+
+$$
+\pi_{t+1}=\operatorname*{argmin}_{\pi}\ J^{\beta}_{\mathrm{effreys}}\bigl(\pi\Vert\mathrm{Best\text{-}of\text{-}2}(\pi^t_{\mathrm{anchor}})\bigr)+\gamma\cdot\mathrm{KL}(\pi\Vert\pi^t_{\mathrm{anchor}}).
+\tag{16}
+$$
+
+论文脚注指出, 反向 KL 那一项本身已含 KL 正则, $\gamma$ 是额外加上的.
+
+### 6.4 EMA 锚点
+
+锚点不再隔若干步整体替换, 而是每步做权重的指数滑动平均 (论文式 (18)):
+
+$$
+\theta^{t+1}_{\mathrm{anchor}}\leftarrow(1-\eta)\,\theta^t_{\mathrm{anchor}}+\eta\,\theta_{t+1}.
+\tag{17}
+$$
+
+论文说明这与 [10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md) 的观察一致: 权重 EMA 能降低更新的方差. $\eta=0.02$ 大致对应每 50 步更新一次锚点. 展开式 (17), $k$ 步前的策略权重系数是 $\eta(1-\eta)^k$, 平均滞后 $(1-\eta)/\eta=49$ 步, 与「约 50 步」吻合. 两者的区别是 EMA 每步都在动, 锚点不会在某一步突然跳到新位置.
+
+把以上各部分串起来, J-BOND 的一步是:
+
+1. 对 batch 中每个 prompt, 从 $\pi_t$ 采 1 条 $y$, 从 $\pi^t_{\mathrm{anchor}}$ 采 2 条 $y'_1,y'_2$.
+2. 奖励模型给三条打分, 取 $y'_{\mathrm{Bo2}}$, 按式 (12) 得 $r_{\mathrm{J\text{-}BOND}}(y)$.
+3. 算 $\log\pi_t$ 和 $\log\pi^t_{\mathrm{anchor}}$ 在 $y$ 上的值, 得回报 $R(y)$ 和 baseline.
+4. 按式 (15) 合并 $G_{\mathrm{FW}}$, $G_{\mathrm{BW}}$, $G_{\mathrm{Reg}}$, 更新 $\pi_t$.
+5. 按式 (17) 更新锚点权重.
+
+与第 4.3 节约 $25$ 次生成相比, 每个 prompt 降到 $3$ 次.
+
+![Jeffreys 把前向 SFT 与反向 J-BOND 奖励合在一起, 锚点用 EMA 跟踪策略](./images/fig-jbond-jeffreys-ema.png)
+
+> 图 2: 一个 prompt 分两路. 策略采 1 条进入反向支路; 锚点采 2 条, 较好的一条进入前向 SFT, 两条中的最小奖励送进 $r_{\mathrm{J\text{-}BOND}}$. Jeffreys $\beta=0.5$ 合并两路梯度后更新 $\pi$. 虚线表示 EMA ($\eta=0.02$) 把策略权重混入锚点, 方向单一.
 
 **图 2 解析**
 
-- 实线是前向数据:prompt → 采样 → 两条散度 → 混合 → 更新.
-- 紫色框是式 (11):只有 $r(y)$ 低于两条锚点的 $\min$ 才给 $-\log 16$,否则 0.
-- 绿色框是前向 KL:SFT 的对象是两条锚点里较好的那条,不是策略自己的样本.
-- 金色框写 $\beta=0.5$,对应 HTML 的 Jeffreys 符号,不是另起一套 $\alpha$.
-- 底廊虚线从更新框回到锚点,标签是 EMA.不要读成策略和锚点互相反传.
-- 没有 Gemma 基准点,没有假坐标轴.
+- 实线是数据流: prompt, 采样, 两种散度的梯度, 混合, 更新.
+- 紫色框对应式 (12): $r(y)$ 低于两条锚点的最小值时给 $-\log16$, 否则为 $0$.
+- 绿色框对应式 (11): SFT 的对象是锚点的 Best-of-2 样本, 策略自己的样本只进反向支路.
+- 金色框的 $\beta=0.5$ 对应式 (8) 和式 (15) 中的混合系数.
+- 底部虚线从更新框指回锚点, 表示式 (17) 的权重复制, 锚点不接收梯度.
 
-## 7. Gemma 上不必先钉死一个 KL 系数
+## 7. Gemma 实验
 
-Gemma 实验把 2B 和 7B 微调成更好的对话策略.batch 128,Adam,学习率 $3\times 10^{-6}$,warmup 100 步.Jeffreys 取 $\beta=0.5$.对照是式 (1) 的 REINFORCE:每 prompt 2 条策略样本,leave-one-out baseline(Ahmadian 等).正则强度扫 $\beta_{\mathrm{RL}}\in\{0.001,0.01,0.1,1\}$.
+### 7.1 设定
 
-Figure 6 在 Gemma 2B 上拆两个旋钮.$\gamma=0$ 时 $\eta\in\{0.01,0.05,0.1\}$:锚点走得越快,奖励涨得越快.把 $\eta$ 钉在 $0.05$,再扫 $\gamma\in\{0,0.5,1,2\}$:$\gamma$ 越大,策略离 $\pi_{\mathrm{ref}}$ 越慢,奖励–KL 前沿可以更好.这是约束优化的那一层,不是把 $\beta_{\mathrm{RL}}$ 固定.
+策略是 Gemma 2B 和 7B. batch 128, Adam, 学习率 $3\times10^{-6}$, warmup 100 步, Jeffreys 取 $\beta=0.5$.
 
-Figure 7 是 Gemma 7B,$\eta=0.02$ 对上那组 REINFORCE.三张子图要拆开读.左图奖励:J-BOND 持续涨,REINFORCE 的四条 $\beta_{\mathrm{RL}}$ 各自饱和在不同高度.中图 KL:J-BOND 近似线性往上走,REINFORCE 随 $\beta_{\mathrm{RL}}$ 差出一截.右图才是要看的 Pareto.不能拿 $\beta_{\mathrm{RL}}=0.001$ 那条终局奖励单独去和 J-BOND 比「谁分高」,那是在比两个不同的 KL 预算.HTML 的口径是:J-BOND 不必事先承诺某一个正则强度,奖励继续涨,KL 稳定近似线性增加,奖励–KL 前沿好过列出的全部 REINFORCE 对照.图是论文里的训练曲线,这里不临摹坐标,也不伪造 Gemma 基准点.
+### 7.2 Figure 5: EMA 与周期替换
 
-J-BOND 还被用来微调开源权重:Gemma 1.1 的 2B 和 7B,RecurrentGemma 2B 和 9B,CodeGemma 1.1.Gemma 1.1 IT 对 Mistral 7B v0.2 Instruct 的人评在 Gemma 报告 Table 5([arXiv:2403.08295](https://arxiv.org/html/2403.08295) HTML).约 400 条安全题,约 1000 条指令题,平局对半计入胜率.7B:Safety $63.5\%$(区间 $[60.7\%,66.1\%]$;Win/Tie/Loss $51.5\%/23.9\%/24.6\%$),指令跟随 $61.2\%$($[59.3\%,63\%]$;$52.2\%/18.1\%/29.8\%$).2B:Safety $60.1\%$($[57.3\%,62.8\%]$;$48.5\%/23.2\%/28.3\%$),指令跟随 $45\%$($[43.1\%,46.9\%]$;$37.1\%/15.8\%/47.1\%$).这是 Gemma 报告的人评,不是 BOND 文自己的主表;BOND 文只指向这张表.v3 HTML 表前那段散文仍写着 Gemma 7B IT 的 $51.7\%/58\%$,那是附录 Table 9 的 1.0 数字,不要和 Table 5 的 1.1 混读.
+Gemma 7B, $\gamma=0$. 对比 $\eta=0.02$ 的 EMA 锚点与每 50 步整体替换的锚点. 两者的奖励曲线几乎重合, 这符合 $\eta=0.02$ 约等于 50 步的估算; EMA 的 KL 更低. 同样的奖励, 离 $\pi_{\mathrm{ref}}$ 更近. 两种锚点的更新时间尺度都在 50 步左右, 差别主要在更新是逐步平滑的还是每 50 步跳变一次, 论文把 KL 的差距归到 EMA 降低方差的作用上.
 
-## 8. 不是 RAFT,不是解码 BoN,不是在线偏好
+### 7.3 Figure 6: $\eta$ 与 $\gamma$
 
-同一笔「每 prompt 采几条,按 RM 排序」的预算,三件事不要混.
+Gemma 2B. 先固定 $\gamma=0$, 扫 $\eta\in\{0.01,0.05,0.1\}$: $\eta$ 越大, 锚点跟得越紧, 奖励涨得越快. 再固定 $\eta=0.05$, 扫 $\gamma\in\{0,0.5,1,2\}$: $\gamma$ 越大, 策略离开 $\pi_{\mathrm{ref}}$ 越慢, 奖励与 KL 的权衡越好.
 
-解码 BoN 可以不更新.Gao 等要的是 $R(d)$,BoN 只是一条可解析的优化路径.BOND 把 $\pi_{\mathrm{BoN}}$ 蒸馏回权重.推理采 1.
+两个旋钮作用在不同的位置. $\eta$ 决定锚点走多快, 也就决定式 (16) 的目标 $\mathrm{Best\text{-}of\text{-}2}(\pi^t_{\mathrm{anchor}})$ 移动多快; $\gamma$ 限制每一步 $\pi$ 离当前锚点多远. 前者控制整条路径的推进速度, 后者控制每一步沿路径走得多贴. 按这个分工理解: 约束越紧, 策略越贴着迭代 BoN 的路径走, 同样的 KL 能换到更高的奖励, 代价是训练更慢.
 
-RAFT 更新,但只走前向 KL:冠军进交叉熵,其余丢掉.BOND 的 $\beta=0$ 端点看起来像 RAFT,主算法不在那个端点.反向端点是分位数优势,Jeffreys 把两端加起来.迭代加 EMA 锚点,RAFT 没有.
+### 7.4 Figure 7: 与 REINFORCE 对比
 
-Amini 等的 variational BoN([arXiv:2407.06057](https://arxiv.org/abs/2407.06057))也做分布匹配,但只用反向 KL,没有这篇的 Jeffreys,也没有移动锚点.BOND 文把它写成并发,最近的对照.Gui 等的 BonBon 是「最好的做 SFT,最好最差做 DPO」,也不是 Jeffreys.
+Gemma 7B, J-BOND 取 $\eta=0.02$. 对照是式 (1) 的 REINFORCE: 每个 prompt 采 2 条, 用 leave-one-out baseline (Ahmadian 等), $\beta_{\mathrm{RL}}\in\{0.001,0.01,0.1,1\}$. REINFORCE 的表现对 $\beta_{\mathrm{RL}}$ 很敏感, 每个取值停在不同的奖励和 KL 上. 这与式 (5) 相符: 每个 $\beta_{\mathrm{RL}}$ 有自己的最优策略, 训练收敛到那里就不再前进; 想要更高的奖励就得换一个 $\beta_{\mathrm{RL}}$ 从头训练. J-BOND 的锚点在动, 目标分布随之后移, 训练不会停在某个固定的正则解上. J-BOND 不需要事先选一个正则强度, KL 随训练近似线性增长, 奖励与 KL 的权衡优于所有 REINFORCE 对照.
 
-[OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 和 Calandriello 等的在线偏好,是相关工作里的对照文献:当场采样,当场标偏好,再套 DPO/IPO/SLiC.BOND 不走成对偏好损失.[10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md) 是权重平均策略,J-BOND 的 EMA 锚点和它同族,不是同一篇算法.WARM 平均的是奖励模型,更远.
+J-BOND 的采样量是每个 prompt 3 条, REINFORCE 对照是 2 条, 两者在同一数量级. 比较时应看整条奖励–KL 曲线; 单比终点奖励, 等于在比两个不同的 KL 预算.
 
-| | 解码 BoN | RAFT | J-BOND |
-|--|----------|------|--------|
-| 更新策略 | 可以没有 | 只对 $\arg\max$ 做 SFT | 前向 SFT + 反向 $r_{\texttt{J-BOND}}$ |
-| 推理采样 | $N$ | 1 | 1 |
-| 散度 | 无训练损失 | 前向 KL | Jeffreys $\beta=0.5$ |
-| 锚点 | 无 | 无(生成器自己迭代) | EMA $\eta=0.02$ |
+### 7.5 发布模型
 
-[PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) 有 Critic 和 clip.J-BOND 的对照基线是 REINFORCE + 2 sample + leave-one-out,见 [06-RLOO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/06-RLOO-留一法基线/06-RLOO-留一法基线.md) 那条留一法,不是 PPO 四件套.同夹解码 BoN 过优化在 [07-Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md).
+论文提到 J-BOND 用于微调 Gemma 1.1 2B 和 7B, RecurrentGemma 2B 和 9B, 以及 CodeGemma 1.1. 关于效果, BOND 只引用一句: Gemma 1.1 IT 7B 在安全和指令跟随上都胜过 Mistral 7B v0.2 Instruct. 对应的人工评估在 Gemma 技术报告的 Table 5, 约 1000 条指令跟随 prompt, 约 400 条安全 prompt, 平局各算一半, 括号是 95% 置信区间:
 
-## 9. 失效与边界
+| 模型 | 安全 | 指令跟随 |
+|---|---|---|
+| Gemma 1.1 IT 7B | $63.5\%$ $[60.7,66.1]$ | $61.2\%$ $[59.3,63]$ |
+| Gemma 1.1 IT 2B | $60.1\%$ $[57.3,62.8]$ | $45\%$ $[43.1,46.9]$ |
 
-$N$ 太大照样过优化.迭代和小 $n$ 是把步子拆碎,不是把代理 RM 换成金标.Gao 等量过的那条金标掉头,BOND 没有在合成金标设定里复测.
+7B 安全一栏的胜/平/负是 $51.5/23.9/24.6$, 指令跟随是 $52.2/18.1/29.8$; 2B 分别是 $48.5/23.2/28.3$ 和 $37.1/15.8/47.1$. 2B 在指令跟随上低于 $50\%$. 这张表比较的是两个完整的模型, BOND 论文没有给出去掉 J-BOND 的对照, 胜率差不能直接算作 J-BOND 的贡献.
 
-两条锚点估分位数是粗的.式 (11) 只在「比两条都差」时给惩罚,中位数附近才和 $\log p_{\le}$ 对齐.极端高分,极端低分,期望曲线和理想对数分位数是分开的(HTML Figure 8).学一个上下文相关的分位数模型(附录 B.1,交叉熵当二分类)在 XSum 上能走近 MC 的 KL,主文仍用 MC;J-BOND 那 2 条锚点更走不进这条学习器.
+## 8. 与相邻方法的关系
 
-EMA 的 $\eta$ 太快,锚点几乎贴着策略,蒸馏的 Best-of-2 幅度变小;太慢,优化被锁在旧锚点附近.Figure 6 只扫了三档.额外 $\gamma$ 会改善前沿,也会让奖励涨得更慢.
+| 方法 | 更新权重 | 推理采样 | 训练目标 | 锚点 |
+|---|---|---|---|---|
+| 推理期 BoN | 否 | $N$ 条 | 无 | 无 |
+| [RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md) | 是 | 1 条 | 对 BoN 样本做 SFT (前向 KL) | 无 |
+| vBoN (Amini 等) | 是 | 1 条 | 反向 KL | 无 |
+| BOND | 是 | 1 条 | Jeffreys, 固定 $N$ | $\pi_{\mathrm{ref}}$ |
+| J-BOND | 是 | 1 条 | Jeffreys + 二值奖励, $n=2$ 迭代 | EMA |
 
-Gemma 对话实验的 prompt 集,RM 大小,训练步数,HTML §6 没有给一张可复现的超参全表.Figure 7 是定性的 Pareto 形状,不是可以读点的基准表.人评数字在 Gemma 报告 Table 5,不在 BOND 主文.
+论文相关工作部分写明, Amini 等 (2024) 的 variational BoN 用了相同的形式化, 但只用反向 KL. Gui 等 (2024) 的 BonBon 是同期工作. RAFT 和 Llama 2 在 BoN 样本上做 SFT, 对应 $\beta=0$ 的前向端点.
 
-| 现象 | 原因 | 说明 |
-|------|------|------|
-| 把 BOND 写成解码 BoN | 左栏可以不更新 | 右栏才改权重;过优化标度在邻居 07 |
-| 把 BOND 写成 RAFT | $\beta=0$ 端点确实是 SFT | 主算法是 Jeffreys + 反向分位数奖励 |
-| $N$ 一次拉很大 | 分位数误差被 $p_{\le}^{N-1}$ 放大 | 迭代用小 $n$;J-BOND 钉 $n=2$ |
-| 用 $\log\hat{p}_{\le}$ 当 J-BOND 奖励 | 2 条 MC 太噪 | 改成式 (11) 的 $-\log 16$ / $0$ |
-| 把正文 $<$ 和附录 $\le$ 混用 | HTML 两处写法不一致 | 以正文式 (17) 的严格小于为准 |
-| 先钉死 $\beta_{\mathrm{RL}}$ 再和 J-BOND 比终局奖励 | J-BOND 不承诺单一正则 | Figure 7 比的是整条奖励–KL 前沿 |
-| EMA 当双向反传 | 式 (13) 是权重复制 | 图 2 虚线从更新指向锚点,单向 |
+从式 (8) 看, BOND 把两类已有做法放进同一个目标. $\beta=0$ 是「在 BoN 样本上做 SFT」; $\beta=1$ 由式 (10) 可知是奖励取 $r_{\mathrm{BOND}}$, 正则系数取 $1/(N-1)$ 的 KL 正则 RLHF. 中间的 $\beta$ 把两者按比例相加. 这样看, 第 4.3 节 XSum 上的结果可以换一种说法: 两种 KL 同时压低, 而对数分位数和纯 RL 端点持平, 这是「SFT 加 RL」相对单独一种的收益. 纯 SFT 端点的分位数明显落后, 纯 RL 端点的前向 KL 降不下来, 各缺一块. 与常见的「先 SFT 再 RL」相比, 区别在于两部分的目标分布相同, 都是 $\pi_{\mathrm{BoN}}$, 不会互相拉扯.
 
-邻居链:解码 BoN 与 $R(d)$ 在 [07-Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md);只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md);留一法 baseline 在 [06-RLOO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/06-RLOO-留一法基线/06-RLOO-留一法基线.md);在线偏好框架在 [06-OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md);三次权重平均在 [10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md),不是把 J-BOND 的 EMA 当成主算法.
+[07 Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md) 研究推理期 BoN 在代理奖励下的过优化, 策略权重不动. BOND 训练策略去逼近 BoN 分布, 所以也会继承 BoN 对代理奖励的过优化. J-BOND 的反向项是带 baseline 的 REINFORCE 估计, 与 [06-RLOO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/06-RLOO-留一法基线/06-RLOO-留一法基线.md) 的留一法 baseline 同类, 没有 [PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) 的价值网络和 clip.
+
+[OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 和 [08 Online IPO](../08-Online-IPO-在线偏好/08-Online-IPO-在线偏好.md) 也在线采样, 但用成对偏好损失; BOND 只用奖励的排序.
+
+## 9. 失效模式与边界
+
+**过优化仍在.** BOND 的目标是 BoN 分布, BoN 本身在 $N$ 很大时会过优化代理奖励. 迭代 BOND 让 $N$ 随训练增长, 等于把过优化风险推迟到训练后期, 停止时机要另外判断. 论文没有在金标奖励设定下检验这一点.
+
+**二值奖励的偏差.** 式 (12) 只在中位数和 $p_\le=1$ 处与 $\log p_\le$ 一致. 第 6.3 节的表格显示, 高分位数一侧惩罚偏轻, 策略区分「中等」和「好」回答的信号很弱, 这部分信号主要来自前向 SFT 项.
+
+**训练初期惩罚密集.** 刚开始时 $\pi_t$ 与锚点相同, 策略样本的分位数近似服从 $[0,1]$ 上的均匀分布, 两条锚点都更好的概率是 $\mathbb{E}[(1-U)^2]=1/3$. 也就是说约三分之一的样本拿到 $-\log16$, 平均奖励约 $-0.92$. 剩下三分之二奖励都是 $0$, 它们之间的差别要靠前向项和 KL 项区分. 奖励模型给出相同分数时, 式 (12) 的严格小于把平局记为 $0$, 不受惩罚.
+
+**$\eta$ 与 $\gamma$ 的权衡.** $\eta$ 越大, 锚点越贴近当前策略, 奖励涨得快, KL 也走得快; $\gamma$ 越大, 前沿越好, 但奖励涨得慢. Figure 6 只在 2B 上扫了三个 $\eta$ 和四个 $\gamma$.
+
+**复现信息不全.** Gemma 实验的 prompt 集, 奖励模型规模和训练步数, 论文没有给出完整的超参表. Figure 7 是训练曲线, 没有附表格数值.
 
 ## 参考文献
 
-1. Sessa, P. G., Dadashi, R., Hussenot, L., Ferret, J., Vieillard, N., Ramé, A., Shariari, B., Perrin, S., Friesen, A., Cideron, G., Girgin, S., Stanczyk, P., Michi, A., Sinopalnikov, D., Ramos, S., Héliou, A., Severyn, A., Hoffman, M., Momchev, N., & Bachem, O. (2024/2025). [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14622). HTML:[arxiv.org/html/2407.14622](https://arxiv.org/html/2407.14622). *ICLR 2025*. OpenReview:[0tAXMiSufG](https://openreview.net/forum?id=0tAXMiSufG).
-2. Gao, L., Schulman, J., & Hilton, J. (2023). [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760). *ICML*.(解码 BoN 与 $R(d)$;不是本算法)
-3. Dong, H., et al. (2023). [RAFT: Reward Ranked Finetuning](https://arxiv.org/abs/2304.06767). *TMLR*.(前向 KL / 只训 top-1)
-4. Roit, P., et al. (2023). [Factually consistent summarization via RL with textual entailment feedback](https://aclanthology.org/2023.acl-long.353/). *ACL*.(XSum 的 T5 NLI RM)
-5. Ahmadian, A., et al. (2024). [Back to Basics: Revisiting REINFORCE-style Optimization for RLHF](https://arxiv.org/abs/2402.14740).(2 sample + leave-one-out)
-6. Gemma Team. (2024). [Gemma: Open Models Based on Gemini Research and Technology](https://arxiv.org/abs/2403.08295). HTML:[arxiv.org/html/2403.08295](https://arxiv.org/html/2403.08295).(Table 5:Gemma 1.1 IT 7B vs Mistral 7B v0.2 Instruct)
-7. Ramé, A., et al. (2024). [WARP: On the Benefits of Weight Averaged Rewarded Policies](https://arxiv.org/abs/2406.16768).(权重平均策略;EMA 锚点的同族文献)
-8. Guo, S., et al. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792).(OAIF;对照文献,不是本算法)
-9. Calandriello, D., et al. (2024). [Human Alignment of Large Language Models through Online Preference Optimisation](https://arxiv.org/abs/2403.08635).(在线偏好;对照文献)
-10. Amini, A., Vieira, T., Ash, E., & Cotterell, R. (2024). [Variational Best-of-N Alignment](https://arxiv.org/abs/2407.06057).(并发;仅反向 KL)
-11. Stiennon, N., et al. (2020). [Learning to summarize with human feedback](https://arxiv.org/abs/2009.01325).(解码 BoN 的出处)
-12. Narayan, S., Cohen, S. B., & Lapata, M. (2018). [Don't Give Me the Details, Just the Summary!](https://aclanthology.org/D18-1206/). *EMNLP*.(XSum)
+1. Sessa, P. G., Dadashi, R., Hussenot, L., Ferret, J., Vieillard, N., Ramé, A., Shariari, B., Perrin, S., Friesen, A., Cideron, G., Girgin, S., Stanczyk, P., Michi, A., Sinopalnikov, D., Ramos, S., Héliou, A., Severyn, A., Hoffman, M., Momchev, N., & Bachem, O. (2024). [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14622). arXiv:2407.14622.
+2. Gao, L., Schulman, J., & Hilton, J. (2023). [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760). *ICML*.
+3. Dong, H., Xiong, W., Goyal, D., et al. (2023). [RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment](https://arxiv.org/abs/2304.06767). *TMLR*.
+4. Roit, P., Ferret, J., Shani, L., et al. (2023). Factually Consistent Summarization via Reinforcement Learning with Textual Entailment Feedback. *ACL*.
+5. Ahmadian, A., Cremer, C., Gallé, M., et al. (2024). [Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs](https://arxiv.org/abs/2402.14740).
+6. Gemma Team. (2024). [Gemma: Open Models Based on Gemini Research and Technology](https://arxiv.org/abs/2403.08295).
+7. Ramé, A., Ferret, J., Vieillard, N., et al. (2024). [WARP: On the Benefits of Weight Averaged Rewarded Policies](https://arxiv.org/abs/2406.16768).
+8. Amini, A., Vieira, T., & Cotterell, R. (2024). Variational Best-of-N Alignment.
+9. Gui, L., Gârbacea, C., & Veitch, V. (2024). BoNBoN Alignment for Large Language Models and the Sweetness of Best-of-n Sampling.
+10. Touvron, H., et al. (2023). [Llama 2: Open Foundation and Fine-Tuned Chat Models](https://arxiv.org/abs/2307.09288).
+11. Guo, S., Zhang, B., Liu, T., et al. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792).
+12. Calandriello, D., Guo, D., Munos, R., et al. (2024). [Human Alignment of Large Language Models through Online Preference Optimisation](https://arxiv.org/abs/2403.08635).
