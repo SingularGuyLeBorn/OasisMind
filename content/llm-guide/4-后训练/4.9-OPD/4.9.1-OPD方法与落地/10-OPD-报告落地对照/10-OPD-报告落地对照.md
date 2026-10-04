@@ -1,6 +1,6 @@
 ---
 title: "10 · OPD 在各家技术报告里的落地"
-category: "LLM 指南"
+category: "后训练"
 published: true
 tags: ["OPD", "MOPD", "On-Policy Distillation", "Qwen3", "DeepSeek-V4", "Kimi K3", "GLM-5", "ERNIE 5.1", "Baichuan-M3"]
 excerpt: "同叫 on-policy distillation, 在各家流水线里占的位置不同: Qwen3 用大模型教小模型, DeepSeek-V4, K3, MiMo, ERNIE 5.1 等用它把分域专家并成一份权重, GLM-5 用它在顺序 RL 之后找回前面阶段的能力. 本文按报告原文对照教师来源, 损失形态和数字的适用条件."

@@ -1,6 +1,6 @@
 ---
 title: "01 · Song & Zheng 的 OPD 综述"
-category: "LLM 指南"
+category: "后训练"
 published: true
 tags: ["OPD", "On-Policy Distillation", "f-散度", "GKD", "MiniLLM", "DistiLLM", "综述"]
 excerpt: "Song 与 Zheng (腾讯) 的 OPD 综述把在线策略蒸馏写成学生轨迹上的 f-散度最小化, 再按优化目标, 信号来源, 训练稳定三条轴给一百多篇论文归类, 并整理了成功条件, 失败模式和与 off-policy 的取舍规则."

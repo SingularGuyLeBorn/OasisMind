@@ -1,6 +1,6 @@
 ---
 title: "09 · MOPD: 多教师在线蒸馏"
-category: "LLM 指南"
+category: "后训练"
 published: true
 tags: ["MOPD", "OPD", "多教师", "On-Policy Distillation", "DeepSeek-V4", "Kimi K3", "MiMo-V2-Flash"]
 excerpt: "分域 RL 训出一排专家, 再让学生在自己的 rollout 上按题目找对应教师做 reverse KL, 把多份专家并进一份权重. DeepSeek-V4 用全词表 logit, Kimi K3 与 MiMo-V2-Flash 用 sampled-token 的对数比当优势. Ma 等在 Qwen3-30B-A3B 上的对照里, MOPD 归一化分 0.937, 高于 Mix-RL 的 0.882 与参数平均的 0.328."
