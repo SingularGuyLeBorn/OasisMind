@@ -31,6 +31,7 @@ python scripts/paper-ingest.py <arxiv-id | pdf 路径 | URL> <garden>/<章>/<slu
 ```
 
 - 脚本从 MinerU 的 `structured_content.json` 重建正文 (`markdown.md` 在 Windows 上丢符号), 每页前插 `<!-- page k of N -->`, 图片按图号改名放进 `images/`. PDF 留在 `D:/tmp/papers/<slug>/`, 不进 content.
+- 全机同时最多两个 MinerU 进程. 多篇论文由主代理写一个批处理脚本串行调用 `paper-ingest.py`; 子代理只做翻译与解析, 不自己跑 MinerU.
 - 转换后核对: 页数等于 PDF 页数, 公式是 `$...$`, 表格没丢. 脚本输出 `BAD IMAGE` 的图要重新抽.
 - 有官方代码仓库的, 下载到 `data/sources/<slug>/<repo>/`, 解析里引用写 GitHub 链接, 不写本地路径.
 
