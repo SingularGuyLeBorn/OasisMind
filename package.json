@@ -22,6 +22,7 @@
     "test:e2e": "pnpm --filter @oasismind/web test:e2e",
     "test:e2e:mock": "pnpm --filter @oasismind/web test:e2e:mock",
     "content:check": "node scripts/content-check.mjs",
+    "public:content": "pnpm --filter @oasismind/server public:content",
     "validate": "pnpm content:check && pnpm lint && pnpm test && pnpm build && pnpm test:e2e",
     "tunnel:quick": "powershell -ExecutionPolicy Bypass -File scripts/tunnel.ps1 quick",
     "tunnel:run": "powershell -ExecutionPolicy Bypass -File scripts/tunnel.ps1 run",
