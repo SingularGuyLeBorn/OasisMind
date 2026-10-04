@@ -31,7 +31,7 @@ excerpt: "这份材料是 Google 官方博客 (blog.google) 上的一篇发布�
 
 PDF 原图有两处 md 丢掉的标记: 2.0 Flash 一列用浅蓝底框出, 每行最高分加粗. 加粗落在 2.0 Flash 列的有 11 行, 落在 1.5 Pro 列的有 2 行 (MRCR 和 CoVoST2). 这正好对应正文 「2.0 Flash even outperforms 1.5 Pro on key benchmarks」 里 「key」 的分寸: 不是全胜, 而是 13 行赢 11 行. 读 md 版时要回到 PDF 才能看出这一层.
 
-口径上要注意说明列里的几个短语. Natural2Code 和 HiddenMath 标 「Held out dataset ... not leaked on the web」, FACTS Grounding 标 「Held out internal dataset」, 这三项的题目外界拿不到. Vibe-Eval 的题目公开, 判分却是 「Evaluated with a Gemini Flash model as a rater」, 被评的模型里就有 Flash. LiveCodeBench 注明只取 2024/06/01 到 2024/10/05 的题目. 静态基准可比性取决于这些设置, 一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md); 那篇讲的是方法, 不能反推这张表某一格的细节.
+口径上要注意说明列里的几个短语. Natural2Code 和 HiddenMath 标 「Held out dataset ... not leaked on the web」, FACTS Grounding 标 「Held out internal dataset」, 这三项的题目外界拿不到. Vibe-Eval 的题目公开, 判分却是 「Evaluated with a Gemini Flash model as a rater」, 被评的模型里就有 Flash. LiveCodeBench 注明只取 2024/06/01 到 2024/10/05 的题目. 静态基准可比性取决于这些设置, 一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md); 那篇讲的是方法, 不能反推这张表某一格的细节.
 
 ## 4. 表格和正文说法的对应
 
@@ -55,7 +55,7 @@ Jules 集成进 GitHub 工作流, 能处理 issue, 制定计划并执行, 全程
 
 安全一节先讲流程: 探索式, 渐进式开发, 在多个原型上研究, 迭代地做安全训练, 与受信任测试者和外部专家合作, 做风险评估和安全与保障评估. 随后举了五个例子: 与内部的责任与安全委员会 (RSC) 一起识别风险; 用 2.0 的推理能力做 AI 辅助红队, 从发现风险推进到自动生成评估和训练数据; 在图像和音频的输入输出上继续评估和训练; Astra 防止用户无意分享敏感信息, 并内置删除会话的隐私控制; Mariner 让模型把用户指令置于第三方提示注入之上.
 
-这些例子都只有做法, 没有结果. 红队测了哪些风险类别, 自动生成的训练数据有多少, 提示注入的防御成功率是多少, 页面一概没写, 也没有像技术报告那样附模型卡链接. Mariner 这条对应的是 agent 读网页时最现实的风险: 邮件, 文档, 网站里藏着的恶意指令. 提示注入与 agent 安全的一般讨论见 [Agent安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md), 红队的一般做法见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
+这些例子都只有做法, 没有结果. 红队测了哪些风险类别, 自动生成的训练数据有多少, 提示注入的防御成功率是多少, 页面一概没写, 也没有像技术报告那样附模型卡链接. Mariner 这条对应的是 agent 读网页时最现实的风险: 邮件, 文档, 网站里藏着的恶意指令. 提示注入与 agent 安全的一般讨论见 [Agent安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md), 红队的一般做法见 [安全与对抗评测](../../../../llm-guide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 ## 7. 图片与抓取痕迹
 

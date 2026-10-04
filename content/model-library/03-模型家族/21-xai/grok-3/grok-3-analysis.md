@@ -40,7 +40,7 @@ excerpt: "这份材料能回答三件事: Grok 3 和 Grok 3 mini 的推理模式
 
 按印出的数字, 四张图的第一名都是 Grok 家族, 家族最好成绩领先 o3 mini (high) 4.9 到 8.5 个点. 但每根 Grok 柱子都分深橙, 浅橙两段, 印出的数字对应浅色段末端, 图上没有图例. 正文说 93.3% 是「our highest level of test-time compute (cons@64)」, 也就是每题采样 64 次后做 **majority voting**. 所以浅色段最可能是 cons@64, 深色段是单次或较低预算的成绩. 按坐标轴目测, AIME'25 上 Grok 3 的深色段约 77, mini 约 82, 都低于 o3 mini (high) 的 86.5; GPQA 上两者深色段都在 80 左右, 和 o3 mini (high) 的 79.7 差不多. 目测误差大约一两个点, 但结论方向不变: 领先主要来自 cons@64 这一段.
 
-对手的柱子大多是单段灰色, 它们是单次作答还是也用了多次采样, 图上没说. 唯一的例外是 AIME'24 里 o1 的柱子, 深色段约 75, 浅灰延伸到 83.3, 说明这张图对不同模型混用了不同设置. 对手的标注也不统一: o1 在 AIME'25 是「(medium)」, 在 LCB 是「(high)」, 在 AIME'24 和 GPQA 不带括号; DeepSeek 在 LCB 写的是「R1-Preview」. 公平的比较应该在同一采样预算下进行, 这四张图做不到. 评测口径的一般问题见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
+对手的柱子大多是单段灰色, 它们是单次作答还是也用了多次采样, 图上没说. 唯一的例外是 AIME'24 里 o1 的柱子, 深色段约 75, 浅灰延伸到 83.3, 说明这张图对不同模型混用了不同设置. 对手的标注也不统一: o1 在 AIME'25 是「(medium)」, 在 LCB 是「(high)」, 在 AIME'24 和 GPQA 不带括号; DeepSeek 在 LCB 写的是「R1-Preview」. 公平的比较应该在同一采样预算下进行, 这四张图做不到. 评测口径的一般问题见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 AIME 还有题量的问题. AIME 每场 15 题, 93.3% 正好是 15 题对 14 题, 或两场 30 题对 28 题. 按 15 题算, 一题就是 6.7 个点, AIME'25 上 Grok 3 对 o3 mini (high) 的 6.8 个点差距大约只相当于一道题. mini 的 90.8% 和 o3 mini (high) 的 86.5% 都不是 15 或 30 的整数倍能得出的比例, 说明这些数字是多次运行取平均, 或者题目范围不是一整场, 页面都没说明. AIME'25 在发文前 7 天才公布, 是四项里最不可能被训练数据覆盖的一项; AIME'24 和 GPQA 公开已久, 页面没有讨论数据污染.
 
@@ -72,7 +72,7 @@ AIME 还有题量的问题. AIME 每场 15 题, 93.3% 正好是 15 题对 14 题
 
 产品层面, 推理模式靠界面上的 Think 按钮打开. 公告说「Grok 3 (Think)'s mind is completely open」, 用户能看到推理过程, 可示例里推理内容折叠在「Click to read my mind」后面, 抓取结果没有展开的部分. 用户看到的是原始推理全文还是整理后的摘要, 页面没说. 唯一的示例只思考了 6 秒, 做的是把 Pong 和 Breakout 混在一起的「Break-Pong」, 代码和视频都没抓到, 效果核不了.
 
-API 方面, Grok 3 和 Grok 3 mini 的标准版与推理版「In the coming weeks」上线, DeepSearch 面向企业合作伙伴开放. 后续计划是在 Enterprise API 里加入工具使用, 代码执行和「advanced agent capabilities」, 这些 Agent 能力的一般构成见 [Agent](../../../../llm-guide/7-LLM应用开发/7.3-Agent/7.3-Agent.md). 安全方面只有一句: 继上周发布 RMF (Risk Management Framework) 之后, 希望在训练中加快 scalable oversight 和对抗鲁棒性的进展. 链接文件名 `2025.02.20-RMF-Draft.pdf` 的日期比发文日还晚一天, 和「last week」对不上. 页面没有安全评测结果, 也没有 system card, 相关评测方法见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
+API 方面, Grok 3 和 Grok 3 mini 的标准版与推理版「In the coming weeks」上线, DeepSearch 面向企业合作伙伴开放. 后续计划是在 Enterprise API 里加入工具使用, 代码执行和「advanced agent capabilities」, 这些 Agent 能力的一般构成见 [Agent](../../../../llm-guide/7-LLM应用开发/7.3-Agent/7.3-Agent.md). 安全方面只有一句: 继上周发布 RMF (Risk Management Framework) 之后, 希望在训练中加快 scalable oversight 和对抗鲁棒性的进展. 链接文件名 `2025.02.20-RMF-Draft.pdf` 的日期比发文日还晚一天, 和「last week」对不上. 页面没有安全评测结果, 也没有 system card, 相关评测方法见 [安全与对抗评测](../../../../llm-guide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 ## 9. 架构: 本页没有
 

@@ -21,7 +21,7 @@ excerpt: "引言把 Seed2.1 称为家族的转折点: 日常生活, 专业生产
 
 Seed2.0 卡的对手是 GPT-5.2 High, Claude-Sonnet-4.5, Claude-Opus-4.5 和 Gemini-3-Pro High; Seed2.1 的自动评测表换成 GPT-5.5, Claude-4.7 Opus 和 Gemini-3.1 Pro, 视频表换成 Gemini-3.1-Pro 和 Gemini-3.5-Flash. 于是 「相对对手的名次」 和 「相对上一代的进步」 成了两件事. Seed2.0 Pro 在 BrowseComp 上 77.3, 与 GPT-5.2 High 的 77.9 基本持平; Seed2.1 Pro 在 BrowseComp (带搜索) 上 86.2, 对 GPT-5.5 的 84.4 领先. 两次看起来都是 「与 GPT 同档」, 实际上 **Seed 自己涨了约 9 分, 对手也涨了约 6.5 分**.
 
-同一张卡里 Claude 的版本也不统一: 众测对手是 Opus 4.6, Trae 众测是 Opus 4.7, 自动评测表是 Claude-4.7 Opus, 数据清洗对比里是 Claude Opus 4.8. 引言说 「偏好排名高于 Claude Opus 4.6」, 比较对象比自动评测表里的对手低一个版本. 读 「超过 Claude」 这类句子时要先看是哪一个版本. 表 1 的专业生产力行也要按对手逐项看. Seed2.1-Pro 在 GDPval 上 87.9, 高于 GPT-5.5 的 84.9; Agent Startup Bench 68.8 对 68.1; 在 Finance Agent v1.1 上 60.7 落后 GPT-5.5 的 65.3, OneMillion Bench 68.8 落后 Claude 的 73.0, APEX Agents 33.8 与 Claude 的 33.9 持平. 领先的几行多是按 rubric 或偏好评交付物的任务, 落后的几行更依赖领域事实和可核对的数字, 这与第 2.2 节 「长尾知识没有追上」 的判断一致. 评测证据怎样分级, 可以参考 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
+同一张卡里 Claude 的版本也不统一: 众测对手是 Opus 4.6, Trae 众测是 Opus 4.7, 自动评测表是 Claude-4.7 Opus, 数据清洗对比里是 Claude Opus 4.8. 引言说 「偏好排名高于 Claude Opus 4.6」, 比较对象比自动评测表里的对手低一个版本. 读 「超过 Claude」 这类句子时要先看是哪一个版本. 表 1 的专业生产力行也要按对手逐项看. Seed2.1-Pro 在 GDPval 上 87.9, 高于 GPT-5.5 的 84.9; Agent Startup Bench 68.8 对 68.1; 在 Finance Agent v1.1 上 60.7 落后 GPT-5.5 的 65.3, OneMillion Bench 68.8 落后 Claude 的 73.0, APEX Agents 33.8 与 Claude 的 33.9 持平. 领先的几行多是按 rubric 或偏好评交付物的任务, 落后的几行更依赖领域事实和可核对的数字, 这与第 2.2 节 「长尾知识没有追上」 的判断一致. 评测证据怎样分级, 可以参考 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 ### 2.2. 同一把尺子上的两代变化
 

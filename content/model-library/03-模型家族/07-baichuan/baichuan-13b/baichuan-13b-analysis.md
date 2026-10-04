@@ -41,7 +41,7 @@ ALiBi 在论文里的卖点是 「train short, test long」, 但这份 README �
 
 Benchmark 节只有一句 「5-shot 评测」. 三张表各 9 行, 对照组是 13B 上下的开源模型 (Vicuna-13B, LLaMA-13B, Chinese-Alpaca-Plus-13B, Chinese-LLaMA-Plus-13B, Ziya-LLaMA-13B-Pretrain, moss-moon-003-base 16B) 加自家 7B. C-Eval 上 Base 52.4, Chat 51.5, 次名是自家 7B 的 42.8; CMMLU 上 Base 55.3, Chat 55.8, 次名还是 7B 的 44.0. 中文两张榜领先十分左右, 和 7B 时代的中文投入是一条线.
 
-MMLU 上情况不同. Vicuna-13B 为 52.0, Baichuan-13B-Base 为 51.6, 低于 Vicuna; Chat 为 52.1, 只高 0.1. 开篇 「中英文 benchmark 上均取得同尺寸最好」 **在英文侧靠的是 Chat 这一行**. 还有两处口径要对齐: C-Eval 的 Average 与四大类的算术平均对不上, 说明另有加权; CMMLU 的列序与前两张表不同, 并被分页切成两段. 具体数字在 bi 的对应表格后面. 评测证据的一般读法见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
+MMLU 上情况不同. Vicuna-13B 为 52.0, Baichuan-13B-Base 为 51.6, 低于 Vicuna; Chat 为 52.1, 只高 0.1. 开篇 「中英文 benchmark 上均取得同尺寸最好」 **在英文侧靠的是 Chat 这一行**. 还有两处口径要对齐: C-Eval 的 Average 与四大类的算术平均对不上, 说明另有加权; CMMLU 的列序与前两张表不同, 并被分页切成两段. 具体数字在 bi 的对应表格后面. 评测证据的一般读法见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 Chat 与 Base 的差距在三张榜上都在一分左右, 方向不一致: C-Eval 上 Chat 低 0.9, MMLU 和 CMMLU 上 Chat 高 0.5 左右. 页内没写 Chat 用了什么对齐方法, 是只做了 SFT 还是还有偏好优化, 也没写 5-shot 评测时 Chat 是否套用对话模板. **这组差异只能记成现象, 不能归因**. SFT 的一般位置见 [SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md). 后训练这一面, 百川要到 Baichuan 2 才第一次公开 SFT 加 PPO 的完整流程.
 

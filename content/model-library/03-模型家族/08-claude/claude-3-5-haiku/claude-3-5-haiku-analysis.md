@@ -43,7 +43,7 @@ TAU-bench 由 Sierra 发布, 模拟客服场景: 一个由语言模型扮演的�
 
 表有七列模型, 三列 Claude (新 Sonnet, Haiku, 旧 Sonnet), 四列 GPT-4o, GPT-4o mini, Gemini 1.5 Pro, Gemini 1.5 Flash. 前六行大多标了提示设置, 以 0-shot CoT 为主, HumanEval 是 0-shot; SWE-bench 与 TAU-bench 两行没标设置, 只有三列 Claude 有分数. Haiku 的 MMMU 一格是 「-」, 与 「先纯文本, 图像之后再加」 的上线说明一致. 同价位对手里, Haiku 的 HumanEval 88.1% 高于 GPT-4o mini 的 87.2%, GPQA 41.6% 高于 40.2%, MATH 69.2% 低于 70.2%, 互有胜负.
 
-脚注解释为何不收 o1: o1 系列依赖回答前的大量计算, 和常规模型不好直接比较. 这条脚注把 「推理时多花算力」 的 **TestingTime** 路线单独拿了出来, 表里各列 (包括 Haiku) 都是不带长思考的常规推理. 四个月后 Anthropic 自己在 3.7 Sonnet 上推出了 **extended thinking**, 用 RL 训练模型在回答前写长推理, 同级目录那篇有交代. 背景见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md). 静态评测的可比性问题见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
+脚注解释为何不收 o1: o1 系列依赖回答前的大量计算, 和常规模型不好直接比较. 这条脚注把 「推理时多花算力」 的 **TestingTime** 路线单独拿了出来, 表里各列 (包括 Haiku) 都是不带长思考的常规推理. 四个月后 Anthropic 自己在 3.7 Sonnet 上推出了 **extended thinking**, 用 RL 训练模型在回答前写长推理, 同级目录那篇有交代. 背景见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md). 静态评测的可比性问题见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 ## 3. 发布, 安全与边界
 

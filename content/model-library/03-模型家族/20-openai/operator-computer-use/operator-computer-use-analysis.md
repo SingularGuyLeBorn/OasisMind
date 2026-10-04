@@ -61,7 +61,7 @@ Preparedness Framework 有四个类别. Operator 沿用 GPT-4o 的说服 Medium 
 
 §4.1 给了三层防护: 使用政策层面明确禁止的四类用途, 模型层面的拒答训练, 系统层面对某些网站的访问限制, 再加部署后的自动与人工审查. 可量化的只有模型层. 对 Agent 类有害任务, 内部评测集上拒绝 97%, 评测集里有害提示有的在开头, 有的在对话中途. Table 3 的 Operator 专属部分把它拆成三行: 违法活动 97%, 受禁金融活动 97%, 搜索敏感个人数据 100%. GPT-4o 在这三行上是 「not applicable」, 因为它本来没有行动能力.
 
-ChatGPT 通用的拒答评测部分, 结论是 「更安全, 但拒错更多」. 标准集上 not_unsafe 两者都是 100%, not_overrefuse Operator 只有 55%, GPT-4o 是 90%, 即良性请求里约 45% 会被 Operator 拒掉. 本文承认 「we have tuned the refusals to be especially cautious」. 换来的是更难的场景上的优势: 高难拒答集 92% 对 80%, StrongREJECT goodness@0.1 0.66 对 0.37. 三组越狱评测 (生产越狱, 公开越狱增强, 人工红队越狱) 两者都在 97% 到 100%, 区分不开; 真正拉开差距的只有 StrongREJECT, 因为按脚注它只看每条提示下最强的 10% 越狱技巧, 是最坏情形指标. 越狱评测的一般方法论见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
+ChatGPT 通用的拒答评测部分, 结论是 「更安全, 但拒错更多」. 标准集上 not_unsafe 两者都是 100%, not_overrefuse Operator 只有 55%, GPT-4o 是 90%, 即良性请求里约 45% 会被 Operator 拒掉. 本文承认 「we have tuned the refusals to be especially cautious」. 换来的是更难的场景上的优势: 高难拒答集 92% 对 80%, StrongREJECT goodness@0.1 0.66 对 0.37. 三组越狱评测 (生产越狱, 公开越狱增强, 人工红队越狱) 两者都在 97% 到 100%, 区分不开; 真正拉开差距的只有 StrongREJECT, 因为按脚注它只看每条提示下最强的 10% 越狱技巧, 是最坏情形指标. 越狱评测的一般方法论见 [安全与对抗评测](../../../../llm-guide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 附录与正文之间有一处对不上. Table 5 五个类别的简单平均, Operator 是 87.2%, GPT-4o 是 77.6%, 而 Table 3 印的是 92% 与 80%. 差距不小, 可能是按样本数加权, 也可能 Table 5 只列了部分类别, 本文都没说明. 此外 Table 5 里 sexual/exploitative 一行 Operator 70% 低于 GPT-4o 77%, 是整张表唯一的落后项, 而正文对此没有任何说明. Table 4 标准集十二个类别全是 100%, 与 Table 3 的 not_unsafe 一致, 但同一评测的 not_overrefuse 没有按类别拆开, 看不出 55% 的过度拒答集中在哪里.
 

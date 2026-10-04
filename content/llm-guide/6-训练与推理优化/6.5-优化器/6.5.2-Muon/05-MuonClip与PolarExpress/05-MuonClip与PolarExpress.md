@@ -46,7 +46,7 @@ $$
 
 然后对每个注意力头看本步前向已经算过的最大 logit $S_{\max}^h$,超阈值就缩放 $W_q,W_k$.$0.2\sqrt{\max(n,m)}$ 是为了让更新的 RMS 和 Adam 习惯的量级对齐(报告写 consistent RMS matching,前作 Moonlight).没有这一层,直接换学习率表会对不齐.
 
-![AdamW 逐元素,Muon 极分解,Polar Express 换多项式,QK-Clip 更新后缩放](../../Muon/images/fig-muonclip-polar-express.png)
+![AdamW 逐元素,Muon 极分解,Polar Express 换多项式,QK-Clip 更新后缩放](../images/fig-muonclip-polar-express.png)
 
 > 图 1:四件事不要混成一个名词.左起:AdamW 拍扁成标量;Muon 对矩阵做 $\mathrm{polar}$;Polar Express 只替换「怎么算 polar」;QK-Clip 只在注意力权重上做更新后缩放.
 

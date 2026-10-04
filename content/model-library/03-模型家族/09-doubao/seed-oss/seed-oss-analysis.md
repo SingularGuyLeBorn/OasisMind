@@ -41,7 +41,7 @@ Base 表给了两版并排的数. 11 行里 w/ syn. 赢 9 行, 输的两行是 G
 
 ### 3.1. 评测: 同一格里有几种来源
 
-Instruct 表六列来源不同: 自家 Seed1.6-Thinking-0715 不带星号; OAI-OSS-20B, Qwen3-30B-A3B-Thinking-2507, Qwen3-32B 带星号, 格式是 「复现值 (原报告值)」; Gemma3-27B 抄自技术报告; Seed-OSS 是自测. 生成配置是 temperature 1.1, top_p 0.95. 按开源列比, Seed-OSS 第一的行有 MMLU-Pro 82.7, LiveCodeBench v6 67.4, TAU1-Retail 70.4, SWE-Bench Verified (OpenHands) 56, RULER (128K) 94.6; 数学推理几行输给 OAI-OSS-20B: AIME24 91.7 对 92.7, AIME25 84.7 对 90.3, BeyondAIME 65 对 69. IFEval 85.8 是六列最低. 评测口径的一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
+Instruct 表六列来源不同: 自家 Seed1.6-Thinking-0715 不带星号; OAI-OSS-20B, Qwen3-30B-A3B-Thinking-2507, Qwen3-32B 带星号, 格式是 「复现值 (原报告值)」; Gemma3-27B 抄自技术报告; Seed-OSS 是自测. 生成配置是 temperature 1.1, top_p 0.95. 按开源列比, Seed-OSS 第一的行有 MMLU-Pro 82.7, LiveCodeBench v6 67.4, TAU1-Retail 70.4, SWE-Bench Verified (OpenHands) 56, RULER (128K) 94.6; 数学推理几行输给 OAI-OSS-20B: AIME24 91.7 对 92.7, AIME25 84.7 对 90.3, BeyondAIME 65 对 69. IFEval 85.8 是六列最低. 评测口径的一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 AIME 的分数能看出采样次数的线索 (读数推断). 每年 30 题, 单次作答只能是 3.33 分的整数倍, 91.7 约合 27.5 题, 84.7 约合 25.4 题, 都不是整数, 说明是多次采样平均, 但次数没印. BeyondAIME 这一行值得一提, 它正是 Seed1.5-Thinking 自建的那套 100 题, 在这里成了开源模型之间的公共尺子. SWE-Bench Verified 同一基准配了两套 agent 框架, OpenHands 下 56, AgentLess 4*10 下 47, 差了 9 分, **框架本身就是变量**.
 

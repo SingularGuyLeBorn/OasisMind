@@ -49,7 +49,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 ### 精读
 
-* [LongHorizon-Harness](../longhorizon/notes/longhorizon-harness.md)
+* [LongHorizon-Harness](../longhorizon/longhorizon-harness/longhorizon-harness.md)
 
 ***
 
@@ -74,7 +74,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 ### 精读
 
-* [Evolving User Intent](../longhorizon/notes/evolving-user-intent.md)
+* [Evolving User Intent](../longhorizon/evolving-user-intent/evolving-user-intent.md)
 
 ***
 
@@ -125,9 +125,9 @@ Orchard 的启示:把 **Env(沙箱生命周期)** 与 **Harness(推理循环)** 
 
 ### 精读
 
-* [Code as Agent Harness](../longhorizon/notes/code-as-agent-harness.md)
-* [Orchard](../longhorizon/notes/orchard-agentic-modeling.md)
-* [OpenForge RL](../longhorizon/notes/openforge-rl.md)
+* [Code as Agent Harness](../longhorizon/code-as-agent-harness/code-as-agent-harness.md)
+* [Orchard](../longhorizon/orchard-agentic-modeling/orchard-agentic-modeling.md)
+* [OpenForge RL](../longhorizon/openforge-rl/openforge-rl.md)
 
 ***
 
@@ -167,7 +167,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 
 * Polaris
 * [Stanford CS329A Skill](../rsi/1-基础/1.2-定义与形式化/1.2-定义与形式化.md)
-* [bilibili2skill](../resources/tools/bilibili2skill.md)
+* [bilibili2skill](../resources/bilibili2skill/bilibili2skill.md)
 * 资源花园其它工具/创意 Skill:见 `resources/_garden.md`
 
 ***
