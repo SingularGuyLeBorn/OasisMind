@@ -10,8 +10,15 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import sharp from "sharp";
+import {
+  PUBLIC_CONTENT_SCHEMA_VERSION,
+  type PublicContentManifest,
+  type PublicGarden,
+  type PublicPost,
+  type PublicPostSummary,
+  type PublicSearchEntry,
+} from "@oasismind/shared";
 
-const PUBLIC_SCHEMA_VERSION = 1;
 const GARDEN_META_FILE = "_garden.md";
 
 /**
@@ -33,42 +40,6 @@ const PUBLIC_IMAGE_MAX_WIDTH = 2_400;
 const PUBLIC_IMAGE_WEBP_QUALITY = 82;
 // [OM-FREEPLAY] 限制并发可避免数千张图片同时解码耗尽构建机内存。
 const IMAGE_BUILD_CONCURRENCY = 4;
-
-export interface PublicGarden {
-  id: string;
-  title: string;
-  description: string | null;
-  /** 花园首页本身也必须显式发布；未发布时只保留安全的导航壳。 */
-  homeContent: string;
-  postCount: number;
-}
-
-export interface PublicPostSummary {
-  id: string;
-  garden: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  category: string | null;
-  tags: string[];
-  apiPath: string;
-}
-
-export interface PublicPost extends PublicPostSummary {
-  content: string;
-  contentHash: string;
-}
-
-export interface PublicContentManifest {
-  schemaVersion: number;
-  gardens: PublicGarden[];
-  posts: PublicPostSummary[];
-}
-
-export interface PublicSearchEntry extends PublicPostSummary {
-  /** 去掉 Markdown 标记后的短文本，仅用于客户端搜索，不承载全文。 */
-  searchText: string;
-}
 
 export interface PublicContentBuildOptions {
   contentDir: string;
@@ -401,6 +372,7 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
         );
         const id = `${garden.id}/${slug}`;
         const apiPath = `/api/v1/posts/${encodePublicPath(id)}.json`;
+        const markdownPath = `/api/v1/posts/${encodePublicPath(id)}.md`;
         const post: PublicPost = {
           id,
           garden: garden.id,
@@ -410,6 +382,7 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
           category: readString(parsed.data.category),
           tags: readTags(parsed.data.tags),
           apiPath,
+          markdownPath,
           content: rewrittenContent,
           contentHash: createHash("sha256").update(rewrittenContent).digest("hex"),
         };
@@ -424,6 +397,7 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
           description: garden.description,
           homeContent: garden.homeContent,
           postCount: gardenPosts.length,
+          apiPath: `/api/v1/gardens/${encodeURIComponent(garden.id)}.json`,
         });
       }
     }
@@ -431,7 +405,7 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
     posts.sort((left, right) => left.id.localeCompare(right.id, "zh-CN"));
     const summaries = posts.map(({ content: _content, contentHash: _hash, ...summary }) => summary);
     const manifest: PublicContentManifest = {
-      schemaVersion: PUBLIC_SCHEMA_VERSION,
+      schemaVersion: PUBLIC_CONTENT_SCHEMA_VERSION,
       gardens: publicGardens,
       posts: summaries,
     };
@@ -442,13 +416,25 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
 
     writeJson(path.join(temporaryDir, "index.json"), manifest);
     writeJson(path.join(temporaryDir, "search.json"), {
-      schemaVersion: PUBLIC_SCHEMA_VERSION,
+      schemaVersion: PUBLIC_CONTENT_SCHEMA_VERSION,
       posts: searchEntries,
     });
     for (const post of posts) {
       writeJson(path.join(temporaryDir, "posts", post.garden, `${post.slug}.json`), {
-        schemaVersion: PUBLIC_SCHEMA_VERSION,
+        schemaVersion: PUBLIC_CONTENT_SCHEMA_VERSION,
         post,
+      });
+      fs.writeFileSync(
+        path.join(temporaryDir, "posts", post.garden, `${post.slug}.md`),
+        post.content,
+        "utf8",
+      );
+    }
+    for (const garden of publicGardens) {
+      writeJson(path.join(temporaryDir, "gardens", `${garden.id}.json`), {
+        schemaVersion: PUBLIC_CONTENT_SCHEMA_VERSION,
+        garden,
+        posts: summaries.filter((post) => post.garden === garden.id),
       });
     }
     await buildAssets(temporaryDir, assets.values());

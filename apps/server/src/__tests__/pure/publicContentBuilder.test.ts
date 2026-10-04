@@ -55,6 +55,10 @@ describe("buildPublicContent", () => {
     const post = JSON.parse(fs.readFileSync(path.join(outputDir, "posts", "notes", "public.json"), "utf8"));
     expect(post.post.content).toContain("公开正文");
     expect(JSON.stringify(post)).not.toContain("不得输出");
+    expect(fs.readFileSync(path.join(outputDir, "posts", "notes", "public.md"), "utf8")).toContain("公开正文");
+    const garden = JSON.parse(fs.readFileSync(path.join(outputDir, "gardens", "notes.json"), "utf8"));
+    expect(garden.posts).toHaveLength(1);
+    expect(garden.garden.apiPath).toBe("/api/v1/gardens/notes.json");
     expect(fs.existsSync(path.join(outputDir, "posts", "notes", "draft.json"))).toBe(false);
   });
 
@@ -114,6 +118,7 @@ describe("buildPublicContent", () => {
     const result = await buildPublicContent({ contentDir, outputDir });
     expect(result.postCount).toBe(0);
     expect(fs.existsSync(path.join(outputDir, "posts", "notes", "toggle.json"))).toBe(false);
+    expect(fs.existsSync(path.join(outputDir, "posts", "notes", "toggle.md"))).toBe(false);
   });
 
   it("frontmatter 损坏时安全跳过并报告，不从正文猜测发布状态", async () => {

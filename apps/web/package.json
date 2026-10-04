@@ -37,6 +37,7 @@
     "@milkdown/transformer": "7.5.9",
     "@milkdown/utils": "7.5.9",
     "@oasismind/algo-viz": "workspace:*",
+    "@oasismind/markdown": "workspace:*",
     "@oasismind/server": "workspace:*",
     "@oasismind/shared": "workspace:*",
     "@react-three/drei": "10.7.7",

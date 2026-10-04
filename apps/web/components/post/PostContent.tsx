@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeSanitize from "rehype-sanitize";
 import { Check, Copy, Eye, Code2, Maximize2, Minimize2, WrapText, ListOrdered } from "lucide-react";
 import { cn } from "@/lib/utils";
 // KaTeX CSS 只在根布局 layout.tsx 导入一次，避免 client chunk 延迟加载导致公式初始闪烁
@@ -15,6 +15,10 @@ import { transformWikiLinks } from "./WikiLink";
 import { PostMarkdownLink } from "./PostMarkdownLink";
 import { RoughAnnotation, type RoughAnnotationProps } from "./RoughAnnotation";
 import { memoizeMarkdownTransform } from "@oasismind/shared";
+import {
+  markdownSanitizeSchema as sanitizeSchema,
+  safeMarkdownUrlTransform as urlTransform,
+} from "@oasismind/markdown";
 import { resolvePostAssetUrl } from "@/lib/postAssetUrl";
 import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
 import { MarkdownTable } from "@/components/post/MarkdownTable";
@@ -98,48 +102,6 @@ interface PostContentProps {
   /** 当前文章所属花园；内链解析优先同库匹配 */
   postGarden?: string;
 }
-
-function urlTransform(url: string) {
-  const colonIndex = url.indexOf(":");
-  // 没有协议说明是相对路径，放行
-  if (colonIndex === -1) return url;
-  const scheme = url.slice(0, colonIndex + 1).toLowerCase();
-  const allowed = ["http:", "https:", "mailto:", "tel:", "data:", "wiki:"];
-  return allowed.includes(scheme) ? url : "";
-}
-
-/** rehype-sanitize schema：在 defaultSchema 基础上保留 className/id/src(data:) 等现有渲染依赖 */
-const sanitizeSchema = {
-  ...defaultSchema,
-  // GFM 的默认安全规则不包含 mark；这里只恢复项目自己的手写标注标签。
-  tagNames: [...(defaultSchema.tagNames ?? []), "mark"],
-  attributes: {
-    ...defaultSchema.attributes,
-    // highlight.js / KaTeX / 自定义组件大量使用 className；heading id 用于 TOC 锚点
-    "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "id"],
-    // 手写标注依赖这些受限 data 属性；事件属性仍不在白名单中，不能借此注入脚本。
-    mark: [
-      ...(defaultSchema.attributes?.mark ?? []),
-      "dataAnnotation",
-      "dataColor",
-      "dataBracket",
-      "dataTarget",
-      "dataStrokeWidth",
-      "dataPadding",
-      "dataIterations",
-      "dataMultiline",
-      "dataAnimate",
-      "dataAnimationDuration",
-    ],
-  },
-  protocols: {
-    ...defaultSchema.protocols,
-    // wiki:// 内链协议（transformWikiLinks 产物）；缺失会被 sanitize 剥掉 href，内链退化成纯文本
-    href: [...(defaultSchema.protocols?.href ?? []), "wiki"],
-    // 与 urlTransform 一致：允许 data: 图片
-    src: ["http", "https", "data"],
-  },
-};
 
 /** 可渲染为 iframe 预览的语言（HTML/可独立运行的标记） */
 const PREVIEWABLE_LANGS = new Set(["html", "htm", "svg"]);

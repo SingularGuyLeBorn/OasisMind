@@ -1,0 +1,59 @@
+import Link from "next/link";
+import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
+import { PostCard } from "@/components/PostCard";
+import { getManifest } from "@/lib/publicContent";
+
+export default function HomePage() {
+  const manifest = getManifest();
+  const featured = manifest.posts.slice(0, 6);
+
+  return (
+    <>
+      <section className="hero">
+        <div className="hero-glow hero-glow-one" />
+        <div className="hero-glow hero-glow-two" />
+        <div className="site-shell hero-inner">
+          <p className="eyebrow"><Sparkles size={15} /> PERSONAL KNOWLEDGE GARDEN</p>
+          <h1>从细微处，<br /><span>看见思想生长。</span></h1>
+          <p className="hero-copy">
+            这里收纳我在 AI、工程、学习与生活中的公开思考。不是信息流，
+            而是一座持续修剪、可以反复漫游的知识花园。
+          </p>
+          <div className="hero-actions">
+            <Link href="/knowledge" className="primary-button"><BookOpen size={18} />进入知识库</Link>
+            <Link href="/about" className="text-link">关于见微 <ArrowRight size={16} /></Link>
+          </div>
+          <div className="hero-stats">
+            <div><strong>{manifest.posts.length}</strong><span>篇公开文章</span></div>
+            <div><strong>{manifest.gardens.length}</strong><span>座知识花园</span></div>
+            <div><strong>∞</strong><span>持续生长</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="site-shell section-block">
+        <div className="section-heading">
+          <div><p className="section-kicker">RECENT NOTES</p><h2>最近公开的思考</h2></div>
+          <Link href="/knowledge">查看全部 <ArrowRight size={16} /></Link>
+        </div>
+        <div className="post-grid">{featured.map((post) => <PostCard key={post.id} post={post} />)}</div>
+      </section>
+
+      <section className="garden-band">
+        <div className="site-shell section-block">
+          <div className="section-heading"><div><p className="section-kicker">GARDENS</p><h2>沿着主题漫游</h2></div></div>
+          <div className="garden-grid">
+            {manifest.gardens.map((garden, index) => (
+              <Link href={`/gardens/${encodeURIComponent(garden.id)}`} className="garden-card" key={garden.id}>
+                <span className="garden-index">{String(index + 1).padStart(2, "0")}</span>
+                <h3>{garden.title}</h3>
+                <p>{garden.description || "一组持续整理中的主题笔记。"}</p>
+                <small>{garden.postCount} 篇文章 <ArrowRight size={14} /></small>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
