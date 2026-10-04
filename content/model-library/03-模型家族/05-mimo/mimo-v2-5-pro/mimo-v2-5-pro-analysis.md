@@ -7,17 +7,7 @@ excerpt: "MiMo-V2.5-Pro 是 1.02T 总参, 42B 激活的 MoE, 沿用 MiMo-V2-Flas
 ---
 # MiMo-V2.5-Pro: 把 Flash 的配方放大到 1T, 滑窗比例改成 6:1
 
-## 太长不看版
-
-材料是小米 MiMo 团队 2026-04-27 的 MiMo-V2.5-Pro 发布页和 HuggingFace 上 `XiaomiMiMo/MiMo-V2.5-Pro` 的模型卡; 机制背景取自 MiMo-V2-Flash 技术报告 (arXiv 2601.02780), 后续对照取自 MiMo-V2.6 技术报告.
-
-- **规模**: 总参数 1.02T, 每 token 激活 42B, 70 层 (1 层稠密加 69 层 MoE), 384 个路由专家里激活 8 个, 没有共享专家. 和前代 MiMo-V2-Pro 规模相同. 正式版上下文 1M, Base 256K, 权重 FP8 (E4M3) 混合精度.
-- **注意力**: 滑窗注意力 (SWA) 和全局注意力 (GA) 按 6:1 交织, 60 层 SWA, 10 层 GA, 窗口 128, 每头带可学习的 attention sink. 长上下文下只有 10 层 GA 的 KV 随长度增长, 按层数算正好是全 GA 的 1/7 (推导), 发布页写作 「nearly 7×」.
-- **MTP**: 3 层, 用稠密 FFN, 训练和推理都用, 发布页称输出吞吐约 3 倍, 也用来加速 RL rollout.
-- **训练**: 预训练 27T token, FP8 混合精度, 原生 32K; 后训练是 SFT, 分域 RL 教师, 多教师在线蒸馏 (MOPD) 三步, 和 Flash 报告相同.
-- **成绩**: 发布页对照表上 GDPVal-AA 1581, Terminal-Bench 2.0 68.4 (前代 57.1), SWE-bench Verified 78.9 (前代 78.0); ClawEval 约 64% Pass^3 时每条轨迹约 70K token. V2.6 报告用新基准重测, DeepSWE v1.1 只有 19.0, CyberGym 40.0.
-
-V2.5-Pro 在 MiMo 家族里处在中间一环. 往前, 它的骨干, MTP 和后训练范式都来自 MiMo-V2-Flash; 往后, MiMo-V2.6-Pro 的层数, 专家数和文本预训练量都和它相同, 改动集中在后训练. 所以读 V2.5-Pro, 结构要回到 Flash 报告去看机制, 能力变化要拿 V2.6 报告的重测来校准.
+材料是小米 MiMo 团队 2026-04-27 的 MiMo-V2.5-Pro 发布页和 HuggingFace 上 `XiaomiMiMo/MiMo-V2.5-Pro` 的模型卡, 没有单独的技术报告; 机制背景取自 MiMo-V2-Flash 技术报告 (arXiv 2601.02780), 后续对照取自 MiMo-V2.6 技术报告. V2.5-Pro 的骨干, MTP 和后训练范式都来自 Flash, 要看的问题是这套配方放大到 1T 并把滑窗比例改成 6:1 之后, 结构, KV 和分数各变成什么样.
 
 ## 1. 谱系与规模
 
@@ -49,7 +39,7 @@ V2.5 的层数, 层型和专家数都和 Flash 相同, 是 Flash 骨干接上视
 
 两档都没有共享专家, 只在第 0 层放一个稠密 FFN. Flash 报告没有给去掉共享专家的消融, 但给了 SFT 阶段监控专家负载的指标: 梯度为零的参数个数 num-zeros, 上升说明有专家拿不到 token, 下降说明过拟合. 没有共享专家兜底时, 路由一旦塌缩就没有备用支路, 这类负载监控更要紧. 到 V2.6, Pro 档的 RL 在第 9 层出现了路由漂移, 前 20 步冷专家占比从 0.5% 涨到 22%, 最后的处理是 RL 期间冻结 router.
 
-## 2. 混合注意力: 从 5:1 到 6:1
+## 2. 混合注意力与 MTP
 
 ### 2.1. 滑窗加 sink
 
@@ -100,7 +90,7 @@ $L=1{,}048{,}576$ 时第一项约 268 亿个元素, 第二项约 1,966 万, 只�
 
 Flash 报告的 Base 模型长上下文表给过同一结构 「掉得慢」 的证据. GSM-Infinite Hard 从 16K 到 128K, Flash 从 37.7 降到 29.0, Kimi-K2-Base 从 34.6 降到 8.8, DeepSeek-V3.1-Base 从 41.5 降到 28.7, 用稀疏注意力的 DeepSeek-V3.2-Exp 从 50.4 降到 25.7. V3.2-Exp 短长度最高, 到 128K 掉得最多. 这张表的对照模型最大长度都不到 256K, 证据只覆盖到 128K; V2.5-Pro 在 1M 上的表现, 目前只有 GraphWalks 这一组数.
 
-## 3. MTP
+### 2.5. MTP: 3 层草稿与吞吐
 
 MTP 模块有 3 层, 用稠密 FFN, 发布页说它 「natively integrated for training and inference」, 输出吞吐 「roughly tripling」, 并加速 RL rollout. Flash 报告给了同结构的实测: 每层约 0.33B, 稠密 FFN 加 SWA; 3 层 MTP 接受长度最高约 3.6; 固定 16K 输入, 1K 输出时, 相对无 MTP 加速 1.82× 到 2.70×, 随接受长度近似线性上升.
 
@@ -124,9 +114,9 @@ $x=0$ 时 $y=4$, 正是 3 层 MTP 的上限. 低熵任务 (如网页开发) 接�
 
 MTP 用在 RL 上的理由来自 Flash 报告: on-policy 训练的小 batch 吃不满 GPU, 长尾序列到最后 batch 趋近 1, 多 token 草稿能补回算术强度. 到 V2.6, RL rollout 换成 DFlash 块扩散草稿模型, 一次出一整块草稿, 报告称平均接受长度比 MTP 高 31.3%. MTP 的一般机制见 [多 Token 预测 MTP](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md), 投机解码见 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用.md).
 
-## 4. 预训练与后训练
+## 3. 预训练与后训练
 
-### 4.1. 预训练与 Base 模型
+### 3.1. 预训练与 Base 模型
 
 预训练 27T token, FP8 混合精度, 原生序列 32K, 和 Flash 报告的 27T 相同. Flash 的 27T 分三段 (22T, 4T, 1T), 语料偏向仓库级代码和长程依赖. V2.5-Pro 的数据配比发布页只有总数.
 
@@ -145,7 +135,7 @@ MTP 用在 RL 上的理由来自 Flash 报告: on-policy 训练的小 batch 吃�
 
 数学和代码是 V2.5-Pro Base 拉开差距的地方: MATH 86.2 比 DeepSeek-V4-Pro Base 高 21.7, GSM8K 99.6 接近满分, SWE-Bench AgentLess 35.7 比 Kimi-K2 Base 高 7.5. 知识类基准反过来: MMLU-Pro 68.5 低于 DeepSeek-V4-Pro Base 的 73.5, C-Eval 91.5 低于三家对照. 中文基准偏弱这一点和 Flash Base 相同, Flash 的 C-Eval 和 CMMLU 也都低于三家对照. 相对 V2.5 Base, 放大后 GSM8K 涨 16.3, MATH 涨 18.5, GPQA-Diamond 涨 8.6, MMLU 只涨 3.1. 各家 Base 的 few-shot 设置模型卡没有逐项列出, 跨家比较只作参考.
 
-### 4.2. 后训练三步
+### 3.2. 后训练三步与 V2.6 的改动
 
 发布页的三步: SFT 建立指令遵循; 分域训练, 各领域教师分别做 RL, 点名了数学, 安全, 智能体工具调用; 最后 MOPD, 一个学生在自己的 rollout 上接受各领域教师的 token 级指导, 合成统一模型. 这和 Flash 报告的 Figure 3 一一对应.
 
@@ -163,29 +153,27 @@ $$
 
 $\pi_{\mathrm{domain}_x}$ 是 prompt $x$ 所属领域的教师. 教师项的符号由师生在这个 token 上的概率比决定: 学生给 0.1, 教师给 0.5, 该项是 $\log5\approx1.61$, 推高这个 token; 学生给 0.4, 教师给 0.05, 是 $\log0.125\approx-2.08$, 压低它. $w_t=\mathrm{sg}[\pi_\theta/\mu_\theta]$, 越出 $[\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}}]$ 置 0; $\pi_\theta$ 和 $\mu_\theta$ 是同一组参数在训练引擎和推理引擎里算出的概率, $w_t$ 量的是两个引擎的数值差. 在 MoE 上, 两个引擎还可能选出不同的专家, R3 在训练时重放 rollout 记下的专家选择来对齐.
 
-Flash 报告的 RL 系统还有两块和长程任务直接相关. Data Scheduler 按历史通过率做动态采样, 给空闲的 GPU 派新 prompt; 超长轨迹用 partial rollout 切成多步, 同时限制陈旧度和每批 partial 样本的比例, 用考虑陈旧度的截断重要性采样补偿. Toolbox 是集中的资源分配器, 在并发任务之间执行工具的配额和 QPS 限制, 用容错的 Ray actor 池消除冷启动. 上万个环境同时调用搜索, 代码执行, 网页渲染, 任何一个工具卡住都会拖住一批 rollout, 这两块解决的是这个问题. MiMo-7B 那一代不做异步训练, Flash 开始接受有限的陈旧, V2.6 放宽到最多落后 4 个策略版本. Flash 的 Table 7 显示 MOPD 后数学, 代码, SWE 基本追平或超过最佳教师, 搜索智能体没追上 (BrowseComp 45.4 对 SFT 教师 51.7). 机制见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md).
+Flash 报告的 RL 系统还有两块和长程任务直接相关. Data Scheduler 按历史通过率做动态采样, 给空闲的 GPU 派新 prompt; 超长轨迹用 partial rollout 切成多步, 同时限制陈旧度和每批 partial 样本的比例, 用考虑陈旧度的截断重要性采样补偿. Toolbox 是集中的资源分配器, 在并发任务之间执行工具的配额和 QPS 限制, 用容错的 Ray actor 池消除冷启动. 上万个环境同时调用搜索, 代码执行, 网页渲染, 任何一个工具卡住都会拖住一批 rollout, 这两块解决的是这个问题. MiMo-7B 那一代不做异步训练, Flash 开始接受有限的陈旧, V2.6 放宽到最多落后 4 个策略版本. Flash 的 Table 7 显示 MOPD 后数学, 代码, SWE 基本追平或超过最佳教师, 搜索智能体没追上 (BrowseComp 45.4 对 SFT 教师 51.7). 机制见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md).
 
-发布页的 Frontier Coding 一段说代码能力的进一步提升来自 「scaling post-training compute」, 教师数量, RL 算法和超参都没给.
+发布页的 Frontier Coding 一段说代码能力的进一步提升来自 「scaling post-training compute」, 教师数量, RL 算法和超参都没给. 这一段配的评测是内部的 MiMo Coding Bench, 衡量模型在 Claude Code 一类 agentic 框架里做编程任务的能力, 覆盖仓库理解, 项目构建, 代码审查, 结构化产物生成, 规划和 SWE; 图题是「缩小与 Opus 4.6 的差距」, 也就是说在这套内部基准上 V2.5-Pro 仍低于 Opus 4.6. 发布页同时点名了 Claude Code, OpenCode, Kilo 三个可接入的 scaffold.
 
 分域 RL 的环境在 Flash 报告里有交代, V2.5-Pro 的智能体能力就建在这些环境上. 代码智能体用真实 GitHub 仓库搭可执行环境, 约 120K 个, 系统提示刻意最简, 只经 shell 和后端交互; 终端任务从 Stack Overflow 和 Stack Exchange 选题, 改写成带 Dockerfile 和测例的任务, 过滤后约 30,000 条; 网页开发用 Playwright 把生成的页面录成视频, 交给多模态判别器打分; 搜索智能体只有 search, open, find 三个工具; 函数调用在合成的应用环境里训, 工具之间既有显式的数据依赖, 也有要推断的隐藏状态. Flash 报告附录 B 还记了一处漏洞: 官方 SWE-Bench 镜像没清干净未来的提交, RL 中模型会学会用 git 翻出答案, Flash 的处理是自建训练镜像修掉这个问题. 到 V2.6, 防线扩成断网, 截断 Git 历史, 专门的 Hack Agent 和在线清零四层.
 
-### 4.3. 到 V2.6 改了什么
+到了 V2.6, 报告保留了骨干, 把后训练改成 「三轴放大 RL」. 三条轴是: 更大的 batch 和更高的吞吐 (异步训练, 每步 1,568 个 prompt, 2.7B 到 3.7B token); 更多样的环境 (代码, 通用, 视觉, 网络安全四域, 混用多种 harness); 更多的 grader 算力 (组内比较的 agentic grading, 并把模型推向更短的解). 分域 RL 训教师换成一次混合任务 RL, 难以验证的领域交给 MOPD2 的 SFT 教师; MOPD2 从教师轨迹切出历史前缀, 学生只采当前一轮. Pro 的 RL 花了约 260 万美元. 这些改动在 V2.5-Pro 上都还没有, 详见 [MiMo-V2.6 解读](../mimo-v2-6/mimo-v2-6-analysis.md).
 
-V2.6 报告保留了骨干, 把后训练改成 「三轴放大 RL」. 三条轴是: 更大的 batch 和更高的吞吐 (异步训练, 每步 1,568 个 prompt, 2.7B 到 3.7B token); 更多样的环境 (代码, 通用, 视觉, 网络安全四域, 混用多种 harness); 更多的 grader 算力 (组内比较的 agentic grading, 并把模型推向更短的解). 分域 RL 训教师换成一次混合任务 RL, 难以验证的领域交给 MOPD2 的 SFT 教师; MOPD2 从教师轨迹切出历史前缀, 学生只采当前一轮. Pro 的 RL 花了约 260 万美元. 这些改动在 V2.5-Pro 上都还没有, 详见 [MiMo-V2.6 解读](../mimo-v2-6/mimo-v2-6-analysis.md).
+## 4. 长程案例与评测
 
-## 5. 长程案例
+### 4.1. 长程案例
 
 发布页用三个案例展示长程能力. SysY 编译器来自北大编译原理课程项目, 用 Rust 从零实现词法分析, 语法分析, AST, Koopa IR 生成, RISC-V 后端和性能优化, 发布页说参考项目通常要本科生几周. 模型用 4.3 小时, 672 次工具调用, 课程隐藏测试 233/233. 过程是分层推进的: Koopa IR 110/110, RISC-V 后端 103/103, 性能 20/20, 三项相加正好 233. 第一次编译就过了 137/233 (约 59%); 第 512 轮的一次重构让两个测试回退, 模型定位后恢复.
 
-视频编辑器: 几条简单提示后交付可运行的桌面应用, 有多轨时间线, 剪辑, 交叉淡化, 混音和导出, 8,192 行代码, 1,868 次工具调用, 11.5 小时. 模拟电路 FVF-LDO: 在 TSMC 180nm 工艺上从零设计, 要让相位裕度, 线性调整率, 负载调整率, 静态电流, PSRR, 瞬态响应六项同时达标; harness 是 Claude Code 加 ngspice 仿真闭环, 约一小时全部达标.
+视频编辑器: 几条简单提示后交付可运行的桌面应用, 有多轨时间线, 剪辑, 交叉淡化, 混音和导出, 8,192 行代码, 1,868 次工具调用, 11.5 小时; 演示视频里的 AI 旁白由 MiMo-V2-TTS 生成. 模拟电路 FVF-LDO: 在 TSMC 180nm 工艺上从零设计, 模型要定功率管尺寸, 调补偿网络, 选偏置电压, 让相位裕度, 线性调整率, 负载调整率, 静态电流, PSRR, 瞬态响应六项同时达标, 发布页说训练有素的模拟设计师做同规模项目通常要几天; harness 是 Claude Code 加 ngspice 仿真闭环, 约一小时全部达标, 图中展示的四项相对模型自己的初稿提升约一个数量级. 初值和终值只画在图里, 正文没有数值表.
 
-发布页把这些表现归结为 「harness awareness」: 用满 harness 提供的能力, 管理自己的记忆, 按最终目标控制上下文里放什么. 三个案例都是单次演示, 没有重复次数和失败率, 能说明能力的上限, 不能当受控评测读.
+发布页把这些表现归结为 「harness awareness」: 用满 harness 提供的能力, 管理自己的记忆, 按最终目标控制上下文里放什么. 它还说配上合适的 harness, V2.5-Pro 能撑起超过一千次工具调用的长程任务, agentic 场景里对上下文中细小约束的遵循也更稳. 三个案例都是单次演示, 没有重复次数和失败率, 能说明能力的上限, 不能当受控评测读.
 
 「管理记忆, 控制上下文」 在 Flash 报告的附录 C 里有一套具体做法. 扩充侧把工具, 文档, 数据库统一暴露成文件, 让模型用 Bash 去检索; 压缩侧在上下文占用超过阈值 (低至 30%) 时让模型写摘要, 完整历史归档到可检索的记忆文件, 活跃上下文换成摘要. Flash 报告称这在 Deep Research 类任务上稳定带来 5–10% 的准确率提升, 按 DeepSeek 式的激进重置策略复现后, BrowseComp 从 45.4 到 58.3. 发布页没说三个案例里用的是哪种上下文管理, 但 「harness awareness」 指的很可能就是这类能力. 这也说明同一份权重换个 harness, 分数能差很多, 比较不同模型的智能体分数时, harness 要对齐.
 
-## 6. 评测
-
-### 6.1. 发布页对照表
+### 4.2. 发布页对照表与 token 效率
 
 | 基准 | V2.5-Pro | V2-Pro | DeepSeek V4 Pro | Kimi K2.6 | GLM 5.1 |
 |---|---|---|---|---|---|
@@ -200,23 +188,23 @@ V2.6 报告保留了骨干, 把后训练改成 「三轴放大 RL」. 三条轴�
 
 对照模型的规模: DeepSeek V4 Pro 1.6T / 49B, 按最高推理档评; Kimi K2.6 1T / 32B; GLM 5.1 744B / 40B. V2.5-Pro 在 GDPVal-AA, $\tau^3$-bench, Claw-Eval 三项智能体基准上最高. 其余几项不占优: HLE 带工具 48.0 低于 Kimi 的 54.0 和 GLM 的 52.3, 不带工具 34.0 低于 DeepSeek 的 37.7 和 Kimi 的 34.7; SWE-bench Verified 低于 DeepSeek 和 Kimi; SWE-Bench Pro 低于 Kimi 和 GLM; Terminal-Bench 2.0 低于 GLM. 相对前代, 涨得最多的是 Terminal-Bench 2.0 (+11.3), $\tau^3$-bench (+8.4) 和 HLE 带工具 (+8.0), SWE-bench Verified 只涨 0.9. 规模没变, 这些涨幅都来自训练. FrontierSWE 一行给的是名次, 数值越小越靠前, 带小数, 发布页没解释是怎样平均出来的, 只能看出比前代前进了 1.6 名.
 
-### 6.2. Token 效率
+token 效率另有一张图. 发布页的散点图横轴是每条轨迹的平均 token 数 (输入加输出), 纵轴是 ClawEval Pass^3. V2.5-Pro 约 64% 时每条轨迹约 70K token, 发布页称比 Claude Opus 4.6, Gemini 3.1 Pro, GPT-5.4 在相近能力下少用约 40–60% 的 token. 表里同一项是 63.8, 64% 是取整. 对按 token 计费的智能体任务, 每条轨迹的 token 数直接决定成本, 这和分数一样是产品指标. V2.6 的 grader 有一项就是把模型推向更短的解, 方向一致.
 
-发布页的散点图横轴是每条轨迹的平均 token 数 (输入加输出), 纵轴是 ClawEval Pass^3. V2.5-Pro 约 64% 时每条轨迹约 70K token, 发布页称比 Claude Opus 4.6, Gemini 3.1 Pro, GPT-5.4 在相近能力下少用约 40–60% 的 token. 表里同一项是 63.8, 64% 是取整. 对按 token 计费的智能体任务, 每条轨迹的 token 数直接决定成本, 这和分数一样是产品指标. V2.6 的 grader 有一项就是把模型推向更短的解, 方向一致.
-
-### 6.3. V2.6 报告的重测
+### 4.3. V2.6 报告的重测
 
 V2.6 报告的 Tab. 3 用一批更新的基准重测了 V2.5-Pro: DeepSWE v1.1 19.0, ProgramBench 12.5, AutomationBench 16.0, Terminal Bench 2.1 65.2, Terminal Bench 4.0 1.5, Toolathlon-Verified 49.1, Agents' Last Exam 13.2, GDPval-AA 2.1 1107, CyberGym 40.0, MiMo Cyber Bench 0.0. GDPval-AA 2.1 的 1107 和发布页的 GDPVal-AA 1581 版本不同, 不能直接比.
 
-这组数要分开读. 网络安全并非空白: CyberGym 是漏洞复现, V2.5-Pro 有 40.0, 为 0 的只有内部的 MiMo Cyber Bench. DeepSWE 的 19.0 和 Terminal Bench 4.0 的 1.5 很低, 但和第 5 节的长程案例并不矛盾: 案例是自选任务的单次演示, DeepSWE 是固定任务集上的统计结果, 两者衡量的范围不同. V2.6-Pro 在 DeepSWE 上到 71.9, 前后骨干相同, 差距来自 mid-training 和覆盖这类环境的三轴 RL. 这些新基准对上一代接近空白区, 19.0 到 71.9 的涨幅有一部分是从不会到会, 不宜当成同一条能力曲线上的进步比例.
+这组数要分开读. 网络安全并非空白: CyberGym 是漏洞复现, V2.5-Pro 有 40.0, 为 0 的只有内部的 MiMo Cyber Bench. DeepSWE 的 19.0 和 Terminal Bench 4.0 的 1.5 很低, 但和第 4.1 节的长程案例并不矛盾: 案例是自选任务的单次演示, DeepSWE 是固定任务集上的统计结果, 两者衡量的范围不同. V2.6-Pro 在 DeepSWE 上到 71.9, 前后骨干相同, 差距来自 mid-training 和覆盖这类环境的三轴 RL. 这些新基准对上一代接近空白区, 19.0 到 71.9 的涨幅有一部分是从不会到会, 不宜当成同一条能力曲线上的进步比例.
 
-## 7. 部署与计费
+## 5. 部署与结论
 
-权重, tokenizer 和完整模型卡以宽松许可放在 HuggingFace, 模型卡有 SGLang 和 vLLM 的部署指南. SGLang 示例用 16 卡张量并行, 16 路专家并行, 2 路数据并行注意力, EAGLE 投机解码 3 步, 上下文长度 1,048,576; 推荐采样 temperature 1.0, top-p 0.95. 1.02T 参数按 FP8 存约 1TB, 再加上式 (3) 的 KV, 示例按 16 卡张量并行部署 (推导).
+### 5.1. 部署与计费
 
-发布页同时说 API 和 AI Studio 全量上线, 价格和前代 Pro 相同, 模型名换成 `mimo-v2.5-pro`. Token Plan 支持 V2.5, V2.5-Pro, V2.5-TTS, 所有上下文窗口统一倍率, V2.5 为 1 倍, V2.5-Pro 为 2 倍; 4 月 21 日 14:00 UTC 前购买 Plan 的用户, 已用额度重置. 「价格不变」 说的是按 token 计费的 API 单价和前代 Pro 一样; 2 倍说的是 Plan 套餐里调用 V2.5-Pro 时额度按 V2.5 的两倍扣. 两者是两套计费方式, 不矛盾.
+权重, tokenizer 和完整模型卡以宽松许可放在 HuggingFace, 模型卡有 SGLang 和 vLLM 的部署指南. SGLang 示例用 16 卡张量并行, 16 路专家并行, 2 路数据并行注意力, EAGLE 投机解码 3 步, 上下文长度 1,048,576; 推荐采样 temperature 1.0, top-p 0.95. 模型卡写明权重是 FP8 (E4M3) 混合精度. 1.02T 参数按 FP8 存约 1TB, 再加上式 (3) 的 KV, 示例按 16 卡张量并行部署 (推导).
 
-## 8. 结论与边界
+发布页同时说 API 和 AI Studio 全量上线, 价格和前代 Pro 相同, 模型名换成 `mimo-v2.5-pro`. Token Plan 支持 V2.5, V2.5-Pro, V2.5-TTS, 所有上下文窗口统一倍率, V2.5 为 1 倍, V2.5-Pro 为 2 倍; 4 月 21 日 14:00 UTC 前购买 Plan 的用户, 已用额度重置. 订阅折扣分三档: 月付的现有用户下个月 7 折, 新用户下个月 77 折, 年付全年 88 折. 「价格不变」 说的是按 token 计费的 API 单价和前代 Pro 一样; 2 倍说的是 Plan 套餐里调用 V2.5-Pro 时额度按 V2.5 的两倍扣. 两者是两套计费方式, 不矛盾.
+
+### 5.2. 结论与边界
 
 V2.5-Pro 是 Flash 配方在 1T 规模上的放大: 隐藏维, 层数和专家数加大, 专家形状和激活个数不变; 混合比从 5:1 改到 6:1, 70 层里 10 层存完整 KV, 长上下文 KV 约为全 GA 的 1/7; 3 层 MTP 和 SFT, 分域 RL, MOPD 的后训练照搬. 规模和前代 V2-Pro 相同, 智能体基准的涨幅都来自训练, 1M 上的 GraphWalks 从 0 到可用.
 

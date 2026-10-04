@@ -7,21 +7,13 @@ excerpt: "Qwen3.8-Flash-Next 是 125B 总参, 6B 激活的 MoE, 另带 51B 放�
 ---
 # Qwen3.8-Flash-Next: 6B 激活追 397B 旗舰的架构与稳定性设计
 
-## 太长不看版
-
-材料是 Qwen Team 的技术报告 *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability* (2026-08-26, 28 页), 只覆盖架构, 优化器和 base 模型评测.
-
-- **规模**: 骨干 125B 总参, 每 token 激活 6B; 另有 51B n-gram embedding 表放在主机内存, 按输入 token 预取. 专家数, 层数, 隐藏维报告没给.
-- **四处架构改动**: 每四层三层 Gated DeltaNet 一层全注意力; 继续预训练时全注意力换成 QSA (先把 key 按 4 个 token 平均池化再让 indexer 打分, 每个 query 选 2,048 个 token); 残差加宽成 4 支, 用逐通道 sigmoid 门读入的 Gated Residual; 第 2 层放一层 n-gram embedding.
-- **优化**: Muon (Polar Express 系数, 8 步 NS, 融合矩阵先拆再正交化); 重新拟合的超参 Scaling Laws 给出更大的 batch 和学习率; 取消 batch warmup. 4 倍学习率的压力测试里 AdamW 基线每万步 183 次 loss spike, Muon 加 GR 为 0.
-- **结果**: 14 项 base 基准对 Qwen3.7-Plus-Base (397B-A17B) 赢 8 项, 其余最多落后 2.59 分, 激活参数和训练 token 各约 1/3, 训练 FLOPs 约 1/9. 1M 长度上 QSA 注意力 prefill 快 7.6×, decode 快 4.9× (kernel 级).
-- **没给的**: 预训练数据, 后训练配方和后训练模型评测.
-
-它改了四处架构 (GDN 混合注意力, 继续预训练阶段换上的 Qwen Sparse Attention, 四支加宽的 Gated Residual, 单层 n-gram embedding), 换了优化器 (Muon), 重新拟合了超参 Scaling Laws, 又设计了一套压力测试验证稳定性. 每个候选改动都按三条轴评估: loss 与下游基准, 训练/prefill/decode 三个阶段的成本, 对最优超参和稳定性的影响. 报告反复强调这三条轴经常给出相反的结论, 并把这些分歧当作设计依据写进正文. 预训练数据和后训练配方这一面报告没有展开.
+材料是 Qwen Team 2026-08-26 发布的技术报告 *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability* (28 页), 只覆盖架构, 优化器和 base 模型评测, 预训练数据和后训练配方没有展开. 它要回答的问题是: 一个每 token 只激活 6B 参数的 MoE, 改哪几处架构和优化器, 才能用远少于上一代 397B-A17B 旗舰的训练算力追上它.
 
 相关机制的推导在本库其他笔记里. GDN 与线性注意力: [Kimi Delta Attention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md). QSA: [QSA Qwen 稀疏注意力](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/06-QSA-Qwen稀疏注意力/06-QSA-Qwen稀疏注意力.md). Gated Residual: [Gated Residual](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md). Muon 与 Polar Express: [MuonClip 与 Polar Express](../../../../llm-guide/6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md). Scaling Laws: [Scaling Laws](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md). MoE: [DeepSeek MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md). MTP 与投机解码: [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用.md). 同族骨架: [Qwen3.5](../qwen3-5/qwen3-5-analysis.md), [Qwen3-Next](../qwen3-next/qwen3-next-analysis.md).
 
-## 1. 设计目标: 三组参数和一个成本比
+## 1. 设计目标与注意力: GDN 混合与 QSA
+
+### 1.1. 设计目标: 三组参数和一个成本比
 
 报告开篇给出三组参数. 125B 是骨干总参, 决定容量; 6B 是每 token 激活的参数, 决定每步矩阵乘的计算量; 51B 是 n-gram embedding 表, 放在主机内存里按需预取, 几乎不增加每 token 的计算. 三个数不能相加, 既不能说 「182B 激活」, 也不能把 125B 当稠密模型计费. 专家总数, 每 token 选几个专家, 是否有共享专家, 层数和隐藏维度, 这些整数报告都没有给; Muon 一节提到 「routed and shared experts」, 说明至少有共享专家.
 
@@ -29,9 +21,7 @@ excerpt: "Qwen3.8-Flash-Next 是 125B 总参, 6B 激活的 MoE, 另带 51B 放�
 
 三轴评估是全文的方法论. 第一轴看 loss 和下游基准, 第二轴分别看训练, prefill, decode 的代价, 第三轴看改动是否挪动了最优学习率和 batch size, 以及大规模训练会不会不稳. 报告列出了几处三轴打架的例子: n-gram 词表越大 loss 越低, 下游却饱和; 残差读写改成数据依赖, loss 几乎不动, 基准却明显上升; 残差稀疏读和去掉位置编码在预训练阶段看不出差别, 后训练后才暴露问题. 这些例子在后面各节逐个出现.
 
-## 2. 注意力: GDN 混合与 QSA
-
-### 2.1. GDN 混合: 三层 Gated DeltaNet 配一层全注意力
+### 1.2. GDN 混合: 三层 Gated DeltaNet 配一层全注意力
 
 token 混合用的是逐层混合: 每四层里三层 **Gated DeltaNet** (GDN), 一层全局注意力. GDN 把前缀压进固定大小的矩阵状态, 计算随长度线性增长, decode 时不需要随长度增长的 KV cache; 全注意力层保留逐 token 的精确检索, 这是任何有限状态记忆都难以完全复现的. 报告把线性注意力解释为 fast-weight 记忆: 状态矩阵 $S_t \in \mathbb{R}^{d_k \times d_v}$ 存的是 key 到 value 的关联.
 
@@ -41,7 +31,7 @@ gated delta rule 分两步. 先用衰减门 $\alpha_t$ 整体缩小旧状态, $\
 
 按四件事看这对组合. GDN 层: 谁算, 是本层隐状态经投影, 卷积, L2 归一化得到的 $q_t, k_t, v_t$ 和两个门 $\alpha_t, \beta_t$; 和谁算, 当前 $q_t$ 只读本头的状态矩阵 $S_t$; 状态怎么变, 每头一个 $d_k\times d_v$ 矩阵, 每个 token 衰减一次, 写入一次误差项, 大小与长度无关; 丢了什么, 旧关联按 $\alpha_t$ 整体衰减 (每头一个标量门, 不分通道), 远处的精确内容取不回来. 全注意力层: 谁算, 本层隐状态投影出的 Q, K, V, 带 RoPE 和输出门; 和谁算, 与全部历史 token 做 softmax; 状态怎么变, 每个 token 追加一条 KV, 线性增长; 丢了什么, 在继续预训练换成 QSA 之前不丢信息, 代价是平方复杂度.
 
-### 2.2. 混合比例与位置编码的实验
+### 1.3. 混合比例与位置编码的实验
 
 Tab. 1 在 28 层 25B-A3B MoE 上比较三种结构, 先在 4K 长度训 400B token, 再在 32K 长度训 80B token. 两种混合结构都是每四层一层全注意力, 其余层分别用窗口 128 的 SWA 或 GDN. 九项平均分: 全注意力 49.87, SWA 混合 51.15, GDN 混合 53.81. GDN 混合在九项里有八项超过全注意力 Transformer, 七项超过 SWA 混合; SWA 混合在 MMLU (66.30 对 66.26) 和 EvalPlus (52.12 对 49.71) 上更高. 报告自己承认这张表只能说明混合结构有效, 分不清每项提升具体来自哪个组件.
 
@@ -49,7 +39,7 @@ Tab. 1 在 28 层 25B-A3B MoE 上比较三种结构, 先在 4K 长度训 400B to
 
 训练侧的 GDN kernel 用 FlashQLA 实现, 这是基于 TileLang 的融合线性注意力 kernel 库, 已在 GitHub 开源. 在多种 NVIDIA GPU 配置上, 它相对 FLA 的 Triton kernel 前向快 2–3×, 反向约 2×. 这是 kernel 级数字, 不代表端到端训练吞吐提升同样的倍数.
 
-### 2.3. Qwen Sparse Attention: 压缩后的 micro-block indexer
+### 1.4. Qwen Sparse Attention: 压缩后的 micro-block indexer
 
 继续预训练 (CPT) 阶段, 骨干和 MTP 模块里所有全注意力层都换成 Qwen Sparse Attention (QSA). 它沿用 DeepSeek Sparse Attention (DSA) 的思路: 用一个轻量 indexer 给历史位置打分, 每个 query 只对 top-k 位置做真正的 attention. DSA 的问题是 indexer 本身是 $O(n^2)$, 序列很长时这部分开销不可忽略. QSA 的改法是先把 key 序列按 r 个 token 一块做**平均池化压缩**, indexer 在压缩后的序列上打分, 复杂度降到 $O(n^2/r)$.
 
@@ -65,7 +55,7 @@ $q_i^h$ 是第 h 个 indexer 头在位置 i 的 query (RMSNorm 后按位置 i �
 
 QSA 按四件事归纳. 谁算: indexer 的 4 个 query 头按 token 算, 1 个 key 头按 4-token 块算 (先平均再 RMSNorm, 再按块起点加 RoPE); 主注意力仍是原来的头. 和谁算: indexer 的 query 与所有完整的历史块打分, 选出 512 块; 主注意力只与这些块展开后的至多 2,048 个 token 加当前不完整块做 softmax. 缓存怎么变: 主注意力的 KV cache 仍然存全部 token, 另加一份按块压缩的 indexer key, 约为 token 数的 1/4 乘 indexer 头维; 省的是每步读多少 KV, 不是存多少. 丢了什么: 没被选中的块对当前 query 完全不可见, 块内 4 个 token 被平均后, 打分时分不出是哪一个 token 相关.
 
-### 2.4. QSA 的训练日程与长上下文结果
+### 1.5. QSA 的训练日程与长上下文结果
 
 QSA 在 256K 长度的 CPT 阶段引入, 分两步. 第一步是稠密蒸馏: 把骨干所有注意力头的 softmax 分布求和并 L1 归一化, 作为 token 级教师分布, 再对每块取 max pooling (不用平均, 以免稀释少数关键 token 的信号), 归一化后用 KL 散度蒸馏给 indexer:
 
@@ -81,9 +71,9 @@ Tab. 3 还有一个报告没有展开的现象: MRCR 在 256K 还有 93.00, 到 
 
 MTP 模块里的注意力层也换成 QSA, 并按 GLM-5 的做法在投机解码的各步之间复用 top-k 索引. Tab. 4 做了四步投机解码: 平均接受长度从 4.06 变为 4.07, MT-Bench, GSM8K, MATH, HumanEval, MBPP 五项都几乎不变. 这说明复用索引没有伤到草稿质量, 但复用本身省了多少延迟, 报告没有单独列表.
 
-## 3. 残差与 embedding: GR 与 N-gram
+## 2. 残差与 embedding: GR 与 N-gram
 
-### 3.1. 残差加宽: 从 AltUp 到 Hyper-Connections
+### 2.1. 残差加宽: 从 AltUp 到 Hyper-Connections
 
 Pre-norm 残差训练稳定, 但每个块读的都是同一条残差流, 早期写入的特征要和之后所有写入竞争. 修改残差路径的工作分两类: 一类让每层的读写更有表达力 (highway network 一系), 另一类把残差流本身加宽成多条并行支路 (**AltUp**, **Hyper-Connections**). 报告认为两者互补: 加宽提供容量, 读写机制决定容量怎么用.
 
@@ -91,7 +81,7 @@ Pre-norm 残差训练稳定, 但每个块读的都是同一条残差流, 早期�
 
 Tab. 5 在 560B token 的 25B-A3B 上比较四个端点. Pre-norm loss 1.617, 九项平均 50.91; mHC 静态 1.596 / 52.49; mHC 动态 1.594 / 54.47; GR 1.590 / 54.66. 静态加宽让 loss 降了 0.021, 平均分涨 1.58; 从静态改成动态, loss 只再降 0.002, 平均分却再涨 1.98. loss 变化的比例和基准变化的比例正好相反, 只看 loss 会低估数据依赖读写的价值.
 
-### 3.2. Gated Residual: 五条消融结论
+### 2.2. Gated Residual: 五条消融结论
 
 从静态算子出发, 报告只在收益大于成本的地方加表达力. 除了上一节已经给出的「读写改成数据依赖」之外, 还有四条消融结论. sigmoid 门比 tanh 在 loss 和稳定性上都更好, 和 GDN, 注意力里 sigmoid 门优于 SiLU/tanh 的观察一致. 读的粒度比写的粒度重要: 把 $H_{\mathrm{mix}}$ 从每支一个标量细化到每支每通道一个权重有用, 同样细化 $H_{\mathrm{combine}}$ 几乎无用, 所以写保持每支一个标量. 预测算子时用全部支路, 比只用最后一支或先池化更好, 每支单独做 RMSNorm (group RMSNorm) 还有额外收益. 读写足够强之后, $n_r \times n_r$ 的混合算子 $H_{\mathrm{res}}$ 没有显著收益.
 
@@ -119,7 +109,7 @@ GR 用 $n_r = 4$, 每层的注意力块和 MLP 块各有一个 GR. 因为读已�
 
 Tab. 6 在 28 层模型上和 Attention Residual (AttnRes, 用 softmax attention 在前面各层输出上决定每个子层读什么) 比较. 全量 AttnRes 不带 GatedNorm 时 loss 1.762, 和 GR 相同; 带 GatedNorm 后是 1.758, 反而比 GR 略低. Block AttnRes 把每 S 个子层求和成一个表示再 attend, 不带 GatedNorm 时 S=2 和 S=4 相对全量 AttnRes (相当于 S=1) 分别多出 0.008 和 0.011 的 loss. 48 层时 Block AttnRes (S=4) 是 1.711, GR 是 1.707. 所以 GR 并非每张表上 loss 都最低, 它的优势在于不需要保存并 attend 前面所有子层的输出, 访存更省. GatedNorm 在每种残差设计上都降 loss, 在 AttnRes 上降 0.004–0.005, 在普通 pre-norm 上只降 0.002, 报告的解释是子层读入的东西越复杂, 门的作用越大.
 
-### 3.3. GR 的支路在做什么: 路径分解
+### 2.3. GR 的支路在做什么: 路径分解
 
 GR 没有支间混合, 每条支路只是过去各块输出的加权累加, 所以可以把某个块的输入精确分解成前面每个块的贡献 $a_{u\to v}$, 再归一化成份额 $\pi_{uv}$, 分解误差在 $3\times10^{-8}$ 以内. 报告在 20 层 MoE 上比较带 GR 和不带 GR 的两个模型 (同配方, 同数据, 同步数, 同一批探测 token), 看份额差 $\Delta_{uv}$, 以去掉所有残差网络共有的 「近邻写入者占主导」 这一模式.
 
@@ -129,7 +119,7 @@ GR 没有支间混合, 每条支路只是过去各块输出的加权累加, 所�
 
 推理侧报告做了两次尝试. 第一次是稀疏读: 训练好的模型里每层写入通常由两条支路主导, 于是只读门值最高的两条. 预训练 loss 和基准几乎不受影响, 但后训练后质量明显下降, 按层变化稀疏度也没解决, 最终放弃. 这是 「预训练指标不够用」 的第二个例子. 第二次是 FP8 存残差: GR, gated attention, GDN 的门都限制了写入残差的幅度, 残差值范围窄, 适合低精度. FP8 相对 BF16 残差搬运字节数减半, 质量几乎不变. 读和写各融合成一个 kernel, group RMSNorm 折进读 kernel, 每块每个方向只遍历一次加宽残差.
 
-### 3.4. N-gram embedding: 放在哪一层, 词表多大
+### 2.4. N-gram embedding: 放在哪一层, 词表多大
 
 **n-gram embedding** 用以当前 token 结尾的短 n-gram 作为 key 去查 embedding 表, 查到的向量加到 token 表示上. 寻址只依赖输入 token, 是确定的, 所以可以放在主机内存里异步预取, 几乎不增加每 token 的计算和延迟. 报告引用的前作是 Gemma 3n 和 DeepSeek 的 Engram (Cheng et al., 2026); Engram 论文标题就把它称作「a new axis of sparsity」: MoE 是条件计算, n-gram 表是条件查表. 本节实验统一用每激活参数 300 个 token (TPP).
 
@@ -139,9 +129,9 @@ Tab. 8 固定模型总参数: 加大 n-gram 词表, 同时减少专家数. loss 
 
 Tab. 9 在不动 MoE 的前提下把 n-gram 词表从基础词表 (250K) 的 20 倍扩到 200 倍: loss 从 1.553 单调降到 1.526, 下游却在 50 倍左右饱和, 数学类 (MATH 37.38 到 35.34, GSM8K 65.09 到 62.96) 甚至回落. 唯一持续上涨的是中文: C-Eval 从 71.75 到 74.94, CMMLU 从 72.29 到 73.24. Tab. 7 的第 2 层一行和 Tab. 9 的 50 倍一行数字完全相同, 说明放置实验用的是 50 倍词表. 报告没有给最终模型的词表倍数和 embedding 维度; 若最终也是 50 倍, 即 12.5M 个槽, 51B 参数对应每槽约 4,100 维 (推导). 词表压缩, 按阶数非均匀分配, 按频率分槽等其他提效手段, 报告说在它的配方里都没有一致收益.
 
-## 4. 优化与稳定性
+## 3. 优化与稳定性
 
-### 4.1. Muon: 哪些参数用, 怎么正交化
+### 3.1. Muon: 哪些参数用, 怎么正交化
 
 主优化器是 **Muon**: 对矩阵参数的动量做 Newton–Schulz (NS) 迭代, 近似正交化后作为更新方向. 具体设置是 Nesterov 动量 $\mu = 0.95$, 正交化结果乘 $\gamma(A,B) = 0.2\sqrt{\max(A,B)}$, 使更新的 RMS 与矩阵形状无关; NS 系数用 Polar Express 的逐步系数表 (给定步数下 minimax 最优); 迭代 8 步, 比更少步数正交化更准, 在压力测试里梯度范数尖峰的幅度和频率都更小; NS 前 Frobenius 归一化的稳定常数设为 $10^{-14}$.
 
@@ -151,7 +141,7 @@ Muon 只用于真正充当线性映射的二维权重: 注意力 q/k/v 和输出
 
 工程上有两个问题. NS 迭代需要完整矩阵, 约 $4K\max(A,B)\min(A,B)^2$ FLOPs (K 为迭代步数), 张量并行下没有哪个 rank 持有完整权重, 数据并行下按元素数平均切分又会因为代价与短边立方成正比而产生严重的拖尾. 报告开发了 Canzona: 按估计的 NS FLOPs 把整块参数重新分配到各数据并行 rank, 张量内部不切; 再用异步的 micro-group 流水线通过融合 All-to-All 在张量并行 rank 间重建完整矩阵, 每个持有者跑的更新和单卡 Muon 数学等价, 同时保留 ZeRO-1 的 bucket 结构和 Reduce-Scatter 与反向的重叠. 第二个问题是拆分后一层就有上百个子矩阵, 优化器一步变成一长串小 kernel, 瓶颈在 launch 开销, 解决办法是把整个优化器步骤捕获成 CUDA graph.
 
-### 4.2. 重新拟合超参 Scaling Laws, 取消 batch warmup
+### 3.2. 重新拟合超参 Scaling Laws, 取消 batch warmup
 
 最优学习率和 batch size 取决于架构和优化器, 两者都换了之后, Qwen3.5 的超参配方不再最优. 报告观察到新架构和优化器在旧配方下训练明显更稳, 于是重新拟合了超参 Scaling Laws. 新拟合预测的最优 batch 和学习率都明显更大, 学习率随模型规模下降得也更慢. 闭式系数报告没有给, 只给了验证点. 验证的思路是在各自最敏感的区间检验: batch size 在小模型长训练上验证 (batch 过大时这里最容易吃亏), 学习率在大模型短预算上验证 (这里不稳定是主要风险).
 
@@ -161,7 +151,7 @@ batch size 在 20 层 10.8B-A0.89B MoE 上训 4T token 验证. 旧配方 B = 12.
 
 学习率在 48 层 156B-A7B MoE 上用 419B token 验证. 预测最优是 B = 8.4M, $\eta = 1.76\times10^{-3}$, 对照组包括学习率除以和乘以 $\sqrt2$, batch 加 25% 配匹配学习率, 以及旧配方 (B = 4.2M, $\eta = 6.8\times10^{-4}$). 新预测附近四个设置的最终 loss 相差在 $7\times10^{-4}$ 以内, 接近噪声, 旧配方高出 $7.8\times10^{-3}$. Tab. 10 的七项平均: 预测最优 60.55, 旧配方 56.41, 差 4.14 分. 新配方的 batch 是旧的 2 倍, 学习率约是旧的 2.6 倍 (按表计算). 报告自己也说排序只是观察, 每个设置只评一次, 前几名之间的差距可能在评测噪声内. 裁剪在 warmup 后五个设置里都没有触发, 预测最优的最大裁剪前梯度范数只到阈值的 28%, 旧配方是 51%.
 
-### 4.3. 稳定性压力测试: 把大规模的不稳提前放出来
+### 3.3. 稳定性压力测试: 把大规模的不稳提前放出来
 
 万亿参数, 数十万亿 token 的训练会遇到小规模实验里看不到的不稳定, 比如长时间停在峰值学习率带来的 loss spike 和发散. 报告的压力测试沿用 Wortsman 等人的观察: 调高学习率能在小模型上复现大规模的不稳定. 具体做法是在 28 层 MoE 上把学习率固定在最优值的 2 倍或 4 倍, 不做衰减, 模拟生产训练中长时间的峰值学习率. 判据是新配方在同等压力下至少和已经成功放大过的 Qwen3.5 结构加 AdamW 一样稳. 所有运行用同一个 batch 和裁剪阈值 0.5, 统计三个量: loss spike (超过 201 步滚动中位数 0.1 以上的步数), 裁剪前梯度范数的 p99.9 与越过阈值次数, 每块最大激活.
 
@@ -169,21 +159,21 @@ batch size 在 20 层 10.8B-A0.89B MoE 上训 4T token 验证. 旧配方 B = 12.
 
 为了单独看门的作用, 报告做了单变量对照: 3 倍学习率, 固定 AdamW 和结构, 只开关 GatedNorm. 打开门后 spike 从 32.0 降到 3.2 次/万步, 越阈次数从 256 降到 20. 在无门基线上做学习率阶梯, 激活离群值几乎随学习率线性增长, spike 率增长得快得多; 打开门之后, 最高学习率下的离群值水平甚至低于无门基线在最低学习率下的水平. 报告的解释是高学习率训练需要某种重新缩放的机制, 没有显式门时网络只能靠放大激活离群值来实现, 于是变得脆弱; 乘性门直接提供了这种缩放. 报告把 qk-clip (Kimi K2) 和 SwiGLU-clip (gpt-oss) 列为它没有用到的显式裁剪手段. 这两种手段直接裁剪 attention logit 或激活值, GR 则用门从结构上限制写入残差的幅度.
 
-### 4.4. 生产配置下的验证
+### 3.4. 生产配置下的验证
 
 压力测试用的是 28 层模型和人为放大的学习率, 所以报告又在约 8 倍规模的模型, 生产学习率下验证了一遍. 三个运行共享数据顺序, 学习率日程和优化器, 比较前 276B token: Qwen3.5 结构加 Muon, 再加 GR, 以及完整的 Flash-Next 配方 (进一步改进的 GR 加 n-gram embedding). Fig. 13a 显示, 加 GR 在 276B token 时 loss 降 0.026, 完整配方再降 0.032, 合计比 Muon 基线低 0.058. 报告说这使 Flash-Next 以约九分之一的训练成本达到和 Qwen3.7-Plus 相当的预训练结果, 不过 0.058 是早期窗口的数字, 和全量训练的 1/9 FLOPs 是两个不同口径.
 
 梯度范数上, 只用 Muon 的运行中位数约是门控运行的 2 倍, p99.9 是 4.2 倍 (0.097/0.298 对 0.053/0.071 和 0.043/0.066), 而且是唯一越过裁剪阈值的运行. 门控运行在 1000 步滑动窗口里的梯度范数标准差低 4.3–4.7 倍, 在 8 倍的模型规模, 生产学习率下复现了压力测试的结论. 把残差读和 LM head 前的最终归一化融合成一个门控读, 梯度范数进一步下降, 报告认为这是 Flash-Next 和 Muon+GR 之间差距的主要来源. 激活上, GR 在所有探测深度都显著降低了残差最大值. 报告称全量训练过程中没有出现一次 loss spike 或梯度范数异常, 也没有依赖 qk-clip 或 SwiGLU-clip 这类显式裁剪.
 
-## 5. 数据, 评测与谱系
+## 4. 数据, 评测与谱系
 
-### 5.1. 数据与训练日程: 报告给了什么
+### 4.1. 数据与训练日程: 报告给了什么
 
 预训练数据报告里没写: 没有总 token 数, 没有语料来源和配比, 没有多语种或代码比例, 也没有数据清洗流程. 能拼出来的训练日程只有几段. 骨干预训练的学习率, batch 按新拟合的超参 Scaling Laws 设置, 不做 batch warmup; 继续预训练在 256K 长度进行, 最后两步是 QSA 的稠密蒸馏 (约 2B token) 和稀疏联合训练 (约 200B token). 基础词表沿用 Qwen3.5 的 250K.
 
 消融实验的预算倒是写得很清楚, 读表时要对上号: GDN 架构对比是 25B-A3B, 400B+80B token; 残差消融是 25B-A3B, 560B token; n-gram 实验固定 300 TPP; batch 验证是 10.8B-A0.89B, 4T token; 学习率验证是 156B-A7B, 419B token; 压力测试是 28 层 25B-A3B; 生产配置验证看前 276B token. 这些都是不同规模和预算下的结论, 不能直接填进主表. QSA 的消融在 35B-A3B 上做, 用 RULER 到 1M 作指标.
 
-### 5.2. Base 评测协议与主表
+### 4.2. Base 评测协议与主表
 
 评测对象是 Qwen3.8-Flash-Next-Base, 共 14 项. 通用: MMLU (5-shot), MMLU-Pro (5-shot, CoT), MMLU-Redux (5-shot), BBH (3-shot, CoT), SuperGPQA (5-shot, CoT). 数学与 STEM: GPQA (5-shot, CoT), GSM8K (4-shot, CoT), MATH (4-shot, CoT). 代码: EvalPlus (0-shot, HumanEval, MBPP 及其 plus 版的平均), MultiPL-E (0-shot, 8 种语言), SWEBench-Pretrain (SWE-bench 的预训练变体). 多语: MGSM (8-shot, CoT), MMMLU (5-shot), INCLUDE (5-shot).
 
@@ -191,7 +181,7 @@ Tab. 11 对照 Qwen3.8-27B-Base (27B 稠密) 和 Qwen3.7-Plus-Base (397B-A17B). 
 
 六项输掉的格子里, MMLU, GPQA, INCLUDE 差距都在 0.5 以内, 实际可以看作打平; 真正落后的是 MATH 和 MultiPL-E. 这两项分别考竞赛数学和八种语言的代码生成. 一种可能是它们更依赖总参数带来的知识储备, 125B 对 397B 的差距在这里显出来; 报告没有做这方面的分析. 赢得最多的 MGSM (+3.91) 和 SuperGPQA (+2.94), 报告没有解释原因. 这张表只比较 base 模型, 且只和自家两个模型比, 没有外部对手. 报告还指出更少的激活参数加上 QSA, GDN 的推理优化, 推理成本显著更低, 但没有给端到端的推理成本对比数字.
 
-### 5.3. 后训练的缺位与谱系位置
+### 4.3. 后训练的缺位与谱系位置
 
 报告的组织说明里写 「Evaluation of the resulting base and post-trained models follows」, 实际第 4 节只有 base 模型表, 报告里没有后训练模型的评测. 后训练配方 (SFT 数据, RL 算法, 奖励设计) 也没有. 后训练只在两处出现, 都是作为 「晚期才暴露的问题」: NoPE 变体后训练后无限生成率升高, GR 稀疏读后训练后质量下降. 报告结论里把这两者和 batch warmup 并列, 说明为什么设计时不能只看预训练指标, 并指出下一步最紧的瓶颈是评测吞吐: 需要一种便宜的中等规模探针, 能可靠预测后训练之后的排序.
 
@@ -208,9 +198,7 @@ Tab. 11 对照 Qwen3.8-27B-Base (27B 稠密) 和 Qwen3.7-Plus-Base (397B-A17B). 
 
 Qwen3-Next 首次引入 GDN 与 Gated Attention 的 3:1 混合, Qwen3.5 把这套骨架用到 397B-A17B 旗舰, 本报告的压力测试也以「Qwen3.5 结构加 AdamW」为基线. Flash-Next 保留 3:1 混合, 改动集中在全注意力层 (QSA), 残差 (GR), 骨干外容量 (n-gram 表) 和优化器 (Muon) 四处. 同期的 [Qwen3.8-Max](../qwen3-8/qwen3-8-analysis.md) (2.4T-A95B) 走的是另一个方向: 在 Qwen3.5 骨架上放大规模, 重点放在真实工作 RL.
 
-## 6. 结论
-
-Qwen3.8-Flash-Next 用 125B-A6B 的骨干加 51B 主机内存查表, 以约 1/9 的训练 FLOPs 在 14 项 base 基准上与 397B-A17B 的上一代旗舰相当 (8 胜 6 负, 负的最多 2.59 分), 主要靠四处改动: GDN 混合加 QSA 降低长上下文注意力的成本, Gated Residual 加宽残差并用门稳住训练, n-gram 表在加速器外加容量, Muon 配重新拟合的超参允许更大的 batch 和学习率. 报告最有用的部分是失败记录: NoPE, 残差稀疏读, batch warmup 和大 n-gram 词表都在预训练指标上看起来没问题, 后训练或下游评测才暴露出来. 后训练模型和预训练数据都没有公开, 所以 base 表之外的能力目前无法判断.
+把前面几节放在一起看, Qwen3.8-Flash-Next 用 125B-A6B 的骨干加 51B 主机内存查表, 以约 1/9 的训练 FLOPs 在 14 项 base 基准上与 397B-A17B 的上一代旗舰相当 (8 胜 6 负, 负的最多 2.59 分), 主要靠四处改动: GDN 混合加 QSA 降低长上下文注意力的成本, Gated Residual 加宽残差并用门稳住训练, n-gram 表在加速器外加容量, Muon 配重新拟合的超参允许更大的 batch 和学习率. 报告最有用的部分是失败记录: NoPE, 残差稀疏读, batch warmup 和大 n-gram 词表都在预训练指标上看起来没问题, 后训练或下游评测才暴露出来. 后训练模型和预训练数据都没有公开, 所以 base 表之外的能力目前无法判断.
 
 ## 参考文献
 

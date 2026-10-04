@@ -7,11 +7,7 @@ excerpt: "Qwen3.8-Max 在 Qwen3.5 骨架上放大到 2.4T 总参, 95B 激活, �
 ---
 # Qwen3.8-Max: 2.4T 参数的开源 Max 与真实工作 RL
 
-## 太长不看版
-
-Qwen3.8-Max 总参 2.4T, 每 token 激活 95B, 激活比例约 4.0%, 骨架沿用 Qwen3.5. 相对 Qwen3.5-397B-A17B, 总参放大约 6 倍, 激活放大约 5.6 倍. 这是 Qwen 第一次开放 Max 档权重 (发布时说「下周」放出). 训练侧公开了三条设计: RL 环境沿 Task, Workspace, Harness 三条独立的轴扩张; 执行检查, rubric 裁判和 agent 自查收进一个奖励系统; 在线数据均衡器让每个 batch 在任务, 难度, workspace, harness 四个维度上分布均衡, 用来压 batch 间的梯度方差.
-
-分数上, 31 行文本与 agent 基准里它独占第一的只有 6 行, 对上一代 Qwen3.7-Max 全部上升, DeepSWE 从 21.6 到 56.6; 长链编码 agent 大多落后 Fable5 (SWE-bench Pro 67.7 对 80.0). 55 行多模态基准里独占第一约 36 行, 感知, 定位和文档类领先最明显 (Dense200 87.0 对次高 69.7), 多步视觉 agent 只赢 3 行. 材料是阿里云社区转载的发布博客 (2026-08-03): 专家数, 层数, 预训练数据, RL 算法名称和 rubric 细节报告里都没写.
+材料是阿里云社区转载的 Qwen3.8-Max 发布博客 (2026-08-03), 没有技术报告, 专家数, 层数, 预训练数据, RL 算法名称和 rubric 细节都没写. 问题是: 在 Qwen3.5 骨架上放大到 2.4T 总参的开放权重 Max 模型, 训练侧换了什么, 分数在哪些任务上领先, 在哪些任务上落后.
 
 ## 1. 从 Qwen3 到 Qwen3.8: 旗舰线怎样一路变过来
 
@@ -54,7 +50,7 @@ Qwen3.7-Max 在 environment scaling 上加了一条具体设计: 每个训练实
 
 ### 2.1. 2.4T 与 95B 分别决定什么
 
-博客给的结构信息只有 2.4T 总参, 95B 激活, 以及「Built upon the architectural foundation of Qwen 3.5」一句. 专家数, 每 token 选几个专家, 有没有共享专家, 层数, 词表, 报告里都没写. 总参决定权重要占多少存储, 激活参决定每 token 前向要算多少. 按每 token 前向约 $2N_{\text{act}}$ FLOPs 的粗算 ($N_{\text{act}}$ 是激活参数量, 不计注意力的长度相关项), 3.8-Max 每 token 约 190 GFLOPs, 3.5-397B 约 34 GFLOPs, 相差约 5.6 倍.
+博客给的结构信息只有 2.4T 总参, 95B 激活, 以及「Built upon the architectural foundation of Qwen 3.5」一句. 专家数, 每 token 选几个专家, 有没有共享专家, 层数, 词表, 报告里都没写. 相对 Qwen3.5-397B-A17B, 总参放大约 6 倍 ($2400/397\approx6.0$), 激活放大约 5.6 倍 ($95/17\approx5.6$). 这也是 Qwen 第一次开放 Max 档权重, 博客发布时说权重「下周」放出. 总参决定权重要占多少存储, 激活参决定每 token 前向要算多少. 按每 token 前向约 $2N_{\text{act}}$ FLOPs 的粗算 ($N_{\text{act}}$ 是激活参数量, 不计注意力的长度相关项), 3.8-Max 每 token 约 190 GFLOPs, 3.5-397B 约 34 GFLOPs, 相差约 5.6 倍.
 
 权重的存储按每参数字节数算: BF16 约 4.8TB, FP8 约 2.4TB. 一台八卡 H200 共 $8\times141=1{,}128$GB, 八卡 B200 共 $8\times192=1{,}536$GB, FP8 权重都放不下, 还没算 KV cache. 开源权重对大多数用户意味着可以审查和微调, 真要服务这个规模, 至少是两台以上八卡机做专家并行.
 
@@ -68,13 +64,11 @@ Qwen3.7-Max 在 environment scaling 上加了一条具体设计: 每个训练实
 
 博客的 Work 一节是全文唯一讲训练方法的地方. 目标是同时扩大 RL 环境和 RL 算力, 让通用工作能力在 QwenWork, Claude Code, Codex, OpenClaw, Hermes 几种 harness 上一起提升. 博客把它拆成三个互相耦合的问题: 环境怎么扩, 奖励怎么统一, batch 怎么配. 关于这一套 RL 的一般背景, 见 [Agentic RL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md).
 
-### 3.1. 环境: Task, Workspace, Harness 三条轴
-
-三条轴各自分级. Task 从单任务到多任务, 再到跨多天的任务; Workspace 从多文件到分层目录, 再到复杂的异构目录; Harness 按类别, 版本和挂载的 skills 变化. 三轴独立, 组合数是乘法: 设三轴各有 $n_T, n_W, n_H$ 个取值, 可组合出的环境数是 $n_T n_W n_H$, 每加一个 harness 版本就多出 $n_T n_W$ 个环境, 不需要为每个新场景写一套定制集成.
+环境按 Task, Workspace, Harness 三条轴各自分级. Task 从单任务到多任务, 再到跨多天的任务; Workspace 从多文件到分层目录, 再到复杂的异构目录; Harness 按类别, 版本和挂载的 skills 变化. 三轴独立, 组合数是乘法: 设三轴各有 $n_T, n_W, n_H$ 个取值, 可组合出的环境数是 $n_T n_W n_H$, 每加一个 harness 版本就多出 $n_T n_W$ 个环境, 不需要为每个新场景写一套定制集成.
 
 和 Qwen3.7 的三分对照, 改动在第二条轴. 3.7 是 Task, Harness, Verifier: 同一道题可以换不同的工具接口跑, 同一个 harness 可以配不同的验证器. 3.8 把 Workspace 单独拿出来, 说明「在什么样的目录里干活」成了一个要专门扩张的变量. 真实办公任务的难点常在于找文件, 读懂目录结构, 在几百份异构文档里定位相关内容, 第 4.3 节那个一次找出 1,284 条条款的合规案例考的就是这个. Verifier 则不再是可替换的部件, 收进了下一节的统一奖励. 每条轴有多少个取值, 环境总数多少, 博客都没给.
 
-### 3.2. 奖励: 三种验证收进一个系统
+### 3.1. 奖励: 三种验证收进一个系统
 
 **Universal Reward System** 收进三种验证方式: 基于执行的检查 (跑代码, 跑测试), 按 rubric 对文本和渲染出来的视觉结果打分, 以及让 agent 去检查产物 (agentic inspection). rubric 可以自动扩展. 博客给出的理由是: 维护一批任务专用 verifier 时, 各自的打分尺度不一致, 跨环境的奖励就不能直接放进同一个 batch 比较.
 
@@ -88,7 +82,7 @@ $x$ 是题目, $k$ 是判据条数, $w_j$ 是第 $j$ 条的权重. 分母做了�
 
 agentic inspection 这一项在 Qwen 自己的材料里有前例. Qwen3.7-Max 被当作审查者接进 SWE 任务的 RL 监控, 在超过 80 小时里调用工具一万多次, 新增 13 条启发式规则. 3.8 把「让 agent 检查」写进奖励系统本身, 用途可能更宽: 检查渲染出的网页, 3D 场景, 生成的报告是否符合要求 (推测). LLM 裁判和 agent 检查都会被策略针对, 奖励模型过优化的一般机制见 [Best-of-N 与奖励模型过优化](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.4-其他对齐技术/07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md). 博客没有给 hacking 率或裁判一致性的数字.
 
-### 3.3. 在线数据均衡: batch 的组成怎样影响梯度方差
+### 3.2. 在线数据均衡: batch 的组成怎样影响梯度方差
 
 博客说在线数据均衡器让每个 batch 在任务类型, 难度, workspace, harness 四个维度上分布均衡, 目的是压低 batch 之间的梯度方差, 让 RL 算力能继续加上去. 这句话背后有两个机制.
 
@@ -110,7 +104,7 @@ $r_i$ 是第 $i$ 条回答的奖励. 全对或全错时分子为零, 这道题�
 
 要补一句边界. 「高度均衡」如果指各层等比例, 而训练数据里各层的自然比例并不相等, 那么 batch 梯度的期望也从 $\sum_k w_k\mu_k$ 变成了各层等权平均, 优化目标本身跟着变了, 效果不只是降方差. 这是一个选择, 博客没有交代选的是哪种比例. Fig 1 说随 RL 规模扩大, 几十个内部和公开的工作基准稳定上升; Fig 2 说各 harness 上表现接近. 两张图只有曲线, 博客没有给数值.
 
-### 3.4. MoE 上做 RL 的另一个不稳定源
+### 3.3. MoE 上做 RL 的另一个不稳定源
 
 batch 组成之外, MoE 的 RL 还有一个专门的不稳定源: 同一个 token 在推理引擎里和在训练框架里可能被路由到不同专家. [Ma 等 (2025)](https://arxiv.org/abs/2510.11370) 分析过这个问题: 训练和推理两侧的路由行为不一致, 即便条件完全相同, 重复前向也可能选出不同的专家; 这会放大重要性比率的偏差, 严重时 RL 训练崩溃. 他们的 Rollout Routing Replay (R3) 在推理时记录路由分布, 训练时回放, 显著降低了训推两侧策略的 KL. Qwen3.5 博客里的 rollout router replay 列在异步 RL 框架的技术清单中, 名字和用途都对得上这一类做法.
 
@@ -173,7 +167,7 @@ batch 组成之外, MoE 的 RL 还有一个专门的不稳定源: 同一个 toke
 
 Qwen3.8-Max 独占第一的 6 行是 PaperBench (93.0), WideSearch (81.9), IFBench (82.8), HealthBench (60.2), PLawBench (73.2), PRBench-Finance (58.3); PRBench-Legal 和 Fable5, GPT5.6 三家并列 57.6. Fable5 独占第一的有 14 行, 集中在 coding 和 agent 组. 对 Qwen3.7-Max, 31 行全部上升, DeepSWE (+35.0) 和 FrontierSWE (+32.8) 涨得最多. 其中 WideSearch 和 HealthBench 两行的第一是在缺一个对手的情况下拿的 (GPT5.6 和 Fable5 分别空格).
 
-Coding 组 12 行里 Qwen3.8-Max 只赢 PaperBench 一行. 四个 Qwen 自建基准 (QwenSWEBench, QwenQoderBench, QwenReactBench, QwenSVGBench) 上它一个第一都没拿, 前三个输给 Fable5, 最后一个输给 GPT5.6, 自建基准没有偏向自家模型. 知识类的 HLE 43.6, 比上一代只高 2.2, 落后 Fable5 近 10 分; 指令遵循和医疗, 法律, 金融这类 rubric 评分的专业题领先. 这个形状和第 3.2 节的统一奖励对得上: rubric 能覆盖的专业写作类任务涨得多, 长链编码 agent 仍落后 Fable5 一截.
+Coding 组 12 行里 Qwen3.8-Max 只赢 PaperBench 一行. 四个 Qwen 自建基准 (QwenSWEBench, QwenQoderBench, QwenReactBench, QwenSVGBench) 上它一个第一都没拿, 前三个输给 Fable5, 最后一个输给 GPT5.6, 自建基准没有偏向自家模型. 知识类的 HLE 43.6, 比上一代只高 2.2, 落后 Fable5 近 10 分; 指令遵循和医疗, 法律, 金融这类 rubric 评分的专业题领先. 这个形状和第 3.1 节的统一奖励对得上: rubric 能覆盖的专业写作类任务涨得多, 长链编码 agent 仍落后 Fable5 一截.
 
 几处协议细节影响读数. Agents' Last Exam 报 Pass 和 Score 两个数, Qwen3.8-Max 的 Pass 和 Opus 并列 27.0, Score 却是 52.4 对 45.1. MLS-Bench-Lite 用 Claude Code 跑, 5 小时超时, `max_tokens=131072`, 其他模型分数取自官方榜单, 两边条件不一定相同. Automation-Bench 只用 600 题公开子集.
 
@@ -198,7 +192,9 @@ Coding 组 12 行里 Qwen3.8-Max 只赢 PaperBench 一行. 四个 Qwen 自建基
 
 看图, 读文档, 数数, 定位这类感知任务领先最明显, Dense200 比次高的 Gemini 高 17.3 分. 需要多步操作的 agent 任务 (ScreenSpot Pro, WebArena, MobileWorld, RecreationBench) 大多输给 Fable5. RecreationBench 是博客新提出的黑盒复刻基准: 模型只能通过交互观察一个正在运行的应用, 没有源码, 不能联网, 然后从零重建; 正文说 Qwen3.8-Max 达到「frontier-level」, 表上 51.7 低于 Fable5 的 56.1. OSWorld 2.0 报 binary / partial 两个数, binary 是拿满奖励的任务占比, Qwen3.8-Max 是 19.4 / 46.7, binary 低于 Opus 的 20.6. 视频组 Opus4.8 的 MLVU 只有 53.4, 其他有分数的模型都在 84 以上, 可能是协议没对齐 (推测).
 
-## 6. 接入: 推理档位, 历史 thinking 与 harness
+## 6. 接入与谱系位置
+
+### 6.1. 接入: 推理档位, 历史 thinking 与 harness
 
 API 支持三档 **`reasoning_effort`**: xhigh (默认, 复杂任务), medium, low. 这是推理时多花算力换质量的旋钮, 属于 TestingTime, 和第 3 节 RL 阶段的环境扩张是两条轴. 表头 GPT5.6 Sol 标了 (max), 其他列没有注明推理档位, Qwen3.8-Max 的分数用的大概是默认的 xhigh (推测, 博客没写评测档位).
 
@@ -206,7 +202,7 @@ API 支持三档 **`reasoning_effort`**: xhigh (默认, 复杂任务), medium, l
 
 模型名是 `qwen3.8-max`. QwenCloud 同时兼容 OpenAI 的 chat completions 和 responses 协议, 以及 Anthropic 协议, 所以 Claude Code, Codex, OpenClaw, Qwen Code, Qoder 都能直接接. 这和 RL 环境里的 Harness 轴是同一批名字: 训练时让模型在这些 harness 上一起练, 发布时给出它们的接入配置. 用户反馈页里 Qoder 负责人说双语场景 token 效率比 Opus4.8 高 60%, 等效推理速度高 28%, 这是具名引言, 没有测量协议.
 
-## 7. 在谱系里的位置
+### 6.2. 在谱系里的位置
 
 Qwen 旗舰线的训练重心, 从 Qwen3 的预训练数据配比, 移到了 3.5 之后 RL 阶段能构造多少种环境. 3.5 提出 environment scaling, 3.7 用 Task/Harness/Verifier 三分组合环境, 并开始用模型监控 reward hacking; 3.8-Max 把三轴改成 Task/Workspace/Harness, 把验证收进统一奖励, 再用在线均衡控制 batch 组成. 训练方法的描述一代比一代具体, 但每一代都只给设计, 不给数量和消融.
 

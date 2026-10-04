@@ -7,18 +7,7 @@ excerpt: "DeepSeek-V4.1-Flash 用因果 encoder-decoder 和跨层复用的 CSA2 
 ---
 # DeepSeek-V4.1-Flash: 每 token 890 字节的 global KV
 
-## 太长不看版
-
-材料是 DeepSeek 的正式技术报告 (arXiv 2609.19969). V4.1-Flash 是原生多模态的 MoE 模型, 骨干 552B 参数, prefill 激活 8B, decode 激活 16B, 另挂 196B 的 Engram 条件记忆, 上下文 1M token.
-
-- **KV cache**: 每 token 常驻 HBM 的 global KV 从 V4-Flash 的 3,514 字节降到 890 字节, 约 4 倍; 从 V1 算起是 437 倍. 来源是三处叠加: 前 20 层作因果 encoder, decoder 的 KV 全由 encoder 末层投影 (CED); 38 个 CSA2 层里只有 4 层产生 global KV, 其余层复用 (CSA2 的 Full / Reindex / Reuse 三种模式); 主 KV 从 FP8 改存 FP4.
-- **持久化缓存**: 滑动窗口 (SWA) KV 移出持久化缓存, 缓存命中时只回放最近 128 个 token 近似重建 (SWA Bounded Replay). 持久化 KV 合计缩到 V4 的 1/8.
-- **decode 算力**: 上下文从 4K 拉到 1M, 单 token decode FLOPs 只增加约 1/4, 在 100K 到 128K 之间低于 V4-Flash.
-- **训练**: 45T token (文本与多模态 7:1), batch 固定 100.6M token, 稀疏注意力从零起训, 全程无不稳定. MTP 换成单独训练的 DSpark 草稿模型.
-- **后训练**: 报告自称没有新算法, 增益来自任务合成, 环境规模和 40 个以上教师的 OPD; 推理力度从三档变成 1 到 100 的标量.
-- **结果**: Max 力度下 DeepSWE v1.1 74.2, Terminal-Bench 2.1 90.6, CyberGym 88.1, Codeforces 3471, 均为表内最高; Terminal-Bench 4.0 (31.2 对 Opus-5 的 51.8) 和 ProgramBench (20.3 对 37.0) 仍有明显差距.
-
-报告的出发点是长程 Agent 的负载越来越偏输入: 工具调用一轮接一轮, 每轮都要 prefill, KV cache 要在 HBM, 主机内存和 SSD 之间存放与搬运. V4 用压缩稀疏注意力压下了长序列的计算, 剩下的瓶颈变成 cache 的容量和带宽. V4.1 从架构, 精度, 部署三层回应: 架构上用 **Causal Encoder-Decoder (CED)** 让 prefill 只跑一半层, 再用 **CSA2** 的跨层复用把 global KV 压到每 token 890 字节; 精度上把主 KV 存成 **FP4**; 部署上用 **SWA Bounded Replay** 把 SWA KV 从持久化缓存里拿掉. 下面先从配置复算规模和 KV 字节, 再依次讲结构, 扩展模块, 优化器, 基础设施, 数据与日程, 后训练和评测.
+材料是 DeepSeek 的正式技术报告 (arXiv 2609.19969). 报告的出发点是长程 Agent 的负载越来越偏输入: 工具调用一轮接一轮, 每轮都要 prefill, KV cache 要在 HBM, 主机内存和 SSD 之间存放与搬运; V4 用压缩稀疏注意力压下了长序列的计算之后, 剩下的瓶颈是 cache 的容量和带宽.
 
 ## 1. 规模与每 token KV 字节
 
@@ -48,7 +37,7 @@ excerpt: "DeepSeek-V4.1-Flash 用因果 encoder-decoder 和跨层复用的 CSA2 
 
 ### 2.1. CED: 从 YOCO 借来的半网 prefill
 
-CED 的灵感来自 **YOCO**(You Only Cache Once). YOCO 把网络分成 self-decoder 和 cross-decoder 两半, 下半层用高效注意力产出一份 global KV, 上半层全部通过交叉注意力复用这一份, 于是 prefill 走完下半层就可以提前退出. CED 做了两处改动. 第一, decoder 的 global KV 条目 $C_l$ 和压缩权重 $Z_l$ 不来自本层隐状态 $H_l$, 而是由 encoder 末层 $H_{L/2}$ 经层相关投影得到, 见式 (1):
+**CED** (Causal Encoder-Decoder) 的灵感来自 **YOCO**(You Only Cache Once). YOCO 把网络分成 self-decoder 和 cross-decoder 两半, 下半层用高效注意力产出一份 global KV, 上半层全部通过交叉注意力复用这一份, 于是 prefill 走完下半层就可以提前退出. CED 做了两处改动. 第一, decoder 的 global KV 条目 $C_l$ 和压缩权重 $Z_l$ 不来自本层隐状态 $H_l$, 而是由 encoder 末层 $H_{L/2}$ 经层相关投影得到, 见式 (1):
 
 $$
 C_l=H_{L/2}W_l^{KV},\qquad Z_l=H_{L/2}W_l^{Z},\qquad l>\frac{L}{2}.
@@ -204,7 +193,7 @@ ViT 先单独训练两阶段. 对比预训练用 SigLIP 的 sigmoid 对比损失
 
 *报告 Figure 6: 内部 held-out 语料上的 bits-per-byte 对比*
 
-## 6. 后训练与评测
+## 6. 后训练, 评测与局限
 
 ### 6.1. 后训练: 任务合成, 环境与 DSec
 
@@ -272,7 +261,7 @@ ProgramBench 的高置信子集只保留参考解通过率至少 95% 的题, 剩
 
 *报告 Figure 10: 多智能体 vs 单智能体在不同墙钟截止下的 Almost@1(FrontierSWE 子集 Mean@5 亦见图)*
 
-## 7. 局限与谱系位置
+### 6.7. 局限与谱系位置
 
 第 6 节承认两类风险. 一是新架构的稳健边界还没有完全刻画: CSA2 可能选错条目, SWA Bounded Replay 是近似重建, 在未测试的边界情况下可能伤害能力; 内部测试没有发现系统性退化, 但有限的测试集覆盖不了所有极端输入. 后续会重点压测长上下文下的稀疏检索和缓存恢复边界上的 SWA 重建. 二是标准基准日益饱和, 模型在日常应用上已接近文中点名的前沿闭源系统, 但最难的任务和边角案例仍有差距, 榜单分数接近不等于复杂高难推理能力对齐. 引言里「能完成 95% 以上真实任务」的说法, 报告没有给任务集定义和统计方法.
 

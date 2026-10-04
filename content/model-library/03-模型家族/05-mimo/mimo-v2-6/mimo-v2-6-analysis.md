@@ -7,16 +7,9 @@ excerpt: "MiMo-V2.6 沿用 V2.5 系列的 Hybrid SWA 骨干, 把力气花在 Age
 ---
 # MiMo-V2.6: 把 RL 算力当主轴放大, 底座和稳定性怎样跟上
 
-## 太长不看版
+材料是小米 MiMo 团队的正式技术报告 *MiMo-V2.6: Scaling Reinforcement Learning Towards Self-Improvement* (44 页), RL 运行日志公开在 https://mimo.xiaomi.com/rl/mimo-v26. 报告讨论的问题是: 骨干基本不动, 只把 Agent RL 的算力沿 batch, 环境, grader 三条轴放大, 能把 Pro (1.02T 总参, 42B 激活) 和 Flash (310B, 15B) 两档模型推到哪里, 以及底座和训练稳定性要怎么跟上.
 
-材料是小米 MiMo 团队的正式技术报告 *MiMo-V2.6: Scaling Reinforcement Learning Towards Self-Improvement* (44 页), RL 运行日志公开在 https://mimo.xiaomi.com/rl/mimo-v26. 两档模型: Pro 总参 1.02T, 激活 42B; Flash 总参 310B, 激活 15B; 都是无共享专家的 MoE, 注意力为 128 窗口的 SWA 与全局注意力交错, 上下文 1M.
-
-- **骨干**: 层数和专家配置与 V2.5 系列一致. Flash 共 48T token 预训练, Pro 30T; mid-training 把隐藏层优化器从 AdamW 换成 Muon 变体 Muown, 并开 MXFP4 量化感知训练.
-- **RL 规模**: 每步 1,568 个 prompt, 组大小 16, 约 25K 条轨迹, 2.7B 到 3.7B token, 允许最多落后 4 个策略版本的异步训练. Pro 的 RL 花了约 260 万美元, Flash 约 90 万美元; 成本里 rollout 43.8%, 训练 43.5%, grader 12.7%.
-- **奖励**: 代码 Agent 在测例通过之上加两种质量信号, 离线 rubric (GRS) 与在线组内比较 (GAR); 网络安全改用 sanitizer 报告的漏洞类型加崩溃位置做规则判定. 确认的 reward hacking 全程低于 2%.
-- **稳定性**: RL 中冻结 MoE router. 可训 router 时 20 步内负载变异系数从 0.78 涨到 2.0, 冷专家从 0.5% 涨到 22%.
-- **结果**: Pro 的 DeepSWE v1.1 71.9 (V2.5-Pro 19.0, Claude Opus 5 74.0), AutomationBench 53.1 高于表中三个闭源模型; ExploitBench 47.9, Terminal Bench 4.0 34.9 明显落后.
-- **开源**: MiMo-V2.6-Distill-Qwen-9B 连同环境, RL 框架和 mini-harness 一起放出.
+## 1. 动机与底座
 
 V2.6 是 MiMo 线第一篇把「RL 花了多少钱」写进正文的报告. 标题里的 self-improvement 落到操作层面是这样一句话: Agent = 模型 + 可交互环境, 能力的来源是大规模 agentic RL 在环境里拿到的多步反馈. 所以这篇的主角是后训练, 骨干基本沿用前代, 改动集中在三处: 让大 batch RL 训得动的优化器与精度, 让 RL 不崩的路由与一致性处理, 以及让奖励信号可信的环境清洗与 grader.
 
@@ -24,15 +17,13 @@ V2.6 是 MiMo 线第一篇把「RL 花了多少钱」写进正文的报告. 标�
 
 两种 「变大」 在这篇里要分清. 部署前的 Scaling 是总参, 预训练 token (Flash 48T, Pro 30T) 与上下文 (32K→256K→1M). RL 算力沿 batch, 环境, grader 三轴放大, 仍属训练侧. 报告没有把推理时多花算力单列成 TestingTime 档; Fig. 9 里回答 token 随训练上涨是 RL 的训练动态, 不能读成一个可调的推理预算.
 
-## 1. 动机与底座
-
 ### 1.1. 为什么把 RL 算力当主轴
 
 引言从递归自我改进 (RSI) 讲起: 模型要靠持续探索和反馈扩展能力, 这需要把模型和可交互环境绑成 Agent, 在复杂 Agent 任务上放大 RL 是一条具体的路. 引言接着列了两个障碍: 一是基础模型要有合适的架构和足够大的探索空间, 二是放大 RL 要解决基础设施, 环境和 grader 三方面的问题. 前者对应第 1.2–1.3 节的骨干与 mid-training, 后者对应三轴放大. 摘要把放大拆成三条轴: 更大的 batch 与更高的吞吐 (异步训练, 每步 1,568 个 prompt, 2.7–3.7B tokens, 上下文最长 1M); 更多样, 更复杂的环境 (code, general, visual, cyber 四域, 混用多种 agent harness); 更多的 grader 算力 (groupwise agentic grading, 给长程任务更准的奖励, 并把模型推向更短的解).
 
 另一种拆法是按计算花在哪里. 报告在写出 RL 目标式 (1) 之后, 把每一步的计算分成三块: rollout (rollout 策略对每个 prompt 生成一组 $G$ 条候选), grading (在测例之外再花算力区分好解和坏解, 结果进入优势 $A_i$), training (用收集到的 token 更新 $\theta$). 三条放大轴和这三块计算不是一一对应: batch 轴同时放大 rollout 和 training, 环境轴主要放大 rollout 的种类和时长, grader 轴才单独对应 grading.
 
-Fig. 3 给了这三块的实际占比. 右图 Pro 的成本拆分: rollout 43.8%, training 43.5%, grader 12.7%. 左图是 DeepSWE v1.1 average@3 随累计成本上升: Pro 58.4→72.6, Flash 48.7→65.7. grader 占到约八分之一, 已经是一笔需要单独规划的算力. 7B 那一代的判分是规则 Math-Verify 和单元测例, 成本低到可以忽略; 到了 V2.6, 判分本身要跑 LLM 与执行环境, 成本结构变了, 这也是 「grader 算力」 被列成独立一轴的原因.
+Fig. 3 给了这三块的实际占比. 总账是 Pro 的 RL 花了约 260 万美元, Flash 约 90 万美元. 右图 Pro 的成本拆分: rollout 43.8%, training 43.5%, grader 12.7%. 左图是 DeepSWE v1.1 average@3 随累计成本上升: Pro 58.4→72.6, Flash 48.7→65.7. grader 占到约八分之一, 已经是一笔需要单独规划的算力. 7B 那一代的判分是规则 Math-Verify 和单元测例, 成本低到可以忽略; 到了 V2.6, 判分本身要跑 LLM 与执行环境, 成本结构变了, 这也是 「grader 算力」 被列成独立一轴的原因.
 
 ### 1.2. 骨干沿用 Flash, 多模态在前端接入
 
@@ -178,7 +169,7 @@ Tab. 3 的旗舰对照: DeepSWE v1.1 Pro 71.9, Flash 67.9, V2.5-Pro 19.0, Claude
 
 Tab. 7 在 7 个 harness × 3 个数据集上看 multi-harness RL: 蒸馏模型在全部 21 个组合上高于 Qwen3.5-9B, multi-harness RL 又让每个组合继续涨, MiMo Code Bench (mini) 上额外增益约 1.8–9.3 个百分点. 以 SWE-bench Verified 的 7 个 harness 均值为例, Qwen3.5-9B 53.1, 蒸馏后 62.3, multi-harness RL 后 65.7; 其中 codex, claude code, mini-swe-agent 三个 held-out harness 也都在涨. Tab. 6 里代码域用的是单 harness RL, 与 Tab. 7 是两组实验. 这条线的意义是可复现: 旗舰线的 \$M 级算力外人跑不起, 9B 这条线把同一套环境, verifier, mini-harness 与 GRPO 配方放出来, 从蒸馏初始化出发也能分域涨分. 引用时要把 Distill 与旗舰分开, Tab. 6 的分数不能回填到 Tab. 3.
 
-### 4.3. 在家族里的位置
+### 4.3. 在家族里的位置与 RL 主轴的结果
 
 从 MiMo-V2-Flash 到 V2.6, 骨干几乎没动, 变化集中在数据规模, 多模态和后训练上. 下表只列各份材料里写明的数字:
 
@@ -196,9 +187,7 @@ Tab. 7 在 7 个 harness × 3 个数据集上看 multi-harness RL: 蒸馏模型�
 
 和上一代比分数时也有几处容易混. Tab. 3 里 V2.5-Pro 的 DeepSWE 只有 19.0, Terminal Bench 4.0 只有 1.5, 说明这些新基准对上一代几乎是空白区, V2.6 的涨幅有一部分是 「从不会到会」, 不宜直接当成同一能力曲线上的进步比例. Tab. 3 中 V2.5-Pro 的 OSWorld-Verified 与 Visual Coding 两格为空, 对比时也要跳过.
 
-## 5. 结论
-
-V2.6 的骨干与 V2.5 系列相同, 分数的大幅变化来自后训练: 一次覆盖代码, 安全, 通用和视觉 Agent 的大 batch 异步 RL, 加上 GRS / GAR 的质量梯度和冻结 router, 把 Pro 的 DeepSWE 从 19.0 带到 71.9, Pro 的 RL 花了约 260 万美元. 它在 SaaS 流程编排上高于表中闭源模型, 在漏洞利用和 Terminal Bench 4.0 上仍差 10 分以上, 这与训练环境的覆盖范围一致. 报告公开了成本拆分, reward hacking 案例和 Distill-9B 套件, 外部可以在 9B 规模上复查这套配方, 旗舰规模的结果目前只能读表.
+回到开头的问题, V2.6 的骨干与 V2.5 系列相同, 分数的大幅变化来自后训练: 一次覆盖代码, 安全, 通用和视觉 Agent 的大 batch 异步 RL, 加上 GRS / GAR 的质量梯度和冻结 router, 把 Pro 的 DeepSWE 从 19.0 带到 71.9, Pro 的 RL 花了约 260 万美元. 它在 SaaS 流程编排上高于表中闭源模型, 在漏洞利用和 Terminal Bench 4.0 上仍差 10 分以上, 这与训练环境的覆盖范围一致. 报告公开了成本拆分, reward hacking 案例和 Distill-9B 套件, 外部可以在 9B 规模上复查这套配方, 旗舰规模的结果目前只能读表.
 
 ## 参考文献
 
