@@ -8,7 +8,29 @@ import {
   rerunSessionSchema,
   createTaskSchema,
   updateTaskSchema,
+  createPostSchema,
+  createPostFromChatSchema,
+  createPostFromToolResultSchema,
 } from "../schemas.js";
+
+describe("文章发布默认值", () => {
+  it("所有文章创建入口在未显式发布时都保持草稿", () => {
+    const direct = createPostSchema.parse({ title: "本地草稿" });
+    const fromChat = createPostFromChatSchema.parse({
+      sessionId: "clx12345678901234567890123",
+      messageId: "clx12345678901234567890124",
+    });
+    const fromTool = createPostFromToolResultSchema.parse({ path: "data/tool-results/post.md" });
+
+    expect(direct.published).toBe(false);
+    expect(fromChat.published).toBe(false);
+    expect(fromTool.published).toBe(false);
+  });
+
+  it("业主显式传 published=true 时仍允许发布", () => {
+    expect(createPostSchema.parse({ title: "公开文章", published: true }).published).toBe(true);
+  });
+});
 
 describe("createGitRepoSchema path 校验", () => {
   it("接受 Windows 绝对路径", () => {

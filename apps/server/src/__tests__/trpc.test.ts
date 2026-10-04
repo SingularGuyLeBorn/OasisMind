@@ -97,9 +97,10 @@ describe("tRPC Routers Comprehensive CRUD tests (All 18 Entities)", () => {
       title: `Draft Beta ${Date.now()}`,
       slug: `draft-${uniqueSlug}`,
       content: "draft-only",
-      published: false,
     });
     expect(draft.success).toBe(true);
+    // tRPC Schema 与 PostService 双层 fail-closed：调用方省略 published 也只能创建草稿。
+    expect(draft.data.published).toBe(false);
 
     const draftList = await caller.post.list({ page: 1, pageSize: 10, published: false, keyword: "Draft Beta" });
     expect(draftList.items.some((item: { id: string }) => item.id === draft.data.id)).toBe(true);

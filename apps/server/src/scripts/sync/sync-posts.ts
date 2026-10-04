@@ -55,7 +55,9 @@ export function createPostGardenSyncer(garden: string): Syncer<PostData> {
         const title = typeof data.title === "string" ? data.title : slug;
         const category = typeof data.category === "string" ? data.category : null;
         const excerpt = typeof data.excerpt === "string" ? data.excerpt : null;
-        const published = typeof data.published === "boolean" ? data.published : true;
+        // 磁盘文章发布采用 fail-closed：仅 YAML 布尔值 true 可公开。
+        // 缺失、字符串 "true"、数字 1 等都保持草稿，避免旧文或损坏 frontmatter 意外泄露。
+        const published = data.published === true;
 
         let tags = "";
         if (Array.isArray(data.tags)) {

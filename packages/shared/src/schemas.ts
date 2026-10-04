@@ -114,7 +114,14 @@ export const createPostSchema = z.object({
   coverImage: z.string().url().optional().nullable(),
   category: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
-  published: z.boolean().optional(),
+  /**
+   * 新文章必须默认留在本地草稿态。
+   *
+   * 这里使用 default(false)，而不是交给各个创建入口自行猜测，确保编辑器、
+   * Chat 落库和 Agent 工具最终得到相同的发布语义。调用方只有显式传 true
+   * 才能把文章标记为公开。
+   */
+  published: z.boolean().default(false),
   /** 创建文件夹首页：slug 为 a/b 时生成 a/b/index.md，使该文件夹节点本身成为文档 */
   createFolderIndex: z.boolean().optional(),
 });
@@ -193,7 +200,8 @@ export const createPostFromToolResultSchema = z.object({
   targetPostId: z.string().cuid().optional(),
   category: z.string().max(100).optional().nullable(),
   tags: z.array(z.string().max(40)).max(20).optional(),
-  published: z.boolean().default(true),
+  /** Chat 工具结果落库同样默认草稿，防止后台产物未经审阅直接公开。 */
+  published: z.boolean().default(false),
   appendHeading: z.string().max(200).optional(),
 });
 
@@ -210,7 +218,8 @@ export const createPostFromChatSchema = z.object({
   targetPostId: z.string().cuid().optional(),
   category: z.string().max(100).optional().nullable(),
   tags: z.array(z.string().max(40)).max(20).optional(),
-  published: z.boolean().default(true),
+  /** Chat 消息转文章同样默认草稿，发布必须由业主显式确认。 */
+  published: z.boolean().default(false),
   appendHeading: z.string().max(200).optional(),
 });
 
@@ -2128,4 +2137,3 @@ export type CreateDailyFlowItemInput = z.infer<typeof createDailyFlowItemSchema>
 export type UpdateDailyFlowItemInput = z.infer<typeof updateDailyFlowItemSchema>;
 export type MoveDailyFlowItemInput = z.infer<typeof moveDailyFlowItemSchema>;
 export type DailyFlowDayReportInput = z.infer<typeof dailyFlowDayReportSchema>;
-

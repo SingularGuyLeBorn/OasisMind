@@ -40,7 +40,8 @@ describe("rustScan", () => {
     expect(rust2!.data.title).toBe(ts2.data.title);
     expect(rust2!.data.content).toBe(ts2.content);
     expect(rust2!.data.tags).toBe("");
-    expect(rust2!.data.published).toBe(true);
+    // 未写 published 的磁盘文章必须保持草稿；全量 Rust 与增量 TS 语义一致。
+    expect(rust2!.data.published).toBe(false);
 
     const mtime1 = getFileMtime(file1).getTime();
     const mtime2 = getFileMtime(file2).getTime();
@@ -83,5 +84,24 @@ describe("rustScan", () => {
     expect(records[0].data.title).toBe("T");
     expect(records[0].data.tags).toBe("x,y");
     expect(records[0].data.published).toBe(false);
+  });
+
+  it("增量 TypeScript 扫描对缺失或错误 published 采用草稿态", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "om-sync-incremental-"));
+    const missing = path.join(dir, "missing.md");
+    const invalid = path.join(dir, "invalid.md");
+    fs.writeFileSync(missing, "---\ntitle: Missing\n---\nBody\n");
+    fs.writeFileSync(invalid, "---\ntitle: Invalid\npublished: \"true\"\n---\nBody\n");
+
+    const syncer = createPostGardenSyncer("knowledge");
+    // Post 同步器必须支持增量扫描；先收窄可选接口，避免测试用非空断言掩盖契约变化。
+    expect(syncer.scanFile).toBeTypeOf("function");
+    if (!syncer.scanFile) throw new Error("Post 同步器缺少 scanFile 增量扫描能力");
+
+    const missingRecord = await syncer.scanFile(missing, dir);
+    const invalidRecord = await syncer.scanFile(invalid, dir);
+
+    expect(missingRecord?.data.published).toBe(false);
+    expect(invalidRecord?.data.published).toBe(false);
   });
 });
