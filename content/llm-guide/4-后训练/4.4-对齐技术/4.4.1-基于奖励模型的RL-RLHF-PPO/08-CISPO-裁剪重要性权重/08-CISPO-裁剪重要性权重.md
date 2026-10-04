@@ -1,257 +1,332 @@
 ---
-title: "08 · CISPO:裁剪重要性权重"
+title: "08 · CISPO: 裁剪重要性权重"
 published: true
-tags: ["CISPO", "GRPO", "DAPO", "PPO", "RLHF", "MiniMax-M1", "重要性采样"]
-excerpt: "CISPO(Clipped IS-weight Policy Optimization)clip 的是重要性权重 r_t=\\pi_\\theta/\\pi_{\\mathrm{old}},再 stop-gradient:目标形如 \\mathrm{sg}(\\hat r_{i,t}(\\theta))\\,\\ha…"
+tags: ["CISPO", "GRPO", "DAPO", "PPO", "MiniMax-M1", "重要性采样"]
+excerpt: "CISPO 来自 MiniMax-M1 技术报告. 它把 PPO 和 GRPO 对 token 更新的裁剪, 换成对重要性权重本身的裁剪, 权重做 stop-gradient, 梯度只经过 log 概率, 超出区间的 token 仍然参与更新. 在 Qwen2.5-32B-base 的对照实验中, CISPO 用 DAPO 一半的训练步数达到 DAPO 的 AIME 2024 成绩."
 ---
-# 08 CISPO:裁剪重要性权重
 
-CISPO(Clipped IS-weight Policy Optimization)clip 的是重要性权重 $r_t=\pi_\theta/\pi_{\mathrm{old}}$,再 **stop-gradient**:目标形如 $\mathrm{sg}(\hat r_{i,t}(\theta))\,\hat A_{i,t}\,\log\pi_\theta$.梯度走 $\log\pi$,出界 token **不**像 PPO / GRPO 的 $\min$ clip 那样被丢掉.一手是 MiniMax-M1 的 [arXiv:2506.13585](https://arxiv.org/abs/2506.13585) §3.1(HTML:[arxiv.org/html/2506.13585](https://arxiv.org/html/2506.13585)),2025 年 6 月.本篇钉这条算法.MiniMax-M1 那次完整 RL 用 512 张 H800,大约三周,那是 CISPO 落地的墙钟,不是 CISPO 公式;Lightning Attention 和 456B 总参只说明「这篇算法在哪次训练里用过」,不在这里展开整机.**不是** SAPO(温度 sigmoid 软门).**不是** [03-GSPO](../03-GSPO/03-GSPO.md) 的序列几何平均.**不是** 把 hard-clip 换成平滑过渡区的课设故事.邻居:[02-GRPO](../02-GRPO/02-GRPO.md) 的组内 $z$-score,[04-PPO](../04-PPO/04-PPO.md) 的 $\min$ clip;家族对照在 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md).
+# CISPO: 裁剪重要性权重
 
-## 1. 一批 rollout 要更新 16 轮,min-clip 先把分叉词抹掉
+> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [02 GRPO](../02-GRPO/02-GRPO.md) · [03 GSPO](../03-GSPO/03-GSPO.md) · [09 SAPO](../09-SAPO-温度软门/09-SAPO-温度软门.md) · [GxPO 家族](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)
 
-PPO 的代理目标按 token 写.旧策略 $\pi_{\theta_{\mathrm{old}}}$ 采出回答 $o$,当前策略 $\pi_\theta$ 再算每个位置的重要性权重
+材料是 MiniMax-M1 技术报告 (*MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*, arXiv:2506.13585) 的 §3.1, CISPO 全称 Clipped IS-weight Policy Optimization. 问题是同一批 rollout 要更新多轮时, PPO/GRPO 的裁剪会让一部分 token 失去梯度.
 
-$$
-r_{i,t}(\theta)=\frac{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}{\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,<t})}. \tag{1}
-$$
+## 1. 问题: 多轮离策略更新中, 反思 token 被裁掉
 
-然后做 $\min\bigl(r_{i,t}\hat A_{i,t},\,\mathrm{clip}(r_{i,t},1-\varepsilon,1+\varepsilon)\hat A_{i,t}\bigr)$.论文把 PPO 目标写成(他们的式 (1),KL 仍挂在里面)
+### 1.1 PPO 和 GRPO 的目标
 
-$$
-\mathcal{J}_{\mathrm{PPO}}(\theta)
-=\mathbb{E}_{q\sim\mathcal{D},\,o_i\sim\pi_{\theta_{\mathrm{old}}}}
-\Biggl[
-\frac{1}{|o_i|}\sum_{t=1}^{|o_i|}
-\min\bigl(r_{i,t}(\theta)\hat A_{i,t},\;
-\mathrm{clip}(r_{i,t}(\theta),1-\varepsilon,1+\varepsilon)\hat A_{i,t}\bigr)
--\beta\,D_{\mathrm{KL}}(\pi_\theta\Vert\pi_{\mathrm{ref}})
-\Biggr]. \tag{2}
-$$
-
-$r_{i,t}$ 本来是 off-policy 校正:同一批轨迹要按 mini-batch 多步更新,$\pi_\theta$ 已经不是采样时的 $\pi_{\theta_{\mathrm{old}}}$.clip 的本意是挡「太旧的样本」.落到 $\min$ 这一层,挡法变成:比率一出带,这项代理目标锁成常数,这个 token 的梯度归零.
-
-GRPO 把价值网络拿掉,优势改成同题 $G$ 条的相对分数(论文式 (2)):
+对数据集 $\mathcal{D}$ 中的问题 $q$, 旧策略 $\pi_{\theta_{old}}$ 生成回复 $o_i$. PPO 的目标 (论文式 (1)):
 
 $$
-\hat A_{i,t}=\frac{R_i-\mathrm{mean}(\{R_j\}_{j=1}^{G})}{\mathrm{std}(\{R_j\}_{j=1}^{G})}. \tag{3}
+\mathcal{J}_{\mathrm{PPO}}(\theta)=\mathbb{E}_{q\sim\mathcal{D},\ o_i\sim\pi_{\theta_{old}}(\cdot\mid q)}\Biggl[\frac{1}{|o_i|}\sum_{t=1}^{|o_i|}\min\Bigl(r_{i,t}(\theta)\hat A_{i,t},\ \mathrm{clip}\bigl(r_{i,t}(\theta),1-\epsilon,1+\epsilon\bigr)\hat A_{i,t}\Bigr)-\beta D_{\mathrm{KL}}(\pi_\theta\|\pi_{\mathrm{ref}})\Biggr]
+\tag{1}
 $$
 
-$R_i$ 是整段奖励,规则验证器或奖励模型都可以.结果监督下一条里的 token 共用同一个 $\hat A$.clip 对象没变,仍是每个 $r_{i,t}$.组相对优势的机制在 [02-GRPO](../02-GRPO/02-GRPO.md),本篇不重推 $z$-score.
-
-问题出在「出带就丢」和长 CoT 叠在一起.MiniMax 在 hybrid 架构,zero-RL 设定里跑 GRPO,训练上不去,长思维链也起不来.消融把锅判给 PPO / GRPO 那套 clip.具体症状:However,Recheck,Wait,Aha 这类反思词,基座里本来就稀,概率低.策略一更新,这些位置的 $r_{i,t}$ 容易飙高.第一次 on-policy 更新之后,它们就被 clip 出带,后面的 off-policy 步再也吃不到它们的梯度.
-
-他们的训练设定是:**每一批生成,做 16 轮 off-policy 更新**.生成时冻结 $\pi_{\theta_{\mathrm{old}}}$,内层对同一批轨迹反复算 $r_{i,t}$,反传.第一轮还接近 on-policy,$r$ 多半在 $1$ 附近.反思词一旦被抬起来,$\pi_\theta$ 在这些位置变大,$\pi_{\theta_{\mathrm{old}}}$ 仍是采样时的小概率,后面十五轮的 $r$ 只可能更大.$\min$ clip 的上沿是固定的,越大越容易出带,出带就 $\nabla=0$.不是「偶尔丢几个 token」,而是越更新越把刚学会的分叉从梯度里清出去.一轮 clip 掉,后面十五轮继续空转.
-
-DAPO 用 Clip-Higher 把 $\varepsilon$ 的上沿抬高,想让更多高比率 token 留在带里.同一套 16 轮设定下,他们觉得这招不够用.带宽加一点,只是把「第几轮开始丢」往后推,没有改「出带就常数代理」这件事.低概率 token 又偏偏是熵和可扩展 RL 里常被点名的那一类(论文引 Cui et al. 2025,Wang et al. 2025),当「分叉」用.min-clip 先把分叉掐掉,后面再谈探索,已经晚了.
-
-信任域约束在 [04-PPO](../04-PPO/04-PPO.md) 里是故意的:更新太大就停.CISPO 的判断是,停的方式停错了.要稳的是重要性权重的数值,不是把这个 token 从梯度里开除.
-
-## 2. clip 的是权重,梯度仍走 $\log\pi$
-
-先回到不带 $\min$ 的 REINFORCE,只做分布校正.论文式 (3):
+其中
 
 $$
-\mathcal{J}_{\mathrm{REINFORCE}}(\theta)
-=\mathbb{E}
-\Biggl[
-\frac{1}{|o_i|}\sum_{t=1}^{|o_i|}
-\mathrm{sg}\bigl(r_{i,t}(\theta)\bigr)\,\hat A_{i,t}\,
-\log\pi_\theta(o_{i,t}\mid q,o_{i,<t})
-\Biggr]. \tag{4}
+r_{i,t}(\theta)=\frac{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}{\pi_{\theta_{old}}(o_{i,t}\mid q,o_{i,<t})}
+\tag{2}
 $$
 
-$\mathrm{sg}(\cdot)$ 是 stop-gradient,对应实现里的 `detach`.$r_{i,t}$ 当系数,不往回传;梯度只从 $\log\pi_\theta$ 走.没有 clip 时,这就是带重要性采样的策略梯度.
-
-CISPO 不在 $\min(rA,\mathrm{clip}(r)A)$ 上做文章,而是先把 $r$ 本身 clip 住,再 $\mathrm{sg}$.clipped IS 权重(论文式 (5))
+是重要性采样 (IS) 权重. 轨迹由 $\pi_{\theta_{old}}$ 收集, 再按 mini-batch 分多步更新策略, 这个权重用来修正采样分布和当前分布的差别. PPO 需要价值模型来算优势; GRPO 去掉价值模型, 用同一问题 $G$ 条回复的相对奖励作优势 (论文式 (2)):
 
 $$
-\hat r_{i,t}(\theta)=\mathrm{clip}\bigl(r_{i,t}(\theta),\,1-\varepsilon^{\mathrm{IS}}_{\mathrm{low}},\,1+\varepsilon^{\mathrm{IS}}_{\mathrm{high}}\bigr). \tag{5}
+\hat A_{i,t}=\frac{R_i-\mathrm{mean}\bigl(\{R_j\}_{j=1}^{G}\bigr)}{\mathrm{std}\bigl(\{R_j\}_{j=1}^{G}\bigr)}
+\tag{3}
 $$
 
-目标沿用 GRPO 的组相对优势,损失改成 token 级分母(Liu et al. 2025b;Yu et al. 2025).论文式 (4):
+$R_i$ 可以来自规则校验器 (例如数学题判对错), 也可以来自奖励模型. 结果监督下, 同一条回复的所有 token 共享一个 $\hat A$.
+
+### 1.2 论文观察到的现象
+
+MiniMax 在混合注意力架构 (带 lightning attention 的 MoE 模型) 上做 zero-RL 的早期实验里, GRPO 损害了训练效果, 也没能促成长 CoT 推理行为的出现. 经过一系列受控消融, 作者把主要原因定位到 PPO/GRPO 损失里的裁剪操作.
+
+具体机制是: 与反思行为相关的 token (例如 However, Recheck, Wait, Aha) 常常是推理路径上的分叉点, 它们在基座模型中出现得少, 概率低. 策略更新时, 这些 token 的 $r_{i,t}$ 容易变大. 结果是它们在第一次 on-policy 更新之后就被裁掉, 后面的离策略更新步里不再贡献梯度. 这个问题在混合架构模型上尤其明显. 论文引用 Cui 等 2025 和 Wang 等 2025 指出, 这类低概率 token 对稳定熵和扩展 RL 很重要.
+
+训练设定放大了这个问题: 每生成一批数据, 要做 16 轮离策略更新. 第一轮时 $\pi_\theta=\pi_{\theta_{old}}$, 所有 $r=1$. 某个反思 token 的概率一旦被推高, 分母还是采样时的小概率, 后面每一轮 $r$ 只会更大, 一直落在区间外. DAPO 把裁剪上界调高 (Clip-Higher, Yu 等 2025) 来缓解, 作者发现在 16 轮更新的设定下效果不够.
+
+### 1.3 为什么低概率 token 先越界
+
+同样幅度的参数更新, 低概率 token 的比率变化更大. 看最简单的情形: 只有 token $v$ 的 logit 增加 $\delta$, 其余 logit 不变. 设更新前它的概率是 $p$, 更新后的概率是 $p'=p\,e^{\delta}/(1-p+p\,e^{\delta})$, 比率 $r=p'/p=e^{\delta}/(1-p+p\,e^{\delta})$. $p\to0$ 时 $r\to e^{\delta}$; $p\to1$ 时 $r\to1$. 取 $\delta=0.5$: $p=0.01$ 时 $r\approx1.638$, 已经远超 $1.2$; $p=0.9$ 时 $r\approx1.041$, 还在区间内. 另一方面, $\log\pi_v$ 对自身 logit 的梯度是 $1-p$, 正优势推高 $v$ 时, 低概率 token 的 logit 本来就被推得更多. 两个因素叠加, 区间外的 token 集中在低概率的那一端, 也就是论文说的反思 token 所在的位置.
+
+这个算例还说明另一点: 如果每批 rollout 只做一次梯度更新, 更新时 $\pi_\theta=\pi_{\theta_{old}}$, 所有 $r=1$, PPO, GRPO, CISPO 的梯度完全相同. 三者的差别只出现在同一批数据的第二轮及以后的更新里. 论文的 16 轮设定让这部分更新占了大多数.
+
+## 2. 先看 PPO 的梯度
+
+被裁掉为什么等于没有梯度, 要从式 (1) 的导数看. 比率对参数的导数是
 
 $$
-\mathcal{J}_{\mathrm{CISPO}}(\theta)
-=\mathbb{E}_{(q,a)\sim\mathcal{D},\,\{o_i\}_{i=1}^{G}\sim\pi_{\theta_{\mathrm{old}}}(\cdot\mid q)}
-\Biggl[
-\frac{1}{\sum_{i=1}^{G}|o_i|}\sum_{i=1}^{G}\sum_{t=1}^{|o_i|}
-\mathrm{sg}\bigl(\hat r_{i,t}(\theta)\bigr)\,\hat A_{i,t}\,
-\log\pi_\theta(o_{i,t}\mid q,o_{i,<t})
-\Biggr]. \tag{6}
+\nabla_\theta r_{i,t}=r_{i,t}\,\nabla_\theta\log\pi_\theta(o_{i,t}\mid q,o_{i,<t})
+\tag{4}
 $$
 
-分母是组内所有回答的 token 总数,不是先对每条做 $1/|o_i|$ 再对 $G$ 平均.短句不会因为长度小就每个 token 分到更大的权重.这是 DAPO / Dr. GRPO 那条线上已经改过的聚合方式,CISPO 直接采用,本篇不重推 DAPO.
+所以未裁剪项 $r\hat A$ 的梯度是 $r\hat A\,\nabla\log\pi_\theta$. 裁剪项 $\mathrm{clip}(r,1-\epsilon,1+\epsilon)\hat A$ 在 $r$ 落到区间外时是常数, 梯度为 0. $\min$ 选中哪一项, 这个 token 就得到哪一项的梯度. 按优势符号和比率位置分四种情形 (区间内两项相等, 梯度都是 $r\hat A\nabla\log\pi_\theta$):
 
-不加权重 clip 时,式 (6) 退回普通策略梯度.实验里他们 **没有** 给 IS 权重设有效下界:把 $\varepsilon^{\mathrm{IS}}_{\mathrm{low}}$ 设得很大,$1-\varepsilon^{\mathrm{IS}}_{\mathrm{low}}$ 落到几乎不起作用的位置,只调 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$.小 $r$ 保持原值,不被抬到 $1-\varepsilon$;大 $r$ 被天花板截住,系数变成 $1+\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$ 这个常数.§3.1 没有写出 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$ 的数值.
+| 情形 | $\min$ 选中 | PPO 中该 token 的梯度 |
+|---|---|---|
+| $\hat A>0$, $r>1+\epsilon$ | 裁剪项 (常数) | $0$ |
+| $\hat A>0$, $r<1-\epsilon$ | 未裁剪项 | $r\hat A\,\nabla\log\pi_\theta$ |
+| $\hat A<0$, $r<1-\epsilon$ | 裁剪项 (常数) | $0$ |
+| $\hat A<0$, $r>1+\epsilon$ | 未裁剪项 | $r\hat A\,\nabla\log\pi_\theta$, $r$ 无上限 |
 
-权重 clip 会让式 (6) 的梯度略偏.论文自己承认这一点.换来的是:所有 token 都还在梯度里,尤其是长回答.方差下来,训练稳一些.另外两件从 DAPO 挪过来的工程:dynamic sampling,丢掉组内准确率 0% 或 100% 的题;length penalty,压超长.CISPO **没有 KL 项**,和 DAPO,Open-Reasoner-Zero 一类近期工作同一选择.
+第一行就是反思 token 的情形: 回复得到正优势, 反思 token 的概率已经被推高, $r>1+\epsilon$, 梯度为 0. 16 轮更新里, 只要它在第一轮之后越过上界, 剩下的轮次都对它没有作用. 第四行是另一个方向的问题: 负优势的回复里, 某个 token 的概率被意外推高, PPO 不限制它的系数. 这一行常被另外处理, 例如 dual-clip PPO (Ye 等 2020) 给它加了一个上界.
 
-用一个数把两条对照看清.设 $\hat A=+1$,$\varepsilon=0.2$,某个反思 token 的 $r=1.8$.PPO / GRPO:未裁剪支 $1.8$,裁剪支 $1.2$,$\min$ 锁在 $1.2$.再抬这个位置的概率,代理目标不加分,这项对 $\theta$ 的导数是 $0$.CISPO:若天花板碰巧也是 $1.2$,则 $\hat r=1.2$,`detach` 之后系数是常数 $1.2$,目标仍是 $1.2\cdot\log\pi_\theta$,梯度 $1.2\,\nabla\log\pi_\theta$,token 还在.
+## 3. CISPO 的目标
 
-负优势对称.设 $\hat A=-1$,$r=0.3$,$\varepsilon=0.2$.未裁剪支 $0.3\times(-1)=-0.3$,裁剪支 $0.8\times(-1)=-0.8$.最大化 $\min(-0.3,-0.8)$ 会选中常数 $-0.8$,这个位置同样不再提供 $\nabla\log\pi$.CISPO 若按下界几乎不设,$r=0.3$ 不被抬到 $0.8$,系数仍是 $0.3$,目标 $0.3\times(-1)\times\log\pi$,梯度还在,只是幅度按小权重缩小.数字 $1.8$ / $0.3$ / $0.2$ 是为了把「常数代理」和「常数系数乘 $\log\pi$」分开,不是论文表.
+### 3.1 从带重要性权重的 REINFORCE 出发
 
-![PPO/GRPO 的 min-clip 丢掉梯度,CISPO 对 r clip 后 sg,梯度仍走 logπ](./images/fig-cispo-clip-is-weight.png)
+离线更新时, 修正了分布的 REINFORCE 目标是 (论文式 (3)):
 
-> 图 1:上栏 PPO / GRPO 对 $r A$ 做 $\min$ clip,出带则该 token 梯度为零.下栏 CISPO 先把 $r$ clip 成 $\hat r$,再 $\mathrm{sg}(\hat r)$,目标是系数乘 $\log\pi_\theta$,所有 token 仍进梯度.
+$$
+\mathcal{J}_{\mathrm{REINFORCE}}(\theta)=\mathbb{E}_{(q,a)\sim\mathcal{D},\ o_i\sim\pi_{\theta_{old}}(\cdot\mid q)}\Biggl[\frac{1}{|o_i|}\sum_{t=1}^{|o_i|}\mathrm{sg}\bigl(r_{i,t}(\theta)\bigr)\hat A_{i,t}\log\pi_\theta(o_{i,t}\mid q,o_{i,<t})\Biggr]
+\tag{5}
+$$
+
+$\mathrm{sg}(\cdot)$ 是 stop-gradient, 对应代码里的 `detach`. 权重当作常数, 梯度只经过 $\log\pi_\theta$. 对比式 (4) 可以看到, 式 (5) 中每个 token 的梯度 $r\hat A\nabla\log\pi_\theta$, 与 PPO 未裁剪项 $r\hat A$ 的梯度完全一样. 两者只是写法不同, 在当前参数处的梯度相同.
+
+PPO/GRPO 裁的是 token 的更新, CISPO 改为裁式 (5) 里的权重. 裁剪后的权重 (论文式 (5)):
+
+$$
+\hat r_{i,t}(\theta)=\mathrm{clip}\bigl(r_{i,t}(\theta),\ 1-\epsilon^{IS}_{low},\ 1+\epsilon^{IS}_{high}\bigr)
+\tag{6}
+$$
+
+采用 GRPO 的组内相对优势和 token 级损失 (Yu 等 2025; Liu 等 2025), CISPO 的目标是 (论文式 (4)):
+
+$$
+\mathcal{J}_{\mathrm{CISPO}}(\theta)=\mathbb{E}_{(q,a)\sim\mathcal{D},\ \{o_i\}_{i=1}^{G}\sim\pi_{\theta_{old}}(\cdot\mid q)}\Biggl[\frac{1}{\sum_{i=1}^{G}|o_i|}\sum_{i=1}^{G}\sum_{t=1}^{|o_i|}\mathrm{sg}\bigl(\hat r_{i,t}(\theta)\bigr)\hat A_{i,t}\log\pi_\theta(o_{i,t}\mid q,o_{i,<t})\Biggr]
+\tag{7}
+$$
+
+不裁权重时, 式 (7) 退化为标准的策略梯度目标. 论文实验中把 $\epsilon^{IS}_{low}$ 设得很大, 等于不设下界, 只调 $\epsilon^{IS}_{high}$.
+
+### 3.2 四种情形下的梯度
+
+不设下界时, $\hat r=\min(r,1+\epsilon^{IS}_{high})$. 代入式 (7), 每个 token 的梯度是 $\hat r\hat A\nabla\log\pi_\theta$. 和第 2 节的表并排:
+
+| 情形 | PPO | CISPO |
+|---|---|---|
+| 区间内 | $r\hat A\,\nabla\log\pi_\theta$ | $r\hat A\,\nabla\log\pi_\theta$ |
+| $\hat A>0$, $r>1+\epsilon$ | $0$ | $(1+\epsilon^{IS}_{high})\hat A\,\nabla\log\pi_\theta$ |
+| $\hat A>0$, $r<1-\epsilon$ | $r\hat A\,\nabla\log\pi_\theta$ | $r\hat A\,\nabla\log\pi_\theta$ |
+| $\hat A<0$, $r<1-\epsilon$ | $0$ | $r\hat A\,\nabla\log\pi_\theta$ |
+| $\hat A<0$, $r>1+\epsilon$ | $r\hat A\,\nabla\log\pi_\theta$ | $(1+\epsilon^{IS}_{high})\hat A\,\nabla\log\pi_\theta$ |
+
+(为了对齐, 表中把 PPO 的 $\epsilon$ 和 CISPO 的 $\epsilon^{IS}_{high}$ 放在同一位置比较, 实际两者可以取不同的值.)
+
+五行里有两行完全相同. 区别在三行:
+
+- 第二行是论文关心的情形. 正优势的反思 token 比率超过上界后, PPO 不再更新它; CISPO 继续以封顶的系数推高它的概率.
+- 第四行, 负优势且比率已经很小. PPO 不再压低这个 token; CISPO 继续压, 力度按 $r$ 缩小. 比率越小, 这个 token 在当前策略下已经越不可能, 系数也越小.
+- 第五行, 负优势且比率很大. PPO 的系数随 $r$ 无界增长; CISPO 把它封在 $1+\epsilon^{IS}_{high}$.
+
+所以 CISPO 在 PPO 的基础上做了两件事: 区间外不再丢 token; 所有 token 的系数都不超过 $1+\epsilon^{IS}_{high}$. 论文承认, 因为裁了权重, 式 (7) 的梯度略有偏差; 换来的是所有 token 都保留梯度贡献, 尤其是长回复里的 token. 作者报告这样做降低了方差, 训练更稳.
+
+### 3.3 一个数值例
+
+取 $\hat A=+1$, PPO 的 $\epsilon=0.2$, CISPO 的上界也取 $1.2$ (这里只为演示, 论文没有给 $\epsilon^{IS}_{high}$ 的值). 某个反思 token 的 $r=1.8$.
+
+- PPO: 未裁剪项 $1.8$, 裁剪项 $1.2$, $\min$ 选 $1.2$, 是常数, 梯度为 0.
+- CISPO: $\hat r=1.2$, 目标项为 $1.2\cdot\log\pi_\theta$, 梯度 $1.2\,\nabla\log\pi_\theta$.
+
+再取 $\hat A=-1$, $r=0.3$.
+
+- PPO: 未裁剪项 $0.3\times(-1)=-0.3$, 裁剪项 $0.8\times(-1)=-0.8$, $\min$ 选 $-0.8$, 是常数, 梯度为 0.
+- CISPO (无下界): $\hat r=0.3$, 梯度 $-0.3\,\nabla\log\pi_\theta$.
+
+最后取 $\hat A=-1$, $r=5$.
+
+- PPO: 未裁剪项 $-5$, 裁剪项 $-1.2$, $\min$ 选 $-5$, 梯度 $-5\,\nabla\log\pi_\theta$.
+- CISPO: $\hat r=1.2$, 梯度 $-1.2\,\nabla\log\pi_\theta$.
+
+### 3.4 放弃信任域的代价
+
+论文引言说 CISPO 放弃了信任域约束, 改为裁剪重要性权重来稳定训练. 这一点可以用 16 轮更新算一遍. 设某个反思 token 在 $\pi_{\theta_{old}}$ 下概率 $p=0.01$, 每轮更新让它的 logit 增加 $0.1$ (只为演示). 按 1.3 节的近似, 第 $k$ 轮之后 $r\approx e^{0.1k}$.
+
+- PPO, $\epsilon=0.2$: 两轮之后 $r\approx e^{0.2}=1.221$, 越过上界. 第 3 轮到第 16 轮, 这个 token 都没有梯度, $r$ 停在 $1.22$ 附近, 概率约 $0.0122$.
+- CISPO, 上界也取 $1.2$: 每轮都继续推. 16 轮后 logit 共增加 $1.6$, 按 1.3 节的精确式 $r=e^{1.6}/(0.99+0.01e^{1.6})\approx4.77$, 概率约 $0.048$.
+
+同一批数据上, PPO 把这个 token 的概率变化限制在约 22%, CISPO 让它涨到约 4.8 倍. 前者是信任域在起作用, 后者是论文想要的效果: 反思 token 在一批数据内就能被明显推高. 代价也在这里: 对一个错误的正优势 (例如答案碰巧正确的回复), CISPO 同样会在 16 轮里把相关 token 推得很远. 系数封顶只限制了每一步的幅度, 不限制多步累积的幅度. 6.3 节里, 长度扩展后期要同时调小梯度裁剪阈值和 $\epsilon^{IS}_{high}$, 也和这个性质有关.
+
+![PPO/GRPO 的 min-clip 丢掉梯度, CISPO 对 r 裁剪后 sg, 梯度仍走 log π](./images/fig-cispo-clip-is-weight.png)
 
 **图 1 解析**
 
-- 两栏都从左到右,起点都是绿框 `token $o_t$`.
-- 上栏:黄框写出 $r_t=\pi_\theta/\pi_{\mathrm{old}}$.橙框是 $\min(rA,\mathrm{clip}(r)A)$.虚线进紫框 `out of band: drop token, $\nabla=0$`.虚线表示排除,不是第二条数据流.
-- 下栏:黄框同样是 $r_t$.蓝框写出 $\hat r=\mathrm{clip}(r)$,然后 $\mathrm{sg}(\hat r)$.红框是 $\mathrm{sg}(\hat r)\,\hat A\log\pi_\theta$,并标明所有 token 保留 $\nabla\log\pi$.
-- 读图时不要把紫框理解成「clip 掉奖励」.丢掉的是这个位置的策略梯度,奖励 $R_i$ 还在式 (3) 里.
+- 上栏是 PPO/GRPO: 由 $r_t=\pi_\theta/\pi_{old}$ 进入 $\min(rA,\mathrm{clip}(r)A)$, 超出区间的 token 用虚线连到紫框, 标注 $\nabla=0$, 表示该位置的策略梯度被去掉, 奖励本身还在优势里.
+- 下栏是 CISPO: $r_t$ 先裁成 $\hat r$, 再做 $\mathrm{sg}(\hat r)$, 目标是 $\mathrm{sg}(\hat r)\hat A\log\pi_\theta$, 标注所有 token 保留 $\nabla\log\pi$.
+- 两栏的起点相同, 差别只在裁剪作用在哪里, 对应 3.2 节表格的第二, 四行.
 
-## 3. 和 GRPO,DAPO,GSPO 不是同一层
+### 3.5 其他配置
 
-三家都可以组内相对优势.分叉在 clip 作用在谁身上,以及出界 token 还在不在.
+- **损失归一化.** 式 (7) 的分母是一组回复的 token 总数 $\sum_i|o_i|$, 每个 token 权重相同. 式 (1) 和式 (5) 先对每条回复除以 $|o_i|$, 短回复的每个 token 权重更大.
+- **动态采样和长度惩罚.** 沿用 DAPO 的做法: 动态采样过滤掉组内全对或全错的题 (这时式 (3) 的分子全为 0), 长度惩罚压制超长回复.
+- **无 KL.** 与 DAPO 和 Open-Reasoner-Zero (Hu 等 2025) 一样, CISPO 不加 KL 项.
 
-| 项 | GRPO | DAPO | CISPO |
-|----|------|------|-------|
-| clip 对象 | token 比率,进 $\min(\cdot)$ | 仍是 $\min$ clip;Clip-Higher 抬 $\varepsilon_{\mathrm{high}}$ | IS 权重 $r$ 本身,再 $\mathrm{sg}$ |
-| 出界 token | 代理变常数,$\nabla=0$ | 新带之外仍丢 | 不丢,系数封顶后仍走 $\log\pi$ |
-| 优势 | 组内 $z$-score | 同左 | 同左 |
-| 损失分母 | 论文式先 $1/\|o_i\|$ 再对组平均 | token 级 | token 级 |
-| KL | DeepSeekMath 挂损失,$\beta=0.04$ | 无 | 无 |
-| 其它 | 无这三项配件 | 动态采样,长度惩罚 | 沿用这两项,不重推 |
+## 4. 与截断重要性采样的关系
 
-DAPO 全称是 Decoupled Clip and Dynamic sAmpling Policy Optimization.Clip-Higher,动态采样,token 级损失,超长惩罚,公式以 [arXiv:2503.14476](https://arxiv.org/abs/2503.14476) 为准.CISPO 把后三项当配件,主改动仍是「clip 权重 + stop-gradient」.
+把重要性权重截断来换取更小的方差, 在统计和 RL 文献里早有先例. Ionides 2008 研究了截断重要性采样: 权重的尾部很重时, 截断会引入偏差, 但方差有界. IMPALA (Espeholt 等 2018) 的 V-trace 在策略梯度项里用截断后的权重 $\rho_s=\min\bigl(\bar\rho,\ \pi(a_s\mid x_s)/\mu(a_s\mid x_s)\bigr)$ 乘 $\nabla\log\pi(a_s\mid x_s)$ 和优势估计, $\mu$ 是行为策略. 这个形式和式 (7) 一致: 只截上界, 截断后的权重当作系数, 梯度经过 $\log\pi$.
 
-![GRPO,DAPO,CISPO 三列:clip 对象,是否丢 token,优势来源](./images/fig-cispo-vs-grpo-dapo.png)
+两者的场景不同. IMPALA 处理的是分布式 actor 和 learner 之间的策略滞后; CISPO 处理的是同一批 rollout 上的 16 轮更新, 以及 PPO 裁剪对低概率 token 的副作用. MiniMax 的论文没有讨论这层联系, 这里列出来是为了说明式 (7) 的偏差性质: 权重被截断的 token, 梯度被低估, 估计偏向「少更新这些 token」; 没有被截断的 token 不受影响.
 
-> 图 2:三列对照 clip 对象,出界是否丢 token,优势从哪来.CISPO 与 GRPO / DAPO 同属组相对,不画训练曲线.
+方差这一侧也可以直接写出来. 每个 token 的梯度贡献是 $\hat r\hat A\nabla\log\pi_\theta$, 不设下界时 $0\le\hat r\le1+\epsilon^{IS}_{high}$, 所以每个 token 的梯度范数不超过 $(1+\epsilon^{IS}_{high})\,|\hat A_{i,t}|\,\|\nabla_\theta\log\pi_\theta(o_{i,t}\mid\cdot)\|$. 不裁剪时 $r$ 没有上界, 16 轮更新后少数 token 的 $r$ 可以很大, 单个 token 就可能主导整批梯度. 裁剪把每个 token 的影响限制在未加权梯度的 $1+\epsilon^{IS}_{high}$ 倍以内. PPO 的裁剪也限制了正优势一侧的影响, 方式是把系数直接置零; 负优势, 大比率的那一侧它不限制 (第 2 节表格第四行).
+
+## 5. 统一形式: 用掩码控制是否丢弃 token
+
+论文还给出一个带 token 掩码的统一目标, 用超参控制在哪些条件下丢弃哪些 token 的梯度 (论文式 (6)):
+
+$$
+\mathcal{J}_{\mathrm{unify}}(\theta)=\mathbb{E}\Biggl[\frac{1}{\sum_{i=1}^{G}|o_i|}\sum_{i=1}^{G}\sum_{t=1}^{|o_i|}\mathrm{sg}\bigl(\hat r_{i,t}(\theta)\bigr)\hat A_{i,t}\log\pi_\theta(o_{i,t}\mid q,o_{i,<t})\,M_{i,t}\Biggr]
+\tag{8}
+$$
+
+掩码与 PPO 信任域里隐含的掩码等价 (论文式 (7)):
+
+$$
+M_{i,t}=\begin{cases}
+0, & \hat A_{i,t}>0\ \text{且}\ r_{i,t}(\theta)>1+\epsilon_{high}\\
+0, & \hat A_{i,t}<0\ \text{且}\ r_{i,t}(\theta)<1-\epsilon_{low}\\
+1, & \text{其他}
+\end{cases}
+\tag{9}
+$$
+
+两种特例可以从式 (8) 读出来:
+
+- 所有 $M_{i,t}=1$, 就是 CISPO.
+- $M$ 取式 (9), 并且不裁权重 ($\hat r=r$). 这时每个 token 的梯度是 $M\cdot r\hat A\nabla\log\pi_\theta$, 和第 2 节 PPO 表格的四行逐一相同. 也就是说, 在 token 级归一化下, 式 (8) 可以还原 PPO 的梯度.
+
+在两者之间还可以有其他组合, 例如保留式 (9) 的掩码, 同时用 $\hat r$ 给第五种情形封顶. 论文只说统一形式可以表示不同的裁剪策略, 实验用的是 CISPO.
+
+**stop-gradient 不能省.** 如果不对 $\hat r$ 做 stop-gradient, 在区间内, 目标项 $r\hat A\log\pi_\theta$ 对 $\theta$ 的导数会多出一项 $r\hat A\log\pi_\theta\cdot\nabla\log\pi_\theta$ (由式 (4) 得到), 这一项的大小取决于 $\log\pi_\theta$ 的数值, 没有意义; 在区间外, $\hat r$ 是常数, 又和 stop-gradient 一样. 只有加了 stop-gradient, 梯度才是式 (5) 那种重要性加权的策略梯度.
+
+## 6. 实验
+
+### 6.1 受控对比
+
+论文在 zero-RL 设定下 (不经 SFT, 直接对基座模型做 RL) 比较 CISPO, DAPO 和 GRPO: 用 Yu 等 2025 (DAPO) 的数学推理数据训练 Qwen2.5-32B-base, 在 AIME 2024 上报告成绩 (Figure 2). 相同训练步数下 CISPO 明显高于 DAPO 和 GRPO; CISPO 用 50% 的训练步数达到 DAPO 的成绩. 论文引言把这个结果写成相对 DAPO 2 倍的加速. 论文正文没有用表格给出 Figure 2 曲线的具体数值.
+
+### 6.2 在 MiniMax-M1 训练中的使用
+
+MiniMax-M1 基于 MiniMax-Text-01, 是混合 MoE 架构, 总参数 456B, 每个 token 激活 45.9B, 使用 lightning attention. 摘要称, 混合注意力和 CISPO 结合, 让 M1 的完整 RL 训练在 512 张 H800 上三周完成, 租用成本 534,700 美元 (引言写约 0.53M 美元). 这是整套训练的成本, 包含架构带来的推理效率, 不能全部归到 CISPO 上.
+
+同一节 (§3.2) 还记录了几个与 CISPO 无关, 但影响 RL 能否收敛的工程问题:
+
+- **训练和推理的精度不一致.** rollout 时 token 的概率在训练模式和推理模式下差别明显, 奖励涨不上去. 逐层分析定位到输出层 LM head 的大幅激活. 把 LM head 改成 FP32 后, 两种模式下概率的相关系数从约 0.9x 提到 0.99x. 小的稠密 softmax attention 模型没有出现这个问题.
+- **优化器超参.** AdamW 用 VeRL 默认的 betas $(0.9,0.999)$, eps $10^{-8}$ 会不收敛. M1 训练中梯度幅度从 $10^{-18}$ 到 $10^{-5}$, 大部分小于 $10^{-14}$, 相邻迭代的梯度相关性弱. 最终取 $\beta_1=0.9$, $\beta_2=0.95$, eps $10^{-15}$.
+- **重复检测提前截断.** 复杂 prompt 会引出很长的重复回复, 梯度很大, 威胁稳定性. 规则是: 连续 3000 个 token 的概率都高于 0.99 时停止生成.
+
+**数据和课程 (§4).** M1 的 RL 数据分两类. 规则可校验的: 数学约 50K 条 (用强推理模型算 pass@10, 只留通过率严格介于 0 和 0.9 之间的题), 逻辑推理约 53K 条 (41 类任务, 用 SynLogic 框架合成), 竞赛编程 30K 条, 软件工程几千条 (在容器沙箱里跑测试用例给奖励). 需要奖励模型的通用任务共 25K 条, 由生成式奖励模型打分; 没有标准答案的任务和参考回答两两比较, 得分取 $-1$, $0$, $1$. 用 CISPO 训练时先只用规则奖励的推理任务, 再逐步混入通用任务. 所以 CISPO 面对的奖励既有规则校验的对错, 也有奖励模型的分级打分.
+
+奖励模型一侧有长度偏差 (§4.2.2): 生成式奖励模型偏好更长的回复, 不管推理质量如何. 离线手段 (训练数据覆盖更多长度和来源, 加对抗样本, 改模型结构) 没能阻止 RL 训练中出现长度投机. 最终做法是训练中在线监控: 回复长度上涨而任务成功率和推理深度没有提升时, 立即重新校准奖励模型; RL 一侧再配合奖励整形和归一化, 降低奖励对长度这类表面特征的敏感度.
+
+### 6.3 扩展生成长度时的调整
+
+M1 的第一次 RL 输出长度上限是 40K, 之后分阶段扩到 48K, 56K, 64K, 72K, 80K (§5). 是否进入下一阶段, 看生成序列的困惑度是否收敛, 以及输出长度的 99 分位是否接近当前窗口上限.
+
+扩展过程中, 每个长度窗口的训练后期都出现模式坍塌: 生成序列的后半段变成不连贯或乱码的文本, 同时困惑度上升. 作者给出的原因是: 扩展长度时, 负样本变长的速度比正样本快得多, 更早碰到窗口上限, 序列后段累积了不成比例的负梯度. 这种不平衡来自 GRPO 优势归一化和 token 级损失. 处理办法有三条:
+
+1. 检测重复模式 (连续高概率 token) 并提前停止, 避免重复回复占满窗口.
+2. 把样本级损失和 token 级归一化结合, 缓解正负样本的不平衡.
+3. 同时降低梯度裁剪阈值和 $\epsilon^{IS}_{high}$.
+
+第 3 条说明 $\epsilon^{IS}_{high}$ 并非越大越好. 上界太宽时, 被保留的 token 系数也可以很大, 长序列上的累积更新仍然会过猛.
+
+## 7. 实现
+
+`log_prob`, `old_log_prob`, `advantages`, `response_mask` 形状都是 $[B,T]$, 结果监督下 `advantages` 是式 (3) 的值广播到每个 token. 下面把式 (6) 和式 (7) 写成 PyTorch:
+
+```python
+import torch
+
+def cispo_loss(log_prob, old_log_prob, advantages, response_mask, eps_high):
+    ratio = torch.exp(log_prob - old_log_prob.detach())
+    hat_r = torch.clamp(ratio, max=1.0 + eps_high)  # 不设下界
+    per_token = hat_r.detach() * advantages * log_prob
+    denom = response_mask.sum().clamp_min(1.0)
+    return -(per_token * response_mask).sum() / denom
+
+# 同一 token 上与 PPO 未裁剪项的梯度对照
+lp = torch.tensor([-2.0], requires_grad=True)
+old = torch.tensor([-2.5])
+adv = torch.tensor([1.0])
+ppo_term = torch.exp(lp - old) * adv
+ppo_term.backward()
+g_ppo = lp.grad.clone(); lp.grad = None
+(torch.exp(lp - old).detach() * adv * lp).backward()
+assert torch.allclose(g_ppo, lp.grad)
+```
+
+最后几行验证 3.1 节的结论: 不裁剪时, $\mathrm{sg}(r)\hat A\log\pi$ 和 $r\hat A$ 对 log 概率的梯度相同.
+
+**分母.** 设一组只有两条回复: 一条 100 个 token, $\hat A=+1$; 一条 400 个 token, $\hat A=-1$; 暂设 $\hat r=1$. 先按条平均再对组平均时, 短回复每个 token 的权重是 $1/200$, 长回复每个 token 是 $1/800$, 正样本的每个 token 分量是负样本的 4 倍. token 级分母是 500, 每个 token 的权重都是 $1/500$. 6.3 节的模式坍塌说明, token 级归一化也有自己的问题: 负样本更长时, 负梯度的总量更大.
+
+**训练中要记录的量.** 至少记三个: 每轮更新中 $r>1+\epsilon^{IS}_{high}$ 的 token 比例, 按优势正负分开统计; 被截断 token 的平均 $r$; 策略熵. 第一个量随更新轮数上升是正常的, 如果在第一两轮就很高, 说明学习率或上界不合适. 第二个量反映截断丢掉了多少重要性修正, 它越大, 式 (7) 的偏差越大. 熵持续下降而奖励不涨时, 先检查第一个量里正优势那部分是否接近 0: 接近 0 说明大部分 token 都在区间内, 问题不在裁剪.
+
+**数值精度.** 比率在指数域计算, 长序列上 `log_prob - old_log_prob` 的误差会被放大, 6.2 节的 LM head 精度问题就是一个例子. 至少在算比率时用 FP32. `response_mask` 和 EOS 位置不一致时, $|o_i|$ 和分母都会算错.
+
+## 8. 与相邻方法的对照
+
+![GRPO, DAPO, CISPO 三列: 裁剪对象, 是否丢 token, 优势来源](./images/fig-cispo-vs-grpo-dapo.png)
 
 **图 2 解析**
 
-- 三列各自从上到下,列与列之间没有箭头.
-- 左列 GRPO:clip 在 $\min$ 里的 token 比率;出界丢;组内 $z$-score,KL 在损失里.
-- 中列 DAPO:仍是 $\min$ clip,只把上沿抬高;出界仍可能丢;优势仍是组相对,另加 token 级损失,动态采样,长度惩罚.
-- 右列 CISPO:clip 的是 $r$ 再 $\mathrm{sg}$;不丢 token;优势仍是 GRPO 组相对,token 级分母,无 KL.
-- 底注写明这不是成绩曲线.AIME 对照只存在论文 Figure 2,本页不临摹坐标.
+- 三列分别是 GRPO, DAPO, CISPO, 按裁剪对象, 区间外是否丢 token, 优势来源三项比较, 不是训练曲线.
+- GRPO 和 DAPO 都在 $\min$ 里裁 token 比率, DAPO 只是抬高了上界, 区间外的 token 仍会被丢掉.
+- CISPO 裁的是权重 $r$, 再做 stop-gradient, 不丢 token; 三者都用组内相对优势.
 
-GSPO 把重要性采样从 token 提到整条回答,序列级比率是长度归一化的几何平均 $s_i$,clip 作用在这一个 $s_i$ 上.CISPO 的 $r_{i,t}$ 仍是 token 级,改的是「系数要不要 `detach`,出界要不要把 $\nabla\log\pi$ 抹掉」.一条回答里,GSPO 可能因为 $s_i$ 出带整段出局;CISPO 每个 token 都还在,只是过大的 $r$ 被封顶.两边都不是 sigmoid.
+| | GRPO | DAPO | CISPO | GSPO | SAPO |
+|---|---|---|---|---|---|
+| 比率粒度 | token | token | token | 序列 (几何平均) | 序列或 token |
+| 限制方式 | $\min$ 硬裁剪 | $\min$ 硬裁剪, 上界抬高 | 裁权重 + stop-gradient | 对序列比率硬裁剪 | 温度控制的 sigmoid 软门 |
+| 区间外 | 梯度为 0 | 梯度为 0 | 系数封顶, 梯度保留 | 整条回复梯度为 0 | 权重平滑衰减 |
 
-SAPO(Soft Adaptive Policy Optimization,Gao,Zheng 等,[arXiv:2511.20347](https://arxiv.org/abs/2511.20347))用温度控制的 sigmoid 软门替代 hard clip,正负优势可以不同温度 $\tau_{\mathrm{pos}}$ / $\tau_{\mathrm{neg}}$.CISPO 的 clip 是硬截断加 stop-gradient,没有平滑过渡区,也没有把 $\varepsilon$ 写成熵的滑动平均.课设里常见的「hard-clip 太硬,改成中间一段斜坡」和这两篇都对不上:斜坡仍让出界梯度按门控衰减到接近零,CISPO 则把系数钉死,$\log\pi$ 照常反传.
+损失归一化和 KL 只在前三列之间比: GRPO 先对每条回复按长度平均, DeepSeekMath 把 KL 直接加在损失里; DAPO 和 CISPO 都用 token 级归一化, 都不加 KL.
 
-## 4. 统一式里的 mask:想丢 token 才乘零
+**DAPO** (Decoupled Clip and Dynamic sAmpling Policy Optimization, Yu 等 2025) 有四项改动: Clip-Higher, 动态采样, token 级损失, 超长回复的奖励整形. CISPO 采用了后三项中的动态采样, token 级损失和长度惩罚, 把 Clip-Higher 换成了对权重的裁剪.
 
-论文还写了一个带 token 掩码的统一目标(式 (6)(7)),用来把「丢不丢」收成超参,而不是另起一套损失:
+**GSPO** (Zheng 等 2025) 把重要性比率从 token 提到整条回复, 用长度归一化的几何平均 $s_i$, 裁剪也作用在 $s_i$ 上. 一条回复的 $s_i$ 出界, 整条回复都不更新. CISPO 的比率仍在 token 级, 每个 token 都更新, 过大的权重被封顶.
 
-$$
-\mathcal{J}_{\mathrm{unify}}(\theta)
-=\mathbb{E}
-\Biggl[
-\frac{1}{\sum_{i=1}^{G}|o_i|}\sum_{i=1}^{G}\sum_{t=1}^{|o_i|}
-\mathrm{sg}\bigl(\hat r_{i,t}(\theta)\bigr)\,\hat A_{i,t}\,
-\log\pi_\theta(o_{i,t}\mid\cdot)\,M_{i,t}
-\Biggr]. \tag{7}
-$$
+**SAPO** (Gao 等 2025) 用温度控制的 sigmoid 软门代替硬裁剪, 正负优势用不同温度. 它的权重随比率偏离 1 平滑衰减, 远离 1 时梯度趋近 0; CISPO 的系数在上界处截断, 之后保持常数, 不衰减到 0. 取正优势, 比较三种方法乘在 $\hat A\nabla\log\pi_\theta$ 前的系数 (PPO 取 $\epsilon=0.2$, CISPO 上界取 $1.2$, SAPO 取 $\tau=1$, 其系数是 $4\sigma(r-1)(1-\sigma(r-1))\cdot r$, 推导见 [09 SAPO](../09-SAPO-温度软门/09-SAPO-温度软门.md)):
 
-$M_{i,t}$ 等价于 PPO 信任域里隐式的那张掩码:
+| $r$ | PPO | CISPO | SAPO ($\tau=1$) |
+|---|---|---|---|
+| $1.0$ | $1.0$ | $1.0$ | $1.0$ |
+| $1.5$ | $0$ | $1.2$ | $1.41$ |
+| $2.0$ | $0$ | $1.2$ | $1.57$ |
+| $5.0$ | $0$ | $1.2$ | $0.35$ |
 
-$$
-M_{i,t}=
-\begin{cases}
-0 & \text{if }\hat A_{i,t}>0\text{ and }r_{i,t}(\theta)>1+\varepsilon_{\mathrm{high}},\\
-0 & \text{if }\hat A_{i,t}<0\text{ and }r_{i,t}(\theta)<1-\varepsilon_{\mathrm{low}},\\
-1 & \text{otherwise.}
-\end{cases} \tag{8}
-$$
+比率稍大时 SAPO 的系数比 CISPO 还大, 比率很大时降到接近 0; CISPO 在上界之后始终保持 $1.2$. 两种方法都在 $r$ 略超出 PPO 区间时保留梯度, 对极端比率的处理方向相反.
 
-$M=0$ 的两个分支,就是「正优势还继续抬,已经超出上沿」和「负优势还继续压,已经低于下沿」.CISPO 实验走的是 **所有 $M_{i,t}=1$**:掩码不起作用,出界只改 $\hat r$ 的数值,不改这个位置还在不在.把式 (8) 打开,统一式可以回到 PPO 那种丢 token 的行为.实现时不要默认「写了 CISPO 就一定带这张掩码」.
+## 9. 失效模式与适用边界
 
-正优势且 $r>1+\varepsilon_{\mathrm{high}}$ 时,PPO 的 $\min$ 选中常数支,梯度没了.CISPO 若 $M=1$,同一位置仍有 $\hat r_{\mathrm{clip}}\cdot\hat A\cdot\nabla\log\pi$.负优势且 $r<1-\varepsilon_{\mathrm{low}}$ 时同理.他们实验里下界几乎不设,后一个分支更少被权重 clip 碰到;真正常触发的是上沿.
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| 大量 token 的权重顶在上界 | 多轮更新后策略离 $\pi_{\theta_{old}}$ 很远 | 减少每批的更新轮数, 或收紧 $\epsilon^{IS}_{high}$; 这时重要性修正已经很弱 |
+| 长度扩展后期后半段乱码 | 负样本更长, 负梯度在后段累积 | 论文的三条处理 (6.3 节) |
+| 组内全对或全错 | 式 (3) 分子为 0, 分母趋近 0 | 动态采样过滤 |
+| 照搬 GRPO 的 $\epsilon=0.2$ 作上界 | 论文没有给 $\epsilon^{IS}_{high}$ 的值 | 按自己的验证曲线调 |
+| 中间推理错误, 最终答案碰巧正确 | 结果监督下整条回复共享一个 $\hat A$ | CISPO 不改信用分配, 需要过程奖励 |
+| MoE 上 token 比率波动大 | 更新前后路由的专家不同 | CISPO 不处理这个问题, 参考 GSPO |
 
-$\mathrm{sg}$ 不能省的理由也在梯度里.$\hat r$ 是 $\pi_\theta/\pi_{\mathrm{old}}$ 的函数,若不 `detach`,反传会同时打到分子上的 $\log\pi$ 和比率本身,等价于对重要性权重再乘一层 $\nabla r$.那既不是式 (4) 的 REINFORCE 校正,也不是 PPO 的 $\min$ 代理.clip 再叠上去,出界处 $\mathrm{clip}$ 的局部导数是 $0$,未出界处又变成对 $r$ 的额外缩放,系数含义乱掉.论文写的路径只有一条:把 $\hat r$ 当常数,$A$ 当常数,唯一的 $\theta$ 通道是 $\log\pi_\theta$.
+偏差的来源要分清. 权重被截断的 token, 梯度被系统性低估. 每批只更新一两轮时, 大多数 $r$ 都在 1 附近, 截断很少触发, 偏差很小; 论文的 16 轮设定下, 截断触发得更多, 这正是 CISPO 相对 PPO 的收益所在, 也是偏差最大的地方. 论文的判断是, 保留这些 token 的梯度比无偏更重要.
 
-## 5. 对照实验写了哪些数
+什么时候该换. 判断依据是每批 rollout 上做几轮更新. 只做一轮时 (完全 on-policy), 1.3 节已经说明各方法梯度相同, 换 CISPO 没有收益. 做多轮时, 先统计每轮被 PPO 裁剪的 token 比例, 以及这些 token 的类型: 如果被裁的主要是正优势回复里的低概率 token, 而这些 token 恰好是希望模型学会的行为, CISPO 的改动正好对准这个问题. 如果被裁的比例本来就很低 (RLOO 一文在 RLHF 设定下测到不到 5%), 两者的差别也会很小.
 
-算法对账用的是 controlled study,不是 MiniMax-M1 的全量成绩单.设定:Qwen2.5-32B-base,题集用 Yu et al. 2025 的数学推理数据(DAPO-Math 那条),评测 AIME 2024.zero-RL,直接在 base 上做 RL.论文 Figure 2:同样训练步数,CISPO 高于 GRPO 和 DAPO;大约 **50% 步数** 追上 DAPO.引言把同一观察写成相对 DAPO 约 **2×** 的速度.正文没有把 Figure 2 的终点写成表格百分数.本篇不从曲线上估坐标.
-
-能钉住的只有这些:
-
-| 项 | 论文写法 |
-|----|----------|
-| 算法全称 | Clipped IS-weight Policy Optimization |
-| 出处 | MiniMax-M1 §3.1,arXiv:2506.13585 |
-| clip 对象 | IS 权重 $r_{i,t}$,再 $\mathrm{sg}$ |
-| 下界 | $\varepsilon^{\mathrm{IS}}_{\mathrm{low}}$ 很大,等于不卡下界 |
-| 上界 | 只调 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$;§3.1 未给具体数字 |
-| 优势 | GRPO 组内相对 |
-| 损失 | token 级分母 |
-| KL | 无 |
-| 配件 | DAPO 的动态采样与长度惩罚 |
-| 每批 off-policy | **16** 轮更新 / 一次生成 |
-| 对照骨干 | Qwen2.5-32B-base |
-| 对照数据 | DAPO 数学题集 |
-| 对照基准 | AIME 2024 |
-| Figure 2 | 同步数优于 GRPO / DAPO;约一半步数追上 DAPO |
-
-MiniMax-M1 自己的 RL:512 张 H800,完整一轮大约三周,租卡费用正文写约 $0.53\mathrm{M}$ 美元(摘要里 $534{,}700$).这是 CISPO 加 hybrid 注意力一起跑完的墙钟.
-
-把生成长度从 40K 拉到 80K 时,他们在每个长度窗口后期碰到过模式崩:后半段胡写,困惑度涨.归因写的是负样本变长更快,GRPO 式归一化加 token 级损失让后半段负梯度堆起来.处理里有一条直接碰到 CISPO 超参:同时减小梯度裁剪阈值和 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$.上沿不是越大越「不丢 token」就越好;封顶太松,系数仍可能把更新拉飞.这是调 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$ 的工程边界,不是另发明一套算法.
-
-## 6. 实现时分母,detach 和配件
-
-形状约定:`log_prob`,`old_log_prob`,`advantages`,`response_mask` 都是 $[B,T]$.结果监督下 `advantages` 通常是式 (3) 广播到 token.下面不是框架源码,只把式 (5)(6) 写成可对账的几行.
-
-```python
-log_ratio = log_prob - old_log_prob
-ratio = torch.exp(log_ratio)
-# 论文:下界几乎不设,只卡上沿;eps_low 取很大时 1-eps_low 不起作用
-hat_r = torch.clamp(ratio, 1.0 - eps_low, 1.0 + eps_high)
-# stop-gradient:系数当常数,梯度走 log π
-per_token = hat_r.detach() * advantages * log_prob
-denom = response_mask.sum().clamp_min(1.0)
-loss = -(per_token * response_mask).sum() / denom
-```
-
-最大化式 (6),损失取负.`detach` 不能省:省掉就变成对 $r$ 和 $\log\pi$ 同时反传,和「clip 权重,梯度走 $\log\pi$」对不上,也不是 PPO 的 $\min$.`eps_high` 用他们调过的值;不要默写成 $0.2$,也不要抄 GSPO 的 $4\times 10^{-4}$.`eps_low` 若按论文「很大」,实现上可以让下界 $\le 0$,再靠 `clamp` 把比率留在正侧,效果是小 $r$ 不被抬高.
-
-分母用 batch 内有效 token 总数,对应式 (6) 的 $\sum_i|o_i|$.取一个只有两条的组:一条 100 token,$\hat A=+1$,一条 400 token,$\hat A=-1$,且暂令 $\hat r=1$.按条平均再对组平均时,短句每个 token 分到 $1/100$,长句每个 token 分到 $1/400$,正优势短句更「值钱」.token 级分母是 $500$,每个有效位置权重相同.若改回「先按条平均再对 $B$ 平均」,长度偏差会回到 [02-GRPO](../02-GRPO/02-GRPO.md) §6.1 说的那种.组内 $z$-score 仍要处理 $\mathrm{std}\to 0$;动态采样的做法是把准确率 0 或 1 的组丢掉,保证留下的组里 $\hat A$ 不是全零.长度惩罚按 DAPO 的软区间.这三项都不是 CISPO 新推的公式,漏实现会让「复现 CISPO」和论文 Figure 2 的设定对不上,但不要在本篇把 DAPO 再讲一遍.
-
-`float16` 下长序列的 `log_ratio` 可能溢出.比率在指数域算,clip 之前至少用 `float32`.mask 和 EOS 不一致时,$|o_i|$ 会错,token 级分母跟着错.这些不是论文表格,是式 (1) 和式 (6) 在代码里会踩的坑.
-
-## 7. 失效和边界
-
-CISPO 不是万能的.权重 clip 仍然引入偏差:过大的 $r$ 被钉在天花板上,重要性采样不再无偏.论文认为这笔偏差换「token 不丢」划得来,没有承诺系数封顶之后还能当精确的 off-policy 校正.16 轮更新把 $\pi_\theta$ 推得很远时,$\hat r$ 大量顶在上沿,系数几乎变成同一个常数,IS 校正名存实亡,只剩下「所有 token 都还在 $\nabla\log\pi$ 里」这一层.
-
-组内 $z$-score 的旧病还在.全对全错时 $\mathrm{std}\to 0$,简单题和难题的「差一点」被放成同类.CISPO 没改式 (3).动态采样能丢掉无信息组,组太小($G=2$)时均值仍会晃;$G=1$ 没有对照,退回不带 baseline 的 REINFORCE.这些是组相对的边界,不是 clip 权重新引入的.
-
-信用分配仍然粗.结果监督下一条回答一个 $\hat A$,中间写错,最后凑对,整段仍吃正优势.CISPO 保证的是这个 $\hat A$ 能乘到每一个 token 的 $\log\pi$ 上,包括那些 $r$ 已经很大的反思词.它不把优势拆成逐步奖励.需要逐步 $\hat A_{i,t}$ 时,公式仍在 GRPO 的过程监督一侧;CISPO 只规定系数怎么 clip.
-
-和邻居的错位.clip 区间按 token 比率的 $0.2$ 量级去抄,可能根本不是他们调 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$ 时用的尺度;§3.1 没给数,只能以自己的验证曲线为准.把 CISPO 做成「$\min$ 外面套一层 sigmoid」,那是 SAPO 的结构,不是式 (5)(6).把 $r_{i,t}$ 先做成几何平均再 clip,那是 GSPO 的 $s_i$.MoE 上 token 级 IS 方差炸掉,要靠序列似然判决整段去留,走 [03-GSPO](../03-GSPO/03-GSPO.md),不要指望 CISPO 的 `detach` 自动消化专家漂移.
-
-M1 把思维预算拉到 80K 时,负样本先顶满窗口,后半段负梯度过猛.CISPO 解决的是「高 $r$ token 被 $\min$ 丢掉」,不解决「负样本更长所以后半段更亏」.他们写了三条补丁:连续高概率 token 早停,避免复读占满窗口;sample 级损失和 token 级归一化掺在一起,减轻正负样本长度差;同时减小梯度裁剪阈值和 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$.复现长 CoT 时,只抄式 (6) 不够.
-
-| 现象 | 原因 | 说明 |
-|------|------|------|
-| 反思词冒头后分数不动 | 内层多 epoch 仍用 $\min$ clip | 换 CISPO 的 $\mathrm{sg}(\hat r)$,不要只抬 $\varepsilon_{\mathrm{high}}$ |
-| 上沿一松就炸 | $\hat r$ 封顶太宽,系数仍很大 | 80K 阶段他们把 $\varepsilon^{\mathrm{IS}}_{\mathrm{high}}$ 再收紧 |
-| 组内全对或全错 | 式 (3) 的 $\mathrm{std}\to 0$ | 动态采样丢掉;CISPO 不改 $z$-score |
-| 后半段胡写 | 负样本更长,token 级损失堆负梯度 | 早停复读,掺 sample 级损失,不是 clip 权重能单独修 |
-
-熵这一侧,CISPO 的承诺比「加一项熵奖励」更窄.论文的说法是:不丢掉大更新对应的 token,熵会自然留在一个还能探索的区间.没有单独报熵曲线的表.Cui 等把熵崩和策略过早确定连在一起,Wang 等强调高熵少数 token 对推理 RL 更关键.CISPO 的设计对准的是后一类位置不被 $\min$ 开除,不是另训一个熵头.若训练后期熵已经塌完,再换成 CISPO 救不回来;它防的是「刚冒头就被 clip」.
-
-怎么选.可验证奖励,组内可比较,愿意用采样宽度换 Critic:先看 GRPO.同一批轨迹要多 epoch 更新,且发现 Wait / However 一类 token 刚冒头就被 clip 掉:换 CISPO.MoE 上 token 比率已经没有定义:GSPO.离线偏好对:DPO.要平滑门而不是硬截断系数:SAPO,不是把式 (5) 的 `clamp` 改成 `sigmoid` 就算完.
-
-## 8. 收束
-
-CISPO 留下 GRPO 的组内相对优势和 DAPO 的 token 级分母,动态采样,长度惩罚,把 PPO 式 $\min$ clip 换成「先 clip $r$,再 $\mathrm{sg}$,梯度走 $\log\pi$」.实验里不卡 IS 下界,只调上沿,无 KL.Qwen2.5-32B-base 在 DAPO-Math 上,AIME 2024 的 Figure 2:同样步数高于 GRPO / DAPO,大约一半步数追上 DAPO.16 轮 off-policy 是这条对照成立的背景.512 张 H800,约三周是 M1 整次 RL 的墙钟.没有两全其美:token 都留下,重要性权重就不再无偏;上沿太松,封顶等于没封.下一篇要看组统计进 [02-GRPO](../02-GRPO/02-GRPO.md);要看序列级 IS 进 [03-GSPO](../03-GSPO/03-GSPO.md);要看 Critic 和 GAE 进 [04-PPO](../04-PPO/04-PPO.md);要看家族对照进 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md).
+熵方面, 论文说 CISPO 避免丢弃 token, 同时让熵保持在合理范围, 保证探索稳定, 但没有单独给出熵曲线的对比. 它能做到的是让刚冒头的低概率 token 不因裁剪失去梯度; 如果熵在训练早期已经坍塌, 换成 CISPO 不能把它恢复.
 
 ## 参考文献
 
-1. MiniMax. (2025). *MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*. arXiv:2506.13585. https://arxiv.org/abs/2506.13585 · HTML: https://arxiv.org/html/2506.13585 (§3.1 CISPO;式 (1)–(7);Figure 2;512 H800,约三周)
-2. Shao, Z., et al. (2024). *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300. https://arxiv.org/abs/2402.03300
-3. Yu, Q., et al. (2025). *DAPO: An Open-Source LLM Reinforcement Learning System at Scale*. arXiv:2503.14476. https://arxiv.org/abs/2503.14476
-4. Liu, Z., et al. (2025). *Understanding R1-Zero-like Training: A Critical Perspective*. arXiv:2503.20783. https://arxiv.org/abs/2503.20783 (token 级损失)
-5. Schulman, J., et al. (2017). *Proximal Policy Optimization Algorithms*. arXiv:1707.06347.
-6. Zheng, C., et al. (2025). *Group Sequence Policy Optimization*. arXiv:2507.18071. https://arxiv.org/abs/2507.18071
-7. Gao, C., Zheng, C., Chen, X.-H., et al. (2025). *Soft Adaptive Policy Optimization*. arXiv:2511.20347. https://arxiv.org/abs/2511.20347 (温度 sigmoid 软门;与 CISPO 不是同一机制)
-8. Hu, J., et al. (2025). *Open-Reasoner-Zero: An Open Source Approach to Scaling Up Reinforcement Learning on the Base Model*. arXiv:2503.24290. https://arxiv.org/abs/2503.24290
-9. Cui, G., et al. (2025). *The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models*. arXiv:2505.22617.
-10. Wang, S., et al. (2025). *Beyond the 80/20 Rule: High-Entropy Minority Tokens Drive Effective Reinforcement Learning for LLM Reasoning*. arXiv:2506.01939.
-11. Qwen, et al. (2025). *Qwen2.5 Technical Report*. arXiv:2412.15115.
-
-
-CISPO 的 trick 在于「clip 重要性比率,但梯度走 logπ」.这样既能限制 $ho$ 的爆炸,又不把 clip 的硬边界直接传进策略更新.它提醒我们:重要性采样的稳定性问题可以用很多方式缓解,clip 不是唯一答案.
+1. MiniMax. *MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*. arXiv:2506.13585, 2025. §3.1, §3.2, §5, Figure 2.
+2. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., Klimov, O. *Proximal Policy Optimization Algorithms*. arXiv:1707.06347, 2017.
+3. Shao, Z. 等. *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300, 2024.
+4. Yu, Q. 等. *DAPO: An Open-Source LLM Reinforcement Learning System at Scale*. arXiv:2503.14476, 2025.
+5. Liu, Z. 等. *Understanding R1-Zero-Like Training: A Critical Perspective*. arXiv:2503.20783, 2025.
+6. Hu, J. 等. *Open-Reasoner-Zero: An Open Source Approach to Scaling Up Reinforcement Learning on the Base Model*. arXiv:2503.24290, 2025.
+7. Cui, G. 等. *The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models*. arXiv:2505.22617, 2025.
+8. Wang, S. 等. *Beyond the 80/20 Rule: High-Entropy Minority Tokens Drive Effective Reinforcement Learning for LLM Reasoning*. arXiv:2506.01939, 2025.
+9. Zheng, C. 等. *Group Sequence Policy Optimization*. arXiv:2507.18071, 2025.
+10. Gao, C. 等. *Soft Adaptive Policy Optimization*. arXiv:2511.20347, 2025.
+11. Ionides, E. L. *Truncated Importance Sampling*. Journal of Computational and Graphical Statistics, 17(2), 295–311, 2008.
+12. Espeholt, L. 等. *IMPALA: Scalable Distributed Deep-RL with Importance Weighted Actor-Learner Architectures*. ICML 2018. arXiv:1802.01561.
+13. Ye, D. 等. *Mastering Complex Control in MOBA Games with Deep Reinforcement Learning*. AAAI 2020. arXiv:1912.09729.

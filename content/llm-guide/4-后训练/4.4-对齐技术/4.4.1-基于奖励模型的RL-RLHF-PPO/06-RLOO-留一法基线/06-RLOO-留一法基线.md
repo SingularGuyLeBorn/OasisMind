@@ -1,204 +1,348 @@
 ---
-title: "06 · RLOO:留一法基线"
+title: "06 · RLOO: 留一法基线"
 published: true
-tags: ["RLOO", "REINFORCE", "RLHF", "PPO", "GRPO", "DPO", "RAFT"]
-excerpt: "RLOO(REINFORCE Leave-One-Out,留一法基线)把同一 prompt 上现采的 k 条回复互相当对照:第 i 条的 baseline 是其余 k-1 条奖励的均值,自己不进这道均值,也不除组内标准差."
+tags: ["RLOO", "REINFORCE", "RLHF", "PPO", "GRPO", "RAFT"]
+excerpt: "RLOO 对同一 prompt 采 k 条回复, 第 i 条的基线取其余 k-1 条奖励的均值, 不训 Critic, 不除组内标准差. Ahmadian 等 2024 在 TL;DR 和 Anthropic-HH 上测得, RLOO k=4 的胜率比 PPO 高 10.3 到 32.1 个点."
 ---
-# 06 RLOO:留一法基线
 
-RLOO(REINFORCE Leave-One-Out,留一法基线)把同一 prompt 上现采的 $k$ 条回复互相当对照:第 $i$ 条的 baseline 是其余 $k-1$ 条奖励的均值,自己不进这道均值,也不除组内标准差.它要拆的瓶颈很具体:PPO 在 RLHF 里同时扛 Actor,Critic,奖励模型和参考模型,再用 GAE 拿偏差换方差,而这段任务的奖励本来只打在整段生成上.本篇落在 4.4.1 奖励模型 RL 一条线上,记号沿用邻居里的策略 $\pi_{\theta}$,奖励 $r_{\phi}$ 与 KL 系数 $\beta$,公式和表跟 Ahmadian 等 *Back to Basics*([arXiv:2402.14740](https://arxiv.org/abs/2402.14740)).不是 PPO:无 Critic,无 GAE,主路径也不靠 clip.不是 DPO:奖励模型还在,更新仍是在线策略梯度.不是 GRPO 的 $z$-score:那条把样本自己算进组均值和标准差.
+# RLOO: 留一法基线
 
-## 1. PPO 在 RLHF 里多装了什么
+> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [02 GRPO](../02-GRPO/02-GRPO.md) · [07 RAFT](../07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md) · [10 序列级 REINFORCE](../10-REINFORCE-序列级策略梯度/10-REINFORCE-序列级策略梯度.md) · [ReMax](../../4.4.6-其他策略梯度/01-ReMax-贪婪基线/01-ReMax-贪婪基线.md) · [Dr. GRPO](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md)
 
-Schulman 等把 PPO 做成「小步,稳更新」的工具,前提是 off-policy 梯度会大到把学习扯散.传统 Deep-RL 基准大体活在这个区里.RLHF 微调一条已经过预训练和 SFT 的语言模型,起点不是随机参数.词表名义上几万维,条件在 prompt 和已写出的 token 上之后,概率质量会堆在极少几个候选上.论文附录用 Llama SFT,词表 32k 量过:第一个 token 之后,单步 top-1 大约收走 $60\%$ 的质量,top-16 超过 $90\%$.熵在第一步之后掉下去,后面只略回升.搜索空间看起来大,走得动的那一小块并不大.
+材料是 Ahmadian 等的 *Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs* (ACL 2024, arXiv:2402.14740). 问题是 RLHF 里 PPO 的价值网络, GAE 和比率裁剪是否必要, 以及同一 prompt 的多条样本能否直接充当基线.
 
-PPO 为此准备的零件,在这个环境里对不上号.计算上,一次迭代常要同时加载生成器,参考模型(估 KL),Critic 和奖励模型,生成器和 Critic 还交错更新.优化上,GAE 用 $\lambda\in[0,1]$ 在方差和偏差之间滑动:$\lambda$ 靠近 $0$ 时多自举,偏差大;$\lambda=1$ 时退回整段回报,无偏,方差名义上更高.论文在 Llama-7B + Anthropic-HH 上扫 $\lambda$:$\lambda=1.0$(Vanilla Policy Gradient)奖励最高,然后随 $\lambda$ 下降单调变差.$\lambda=0$ 和 $\lambda=0.5$ 那两条把方差压下去的变体,奖励明显更差.RLHF 这边默认就不那么抖,再引入偏差是白付的.
+## 1. PPO 在 RLHF 里有哪些部件用不上
 
-再拆 clip 和损失归一,学习曲线几乎不动;全程每个 batch 里真正被 clip 到的 token 平均不到 $5\%$.他们还做过更狠的一刀:$\lambda=1$ 时关掉 clip,再去掉比率 $\pi_{\theta}/\pi_{\mathrm{old}}$,PPO 损失直接退回 Vanilla PG.去掉夹子不但没垮,奖励还略升.学习已经贴着 on-policy 走,策略迭代之间变得很慢,为「防止一步跨太远」准备的夹子很少合上.
-
-还有一处建模错位.PPO 把每个 token 当动作,把部分序列当状态,折扣 $\gamma=1$.奖励模型只给完整 $y$ 一个标量;除终点外,逐步的 $R_t$ 几乎只剩 KL 项.环境转移还是确定的:在 $s_t$ 写下 $y_t$,下一状态就是拼上这个 token.从 MDP 看,这就是以 prompt 为初态,以整段生成为唯一动作,写完即终止的 bandit.把中间 token 都建成状态,是为 GAE 和 Critic 准备的脚手架,不是奖励真正存在的地方.
-
-## 2. 整段生成当成一个动作
-
-RLHF 第三阶段仍最大化带 KL 塑形的期望奖励.论文把塑形后的标量写成
+RLHF 的常规流程分三段 (Ziegler 等): 先做 SFT; 再用人类偏好对训练奖励模型 $r_\phi(x,y)$; 最后让奖励模型在线打分, 优化策略. 第三段的目标是带 KL 罚的期望奖励, 等价于最大化 KL 塑形后的奖励 (论文式 (3)):
 
 $$
-R(x,y)=r_{\phi}(x,y)-\beta\log\frac{\pi_{\theta}(y|x)}{\pi_{\mathrm{ref}}(y|x)}. \tag{1}
+R(x,y)=r_\phi(x,y)-\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}
+\tag{1}
 $$
 
-$\beta$ 管离参考策略有多远.无惩罚地抬 $r_{\phi}$ 会把连贯性掏空,这一项不能省.差别在怎么估 $\nabla_{\theta}\mathbb{E}[R]$.
+$\pi_\theta$ 是正在训练的策略, $\pi_{\mathrm{ref}}$ 是参考策略, 一般取 SFT 模型, $\beta$ 控制策略能离参考策略多远. 论文说明这一项必须保留: 不加罚直接优化奖励模型, 生成的连贯性会变差.
 
-REINFORCE(Williams, 1992)直接对整段 $y$ 反传:
+第三段默认用 PPO. PPO 把每个生成的 token 看作一个动作, 把 prompt 加已生成的前缀看作状态, 折扣取 1. 奖励模型的分数只加在最后一个 token 上, 其余位置的逐步奖励只剩 KL 项. 优势用 GAE 估计, 需要一个价值网络 (Critic) 预测每个前缀的回报. 一次迭代通常要同时加载四个模型: 生成器, 计算 KL 用的参考模型, Critic, 奖励模型, 其中生成器和 Critic 都要训练. 7B 量级的策略配一个同规模的 Critic, 就多出一份权重, 梯度和优化器状态.
 
-$$
-\mathbb{E}_{x\sim\mathcal{D},\,y\sim\pi_{\theta}(\cdot|x)}\bigl[R(y,x)\,\nabla_{\theta}\log\pi_{\theta}(y|x)\bigr]. \tag{2}
-$$
+Ahmadian 等认为 PPO 的设计前提来自传统 Deep-RL: 策略从随机初始化开始, 离策略更新的步子一大, 学习就不稳, 所以 PPO 强调每一步更新要小而稳. RLHF 的起点是预训练加 SFT 后的语言模型, 条件差得很远. 论文从下面四个方面检查 PPO 的部件在这个设定里是否还必要.
 
-减一个与梯度协方差高,自身不依赖当前这条样本的 baseline $b$,方差降,期望不变:
+**偏差和方差.** 价值网络和 GAE 用偏差换方差. GAE 的 $\lambda\in[0,1]$ 决定换多少: $\lambda$ 接近 0 时优势主要靠价值网络自举, 方差小, 偏差大; $\lambda=1$ 时优势退化成从当前 token 往后的完整回报减去基线, 偏差最小, 方差最大. $\lambda$ 取多少取决于环境: 随机性很强的环境里, 用偏差换方差是划算的; 环境本身稳定, 方差已经低时, 引入偏差没有必要. 论文在 Llama-7B 和 Anthropic-HH 上扫了 $\lambda\in\{0,0.5,0.95,1.0\}$ (Figure 1 左): $\lambda=1.0$ 的奖励最高, 随 $\lambda$ 变小单调下降. 作者据此判断, 这个环境本身的方差已经不高, 再用偏差去换方差没有收益.
 
-$$
-\mathbb{E}\bigl[(R(y,x)-b)\,\nabla_{\theta}\log\pi_{\theta}(y|x)\bigr]. \tag{3}
-$$
+**输出分布的集中程度.** 附录 A 统计了 HH 实验所用 Llama SFT 模型 (词表 32k) 每一步的输出分布. 生成第一个 token 之后, 概率质量明显集中: 每一步约 60% 落在 top-1 token 上, 超过 90% 落在 top-16 上, 扩到 top-32 和 top-64 增加很少. 归一化熵在第一个 token 之后降幅最大, 后面只小幅回升. 名义上每一步有 32k 个可选动作, 实际有机会被采到的只有十几个. 早期 NLP 文献 (Ranzato 等 2016, Bahdanau 等 2017, Ding 和 Soricut 2017, Korbak 等 2022 等) 报告 REINFORCE 方差高, 在大动作空间里会失败. 作者认为这些结论来自随机初始化或弱初始化的训练, 从强预训练模型出发时不成立.
 
-最省事的无参选择是训练过程里所有奖励的滑动平均
+**裁剪.** PPO 的比率裁剪限制 $\pi_\theta/\pi_{\mathrm{old}}$ 偏离 1 的幅度. 论文统计, 所有数据集和基座组合上, 每个 batch 平均被 clip 的损失项不到 5%. 训练基本是 on-policy 的, 相邻两次迭代之间策略变化很慢. 在 $\lambda=1$ 下关掉 clip (价值网络的 clip 也关掉; Engstrom 等 2020 观察到, 价值网络的 clip 在传统 Deep-RL 环境里对学习有明显影响), 再去掉比率 $\pi_\theta/\pi_{\mathrm{old}}$, PPO 的损失就退化成 Vanilla Policy Gradient. 这样改之后奖励没有下降, 还略有提升 (Figure 1 右). 作者的结论是, 大步长的离策略更新在这个设定里很少出现, 也不会像传统 Deep-RL 那样破坏学习.
 
-$$
-b_{\mathrm{MA}}=\frac{1}{S}\sum_{s}R(x^{s},y^{s}). \tag{4}
-$$
+**状态建模.** 奖励只在整段生成结束时出现, 中间 token 的逐步奖励只有 KL 项. 状态转移是确定的: 在 $s_t=\{y_{<t},x\}$ 写下 $y_t$, 下一个状态就是拼上 $y_t$ 的前缀, 转移概率恒为 1. 这样的 MDP 里有实际作用的只有两个状态: 由 prompt 决定的初始状态, 和生成结束后到达的终止状态. 论文因此把整段生成看作一个动作, 问题化为 contextual bandit, 这与 Kreutzer 等 2017, Nguyen 等 2017 在机器翻译上的做法一致.
 
-$S$ 是步数.它跨 prompt,跨时间,对「这一条 $x$ 现在值多少」反应慢.论文里的 Vanilla PG 仍按 token 展开轨迹回报,并从部分序列学一个 $b_{\phi}(s_t)$;REINFORCE 则只在整段 $R(x,y)$ 上减 $b_{\mathrm{MA}}$.两条都比 PPO 简单,Win-rate 也更高.TL;DR 上 REINFORCE 带滑动平均是 $70.7$,Vanilla PG 是 $70.4$,PPO 是 $67.6$.HH + Llama 上三者是 $55.3$,$52.3$,$32.0$.论文把 Vanilla PG 相对 PPO 的 Win-rate 增益概括成 $3.2\%$ 到 $20.3\%$,区间的上沿就来自这一列.
+四点合在一起, 要求的优化器是: 不对部分序列建模, 不训练价值网络, 不需要裁剪. 序列级 REINFORCE 满足这些条件. RLOO 在它的基础上换了一个更好的基线.
 
-整段 $y=(y_1,\ldots,y_T)$ 的对数概率仍是逐步相加
+## 2. 从单样本 REINFORCE 到留一法
+
+### 2.1 REINFORCE 和基线
+
+把整段回复 $y$ 看作一个动作, REINFORCE (Williams 1992) 给出期望奖励的梯度 (论文式 (6)):
 
 $$
-\log\pi_{\theta}(y|x)=\sum_{t=1}^{T}\log\pi_{\theta}(y_t\mid x,y_{<t}).
+\nabla_\theta\,\mathbb{E}_{y\sim\pi_\theta(\cdot\mid x)}\bigl[R(x,y)\bigr]
+=\mathbb{E}_{x\sim\mathcal{D},\,y\sim\pi_\theta(\cdot\mid x)}\bigl[R(x,y)\,\nabla_\theta\log\pi_\theta(y\mid x)\bigr]
+\tag{2}
 $$
 
-式 (2) 的 $\nabla_{\theta}\log\pi_{\theta}(y|x)$ 因此会流过每一个已生成 token,并不是把整句当成不可微的黑盒.变的是**权重**:同一条 $y$ 上所有 $t$ 共享同一个 $(R(x,y)-b)$,没有逐步 TD,没有 $\lambda$.论文把「按部分序列估回报」的 Vanilla PG 和「只在整段 $R$ 上估」的 REINFORCE 拆开比,就是要回答:中间那些只有 KL,没有 $r_{\phi}$ 的状态,值不值得单独建一个 $V$.答案是不值得.HH + Llama 上带滑动平均的 REINFORCE($55.3$)已经高于 Vanilla PG($52.3$),两条都远高于 PPO($32.0$).
+式 (2) 把 $R$ 看作一个标量. $\log\pi_\theta(y\mid x)=\sum_{t=1}^{T}\log\pi_\theta(y_t\mid x,y_{<t})$, 所以梯度仍然经过每个 token 的 logits, 只是每个 token 乘的是同一个数 $R(x,y)$.
 
-滑动平均解决不了「同一 prompt 上几条回复谁高谁低」.它混的是不同 $x$,不同时刻的分数,对「这一条指令现在值多少」反应慢.要这块对照,就得在同一次 rollout 里对同一个 $x$ 多采几条.
-
-## 3. 留一法:第 $i$ 条不进自己的均值
-
-Kool 等 2019 年在 ICLR 结构预测工坊写过一句很省的话:多买几条 REINFORCE 样本,基线几乎白送.RLOO 把这句话接到 LLM 对齐上.给定 prompt $x$,从当前策略 i.i.d. 采 $k$ 条 $y_{(1)},\ldots,y_{(k)}$,第 $i$ 条的梯度权重是
+单样本估计的方差大, 常见做法是减去一个基线 $b$ (论文式 (7)):
 
 $$
-\frac{1}{k}\sum_{i=1}^{k}\Biggl[R(y_{(i)},x)-\frac{1}{k-1}\sum_{j\neq i}R(y_{(j)},x)\Biggr]\nabla\log\pi(y_{(i)}|x). \tag{5}
+\mathbb{E}_{x,\,y}\bigl[(R(x,y)-b)\,\nabla_\theta\log\pi_\theta(y\mid x)\bigr]
+\tag{3}
 $$
 
-方括号里那一项就是优势.baseline
+只要 $b$ 不依赖被求导的那条 $y$, 减掉它就不改变期望. 推导只有一行:
 
 $$
-b_{i}=\frac{1}{k-1}\sum_{j\neq i}R(y_{(j)},x) \tag{6}
+\mathbb{E}_{y\sim\pi_\theta}\bigl[b\,\nabla_\theta\log\pi_\theta(y\mid x)\bigr]
+=b\sum_{y}\pi_\theta(y\mid x)\frac{\nabla_\theta\pi_\theta(y\mid x)}{\pi_\theta(y\mid x)}
+=b\,\nabla_\theta\sum_{y}\pi_\theta(y\mid x)
+=b\,\nabla_\theta 1=0
+\tag{4}
 $$
 
-是其余 $k-1$ 条的均值,不含 $R(y_{(i)},x)$.同分布下 $\mathbb{E}[b_i]=\mathbb{E}[R]$,所以 $\mathbb{E}[R_i-b_i]=0$,基线无偏.$k$ 条梯度再平均,得到多样本蒙特卡洛.多付的代价是采样时间;换来的是逐步,按 prompt 现做的对照,不必再训价值网络.
+$b$ 可以依赖 $x$, 也可以依赖其他独立采到的样本, 式 (4) 都成立. 论文的 REINFORCE 基线取训练过程中所有奖励的滑动平均 (论文式 (8)):
 
-![RLOO leave-one-out baseline for k=4 with focus on y2](./images/fig-rloo-loo-baseline.png)
+$$
+b_{\mathrm{MA}}=\frac{1}{S}\sum_{s}R(x^{s},y^{s})
+\tag{5}
+$$
 
-> 图 1:同一 prompt 采 $k=4$ 条.焦点 $y_2$ 的 baseline 只吃 $R_1$,$R_3$,$R_4$ 的均值;$R_2$ 走实线进优势,不进虚线.
+$S$ 是训练步数, $(x^s,y^s)$ 是第 $s$ 步的 prompt 和回复. $b_{\mathrm{MA}}$ 对所有 prompt 都是同一个数. 某个 prompt 天然容易拿高分时, 它的每条回复都会得到正优势; 难的 prompt 则相反. 这部分优势反映的是 prompt 的难度, 与回复好坏无关.
+
+### 2.2 留一法估计器
+
+留一法估计器来自 Kool, van Hoof 和 Welling 2019 年的工作坊论文, Ahmadian 等把它用到 RLHF 上. RLOO 对每个 prompt 独立采 $k$ 条回复 $y_{(1)},\dots,y_{(k)}\sim\pi_\theta(\cdot\mid x)$, 每条回复用其余 $k-1$ 条的平均奖励作基线:
+
+$$
+b_i=\frac{1}{k-1}\sum_{j\ne i}R(x,y_{(j)})
+\tag{6}
+$$
+
+梯度估计是 $k$ 条单样本估计的平均 (论文 §2.3, 原文未编号):
+
+$$
+\hat g=\frac{1}{k}\sum_{i=1}^{k}\bigl[R(x,y_{(i)})-b_i\bigr]\,\nabla_\theta\log\pi_\theta(y_{(i)}\mid x)
+\tag{7}
+$$
+
+$k$ 条回复独立同分布, $b_i$ 和 $y_{(i)}$ 独立, 由式 (4), 式 (7) 是无偏估计. 论文把 $b_i$ 称作每一步现场估计, 不带参数的价值函数.
+
+降方差来自两处. 第一处是 $k$ 条估计取平均. 第二处是基线贴近当前 prompt 的期望奖励 $V(x)=\mathbb{E}_{y}[R(x,y)]$. 只看乘在 $\nabla\log\pi$ 前面的那个标量, 可以算出两种基线的差别. 用常数 $c$ 作基线时:
+
+$$
+\mathbb{E}\bigl[(R-c)^2\mid x\bigr]=\mathrm{Var}(R\mid x)+\bigl(V(x)-c\bigr)^2
+\tag{8}
+$$
+
+用留一均值作基线时, $b_i$ 是 $k-1$ 个独立样本的均值, 与 $R_i$ 独立:
+
+$$
+\mathbb{E}\bigl[(R_i-b_i)^2\mid x\bigr]=\mathrm{Var}(R\mid x)+\frac{\mathrm{Var}(R\mid x)}{k-1}
+\tag{9}
+$$
+
+式 (8) 的第二项是 prompt 之间难度差带来的, prompt 越杂越大; 式 (9) 把它换成 $\mathrm{Var}(R\mid x)/(k-1)$, 随 $k$ 增大而减小. $k=2$ 时第二项等于 $\mathrm{Var}(R\mid x)$, $k=4$ 时是它的三分之一.
+
+### 2.3 一个四样本的例子
+
+设某个 prompt 采了 4 条回复, KL 塑形后的奖励分别是 $2.0,\ 0.5,\ 1.5,\ -0.5$, 和为 $3.5$, 组均值 $\bar R=0.875$.
+
+| $i$ | $R_i$ | $b_i$ (其余三条均值) | RLOO 优势 $R_i-b_i$ | 组内去均值 $R_i-\bar R$ | GRPO $z$ 分 |
+|---|---|---|---|---|---|
+| 1 | $2.0$ | $0.500$ | $+1.500$ | $+1.125$ | $+1.172$ |
+| 2 | $0.5$ | $1.000$ | $-0.500$ | $-0.375$ | $-0.391$ |
+| 3 | $1.5$ | $0.667$ | $+0.833$ | $+0.625$ | $+0.651$ |
+| 4 | $-0.5$ | $1.333$ | $-1.833$ | $-1.375$ | $-1.432$ |
+
+GRPO 一列用总体标准差 $0.960$. 三点可以从表里读出来.
+
+第一, RLOO 优势之和为 0: $1.5-0.5+0.833-1.833=0$. 这对任意一组奖励都成立.
+
+第二, RLOO 优势和组内去均值只差一个常数倍. 把式 (6) 代进去:
+
+$$
+R_i-b_i=R_i-\frac{\sum_j R_j-R_i}{k-1}=\frac{kR_i-\sum_j R_j}{k-1}=\frac{k}{k-1}\bigl(R_i-\bar R\bigr)
+\tag{10}
+$$
+
+$k=4$ 时倍数是 $4/3$, 表里 $1.125\times 4/3=1.5$. 所以「组内减均值, 均值里含自己」的写法在期望上等于 RLOO 梯度乘 $(k-1)/k$, 方向一致, 只是整体缩小; 这个倍数可以并进学习率.
+
+第三, GRPO 再除以组内标准差, 而标准差由 4 条奖励共同决定, 其中包括 $R_i$ 本身. 这一步之后系数和 $y_{(i)}$ 不再独立, 式 (4) 的条件不满足, 估计有偏. 它的效果是把每个 prompt 的优势拉到同一尺度, 奖励差异很小的 prompt 会被放大. RLOO 不做这一步, 优势保持 KL 塑形奖励的原始单位.
+
+### 2.4 $k=2$ 时的对比形式
+
+$k=2$ 时, 记两条回复中奖励较高的为 $y_+$, 较低的为 $y_-$. 两条的优势分别是 $R(y_+)-R(y_-)$ 和 $R(y_-)-R(y_+)$, 代入式 (7) 并改写成损失 (论文式 (11), $1/k$ 的系数并入学习率):
+
+$$
+\mathcal{L}^{k=2}_{\mathrm{RLOO}}=\frac{R(y_+)-R(y_-)}{2}\Bigl(-\log\pi_\theta(y_+\mid x)+\log\pi_\theta(y_-\mid x)\Bigr)
+\tag{11}
+$$
+
+形式上是一个对比损失: 提高好回复的似然, 压低差回复的似然, 力度和两者的奖励差成正比. 两条奖励相同时这组样本不产生梯度. 论文附录 B 把它和 SLiC-HF (Zhao 等 2023), RRHF (Yuan 等 2023) 一类迭代微调里的对比损失放在一起讨论: 对比损失只知道哪条更好, RLOO 还用上了好多少.
+
+### 2.5 两种 prompt 上的数值对照
+
+式 (8) 和式 (9) 的差别, 用两个 prompt 代入就能看出来. 设 prompt A 很容易, 期望奖励 $V=+2$; prompt B 很难, $V=-2$; 两者的组内方差都是 $\mathrm{Var}(R\mid x)=1$. 训练中两类 prompt 各占一半, 滑动平均基线会收敛到 $c\approx0$.
+
+- 用 $b_{\mathrm{MA}}$: 每个 prompt 的系数二阶矩是 $1+(\pm2-0)^2=5$, 其中 4 来自 prompt 的难度. A 的回复不论好坏都被推高, B 的回复都被压低.
+- 用 $k=4$ 的留一基线: 系数二阶矩是 $1+1/3\approx1.33$, 和 prompt 的难度无关.
+
+再看另一种极端: 某个 prompt 的 4 条回复奖励几乎相同, 分别是 $1.00,\ 1.01,\ 0.99,\ 1.00$. 组均值 $1.00$, 总体标准差约 $0.0071$.
+
+| $i$ | $R_i$ | RLOO 优势 | GRPO $z$ 分 |
+|---|---|---|---|
+| 1 | $1.00$ | $0$ | $0$ |
+| 2 | $1.01$ | $+0.0133$ | $+1.414$ |
+| 3 | $0.99$ | $-0.0133$ | $-1.414$ |
+| 4 | $1.00$ | $0$ | $0$ |
+
+RLOO 给出的优势只有百分之一量级, 这个 prompt 对梯度几乎没有贡献. GRPO 除以标准差后, 这组 $0.01$ 的差别被放大成 $\pm1.41$, 和 2.3 节那组差别明显的奖励拿到同样量级的权重. 奖励模型的分数在 $0.01$ 上的差别常常是噪声, 这时 RLOO 的做法更保守; 反过来, 如果奖励尺度在不同 prompt 之间本来就差得很多 (例如某类 prompt 的奖励整体被压缩), RLOO 会让这类 prompt 学得很慢.
+
+### 2.6 KL 项放在哪里
+
+式 (1) 里的 KL 项是对整段回复算的, 实现中把它拆成 token 级的和:
+
+$$
+\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}=\sum_{t=1}^{T}\Bigl[\log\pi_\theta(y_t\mid x,y_{<t})-\log\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})\Bigr]
+\tag{12}
+$$
+
+每条回复只需要一次策略前向和一次参考模型前向, 得到两列 token log 概率, 相减求和, 乘 $\beta$, 再从奖励模型分数里减掉, 就是这条回复的 $R(x,y)$. 之后的留一基线和优势都在这个标量上算. 这样 KL 罚和奖励一起进入留一比较: 两条回复奖励模型分数相同时, 离参考策略更远的那条优势更低.
+
+PPO 的做法是把 KL 项留在每个 token 的逐步奖励里, 再经 GAE 分配到各个位置. 序列级的写法里没有逐步分配, 所有 token 共享同一个优势. 两者在期望上优化同一个目标式 (1), 只是信用分配的粒度不同. 论文 Figure 2 的对比说明, 在只有终点奖励的 RLHF 设定下, 这种更粗的粒度没有损害效果.
+
+### 2.7 实现
+
+序列级 log 概率是 token 级 log 概率在回复范围内的和. 优势只算一次, 不参与求导:
+
+```python
+import torch
+
+def rloo_advantage(rewards: torch.Tensor) -> torch.Tensor:
+    """rewards: [B, k], 每行是同一 prompt 的 k 条回复的 KL 塑形奖励."""
+    k = rewards.shape[1]
+    assert k >= 2
+    loo_mean = (rewards.sum(dim=1, keepdim=True) - rewards) / (k - 1)
+    return rewards - loo_mean
+
+def rloo_loss(rewards: torch.Tensor, seq_logprob: torch.Tensor) -> torch.Tensor:
+    """seq_logprob: [B, k], 每条回复 token log 概率之和, 带梯度."""
+    adv = rloo_advantage(rewards).detach()
+    return -(adv * seq_logprob).mean()
+
+r = torch.tensor([[2.0, 0.5, 1.5, -0.5]])
+adv = rloo_advantage(r)
+assert torch.allclose(adv, torch.tensor([[1.5, -0.5, 0.8333, -1.8333]]), atol=1e-4)
+assert torch.allclose(adv, 4 / 3 * (r - r.mean(dim=1, keepdim=True)))
+```
+
+两条断言对应 2.3 节的表和式 (10).
+
+![RLOO 留一法基线示意](./images/fig-rloo-loo-baseline.png)
 
 **图 1 解析**
 
-- 左侧 `prompt x` 进策略 $\pi_{\theta}$,一次画出四条回复.颜色相同的 $y$ 和 $R$ 是一对;加粗描边的 $y_2$,$R_2$ 是当前要更新的那条.
-- 实线从左到右走前向数据:prompt → 策略 → 回复 → 奖励 → 优势 → $\nabla\log\pi$.
-- 三条虚线从 $R_1$,$R_3$,$R_4$ 进金色框,表示「拷贝别人的奖励来当基线」.没有从 $R_2$ 进这个框的箭头:自己不进自己的均值.
-- 粉色框是 $A_2=R_2-b_2$.绿色框用这个标量去乘整段 $\log\pi(y_2|x)$ 的梯度.图里没有 Critic,也没有 $\mathrm{std}(\mathbf{r})$.
-- 图注写明「no group std」.组内标准差是 GRPO 的尺度,不是 RLOO 的.
+- 同一 prompt 进入策略, 采出 4 条回复 $y_1,\dots,y_4$, 各自得到奖励 $R_1,\dots,R_4$. 图中高亮的是第 2 条.
+- $R_1,R_3,R_4$ 用虚线连向基线框, $R_2$ 没有箭头连向基线, 对应式 (6) 里 $j\ne i$ 的求和范围.
+- 粉色框是 $A_2=R_2-b_2$, 绿色框是 $\nabla\log\pi_\theta(y_2\mid x)$, 两者相乘就是式 (7) 求和里的第 2 项. 图注写明不除组内标准差.
 
-手算一组 $k=4$ 的奖励 $(2.0,\,0.5,\,1.5,\,-0.5)$,把式 (6) 走一遍:
+## 3. 与 PPO, GRPO, RAFT 的分界
 
-| $i$ | $R_i$ | $b_i$(其余三条均值) | $A_i=R_i-b_i$ |
-|-----|------:|----------------------:|--------------:|
-| 1 | 2.0 | $(0.5+1.5-0.5)/3=0.500$ | $1.500$ |
-| 2 | 0.5 | $(2.0+1.5-0.5)/3=1.000$ | $-0.500$ |
-| 3 | 1.5 | $(2.0+0.5-0.5)/3=0.667$ | $0.833$ |
-| 4 | $-0.5$ | $(2.0+0.5+1.5)/3=1.333$ | $-1.833$ |
-
-四条优势之和为 $0$.这不是实现凑巧,是留一法在有限样本上的对称性:每人当一次「被留下的那个」,对照集覆盖其余人.
-
-若改用「四条全进」的组均值 $\bar{r}=0.875$,未标准化的 $R_i-\bar{r}$ 分别是 $1.125$,$-0.375$,$0.625$,$-1.375$,恰好等于 $\frac{k-1}{k}A_i^{\mathrm{RLOO}}$.含自己的均值把留一法优势按 $(k-1)/k$ 缩小一圈,排序不变,尺度变了.GRPO 还要再除 $\mathrm{std}(\mathbf{r})$.上面这组的总体标准差约 $0.960$,除完之后 $z$ 大约是 $1.17$,$-0.39$,$0.65$,$-1.43$.相对高低还在,跨 prompt 的尺度被强行拉齐;组内几乎同分时分母趋近 $0$,这就是后文要对照的难度偏差,RLOO 根本不走这道除法.
-
-无偏性可以从控制变量看.令 $g_i=R_i\nabla\log\pi(y_i|x)$ 为单样本 REINFORCE 项.$b_i$ 由与 $y_i$ 独立的其余样本构成,故 $\mathbb{E}[b_i\nabla\log\pi(y_i|x)]=\mathbb{E}[b_i]\,\mathbb{E}[\nabla\log\pi(y_i|x)]$.策略梯度里 $\mathbb{E}[\nabla\log\pi]=0$,减 $b_i$ 不改期望,只改方差.把 $R_i$ 自己加进均值会破坏这项独立性,无偏性要靠 $\frac{k-1}{k}$ 那层缩放来补;RLOO 选择不把这项污染放进 $b_i$.
-
-内存上的直接后果是少加载一份与策略同级的价值网络.论文写:不建部分序列,不训 learned baseline / Critic 的方法,比 Vanilla PG 和 PPO 少一份模型拷贝.RLOO 训练时仍要策略,参考模型(算式 (1) 的 KL)和冻结的 $r_{\phi}$,三份而不是四份.多出来的开销在采样:$k$ 条完整生成.$k=2$ 时这份开销往往小于再养一个 7B 级 Critic.
-
-$k=2$ 时式 (5) 塌成对比损失的加权版.记两条为 $y_{+}$,$y_{-}$(此处只按奖励高低,不是偏好对里的标注),论文附录 B 写出
-
-$$
-\mathcal{L}^{k=2}_{\mathrm{RLOO}}=\frac{R(y_{+},x)-R(y_{-},x)}{2}\bigl(-\log\pi(y_{+}|x)+\log\pi(y_{-}|x)\bigr). \tag{7}
-$$
-
-右边括号是普通对比项,前面的系数是两条奖励差.和「只抬最高,丢掉其余」的 RAFT 不同,两条都进梯度,只是符号相反,幅度跟分差走.
-
-## 4. 不是 PPO,不是 DPO,不是 GRPO 的 $z$-score
-
-三句话分界,对应图 2 的三列.PPO 的 Critic 与 GAE 展开见 [04-PPO](../04-PPO/04-PPO.md);组内 $z$-score 的写法见 [02-GRPO](../02-GRPO/02-GRPO.md).这里只钉 RLOO 相对它们改了哪一块.
-
-![RLOO is not PPO and not GRPO z-score](./images/fig-rloo-not-ppo-grpo.png)
-
-> 图 2:同一 prompt 分出三条更新路径.PPO 走 token 级 MDP 加 Critic/GAE/clip;GRPO 走含自己的组均值和标准差;RLOO 走其余 $k-1$ 条均值,序列级 REINFORCE.
+![RLOO 与 PPO, GRPO 的对照](./images/fig-rloo-not-ppo-grpo.png)
 
 **图 2 解析**
 
-- 顶栏 `same prompt x` 分叉进三列,主方向在列内自上而下.
-- 左列 PPO:Actor 出 token 动作,Critic 出 $V_{\phi}$,两者进 GAE,再进 $1\pm\varepsilon$ 的比率 clip.要第二份与策略同级的网络,优势按部分序列自举.
-- 中列 GRPO:采 $G$ 条之后算 $\mathrm{mean}(\mathbf{r})$ 和 $\mathrm{std}(\mathbf{r})$,**均值含第 $i$ 条自己**,再做 $(r_i-\mathrm{mean})/\mathrm{std}$.Critic 没了,尺度归一还在.
-- 右列 RLOO:虚线进 $b_i=\mathrm{mean}(R_{j\neq i})$,实线把 $R_i$ 和 $b_i$ 合成 $A_i$,最后是「整段 REINFORCE,无 Critic,无 std」.
-- 列脚三句对照:token MDP + Critic;组 $z$-score 含自己;留一法,序列 bandit.
+- 左列 PPO: Actor, Critic, GAE, clip 四个部件都在, 优势按 token 计算.
+- 中列 GRPO: 去掉 Critic, 组内减均值再除标准差, 均值和标准差都包含被打分的那条回复.
+- 右列 RLOO: 基线是留一均值, 不除标准差. 中列和右列的差别只在基线是否含自己, 以及是否做标准化.
 
-| | PPO | GRPO | RLOO |
-|--|-----|------|------|
-| 动作 | 逐步 token | 常把整段优势广播到 token,比率仍逐步 | 整段 $y$ 一个动作 |
-| 基线 | 学出来的 $V_{\phi}$ + GAE | 组均值(含自己) | 其余 $k-1$ 条均值 |
-| 尺度 | 回报量纲,再经 GAE | 除组内 std,跨题拉齐 | 不除 std,保留题间量纲 |
-| 信任域 | clip $1\pm\varepsilon$;论文里触发率 $<5\%$ | 对称 clip 仍在目标里 | 主估计器无 clip |
-| 在线样本 | 每 prompt 一条为主 | 组大小 $G$ | $k$ 条,全部进梯度 |
-| 额外网络 | Critic,约略与 Actor 同规模 | 无 | 无 |
+| | PPO | RLOO | GRPO | RAFT |
+|---|---|---|---|---|
+| 动作粒度 | token | 整段回复 | 整段回复的优势, 广播到每个 token | 整段回复 |
+| 基线 | 价值网络 + GAE | 其余 $k-1$ 条均值 | 组均值 (含自己) | 无, 只保留组内最高分 |
+| 标准化 | 无 | 无 | 除组内标准差 | 无 |
+| 裁剪 | 有 | 无 | 有 | 无 |
+| 训练中的模型 | 策略, Critic | 策略 | 策略 | 策略 |
+| 每个 prompt 的样本 | 通常 1 条 | $k$ 条 | $G$ 条 | $k$ 条, 只用 1 条 |
+| 无偏性 | GAE 有偏 | 无偏 | 标准化后有偏 | 优化的不是原目标 |
 
-DPO 不在这张表里,因为它连第三阶段的在线 RL 都跳过:偏好对直接进分类损失,不训独立奖励模型,也不做 rollout.RLOO 仍走 Ziegler 那条三阶段:SFT,BT 奖励模型,再用 $r_{\phi}$ 在线打分.论文拿 DPO 当「RL-free」对照,不是把 RLOO 写成 DPO 的变体.Win-rate 上 DPO 并非处处崩:HH + Llama 一格它拿到 $61.9$,距 RLOO $k=4$ 的 $64.1$ 不远;TL;DR 上 $66.6$ 对 $77.9$,HH + Pythia 上 $39.0$ 对 $43.7$,缺口就大了.离线偏好对够用时 DPO 能贴近,在线采样能改分布时 RLOO 把差距拉开.
+GRPO (Shao 等, arXiv:2402.03300) 与 RLOO 论文都在 2024 年 2 月公开, 两者都用同一 prompt 的多条样本代替 Critic. GRPO 保留了 PPO 的比率裁剪和 token 级损失, 优势用组内 $z$ 分; RLOO 去掉裁剪, 基线只用其余样本. 后来 Dr. GRPO 针对的标准差偏置和长度偏置, 在 RLOO 里不出现, 因为 RLOO 既不除标准差, 也不按 token 数归一.
 
-RAFT(Dong 等, 2023)和 RLOO 共享「每 prompt 采 $k$ 条」的预算,更新完全不同.RAFT 按 $R(x,y)$ 排序,只对最高的那条做交叉熵,其余 $k-1$ 条丢掉.RLOO 每条都贡献一项 $(R_i-b_i)\nabla\log\pi$.同一预算下,一个吃冠军,一个吃全体相对位置.
+RAFT (Dong 等 2023) 同样每个 prompt 采 $k$ 条, 保留奖励最高的一条做 SFT, 其余 $k-1$ 条丢弃. 它只用到排序, 不用奖励的大小, 也没有负样本. RLOO 每条样本都进梯度, 高于留一均值的被推高, 低于的被压低.
 
-DeepSeekMath 的 GRPO([arXiv:2402.03300](https://arxiv.org/abs/2402.03300))和这篇 RLOO 同月挂出,都是「一组样本当基线,拆掉 Critic」.分叉在估计器:GRPO 是含自己的 $z$-score 再接 PPO 式 clip;RLOO 是留一法均值,序列 REINFORCE.后文 GxPO 家族大多从 GRPO 的式子改旋钮,不从式 (5) 长出来.
+显存和计算上的差别可以按模型份数来数. PPO 训练时要放四份: 策略 (训练), Critic (训练), 参考模型 (只前向), 奖励模型 (只前向). Vanilla PG 去掉了裁剪和比率, 仍保留学出来的 token 级基线, 也是四份. REINFORCE 和 RLOO 只剩三份, 其中只有策略需要梯度和优化器状态. 省下的是一个与策略同规模的可训练模型; 用 Adam 训练时, 每个可训练参数除权重外还要存梯度和两个动量, 省掉 Critic 节省的显存远多于一份权重. RLOO 多出的开销在生成侧: 每个 prompt 生成 $k$ 次, 奖励模型和参考模型的前向也是 $k$ 倍. 生成可以批量并行, 显存压力比训练一个 Critic 小.
 
-组内标准差这一除法,把「题有多难」和「这条相对组内好多少」缠在一起.设两组 $k=4$:甲组奖励 $(1,1,1,0.99)$,乙组 $(1,0,1,0)$.甲组几乎全对,标准差接近 $0$,$z$-score 会把 $0.01$ 的缺口拉成很大的优势或惩罚;乙组方差本来就大,同样 $1$ 分和 $0$ 分的差别被除回去,数值反而更温和.RLOO 没有这道除法:甲组里 $0.99$ 对 $1$ 的留一法优势仍然只有百分位差,乙组里 $1$ 对 $0$ 的优势保持在奖励原单位上.后面 DrGRPO 去掉 $1/\mathrm{std}$,只是把尺度拉回奖励原单位,均值仍含自己,并不是改成式 (5) 的留一法.起点仍是 GRPO 那条目标.
+ReMax (Li 等 2023) 也为基线多采样本: 它用贪婪解码回复的奖励作基线. Ahmadian 等在相关工作里把它列为同期的「额外采样」类方法. 两者的区别是: ReMax 的那条贪婪回复只用来算基线, 不进梯度; RLOO 的 $k$ 条回复既当别人的基线, 又贡献自己的梯度.
 
-## 5. 一手数字:Win-rate,采样,噪声
+## 4. 实验设定
 
-实验落在两个偏好集,两个基座上.TL;DR Summarize 训练集含 116k 条人类写的指令和 93k 条偏好对;预处理后的 Anthropic-HH 含 112k 条训练偏好对.基座是 Pythia-6.9B;HH 上再加 Llama-7B 做预训练质量消融.SFT 与 RM 上下文 512.过长 prompt 滤掉:TL;DR 超 448 token,HH 超 348 token.RM 和策略都从对应 SFT 初始化.偏好阶段 TL;DR 跑 600 step,rollout batch 512,更新 batch 256,$\beta=0.03$;HH 上 Pythia 跑 393 step,同 batch;Llama 跟 RAFT 文的设定,rollout 与 step batch 都是 2048,两 epoch,$\beta=0.10$(HH 上未另注时都用这个值).学习率常数 $1\times 10^{-6}$,每批两个梯度步.评测用训练 RM 在 1000 条测试 prompt 上算平均奖励;Win-rate 按 AlpacaFarm,GPT-4 当人类代理,TL;DR 对 SFT 参考摘要,HH 对偏好对里更好的那条,解码默认 greedy.表中数字取测试奖励最高的那个 checkpoint.
+**数据.** TL;DR 摘要 (Stiennon 等 2020): 116k 条人写摘要用于 SFT, 93k 对人工偏好用于训练奖励模型. Anthropic-HH (Bai 等 2022): 112k 条训练偏好对. HH 没有单独的 SFT 集, SFT 用偏好对里被选中的回复, 与 Yuan 等, Dong 等, Rafailov 等的做法一致. 偏好训练阶段的 rollout 沿用 SFT 阶段的 prompt.
+
+**模型.** 两个任务都用 Pythia-6.9B 作基座; HH 上另跑 Llama-7B, 这组的 SFT 和奖励模型沿用 Dong 等 2023 (RAFT 论文) 的检查点. 上下文长度 512; 过滤掉 prompt 超过 448 token (TL;DR) 和 348 token (HH) 的样本, 给生成留出空间.
+
+**训练.** Pythia 的 SFT 训 2 个 epoch, 学习率 $2\times10^{-5}$; Llama 的 SFT 训 1 个 epoch. 奖励模型训 1 个 epoch, 学习率 $10^{-5}$. 两者都用余弦衰减, 前 3% 线性预热. 偏好训练阶段:
+
+| 设置 | TL;DR (Pythia) | HH (Pythia) | HH (Llama) |
+|---|---|---|---|
+| 训练步数 | 600 | 393 | 2 个 epoch |
+| rollout batch / step batch | 512 / 256 | 512 / 256 | 2048 / 2048 |
+| KL 系数 $\beta$ | 0.03 | 0.10 | 0.10 |
+
+学习率固定, 前 3% 线性预热. 学习率在 $\{10^{-6},10^{-5},2\times10^{-5}\}$ (RAFT, RLOO) 和 $\{10^{-6},10^{-5}\}$ (PPO, Vanilla PG) 中扫, 最终各方法都取 $10^{-6}$. 每个 batch 做 2 步梯度更新.
+
+**评估.** 用测试集 1000 条样本上的平均奖励 (训练用的同一个奖励模型) 和模拟胜率. 胜率用 AlpacaFarm 框架, GPT-4 作裁判: TL;DR 和 SFT 时用的参考摘要比, HH 和偏好数据里被选中的回复比. 生成用贪婪解码. 每个方法取测试奖励最高的检查点.
+
+## 5. 结果
+
+### 5.1 胜率
 
 | 方法 | TL;DR | HH (Pythia) | HH (Llama) |
-|------|------:|------------:|-----------:|
-| RLOO ($k=4$) | 77.9 | 43.7 | 64.1 |
-| RAFT ($k=4$) | 73.2 | 42.1 | 63.3 |
-| RLOO ($k=2$) | 74.2 | 47.6 | 62.2 |
-| RAFT ($k=2$) | 72.1 | 37.7 | 58.4 |
-| REINFORCE + 滑动平均 | 70.7 | 37.9 | 55.3 |
+|---|---|---|---|
+| RLOO $k=4$ | **77.9** | 43.7 | **64.1** |
+| RAFT $k=4$ | 73.2 | 42.1 | 63.3 |
+| RLOO $k=2$ | 74.2 | **47.6** | 62.2 |
+| RAFT $k=2$ | 72.1 | 37.7 | 58.4 |
+| REINFORCE w/ baseline | 70.7 | 37.9 | 55.3 |
 | Vanilla PG | 70.4 | 36.4 | 52.3 |
 | PPO | 67.6 | 29.2 | 32.0 |
 | DPO | 66.6 | 39.0 | 61.9 |
 
-RLOO $k=4$ 相对 PPO 的 Win-rate 高出 $10.3$,$14.5$,$32.1$ 个点(三列依次).三个数据集–模型对上平均,RLOO 在 $k=2$ / $k=4$ 是 $61.3$ / $61.9$,RAFT 是 $56.1$ / $59.5$.HH + Pythia,$k=2$ 这一格 RLOO 比 RAFT 高 $9.9$ 点,是两者差距最大的一格.HH 上唯一的例外是 $k=2$ 的 Win-rate($47.6$)高于 $k=4$ 的 $43.7$,论文按测试奖励选 checkpoint,Win-rate 与奖励不是同一把尺:RM 分数高不保证 GPT-4 代理也判赢,两套数字要分开读.
+上表来自论文 Table 1, 数字是对参考回复的胜率 (%). 几处对比:
 
-「要不要建部分序列」这条消融,Win-rate 和测试奖励是对齐的.不把中间 token 建成状态的 REINFORCE / RLOO,在三条设定上都压过 Vanilla PG 和 PPO.论文的结论写得很硬:LLM 偏好训练里,建模部分 completion 是多余的工作;改成整段动作之后,RL 阶段更简单,学得也更快.PPO 那份 Critic 不只贵,还在用一个没有真实逐步奖励的 MDP.
+- RLOO $k=4$ 比 PPO 高 10.3, 14.5, 32.1 个点. PPO 在三组里都排末尾或接近末尾; 在 HH (Llama) 上只有 32.0, 低于所有 REINFORCE 系方法.
+- 同一 $k$ 下 RLOO 都高于 RAFT. 三组取平均, RLOO $k=2$ 和 $k=4$ 为 61.3 和 61.9, RAFT 为 56.1 和 59.5. 单组差距最大的是 HH (Pythia) 的 $k=2$, 47.6 对 37.7, 差 9.9 个点.
+- 一般 $k=4$ 好于 $k=2$. 唯一例外是 HH (Pythia), $k=2$ 的 RLOO 是这一列最高.
+- DPO 在 TL;DR 上是全表最低, 66.6; 在 HH (Llama) 上为 61.9, 和 RLOO $k=2$ 接近.
 
-采样效率按同一 $k$ 比.训练曲线上 RLOO 全程压着 RAFT;RLOO $k=2$ 用一半在线样本,对上或超过 RAFT $k=4$.把横轴改成「一共见过多少条生成」(与 $k$ 无关,再按 batch 归一),RLOO 仍然更陡.原因就是上一节那句话:冠军一条交叉熵,对不上 $k$ 条相对位置.多出来的 $k-1$ 条在 RAFT 里只参与排序,在 RLOO 里每条都有一项带符号的梯度.
+训练过程中的测试奖励 (Figure 2) 给出相近的排序. RLOO 全程最高; Vanilla PG 始终高于 PPO; 不对部分序列建模的 REINFORCE 和 RLOO, 又都高于把每个 token 当动作的 Vanilla PG 和 PPO. Vanilla PG 仍用一个学出来的 token 级基线 $b_\phi(s_t)$, 所以它和 PPO 一样要多加载一份模型. 论文把这组对比当作「在 RLHF 里对部分序列建模没有必要」的证据.
 
-对齐税用 HH + Llama 的长度,PPL, diversities 看.RLOO $k=4$ 平均长度 $60.6$,PPL $27.6$,Diversity-1 / Diversity-2 为 $0.10$ / $0.43$,奖励方差 $3.1$.同 $k$ 的 RAFT 是 $62.4$,$30.1$,$0.10$,$0.43$,$3.2$,流畅性略差,方差略高.PPO 平均只有 $16.5$ token,PPL $40.4$,Diversity-1 冲到 $0.34$:短才显得「多样」,不是更好的语言.DPO 冲到 $104.4$ token,PPL $33.8$, Diversity-1 掉到 $0.08$,偏冗.REINFORCE 带滑动平均的奖励方差 $2.7$,Vanilla PG 是 $3.7$,文中写前者低约 $27\%$.RLOO 在同 $k$ 下比 RAFT 再略低一点方差.安全,无害这类「低分样本代价大」的场景,方差本身就是指标.
+### 5.2 样本效率
 
-鲁棒性拿 RAFT 当镜子,因为 RAFT 的学习完全系在「谁排第一」上.KL 系数扫 $\beta\in\{0.25,0.5,1.0\}$(低正则 $\beta=0.1$ 另画).$\beta$ 变大时,$R(x,y)$ 里 KL 项会搅乱 $k$ 条的相对名次.低 $\beta$ 下两者能收到相近的 KL 距离,RLOO 奖励更高;$\beta$ 抬上去之后,RAFT 奖励更差,离 $\pi_{\mathrm{ref}}$ 也更远.奖励噪声则加在分类器 logit 上:$r_{\sigma}(x,y)=r(x,y)+\varepsilon$,$\varepsilon\sim\mathcal{N}(0,\sigma^{2})$,$\sigma\in\{1.0,3.0,5.0\}$.两条曲线都会掉,RAFT 在 $\sigma=3.0$ 和 $5.0$ 掉得更狠:排序一翻,冠军就换人,交叉熵跟着指错方向.RLOO 用的是分差,不是名次,噪声要先大到能改相对幅度,才会同等伤到梯度.
+RLOO 和 RAFT 每个 prompt 用的在线样本数相同. Figure 3 和 Figure 4 按样本数画测试奖励: 同样的 $k$, RLOO 在整个训练过程中都高于 RAFT; $k=2$ 的 RLOO 追平或超过 $k=4$ 的 RAFT, 也就是只用一半的在线样本. 论文的解释是 RAFT 每组只保留最高分的一条, 其余样本的信息被丢弃; RLOO 用上了全部 $k$ 条, 也用上了奖励的数值大小.
 
-## 6. 失效与边界
+### 5.3 对齐代价
 
-留一法不是把方差问题取消了,是把对照范围收进「这一次,这一个 prompt 的其余样本」.$b_{\mathrm{MA}}$ 跨题混合,$V_{\phi}$ 要另训一套网络,组 $z$-score 把自己算进去再除标准差;RLOO 三样都不做,只拿同一次采样里别人的分数来当作对照,换一条 prompt 就重算.下面这些情况它帮不上,或者会换一种坏法.
+偏好训练常伴随生成多样性下降, 论文用 HH (Llama) 的测试生成统计了长度, 困惑度, 1-gram 和 2-gram 多样性, 以及奖励方差 (Table 2):
 
-| 现象 | 原因 | 说明 |
-|------|------|------|
-| $k=1$ 无法留一 | 式 (6) 的分母是 $k-1$ | 退回滑动平均或单样本 REINFORCE,不再是 RLOO |
-| 组内奖励几乎相同 | $R_i\approx b_i$,优势近 $0$ | 简单全对,困难全错时梯度空掉.GRPO 这时还会被 $1/\mathrm{std}$ 放大;RLOO 不会爆炸,但也不会学到东西 |
-| 采样变 $k$ 倍 | 每条 prompt 要 $k$ 次完整生成 | $k=2$ 已常够用.论文里 $k=2$ 对上 $k=4$ 的 RAFT |
-| 代理奖励和金奖励分叉 | 未做 Gao 等说的 RM over-optimization | 局限节写明,RAFT 同类方法同样缺这一笔 |
-| Win-rate 是 GPT-4 代理 | 没有最终人类偏好相关 | 表 1 是模拟胜率,不是人评 |
-| 跨 prompt 优势尺度不同 | 不除组内 std | 难题上 $R$ 的绝对差可以很大,简单题上很小.要不要拉齐是设计选择,不是漏实现 |
-| 逐步过程奖励 | 本文设定奖励只在整段 | 局限节写了:没把 LOO 接到「部分序列 + 中间奖励」上.过程监督是另一条奖励密度问题 |
-| clip 几乎用不上 | 该论文的模型–数据对上策略变得慢 | 换到更猛的探索或 MoE 路由抖动时,序列级 IS 和 clip 可能重新变得必要,那是 GSPO 的问题,不是式 (5) 的问题 |
+| 方法 | 长度 | 困惑度 | Div-1 | Div-2 | 奖励方差 |
+|---|---|---|---|---|---|
+| RLOO $k=4$ | 60.6 | 27.6 | 0.10 | 0.43 | 3.1 |
+| RAFT $k=4$ | 62.4 | 30.1 | 0.10 | 0.43 | 3.2 |
+| RLOO $k=2$ | 58.6 | 29.2 | 0.11 | 0.44 | 3.0 |
+| RAFT $k=2$ | 52.8 | 28.9 | 0.12 | 0.47 | 3.1 |
+| REINFORCE | 47.2 | 27.2 | 0.13 | 0.50 | 2.7 |
+| Vanilla PG | 39.1 | 39.0 | 0.15 | 0.54 | 3.7 |
+| PPO | 16.5 | 40.4 | 0.34 | 0.60 | 2.3 |
+| DPO | 104.4 | 33.8 | 0.08 | 0.39 | 无 |
 
-论文还没拿 ROUGE,BLEU 这类生成指标当奖励扫过.SFT 学习率 Pythia 为 $2\times 10^{-5}$,两 epoch,Llama 上一 epoch 就够;RM 一 epoch,$1\times 10^{-5}$,余弦衰减,warmup 比例 $0.03$.偏好阶段在 $\{10^{-6},10^{-5},2\times 10^{-5}\}$ 里扫过学习率,各算法最后都落到 $1\times 10^{-6}$,每批两个梯度步.这些是复现用的超参,不是 RLOO 估计器的一部分.
+RLOO 和 RAFT 的多样性指标基本一样, RLOO 困惑度略低. PPO 的多样性最高, 但平均长度只有 16.5, 困惑度也最高. REINFORCE 的奖励方差比 Vanilla PG 低 27% (2.7 对 3.7), 胜率也更高, 论文把这归于基线降方差的作用. DPO 的生成最长, 多样性最低.
 
-序列级优势还有一处实现含义:式 (5) 里 $A_i$ 乘的是整段 $\nabla\log\pi(y_i|x)$,逐步展开后每个 token 分到同一标量.短回复和长回复若 $A$ 相同,短的每一步梯度更大.这和 GRPO 里 $1/|o_i|$ 归一不是同一件事,但会碰到类似的长度敏感.论文主文没有把长度偏差当成 RLOO 的主病来修,局限里也没列;做长思维链时要自己看生成长度有没有被这条广播推着走.
+### 5.4 对 KL 系数和奖励噪声的鲁棒性
 
-和邻居的分工可以收成一句:要 GAE 与四模型怎么咬合,读 [04-PPO](../04-PPO/04-PPO.md);要组内 $z$-score 以及后来的 clip / 几何平均 / 序列 IS,读 [02-GRPO](../02-GRPO/02-GRPO.md) 和 4.4.5.本篇只负责把留一法基线写成可算的式 (5),并记住三件「不是」.
+论文鲁棒性实验的出发点是 RAFT 只用排名第一的样本: 凡是会让「哪条最好」判断出错的因素, 都会直接影响 RAFT 的学习. 作者用两类因素检验这一点.
+
+**KL 系数.** 在 HH (Pythia) 上取 $k=2$, 比较默认的 $\beta=0.1$ 和更大的 $\beta\in\{0.25,0.5,1.0\}$ (Figure 5). $\beta=0.1$ 时两者到达的 KL 相近, RLOO 的奖励更高. $\beta$ 调大以后, RAFT 优化奖励更差, 离参考策略也更远. 式 (1) 里 KL 项是奖励的一部分, $\beta$ 越大, 排序越受 KL 项左右.
+
+**奖励噪声.** 奖励模型本身是人类偏好的有噪声代理. 论文对每个 prompt, 往奖励模型二分类器的输出 logit 上加高斯噪声 $\epsilon\sim\mathcal{N}(0,\sigma^2)$, $\sigma\in\{1,3,5\}$ (Figure 6). 两种方法的训练奖励都下降, $\sigma=3$ 和 $5$ 时 RAFT 下降得多得多. 论文的解释是噪声打乱了组内的相对排名; RLOO 用奖励的差值加权全部样本, 排名错一位的影响小得多.
+
+### 5.5 $k$ 取多大
+
+Table 1 里 $k$ 从 2 增加到 4, RLOO 在 TL;DR 上涨 3.7 个点 (74.2 到 77.9), 在 HH (Llama) 上涨 1.9 个点 (62.2 到 64.1), 在 HH (Pythia) 上反而跌 3.9 个点 (47.6 到 43.7). RAFT 三组都随 $k$ 上涨, 涨幅是 1.1, 4.4, 4.9 个点. 每个 prompt 的生成次数随 $k$ 线性增加, $k=4$ 的生成量是 $k=2$ 的两倍.
+
+可以这样读这组数字: RLOO 在 $k=2$ 时已经用上了两条样本的全部信息, 再加样本主要是降低基线的方差, 式 (9) 的第二项从 $\mathrm{Var}(R\mid x)$ 降到三分之一; RAFT 的 $k$ 决定最高分样本能有多好, $k$ 越大, 被选中的样本奖励越高, 收益更直接. 论文只测了 $k=2$ 和 $k=4$, 没有给出更大 $k$ 的结果. DeepSeekMath 的 GRPO 每题采 64 条, 那是可验证奖励的数学题, 设定不同.
+
+## 6. 失效模式与适用边界
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| 多数 prompt 的 $k$ 条回复奖励几乎相同, 有效 batch 变小 | 留一优势接近 0 | 换难度更合适的 prompt, 或增大 $k$ |
+| 不同 prompt 的更新幅度差很多 | 不除标准差, 奖励方差大的 prompt 权重大 | 这是 RLOO 的有意选择; 需要统一尺度时改用 batch 级标准化, 接受偏差 |
+| 显存省下, 生成时间变长 | 每个 prompt 生成 $k$ 次 | 用 vLLM 一类推理引擎做 rollout, 和训练分离 |
+| 一次 rollout 做多步更新时不稳 | 估计器假设 on-policy, 没有比率修正 | 保持每个 batch 少量更新; 论文的设定是 2 步 |
+| 中间步骤有奖励时难以利用 | 整段回复是一个动作, 只用总奖励 | 论文第 7 节列为未来工作 |
+
+训练时可以盯住几个直接由式 (6) 和式 (7) 推出的量. 第一个是组内奖励的标准差: 它在 batch 里的分布反映有多少 prompt 还在提供信号, 大部分 prompt 的标准差趋近 0 时, 有效梯度会变小, 和学习率调低的效果相似. 第二个是式 (12) 算出的序列 KL 的均值: RLOO 没有比率裁剪, 策略离参考模型多远只受 $\beta$ 约束, 这一项持续上升而奖励模型分数停滞, 是开始利用奖励模型漏洞的信号. 第三个是回复长度: Table 2 里各方法的平均长度差了六倍多 (PPO 16.5, DPO 104.4), 长度往一个方向持续漂移时, 先检查奖励模型是否偏好长度.
+
+论文在第 7 节写明了几处没有覆盖的内容: 没有研究奖励模型过优化 (策略在代理奖励上得分上升, 真实效用下降) 在 REINFORCE 系方法上的表现; 没有在有中间奖励的设定里测试留一法; 胜率只用 GPT-4 模拟, 没有人工评估; 也没有试验 ROUGE, BLEU 这类规则型奖励. 实验规模停在 7B, 数据只有 TL;DR 和 HH 两个.
+
+奖励模型过优化的一般现象, 可以对照 [Best-of-N 与奖励模型过优化](../../4.4.4-其他对齐技术/07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md); RLOO 与 GRPO 后续变体的关系见 [GxPO 家族](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md).
 
 ## 参考文献
 
-1. Ahmadian, A., Cremer, C., Gallé, M., Fadaee, M., Kreutzer, J., Pietquin, O., Üstün, A., & Hooker, S. (2024). [Back to Basics: Revisiting REINFORCE-Style Optimization for Learning from Human Feedback in LLMs](https://arxiv.org/abs/2402.14740). In *Proceedings of the 62nd ACL (Volume 1: Long Papers)*, pp. 12248–12267. HTML:[ar5iv 2402.14740](https://ar5iv.labs.arxiv.org/html/2402.14740). Anthology:[2024.acl-long.662](https://aclanthology.org/2024.acl-long.662/).
-2. Kool, W., van Hoof, H., & Welling, M. (2019). [Buy 4 REINFORCE samples, get a baseline for free!](https://api.semanticscholar.org/CorpusID:198489118). *DeepRLStructPred @ ICLR*.
-3. Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. *Machine Learning*, 8(3–4), 229–256.
-4. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
-5. Schulman, J., Moritz, P., Levine, S., Jordan, M., & Abbeel, P. (2018). [High-Dimensional Continuous Control Using Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438).
-6. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290).
-7. Dong, H., Xiong, W., Goyal, D., Zhang, Y., Chow, W., Pan, R., Diao, S., Zhang, J., Shum, K., & Zhang, T. (2023). [RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment](https://arxiv.org/abs/2304.06767).
-8. Shao, Z., et al. (2024). [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300).(GRPO 组内 $z$-score,对照用,不是 RLOO 原文)
-9. Stiennon, N., et al. (2020). [Learning to Summarize from Human Feedback](https://arxiv.org/abs/2009.01325).(TL;DR 数据)
-10. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).(Anthropic-HH)
+1. Ahmadian, A., Cremer, C., Gallé, M., Fadaee, M., Kreutzer, J., Pietquin, O., Üstün, A., Hooker, S. *Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs*. ACL 2024. arXiv:2402.14740.
+2. Kool, W., van Hoof, H., Welling, M. *Buy 4 REINFORCE Samples, Get a Baseline for Free!* ICLR 2019 Workshop on Deep Reinforcement Learning Meets Structured Prediction.
+3. Williams, R. J. *Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning*. Machine Learning, 8, 229–256, 1992.
+4. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., Klimov, O. *Proximal Policy Optimization Algorithms*. arXiv:1707.06347, 2017.
+5. Shao, Z. 等. *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300, 2024.
+6. Dong, H. 等. *RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment*. TMLR, 2023. arXiv:2304.06767.
+7. Li, Z. 等. *ReMax: A Simple, Effective, and Efficient Reinforcement Learning Method for Aligning Large Language Models*. arXiv:2310.10505, 2023.
+8. Ziegler, D. M. 等. *Fine-Tuning Language Models from Human Preferences*. arXiv:1909.08593, 2019.
+9. Stiennon, N. 等. *Learning to Summarize from Human Feedback*. NeurIPS 2020.
+10. Bai, Y. 等. *Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback*. arXiv:2204.05862, 2022.
