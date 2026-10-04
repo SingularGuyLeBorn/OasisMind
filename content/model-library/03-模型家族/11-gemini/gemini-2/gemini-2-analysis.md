@@ -31,7 +31,7 @@ excerpt: "这份材料是 Google 官方博客 (blog.google) 上的一篇发布�
 
 PDF 原图有两处 md 丢掉的标记: 2.0 Flash 一列用浅蓝底框出, 每行最高分加粗. 加粗落在 2.0 Flash 列的有 11 行, 落在 1.5 Pro 列的有 2 行 (MRCR 和 CoVoST2). 这正好对应正文 「2.0 Flash even outperforms 1.5 Pro on key benchmarks」 里 「key」 的分寸: 不是全胜, 而是 13 行赢 11 行. 读 md 版时要回到 PDF 才能看出这一层.
 
-口径上要注意说明列里的几个短语. Natural2Code 和 HiddenMath 标 「Held out dataset ... not leaked on the web」, FACTS Grounding 标 「Held out internal dataset」, 这三项的题目外界拿不到. Vibe-Eval 的题目公开, 判分却是 「Evaluated with a Gemini Flash model as a rater」, 被评的模型里就有 Flash. LiveCodeBench 注明只取 2024/06/01 到 2024/10/05 的题目. 静态基准可比性取决于这些设置, 一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md); 那篇讲的是方法, 不能反推这张表某一格的细节.
+口径上要注意说明列里的几个短语. Natural2Code 和 HiddenMath 标 「Held out dataset ... not leaked on the web」, FACTS Grounding 标 「Held out internal dataset」, 这三项的题目外界拿不到. Vibe-Eval 的题目公开, 判分却是 「Evaluated with a Gemini Flash model as a rater」, 被评的模型里就有 Flash. LiveCodeBench 注明只取 2024/06/01 到 2024/10/05 的题目. 静态基准可比性取决于这些设置, 一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md); 那篇讲的是方法, 不能反推这张表某一格的细节.
 
 ## 4. 表格和正文说法的对应
 
@@ -45,17 +45,17 @@ PDF 原图有两处 md 丢掉的标记: 2.0 Flash 一列用浅蓝底框出, 每�
 
 博客后半用大篇幅介绍 agent 原型, 前提是一段能力清单: 「native user interface action-capabilities」, 多模态推理, 长上下文理解, 复杂指令遵循与规划, 组合式函数调用, 原生工具调用, 更低延迟. 这些都是能力名称, 没有对应的评测行; 其中 「长上下文理解」 恰好是表里 2.0 Flash 最弱的一行. 原型一共四类: Project Astra (通用助手), Project Mariner (浏览器 agent), Jules (代码 agent), 游戏与机器人方向的 agent. 全部标注为研究原型或实验, 开放给受信任的测试者, 没有一项面向普通用户上线.
 
-Project Astra 给了四项改进: 多语言和混合语言对话, 能用搜索, Lens 和地图, 最长 10 分钟的会话内记忆以及更多的跨会话记忆, 接近人类对话的理解延迟. 唯一的数字 「10 minutes」 是时长, 不是上下文长度, 和 MRCR 的 1M 不是同一单位. 跨会话记忆只说 「more」, 机制没交代. agent 记忆的一般做法可以对照 [记忆系统](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.1-记忆系统.md), 实时音视频交互的一般背景见 [Omni与全双工](../../../../llm-guide/8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md); 这两篇都不能说明 Astra 本身怎么做.
+Project Astra 给了四项改进: 多语言和混合语言对话, 能用搜索, Lens 和地图, 最长 10 分钟的会话内记忆以及更多的跨会话记忆, 接近人类对话的理解延迟. 唯一的数字 「10 minutes」 是时长, 不是上下文长度, 和 MRCR 的 1M 不是同一单位. 跨会话记忆只说 「more」, 机制没交代. agent 记忆的一般做法可以对照 [记忆系统](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.1-记忆系统/13.1.1-记忆系统.md), 实时音视频交互的一般背景见 [Omni与全双工](../../../../llm-guide/8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md); 这两篇都不能说明 Astra 本身怎么做.
 
-Project Mariner 是全文唯一带基准分数的原型: WebVoyager 上 83.5%, 「working as a single agent setup」. 分数的主语是原型系统而不是模型, 它只说 「built with Gemini 2.0」, 没说具体版本; 「state-of-the-art」 比的是哪些系统, 页面上没有. 下一段又承认它 「not always accurate and slow to complete tasks today」. agent 基准分数对框架设置的依赖, 可以看 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md). Mariner 的限制写得具体: 只能在当前激活的标签页里输入, 滚动, 点击; 购物等敏感操作前要用户最终确认.
+Project Mariner 是全文唯一带基准分数的原型: WebVoyager 上 83.5%, 「working as a single agent setup」. 分数的主语是原型系统而不是模型, 它只说 「built with Gemini 2.0」, 没说具体版本; 「state-of-the-art」 比的是哪些系统, 页面上没有. 下一段又承认它 「not always accurate and slow to complete tasks today」. agent 基准分数对框架设置的依赖, 可以看 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md). Mariner 的限制写得具体: 只能在当前激活的标签页里输入, 滚动, 点击; 购物等敏感操作前要用户最终确认.
 
-Jules 集成进 GitHub 工作流, 能处理 issue, 制定计划并执行, 全程在开发者监督下; 没有任何分数, 细节指向开发者博客. 这类代码 agent 的形态可以对照 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md). 游戏 agent 只根据屏幕画面推理并在实时对话中给建议, 合作方是 Supercell, 举例是 「Clash of Clans」 和 「Hay Day」, 还能调用搜索查游戏知识. 机器人方向只有一句 「applying Gemini 2.0's spatial reasoning capabilities to robotics」, 并说 「still early」. 原生工具调用这条主线在四类原型里反复出现, 工具调用的一般机制见 [工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP.md).
+Jules 集成进 GitHub 工作流, 能处理 issue, 制定计划并执行, 全程在开发者监督下; 没有任何分数, 细节指向开发者博客. 这类代码 agent 的形态可以对照 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md). 游戏 agent 只根据屏幕画面推理并在实时对话中给建议, 合作方是 Supercell, 举例是 「Clash of Clans」 和 「Hay Day」, 还能调用搜索查游戏知识. 机器人方向只有一句 「applying Gemini 2.0's spatial reasoning capabilities to robotics」, 并说 「still early」. 原生工具调用这条主线在四类原型里反复出现, 工具调用的一般机制见 [工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP/13.1.3-工具使用与MCP.md).
 
 ## 6. 安全部分: 做了什么, 没说什么
 
 安全一节先讲流程: 探索式, 渐进式开发, 在多个原型上研究, 迭代地做安全训练, 与受信任测试者和外部专家合作, 做风险评估和安全与保障评估. 随后举了五个例子: 与内部的责任与安全委员会 (RSC) 一起识别风险; 用 2.0 的推理能力做 AI 辅助红队, 从发现风险推进到自动生成评估和训练数据; 在图像和音频的输入输出上继续评估和训练; Astra 防止用户无意分享敏感信息, 并内置删除会话的隐私控制; Mariner 让模型把用户指令置于第三方提示注入之上.
 
-这些例子都只有做法, 没有结果. 红队测了哪些风险类别, 自动生成的训练数据有多少, 提示注入的防御成功率是多少, 页面一概没写, 也没有像技术报告那样附模型卡链接. Mariner 这条对应的是 agent 读网页时最现实的风险: 邮件, 文档, 网站里藏着的恶意指令. 提示注入与 agent 安全的一般讨论见 [Agent安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐.md), 红队的一般做法见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测.md).
+这些例子都只有做法, 没有结果. 红队测了哪些风险类别, 自动生成的训练数据有多少, 提示注入的防御成功率是多少, 页面一概没写, 也没有像技术报告那样附模型卡链接. Mariner 这条对应的是 agent 读网页时最现实的风险: 邮件, 文档, 网站里藏着的恶意指令. 提示注入与 agent 安全的一般讨论见 [Agent安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md), 红队的一般做法见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 ## 7. 图片与抓取痕迹
 

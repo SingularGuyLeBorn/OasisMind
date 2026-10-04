@@ -23,7 +23,7 @@ Olmo 3 7B 本身已经是一种混合注意力: 3/4 的层是窗口 4096 的 SWA
 
 ### 1.2. 一个 GDN 头在做什么: delta 规则, 衰减门与负特征值
 
-Definition 1 给出状态更新: $\mathbf{S}_t = \mathbf{S}_{t-1}\alpha_t(\mathbf{I}-2\beta_t\mathbf{k}_t\mathbf{k}_t^\top)+\mathbf{v}_t\mathbf{k}_t^\top$, 输出 $\mathbf{y}_t=\mathbf{S}_t\mathbf{q}_t$, 其中 $\|\mathbf{k}_t\|=1$, $\alpha_t,\beta_t\in(0,1)$, value 与状态的行数是 key 维度的 2 倍. 可以把 $\mathbf{S}$ 看成一块以 key 为地址, value 为内容的联想记忆: 右乘 $(\mathbf{I}-2\beta_t\mathbf{k}_t\mathbf{k}_t^\top)$ 先改写旧记忆里沿 $\mathbf{k}_t$ 方向的那一份, 再加上 $\mathbf{v}_t\mathbf{k}_t^\top$ 写入新内容, $\alpha_t$ 让整块记忆按门控衰减. 普通线性注意力只会不断累加, 写满后新旧内容互相干扰, **delta 规则**的 「先擦后写」 缓解了这个问题. 线性注意力与 delta 规则的背景见 [2.3.3-线性注意力机制](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/2.3.3-线性注意力机制.md).
+Definition 1 给出状态更新: $\mathbf{S}_t = \mathbf{S}_{t-1}\alpha_t(\mathbf{I}-2\beta_t\mathbf{k}_t\mathbf{k}_t^\top)+\mathbf{v}_t\mathbf{k}_t^\top$, 输出 $\mathbf{y}_t=\mathbf{S}_t\mathbf{q}_t$, 其中 $\|\mathbf{k}_t\|=1$, $\alpha_t,\beta_t\in(0,1)$, value 与状态的行数是 key 维度的 2 倍. 可以把 $\mathbf{S}$ 看成一块以 key 为地址, value 为内容的联想记忆: 右乘 $(\mathbf{I}-2\beta_t\mathbf{k}_t\mathbf{k}_t^\top)$ 先改写旧记忆里沿 $\mathbf{k}_t$ 方向的那一份, 再加上 $\mathbf{v}_t\mathbf{k}_t^\top$ 写入新内容, $\alpha_t$ 让整块记忆按门控衰减. 普通线性注意力只会不断累加, 写满后新旧内容互相干扰, **delta 规则**的 「先擦后写」 缓解了这个问题. 线性注意力与 delta 规则的背景见 [2.3.3-线性注意力机制](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/2.5.1-线性注意力机制.md).
 
 「先擦后写」 可以落到一次读出上. 由 $\|\mathbf{k}_t\|=1$ 得 $(\mathbf{I}-2\beta_t\mathbf{k}_t\mathbf{k}_t^\top)\mathbf{k}_t=(1-2\beta_t)\mathbf{k}_t$, 用当前 key 去读更新后的状态:
 
@@ -31,7 +31,7 @@ $$\mathbf{S}_t\mathbf{k}_t=\alpha_t(1-2\beta_t)\,\mathbf{S}_{t-1}\mathbf{k}_t+\m
 
 而对任意与 $\mathbf{k}_t$ 正交的方向 $\mathbf{u}$, 有 $\mathbf{S}_t\mathbf{u}=\alpha_t\mathbf{S}_{t-1}\mathbf{u}$ (按 Definition 1 推). 第一式说, 在当前 key 这个地址上, 旧内容先乘 $\alpha_t(1-2\beta_t)$ 再叠上新 value; 第二式说, 其余地址只受衰减门影响, 这次写入碰不到它们. 普通线性注意力 $\mathbf{S}_t=\mathbf{S}_{t-1}+\mathbf{v}_t\mathbf{k}_t^\top$ 的读出是 $\mathbf{S}_{t-1}\mathbf{k}_t+\mathbf{v}_t$, 旧内容原样留着与新内容相加, 两者的差别就在 $\mathbf{S}_{t-1}\mathbf{k}_t$ 前面那个系数. 转移矩阵 $\alpha_t(\mathbf{I}-2\beta_t\mathbf{k}_t\mathbf{k}_t^\top)$ 的特征值因此只有两种: 沿 $\mathbf{k}_t$ 为 $\alpha_t(1-2\beta_t)$, 其余 $d-1$ 个方向为 $\alpha_t$. $\beta_t\in(0,1)$ 时 $1-2\beta_t\in(-1,1)$, **$\beta_t>1/2$ 就进入负半轴**; 原版 GDN 对应的是 $\alpha_t(1-\beta_t)$, 永远在 $(0,1)$ 里.
 
-谱系上这是三步叠加. DeltaNet (Schlag et al., 2021) 提供 Householder 式的 delta 规则; GDN (Yang et al., 2025a) 加上**衰减门** $\alpha_t$; Grazzi et al. (2025) 把 $\beta_t$ 换成 $2\beta_t$, 让沿 key 方向的特征值从 (0, 1) 扩到 (-1, 1). 最后一步只改了一个系数. Definition 1 里 $\alpha_t,\beta_t$ 都在开区间, -1 只能逼近, Fig. 6 的交换矩阵对应 $\alpha_t=1$, $\beta_t=1$ 这个端点. 同属 DeltaNet 家族的 KDA 见 [01-Kimi-Delta-Attention-KDA](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md).
+谱系上这是三步叠加. DeltaNet (Schlag et al., 2021) 提供 Householder 式的 delta 规则; GDN (Yang et al., 2025a) 加上**衰减门** $\alpha_t$; Grazzi et al. (2025) 把 $\beta_t$ 换成 $2\beta_t$, 让沿 key 方向的特征值从 (0, 1) 扩到 (-1, 1). 最后一步只改了一个系数. Definition 1 里 $\alpha_t,\beta_t$ 都在开区间, -1 只能逼近, Fig. 6 的交换矩阵对应 $\alpha_t=1$, $\beta_t=1$ 这个端点. 同属 DeltaNet 家族的 KDA 见 [01-Kimi-Delta-Attention-KDA](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md).
 
 Fig. 6 用一个二维例子说明**负特征值**的作用. 取 $\mathbf{k}_t=(1,-1)/\sqrt2$, 不扩展时 $\mathbf{I}-\mathbf{k}_t\mathbf{k}_t^\top$ 的特征值是 1 和 0, 状态只能保持或衰减; 扩展后 $\mathbf{I}-2\mathbf{k}_t\mathbf{k}_t^\top$ 恰好是**交换矩阵**, 特征值 1 和 -1, 能把状态在两个值之间来回翻转. 奇偶校验, 五元素换位这类问题都依赖这种翻转. 作者特别指出, Qwen3-Next, Kimi Linear, Qwen 3.5 用的 GDN 都没有这条扩展, Olmo Hybrid 在大规模训练里保留了它.
 
@@ -41,7 +41,7 @@ GDN 头接进 Transformer 几乎不需要额外结构: 输入仍是标准的 q /
 
 GDN 的 value 更长, 计算 $\beta_t$ 还要少量额外参数, 同样超参下参数会变多. 作者在 128 张 H100 上逐个去头测参数与吞吐 (Tab. 9): Olmo 3 为 6.8B, 每卡 8.0K token/s; 混合模型 32 头时 7.7B / 7.7K, 31 头 7.4B / 7.7K, 30 头 ($d_{model}$ = 3840) 7.0B / 8.2K. 最终选 30 头, 参数多 0.2B, 吞吐略快, 两者在训练算力口径上基本持平.
 
-Tab. 1 在 fp16 下比较单层推理状态. 32K 序列, 32 个 KV 头, $d_h=128$ 的 MHA 占 512 MiB, 是 GDN 的 485×; 8 个 KV 头的 GQA 占 128 MiB (121×); 窗口 4096, 8 个 KV 头的 GQA-SWA 占 16.0 MiB (15.2×); Olmo Hybrid 的 GDN 层 (30 头, $d_k$=96, $d_v$=192) 只有约 0.55M 个元素, 1.05 MiB, 且与序列长度无关. 需要注意 Olmo 3 7B 本身用的是 MHA (§5.3 明说它 「没有 GQA」), 它真实的 SWA 层按 32 个 KV 头算约 64 MiB, 约为 GDN 的 61× (心算 $4096 \times 32 \times 128 \times 2 \times 2$ 字节). GQA 背景见 [03-GQA-在性能与缓存之间折中](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
+Tab. 1 在 fp16 下比较单层推理状态. 32K 序列, 32 个 KV 头, $d_h=128$ 的 MHA 占 512 MiB, 是 GDN 的 485×; 8 个 KV 头的 GQA 占 128 MiB (121×); 窗口 4096, 8 个 KV 头的 GQA-SWA 占 16.0 MiB (15.2×); Olmo Hybrid 的 GDN 层 (30 头, $d_k$=96, $d_v$=192) 只有约 0.55M 个元素, 1.05 MiB, 且与序列长度无关. 需要注意 Olmo 3 7B 本身用的是 MHA (§5.3 明说它 「没有 GQA」), 它真实的 SWA 层按 32 个 KV 头算约 64 MiB, 约为 GDN 的 61× (心算 $4096 \times 32 \times 128 \times 2 \times 2$ 字节). GQA 背景见 [03-GQA-在性能与缓存之间折中](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
 
 放到整个模型上, 收益会被全局层稀释. 每四层里 Olmo 3 是一层全局加三层 SWA, Hybrid 是一层全局加三层 GDN; 全局层两者相同, 缓存都随序列线性增长. 按位置折算, 32K 时 Hybrid 的总推理状态约为 Olmo 3 7B 的 73%, 64K 时约 85% (心算: GDN 一层约合 67 个位置的 MHA 缓存). SWA 层的缓存本来就被窗口封顶, 换成 GDN 省下的是常数项, 长序列上占大头的仍是那 1/4 全局层. 报告没有给整模型显存的实测, 这组比例只按结构推算.
 
@@ -57,9 +57,9 @@ Tab. 1 在 fp16 下比较单层推理状态. 32K 序列, 32 个 KV 头, $d_h=128
 
 Transformer 这一侧的上界是 $\mathsf{TC}^0$ (Merrill and Sabharwal, 2023; Chiang, 2025). 在 $\mathsf{TC}^0\neq\mathsf{NC}^1$ 的标准猜想下, 固定深度的 Transformer 无法对任意长度做状态追踪, 也就是把一串可结合的操作依次作用到有限状态上. 国际象棋走子, 五个物体反复换位都是例子, 最难的情形是 $\mathsf{NC}^1$ 完全. 直观原因是注意力对操作序列的聚合对顺序不够敏感, 想逐步施加更新, 层数就得随序列长度增长. Fig. 4 左把它写成代码: 连续执行 n 行 `a, c = c, e` 这类交换, 最后问 `a` 的值.
 
-线性 RNN 这一侧恰好相反. 转移矩阵为对角或非负的模型 (线性注意力, S4, Mamba) 同样被压在 $\mathsf{TC}^0$; 非对角, 随输入变化且允许负特征值的转移矩阵可以表达 $\mathsf{NC}^1$ 完全的状态追踪, DeltaNet / GDN, RWKV-7, PD-SSM 都走这条路. Mamba 与 SSM 的背景见 [2.4.3-Mamba系列](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.3-Mamba系列/2.4.3-Mamba系列.md) 与 [2.4.2-状态空间模型SSM](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.2-状态空间模型SSM/2.4.2-状态空间模型SSM.md).
+线性 RNN 这一侧恰好相反. 转移矩阵为对角或非负的模型 (线性注意力, S4, Mamba) 同样被压在 $\mathsf{TC}^0$; 非对角, 随输入变化且允许负特征值的转移矩阵可以表达 $\mathsf{NC}^1$ 完全的状态追踪, DeltaNet / GDN, RWKV-7, PD-SSM 都走这条路. Mamba 与 SSM 的背景见 [2.4.3-Mamba系列](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.3-Mamba系列/2.5.3-Mamba系列.md) 与 [2.4.2-状态空间模型SSM](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.2-状态空间模型SSM/2.5.2-状态空间模型SSM.md).
 
-RNN 的代价是有界状态带来的**召回瓶颈**. Fig. 4 右的 `bits[a]` 查询要从上下文里取回任意一位, 状态大小固定的 RNN 在比特数 m 增长后必然失败 (Arora et al., 2024b; Jelassi et al., 2024); Arora et al. (2024a) 甚至认为线性 RNN 相对 Transformer 的大部分 loss 差距都来自上下文召回. 注意力擅长召回而不擅长状态追踪, 带负特征值的 GDN 正好相反, 混合是自然的选择. 更早的混合路线如 Griffin 见 [2.4.4-线性RNN与Griffin](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.4-线性RNN与Griffin/2.4.4-线性RNN与Griffin.md), 全景见 [2.4.5-新兴架构与混合模型](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.5-新兴架构与混合模型/2.4.5-新兴架构与混合模型.md).
+RNN 的代价是有界状态带来的**召回瓶颈**. Fig. 4 右的 `bits[a]` 查询要从上下文里取回任意一位, 状态大小固定的 RNN 在比特数 m 增长后必然失败 (Arora et al., 2024b; Jelassi et al., 2024); Arora et al. (2024a) 甚至认为线性 RNN 相对 Transformer 的大部分 loss 差距都来自上下文召回. 注意力擅长召回而不擅长状态追踪, 带负特征值的 GDN 正好相反, 混合是自然的选择. 更早的混合路线如 Griffin 见 [2.4.4-线性RNN与Griffin](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.4-线性RNN与Griffin/2.5.4-线性RNN与Griffin.md), 全景见 [2.4.5-新兴架构与混合模型](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.5-新兴架构与混合模型/2.5.5-新兴架构与混合模型.md).
 
 ### 2.2. 混合比两者之和多出什么: 状态召回与 padding 下的 NC¹
 
@@ -89,7 +89,7 @@ RNN 的代价是有界状态带来的**召回瓶颈**. Fig. 4 右的 `bits[a]` �
 
 §4.1 的实验设计值得照搬. 三种架构 (Olmo 3 式 Transformer, 纯 GDN, 3:1 混合) 在 7 个规模 (60M, 100M, 190M, 370M, 600M, 760M, 1B) 上各训一条长跑, 用与总 token 数无关的 **WSD-S 学习率日程**, 在 0.5× 到 8× Chinchilla 最优 token (每参数 20 token) 的五个点各做一次 5% 的衰减, 一条长跑换出五个 (N, D, L) 点, 每种架构共 35 个点. 数据统一用 Olmo 3 32B 配比, loss 取 11 个留出域交叉熵的平均, 用 Huber loss 在 log L 上按 Chinchilla Approach 3 拟合 $L(N,D)=E+A/N^\alpha+B/D^\beta$, 置信区间用 1,000 次 bootstrap.
 
-自由拟合的曲线质量都很高, Tab. 18 的 $R^2$ 为 0.9976 (Olmo 3), 0.9993 (混合), 0.9994 (纯 GDN); 指数 α / β 分别约为 0.25 / 0.21, 0.23 / 0.22, 0.18 / 0.23, 区间大面积重叠. Tab. 4 做外推验证: 混合 7B / 5.5T 预测 loss 2.14, 实测 2.14, 误差 0.28%; Olmo 3 7B 误差同为 0.28%; 远超拟合范围的 Olmo 3 32B 误差 1.69%. 由于自由拟合里五个参数一起动, 单个系数的对比没有统计意义, 作者固定 α = β = 0.22 (约为自由拟合的平均), 只重拟 E, A, B. Scaling Laws 的一般背景见 [3.2.6-Scaling-Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md).
+自由拟合的曲线质量都很高, Tab. 18 的 $R^2$ 为 0.9976 (Olmo 3), 0.9993 (混合), 0.9994 (纯 GDN); 指数 α / β 分别约为 0.25 / 0.21, 0.23 / 0.22, 0.18 / 0.23, 区间大面积重叠. Tab. 4 做外推验证: 混合 7B / 5.5T 预测 loss 2.14, 实测 2.14, 误差 0.28%; Olmo 3 7B 误差同为 0.28%; 远超拟合范围的 Olmo 3 32B 误差 1.69%. 由于自由拟合里五个参数一起动, 单个系数的对比没有统计意义, 作者固定 α = β = 0.22 (约为自由拟合的平均), 只重拟 E, A, B. Scaling Laws 的一般背景见 [3.2.6-Scaling-Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md).
 
 固定指数后**只剩一个稳健信号: 数据系数 B**. Tab. 18 里混合为 83.65 (区间 [79.9, 87.0]), Olmo 3 为 94.85 ([89.3, 101.4]), 区间不重叠; 正文写作 83.7 对 94.9, 区间 [80.2, 87.1] 与 [88.7, 102.0], 与表略有出入. A 为 65.09 对 66.63, 区间重叠; E 在固定指数下反而是 Transformer 更低 (1.55 对 1.58), 作者据此判断自由拟合里混合的 E 优势是拟合伪影. 正文给的 A (70.1 对 71.8) 与 E (1.597 对 1.569) 也与 Tab. 18 不一致, 引用时以表为准.
 
@@ -133,7 +133,7 @@ midtraining 的做法基本照搬 Olmo 3 32B: 用轻度过滤后的 Dolma 3 Dolm
 
 ### 4.3. 长上下文: DroPE 为什么更适合混合模型
 
-长上下文扩展在 100B token 的 Dolma 3 Longmino Mix 上进行, 比较两种位置策略. YaRN 沿用 Olmo 3: 按频率切分 RoPE 维度, 低频维度插值到目标长度, 高频维度保持, 再用注意力温度修正 logit 幅度的偏移. **DroPE** (Gelberg et al., 2025) 在 midtraining 之后整个去掉 RoPE, 只靠因果掩码和权重里已有的位置信号, 目的是摆脱短上下文下学到的旋转频率对外推的限制. YaRN 见 [03-长度外推：从PI到YaRN的频率扩展](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md), 长上下文总览见 [2.5-长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/2.5-长上下文与外推技术.md).
+长上下文扩展在 100B token 的 Dolma 3 Longmino Mix 上进行, 比较两种位置策略. YaRN 沿用 Olmo 3: 按频率切分 RoPE 维度, 低频维度插值到目标长度, 高频维度保持, 再用注意力温度修正 logit 幅度的偏移. **DroPE** (Gelberg et al., 2025) 在 midtraining 之后整个去掉 RoPE, 只靠因果掩码和权重里已有的位置信号, 目的是摆脱短上下文下学到的旋转频率对外推的限制. YaRN 见 [03-长度外推：从PI到YaRN的频率扩展](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md), 长上下文总览见 [2.5-长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md).
 
 Tab. 3 的 RULER 读数把两种方法分开. Olmo 3 7B + YaRN 从 4K 到 64K 为 95.8 / 89.3 / 83.2 / 78.9 / 70.9; Olmo Hybrid + YaRN 为 92.8 / 91.3 / 90.0 / 84.7 / 76.9; Olmo Hybrid + DroPE 为 92.2 / 89.8 / 88.4 / 86.2 / 85.0. 4K 这种短长度上, 混合两版都比 Olmo 3 低约 3 分; 越往长走优势越大, 64K 时 DroPE 比 YaRN 高 8.1 分. 作者的解释是 GDN 的循环结构本身携带隐式位置信息, 注意力层对显式 RoPE 的依赖变小, 去掉 RoPE 损失不大, 外推约束却一并解除. 发布版因此选了 DroPE.
 
@@ -145,7 +145,7 @@ Tab. 3 的 RULER 读数把两种方法分开. Olmo 3 7B + YaRN 从 4K 到 64K �
 
 ### 5.1. 后训练: 知识题涨, 长推理题掉
 
-§5.3 是一次概念验证: 套用 Olmo 3 的配方, 依次做 Think SFT, Instruct SFT, DPO, RLVR 只做了早期探索. 数据上唯一改动是 Think SFT 加入函数调用数据以支持工具使用, 推理轨迹部分复用 DR Tülu, 其余由 GPT-4.1 生成, 每条上采样 3×. Tab. 10 给出规模: Think SFT 2,932,239 条, 47.6B token (由 Olmo 3 的 45.4B 加工具数据折算), 学习率 2.5×10⁻⁵, 64 卡, 最长 32K, 2 个 epoch; Instruct SFT 3.4B token; DPO 259,922 条, 学习率 1×10⁻⁶, 32 卡, 最长 16K, 损失为 DPO Norm (β = 5). SFT 与 DPO 背景见 [4.2-SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md) 与 [01-DPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md).
+§5.3 是一次概念验证: 套用 Olmo 3 的配方, 依次做 Think SFT, Instruct SFT, DPO, RLVR 只做了早期探索. 数据上唯一改动是 Think SFT 加入函数调用数据以支持工具使用, 推理轨迹部分复用 DR Tülu, 其余由 GPT-4.1 生成, 每条上采样 3×. Tab. 10 给出规模: Think SFT 2,932,239 条, 47.6B token (由 Olmo 3 的 45.4B 加工具数据折算), 学习率 2.5×10⁻⁵, 64 卡, 最长 32K, 2 个 epoch; Instruct SFT 3.4B token; DPO 259,922 条, 学习率 1×10⁻⁶, 32 卡, 最长 16K, 损失为 DPO Norm (β = 5). SFT 与 DPO 背景见 [4.2-SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md) 与 [01-DPO](../../../../llm-guide/4-后训练/4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md).
 
 Tab. 7 的绝对值显示出清楚的两极. Think SFT 阶段, Hybrid 的 MMLU 80.5 对 Olmo 3 74.9, PopQA 25.1 对 20.8, AlpacaEval 3 49.0 对 43.9; AIME 2025 55.2 对 57.6, AIME 2024 66.2 对 69.6, Omega 35.1 对 37.8. 到 DPO 阶段差距放大: MMLU 73.6 对 69.1, AlpacaEval 3 56.3 对 43.3, IFBench 33.3 对 29.3; BBH 57.3 对 69.3, MATH 72.9 对 79.6, AIME 2025 10.2 对 20.4, AIME 2024 10.1 对 23.5. **预训练带来的知识优势一路保留**, 需要长链推理, 依赖 TestingTime 预算的数学竞赛题则明显落后.
 

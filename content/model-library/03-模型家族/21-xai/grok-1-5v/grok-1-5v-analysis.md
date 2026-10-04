@@ -23,13 +23,13 @@ excerpt: "这篇公告能回答三件事: Grok-1.5V 在 7 个视觉基准上和 
 
 把表按行排名, Grok-1.5V 拿第一的有 3 项: Mathvista 52.8%, 比第二名 Gemini Pro 1.5 的 52.1% 高 0.7 个点; TextVQA 78.1%, 比 GPT-4V 的 78.0% 高 0.1, 两家 Claude 这一行是「-」; RealWorldQA 68.7%, 比 Gemini Pro 1.5 的 67.5% 高 1.2. AI2D 88.3% 排第 2, 比 Claude 3 Sonnet 的 88.7% 低 0.4, 但比 GPT-4V 的 78.2% 和 Gemini Pro 1.5 的 80.3% 高出 8 到 10 个点. MMMU 53.6% 排第 4, 只赢 Claude 3 Sonnet 的 53.1%, 离 Claude 3 Opus 的 59.4% 差 5.8 个点. ChartQA 76.1% 和 DocVQA 85.6% 都是五家最低, 分别比最高分 (Gemini Pro 1.5 的 81.3%, Claude 3 Sonnet 的 89.5%) 低 5.2 和 3.9 个点.
 
-这个分布和正文「competitive with existing frontier multimodal models in a number of domains」的措辞是吻合的: 它没有说全面领先, 只说有竞争力, 真正用了「outperforms」的只有 RealWorldQA 一处. 领先的三项里, TextVQA 的 0.1 个点在没有方差的情况下**只能算持平**, Mathvista 的 0.7 个点也不大. 落后的两项都是文字密集, 版面细碎的图像: 文档要读小字和表格, 统计图要读坐标和图例. 这类任务通常对输入分辨率和视觉 token 数量敏感, 通用讨论见 [高分辨率 VLM 的技术挑战](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.4-高分辨率VLM的技术挑战.md). 但公告没说 Grok-1.5V 接收多大的图, 切不切块, 所以**不能把 ChartQA, DocVQA 的落后直接归因到分辨率上**.
+这个分布和正文「competitive with existing frontier multimodal models in a number of domains」的措辞是吻合的: 它没有说全面领先, 只说有竞争力, 真正用了「outperforms」的只有 RealWorldQA 一处. 领先的三项里, TextVQA 的 0.1 个点在没有方差的情况下**只能算持平**, Mathvista 的 0.7 个点也不大. 落后的两项都是文字密集, 版面细碎的图像: 文档要读小字和表格, 统计图要读坐标和图例. 这类任务通常对输入分辨率和视觉 token 数量敏感, 通用讨论见 [高分辨率 VLM 的技术挑战](../../../../llm-guide/8-多模态/8.2-视觉语言模型/05-高分辨率VLM的技术挑战/05-高分辨率VLM的技术挑战.md). 但公告没说 Grok-1.5V 接收多大的图, 切不切块, 所以**不能把 ChartQA, DocVQA 的落后直接归因到分辨率上**.
 
 ## 3. 评测设置: zero-shot, 不用 CoT, 对手分数来源不明
 
 正文只有一句交代设置:「For all datasets below, we evaluate Grok in a zero-shot setting without chain-of-thought prompting.」**主语是 Grok**. 表里另外四列从哪来, 是 xAI 用同样设置重跑的, 还是抄自各家的发布材料, 页面没说. 如果是后者, 各家报告的提示方式, 是否用 CoT, 用的是 val 还是 test 切分, 都可能不同. zero-shot 不加 CoT 对多步推理类的 MMMU, Mathvista 通常是偏保守的设置, 对手若用了 CoT, 表里的差距会被放大; 反之则缩小. 本页无法判断是哪种情况. CoT 提示对分数的影响, 通用讨论见 [Prompt 工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md).
 
-打分口径也没写. 表格统一用百分号, 但这几个基准的官方指标并不一样: DocVQA 通常用 **ANLS**, 按编辑距离给部分分; ChartQA 常用 **relaxed accuracy**, 数值答案允许 5% 误差; MMMU, AI2D 和 RealWorldQA 是选择题准确率. 各基准的指标定义可以对照 [VLM 的评测与基准](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.5-VLM的评测与基准.md). 一张表里混着几种口径, 行内横比还说得过去, 前提是五家用的是同一种; 跨行比较 (比如拿 DocVQA 85.6% 和 ChartQA 76.1% 说哪个更强) 就没有意义. 本页连行内是否同口径都没保证.
+打分口径也没写. 表格统一用百分号, 但这几个基准的官方指标并不一样: DocVQA 通常用 **ANLS**, 按编辑距离给部分分; ChartQA 常用 **relaxed accuracy**, 数值答案允许 5% 误差; MMMU, AI2D 和 RealWorldQA 是选择题准确率. 各基准的指标定义可以对照 [VLM 的评测与基准](../../../../llm-guide/8-多模态/8.2-视觉语言模型/06-VLM的评测与基准/06-VLM的评测与基准.md). 一张表里混着几种口径, 行内横比还说得过去, 前提是五家用的是同一种; 跨行比较 (比如拿 DocVQA 85.6% 和 ChartQA 76.1% 说哪个更强) 就没有意义. 本页连行内是否同口径都没保证.
 
 ## 4. 流程图转代码: 读对了图, 也补了图上没有的东西
 
@@ -51,7 +51,7 @@ RealWorldQA 是这篇公告里分量最重的部分. 按第 8 页的说明, 首�
 
 模型内部本页一个字都没写. 视觉部分用什么编码器, 图像怎么变成语言模型能读的 token, 是先训好文本模型再接视觉适配层, 还是图文一起预训练, 图像输入的分辨率和数量上限, 这些都没有. 同家族材料里, [Grok-1](../grok-1/grok-1-bi.md) 公开过 314B 参数的 MoE 结构, [xAI 新闻页](../xai/xai-bi.md) 记录了 Grok-1.5 的上下文是 128,000 token, 但两者都不能直接套到 1.5V 上: 公告没说 1.5V 的语言部分是不是 Grok-1.5, 也没说视觉输入占多少上下文. 多模态模型常见的几种接法, 以及视觉编码器的一般做法, 可以看 [多模态核心概念与架构](../../../../llm-guide/8-多模态/8.1-核心概念与架构/8.1-核心概念与架构.md) 和 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/8.8-CLIP与视觉编码器.md), 那是通用背景, **不是 Grok-1.5V 的做法**.
 
-训练数据, SFT 或偏好对齐, 安全评测, 本页都没有. 结尾「Into the Future」提到要同时推进「multimodal understanding and generation」, 模态包括「images, audio, and video」, 时间是「In the coming months」. 但 Grok-1.5V 本身在全文里只展示了理解能力, 没有生成图像的例子. 按新闻页的时间线, Grok 的图像生成到 2024 年 12 月 9 日才发布, 用的是「a new autoregressive image generation model」, 和这篇公告隔了 8 个月. 同期其他商业 VLM 的横向情况可以对照 [商业级 VLM 对比](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.6-商业级VLM对比.md).
+训练数据, SFT 或偏好对齐, 安全评测, 本页都没有. 结尾「Into the Future」提到要同时推进「multimodal understanding and generation」, 模态包括「images, audio, and video」, 时间是「In the coming months」. 但 Grok-1.5V 本身在全文里只展示了理解能力, 没有生成图像的例子. 按新闻页的时间线, Grok 的图像生成到 2024 年 12 月 9 日才发布, 用的是「a new autoregressive image generation model」, 和这篇公告隔了 8 个月. 同期其他商业 VLM 的横向情况可以对照 [商业级 VLM 对比](../../../../llm-guide/8-多模态/8.2-视觉语言模型/07-商业级VLM对比/07-商业级VLM对比.md).
 
 ## 7. 本页对不上的数字
 

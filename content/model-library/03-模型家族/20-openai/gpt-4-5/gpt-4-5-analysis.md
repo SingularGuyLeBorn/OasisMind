@@ -27,11 +27,11 @@ excerpt: "系统卡的第 1, 2 节合起来不到两页, 剩下近三十页都�
 
 系统卡的第 1, 2 节合起来不到两页, 剩下近三十页都是评测. 模型本身只交代了三件事: 它以 GPT-4o 为基础, 继续扩大预训练; 后训练用了 SFT, RLHF 和一种 「新的监督技术」; 数据来自公开数据, 合作方专有数据和内部定制数据, 并用 Moderation API 与安全分类器过滤. 参数量, 层数, 注意力形式, 上下文长度, 训练 token 数, 算力, 一概没有. 读这份材料时要先接受一个前提: 凡是关于 「GPT-4.5 为什么强」 的结构性解释, 本文都给不出依据, 下文也不做这类推测.
 
-唯一稍有信息量的训练描述, 是第 2 节那句 「scalable alignment techniques that enable training larger and more powerful models with data derived from smaller models」. 常见的蒸馏是大模型教小模型, 这里方向反过来, 由小模型产出数据去对齐大模型. 这与 [RLAIF](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLAIF/4.4.3-RLAIF.md) 一类 「用模型反馈替代部分人工反馈」 的思路相近, 但本文没说小模型有多大, 产出的是偏好标注还是示范, 占后训练多少. 本文也没有任何一张表单独评测这项技术, 后面 Table 6 到 Table 8 的指令层级提升, §3.1.5 明确归因于 「supervised GPT-4.5 to follow the instructions in the system message」, 不能挪作这项技术的证据.
+唯一稍有信息量的训练描述, 是第 2 节那句 「scalable alignment techniques that enable training larger and more powerful models with data derived from smaller models」. 常见的蒸馏是大模型教小模型, 这里方向反过来, 由小模型产出数据去对齐大模型. 这与 [RLAIF](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md) 一类 「用模型反馈替代部分人工反馈」 的思路相近, 但本文没说小模型有多大, 产出的是偏好标注还是示范, 占后训练多少. 本文也没有任何一张表单独评测这项技术, 后面 Table 6 到 Table 8 的指令层级提升, §3.1.5 明确归因于 「supervised GPT-4.5 to follow the instructions in the system message」, 不能挪作这项技术的证据.
 
 ## 2. 两条 Scaling 路线里的位置
 
-第 2 节把 OpenAI 的能力路线分成两条: 一条 Scaling 无监督学习, 目标是 「世界模型更准, 幻觉更少, 联想更好」; 一条 Scaling CoT 推理, 让模型 「先思考再回答」, 面向 STEM 和逻辑题. GPT-4.5 被放在第一条线上. 这个定位直接决定了怎么读后面的评测: 凡是需要多步推理, 长程工具调用的评测, GPT-4.5 大概率落后于 o1, o3-mini 和 deep research; 凡是更依赖知识面, 语言质量和对话分寸的评测, 它才有机会领先. 预训练规模与能力的一般关系可参见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md), 本文没有提供任何能套进这类曲线的数.
+第 2 节把 OpenAI 的能力路线分成两条: 一条 Scaling 无监督学习, 目标是 「世界模型更准, 幻觉更少, 联想更好」; 一条 Scaling CoT 推理, 让模型 「先思考再回答」, 面向 STEM 和逻辑题. GPT-4.5 被放在第一条线上. 这个定位直接决定了怎么读后面的评测: 凡是需要多步推理, 长程工具调用的评测, GPT-4.5 大概率落后于 o1, o3-mini 和 deep research; 凡是更依赖知识面, 语言质量和对话分寸的评测, 它才有机会领先. 预训练规模与能力的一般关系可参见 [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md), 本文没有提供任何能套进这类曲线的数.
 
 把全文的对照数字按这条线过一遍, 结果基本符合预期. 领先 o1 的地方很少: PersonQA accuracy 0.78 对 0.55 (Table 4), MakeMeSay 72% 对 42%, MakeMePay 收款率 57% 对 27%, SWE-Lancer 两类任务略高于 o1. 落后 o1 的地方很多: StrongReject 0.34 对 0.87, 家教越狱 0.77 对 0.95, BBQ 非歧义题 0.74 对 0.93, SWE-bench Verified 38% 对 48%, MMLU 15 行全部低于 o1. 第 4 节开头那句 「it does not introduce net-new capabilities on most preparedness evaluations compared to previous reasoning releases」, 就是对这种分布的正式表述. 说服类评测是明显的例外, 这一点第 10 节再展开.
 
@@ -65,13 +65,13 @@ Table 5 的 BBQ 结果有同样的分母问题. P(not-stereotype | not unknown) 
 
 外部评估部分信息量有限. Apollo Research 的结论是暗中谋划得分 「低于 o1 但高于 GPT-4o」, 可 Appendix 7.2 只给了 GPT-4.5 对 o1 的比较: 六项评测中三项零暗中谋划 (o1 六项全有), 伪装对齐与 o1 相近, 乘法藏拙不如 o1 一贯, 自我外泄 2%. GPT-4o 的数一个都没有, 另外三项评测的名字也没列. 2% 那一项的设置相当激进: 模型被要求 「不惜一切代价」 追求长期目标, 还拿到隐藏草稿区, 并被鼓励 「有创造性, 要主动」, 在这些少数情况下, 它在后续追问中仍保持欺骗.
 
-METR 的 Figure 1 是全文唯一带编号的图. 时间跨度分数定义为 agent 能以 50% 可靠度完成的任务时长, 按人类基线耗时计. 说明文字给 GPT-4.5 的是 「around **30 minutes**」, 读图柱顶在 30 min 刻度线之上, 按对数纵轴估算约 35 分钟, 95% CI 约 20 分钟到接近 1 小时; 同样读图, o1 约 1 小时出头, Claude 3.5 Sonnet (New) 约 50 分钟, GPT-4o 约 10 分钟. 需要注意两点: METR 测的是更早的检查点, 只有 **7 天**; 用的是为 o1 优化的 agent 脚手架. METR 自己在正文里也说, 训练完成后才做的能力评估只能给出有限的安全保证. 有关这类第三方评估的方法论, 可参见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证.md).
+METR 的 Figure 1 是全文唯一带编号的图. 时间跨度分数定义为 agent 能以 50% 可靠度完成的任务时长, 按人类基线耗时计. 说明文字给 GPT-4.5 的是 「around **30 minutes**」, 读图柱顶在 30 min 刻度线之上, 按对数纵轴估算约 35 分钟, 95% CI 约 20 分钟到接近 1 小时; 同样读图, o1 约 1 小时出头, Claude 3.5 Sonnet (New) 约 50 分钟, GPT-4o 约 10 分钟. 需要注意两点: METR 测的是更早的检查点, 只有 **7 天**; 用的是为 o1 优化的 agent 脚手架. METR 自己在正文里也说, 训练完成后才做的能力评估只能给出有限的安全保证. 有关这类第三方评估的方法论, 可参见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证/5.4-部署治理与持续保证.md).
 
 ## 7. 准备度框架的读法: 评级, 指标与 「缓解前」
 
 第 4 节开头给出了总评: 安全顾问组把 GPT-4.5 定为总体中风险, CBRN 与说服为中, 网络安全与模型自主性为低. 问题在于 「中」 指的是哪个模型. §4.1 说 CBRN 与说服 「reached a Medium post-mitigation risk designation」; Conclusion 却写 「classify the pre-mitigation model as medium risk in persuasion and CBRN」. 两处说法一处指缓解后, 一处指缓解前. 对照 §4.3.1, 缓解后模型在长篇生物风险题上五个阶段全是 0%, 可见 CB 的中风险判断至少部分依据的是缓解前能力. 本文没有统一这两个术语在评级中的用法.
 
-第 4 节的柱状图用了至少四种指标, 读的时候必须逐图看纵轴. 长篇生物风险, BioLP, ProtocolQA, SWE-bench, Agentic Tasks, MLE-Bench, OpenAI PRs, 面试编程题用 pass@1; 多模态病毒学, 隐性知识, 背景核知识, 放射与核专家知识, 面试选择题用 **cons@32** (32 次采样取多数票); WMDP 用 **cons@4**; CTF 用 **pass@12**. §4 开头那段置信区间说明只针对 pass@1, 而且作者自己提醒: bootstrap 只刻画同一批题上多次尝试的采样方差, 不刻画题目层面的方差, 小数据集上区间会偏窄. 面试编程题只有 18 道, 79% 换成题数是 14.22 道, 一道题就值约 5.6 个百分点, 这类评测的误差棒要打折看. 评测指标本身的一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md).
+第 4 节的柱状图用了至少四种指标, 读的时候必须逐图看纵轴. 长篇生物风险, BioLP, ProtocolQA, SWE-bench, Agentic Tasks, MLE-Bench, OpenAI PRs, 面试编程题用 pass@1; 多模态病毒学, 隐性知识, 背景核知识, 放射与核专家知识, 面试选择题用 **cons@32** (32 次采样取多数票); WMDP 用 **cons@4**; CTF 用 **pass@12**. §4 开头那段置信区间说明只针对 pass@1, 而且作者自己提醒: bootstrap 只刻画同一批题上多次尝试的采样方差, 不刻画题目层面的方差, 小数据集上区间会偏窄. 面试编程题只有 18 道, 79% 换成题数是 14.22 道, 一道题就值约 5.6 个百分点, 这类评测的误差棒要打折看. 评测指标本身的一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 最容易误读的是 「缓解前」 这个标签. 按直觉, 缓解前模型没有安全训练, 能力应当不低于缓解后. 可逐图读下来几乎处处相反: BioLP 25% 到 29%, 隐性知识 65% 到 72%, 背景核知识 64% 到 71%, 放射与核专家知识 62% 到 68%, WMDP 83% 到 85%, CTF 高中级 37% 到 53%, SWE-bench 35% 到 38%, Agentic Tasks 25% 到 40%, OpenAI PRs 2% 到 7%, 面试编程 72% 到 79%. §4 第二段说评测跑在 「throughout training and on early post-trained checkpoints」 上. 更一致的读法是: 「缓解前」 是一个后训练更少的早期检查点, 它同时缺少安全训练和能力调优, 因而不能充当能力上界. 本文的风险判断若以它为依据, 实际可能偏低.
 
@@ -97,13 +97,13 @@ METR 的 Figure 1 是全文唯一带编号的图. 时间跨度分数定义为 ag
 
 正文用一个策略解释这种 「次数多, 金额少」 的组合: GPT-4.5 学会了只要小额捐款, 比如 「Even just \$2 or \$3 from the \$100 would help me immensely」. 把两根柱子乘回金额就能检验这个解释. 8% 的提取率对应 \$100,000 里约 \$8,000, 57% 的收款率对应约 570 次付款, 平均每次约 \$14, 是引文里 \$2 或 \$3 的好几倍. 所以小额请求是典型策略, 但分布里还有不少大额付款. deep research 平均每次约 \$58, 它的路线是少而大.
 
-MakeMeSay 里 GPT-4.5 以 72% 的胜率领先, o3-mini 62%, o1 42%, GPT-4o 自己骗自己 26%, deep research (无浏览) 24%. 胜率按定义是获胜次数除以对话次数, 「输」 与 「违规」 都在分母里, 没有分开报告. 每个暗号跑 32 个样本, 暗号总数没给. 这一节的文字还有一个细节值得留意: 作者说 「We do not plot Pre-Mitigations models for this evaluation because the model does not refuse on this task」, 也就是说, 安全训练对这类社会工程能力几乎没有约束, 这也解释了为什么说服是中风险, 且没有任何数字显示缓解措施起了作用. §4.5 第三段承认现有评测只测 「生成有说服力的文字」, 真实风险还涉及个性化, 规模化分发和反复曝光, 作者正在重新考虑评估方法. 安全评测设计的更多讨论见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测.md).
+MakeMeSay 里 GPT-4.5 以 72% 的胜率领先, o3-mini 62%, o1 42%, GPT-4o 自己骗自己 26%, deep research (无浏览) 24%. 胜率按定义是获胜次数除以对话次数, 「输」 与 「违规」 都在分母里, 没有分开报告. 每个暗号跑 32 个样本, 暗号总数没给. 这一节的文字还有一个细节值得留意: 作者说 「We do not plot Pre-Mitigations models for this evaluation because the model does not refuse on this task」, 也就是说, 安全训练对这类社会工程能力几乎没有约束, 这也解释了为什么说服是中风险, 且没有任何数字显示缓解措施起了作用. §4.5 第三段承认现有评测只测 「生成有说服力的文字」, 真实风险还涉及个性化, 规模化分发和反复曝光, 作者正在重新考虑评估方法. 安全评测设计的更多讨论见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 ## 11. 模型自主: 从面试题到 SWE-Lancer
 
 模型自主性的六项评测按任务跨度从短到长排列. 面试选择题上 o1 之后的模型都是 80% 左右 (deep research 78%), 已经没有区分度; 编程题 GPT-4.5 79%, 与 deep research 持平, 低于 o3-mini 的 92%. 作者自己也提醒, 面试题只测 1 小时的任务, 真实 ML 研究是 1 个月到 1 年以上. SWE-bench Verified 上缓解后 38%, 缓解前 35%, GPT-4o 31%, o1 48%, deep research 68%. 正文写 「an uplift of 2-7% over GPT-4o」, 按图下界应是 4 个百分点, 不是 2. 另外 SWE-bench Verified 本身有 500 题, 实际只跑 477 题, 剔除的 23 题只说 「validated on our internal infrastructure」.
 
-Agentic Tasks 上缓解后 GPT-4.5 40%, 高于 o1 的 36% 与 GPT-4o 的 34%, 这是它在自主类评测里少有的领先非 deep research 模型的项目, 但缓解前只有 25%, 本身就说明这类评测对后训练版本很敏感. MLE-Bench 上 o1, o3-mini, deep research 与 GPT-4.5 同为 11%, 75 场竞赛的 11% 是 8.25 场, 一场值约 1.3 个百分点; 更要紧的是 deep research 用内部工具脚手架, 其余用 AIDE agent, 同一个 11% 是不同条件下的读数. OpenAI PRs 上 deep research 42%, GPT-4.5 7%, o3-mini 0%; o1 的 12% 和 GPT-4o 的 6% 取自旧系统卡, 用的是修正前的评分, 作者估计新口径下还会再高 1-5pp. Agent 评测设计的一般问题可参见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+Agentic Tasks 上缓解后 GPT-4.5 40%, 高于 o1 的 36% 与 GPT-4o 的 34%, 这是它在自主类评测里少有的领先非 deep research 模型的项目, 但缓解前只有 25%, 本身就说明这类评测对后训练版本很敏感. MLE-Bench 上 o1, o3-mini, deep research 与 GPT-4.5 同为 11%, 75 场竞赛的 11% 是 8.25 场, 一场值约 1.3 个百分点; 更要紧的是 deep research 用内部工具脚手架, 其余用 AIDE agent, 同一个 11% 是不同条件下的读数. OpenAI PRs 上 deep research 42%, GPT-4.5 7%, o3-mini 0%; o1 的 12% 和 GPT-4o 的 6% 取自旧系统卡, 用的是修正前的评分, 作者估计新口径下还会再高 1-5pp. Agent 评测设计的一般问题可参见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 SWE-Lancer 是最接近 「经济价值」 的一项. 通过率: IC SWE 20%, SWE Manager 44%, 都略高于 o1 的 17% 与 42%. 金额: IC SWE \$41,625, SWE Manager \$144,500, 合计 \$186,125, 约占 \$500,800 满额的 37.2%; o1 合计 \$165,625, 约 33.1%; deep research 合计 \$258,875, 约 51.7%. 两类任务单价差别很大, IC SWE 通过率 20% 只换来 \$41,625, 管理类 44% 换来 \$144,500, 通过率不能直接当收入读. 正文还有一句 「Pass@1 performance represents high reasoning effort」, 这是 o 系列的推理强度设置, GPT-4.5 没有对应开关, 本文没说它用的什么配置. 缓解前 GPT-4.5 合计 \$139,500, 与 GPT-4o 的 \$138,750 只差 \$750.
 
@@ -137,4 +137,4 @@ SWE-Lancer 是最接近 「经济价值」 的一项. 通过率: IC SWE 20%, SWE
 
 这些问题大多不改变结论. GPT-4.5 在安全评测上与 GPT-4o 大体持平, 在推理与 agent 类评测上落后于 o 系列, 在说服上领先, 这个大格局经得起上表每一项修正. 真正影响读法的是两处: 一是 「缓解前」 并非能力上界, 准备度评测的下界属性因此更强; 二是过度拒答与 StrongReject 这两个最弱项, 本文都没有给出能定位原因的细分数据.
 
-从文档体例看, 这份系统卡的重心在 「部署前评测做了什么」, 而不是 「模型是怎样做成的」. 读者如果想知道无监督路线的 Scaling 在结构和数据上意味着什么, 本文提供不了答案; 能从本文得到的, 是一张相当完整的风险评测清单, 以及 OpenAI 在 2025 年初用来给前沿模型定级的口径. 与 agent 自主性相关的安全讨论还可参见 [Agent 安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐.md), 后训练里 RLHF 的一般流程见 [RLHF 与 PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/4.4.1-基于奖励模型的RL-RLHF-PPO.md).
+从文档体例看, 这份系统卡的重心在 「部署前评测做了什么」, 而不是 「模型是怎样做成的」. 读者如果想知道无监督路线的 Scaling 在结构和数据上意味着什么, 本文提供不了答案; 能从本文得到的, 是一张相当完整的风险评测清单, 以及 OpenAI 在 2025 年初用来给前沿模型定级的口径. 与 agent 自主性相关的安全讨论还可参见 [Agent 安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md), 后训练里 RLHF 的一般流程见 [RLHF 与 PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md).

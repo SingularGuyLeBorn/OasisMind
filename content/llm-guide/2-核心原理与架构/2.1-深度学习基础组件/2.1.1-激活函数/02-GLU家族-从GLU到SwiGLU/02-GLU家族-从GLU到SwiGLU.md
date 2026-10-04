@@ -126,7 +126,7 @@ $W$ 那一路叫门控支路 (实现里常叫 gate), $V$ 那一路叫线性支�
 
 ### 2.3 与注意力里的门控对照
 
-同样「Sigmoid 门乘线性值」的结构也出现在注意力里. Kimi K3 的 KDA 层输出是 $W_o\bigl[\sigma(W_gx_t)\odot\mathrm{RMSNorm}(\tilde o_t)\bigr]$ (K3 报告式 (6)), 对注意力的输出做逐坐标门控, 形式上就是 GLU, 门的上界是 1. FFN 里流行的却是门无上界的 SwiGLU. 两处的结构差别是: 注意力里被门控的输出先过 RMSNorm, 门的上界是 1; FFN 里两路都是原始投影, SwiGLU 的门没有上界, 也贡献幅度, 因此才有第 3 节的二次型. 注意力输出门控见 [06 Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md).
+同样「Sigmoid 门乘线性值」的结构也出现在注意力里. Kimi K3 的 KDA 层输出是 $W_o\bigl[\sigma(W_gx_t)\odot\mathrm{RMSNorm}(\tilde o_t)\bigr]$ (K3 报告式 (6)), 对注意力的输出做逐坐标门控, 形式上就是 GLU, 门的上界是 1. FFN 里流行的却是门无上界的 SwiGLU. 两处的结构差别是: 注意力里被门控的输出先过 RMSNorm, 门的上界是 1; FFN 里两路都是原始投影, SwiGLU 的门没有上界, 也贡献幅度, 因此才有第 3 节的二次型. 注意力输出门控见 [06 Gated Attention](../../../2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md).
 
 ---
 

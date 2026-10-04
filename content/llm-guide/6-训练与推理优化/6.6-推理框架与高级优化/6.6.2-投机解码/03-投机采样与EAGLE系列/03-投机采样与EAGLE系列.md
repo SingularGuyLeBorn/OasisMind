@@ -1,0 +1,119 @@
+---
+title: "03 · EAGLE 系列:特征草稿与动态树"
+published: true
+tags: ["投机采样", "Speculative Decoding", "EAGLE", "EAGLE-2", "EAGLE-3", "草稿模型", "推理加速"]
+excerpt: "EAGLE 用目标模型的隐藏特征训练轻量草稿器,再用候选树让目标模型一次验证多条路径."
+---
+# 03 · EAGLE 系列:特征草稿与动态树
+
+EAGLE 用目标模型的隐藏特征训练轻量草稿器,再用候选树让目标模型一次验证多条路径.EAGLE-2 改进候选树的动态扩展,EAGLE-3 改为直接预测 token,并用多层特征融合与 training-time test 缓解多步草稿中的分布偏移.共同的投机采样证明见 [6.6.2.5](../07-投机采样数学证明与参考实现/07-投机采样数学证明与参考实现.md),并行块草稿见 [DFlash](../04-DFlash原理解析/04-DFlash原理解析.md),[DFlash2](../05-DFlash2原理解析/05-DFlash2原理解析.md) 与 [DSpark](../06-DSpark原理解析/06-DSpark原理解析.md).
+
+## 1. 共同底座:投机采样如何保持目标分布
+
+设目标模型所需的采样分布为 $p$,草稿器实际提议分布为 $q$.先从 $q$ 抽取候选 $y$,再独立抽取 $u\sim\mathrm{Uniform}(0,1)$:
+
+$$
+y\sim q,\qquad
+y\text{ 被接受}\iff
+u\leq\min\left(1,\frac{p(y)}{q(y)}\right).
+$$
+
+目标模型在验证阶段计算 $p$,接受随机性来自独立 uniform;目标模型另抽 token 与草稿 token 是否相同不参与判定.若首次拒绝,从
+
+$$
+p_{\mathrm{corr}}(v)
+=\frac{[p(v)-q(v)]_+}{\sum_z[p(z)-q(z)]_+}
+$$
+
+抽取替代 token,并丢弃草稿后缀.只要验证使用准确的 $p$ 与实际 $q$,并保持首次拒绝截断等标准条件,输出就恢复为 $p$.
+
+EAGLE 系列改变的是草稿器和候选树,不改变这套严格验证规则;目标模型权重保持不变.
+
+## 2. EAGLE:特征自回归与移位 token
+
+EAGLE 的"feature"指目标模型 LM head 之前的高层隐藏特征.论文观察到:
+
+1. 在特征空间做自回归,比让同等轻量模块直接预测 token 更容易;
+2. 只用当前特征预测下一特征存在不确定性,因为下一特征取决于本轮实际采样出了哪个 token.
+
+因此 EAGLE 同时输入特征序列和向前移一位的 token 序列.已采样 token 的 embedding 显式告诉草稿器走了哪条随机分支.简化表示为:
+
+$$
+\hat f_{t+1}=\operatorname{DraftLM}(f_{\le t},e_{\le t+1}),
+\qquad
+\hat p_{t+2}=\operatorname{LMHead}(\hat f_{t+1}).
+$$
+
+草稿器复用目标模型的 embedding 与 LM head,训练一个由 FC 与单层 Transformer decoder 构成的自回归头.目标模型本身不微调.EAGLE 的训练目标同时包含下一特征的 Smooth L1 回归和 token 分布分类损失:
+
+$$
+\mathcal L=\mathcal L_{\mathrm{reg}}+w_{\mathrm{cls}}\mathcal L_{\mathrm{cls}},
+\qquad w_{\mathrm{cls}}=0.1\ \text{(论文配置)}.
+$$
+
+EAGLE-1 已经使用草稿树.多轮草稿前向先生成静态树,再由 tree attention 让目标模型一次验证树中多条路径.不同分支只能看到共同祖先,不能互相注意;被接受节点的 token 与特征进入下一轮草稿.
+
+**论文报告**:原始 EAGLE 在 LLaMA2-Chat 70B 上报告 2.7×–3.5× 延迟加速;具体结果依赖模型,任务,温度,硬件和候选树,不能作为其他环境的固定倍数.
+
+## 3. EAGLE-2:上下文感知动态草稿树
+
+静态树假定某个树位置的价值相对固定,但真实接受率同时依赖上下文.EAGLE-2 发现草稿概率与经验接受率有较强相关性,于是用路径置信度乘积近似某节点最终存活的概率:
+
+$$
+V_i
+=\prod_{t_j\in\operatorname{Path}(\mathrm{root},t_i)}p_j^{\mathrm{accept}}
+\approx
+\prod_{t_j\in\operatorname{Path}(\mathrm{root},t_i)}c_j.
+$$
+
+EAGLE-2 不修改 EAGLE 草稿器的训练方式,也不修改目标验证规则,主要改变树的构造:
+
+1. **扩展**:每层只扩展当前层中全局 $V_i$ 最高的节点,把草稿计算用在更可能存活的分支;
+2. **重排与剪枝**:扩展完成后,对所有已生成节点按 $V_i$ 重排,选出价值最高的固定数量节点;父节点价值不低于子节点,因此结果仍是一棵连通树;
+3. **验证**:展平所选节点并构造树注意力 mask,由目标模型并行验证.
+
+EAGLE-2 的"动态"指根据当前上下文改变树的扩展,重排与剪枝;这一机制从 EAGLE-2 开始使用,并继续兼容 EAGLE-3.
+
+**论文报告**:EAGLE-2 在论文测试的模型和六类任务上报告 3.05×–4.26× 加速,相对 EAGLE-1 快 20%–40%.这些是论文实验范围内的结果.
+
+## 4. EAGLE-3:直接预测 token 与训练时测试
+
+原始 EAGLE/EAGLE-2 用 $\mathcal L_{\mathrm{fea}}+\mathcal L_{\mathrm{token}}$ 约束草稿输出拟合目标高层特征.特征回归帮助早期模型跨多步工作,却也限制表达能力:最终目标是 token,精确拟合某个高层特征是额外约束;直接删除该约束后,第二步又会遇到训练/推理输入分布偏移.
+
+EAGLE-3 的两项核心改动是:
+
+- **直接 token 预测**:去掉特征回归约束,草稿中间向量只需服务于 token 分布;
+- **多层特征融合**:融合目标模型低,中,高层特征,而非只依赖 LM head 前的高层特征.
+
+Training-time test 指训练时把第一步草稿输出继续喂给后续草稿步,让模型在训练图中经历部署时的多步自回归输入;注意力 mask 也按相应依赖构造.这样模型既见到目标融合特征,也见到自己的预测状态,减轻第二步以后的分布偏移.
+
+推理时,目标模型提供低/中/高层特征,拼接后经 FC 压回隐藏维度得到融合特征 $g$.草稿核心仍是轻量 Transformer decoder:第一步使用目标融合特征,后续尚未验证的位置使用上一草稿输出,并继续拼入已采样 token embedding.输出经过目标 LM head 得到草稿分布.
+
+EAGLE-3 与 EAGLE-2 动态草稿树兼容;它没有用"上下文分类器"重新发明树宽和树深.
+
+![EAGLE-3 训练时测试:多层特征融合与草稿输出回灌](../images/fig-eagle3-ttt.png)
+
+## 5. 三代方法的边界
+
+| 方法 | 草稿学习重点 | 草稿树 | 目标模型 | 论文结果应如何读 |
+|---|---|---|---|---|
+| EAGLE | 高层特征自回归 + 移位 token,特征/分类联合损失 | 静态树 + tree attention | 冻结 | LLaMA2-Chat 70B 报告 2.7×–3.5× 延迟加速 |
+| EAGLE-2 | 沿用 EAGLE 草稿器 | 按路径置信度动态扩展,重排和剪枝 | 冻结 | 报告 3.05×–4.26×,比 EAGLE-1 快 20%–40% |
+| EAGLE-3 | 去特征回归,直接 token 预测;多层特征融合;training-time test | 兼容 EAGLE-2 动态树 | 冻结 | 报告约 3.0×–6.5×,比 EAGLE-2 快 20%–40% |
+
+**延迟与吞吐采用不同测量口径.** EAGLE-3 论文还报告:在单张 H100,LLaMA-Instruct 3.1 8B,MT-Bench,SGLang v0.4.4,链长 3 且不使用树结构的设置中,batch 64 吞吐为无投机基线的 1.38×.该数值只对应这一实验配置.
+
+## 6. 树验证,缓存与模型接口
+
+树注意力让一个节点只能读取原始前缀和自己的祖先路径.目标模型验证后,KV cache 只提交最终接受路径;其他分支的临时状态随树节点一起释放.采样模式还要保存实际产生候选的草稿分布,使接受率和 correction 使用同一条概率路径.
+
+EAGLE 需要取得目标模型内部特征,token embedding 与 LM head,因此只有文本生成接口的黑盒服务不能直接充当目标模型.草稿 checkpoint 也与目标模型及其特征接口绑定;冻结目标权重并不意味着无需训练草稿器.
+
+候选树越大,单次验证覆盖的路径越多,同时增加草稿计算,树注意力和临时 KV.batch 增大后,推理可能从访存受限转向计算受限,继续增加候选未必提高吞吐.比较不同实现时,需要固定模型 revision,任务,采样参数,树预算,batch,硬件,框架与 kernel.
+
+## 7. 原始来源
+
+1. Yuhui Li et al., [EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty](https://arxiv.org/abs/2401.15077).特征自回归,移位 token,静态树,训练与验证机制.
+2. Yuhui Li et al., [EAGLE-2: Faster Inference of Language Models with Dynamic Draft Trees](https://arxiv.org/abs/2406.16858).路径价值,动态扩展,重排与剪枝.
+3. Yuhui Li et al., [EAGLE-3: Scaling up Inference Acceleration of Large Language Models via Training-Time Test](https://arxiv.org/abs/2503.01840).直接 token 预测,多层特征融合,training-time test 与实验结果.
+4. [SafeAILab/EAGLE](https://github.com/SafeAILab/EAGLE).官方实现与模型资源.

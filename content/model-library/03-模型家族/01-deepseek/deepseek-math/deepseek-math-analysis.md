@@ -79,7 +79,7 @@ $$
 \mathcal{J}_{\mathrm{GRPO}}(\theta)=\mathbb{E}\,\frac{1}{G}\sum_{i=1}^{G}\frac{1}{|o_i|}\sum_{t=1}^{|o_i|}\left\{\min\left[\rho_{i,t}\hat A_{i,t},\ \mathrm{clip}(\rho_{i,t},1-\varepsilon,1+\varepsilon)\hat A_{i,t}\right]-\beta\,\mathbb{D}_{KL}[\pi_\theta\|\pi_{ref}]\right\},\qquad \rho_{i,t}=\frac{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}{\pi_{\theta_{old}}(o_{i,t}\mid q,o_{i,<t})}.
 $$
 
-和 PPO 的式 1 逐项比: 裁剪项的形状一样, 都是逐 token 的概率比; 差别在 $\hat A_{i,t}$ 从哪来, 以及 KL 放在哪. PPO 的优势由 GAE 从价值网络算出, 每个 token 的奖励是 $r_t=r_\varphi(q,o_{\le t})-\beta\log\frac{\pi_\theta(o_t\mid q,o_{<t})}{\pi_{ref}(o_t\mid q,o_{<t})}$(式 2), KL 被扣进奖励, 再经 GAE 传到前面的 token. GRPO 把 KL 从奖励里拿出来, 作为独立的一项直接加进损失, 用 Schulman 的无偏估计 $\frac{\pi_{ref}}{\pi_\theta}-\log\frac{\pi_{ref}}{\pi_\theta}-1$ 保证非负(式 4). 外层先按 $1/|o_i|$ 在每条输出内平均, 再按 $1/G$ 在组内平均. 报告给的另一个理由是结构上的: 奖励模型本来就是在同题多答的比较数据上训的, 组内相对优势正好和它的比较性质对上. GRPO 与 PPO 的完整对照见 [02-GRPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 和 [04-PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md).
+和 PPO 的式 1 逐项比: 裁剪项的形状一样, 都是逐 token 的概率比; 差别在 $\hat A_{i,t}$ 从哪来, 以及 KL 放在哪. PPO 的优势由 GAE 从价值网络算出, 每个 token 的奖励是 $r_t=r_\varphi(q,o_{\le t})-\beta\log\frac{\pi_\theta(o_t\mid q,o_{<t})}{\pi_{ref}(o_t\mid q,o_{<t})}$(式 2), KL 被扣进奖励, 再经 GAE 传到前面的 token. GRPO 把 KL 从奖励里拿出来, 作为独立的一项直接加进损失, 用 Schulman 的无偏估计 $\frac{\pi_{ref}}{\pi_\theta}-\log\frac{\pi_{ref}}{\pi_\theta}-1$ 保证非负(式 4). 外层先按 $1/|o_i|$ 在每条输出内平均, 再按 $1/G$ 在组内平均. 报告给的另一个理由是结构上的: 奖励模型本来就是在同题多答的比较数据上训的, 组内相对优势正好和它的比较性质对上. GRPO 与 PPO 的完整对照见 [02-GRPO](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 和 [04-PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/04-PPO/04-PPO.md).
 
 优势有两种定义. **结果监督**: 奖励模型给整条输出一个分, 组内减均值再除以标准差, 这个值广播到该输出的所有 token, $\hat A_{i,t}=\tilde r_i=\frac{r_i-\mathrm{mean}(\mathbf r)}{\mathrm{std}(\mathbf r)}$. **过程监督**: 过程奖励模型在每一步结尾打分, 第 $i$ 条输出第 $j$ 步结尾的 token 位置记作 $\mathrm{index}(j)$, 奖励 $r_i^{\mathrm{index}(j)}$; 归一化在整组所有输出的所有步上一起做,
 
@@ -91,7 +91,7 @@ $$
 
 附录 A.1.6 把 GRPO 的梯度系数写了出来(式 21): $\hat A_{i,t}+\beta\left(\frac{\pi_{ref}}{\pi_\theta}-1\right)$. 第二项就是 KL 约束的作用方式: 某个 token 在当前策略下的概率高于参考模型时, 这一项为负, 把它往回拉; 低于参考模型时为正, 往上推. 和 PPO 把 KL 扣进每个 token 的奖励(式 2)再经 GAE 传播相比, 这种写法让 KL 只作用于当前 token, 不会混进优势估计. 过程监督的优势则有一个副作用: token 的优势等于其后所有步骤归一化奖励之和, 而归一化是在整组所有步骤上做的, 步骤越多的回答, 靠前 token 的优势绝对值越大. 报告没有讨论这一点, 因为 1024 token 上限下步骤数差别有限. 算法 1 里每批样本还可以做 $\mu$ 次 GRPO 内循环更新, 主实验取的是 1 次.
 
-主实验的超参: 策略学习率 1e-6, KL 系数 0.04, 每题采 64 条, 最长 1024 token, batch 1024, 每轮探索后策略只更新一次. 每轮只更新一次意味着新旧策略几乎相同, clip 基本不起作用, 目标函数退化成带组内基线的策略梯度. 社区后来对 GRPO 的两个归一化提过批评. 一是每条输出按 $1/|o_i|$ 做长度平均, 错误的长回答每个 token 受到的惩罚被摊薄, 被认为和 R1 类训练里回答越来越长有关; 二是除以组内标准差, 会让全对或全错附近的题, 也就是很简单和很难的题, 获得更大权重. Dr. GRPO 把两项都去掉, 后续又有工作指出去掉长度归一化会带来另一种长度偏差, 两者无法同时兼顾. 这些讨论见 [03-DrGRPO-去标准差](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md). DeepSeekMath 原文的回答很短, 1024 token 上限下长度偏差不明显, 这些问题要到长 CoT 时代才暴露.
+主实验的超参: 策略学习率 1e-6, KL 系数 0.04, 每题采 64 条, 最长 1024 token, batch 1024, 每轮探索后策略只更新一次. 每轮只更新一次意味着新旧策略几乎相同, clip 基本不起作用, 目标函数退化成带组内基线的策略梯度. 社区后来对 GRPO 的两个归一化提过批评. 一是每条输出按 $1/|o_i|$ 做长度平均, 错误的长回答每个 token 受到的惩罚被摊薄, 被认为和 R1 类训练里回答越来越长有关; 二是除以组内标准差, 会让全对或全错附近的题, 也就是很简单和很难的题, 获得更大权重. Dr. GRPO 把两项都去掉, 后续又有工作指出去掉长度归一化会带来另一种长度偏差, 两者无法同时兼顾. 这些讨论见 [03-DrGRPO-去标准差](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/02-DrGRPO-去标准差/02-DrGRPO-去标准差.md). DeepSeekMath 原文的回答很短, 1024 token 上限下长度偏差不明显, 这些问题要到长 CoT 时代才暴露.
 
 ### 3.2. RL 到底改变了什么: 窄题集, 域外上涨, Maj@K 与 Pass@K
 

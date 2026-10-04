@@ -37,7 +37,7 @@ excerpt: "这页只做一件事: 帮开发者在当前几款 Claude 模型里挑
 
 表里和思考相关的有两行. 「Thinking」 一行, Fable 5.1 与 Opus 5.5 写 「Adaptive (always on)」, Sonnet 5 只写 「Adaptive」; 按字面理解, 前两款的思考不能关, Sonnet 5 可以. 「Default effort」 一行, Fable 5.1 和 Sonnet 5 是 high, Opus 5.5 是 medium. effort 决定推理时多花多少算力, 属于 **TestingTime** 的调节, 和部署前把模型做大的 Scaling 是两回事.
 
-这两行是后训练的产物, 不是推理框架的开关. 公开资料能对上的一条线是: Claude 3.7 Sonnet 的系统卡写明 extended thinking 是用强化学习训出来的, 用户可以给一个思考 token 预算; 之后的代际把 「思考多少」 交给模型自己判断, 再用 effort 给一个粗粒度的偏好. 表里第四列的 「Exten」 与前三列的 「Adaptive」 正好对应这两代. 用 RL 训长推理的一般方法见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md), 可验证奖励的边界见 [RLVR的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.7-RLVR的局限性与探索边界/4.4.7-RLVR的局限性与探索边界.md). Claude 具体用的是 PPO 还是别的算法, 奖励怎么构造, 本页没有, Anthropic 的公开资料也没有.
+这两行是后训练的产物, 不是推理框架的开关. 公开资料能对上的一条线是: Claude 3.7 Sonnet 的系统卡写明 extended thinking 是用强化学习训出来的, 用户可以给一个思考 token 预算; 之后的代际把 「思考多少」 交给模型自己判断, 再用 effort 给一个粗粒度的偏好. 表里第四列的 「Exten」 与前三列的 「Adaptive」 正好对应这两代. 用 RL 训长推理的一般方法见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md), 可验证奖励的边界见 [RLVR的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md). Claude 具体用的是 PPO 还是别的算法, 奖励怎么构造, 本页没有, Anthropic 的公开资料也没有.
 
 两行放在一起还有一处不太直观: Opus 5.5 默认 effort 比 Sonnet 5 低一档, 延迟却标 Moderate, 慢于 Sonnet 5 的 Fast. 说明延迟档位主要由模型本身决定, 默认 effort 低并不会让大模型快过小模型. 页面只有 「Comparative latency」 四个定性档, 没说比较条件, 没列 effort 共有几档, 调高一档 token 用量涨多少也没有交代.
 
@@ -45,7 +45,7 @@ excerpt: "这页只做一件事: 帮开发者在当前几款 Claude 模型里挑
 
 ### 3.1. 上下文, 输出上限与两种知识截止
 
-前三款的上下文窗口都是 1M tokens, 最大输出都是 128K tokens; 第四列按 PDF 是 200K 和 64K. Models API 会为每个模型返回 `max_input_tokens`, `max_tokens` 和一个 capabilities 对象, 适合在代码里动态读取上限, 不必把表里的数字写进配置. 表的行名叫 「Context window」, API 字段叫 「max_input_tokens」, 两者是否同一个范围, 输出是否占用 1M 的额度, 页面都没说明. 1M 上下文靠什么位置编码或注意力方案撑起来, 本页没有; 通用技术路线见 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/2.5-长上下文与外推技术.md).
+前三款的上下文窗口都是 1M tokens, 最大输出都是 128K tokens; 第四列按 PDF 是 200K 和 64K. Models API 会为每个模型返回 `max_input_tokens`, `max_tokens` 和一个 capabilities 对象, 适合在代码里动态读取上限, 不必把表里的数字写进配置. 表的行名叫 「Context window」, API 字段叫 「max_input_tokens」, 两者是否同一个范围, 输出是否占用 1M 的额度, 页面都没说明. 1M 上下文靠什么位置编码或注意力方案撑起来, 本页没有; 通用技术路线见 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md).
 
 知识截止一行, Fable 5.1 和 Opus 5.5 都是 Jun 2026, Sonnet 5 是 Jan 2026, 早五个月. 页面区分了两种截止: 表里的是 「Reliable knowledge cutoff」, 训练数据截止要去 Transparency Hub 查. 这是数据侧唯一露出的信息. 按 Anthropic 历代系统卡的写法, 训练数据截止指预训练语料抓取到哪一天, 可靠知识截止指模型对哪一天之前的事实答得稳; 后者通常早于前者, 因为临近截止的网页数量少, 模型见得不够多 (依系统卡惯例推断). 本页只给了后者. 语料来源和清洗方法见各代系统卡, 通用背景见 [预训练数据](../../../../llm-guide/3-预训练/3.1-预训练数据/3.1-预训练数据.md).
 
@@ -53,7 +53,7 @@ excerpt: "这页只做一件事: 帮开发者在当前几款 Claude 模型里挑
 
 页面的建议分三步: 不确定时先用 Opus 5.5; 任务是高难度推理或长程 agent 工作时用 Fable 5.1; 在 Opus 5.5 上调高 effort 评测仍不达标, 也换 Fable 5.1. 第三条隐含一个顺序: 先在同一模型上加 TestingTime, 不够再换更贵的模型. Opus 5.5 默认是 medium, 往上还有空间, 这个顺序才讲得通. 换到 Fable 5.1 意味着单价涨 2.5 倍, 延迟从 Moderate 变成 Slower.
 
-判据是 「your evals」, 也就是用户自己的评测. 本页不提供任何公开分数, Anthropic 把基准分和安全评测都放在各模型的系统卡里, 本库同级目录收有其中大部分. 怎样搭一个可信的评测, 可参考 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md); agent 类任务的评测口径见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md). 页面另外两条建议也落在用户侧: 回答偏长就用 prompt 引导长度, 通用写法见 [Prompt工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md); 工具调用列为所有模型的共同能力, 背景见 [工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP.md).
+判据是 「your evals」, 也就是用户自己的评测. 本页不提供任何公开分数, Anthropic 把基准分和安全评测都放在各模型的系统卡里, 本库同级目录收有其中大部分. 怎样搭一个可信的评测, 可参考 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md); agent 类任务的评测口径见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md). 页面另外两条建议也落在用户侧: 回答偏长就用 prompt 引导长度, 通用写法见 [Prompt工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md); 工具调用列为所有模型的共同能力, 背景见 [工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP/13.1.3-工具使用与MCP.md).
 
 ### 3.3. 材料边界
 

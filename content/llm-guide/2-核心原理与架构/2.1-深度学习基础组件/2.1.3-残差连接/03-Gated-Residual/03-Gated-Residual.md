@@ -6,7 +6,7 @@ excerpt: "Qwen3.8-Flash-Next 把残差加宽到 4 条分支, 读用逐元素 sig
 ---
 # Gated Residual: 四分支残差上的逐元素读门
 
-> 相关阅读: [01 HC 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) · [Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) · 整机 [Qwen3.8-Flash-Next](../../../../../model-library/03-模型家族/03-qwen/qwen3-8-flash-next/qwen3-8-flash-next-bi.md)
+> 相关阅读: [01 HC 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) · [Gated Attention](../../../2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md) · 整机 [Qwen3.8-Flash-Next](../../../../../model-library/03-模型家族/03-qwen/qwen3-8-flash-next/qwen3-8-flash-next-bi.md)
 
 Gated Residual (GR) 出自 Qwen Team 2026-08-26 的技术报告 *On the Design of Qwen3.8-Next Architecture* §2.2, 公式对应报告式 (21)-(37), 表对应 Table 5-6. 它处理的问题是: 残差流加宽成几条分支之后, 每个块该怎样从这些分支里读, 又怎样写回去.
 
@@ -205,7 +205,7 @@ Muon 只用于真正作为二维线性映射的权重: 注意力的 q, k, v, o, 
 - **输出门**: 注意力输出门和 GDN 的 z 投影, 消融里 AdamW 与 Muon 持平或略好.
 - **向量参数**: GDN 的 decay 和 beta 投影每个头只出一个标量, 正交化没有意义, 排除在 Muon 之外.
 
-融合参数 (Megatron-LM 中拼在一起的 qkv, SwiGLU 的 fc1, GDN 输入投影) 语义上是沿输出维拼接的独立线性映射, 直接对拼接矩阵正交化会把不相关子块的奇异方向混在一起, 缩放系数也按错误的形状计算. 报告先把梯度拆开, 对每个子矩阵单独做 Newton-Schulz, 再拼回原布局. qkv 和 GDN 输入按头拆, loss 和下游都有改善; fc1 拆成 gate 和 up 两半, loss 基本不变, 下游略升. Newton-Schulz 迭代取 8 步, 比更少步数正交化更准, 压力测试中梯度范数尖峰的幅度和频率都更低. 细节见 [MuonClip 与 Polar Express](../../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md).
+融合参数 (Megatron-LM 中拼在一起的 qkv, SwiGLU 的 fc1, GDN 输入投影) 语义上是沿输出维拼接的独立线性映射, 直接对拼接矩阵正交化会把不相关子块的奇异方向混在一起, 缩放系数也按错误的形状计算. 报告先把梯度拆开, 对每个子矩阵单独做 Newton-Schulz, 再拼回原布局. qkv 和 GDN 输入按头拆, loss 和下游都有改善; fc1 拆成 gate 和 up 两半, loss 基本不变, 下游略升. Newton-Schulz 迭代取 8 步, 比更少步数正交化更准, 压力测试中梯度范数尖峰的幅度和频率都更低. 细节见 [MuonClip 与 Polar Express](../../../../6-训练与推理优化/6.5-优化器/6.5.2-Muon/05-MuonClip与PolarExpress/05-MuonClip与PolarExpress.md).
 
 ### 4.3 压力测试
 
@@ -221,7 +221,7 @@ Muon 只用于真正作为二维线性映射的权重: 注意力的 q, k, v, o, 
 
 ### 5.1 与 AttnRes 的对照
 
-AttnRes (Kimi Team 2026) 用对前面各层输出的 softmax 注意力决定每个子层读什么. Full AttnRes 对前面每个子层的输出做注意力; Block AttnRes 把 $L$ 个子层按 $S$ 个一组求和成一个表示, 再对这些表示做注意力. 机制见 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md).
+AttnRes (Kimi Team 2026) 用对前面各层输出的 softmax 注意力决定每个子层读什么. Full AttnRes 对前面每个子层的输出做注意力; Block AttnRes 把 $L$ 个子层按 $S$ 个一组求和成一个表示, 再对这些表示做注意力. 机制见 [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md).
 
 Table 6 在 28 层模型 ($L=56$ 个子层) 上比较, 有无 GatedNorm (GN) 各一列, 指标是最终训练 loss:
 
@@ -251,7 +251,7 @@ GR 本身含门, 只有带 GN 一列. Full AttnRes 是该家族最强的设定, 
 
 每个选项都有容易判断错的地方. 稀疏读在预训练 loss 和基准上几乎无损, 后训练后才暴露问题; 数据依赖的读写则相反, loss 只降 0.002, 下游涨近 2 分, 所以只看预训练指标两头都会判断错. 写的粒度细化到逐通道几乎没有收益, 只增加参数. 去掉门做高学习率训练时, 4.3 节的学习率阶梯显示网络靠增大激活离群值完成重缩放, spike 率随学习率增长得比离群值快得多. 加宽本身的代价在访存: 残差状态是单流的 $n_r$ 倍, decode 受访存限制, 要删 $H_{\mathrm{res}}$, 用 FP8 存储并融核, 三者一起才能压住这部分成本.
 
-还有几个名字相近, 但作用位置不同的机制. [Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) 的 $G_1$ 门在注意力子层内部, 是 SDPA 输出上的逐头 sigmoid, 残差仍是普通的 $x+F(x)$; Qwen3.8 同时保留了注意力输出门和 GR. [SiTU](../../2.1.1-激活函数/01-SiTU-GLU/01-SiTU-GLU.md) 和 SwiGLU 是 FFN 里的激活, 不涉及残差拓扑. [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 对历史层输出做注意力, 不维护固定条数的分支, 对照见第 5.1 节. [CSA / HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/05-CSA-HCA-混合压缩注意力/05-CSA-HCA-混合压缩注意力.md) 是压缩注意力, 缩写里的 HC 与 Hyper-Connections 无关.
+还有几个名字相近, 但作用位置不同的机制. [Gated Attention](../../../2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md) 的 $G_1$ 门在注意力子层内部, 是 SDPA 输出上的逐头 sigmoid, 残差仍是普通的 $x+F(x)$; Qwen3.8 同时保留了注意力输出门和 GR. [SiTU](../../2.1.1-激活函数/01-SiTU-GLU/01-SiTU-GLU.md) 和 SwiGLU 是 FFN 里的激活, 不涉及残差拓扑. [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) 对历史层输出做注意力, 不维护固定条数的分支, 对照见第 5.1 节. [CSA / HCA](../../../2.4-稀疏注意力/04-CSA-HCA-混合压缩注意力/04-CSA-HCA-混合压缩注意力.md) 是压缩注意力, 缩写里的 HC 与 Hyper-Connections 无关.
 
 ## 参考文献
 

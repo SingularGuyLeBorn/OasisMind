@@ -19,7 +19,7 @@ Doubao-1.5-pro 是一份产品页, 不是论文, 但它交代的技术面比很�
 
 ### 2.1. 稀疏度 Scaling Law 与 7 倍性能杠杆
 
-页 2 给出的设计出发点是训练和推理效率: 用稀疏 MoE, 预训练阶段只激活较少参数, 性能即可超过 Llama3.1-405B 这类超大稠密模型. 团队称通过 **「稀疏度 Scaling Law」** 的研究确定了性能与效率平衡的稀疏比例, 再根据 MoE Scaling Law 确定小激活量即可达到一流性能. 这两条定律页上都没有公式和拟合参数, 稀疏比例也没有数值. MoE 的一般机制见 [MoE 模型](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md), Scaling Laws 的一般形式见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md).
+页 2 给出的设计出发点是训练和推理效率: 用稀疏 MoE, 预训练阶段只激活较少参数, 性能即可超过 Llama3.1-405B 这类超大稠密模型. 团队称通过 **「稀疏度 Scaling Law」** 的研究确定了性能与效率平衡的稀疏比例, 再根据 MoE Scaling Law 确定小激活量即可达到一流性能. 这两条定律页上都没有公式和拟合参数, 稀疏比例也没有数值. MoE 的一般机制见 [MoE 模型](../../../../llm-guide/2-核心原理与架构/2.6-MoE/2.6-MoE.md), Scaling Laws 的一般形式见 [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md).
 
 页 3 定义了 **「性能杠杆」**: 表现相同的稠密模型总参数量, 除以 MoE 模型的激活参数量. 例子是 IBM Granite, 800M 激活的 MoE 接近 2B 总参数的稠密模型, 杠杆约 2.5 倍. 页面说业界普遍 「不到 3 倍」, Doubao 在完全相同的部分训练数据 (9T token) 下, 用激活参数仅为稠密模型 1/7 的 MoE 超过了稠密模型, 杠杆到 7 倍. 对照条件做得干净: 同数据, 同 token 数. 缺的是绝对量: 稠密模型多大, MoE 激活多少, 页面都没印, 7 倍成了页内无法复算的比值. 判定标准也不对称, Granite 写的是 「接近」, Doubao 写的是 「超过」, 两者用 loss 对齐还是下游基准对齐, 页面没说.
 
@@ -39,13 +39,13 @@ loss 曲线前 1.4T MoE 略高, 也有常见的解释. MoE 训练初期路由还
 
 页 5 的**四象限**图把推理拆成 Prefill/Decode 两个阶段, Attention/FFN 两类算子. 图上标注: Prefill Attention 「计算瓶颈, 多 chunk 不平衡」; Prefill FFN 「强计算瓶颈」; Decode Attention 「单 batch 内多 query 不平衡, 需适配 SpecDecode」; Decode FFN 「强访存瓶颈」. 页 4 称 Doubao-1.5-pro 是 「高度稀疏的 MoE」, 四个象限计算与访存特征差异大, 所以用异构硬件加不同低精度策略分别处理, 目标是兼顾 TTFT 和 TPOT, 提升吞吐, 降低总成本.
 
-Prefill 一侧放在计算访存比高的设备上, 做 **Chunk-PP Prefill Serving**, 线上 Tensor Core 利用率接近 60%. Attention 用 MMA/WGMMA 指令扩展开源 FlashAttention 的 8-bit 实现, 配合 **Per N tokens Per Sequence 量化**; 再通过建模不同长度分片的耗时加动态**跨 Query Batching**, 消除卡间负载不均. FFN 用 **W4A8** 量化降低稀疏专家的访存, 靠跨 Query Batching 给 FFN 更多输入, MFU 提到 0.8. 两个数口径不同, 60% 是 Prefill 系统的 Tensor Core 利用率, 0.8 是 FFN 阶段的 MFU. 图上 Prefill FFN 标计算瓶颈, 正文却说 W4A8 降访存, 两者能对上: 稀疏专家各自分到的 token 少, 不 batching 时会退回访存受限, 跨 Query Batching 才把它推回计算一侧. FlashAttention 见 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/02-FlashAttention-IO感知分块/02-FlashAttention-IO感知分块.md), 权重量化见 [权重量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1.1-权重量化.md).
+Prefill 一侧放在计算访存比高的设备上, 做 **Chunk-PP Prefill Serving**, 线上 Tensor Core 利用率接近 60%. Attention 用 MMA/WGMMA 指令扩展开源 FlashAttention 的 8-bit 实现, 配合 **Per N tokens Per Sequence 量化**; 再通过建模不同长度分片的耗时加动态**跨 Query Batching**, 消除卡间负载不均. FFN 用 **W4A8** 量化降低稀疏专家的访存, 靠跨 Query Batching 给 FFN 更多输入, MFU 提到 0.8. 两个数口径不同, 60% 是 Prefill 系统的 Tensor Core 利用率, 0.8 是 FFN 阶段的 MFU. 图上 Prefill FFN 标计算瓶颈, 正文却说 W4A8 降访存, 两者能对上: 稀疏专家各自分到的 token 少, 不 batching 时会退回访存受限, 跨 Query Batching 才把它推回计算一侧. FlashAttention 见 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-注意力的高效实现/03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md), 权重量化见 [权重量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/01-权重量化/01-权重量化.md).
 
 Decode 一侧放在计算访存比较低的设备上换 ROI, 配合低成本 Sampling 和 Speculative Decoding 降 TPOT. Attention 用 TP 部署, 用启发式搜索和激进的长句拆分处理同一 batch 内 KV 长度差异大的情况, 并保证随机采样中 KV Cache 只访问一次; FFN 保持 W4A8, 用 EP 部署. 系统层还有三项: 定制 RPC Backend 用零拷贝, 多流并行优化 PD 分离下的 KV Cache 传输; Prefill 与 Decode 集群按角色各自做 HPA 弹性扩容; GPU 算第 N 步时 CPU 提前发射第 N+1 步 kernel. 页 6 又补了自研服务器集群支持低成本芯片, 定制网卡与自研协议优化小包通信, 算子层计算通信 Overlap. 整节没有端到端延迟, 吞吐或单价.
 
 几个名词背后的机制可以按常见做法补全 (以下是读法, 页上只有名词). Chunk-PP 利用的是页面自己点出的 「单向注意力」: 长 prompt 切成若干块, 每块只看自己和前面的块, 于是可以像流水线一样, 第一块在后面的设备上算的同时, 第二块已经进入前面的设备. 问题是越靠后的块要看的前文越长, attention 耗时越大, 各块不等长, 流水线就会空转, 这就是图上 「多 chunk 不平衡」 的意思, 页面给的对策是先建模不同长度分片的耗时, 再把多个请求的块动态拼进同一批. Per N tokens Per Sequence 量化字面上是每条序列里每 N 个 token 共用一个缩放系数, 比整张量一个系数更细, 能吸收不同位置之间的数值差异, 页面说它让 8-bit attention 在不同架构 GPU 上 「无损」, 但没给精度对照.
 
-Decode FFN 为什么是 「强访存瓶颈」, 可以粗算 (硬件参数取 H800 一类 GPU 的量级, 页面没说用什么卡). 一个专家的 FFN 在 decode 时对 b 个 token 做矩阵乘, 计算量约 2·b·d·d_ff, 权重按 4-bit 存, 读取量约 0.5·d·d_ff 字节, 计算访存比约 4b FLOPs/字节. 这类 GPU 的 8-bit 算力与显存带宽之比在 300 FLOPs/字节量级, 要打满算力, 每个专家一次要分到约 75 个 token. 高度稀疏的 MoE 里, 每个 token 只去少数几个专家, 一个 batch 摊到每个专家头上往往只有个位数到十几个 token, 离 75 差得远. 所以 decode 侧的办法都是在 「少读」 和 「多攒」: W4A8 让权重读取量比 8-bit 再减半, EP 把各卡上去同一专家的 token 汇到一处, 跨 Query Batching 在 prefill 侧做的也是同一件事. 投机解码见 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用.md), PD 分离见 [SGLang 与 Prefill-Decode 分离](../../../../llm-guide/9-AI工程化与基础设施/9.4-推理服务框架/9.4.1-SGLang与Prefill-Decode分离.md).
+Decode FFN 为什么是 「强访存瓶颈」, 可以粗算 (硬件参数取 H800 一类 GPU 的量级, 页面没说用什么卡). 一个专家的 FFN 在 decode 时对 b 个 token 做矩阵乘, 计算量约 2·b·d·d_ff, 权重按 4-bit 存, 读取量约 0.5·d·d_ff 字节, 计算访存比约 4b FLOPs/字节. 这类 GPU 的 8-bit 算力与显存带宽之比在 300 FLOPs/字节量级, 要打满算力, 每个专家一次要分到约 75 个 token. 高度稀疏的 MoE 里, 每个 token 只去少数几个专家, 一个 batch 摊到每个专家头上往往只有个位数到十几个 token, 离 75 差得远. 所以 decode 侧的办法都是在 「少读」 和 「多攒」: W4A8 让权重读取量比 8-bit 再减半, EP 把各卡上去同一专家的 token 汇到一处, 跨 Query Batching 在 prefill 侧做的也是同一件事. 投机解码见 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用/01-投机解码原理与应用.md), PD 分离见 [SGLang 与 Prefill-Decode 分离](../../../../llm-guide/9-AI工程化与基础设施/9.4-推理服务框架/9.4.1-SGLang与Prefill-Decode分离/9.4.1-SGLang与Prefill-Decode分离.md).
 
 ## 3. 数据与后训练
 
@@ -57,9 +57,9 @@ Decode FFN 为什么是 「强访存瓶颈」, 可以粗算 (硬件参数取 H80
 
 ### 3.2. 后训练: Seed1.5-Thinking 的零件在这里已经露面
 
-SFT 阶段有一套算法驱动的训练数据优化系统, 覆盖多样性优化与 「精确人题匹配」 (字面上是把题目派给合适的标注员, 页面没解释), 结合模型自演进 (Self-evolve) 提升标注的多样性和难度. Reward Model 部分列了一条数据生产 pipeline: prompt 分布优化, response 筛选, 多轮迭代, active learning; 融合同等规模的合成与挖掘数据来规避数据冲突和 pattern hacking; 多阶段 RM 训练; 基于梯度筛选和迭代过滤, 用 25% 的数据达到近似全量的效果; 把 Verifier 和 Reward Model 融合成**统一的 Reward 框架**; 提出**生成式 RM**, 称在 OOD 泛化和 reward hacking 防御上显著提升. 奖励模型路线的背景见 [基于奖励模型的 RL](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/4.4.1-基于奖励模型的RL-RLHF-PPO.md).
+SFT 阶段有一套算法驱动的训练数据优化系统, 覆盖多样性优化与 「精确人题匹配」 (字面上是把题目派给合适的标注员, 页面没解释), 结合模型自演进 (Self-evolve) 提升标注的多样性和难度. Reward Model 部分列了一条数据生产 pipeline: prompt 分布优化, response 筛选, 多轮迭代, active learning; 融合同等规模的合成与挖掘数据来规避数据冲突和 pattern hacking; 多阶段 RM 训练; 基于梯度筛选和迭代过滤, 用 25% 的数据达到近似全量的效果; 把 Verifier 和 Reward Model 融合成**统一的 Reward 框架**; 提出**生成式 RM**, 称在 OOD 泛化和 reward hacking 防御上显著提升. 奖励模型路线的背景见 [基于奖励模型的 RL](../../../../llm-guide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md).
 
-RL 阶段基于 veRL 打造多角色训练推理一体框架, 兼容不同类型的数据和奖励方式; 用自适应数据分布调节机制解决多任务训练冲突; 攻克价值函数训练难点, 实现 token-wise 稳定建模, 收敛速度提升 4 倍, 高难度任务性能提升超过 10 个绝对点; 用对比学习方法缓解 reward hacking. 把这段和 Seed1.5-Thinking 对照, 几乎每一条都能找到后者的对应: 统一 Reward 框架对应 「验证器 + 成对生成式奖励」, 自适应数据分布对应 Online Data Distribution Adaptation, 价值函数的 token-wise 稳定建模对应 Value-Pretraining 与 Decoupled-GAE 这条 actor-critic 路线, veRL 是 HybridFlow 的开源实现. **产品页只给结论, 三个月后的报告才给出机制**. PPO 本身见 [PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md).
+RL 阶段基于 veRL 打造多角色训练推理一体框架, 兼容不同类型的数据和奖励方式; 用自适应数据分布调节机制解决多任务训练冲突; 攻克价值函数训练难点, 实现 token-wise 稳定建模, 收敛速度提升 4 倍, 高难度任务性能提升超过 10 个绝对点; 用对比学习方法缓解 reward hacking. 把这段和 Seed1.5-Thinking 对照, 几乎每一条都能找到后者的对应: 统一 Reward 框架对应 「验证器 + 成对生成式奖励」, 自适应数据分布对应 Online Data Distribution Adaptation, 价值函数的 token-wise 稳定建模对应 Value-Pretraining 与 Decoupled-GAE 这条 actor-critic 路线, veRL 是 HybridFlow 的开源实现. **产品页只给结论, 三个月后的报告才给出机制**. PPO 本身见 [PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/04-PPO/04-PPO.md).
 
 这一节的三个数字都没有对照基线. 25% 相对哪个全量集, 「近似」 差多少; 4 倍相对哪种价值函数训练方式; 10 个绝对点落在哪些任务, 页面都没有交代. 页面还说借鉴字节在推荐, 搜索, 广告上的 AB Test 经验, 用豆包的大规模用户反馈建了从问题发现, 数据挖掘, 人机结合标注到快速迭代的闭环, 即**用户数据飞轮**. 这些是流程描述, 页内没有可核对的实验. 社区讲这一代时常把 「用户反馈闭环」 当作字节的特殊资源, 这一点页面确实写了, 但它贡献了多少分, 页面没有.
 
@@ -71,7 +71,7 @@ RL 阶段基于 veRL 打造多角色训练推理一体框架, 兼容不同类型
 
 ### 4.1. 视觉: Doubao ViT, 原生动态分辨率和偏 RL 的后训练
 
-页 6 说相比上一版本, 视觉在多模态数据合成, 动态分辨率, 多模态对齐, 混合训练上都有提升, 并把视觉理解融进同一模型. 页 7 的小节标题是 「高效的原生动态分辨率训练」: 支持任意分辨率和极端长宽比的输入, 称文档识别和细粒度识别提升明显. 自研 **Doubao ViT** 正文写 「仅凭 2.4B 规模便在综合评分上取得 SOTA, 超越 7 倍于自身规模的模型」; 页 8 表格的参数一格却印成 24B. 按 2.4B 算, EVA-CLIP-18B 的 17.5B 约是它的 7.3 倍, 与正文吻合, 所以**表格那一格是漏了小数点**. 视觉编码器的一般做法见 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/01-CLIP与视觉编码器.md), 高分辨率输入的难点见 [高分辨率 VLM 的技术挑战](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.4-高分辨率VLM的技术挑战.md).
+页 6 说相比上一版本, 视觉在多模态数据合成, 动态分辨率, 多模态对齐, 混合训练上都有提升, 并把视觉理解融进同一模型. 页 7 的小节标题是 「高效的原生动态分辨率训练」: 支持任意分辨率和极端长宽比的输入, 称文档识别和细粒度识别提升明显. 自研 **Doubao ViT** 正文写 「仅凭 2.4B 规模便在综合评分上取得 SOTA, 超越 7 倍于自身规模的模型」; 页 8 表格的参数一格却印成 24B. 按 2.4B 算, EVA-CLIP-18B 的 17.5B 约是它的 7.3 倍, 与正文吻合, 所以**表格那一格是漏了小数点**. 视觉编码器的一般做法见 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/01-CLIP与视觉编码器/01-CLIP与视觉编码器.md), 高分辨率输入的难点见 [高分辨率 VLM 的技术挑战](../../../../llm-guide/8-多模态/8.2-视觉语言模型/05-高分辨率VLM的技术挑战/05-高分辨率VLM的技术挑战.md).
 
 ViT 表内 6 个分类任务里, Doubao ViT 在 ImageNet-V2 (78.5), ImageNet-A (87.8), ObjectNet (82.5) 三项第一, ImageNet-1K 84.3 与 DFN5B-CLIP-H/14+ 打平, ImageNet-R 和 ImageNet-S 各低 0.3 和 0.1; AVG 83.9 比 EVA-CLIP-18B 的 83.6 高 0.3. **SOTA 成立, 领先很窄**. 训练侧的信息有三条: 针对动态分辨率的前向, 反向负载优化让整体训练吞吐提升 60% 以上; VLM 各阶段混入一定比例的纯文本数据并动态调学习率, 比例未给; 后训练把绝大部分算力和数据工作放在 RL 阶段, 按 prompt 类型建不同偏好标准, 并构造去除长度偏好的 RM 训练集, 让回复准确而简洁.
 
@@ -91,7 +91,7 @@ ViT 表内 6 个分类任务里, Doubao ViT 在 ImageNet-V2 (78.5), ImageNet-A (
 
 页 2 的表有 7 列模型, 14 行基准. 逐行数下来, Doubao-1.5-pro 严格第一的有 6 行: MMLU_PRO (80.1), McEval (70.2), FullStackBench (65.1), DROP (93.0), CMMLU (90.9), C-Eval (91.8); GPQA 65.0 与 Claude-3.5-Sonnet-latest 并列第一; 其余 7 行不是第一: MMLU 由 GPT4o-0806 的 88.7 领先, Math 与 OlympiadBench 由 Gemini-exp-1205 领先 (89.7, 64.7), MBPP+ 由 DeepseekV3 的 79.3 领先, BBH 与 SysBench 由 Gemini 和 Claude 领先, IFEVal 由 Gemini 的 89.8 领先. 两个中文基准领先最多, CMMLU 高第二名 6.6, C-Eval 高 5.3; 最大的落后是 OlympiadBench, 比 Gemini-exp-1205 低 4.9.
 
-表下注有两句要逐字读. 一是 「其它模型的评测指标来自官方评测结果, 官方评测结果中不含的部分来自内部评测平台结果」, 同一行里可能混着对手官方数和字节内部平台数, 表中不做区分; 所以 MMLU 差 0.1, BBH 差 0.1, IFEVal 差 0.3 这类格子只能读成持平. 二是 GPT4o-0806 「在语言模型公开评测指标中显著优于 GPT4o 其它版本」, 视觉表另选 GPT4o-1120, 两张表里的 GPT4o 是两个模型. 表里还有离群格: GPT4o-0806 的 DROP 只有 79.8, 其余六列在 87.4 到 93.0; Qwen2.5 的 SysBench 47.2 比倒数第二低 11.7. 这种突然掉一截, 可能是能力短板, 也可能是 shot 数或评分脚本不同. 评测口径的一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md).
+表下注有两句要逐字读. 一是 「其它模型的评测指标来自官方评测结果, 官方评测结果中不含的部分来自内部评测平台结果」, 同一行里可能混着对手官方数和字节内部平台数, 表中不做区分; 所以 MMLU 差 0.1, BBH 差 0.1, IFEVal 差 0.3 这类格子只能读成持平. 二是 GPT4o-0806 「在语言模型公开评测指标中显著优于 GPT4o 其它版本」, 视觉表另选 GPT4o-1120, 两张表里的 GPT4o 是两个模型. 表里还有离群格: GPT4o-0806 的 DROP 只有 79.8, 其余六列在 87.4 到 93.0; Qwen2.5 的 SysBench 47.2 比倒数第二低 11.7. 这种突然掉一截, 可能是能力短板, 也可能是 shot 数或评分脚本不同. 评测口径的一般讨论见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 柱图与表放在一起看, 能读出一条贯穿预训练到产品的走向. 柱图里 MoE 最强的是 GPQA 和 MMLU_PRO, 表里这两行也是 Doubao 的强项; 柱图里 MoE 最弱的是 MATH, 表里 Math 与 OlympiadBench 正是输给 Gemini 的两行. **知识类偏强, 数学偏弱, 从 9T 中间结果一直延续到最终产品**. 这也给三个月后 Seed1.5-Thinking 让 STEM 训练题里数学占八成以上, 提供了一个合理的动机, 虽然那份报告自己没有这样解释.
 
@@ -99,11 +99,11 @@ ViT 表内 6 个分类任务里, Doubao ViT 在 ImageNet-V2 (78.5), ImageNet-A (
 
 页 7 的视觉表有 6 列模型, 18 行基准, Doubao-1.5-pro 严格第一的有 10 行: MMMU(val) 73.8, MMMU-Pro 59.3, MathVision 48.6, OlympiadBench 48.5, MathVista 78.8, InfoVQA 88.0, DocVQA 96.7, RealWorldQA 78.9, Blink 68.4, CountBench 89.6. 领先最多的是数学推理组, MathVision 比 Gemini-2-flash 高 7.3. 没拿第一的 8 行分布有规律: InternVL-2.5-78B 在 MMStar, MMBench-en, MMBench-cn 三行领先, 这是通用视觉问答的主体; Qwen2-VL-72B 在 TextVQA 和 EgoSchema 领先; Gemini-2-flash 在 Video-MME 领先; Claude3.5-Sonnet 在 ChartQA 领先.
 
-OlympiadBench 在文本表和视觉表各出现一次, 结论相反: 文本表里 59.8 输给 Gemini-exp-1205 的 64.7, 视觉表里 48.5 领先 Gemini-2-flash 的 43.6. 两张表对比的 Gemini 是两个模型, 视觉表用的应是带图题目, 页面没写各取哪个子集. 视频两行的评测依赖抽帧数和分辨率, 页面没有给设置, EgoSchema 一行还写着 「subest」, 应是 subset, 子集多大没写. VLM 评测的一般问题见 [VLM 的评测与基准](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.5-VLM的评测与基准.md).
+OlympiadBench 在文本表和视觉表各出现一次, 结论相反: 文本表里 59.8 输给 Gemini-exp-1205 的 64.7, 视觉表里 48.5 领先 Gemini-2-flash 的 43.6. 两张表对比的 Gemini 是两个模型, 视觉表用的应是带图题目, 页面没写各取哪个子集. 视频两行的评测依赖抽帧数和分辨率, 页面没有给设置, EgoSchema 一行还写着 「subest」, 应是 subset, 子集多大没写. VLM 评测的一般问题见 [VLM 的评测与基准](../../../../llm-guide/8-多模态/8.2-视觉语言模型/06-VLM的评测与基准/06-VLM的评测与基准.md).
 
 ### 5.3. 深度思考模式: AIME 图的两行
 
-页 10 说在不用其他模型数据的条件下, 通过 RL 算法突破和工程优化, 发挥 test time scaling 的算力优势, 完成 RL Scaling, 研发了深度思考模式. 按本库用词, 这是 TestingTime 一侧的投入. AIME 小图有两行: pass@1 上 Doubao-1.5-pro-AS1-Preview 70.0, O1-preview 44.6, O1 74.4, O1 第一; cons@k 上 Doubao 86.7 (cons@32), O1-preview 54.7 (cons@64), O1 83.3 (cons@64), Doubao 第一. 推理与思考能力的一般讨论见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
+页 10 说在不用其他模型数据的条件下, 通过 RL 算法突破和工程优化, 发挥 test time scaling 的算力优势, 完成 RL Scaling, 研发了深度思考模式. 按本库用词, 这是 TestingTime 一侧的投入. AIME 小图有两行: pass@1 上 Doubao-1.5-pro-AS1-Preview 70.0, O1-preview 44.6, O1 74.4, O1 第一; cons@k 上 Doubao 86.7 (cons@32), O1-preview 54.7 (cons@64), O1 83.3 (cons@64), Doubao 第一. 推理与思考能力的一般讨论见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 正文说 「在 AIME 上已经超过 O1-preview, O1」, **对 O1 只在 cons@k 一行成立**. 采样数不对等的方向要看清: Doubao 只投 32 票, O1 投 64 票, 这一点对 Doubao 不利, 所以投票一行的领先在采样数上没占便宜; 问题在单次作答的 pass@1 上 Doubao 低 4.4, 正文只挑了投票那一行. 图也没写 AIME 是哪一年. 有意思的是, 三个月后 Seed1.5-Thinking 报的 AIME 2024 恰好也是 86.7, 但那是 32 次的平均准确率, 这里是 32 票的多数投票, 两个同值的数口径不同, 不能看成同一次结果.
 

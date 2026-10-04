@@ -267,7 +267,7 @@ Qwen2-VL 的视觉编码器 patch 为 14, 之后用一个 MLP 把相邻 $2\times
 
 ### 4.4 MLA: 冲突在哪里
 
-多模态之外, RoPE 还和 MLA 有冲突. MLA (Multi-head Latent Attention) 的公式和矩阵吸收在 [2.2.2 多头注意力变体](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/2.2.2-多头注意力变体.md) 里讲. 这里只需要它的一个性质: MLA 只缓存每个 token 的低秩向量 $c_j^{KV}\in\mathbb{R}^{d_c}$, Key 由 $k_j^C=W^{UK}c_j^{KV}$ 恢复. 不带位置时, 内容部分的分数是
+多模态之外, RoPE 还和 MLA 有冲突. MLA (Multi-head Latent Attention) 的公式和矩阵吸收在 [2.2.2 多头注意力变体](../../../2.2-注意力机制/2.2.2-多头注意力变体/2.2.2-多头注意力变体.md) 里讲. 这里只需要它的一个性质: MLA 只缓存每个 token 的低秩向量 $c_j^{KV}\in\mathbb{R}^{d_c}$, Key 由 $k_j^C=W^{UK}c_j^{KV}$ 恢复. 不带位置时, 内容部分的分数是
 
 $$
 \big(q^C_t\big)^\top k^C_j=\big(W^{UQ}c^Q_t\big)^\top W^{UK}c^{KV}_j=\big(c^Q_t\big)^\top\underbrace{\big(W^{UQ}\big)^\top W^{UK}}_{\text{可预先合并}}c^{KV}_j \tag{15}

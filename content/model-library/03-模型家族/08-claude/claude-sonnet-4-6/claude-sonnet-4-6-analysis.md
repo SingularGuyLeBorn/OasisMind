@@ -13,7 +13,7 @@ excerpt: "系统卡日期是 2026 年 2 月 17 日, 3 月 6 日改了 BrowseComp
 
 系统卡日期是 2026 年 2 月 17 日, 3 月 6 日改了 BrowseComp. 部署标准是 **ASL-3**, 与 Sonnet 4.5 和 Opus 4.6 相同. 摘要说能力相对 Sonnet 4.5 有实质提升, 若干评测上接近或持平 Opus 4.6. 安全画像与 Opus 4.6 大体相当, 总体失对齐低, 有些指标上是迄今 Claude 里最好的. 「最好」 没有在摘要里给出名字和百分比, 所以不能从 ASL-3 推出来, 也不能用来代替安全总述.
 
-「接近」 要逐行看. OSWorld-Verified 72.5% 对 Opus 4.6 的 72.7%, 零售 τ2 91.7% 对 91.9%, 这两行像持平. SWE-bench Verified 79.6% 对 80.8%, 低 1.2, 而且 GPT-5.2 是 80.0%, 高于 Sonnet. ARC-AGI-2 58.3% 对 68.8%, 差 10.5 个百分点. Terminal-Bench 默认思考 59.1% 对 65.4%, 还略低于 Opus 4.5 的 59.8%. 评测口径见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md).
+「接近」 要逐行看. OSWorld-Verified 72.5% 对 Opus 4.6 的 72.7%, 零售 τ2 91.7% 对 91.9%, 这两行像持平. SWE-bench Verified 79.6% 对 80.8%, 低 1.2, 而且 GPT-5.2 是 80.0%, 高于 Sonnet. ARC-AGI-2 58.3% 对 68.8%, 差 10.5 个百分点. Terminal-Bench 默认思考 59.1% 对 65.4%, 还略低于 Opus 4.5 的 59.8%. 评测口径见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 这些格子共用一套采样设置. 模型有两种思考方式: extended thinking 让模型在任务上多推理一段; adaptive thinking 让模型按题目难度自己决定进不进, 进多久, 开发者用 effort 参数调这个倾向. 表 2.1.A 的默认是 10 次平均, adaptive thinking, max effort, 默认温度和 top_p, 上下文按评测而定但不超过 1M. 例外在脚注和正文里: ARC-AGI-2 印的是 max 的 58.3%, high effort 反而是 60.42%, 和 Opus 4.6 的 MCP-Atlas 同一种情形, effort 开到最大不保证分数最高. 多语言一节还量了思考本身: 在 GMMLU 上, adaptive thinking 加 max effort 比关掉思考高约 **7.0 个百分点**; 100 道 GMMLU 英文题的中位思考 token, Gemini 3 Pro 是 1,078, Sonnet 4.5 是 437, Sonnet 4.6 是 246, Opus 4.6 是 191, GPT-5.2 Pro 是 127. 准确率相近时, 花掉的推理算力可以差出几倍.
 

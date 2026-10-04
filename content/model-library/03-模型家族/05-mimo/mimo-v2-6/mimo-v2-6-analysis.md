@@ -39,7 +39,7 @@ Hybrid SWA 是 [MiMo-V2-Flash](../mimo-v2-flash/mimo-v2-flash-analysis.md) 定�
 
 §3.2 的 mid-training 用 agent-centric 数据混合, 轨迹覆盖 coding, general, visual, research, 再掺文本, 仓库级代码, 图像, 视频, 音频; 先在 256K 上花大部分算力, 末段扩到 1M. 这一步的作用是给 RL 准备探索空间: RL 只能强化策略已经偶尔能做对的行为, mid-training 把这类行为的覆盖面先铺开. 这与 MiMo-7B 用 pass@k 论证 「底座里有可挖的正解」 是同一个逻辑, 只是对象从数学题换成了多步 Agent 轨迹.
 
-优化器切换是这一节最有信息量的决定. 报告说初步实验里 mixed-task RL 的 batch 变大后 AdamW 的优化效率下降. Muon 的做法是对隐藏层权重的更新矩阵做正交化 (Newton–Schulz 迭代), 让更新在各个奇异方向上步长接近; 已有工作 (Liu et al. 2025, Shah et al. 2025) 发现它在超过 critical batch size 后仍保持更好的数据效率. critical batch size 指的是再加大 batch 已不能按比例减少所需步数的那个点. RL 每步 25K 条序列, 2.7B 到 3.7B token, 报告的判断是这已经超过 critical batch size, 所以换成在这个区间仍保持数据效率的优化器. **Muown** 在 Muon 上加显式 row-norm 控制, 缓解谱范数漂移; embedding, LM head 与 MoE router 仍用 AdamW. 背景见 [MuonClip 与 PolarExpress](../../../../llm-guide/6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md).
+优化器切换是这一节最有信息量的决定. 报告说初步实验里 mixed-task RL 的 batch 变大后 AdamW 的优化效率下降. Muon 的做法是对隐藏层权重的更新矩阵做正交化 (Newton–Schulz 迭代), 让更新在各个奇异方向上步长接近; 已有工作 (Liu et al. 2025, Shah et al. 2025) 发现它在超过 critical batch size 后仍保持更好的数据效率. critical batch size 指的是再加大 batch 已不能按比例减少所需步数的那个点. RL 每步 25K 条序列, 2.7B 到 3.7B token, 报告的判断是这已经超过 critical batch size, 所以换成在这个区间仍保持数据效率的优化器. **Muown** 在 Muon 上加显式 row-norm 控制, 缓解谱范数漂移; embedding, LM head 与 MoE router 仍用 AdamW. 背景见 [MuonClip 与 PolarExpress](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/05-MuonClip与PolarExpress/05-MuonClip与PolarExpress.md).
 
 报告引用 Qu et al. (2026) 的结论: 用 Adam 预训练的模型切到 Muon 训练可能出现优化器失配和性能下降. V2.6 称 mid-training 全程没有 loss spike, 但没有给切换前后的评测对比. 同期还开了 MXFP4 量化感知训练, 让专家权重适应 4 bit 计算; RL 阶段继承 SFT 检查点的 FP32 master weights 与 Muown 的 row state, 保证低精度训练不从头累积误差. 换优化器, 换精度都放在 mid-training 而不是 RL 里做, 是把风险前移: RL 一步几十亿 token, 出了问题代价远高于 mid-training.
 
@@ -145,7 +145,7 @@ $$
 
 ### 3.2. 投机解码从 MTP 换成 DFlash
 
-Flash 的 MTP 是逐层串行出草稿: 第 1 个 MTP 层猜下一个 token, 第 2 层接着猜再下一个, 草稿越长越慢, 接受率也逐层衰减. **DFlash** 用 block diffusion 的思路一次出一整块: drafter 5 层稠密 FFN, 条件在骨干隐特征与一个干净的 anchor 上, 一次预测 7 个后续 token, 块内双向注意力, 最多看 anchor 前 1024 个骨干位置. 草稿层全用 SWA 与 grouped queries, 窗扩到 1024. 按四件事说: 谁算, 是 5 层 drafter 为块内每个待猜位置出一个分布; 和谁算, 块内位置之间双向注意力, 再加 anchor 前最多 1024 个骨干隐特征; 缓存怎么变, drafter 只保留 1024 窗口的 KV, 主模型一次校验整块草稿, 接受的前缀写进主模型 KV, 被拒的位置丢弃; 丢了什么, 块内位置一次并行猜出, 后面的位置看不到前面位置最终被采样成什么, 只能靠双向注意力在块内协调. 下文 block-6 与 block-8 的接受长度几乎相同, 说明 block-8 多出的两个位置很少被接受. 投机解码的一般原理见 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用.md).
+Flash 的 MTP 是逐层串行出草稿: 第 1 个 MTP 层猜下一个 token, 第 2 层接着猜再下一个, 草稿越长越慢, 接受率也逐层衰减. **DFlash** 用 block diffusion 的思路一次出一整块: drafter 5 层稠密 FFN, 条件在骨干隐特征与一个干净的 anchor 上, 一次预测 7 个后续 token, 块内双向注意力, 最多看 anchor 前 1024 个骨干位置. 草稿层全用 SWA 与 grouped queries, 窗扩到 1024. 按四件事说: 谁算, 是 5 层 drafter 为块内每个待猜位置出一个分布; 和谁算, 块内位置之间双向注意力, 再加 anchor 前最多 1024 个骨干隐特征; 缓存怎么变, drafter 只保留 1024 窗口的 KV, 主模型一次校验整块草稿, 接受的前缀写进主模型 KV, 被拒的位置丢弃; 丢了什么, 块内位置一次并行猜出, 后面的位置看不到前面位置最终被采样成什么, 只能靠双向注意力在块内协调. 下文 block-6 与 block-8 的接受长度几乎相同, 说明 block-8 多出的两个位置很少被接受. 投机解码的一般原理见 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用/01-投机解码原理与应用.md).
 
 RL rollout 默认用 block-6 DFlash, 替代 SFT 阶段继承的 MTP-3. 架构一节的 「一次预测 7 个 token」 加上 anchor 是 8 个位置, 对应 block-8; block-6 按同样算法每步出 5 个草稿 (按块大小推算, 报告没有把两处连起来写). DFlash 先在 SFT 策略上训, 再用早期 RL rollout 日志重采样微调, 以贴合 RL 分布; 此时平均接受长度比 MTP 高 31.3%. 大 batch 下按端到端吞吐而非接受率选块大小: block-6 比 block-8 的全局平均吞吐高约 6%, 接受长度几乎不变, 因为更小的块减少了校验工作. FP8 草稿计算在长上下文负载上再带来约 10.3% 的单节点吞吐提升. 这些都是训练系统里的 rollout 加速, 延续了 Flash 「MTP 给 RL 提速」 的思路, 手段换了.
 

@@ -19,7 +19,7 @@ excerpt: "目录名叫 doubao, 但整页没有出现 「Doubao」 或 「豆包�
 
 ## 2. 头条: Seed2.1 的一句话和三个去向
 
-Seed2.1 只配了一句话: 「A next-generation agent for real-world productivity」, 即面向真实世界生产力的新一代智能体. **把模型直接称作 agent, 而不是 language model**, 和 Seed2.1 模型卡的主线一致: 那份卡以通用 Agent, 生产级编程, 前沿研究和 Seed for Seed 四章组织, 评测也大量绑定 harness 和产品环境. Agent 训练与评测的一般讨论见 [Agentic RL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md) 和 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+Seed2.1 只配了一句话: 「A next-generation agent for real-world productivity」, 即面向真实世界生产力的新一代智能体. **把模型直接称作 agent, 而不是 language model**, 和 Seed2.1 模型卡的主线一致: 那份卡以通用 Agent, 生产级编程, 前沿研究和 Seed for Seed 四章组织, 评测也大量绑定 harness 和产品环境. Agent 训练与评测的一般讨论见 [Agentic RL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md) 和 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 三个链接分工清楚. Learn more 进站内产品页 `/en/seed2_1`; Tech blog 进一篇 slug 为 `seed2-1-officially-released-advancing-ai-productivity` 的博客; Try now 跳到 BytePlus 的 playground, 参数是 `model=dola-seed-2-1-turbo-260628`. 这个 ID 带了标题没有的 `turbo` 后缀, 对应模型卡里的 Seed2.1 Turbo 一档; `260628` 形如 2026-06-28 的日期版本号, 这是按格式推断, 页面没有解释. 头条配图抓成一块纯黑矩形, 没有补充信息.
 

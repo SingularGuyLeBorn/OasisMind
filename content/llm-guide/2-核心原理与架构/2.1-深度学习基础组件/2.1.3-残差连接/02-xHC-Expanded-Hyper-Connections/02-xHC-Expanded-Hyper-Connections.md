@@ -6,7 +6,7 @@ excerpt: "mHC 把残差流从 4 条加到 16 条时收益很小, 成本却按 N 
 ---
 # xHC: 残差流从 4 条扩到 16 条
 
-> 相关阅读: [01 Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) · [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/05-CSA-HCA-混合压缩注意力/05-CSA-HCA-混合压缩注意力.md)
+> 相关阅读: [01 Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) · [CSA/HCA](../../../2.4-稀疏注意力/04-CSA-HCA-混合压缩注意力/04-CSA-HCA-混合压缩注意力.md)
 
 xHC 出自 Zhang 等人 2026 的 *xHC: Expanded Hyper-Connections* (arXiv:2607.14530), 作者来自上海交大与小红书 Dots Studio 等. 它建立在 mHC 之上, 处理的问题是残差流数 $N$ 能不能从 mHC 的 4 条继续加到 16 条.
 
@@ -302,7 +302,7 @@ $$
 
 这里 $C$ 指训练 FLOPs, $E$ 是估计的不可约 loss; 拟合方法是对 $\log_2(\mathcal{L}-E)$ 与 $\log_{10}C$ 做线性回归, 再换回上式. 四个规模的上下文都是 8192, 144 个路由专家, top-8. 拟合系数 (附录 Table 9): vanilla $A=109.303$, $\alpha=0.0936$; mHC $A=99.139$, $\alpha=0.0920$; xHC $A=97.703$, $\alpha=0.0919$. 三者指数几乎相同, 差别主要在系数 $A$. 最大算力点上 xHC 的 loss 比 mHC 低约 1.1%, 比 vanilla 低约 2.4%. 以最大的 vanilla 和 mHC 模型的 loss 为目标, 从 xHC 拟合曲线上读出所需算力, vanilla 要 xHC 的 1.50 倍, mHC 要 1.19 倍.
 
-上面的拟合都用 AdamW. 换成 Muon 后 xHC 的收益是否还在, 论文在 18B 上用 Table 3 检查, 平均下游: AdamW vanilla 40.6, Muon vanilla 43.1, Muon 加 xHC (去掉 Gram-Schmidt) 49.9. 换优化器本身带来 2.5 分; 在 Muon 基线上再加 xHC 多 6.8 分, AdamW 下 xHC 相对 vanilla 是 8.2 分 (上面的 Table 1). 两者的收益没有互相抵消, 大部分可以叠加. Muon 只用于骨干的注意力, MLP/MoE 和 MoE 路由投影, 动量 0.95, 5 次 Newton-Schulz 迭代, 更新 RMS 对齐 AdamW 的目标值 0.2; 嵌入, 归一化和全部 xHC 参数用 AdamW. xHC 的路由和映射投影把 $NC$ 或 $kC$ 维映射到 $N$, $k^2$, $kK_r$ 这样很小的输出维, 形状极不均衡, 不适合 Muon 的矩阵正交化. 去掉 Gram-Schmidt 的理由是 Muon 的 Newton-Schulz 正交化已经让更新谱更受控, 前向投影掉平行分量也会同时投影掉这些方向的梯度, 在 Muon 下显得多余且略有限制. 优化器本身见 [6.5.1 优化器综述](../../../../6-训练与推理优化/6.5-优化器/6.5.1-优化器综述：从SGD到AdamW/6.5.1-优化器综述：从SGD到AdamW.md).
+上面的拟合都用 AdamW. 换成 Muon 后 xHC 的收益是否还在, 论文在 18B 上用 Table 3 检查, 平均下游: AdamW vanilla 40.6, Muon vanilla 43.1, Muon 加 xHC (去掉 Gram-Schmidt) 49.9. 换优化器本身带来 2.5 分; 在 Muon 基线上再加 xHC 多 6.8 分, AdamW 下 xHC 相对 vanilla 是 8.2 分 (上面的 Table 1). 两者的收益没有互相抵消, 大部分可以叠加. Muon 只用于骨干的注意力, MLP/MoE 和 MoE 路由投影, 动量 0.95, 5 次 Newton-Schulz 迭代, 更新 RMS 对齐 AdamW 的目标值 0.2; 嵌入, 归一化和全部 xHC 参数用 AdamW. xHC 的路由和映射投影把 $NC$ 或 $kC$ 维映射到 $N$, $k^2$, $kK_r$ 这样很小的输出维, 形状极不均衡, 不适合 Muon 的矩阵正交化. 去掉 Gram-Schmidt 的理由是 Muon 的 Newton-Schulz 正交化已经让更新谱更受控, 前向投影掉平行分量也会同时投影掉这些方向的梯度, 在 Muon 下显得多余且略有限制. 优化器本身见 [6.5.1 优化器综述](../../../../6-训练与推理优化/6.5-优化器/6.5.1-优化器综述-从SGD到AdamW/6.5.1-优化器综述-从SGD到AdamW.md).
 
 ### 4.4 边界
 
@@ -325,7 +325,7 @@ xHC 的几个部件各有对应的失效. 结构上, 读也做稀疏时 (Table 2
 
 表的前两行是退化情形: $N=1$ 回到单流, $k=N$ 时稀疏更新退化为稠密. 中间三行就是 Table 2 从 mHC 走到 xHC 的路径, 先加宽, 再加时间增强, 最后改成稀疏更新, 每一步的 loss 变化见第 2.4 节. 最后两行只改访存, 不改模型能表达的东西.
 
-同族里, mHC 是 xHC 的直接前作, 多流加双随机混合, 主设定 $N=4$, 机制见 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). [Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) 也加宽到 4 条, 但读用逐元素门并删掉 $H_{\mathrm{res}}$, xHC 则在 $k$ 条激活流上保留 Sinkhorn 混合. [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 每层用注意力对历史层输出加权聚合, 不维护固定条数的流. 名字相近而无关的有两个: Tay 等人的 Sparse Sinkhorn Attention 同样用 Sinkhorn-Knopp, 作用对象是注意力块的排序; HCA / CSA 是压缩注意力, 缩写里的 HC 与 Hyper-Connections 无关. 论文代码在 <https://github.com/aHapBean/xHC>.
+同族里, mHC 是 xHC 的直接前作, 多流加双随机混合, 主设定 $N=4$, 机制见 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). [Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) 也加宽到 4 条, 但读用逐元素门并删掉 $H_{\mathrm{res}}$, xHC 则在 $k$ 条激活流上保留 Sinkhorn 混合. [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) 每层用注意力对历史层输出加权聚合, 不维护固定条数的流. 名字相近而无关的有两个: Tay 等人的 Sparse Sinkhorn Attention 同样用 Sinkhorn-Knopp, 作用对象是注意力块的排序; HCA / CSA 是压缩注意力, 缩写里的 HC 与 Hyper-Connections 无关. 论文代码在 <https://github.com/aHapBean/xHC>.
 
 ## 参考文献
 

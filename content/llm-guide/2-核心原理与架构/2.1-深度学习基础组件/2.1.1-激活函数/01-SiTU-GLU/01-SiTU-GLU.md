@@ -252,7 +252,7 @@ y=\sum_{j=1}^{N_s}E_j^{\text{shared}}(x)+W^{\uparrow}\,\mathrm{RMSNorm}(u)
 \tag{10}
 $$
 
-一个 token 的路径是: $x$ (7168 维) 经 $W^{\downarrow}$ 降到 $z$ (3584 维), 发给 16 个路由专家; 每个专家在 3072 维的中间层上做 SiTU-GLU, 再降回 3584 维; 16 个输出按路由权重 $p_i$ 加权求和得 $u$; $u$ 经 RMSNorm 和 $W^{\uparrow}$ 回到 7168 维. 另有 $N_s=2$ 个全宽度共享专家直接处理 $x$. 降维的 $\ell=3584$ 是 LatentMoE 的路由潜空间, 与 MLA 里压缩 KV 的潜向量 $c_t$ 无关 (MLA 见 [03 MLA](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md)).
+一个 token 的路径是: $x$ (7168 维) 经 $W^{\downarrow}$ 降到 $z$ (3584 维), 发给 16 个路由专家; 每个专家在 3072 维的中间层上做 SiTU-GLU, 再降回 3584 维; 16 个输出按路由权重 $p_i$ 加权求和得 $u$; $u$ 经 RMSNorm 和 $W^{\uparrow}$ 回到 7168 维. 另有 $N_s=2$ 个全宽度共享专家直接处理 $x$. 降维的 $\ell=3584$ 是 LatentMoE 的路由潜空间, 与 MLA 里压缩 KV 的潜向量 $c_t$ 无关 (MLA 见 [03 MLA](../../../2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md)).
 
 ### 4.2 按 Table 1 推算参数分布
 
@@ -296,7 +296,7 @@ Table 1 里与 MoE 层有关的几行:
 | RMSNorm | 加权求和之后, $W^{\uparrow}$ 之前 | 选中专家和路由权重不同导致 $u$ 的尺度波动 | 称持续改善验证损失和下游评测 |
 | Quantile Balancing | 路由偏置更新 | 896 个专家的负载不均 | 目标负载 $q=mk/n$, 一次前向求偏置 |
 
-SiTU-GLU 管坐标级的大值, RMSNorm 管向量级的尺度, 两者作用在不同的对象上. 原始 LatentMoE 直接对 $u$ 做上投影; K3 加了 RMSNorm, 理由是 $u$ 的尺度会随选中的专家和路由权重变化, 归一化后再与全宽共享支路相加. Quantile Balancing 和 SiTU-GLU 的关系在于专家的训练量. 报告指出, 路由不均衡既拖慢专家并行训练, 也会让部分专家训练不足. 它的做法是: 一个 batch 有 $m$ 个 token, $n$ 个专家, 每个 token 选 $k$ 个, 目标负载是每个专家 $q=mk/n$ 个 token; 路由时取带偏置分数的 Top-$(k+1)$, 第 $k+1$ 个分数作为该 token 的截止线 $\alpha_i$; 每个专家的新偏置取它在所有 token 上「分数减截止线」的 $1-k/n$ 分位数的相反数, 再减去所有专家偏置的均值 (K3 报告式 (14)). 报告的 Fig. 5 用 $m=8$, $n=4$, $k=1$ 演示, 负载从 $(4,3,1,0)$ 调到 $(2,2,2,2)$. 实际训练中分位数用直方图估计, 每个专家只需几百个 bin, 一次 all-reduce 即可. 负载均衡让每个专家都有足够的 token 去学, SiTU-GLU 则保证学到的激活不会失控, 两者处理同一层里的两种失效. Quantile Balancing 的细节见 [Stable LatentMoE 与 Quantile Balancing](../../../2.4-前沿架构与变体/2.4.1-混合专家模型MoE/04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md).
+SiTU-GLU 管坐标级的大值, RMSNorm 管向量级的尺度, 两者作用在不同的对象上. 原始 LatentMoE 直接对 $u$ 做上投影; K3 加了 RMSNorm, 理由是 $u$ 的尺度会随选中的专家和路由权重变化, 归一化后再与全宽共享支路相加. Quantile Balancing 和 SiTU-GLU 的关系在于专家的训练量. 报告指出, 路由不均衡既拖慢专家并行训练, 也会让部分专家训练不足. 它的做法是: 一个 batch 有 $m$ 个 token, $n$ 个专家, 每个 token 选 $k$ 个, 目标负载是每个专家 $q=mk/n$ 个 token; 路由时取带偏置分数的 Top-$(k+1)$, 第 $k+1$ 个分数作为该 token 的截止线 $\alpha_i$; 每个专家的新偏置取它在所有 token 上「分数减截止线」的 $1-k/n$ 分位数的相反数, 再减去所有专家偏置的均值 (K3 报告式 (14)). 报告的 Fig. 5 用 $m=8$, $n=4$, $k=1$ 演示, 负载从 $(4,3,1,0)$ 调到 $(2,2,2,2)$. 实际训练中分位数用直方图估计, 每个专家只需几百个 bin, 一次 all-reduce 即可. 负载均衡让每个专家都有足够的 token 去学, SiTU-GLU 则保证学到的激活不会失控, 两者处理同一层里的两种失效. Quantile Balancing 的细节见 [Stable LatentMoE 与 Quantile Balancing](../../../2.6-MoE/04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md).
 
 报告说 KDA, AttnRes, Stable LatentMoE 以及数据和训练配方合起来, 相对 K2 带来约 2.5 倍的缩放效率. 这个 2.5 倍是整套改动的结果, 报告没有拆出 SiTU-GLU 单独的贡献.
 
@@ -306,7 +306,7 @@ SiTU-GLU 管坐标级的大值, RMSNorm 管向量级的尺度, 两者作用在�
 
 ### 5.1 与相近做法的对照
 
-K3 的报告里还有两处与 SiTU-GLU 结构相似的门控: KDA 的输出门是 $\sigma(W_gx_t)\odot\mathrm{RMSNorm}(\tilde o_t)$ (K3 报告式 (6)), 形式上与注意力的输出门控相同 (见 [06 Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md)); 层间的门控残差见 [03 Gated Residual](../../2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md). 它们用 Sigmoid 做门, 输出天然有界, 和这里要解决的「门控因子无界」不是同一个问题.
+K3 的报告里还有两处与 SiTU-GLU 结构相似的门控: KDA 的输出门是 $\sigma(W_gx_t)\odot\mathrm{RMSNorm}(\tilde o_t)$ (K3 报告式 (6)), 形式上与注意力的输出门控相同 (见 [06 Gated Attention](../../../2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md)); 层间的门控残差见 [03 Gated Residual](../../2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md). 它们用 Sigmoid 做门, 输出天然有界, 和这里要解决的「门控因子无界」不是同一个问题.
 
 针对 SwiGLU 大值增长的几种做法:
 

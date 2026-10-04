@@ -13,7 +13,7 @@ excerpt: "这一代没有技术报告, 能看到的只有两张成绩单和一�
 
 这一代没有技术报告, 能看到的只有两张成绩单和一段接入说明. 数据怎么配, 架构有没有改, RL 用了什么奖励, 博客都没提. 剩下能做的是把评测协议和分数放在一起读: 哪些格子涨得多, 哪些格子没动, 脚注里评测条件怎么设, 从这些里倒推这次迭代把力气花在哪里. 结论先放在这里: 两个 SKU 的涨幅几乎都集中在 coding agent 一组, 知识类格子基本不动, 视觉格子小涨或持平.
 
-机制单独成篇. MoE: [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md). Gated DeltaNet 与线性注意力: [01-Kimi-Delta-Attention-KDA](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md). Gated Attention: [06-Gated-Attention](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md). GRPO: [02-GRPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md). 同族底座可对照 [qwen3-5-analysis](../qwen3-5/qwen3-5-analysis.md).
+机制单独成篇. MoE: [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md). Gated DeltaNet 与线性注意力: [01-Kimi-Delta-Attention-KDA](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md). Gated Attention: [06-Gated-Attention](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md). GRPO: [02-GRPO](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md). 同族底座可对照 [qwen3-5-analysis](../qwen3-5/qwen3-5-analysis.md).
 
 ## 1. 规格与 35B-A3B
 

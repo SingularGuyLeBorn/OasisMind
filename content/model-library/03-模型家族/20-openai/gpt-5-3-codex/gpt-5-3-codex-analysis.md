@@ -43,11 +43,11 @@ excerpt: "这页的主语是 Codex 这个产品, 模型只是 Codex 变强的原
 
 ## 4. 编程: 0.4 个点和 13.3 个点
 
-页外背景: SWE-Bench Pro 是 Scale AI 在 2025 年 9 月推出的软件工程评测, 意在替代被刷到饱和, 只有 Python 题的 SWE-bench Verified. 题目来自真实仓库, 覆盖多种语言, 公开集约 731 题, 另有私有题防污染. 本页用的是公开集. GPT-5.3-Codex 56.8%, GPT-5.2-Codex 56.4%, GPT-5.2 55.6%. 正文把 0.4 个点的领先称作 「state-of-the-art」, 按 731 题算约合 3 道题, 本页也没给多次运行的方差. 从 GPT-5.2 到 GPT-5.3-Codex, 两代模型在这把尺子上只差 1.2 个点, 基本是平的. Agent 式编程的一般形态见 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
+页外背景: SWE-Bench Pro 是 Scale AI 在 2025 年 9 月推出的软件工程评测, 意在替代被刷到饱和, 只有 Python 题的 SWE-bench Verified. 题目来自真实仓库, 覆盖多种语言, 公开集约 731 题, 另有私有题防污染. 本页用的是公开集. GPT-5.3-Codex 56.8%, GPT-5.2-Codex 56.4%, GPT-5.2 55.6%. 正文把 0.4 个点的领先称作 「state-of-the-art」, 按 731 题算约合 3 道题, 本页也没给多次运行的方差. 从 GPT-5.2 到 GPT-5.3-Codex, 两代模型在这把尺子上只差 1.2 个点, 基本是平的. Agent 式编程的一般形态见 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
 
 Terminal-Bench 2.0 完全是另一幅图景. 页外背景: Terminal-Bench 由 Stanford 和 Laude Institute 维护, 2.0 版在 2025 年 11 月发布, 约 89 个任务, 每个任务在容器化的终端里给一个目标 (编译, 配环境, 排查服务, 处理数据等), 按最终状态判分. GPT-5.3-Codex 77.3%, GPT-5.2-Codex 64.0%, GPT-5.2 62.2%. 高出 13.3 个点, 失败率从 36.0% 降到 22.7%, 相对降约 37%. 按 89 题算, 13.3 个点约合 12 道题.
 
-两把尺子的增幅差了一个数量级, 这是本页最值得想的地方. SWE-Bench Pro 考的是 「给一个 issue, 写出能过测试的补丁」, 核心是读代码和改代码; Terminal-Bench 考的是 「在一个陌生环境里多步操作到目标状态」, 核心是执行, 观察输出, 调整下一步. 如果 GPT-5.3-Codex 的提升主要来自长程工具使用和环境交互, 而不是写补丁本身, 两者的差距就说得通, 第 6 节的 OSWorld 大涨也指向同一个方向. 这是按分数形状做的推测, 页面没有按任务类型拆分的数据. Agent 评测的设计差异见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+两把尺子的增幅差了一个数量级, 这是本页最值得想的地方. SWE-Bench Pro 考的是 「给一个 issue, 写出能过测试的补丁」, 核心是读代码和改代码; Terminal-Bench 考的是 「在一个陌生环境里多步操作到目标状态」, 核心是执行, 观察输出, 调整下一步. 如果 GPT-5.3-Codex 的提升主要来自长程工具使用和环境交互, 而不是写补丁本身, 两者的差距就说得通, 第 6 节的 OSWorld 大涨也指向同一个方向. 这是按分数形状做的推测, 页面没有按任务类型拆分的数据. Agent 评测的设计差异见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 token 效率的说法只能从那张被盖住的曲线图估. 按颜色推断, GPT-5.3-Codex 的曲线约 6,000 token 时到约 51%, 约 10,000 token 时到约 53%; GPT-5.2-Codex 和 GPT-5.2 要到约 20,000 到 40,000 token 才到同样精度. 如果读数没错, 同精度下 token 少 3 到 6 倍 (按像素估算). 曲线在约 56% 以上被裁掉, 附录 56.8% 对应多少 token 看不到. 曲线的横轴是输出 token, 多半对应不同推理强度档位, 但图上没标档位.
 
@@ -55,9 +55,9 @@ SWE-Lancer IC Diamond 正文没提, 附录是 81.4%, 76.0%, 74.6%. 页外背景:
 
 ## 5. 长程任务: 游戏, 落地页和 compaction
 
-第 3 页的游戏演示是全文唯一讲 「长程」 的具体例子. 流程是: 给 GPT-5.3-Codex 一个 develop web game 技能, 再用预先选好的通用追加提示 (「fix the bug」, 「improve the game」) 反复催它, 人不给具体意见, 让它在 「millions of tokens」 的过程中自己迭代几天. 这种设置的难点在于模型得自己找 bug, 自己判断下一步改什么, 通用提示只起 「继续」 的作用. 相关的自我检查机制见 [反思与自我修正](../../../../llm-guide/13-Agent/13.2-Agent认知架构/13.2.3-反思与自我修正.md). 几天是几天, 多少 token, 催了多少轮, 用哪一档推理强度, 本页都没有, 所以这是演示, 不是评测.
+第 3 页的游戏演示是全文唯一讲 「长程」 的具体例子. 流程是: 给 GPT-5.3-Codex 一个 develop web game 技能, 再用预先选好的通用追加提示 (「fix the bug」, 「improve the game」) 反复催它, 人不给具体意见, 让它在 「millions of tokens」 的过程中自己迭代几天. 这种设置的难点在于模型得自己找 bug, 自己判断下一步改什么, 通用提示只起 「继续」 的作用. 相关的自我检查机制见 [反思与自我修正](../../../../llm-guide/13-Agent/13.2-Agent认知架构/13.2.3-反思与自我修正/13.2.3-反思与自我修正.md). 几天是几天, 多少 token, 催了多少轮, 用哪一档推理强度, 本页都没有, 所以这是演示, 不是评测.
 
-数百万 token 显然超出任何单个上下文窗口, 这就是正文把 「compaction」 列为三个原因之一的道理: 把前面的历史压缩成摘要, 腾出窗口继续干. 同库 GPT-5.2 公告里 compaction 是 Responses API 的一个 /compact 端点, 这里它被写成模型能力的组成部分. 模型是否专门训练过自己做压缩, 压缩后丢了多少信息, 本页没说. 思路和 Agent 系统的记忆管理一致, 见 [上下文管理策略](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.2-上下文管理策略.md) 和 [记忆压缩](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.2-记忆压缩.md).
+数百万 token 显然超出任何单个上下文窗口, 这就是正文把 「compaction」 列为三个原因之一的道理: 把前面的历史压缩成摘要, 腾出窗口继续干. 同库 GPT-5.2 公告里 compaction 是 Responses API 的一个 /compact 端点, 这里它被写成模型能力的组成部分. 模型是否专门训练过自己做压缩, 压缩后丢了多少信息, 本页没说. 思路和 Agent 系统的记忆管理一致, 见 [上下文管理策略](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.2-上下文管理策略/13.3.2-上下文管理策略.md) 和 [记忆压缩](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.2-记忆压缩/13.1.2-记忆压缩.md).
 
 落地页的例子讲的是另一件事: 提示说得不够细时, 模型往哪个方向补默认值. GPT-5.3-Codex 把年付方案显示成打折后的月价, 评价轮播放三条而不是一条, 页面说这让结果 「more complete and production-ready by default」. 这是产品偏好层面的改进, 很可能来自后训练里对网页产出的偏好数据, 但页面没说训练方法, 也没给任何量化比较. 截图只截到 Quiet KPI 首屏, 定价区和轮播都没抓到, GPT-5.2-Codex 那一版完全没有, 这个例子在本页无法核对.
 
@@ -67,7 +67,7 @@ SWE-Lancer IC Diamond 正文没提, 附录是 81.4%, 76.0%, 74.6%. 页外背景:
 
 附录里 GPT-5.2-Codex 38.2%, GPT-5.2 37.9%, GPT-5.3-Codex 64.7%. 前两个数和一年前的 CUA 几乎一样, 说明在 GPT-5.3-Codex 之前, OpenAI 的模型在这个基准上停了一年, 上一代的编程专项也没带来任何提升. 这一代一步涨了 26.5 个点, 是附录六行里涨得最多的, 离约 72% 的人类基线还差约 7.3 个点. 正文只用 「far stronger computer use capabilities」 一句带过 (按 PDF), 没给任何解释.
 
-涨幅从哪来, 本页没说. 图注说 「models use vision to complete diverse computer tasks」, 说明这是看截图操作的设置. 一个可能的解释是 Terminal-Bench 和 OSWorld 考的都是 「观察环境, 执行动作, 再观察」 的多步闭环, 两者一起大涨, 而只考写补丁的 SWE-Bench Pro 不动, 这和第 4 节的推测相互印证. 但视觉定位能力, 动作空间设计, 训练里有没有电脑操作的 RL 环境, 本页都没有. Agent 式 RL 训练的一般做法见 [AgenticRL训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md), 不能直接往 GPT-5.3-Codex 身上套.
+涨幅从哪来, 本页没说. 图注说 「models use vision to complete diverse computer tasks」, 说明这是看截图操作的设置. 一个可能的解释是 Terminal-Bench 和 OSWorld 考的都是 「观察环境, 执行动作, 再观察」 的多步闭环, 两者一起大涨, 而只考写补丁的 SWE-Bench Pro 不动, 这和第 4 节的推测相互印证. 但视觉定位能力, 动作空间设计, 训练里有没有电脑操作的 RL 环境, 本页都没有. Agent 式 RL 训练的一般做法见 [AgenticRL训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md), 不能直接往 GPT-5.3-Codex 身上套.
 
 ## 7. GDPval: 持平, 但条件不一样
 
@@ -79,15 +79,15 @@ SWE-Lancer IC Diamond 正文没提, 附录是 81.4%, 76.0%, 74.6%. 页外背景:
 
 ## 8. 交互: 边做边改
 
-「An interactive collaborator」 一节讲的是产品交互, 不是模型能力. 论点是: 模型越强, 瓶颈越从 「Agent 能做什么」 转到 「人怎么方便地指挥和监督并行工作的多个 Agent」. GPT-5.3-Codex 在工作中会频繁汇报关键决定和进度, 用户可以随时提问, 讨论, 改方向, 设置在 app 的 Settings > General > Follow-up behavior 里. 多 Agent 并行和人工监督的取舍见 [多Agent系统](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.3-多Agent系统.md).
+「An interactive collaborator」 一节讲的是产品交互, 不是模型能力. 论点是: 模型越强, 瓶颈越从 「Agent 能做什么」 转到 「人怎么方便地指挥和监督并行工作的多个 Agent」. GPT-5.3-Codex 在工作中会频繁汇报关键决定和进度, 用户可以随时提问, 讨论, 改方向, 设置在 app 的 Settings > General > Follow-up behavior 里. 多 Agent 并行和人工监督的取舍见 [多Agent系统](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.3-多Agent系统/13.3.3-多Agent系统.md).
 
 本页没有这一节的任何数字: 汇报多频繁, 中途插话对任务成功率有没有影响, 插话后模型是否真的 「without losing context」, 都没测. 首段那句 「you can steer and interact with GPT-5.3-Codex while it's working, without losing context」 在工程上意味着新的用户消息要插进正在进行的 Agent 循环, 同时保持已有的工具调用状态, 这对上下文管理和模型的指令跟随都有要求, 但页面只给了功能描述.
 
 ## 9. 网络安全: 第一个 High, 以及路由回 GPT-5.2
 
-页外背景: Preparedness Framework 是 OpenAI 的前沿风险评估框架, 2025 年 4 月更新的版本跟踪生物与化学, 网络安全, AI 自我改进三类能力, 分 High 和 Critical 两档门槛, 达到 High 要求部署前有相应防护. 本页说 GPT-5.3-Codex 是第一个在网络安全上被评为 High 的模型, 也是第一个直接训练识别软件漏洞的模型; 同时承认 「we don't have definitive evidence it can automate cyber attacks end-to-end」, 评 High 是出于预防. 附录的 Cybersecurity Capture The Flag Challenges 三列是 77.6%, 67.4%, 67.7%. GPT-5.2-Codex 比 GPT-5.2 还低 0.3 个点, 这一代高出约 10 个点. 题目内容本页没有, 这里只记评级和分数. 评测方法论见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测.md).
+页外背景: Preparedness Framework 是 OpenAI 的前沿风险评估框架, 2025 年 4 月更新的版本跟踪生物与化学, 网络安全, AI 自我改进三类能力, 分 High 和 Critical 两档门槛, 达到 High 要求部署前有相应防护. 本页说 GPT-5.3-Codex 是第一个在网络安全上被评为 High 的模型, 也是第一个直接训练识别软件漏洞的模型; 同时承认 「we don't have definitive evidence it can automate cyber attacks end-to-end」, 评 High 是出于预防. 附录的 Cybersecurity Capture The Flag Challenges 三列是 77.6%, 67.4%, 67.7%. GPT-5.2-Codex 比 GPT-5.2 还低 0.3 个点, 这一代高出约 10 个点. 题目内容本页没有, 这里只记评级和分数. 评测方法论见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
-缓解措施有四类: 安全训练, 自动化监控, 高级能力的受信任访问 (Trusted Access for Cyber 试点), 包含威胁情报的执法流程. 最具体的一条是路由: 系统判为网络风险较高的请求, 可能被自动从 GPT-5.3-Codex 转给 GPT-5.2. 按附录, GPT-5.2 在 CTF 上低 9.9 个点, Terminal-Bench 2.0 低 15.1 个点, OSWorld-Verified 低 26.8 个点. 也就是说, 被分类器判为高风险的请求会被降到一个明显更弱的模型上, 做正当安全研究的开发者如果被误判, 要走 Trusted Access 申请或 /feedback 申诉. 路由比例, 误判率, 用户是否被告知换了模型, 本页都没有. 部署侧治理的一般框架见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证.md) 和 [Agent安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐.md).
+缓解措施有四类: 安全训练, 自动化监控, 高级能力的受信任访问 (Trusted Access for Cyber 试点), 包含威胁情报的执法流程. 最具体的一条是路由: 系统判为网络风险较高的请求, 可能被自动从 GPT-5.3-Codex 转给 GPT-5.2. 按附录, GPT-5.2 在 CTF 上低 9.9 个点, Terminal-Bench 2.0 低 15.1 个点, OSWorld-Verified 低 26.8 个点. 也就是说, 被分类器判为高风险的请求会被降到一个明显更弱的模型上, 做正当安全研究的开发者如果被误判, 要走 Trusted Access 申请或 /feedback 申诉. 路由比例, 误判率, 用户是否被告知换了模型, 本页都没有. 部署侧治理的一般框架见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证/5.4-部署治理与持续保证.md) 和 [Agent安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md).
 
 生态侧有三件事. 一是扩大 Aardvark 的私测, 这是 OpenAI 的安全研究 Agent, 页面称它是 Codex Security 系列的第一款. 二是和开源维护者合作做免费代码扫描, 例子是 Next.js, 链接里的两个编号是 CVE-2025-59471 和 CVE-2025-59472; 编号年份是预留年份, 和 「last week」 的披露时间不矛盾. 三是在 2023 年 $1M 资助计划基础上追加 $10M API 额度. 后两个数形式不同, 一个是现金资助, 一个是调用额度, 不能直接比成十倍.
 
@@ -95,7 +95,7 @@ SWE-Lancer IC Diamond 正文没提, 附录是 81.4%, 76.0%, 74.6%. 页外背景:
 
 本页的每个分数都挂着推理强度. PDF 脚注说博客里所有评测都用 GPT-5.3-Codex 的 xhigh 档跑, 表头给另外两列也标了 xhigh, 只有 GPT-5.2 的 GDPval 标 high. xhigh 是 GPT-5.2 那一代新增的最高一档, 意味着在 TestingTime 投入最多的思考 token. 三个模型都在最高档比, 至少在形式上是对齐的, 这比 GPT-5.2 公告里新旧模型不在同一档要干净.
 
-但 「fewer tokens than any prior model」 和 xhigh 放在一起就有问题. 如果附录分数都是 xhigh, 那曲线图上的多个点对应什么? 最合理的读法是曲线上每个点是一个推理强度档位, 右端才是 xhigh, 但图上没标档位, 附录也没印每档的 token 数. 于是 「同精度少用多少 token」 和 「最高档比别人高多少分」 是两个问题, 本页只清楚回答了后一个. 推理模型在 TestingTime 多花算力的原理见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
+但 「fewer tokens than any prior model」 和 xhigh 放在一起就有问题. 如果附录分数都是 xhigh, 那曲线图上的多个点对应什么? 最合理的读法是曲线上每个点是一个推理强度档位, 右端才是 xhigh, 但图上没标档位, 附录也没印每档的 token 数. 于是 「同精度少用多少 token」 和 「最高档比别人高多少分」 是两个问题, 本页只清楚回答了后一个. 推理模型在 TestingTime 多花算力的原理见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 token 少对用户还有一层意义. 本页没印价格, API 也没开放, ChatGPT 套餐里用户按额度而不是按 token 付费, 所以 token 效率在这里主要体现为速度和额度消耗, 和 GPT-5.2 公告拿它来解释涨价的语境不一样.
 

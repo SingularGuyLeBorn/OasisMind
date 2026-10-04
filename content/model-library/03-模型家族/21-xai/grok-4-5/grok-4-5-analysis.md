@@ -31,7 +31,7 @@ excerpt: "这份材料能回答的问题是: Grok 4.5 被定位成什么, 训练
 
 第 2 页 RL 一段有三个值得拆的说法. 一是 **per-token intelligence**: 把强化学习的规模扩张和「每个 token 更聪明」绑在一起, 对应全文的效率叙事——如果模型解同样的问题少写一半 token, 同样的输出速度下任务就更快更便宜, 这就是第 3 到 5 页 80 TPS, token efficiency, 定价三段反复强调的同一根线. 二是 **hundreds of thousands of tasks** 加 **automated and model-based grading**: 任务以多步软件工程为中心, 判分一部分能自动化 (跑测试, 核对答案), 一部分靠模型当裁判; 判分模型是谁, 和训练中的策略什么关系, 页面没写, 用模型做奖励带来的 reward hacking 风险本页也没提. 三是 **highly asynchronous training**: agentic rollout 可以跑好几个小时, 同时学习在数万张 GPU 上继续.
 
-异步这条是全文技术上最硬的一句话, 也是最容易被滑过去的一句. 同步 RL 里所有 rollout 用同一版权重采样, 采样全部返回再更新; 一旦 rollout 时长以小时计, 同步等待会把 GPU 大量时间耗在空转上, 所以必须把采样和更新解耦, 让慢轨迹返回时训练不停车. 代价是数据变陈旧: 轨迹采样自第 n 版权重, 训练已经走到第 n+k 版, 直接用旧数据算梯度会不稳, 需要重要性采样修正, 截断或近端约束一类的手段兜住. 页面只说「built for」, 一个字没提怎么对付陈旧性. 这套问题的通用背景见 [AgenticRL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md) 和 [Off-policyness 与 Privileged Information](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.3-Off-policyness与Privileged-Information.md), RL 规模怎么随计算变见 [ScaleRL](../../../../llm-guide/4-后训练/4.8-ScaleRL-尺度定律的再发现/4.8-ScaleRL-尺度定律的再发现.md), 都是通用讨论, 不是本页的做法.
+异步这条是全文技术上最硬的一句话, 也是最容易被滑过去的一句. 同步 RL 里所有 rollout 用同一版权重采样, 采样全部返回再更新; 一旦 rollout 时长以小时计, 同步等待会把 GPU 大量时间耗在空转上, 所以必须把采样和更新解耦, 让慢轨迹返回时训练不停车. 代价是数据变陈旧: 轨迹采样自第 n 版权重, 训练已经走到第 n+k 版, 直接用旧数据算梯度会不稳, 需要重要性采样修正, 截断或近端约束一类的手段兜住. 页面只说「built for」, 一个字没提怎么对付陈旧性. 这套问题的通用背景见 [AgenticRL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md) 和 [Off-policyness 与 Privileged Information](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.3-Off-policyness与Privileged-Information/13.4.3-Off-policyness与Privileged-Information.md), RL 规模怎么随计算变见 [ScaleRL](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/10-ScaleRL-尺度定律的再发现/10-ScaleRL-尺度定律的再发现.md), 都是通用讨论, 不是本页的做法.
 
 ## 3. 唯一的图: DeepSWE 柱状图怎么读
 
@@ -45,7 +45,7 @@ DeepSWE 是 Datacurve 做的编程 agent 基准, 主打原创任务防污染: �
 
 正文说 Grok 4.5 「exceeds comparable leading models at these tasks」, 但图里 Grok 4.5 是第三名: 落后 Fable (max) 4.1 个点, 落后 GPT 5.5 (xhigh) 2.31 个点, 只领先 Opus 4.8 (max) 6.25 个点. 「comparable」要让这句话成立, 得把前两名划到「不可比」的那一类, 页面没给这个口径. 橙色柱子只给 Grok 4.5 用了, 视觉上也放大了它的存在感.
 
-另一个缺口是 DeepSWE 之外的四个标签. 正文后面两处提到 **SWE Bench Pro**: 第 4 页 token 效率图的横轴口径是「avg. output tokens per SWE Bench Pro task」, 定价段又说「solving tasks in under half the number of steps」, 但 SWE Bench Pro 的通过分数本页一个都没给. 也就是说, 全文反复引用 SWE Bench Pro 作效率口径, 却没有任何一个该基准的分数; 五个标签里四个的图没有抓到. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+另一个缺口是 DeepSWE 之外的四个标签. 正文后面两处提到 **SWE Bench Pro**: 第 4 页 token 效率图的横轴口径是「avg. output tokens per SWE Bench Pro task」, 定价段又说「solving tasks in under half the number of steps」, 但 SWE Bench Pro 的通过分数本页一个都没给. 也就是说, 全文反复引用 SWE Bench Pro 作效率口径, 却没有任何一个该基准的分数; 五个标签里四个的图没有抓到. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 ## 4. 效率主张: 80 TPS 与 token 效率
 
@@ -53,7 +53,7 @@ DeepSWE 是 Datacurve 做的编程 agent 基准, 主打原创任务防污染: �
 
 第 3 页说 Grok 4.5 「served at fast-model speeds of 80 TPS」, 第 4 页给了一张 token 效率图, 两根柱子 (Grok 4.5 和 Opus 4.8 (max)) 都压在 70k tokens 量级的纵轴底部, 柱顶数值在抽取时丢失, PDF 文字层只剩两个「0」. 于是「twice greater token efficiency」这个 2 倍, 从这张图本身读不出来: 没有两个具体数字, 没有对比对象的完整名单 (图上只有 Opus 4.8 (max) 一个), 也没有运行条件.
 
-TPS 和 token 效率是两个独立的量: TPS 是单 token 的生成速度, token 效率是完成同一任务要生成的 token 总数, 任务耗时约等于后者除以前者. 页面把「快」和「省」捆在一起, 逻辑上成立的前提是两者同时成立, 而本文两个都缺核对的数. 80 TPS 本身也没给测量口径: 是单请求解码速度还是聚合吞吐, batch 多大, 什么硬件, 推理时有没有多花 TestingTime, 页面都没写. 速度指标的口径问题见 [LLM Serving 与 PagedAttention](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.4-LLM-Serving与PagedAttention深度解析.md).
+TPS 和 token 效率是两个独立的量: TPS 是单 token 的生成速度, token 效率是完成同一任务要生成的 token 总数, 任务耗时约等于后者除以前者. 页面把「快」和「省」捆在一起, 逻辑上成立的前提是两者同时成立, 而本文两个都缺核对的数. 80 TPS 本身也没给测量口径: 是单请求解码速度还是聚合吞吐, batch 多大, 什么硬件, 推理时有没有多花 TestingTime, 页面都没写. 速度指标的口径问题见 [LLM Serving 与 PagedAttention](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.4-LLM-Serving与PagedAttention深度解析/6.6.4-LLM-Serving与PagedAttention深度解析.md).
 
 ### 4.2 定价段的三个说法互相互证不了
 

@@ -21,7 +21,7 @@ V2.5 的总参, 激活与数据量和 V2.6-Flash 完全一致, 多模态接入�
 
 ### 1.2. 架构图: 三路 token 汇进同一条骨干
 
-页 2 的架构图把数据流画成三路. 音频: 波形 → Audio Tokenizer → Local Transformer → Audio Projector → 音频 token. 视觉: 图像 / 视频帧 → MiMo ViT → Visual Projector → 视觉 token. 文本直接成为文本 token. 三类 token 拼成一条序列送进 「MiMo Hybrid-SWA Backbone」, 输出端并列 LM Head 与 MTP Block. 这是 LLaVA 一路的拼接式结构: 编码器把各模态压成与文本同维的 token, 骨干统一建模, 不另设跨模态注意力塔. 拼接方式的背景可对照 [LLaVA 架构深度解析](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.1-LLaVA架构深度解析.md).
+页 2 的架构图把数据流画成三路. 音频: 波形 → Audio Tokenizer → Local Transformer → Audio Projector → 音频 token. 视觉: 图像 / 视频帧 → MiMo ViT → Visual Projector → 视觉 token. 文本直接成为文本 token. 三类 token 拼成一条序列送进 「MiMo Hybrid-SWA Backbone」, 输出端并列 LM Head 与 MTP Block. 这是 LLaVA 一路的拼接式结构: 编码器把各模态压成与文本同维的 token, 骨干统一建模, 不另设跨模态注意力塔. 拼接方式的背景可对照 [LLaVA 架构深度解析](../../../../llm-guide/8-多模态/8.2-视觉语言模型/02-LLaVA架构深度解析/02-LLaVA架构深度解析.md).
 
 图上的组件名在 V2.6 报告里都有展开, 可以帮助理解, 但数字不能直接搬过来. V2.6 报告写 MiMo-ViT 用 sink 加 SWA 替代 MiMo-VL-7B 的固定窗口注意力, 28 层, 参量 681M; 音频 tokenizer 在 25 Hz 用 20 层 RVQ, patch encoder 每 4 帧合成一个 patch 后投进骨干, 图上的 「Local Transformer」 与这个 patch 内双向注意力的描述对得上. Hugging Face 模型卡 (外部材料) 列 V2.5 的 ViT 约 729M, 音频部分约 261M, MTP 约 329M. 模型卡与 V2.6 报告的 ViT 参量不同, V2.6 报告注明编码器参量含输入 embedding, 不含 projector, 两边统计口径不一定相同, 不宜据此判断编码器换过. MTP Block 在 Flash 报告里是 3 层, 每层约 0.33B, 与模型卡的 329M 量级接近; 本页没有写 MTP 层数与接受长度.
 

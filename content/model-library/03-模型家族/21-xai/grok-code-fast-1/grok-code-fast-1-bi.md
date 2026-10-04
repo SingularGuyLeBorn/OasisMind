@@ -161,7 +161,7 @@ We took a holistic approach to evaluating model performance, blending public ben
 我们对模型性能采取整体评估的路子, 公开基准和真实世界测试相结合. 在 SWE-Bench-Verified 的完整子集上, grok-code-fast-1 用我们自己的内部 harness (评测脚手架) 跑出了 70.8%.
 
 > **对一下:**「full subset」和「internal harness」这两个限定词放在一起, 70.8% 还能和谁比?
-> 本页找不到对照组. 全文只有这一个基准分数, 竞品的 SWE-Bench 分数一个都没给. 「internal harness」意味着脚手架, 提示词, 工具配置都不公开, 同样的模型换一套公开脚手架, 分数可以差好几个点; 「full subset of SWE-Bench-Verified」的措辞也绕 —— SWE-Bench Verified 本身就是从 SWE-Bench 全集中人工核验选出的子集, 「full subset」说的是把 Verified 这 500 题跑全, 不是别的意思. 这个分数只能当「xAI 自测口径下的上限参考」, 横向比较要等第三方复现. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+> 本页找不到对照组. 全文只有这一个基准分数, 竞品的 SWE-Bench 分数一个都没给. 「internal harness」意味着脚手架, 提示词, 工具配置都不公开, 同样的模型换一套公开脚手架, 分数可以差好几个点; 「full subset of SWE-Bench-Verified」的措辞也绕 —— SWE-Bench Verified 本身就是从 SWE-Bench 全集中人工核验选出的子集, 「full subset」说的是把 Verified 这 500 题跑全, 不是别的意思. 这个分数只能当「xAI 自测口径下的上限参考」, 横向比较要等第三方复现. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 While benchmarks like SWE-Bench provide valuable insights, we've found they don't fully reflect the nuances of real-world software engineering, particularly the end-user experience in agentic coding workflows.
 

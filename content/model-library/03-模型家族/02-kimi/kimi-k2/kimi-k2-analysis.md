@@ -23,7 +23,7 @@ k1.5 把 Kimi 的叙事重心放在 RL 上, 底座结构一个字没提. K2 反�
 
 ### 2.1. 1.04T 总参, 32B 激活: 稀疏度和头数的取舍
 
-Table 2 把 K2 和 DeepSeek-V3 并排比较. 层数都是 61, 隐宽 7168, 专家中间维 2048; 总参从 671B 涨到 1.04T(↑54%), 激活参从 37B 降到 32.6B(↓13%), 专家总数从 256 涨到 384, 每个 token 仍激活 8 个路由专家加 1 个共享专家, 注意力头从 128 砍到 64, 前置稠密层从 3 层减到 1 层, V3 的专家分组(Expert Grouping)在 K2 里去掉了. 细粒度专家加共享专家的机制见 [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md), MLA 的低秩 KV 压缩和解耦 RoPE 见 [04-MLA-低秩潜变量与矩阵吸收](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md).
+Table 2 把 K2 和 DeepSeek-V3 并排比较. 层数都是 61, 隐宽 7168, 专家中间维 2048; 总参从 671B 涨到 1.04T(↑54%), 激活参从 37B 降到 32.6B(↓13%), 专家总数从 256 涨到 384, 每个 token 仍激活 8 个路由专家加 1 个共享专家, 注意力头从 128 砍到 64, 前置稠密层从 3 层减到 1 层, V3 的专家分组(Expert Grouping)在 K2 里去掉了. 细粒度专家加共享专家的机制见 [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md), MLA 的低秩 KV 压缩和解耦 RoPE 见 [04-MLA-低秩潜变量与矩阵吸收](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md).
 
 把专家加到 384 的依据是 Figure 5 的**稀疏度 Scaling Laws**. 报告把稀疏度定义为总专家数除以激活专家数, K2 是 384/8 = 48. 小规模控制实验里固定激活专家 8 个, 共享专家 1 个, 只增加总专家数, 训练和验证 loss 都随稀疏度升高而下降. 换算成算力: 要达到相同的验证 loss 1.5, 稀疏度 48 比稀疏度 8, 16, 32 分别省 1.69×, 1.39×, 1.15× FLOPs. 稀疏度再往上还能换分, 但专家并行的通信和负载均衡也更难做, 报告在性能和成本之间停在 48. 这条 Scaling Laws 是用 Muon 训练得到的, 与 AdamW 下的结论是否相同, 报告没有对照.
 
@@ -36,7 +36,7 @@ Figure 6 的实验设计是: 头数等于层数的配置, 对比头数翻倍的�
 
 ### 2.2. MuonClip: 换了优化器, 也换来新问题
 
-§2.1 先讲动机. 前作 Moonlight 的实验表明, 在同样的算力, 规模和数据量下, Muon 比 AdamW 更省 token. Muon 的更新先做动量, 再用 Newton-Schulz 迭代近似矩阵符号函数(msign), 让更新矩阵的奇异值趋于一致, 再乘系数对齐 Adam 的更新 RMS, 并加权重衰减. 机制见 [01-Muon优化器专题](../../../../llm-guide/6-训练与推理优化/6.5-优化器/Muon/01-Muon优化器专题.md). 问题出在放大之后: 中等规模(9B 激活, 53B 总参)的 MoE 用原版 Muon 训练, Figure 2 左图里最大注意力 logit 很快超过 1000, 这个量级通常伴随 loss spike, 偶尔还会发散. 报告说这种现象在 Muon 下比在 AdamW 下更常见.
+§2.1 先讲动机. 前作 Moonlight 的实验表明, 在同样的算力, 规模和数据量下, Muon 比 AdamW 更省 token. Muon 的更新先做动量, 再用 Newton-Schulz 迭代近似矩阵符号函数(msign), 让更新矩阵的奇异值趋于一致, 再乘系数对齐 Adam 的更新 RMS, 并加权重衰减. 机制见 [01-Muon优化器专题](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/01-Muon优化器专题/01-Muon优化器专题.md). 问题出在放大之后: 中等规模(9B 激活, 53B 总参)的 MoE 用原版 Muon 训练, Figure 2 左图里最大注意力 logit 很快超过 1000, 这个量级通常伴随 loss spike, 偶尔还会发散. 报告说这种现象在 Muon 下比在 AdamW 下更常见.
 
 现成的办法都不合适. logit soft-cap 截的是进 softmax 前的值, Q 和 K 的点积本身仍可能继续涨; QK-Norm 需要完整的 Key, 而 MLA 推理时 Key 并不完整物化. **QK-Clip** 换了个思路, 不碰 logit, 改去压产生 logit 的权重. 信号是每个头在当前 batch 里进 softmax 前的最大值:
 
@@ -44,7 +44,7 @@ $$S_{\max}^h=\frac{1}{\sqrt d}\max_{\mathbf X\in B}\max_{i,j}\mathbf Q_i^h\mathb
 
 $i,j$ 是同一条样本里的 token 位置, 这个量在前向时已经算出, 不增加开销. 朴素版本对所有头一起缩放, $\mathbf W_q^h\leftarrow\gamma^{\alpha}\mathbf W_q^h$, $\mathbf W_k^h\leftarrow\gamma^{1-\alpha}\mathbf W_k^h$, 其中 $\gamma=\min(1,\tau/\max_h S_{\max}^h)$, $\alpha$ 通常取 0.5. 因为 logit 对 $\mathbf W_q$ 和 $\mathbf W_k$ 各是一次, 两边指数加起来为 1, 同一输入下 logit 恰好乘 $\gamma$, 最大值被压回 $\tau$; $\alpha$ 只决定这份缩放在 Q, K 两侧怎么分. 缩放发生在本步 Muon 更新之后, 本步的前向和反向不动, 管的是下一步. 实践中只有少数头会爆炸, 所以改成按头计算 $\gamma_h=\min(1,\tau/S_{\max}^h)$, 没超阈值的头 $\gamma_h=1$, 完全不受影响.
 
-MLA 上要多想一步. 每个头的 logit 由两部分相加: 无位置的 $q^C\cdot k^C$ 和带 RoPE 的 $q^R\cdot k^R$(这个拆法来自 MLA 的结构, 报告只列了缩放规则). 报告的规则是 $q^C$, $k^C$ 各乘 $\sqrt{\gamma_h}$, $q^R$ 乘 $\gamma_h$, 所有头共享的 $k^R$ 不动. 代进去, 第一部分乘 $\sqrt{\gamma_h}\cdot\sqrt{\gamma_h}=\gamma_h$, 第二部分乘 $\gamma_h\cdot 1=\gamma_h$, 整个 logit 仍然正好乘 $\gamma_h$, 和 MHA 下 $\alpha=0.5$ 的效果一致. $k^R$ 被所有头共用, 缩放它会连带改掉没出问题的头, 所以把 RoPE 那一份全部压到头独有的 $q^R$ 上. Algorithm 1 把 Muon, 权重衰减, RMS 对齐和 QK-Clip 合成一个优化器, 命名 **MuonClip**. 苏剑林在科学空间的文章里把 QK-Clip 定位为专门给 Muon 补的更新规则, 讲得比报告更直白, 相关整理见 [05-MuonClip与PolarExpress](../../../../llm-guide/6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md).
+MLA 上要多想一步. 每个头的 logit 由两部分相加: 无位置的 $q^C\cdot k^C$ 和带 RoPE 的 $q^R\cdot k^R$(这个拆法来自 MLA 的结构, 报告只列了缩放规则). 报告的规则是 $q^C$, $k^C$ 各乘 $\sqrt{\gamma_h}$, $q^R$ 乘 $\gamma_h$, 所有头共享的 $k^R$ 不动. 代进去, 第一部分乘 $\sqrt{\gamma_h}\cdot\sqrt{\gamma_h}=\gamma_h$, 第二部分乘 $\gamma_h\cdot 1=\gamma_h$, 整个 logit 仍然正好乘 $\gamma_h$, 和 MHA 下 $\alpha=0.5$ 的效果一致. $k^R$ 被所有头共用, 缩放它会连带改掉没出问题的头, 所以把 RoPE 那一份全部压到头独有的 $q^R$ 上. Algorithm 1 把 Muon, 权重衰减, RMS 对齐和 QK-Clip 合成一个优化器, 命名 **MuonClip**. 苏剑林在科学空间的文章里把 QK-Clip 定位为专门给 Muon 补的更新规则, 讲得比报告更直白, 相关整理见 [05-MuonClip与PolarExpress](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/05-MuonClip与PolarExpress/05-MuonClip与PolarExpress.md).
 
 效果看三张图. Figure 2 右图是正式 K2 训练, $\tau=$ 100: logit 开始被压在 100, 大约 30% 训练步之后才自然回落到正常区间, 全程没有调整 $\tau$. Figure 3 是逐步 loss, 没有平滑也没有抽稀, 看不到 spike. 附录 D 用更严的 $\tau=30$ 在小模型上做消融(Figure 12), loss 曲线几乎重合, 说明 QK-Clip 不伤收敛; 正式训练的前 70000 步里约 12.7% 的头至少触发过一次, 之后所有头的 $S_{\max}$ 都降到 100 以下, QK-Clip 实际上不再起作用. **它更像训练早期的护栏, 而不是全程生效的正则.**
 
@@ -118,7 +118,7 @@ F.3 同时承认了副作用. 规则禁止自我限定和免责声明(例如「�
 
 $$L_{\mathrm{RL}}(\theta)=\mathbb{E}_{x\sim\mathcal D}\Big[\frac1K\sum_{i=1}^K\Big(r(x,y_i)-\bar r(x)-\tau\log\frac{\pi_\theta(y_i|x)}{\pi_{\mathrm{old}}(y_i|x)}\Big)^2\Big],\quad \bar r(x)=\frac1K\sum_{i=1}^K r(x,y_i)$$
 
-括号里 $r-\bar r$ 是组内相对奖励, 高于组均值的回答要求 $\log\pi_\theta/\pi_{\mathrm{old}}$ 为正, 即概率上调; $\tau$ 把这个对数比换算成奖励的量纲, $\tau$ 越大, 同样的奖励差只允许更小的概率变化, 起 KL 式约束的作用. 和 k1.5 的式子相比, k1.5 推导里的 $\tau\log Z$ 在这里直接写成了 $\bar r(x)$, 也就是把 k1.5「实践中用均值近似」那一步固定成定义; 优化器同样是 Muon. 它属于无 critic 的组内相对优化一族, 对照见 [02-GRPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md), 区别仍是只减均值, 不除标准差.
+括号里 $r-\bar r$ 是组内相对奖励, 高于组均值的回答要求 $\log\pi_\theta/\pi_{\mathrm{old}}$ 为正, 即概率上调; $\tau$ 把这个对数比换算成奖励的量纲, $\tau$ 越大, 同样的奖励差只允许更小的概率变化, 起 KL 式约束的作用. 和 k1.5 的式子相比, k1.5 推导里的 $\tau\log Z$ 在这里直接写成了 $\bar r(x)$, 也就是把 k1.5「实践中用均值近似」那一步固定成定义; 优化器同样是 Muon. 它属于无 critic 的组内相对优化一族, 对照见 [02-GRPO](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), 区别仍是只减均值, 不除标准差.
 
 在此之上加了三个设计, 报告的动机是任务类型变多后各域很难同时涨分. **Budget Control** 按任务类型给每条样本设 token 上限, 超出即截断并给惩罚, 惩罚记进 $r$, 这条回答在 $r-\bar r$ 里就更可能落成负项, 概率被压低; 各类任务的上限和惩罚值报告都没给. 它和 k1.5 长度奖励的差别在同一步计算上很清楚: k1.5 在组内按相对长度连续打分, 预算随这一组回答的长短浮动; K2 是按任务定死的硬上限, 预算内不管长短, 超了才罚. **PTX 辅助损失**把人工精选的高质量样本作为辅助项加回 RL 目标, 防止联合训练中遗忘, 也避免过拟合到训练里出现的有限任务; 报告只引了 PTX 的出处, 没写式子和权重. **温度衰减**针对创意写作和复杂推理, 早期高温采样鼓励探索, 后期降温求稳定, 衰减曲线没给.
 

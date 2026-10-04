@@ -6,7 +6,7 @@ excerpt: "HC 把单流残差扩成 n 条可学习混合的流, 在 27B MoE 上�
 ---
 # 01 Hyper-Connections 与 mHC: 多流残差和双随机约束
 
-> 相关阅读: [2.1.3 残差连接](../2.1.3-残差连接.md) · [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) · 相关模型: [GLM-5.3-Flash](../../../../../model-library/03-模型家族/13-glm/glm-5-3-flash/glm-5-3-flash-bi.md)
+> 相关阅读: [2.1.3 残差连接](../2.1.3-残差连接.md) · [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) · 相关模型: [GLM-5.3-Flash](../../../../../model-library/03-模型家族/13-glm/glm-5-3-flash/glm-5-3-flash-bi.md)
 
 Hyper-Connections (HC) 是 ByteDance 2024 年的工作 (arXiv:2409.19606), 把单条残差流扩成 $n$ 条可学习混合的流; mHC 是 DeepSeek 2025 年在 HC 之上的改进 (arXiv:2512.24880), 处理 HC 放大到 27B 时的训练失稳. 两篇围绕同一个问题: 残差连接除了恒等相加, 还能不能学出别的拓扑, 学了之后怎样保住恒等通路.
 
@@ -284,7 +284,7 @@ mHC 会在四种情况下失效或收益变小. 第一是 Sinkhorn-Knopp 迭代�
 
 前两行说明 mHC 的两个退化情形: $n=1$ 时双随机矩阵只剩标量 1; 系数固定且 $\mathcal{H}^{\mathrm{res}}=I$ 时流之间不交换, 这正是 mHC Table 1 用来单独评估 $\mathcal{H}^{\mathrm{res}}$ 的对照组. 中间三行只改 $\mathcal{H}^{\mathrm{res}}$ 的约束, 不约束是 HC, 双随机是 mHC, 换别的约束集合是 mHC 结论部分留下的方向. 最后两行是同目录的两篇: xHC 继续加宽并改写回, Gated Residual 反过来删掉 $\mathcal{H}^{\mathrm{res}}$, 把表达力放到读上.
 
-几个名字或组件相近的机制作用在别处. ReZero 一类的残差缩放调的是单流上残差分支的标量幅值, 不涉及 $n\times n$ 拓扑, 可以与多流叠加. MoE 路由决定每个 token 激活哪些专家, 发生在 $\mathcal{F}$ 内部; mHC 的实验骨干是 MoE, 但两者机制无关. [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 每层用注意力对历史层输出做加权聚合, 不维护固定条数的流, 也没有双随机约束. Tay 等人的 Sparse Sinkhorn Attention 同用 Sinkhorn-Knopp, 作用对象是注意力块的排序, 不是残差混合矩阵. HCA / CSA 是压缩注意力, 名字里的 HC 与 Hyper-Connections 无关.
+几个名字或组件相近的机制作用在别处. ReZero 一类的残差缩放调的是单流上残差分支的标量幅值, 不涉及 $n\times n$ 拓扑, 可以与多流叠加. MoE 路由决定每个 token 激活哪些专家, 发生在 $\mathcal{F}$ 内部; mHC 的实验骨干是 MoE, 但两者机制无关. [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) 每层用注意力对历史层输出做加权聚合, 不维护固定条数的流, 也没有双随机约束. Tay 等人的 Sparse Sinkhorn Attention 同用 Sinkhorn-Knopp, 作用对象是注意力块的排序, 不是残差混合矩阵. HCA / CSA 是压缩注意力, 名字里的 HC 与 Hyper-Connections 无关.
 
 ## 参考文献
 

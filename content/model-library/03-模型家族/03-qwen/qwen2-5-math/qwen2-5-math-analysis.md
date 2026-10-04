@@ -11,7 +11,7 @@ excerpt: "Qwen2.5-Math 没有新架构, 没有 MoE, 没有 MTP, 骨架就是 Qwe
 
 Qwen2.5-Math 没有新架构, 没有 MoE, 没有 MTP, 骨架就是 Qwen2.5 的 decoder-only. 它的分数来自一条闭环: 上一代数学 Instruct 模型合成预训练语料, 训出新 Base; 新 Base 经拒绝采样 SFT 得到 Instruct, 奖励模型负责挑路径; 同一个奖励模型进入 GRPO, 和规则校验器一起塑形奖励; 推理时还能用它做 best-of-N. 报告标题里的 self-improvement 指的就是这一圈. 结果是旗舰 72B-Instruct 的英文平均 68.2, 比 GPT-4o-2024-08-06 的 62.0 高 6.2; 中文平均高约 17.5; 7B-Instruct 在 CoT 下 MATH 83.6, TIR 下 85.2 (Table 3; 摘要写 85.3, 与表不一致, 以表为准). 下面按数据, 奖励模型, 算法, 评测怎样咬合来讲.
 
-机制见单独成篇. GRPO: [02-GRPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md). PPO 对照: [04-PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md). SFT: [4.2-SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md). Best-of-N 与奖励模型过优化: [07-Best-of-N-奖励模型过优化](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.4-其他对齐技术/07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md).
+机制见单独成篇. GRPO: [02-GRPO](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md). PPO 对照: [04-PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/04-PPO/04-PPO.md). SFT: [4.2-SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md). Best-of-N 与奖励模型过优化: [07-Best-of-N-奖励模型过优化](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md).
 
 ## 1. 前史与自改进闭环
 

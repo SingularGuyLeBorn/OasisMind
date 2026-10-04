@@ -39,6 +39,6 @@ excerpt: "英雄区只放两张卡."
 
 ### 2.2. 这张首页能回答什么
 
-能回答的: 家族当前的旗舰是 V2.6 Series, 语音线单列; 研究时间线从 2025 年 5 月的 7B 推理模型, 经模态专报, MoE 稳定性, Flash 技术报告, 走到 2026 年的稀疏注意力, Agent RL 资源效率与多教师蒸馏; UltraSpeed 宣称 1T 参数 1000 TPS; Hybrid SWA 被当作 V2.5 推理优化的核心. 后训练主线从 GRPO 规则奖励到 MOPD 再到 MOPD2 的演化, 要到同目录各型号报告里读; 背景可对照 [On-Policy Distillation 深度解析](../../../../llm-guide/4-后训练/4.6-OPD/01-OPD基础原理/01-OPD基础原理.md) 与 [高效与稀疏注意力](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3-高效与稀疏注意力.md).
+能回答的: 家族当前的旗舰是 V2.6 Series, 语音线单列; 研究时间线从 2025 年 5 月的 7B 推理模型, 经模态专报, MoE 稳定性, Flash 技术报告, 走到 2026 年的稀疏注意力, Agent RL 资源效率与多教师蒸馏; UltraSpeed 宣称 1T 参数 1000 TPS; Hybrid SWA 被当作 V2.5 推理优化的核心. 后训练主线从 GRPO 规则奖励到 MOPD 再到 MOPD2 的演化, 要到同目录各型号报告里读; 背景可对照 [On-Policy Distillation 深度解析](../../../../llm-guide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md) 与 [高效与稀疏注意力](../../../../llm-guide/2-核心原理与架构/2.3-注意力的高效实现/2.3-注意力的高效实现.md).
 
 不能回答的: 任何一代的层数, 专家数, 窗口与训练 token; MOPD, HySparse, ARL-Tangram 的公式和表; UltraSpeed 的测法; V2.6 与 V2.5-TTS 是否同底座. 这些问题要么在同族的 7B, Flash, V2.6 报告与 V2.5 / V2.5-Pro 产品页里有答案, 要么目前没有公开材料. 首页的价值在于给出日期顺序: R3 早于 Flash, HySparse 晚于 Flash, MOPD 单独成文晚于 Flash 半年, 这个顺序和各报告内部的引用关系是一致的.

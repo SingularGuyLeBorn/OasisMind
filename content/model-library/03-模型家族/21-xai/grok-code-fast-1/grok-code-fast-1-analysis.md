@@ -51,7 +51,7 @@ prompt caching 的省钱逻辑对应服务端复用前缀的 KV, 省掉重复的
 
 ### 4.2 评测: 70.8% 的三个限定词
 
-全文唯一一个基准分数: SWE-Bench-Verified 完整子集 70.8%, 用的是 **xAI 自己的内部 harness**. 三个限定词各砍一刀横向可比性. 「SWE-Bench-Verified 完整子集」: Verified 本身就是从 SWE-Bench 全集中人工核验出的子集, full subset 指把这 500 题跑全, 不跑子采样. 「internal harness」: 脚手架, 提示词, 工具配置不公开, 同一模型换一套公开脚手架分数可以差好几个点. 缺对照组: 全文没有给任何竞品在同一基准上的分数, 70.8% 是孤岛数字. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md), SWE-Bench 这类解题基准在 agentic coding 里的角色见 [IDE 与 Coding Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
+全文唯一一个基准分数: SWE-Bench-Verified 完整子集 70.8%, 用的是 **xAI 自己的内部 harness**. 三个限定词各砍一刀横向可比性. 「SWE-Bench-Verified 完整子集」: Verified 本身就是从 SWE-Bench 全集中人工核验出的子集, full subset 指把这 500 题跑全, 不跑子采样. 「internal harness」: 脚手架, 提示词, 工具配置不公开, 同一模型换一套公开脚手架分数可以差好几个点. 缺对照组: 全文没有给任何竞品在同一基准上的分数, 70.8% 是孤岛数字. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md), SWE-Bench 这类解题基准在 agentic coding 里的角色见 [IDE 与 Coding Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
 
 第 4 页后半段是评测哲学: 基准不能完整反映真实软件工程, 所以要配常态化人工评估和自动化评估. 这套说法与第 5 页「被程序员评价为又快又可靠」衔接, 但人工评估的样本量, 评分量表, 是否盲评, 和谁对比, 全部缺失, 披露粒度止于「这是训练信号的一部分」. 页面诚实地把这套评估的定位写明了 —— 「to guide our model training」 —— 它是训练的罗盘, 不是独立的第三方验证.
 

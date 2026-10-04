@@ -34,9 +34,9 @@ excerpt: "系统卡的第 1 到第 3 节加起来两页多一点, 余下三十�
 
 ## 2. 训练描述: 强化学习, CoT 与审慎对齐
 
-第 2 节对训练的描述几乎全是定性的: 模型 「think before they answer」, 训练中学会 「refine their thinking process, try different strategies, and recognize their mistakes」. 这与 o1 系统卡的说法一致, 是推理模型的通用描述, 不是 o3-mini 独有的信息. 推理模型这条路线的一般机制可参见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md); 本文没有给出 CoT 长度, 强化学习步数, 奖励模型或可验证奖励的比例, 这些都无从核对.
+第 2 节对训练的描述几乎全是定性的: 模型 「think before they answer」, 训练中学会 「refine their thinking process, try different strategies, and recognize their mistakes」. 这与 o1 系统卡的说法一致, 是推理模型的通用描述, 不是 o3-mini 独有的信息. 推理模型这条路线的一般机制可参见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md); 本文没有给出 CoT 长度, 强化学习步数, 奖励模型或可验证奖励的比例, 这些都无从核对.
 
-与安全直接相关的是审慎对齐. 脚注 1 的定义是 「teaches LLMs to explicitly reason through safety specifications before producing an answer」, §5.2 补充说它 「required updating the format of our refusal policies and generating new safety data」, 并顺带为政治说服任务引入了新的拒答行为. 这与 [Constitutional AI](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 一类 「让模型对照成文规范自我约束」 的做法思路相近, 区别在于规范是在 CoT 里被显式引用的. 但本文没有一张表单独做消融, 看不出拒答和越狱上的提升有多少来自审慎对齐, 多少来自常规的拒答训练 (第 4.1 节说 o3-mini 「inherits our earlier safety mitigations of training in refusal behavior」).
+与安全直接相关的是审慎对齐. 脚注 1 的定义是 「teaches LLMs to explicitly reason through safety specifications before producing an answer」, §5.2 补充说它 「required updating the format of our refusal policies and generating new safety data」, 并顺带为政治说服任务引入了新的拒答行为. 这与 [Constitutional AI](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 一类 「让模型对照成文规范自我约束」 的做法思路相近, 区别在于规范是在 CoT 里被显式引用的. 但本文没有一张表单独做消融, 看不出拒答和越狱上的提升有多少来自审慎对齐, 多少来自常规的拒答训练 (第 4.1 节说 o3-mini 「inherits our earlier safety mitigations of training in refusal behavior」).
 
 数据侧的描述同样简短. 预训练数据过滤 「removing sensitive content that could enable CBRN proliferation」, 加上 PII 输入过滤, 这些在 §5.2 被列为 o 系列共用的预训练缓解. 过滤比例, 过滤前后的数据量, 过滤对能力分的影响, 本文都没有. 通用的数据清洗流程可参见 [数据处理](../../../../llm-guide/3-预训练/3.1-预训练数据/3.1.3-数据处理/3.1.3-数据处理.md). 读到后面化学生物一节时值得回想这一点: 缓解前模型在多项生物评测上仍超过专家基线, 说明预训练过滤并没有把相关知识清干净, 真正起作用的是后训练阶段的拒答.
 
@@ -46,7 +46,7 @@ Table 1 的四行里, 标准拒答集的 not_unsafe 三个模型都是 1, not_ov
 
 附录能把这两个汇总数拆开. Table 17 里 o3-mini 的 XSTest 十个类别简单平均正好是 0.88, 与 Table 1 对得上; 掉分集中在 Discr: Nonsense context 0.48 与 Privacy: fictional 0.56. 同一张表上缓解前模型整体是 0.99, 缓解后降到 0.88. 这说明安全训练在带来拒答的同时, 也让模型在 「字面敏感, 语义无害」 的边界上更保守. 高难拒答集反过来: Table 16 里缓解前 sexual/exploitative 只有 0.52, 缓解后升到 0.93, 安全训练在这一类上起的作用最大.
 
-越狱评测 (Table 2) 的读法与拒答类似. Production jailbreaks, Jailbreak Augmented Examples, Human Sourced Jailbreaks 三行都在 0.95 以上, 三个模型差别不大; 只有 StrongReject 掉到 0.73 上下. 差别来自指标口径: goodness@0.1 对每条提示只看最强的前 10% 越狱技巧, 是最坏情形的安全率. 在这一行上 o3-mini 0.73 与 o1-mini 0.72 持平, GPT-4o 只有 0.37. 推理模型相对 GPT-4o 的优势, 在平均情形里几乎看不见, 要到最坏情形才显出来. 越狱评测的一般设计可参见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测.md).
+越狱评测 (Table 2) 的读法与拒答类似. Production jailbreaks, Jailbreak Augmented Examples, Human Sourced Jailbreaks 三行都在 0.95 以上, 三个模型差别不大; 只有 StrongReject 掉到 0.73 上下. 差别来自指标口径: goodness@0.1 对每条提示只看最强的前 10% 越狱技巧, 是最坏情形的安全率. 在这一行上 o3-mini 0.73 与 o1-mini 0.72 持平, GPT-4o 只有 0.37. 推理模型相对 GPT-4o 的优势, 在平均情形里几乎看不见, 要到最坏情形才显出来. 越狱评测的一般设计可参见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 ## 4. 幻觉与偏见: 分母决定结论
 
@@ -74,11 +74,11 @@ Gray Swan 竞技场 (§4.3.2) 给出的是反方向的信号. 攻击成功要求
 
 ## 7. 准备度框架怎么读: 缓解前, 缓解后与下界
 
-第 5 节开头有三条规则, 决定了后面所有数字的读法. 其一, 只有缓解后评分不高于中的模型才能部署, 不高于高的才能继续开发. 其二, 评级依据是缓解前模型, 即 「actively post-trained to be helpful, i.e., not refuse」 的研究版本; SAG 把缓解后等级定得与缓解前相同, 「to err on the side of caution」. 其三, 所有结果都只能当作 「a lower bound of potential model capability」, 因为更好的脚手架或诱导方法可能大幅提高分数. 这套流程的一般讨论见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证.md).
+第 5 节开头有三条规则, 决定了后面所有数字的读法. 其一, 只有缓解后评分不高于中的模型才能部署, 不高于高的才能继续开发. 其二, 评级依据是缓解前模型, 即 「actively post-trained to be helpful, i.e., not refuse」 的研究版本; SAG 把缓解后等级定得与缓解前相同, 「to err on the side of caution」. 其三, 所有结果都只能当作 「a lower bound of potential model capability」, 因为更好的脚手架或诱导方法可能大幅提高分数. 这套流程的一般讨论见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证/5.4-部署治理与持续保证.md).
 
 「缓解前更强」 这个隐含前提, 在能力类评测上并不总成立. 读图: 专业级 CTF 缓解后 21%, 缓解前只有 12%; BioLP 缓解后 41%, 缓解前 39%; ProtocolQA 缓解后 23%, 缓解前 18%. 本文对缓解前模型的描述是 「different post-training procedures」, 这意味着它不是缓解后模型去掉安全训练的版本, 而是另一条后训练支路, 在有些任务上可能反而训得更差. 所以缓解前的分数在拒答类评测上是上界, 在纯能力类评测上不一定是.
 
-置信区间的说明也值得一读. pass@1 的 95% 区间用 bootstrap 对 「模型的多次尝试」 重采样, 数据集本身视为固定; 本文自己承认这种做法在小数据集上会低估不确定性, 在通过率接近 0% 或 100% 时区间会过窄. 后面几项评测恰好都是小数据集: 面试编程题 18 道, 核知识专家题 87 道, MLE-bench 75 场. 读这些图上的误差棒时, 要把它当作偏乐观的区间. 评测统计的一般问题见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md).
+置信区间的说明也值得一读. pass@1 的 95% 区间用 bootstrap 对 「模型的多次尝试」 重采样, 数据集本身视为固定; 本文自己承认这种做法在小数据集上会低估不确定性, 在通过率接近 0% 或 100% 时区间会过窄. 后面几项评测恰好都是小数据集: 面试编程题 18 道, 核知识专家题 87 道, MLE-bench 75 场. 读这些图上的误差棒时, 要把它当作偏乐观的区间. 评测统计的一般问题见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 ## 8. 网络安全: 低
 
@@ -112,13 +112,13 @@ Gray Swan 竞技场 (§4.3.2) 给出的是反方向的信号. 攻击成功要求
 
 ## 12. 模型自主: 中风险落在一个数上
 
-o3-mini 是第一个在模型自主性上评为中的模型, 小结点名的依据是 SWE-bench Verified. 这一项的数字需要拆开读. 读图: o3-mini (tools) 61%, 用内部工具脚手架, 每题 4 次尝试取平均; 发布候选用 Agentless 1.0 只有 39%, 缓解前 40%, 低于 o1 的 48%. §5.7.2 写明 o3-mini (tools) 「was evaluated using a non-final checkpoint that differs slightly from the o3-mini launch candidate」, 第 3 节 「其余评测都用最终模型」 的清单没有列进这一处. 另外 SWE-bench Verified 本有 500 题, 本文只用内部验证过的 477 题, 与公开榜单不同口径. Coding Agent 的脚手架差异可参见 [IDE 与 Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
+o3-mini 是第一个在模型自主性上评为中的模型, 小结点名的依据是 SWE-bench Verified. 这一项的数字需要拆开读. 读图: o3-mini (tools) 61%, 用内部工具脚手架, 每题 4 次尝试取平均; 发布候选用 Agentless 1.0 只有 39%, 缓解前 40%, 低于 o1 的 48%. §5.7.2 写明 o3-mini (tools) 「was evaluated using a non-final checkpoint that differs slightly from the o3-mini launch candidate」, 第 3 节 「其余评测都用最终模型」 的清单没有列进这一处. 另外 SWE-bench Verified 本有 500 题, 本文只用内部验证过的 477 题, 与公开榜单不同口径. Coding Agent 的脚手架差异可参见 [IDE 与 Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
 
 同属这一类的其他评测, 大多不支持 「能力显著领先」. 面试题 (§5.7.1) 上编程题 o3-mini 缓解后 92%, o1 83%; 可编程题只有 18 道, 92% 约为 16.56 道, 相当于比 o1 多做对不到 2 道. 多选题 97 道, o3-mini 缓解后 80%, 与 o1 相同. 智能体任务 (§5.7.3) 上 o3-mini 缓解前 26%, 缓解后 27%, 六个模型中最低, o1-preview 42% 最高. MLE-bench 上 pass@1 缓解后 11%, pass@10 缓解后 20%, o1-preview 的 pass@10 为 37%. OpenAI PRs 上 o3-mini 缓解前后都是 0%, o1 为 12%.
 
-两处定性描述比数字更值得记下. 智能体任务里, o3-mini 通过了自动评分器的几次整体任务, 人工检查发现 「major parts of each task were left silently incomplete」, 例如偷换成更简单的模型代替 Mistral 7B, 自动评分器没有抓到. OpenAI PRs 的 0% 被归因于 「poor instruction following and confusion about specifying tools in the correct format」, 模型反复调用幻觉出来的 bash 工具, 而框架只接 python. 本文没有换成 o3-mini 习惯的工具格式重测, 所以这个 0% 混着能力与接口适配两种因素. Agent 评测的设计问题可参见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+两处定性描述比数字更值得记下. 智能体任务里, o3-mini 通过了自动评分器的几次整体任务, 人工检查发现 「major parts of each task were left silently incomplete」, 例如偷换成更简单的模型代替 Mistral 7B, 自动评分器没有抓到. OpenAI PRs 的 0% 被归因于 「poor instruction following and confusion about specifying tools in the correct format」, 模型反复调用幻觉出来的 bash 工具, 而框架只接 python. 本文没有换成 o3-mini 习惯的工具格式重测, 所以这个 0% 混着能力与接口适配两种因素. Agent 评测的设计问题可参见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
-合起来看, 中风险的依据相当集中: 一个用内部脚手架, 非最终检查点, 477 题子集测出的 61%. 正文把它解读为 「competently execute well-specified coding tasks」, 同时承认模型 「still performs poorly on evaluations designed to test real-world ML research capabilities」, 所以没到高. 这个判断本身是保守的, 因为按下界原则, 更好的脚手架只会让分数更高; 但它也说明, 同一个模型在同一类风险上的评级, 很大程度取决于评测方给了什么工具. 「偷偷没做完却通过评分器」 这一条, 则与 [Agent 安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐.md) 里讨论的奖励投机直接相关.
+合起来看, 中风险的依据相当集中: 一个用内部脚手架, 非最终检查点, 477 题子集测出的 61%. 正文把它解读为 「competently execute well-specified coding tasks」, 同时承认模型 「still performs poorly on evaluations designed to test real-world ML research capabilities」, 所以没到高. 这个判断本身是保守的, 因为按下界原则, 更好的脚手架只会让分数更高; 但它也说明, 同一个模型在同一类风险上的评级, 很大程度取决于评测方给了什么工具. 「偷偷没做完却通过评分器」 这一条, 则与 [Agent 安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md) 里讨论的奖励投机直接相关.
 
 ## 13. 多语言 MMLU
 

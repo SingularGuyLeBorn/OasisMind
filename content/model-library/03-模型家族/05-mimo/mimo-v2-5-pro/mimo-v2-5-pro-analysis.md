@@ -57,7 +57,7 @@ $$
 \tag{2}
 $$
 
-窗内所有键的 logit 都明显低于 sink 时, $p_i^{\mathrm{sink}}\to1$, $o_i\to0$, 这个头这一步基本不输出; 没有 sink 时, 128 个键再不相关也得把权重分完. 背景见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-StreamingLLM与Attention-Sink/07-StreamingLLM与Attention-Sink.md).
+窗内所有键的 logit 都明显低于 sink 时, $p_i^{\mathrm{sink}}\to1$, $o_i\to0$, 这个头这一步基本不输出; 没有 sink 时, 128 个键再不相关也得把权重分完. 背景见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md).
 
 ### 2.2. Flash 的消融
 
@@ -112,7 +112,7 @@ $$
 
 $x=0$ 时 $y=4$, 正是 3 层 MTP 的上限. 低熵任务 (如网页开发) 接受长, 高熵任务 (如 MMLU-Pro 一类知识问答) 接受短. 反解式 (5), 接受长度 3.6 对应 $x\approx0.048$, 2.8 对应 $x\approx0.32$ (推导). 发布页的 「约三倍」 没说在哪类任务上测, 按式 (5), 换一类任务, 接受长度和吞吐倍数都会变. 模型卡的 SGLang 部署示例用 EAGLE 投机解码, 步数为 3, 和 MTP 层数相同.
 
-MTP 用在 RL 上的理由来自 Flash 报告: on-policy 训练的小 batch 吃不满 GPU, 长尾序列到最后 batch 趋近 1, 多 token 草稿能补回算术强度. 到 V2.6, RL rollout 换成 DFlash 块扩散草稿模型, 一次出一整块草稿, 报告称平均接受长度比 MTP 高 31.3%. MTP 的一般机制见 [多 Token 预测 MTP](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md), 投机解码见 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用.md).
+MTP 用在 RL 上的理由来自 Flash 报告: on-policy 训练的小 batch 吃不满 GPU, 长尾序列到最后 batch 趋近 1, 多 token 草稿能补回算术强度. 到 V2.6, RL rollout 换成 DFlash 块扩散草稿模型, 一次出一整块草稿, 报告称平均接受长度比 MTP 高 31.3%. MTP 的一般机制见 [多 Token 预测 MTP](../../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.1-多Token预测MTP/2.8.1-多Token预测MTP.md), 投机解码见 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用/01-投机解码原理与应用.md).
 
 ## 3. 预训练与后训练
 
@@ -153,7 +153,7 @@ $$
 
 $\pi_{\mathrm{domain}_x}$ 是 prompt $x$ 所属领域的教师. 教师项的符号由师生在这个 token 上的概率比决定: 学生给 0.1, 教师给 0.5, 该项是 $\log5\approx1.61$, 推高这个 token; 学生给 0.4, 教师给 0.05, 是 $\log0.125\approx-2.08$, 压低它. $w_t=\mathrm{sg}[\pi_\theta/\mu_\theta]$, 越出 $[\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}}]$ 置 0; $\pi_\theta$ 和 $\mu_\theta$ 是同一组参数在训练引擎和推理引擎里算出的概率, $w_t$ 量的是两个引擎的数值差. 在 MoE 上, 两个引擎还可能选出不同的专家, R3 在训练时重放 rollout 记下的专家选择来对齐.
 
-Flash 报告的 RL 系统还有两块和长程任务直接相关. Data Scheduler 按历史通过率做动态采样, 给空闲的 GPU 派新 prompt; 超长轨迹用 partial rollout 切成多步, 同时限制陈旧度和每批 partial 样本的比例, 用考虑陈旧度的截断重要性采样补偿. Toolbox 是集中的资源分配器, 在并发任务之间执行工具的配额和 QPS 限制, 用容错的 Ray actor 池消除冷启动. 上万个环境同时调用搜索, 代码执行, 网页渲染, 任何一个工具卡住都会拖住一批 rollout, 这两块解决的是这个问题. MiMo-7B 那一代不做异步训练, Flash 开始接受有限的陈旧, V2.6 放宽到最多落后 4 个策略版本. Flash 的 Table 7 显示 MOPD 后数学, 代码, SWE 基本追平或超过最佳教师, 搜索智能体没追上 (BrowseComp 45.4 对 SFT 教师 51.7). 机制见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md).
+Flash 报告的 RL 系统还有两块和长程任务直接相关. Data Scheduler 按历史通过率做动态采样, 给空闲的 GPU 派新 prompt; 超长轨迹用 partial rollout 切成多步, 同时限制陈旧度和每批 partial 样本的比例, 用考虑陈旧度的截断重要性采样补偿. Toolbox 是集中的资源分配器, 在并发任务之间执行工具的配额和 QPS 限制, 用容错的 Ray actor 池消除冷启动. 上万个环境同时调用搜索, 代码执行, 网页渲染, 任何一个工具卡住都会拖住一批 rollout, 这两块解决的是这个问题. MiMo-7B 那一代不做异步训练, Flash 开始接受有限的陈旧, V2.6 放宽到最多落后 4 个策略版本. Flash 的 Table 7 显示 MOPD 后数学, 代码, SWE 基本追平或超过最佳教师, 搜索智能体没追上 (BrowseComp 45.4 对 SFT 教师 51.7). 机制见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md).
 
 发布页的 Frontier Coding 一段说代码能力的进一步提升来自 「scaling post-training compute」, 教师数量, RL 算法和超参都没给. 这一段配的评测是内部的 MiMo Coding Bench, 衡量模型在 Claude Code 一类 agentic 框架里做编程任务的能力, 覆盖仓库理解, 项目构建, 代码审查, 结构化产物生成, 规划和 SWE; 图题是「缩小与 Opus 4.6 的差距」, 也就是说在这套内部基准上 V2.5-Pro 仍低于 Opus 4.6. 发布页同时点名了 Claude Code, OpenCode, Kilo 三个可接入的 scaffold.
 

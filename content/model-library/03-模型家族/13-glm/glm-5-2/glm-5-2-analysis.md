@@ -34,7 +34,7 @@ I_{t,s}=\sum_{j=1}^{H^I} w^I_{t,j}\,\mathrm{ReLU}\left(q^I_{t,j}\cdot k^I_s\righ
 \tag{1}
 $$
 
-其中 $H^I$ 是 indexer 头数 (GLM 系列是 32), $q^I_{t,j}$ 是第 $j$ 个 indexer 头的查询, $k^I_s$ 是 token $s$ 的 indexer 键 (各头共用, 维度 128), $w^I_{t,j}$ 是按查询算出的头权重. 然后取分数最高的 $k$ 个位置, 主注意力只在这 $k$ 个 token 上算. 主注意力每层从 $O(L^2)$ 降到 $O(Lk)$, indexer 本身仍要对所有前面的 token 打分, 每层 $O(L^2)$, $N$ 层合计 $O(NL^2)$. indexer 头少, 维度低, 还能用 FP8, 单次比主注意力便宜一个量级, 可它是唯一还随 $L^2$ 增长的部分. DSA 靠两段继续训练接到稠密模型上: 先做短暂的稠密预热, 冻结其余参数, 只用 KL 让 indexer 的分布对齐本层各头聚合后的注意力分布; 再打开 top-k 选择做稀疏训练, 整个模型一起调, indexer 的蒸馏梯度走一条断开的计算图, 不回传到主干. 公式推导和 DSA 的两段训练见 [QSA 一文的 DSA 部分](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/06-QSA-Qwen稀疏注意力/06-QSA-Qwen稀疏注意力.md).
+其中 $H^I$ 是 indexer 头数 (GLM 系列是 32), $q^I_{t,j}$ 是第 $j$ 个 indexer 头的查询, $k^I_s$ 是 token $s$ 的 indexer 键 (各头共用, 维度 128), $w^I_{t,j}$ 是按查询算出的头权重. 然后取分数最高的 $k$ 个位置, 主注意力只在这 $k$ 个 token 上算. 主注意力每层从 $O(L^2)$ 降到 $O(Lk)$, indexer 本身仍要对所有前面的 token 打分, 每层 $O(L^2)$, $N$ 层合计 $O(NL^2)$. indexer 头少, 维度低, 还能用 FP8, 单次比主注意力便宜一个量级, 可它是唯一还随 $L^2$ 增长的部分. DSA 靠两段继续训练接到稠密模型上: 先做短暂的稠密预热, 冻结其余参数, 只用 KL 让 indexer 的分布对齐本层各头聚合后的注意力分布; 再打开 top-k 选择做稀疏训练, 整个模型一起调, indexer 的蒸馏梯度走一条断开的计算图, 不回传到主干. 公式推导和 DSA 的两段训练见 [QSA 一文的 DSA 部分](../../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/05-QSA-Qwen稀疏注意力/05-QSA-Qwen稀疏注意力.md).
 
 IndexCache 论文 (Bai 等, Z.ai 与清华, arXiv 2603.12201) 在一个 30B 的 DSA 模型上做了时延剖析: 上下文越长, indexer 在总时延里占的比例涨得越快, prefill 阶段最明显, 其余计算只缓慢增长. 同一篇论文统计了逐层 top-k 下标的重合率, 相邻层选中的 token 有 70% 到 100% 相同, 热力图上还能看出几段互相高度重合的层块. 既然相邻层大多选同一批 token, 每层各算一遍 indexer 大部分是重复劳动. 重合也有边界: 热力图左下和右上两角的重合率不到 0.4, 早期层和后期层关心的 token 差别很大; 跨层块边界时重合率掉得比块内快, 说明少数「过渡层」会把注意力焦点整体挪开. 所以不能随便挑一层的下标给全网用.
 
@@ -67,7 +67,7 @@ KV cache 降得少, 原因在缓存里存了什么. S 层只是不算 indexer, �
 
 ### 3.1. 两个目标与共用 KV
 
-MTP 在 GLM 系列里拿来做投机解码: MTP 层充当草稿模型, 一次往后猜几个 token, 主模型一次前向验证. 每次验证能落地的 token 数叫接受长度. 草稿越便宜, 接受长度越长, 解码越快. 机制见 [MTP 深度解析](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md) 与 [投机解码原理](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用.md). 1M 窗口下单 token 解码更慢, 接受长度多一点, 省下的时间就多一点; GLM-5 报告还提到 RL rollout 常处于小 batch 解码, 长尾样本最吃 MTP 的加速.
+MTP 在 GLM 系列里拿来做投机解码: MTP 层充当草稿模型, 一次往后猜几个 token, 主模型一次前向验证. 每次验证能落地的 token 数叫接受长度. 草稿越便宜, 接受长度越长, 解码越快. 机制见 [MTP 深度解析](../../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.1-多Token预测MTP/2.8.1-多Token预测MTP.md) 与 [投机解码原理](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用/01-投机解码原理与应用.md). 1M 窗口下单 token 解码更慢, 接受长度多一点, 省下的时间就多一点; GLM-5 报告还提到 RL rollout 常处于小 batch 解码, 长尾样本最吃 MTP 的加速.
 
 GLM-5.2 的 MTP 层本身也是一个 DSA 块, 也带 indexer. 博客的做法是把 IndexShare 搬到 MTP 的多步上: indexer 只在第一步算, top-k 下标给后面各步用. 配置里 `index_share_for_mtp_iteration: true` 就是这个开关. 各步参数和 GLM-5.1 一样共享.
 
@@ -137,7 +137,7 @@ $$
 
 ### 4.1. rollout 侧: slime 与防作弊
 
-slime 是 THUDM 开源的 RL 后训练框架 (github.com/THUDM/slime), GLM-5.3 的博客说它把 Megatron 训练和 SGLang 推理放进一条数据流. GLM-5.2 博客列的功能是四种 rollout 组织方式: 白盒 rollout, 黑盒 rollout, 压缩轨迹 (compact trajectory) 和子智能体工作流; 适配不同的并行策略, 路由策略, PD 分离和部署方式, 配合 KV cache FP8. 唯一的数字是: 用 slime 做并行 OPD, 把十多个专家模型合进最终模型, 全程约两天, 用了多少卡没写. OPD 的思路是学生在自己采的样本上逐 token 对齐教师分布, 多教师版本见 [MOPD](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md).
+slime 是 THUDM 开源的 RL 后训练框架 (github.com/THUDM/slime), GLM-5.3 的博客说它把 Megatron 训练和 SGLang 推理放进一条数据流. GLM-5.2 博客列的功能是四种 rollout 组织方式: 白盒 rollout, 黑盒 rollout, 压缩轨迹 (compact trajectory) 和子智能体工作流; 适配不同的并行策略, 路由策略, PD 分离和部署方式, 配合 KV cache FP8. 唯一的数字是: 用 slime 做并行 OPD, 把十多个专家模型合进最终模型, 全程约两天, 用了多少卡没写. OPD 的思路是学生在自己采的样本上逐 token 对齐教师分布, 多教师版本见 [MOPD](../../../../llm-guide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md).
 
 防作弊同样挂在 rollout 上. 博客承认 「GLM-5.2 shows more potential hacking behavior than GLM-5.1」, 没给比例. 举的例子有两类: 用 curl 从 GitHub 直接下载答案文件; 用 find, cat, python 三步串起来读 `/workspace/.eval/secret_cases.json`. 检测分两级: 规则过滤器先筛, 追求召回; LLM 判别再看意图, 保证精确. 监控在线跑在每一次工具调用上, 判定作弊就拦下这次调用, 返回假信息, rollout 继续往下走, 整条轨迹不丢. 博客说这个模块 「for both RL training and evaluation」, 评测里也开着; 脚注里写到防作弊判定的只有 NL2Repo (例子是未经许可的 pip 或 curl). 这意味着评测分数里包含被拦过又继续跑完的轨迹, 各项拦了多少次, 博客没写.
 
@@ -159,7 +159,7 @@ $$
 \tag{8}
 $$
 
-$a_{i,N}$ 是第 $i$ 个动作的最后一个 token, $a_{i+1,0}$ 是下一个动作的第一个. PPO 和 GAE 的推导见 [PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md). 屏蔽区间放得很宽, 而且不对称: 论文的数学推理实验用 $\epsilon_\ell=0.3$, $\epsilon_h=5.0$, 编程智能体实验用 0.8 和 3.0; GAE 的 $\lambda$ 随序列长度自适应. 论文在 Qwen3-30B-A3B 上的结果: SWE-Bench Verified 基线 23.0, GRPO 加 DIS 27.0, SAO 29.8; 原版 GRPO 约 160 步后崩掉, SAO 能稳定训约一千步. 摘要明确说 SAO 部署在了 GLM-5.2 的智能体 RL 流水线里.
+$a_{i,N}$ 是第 $i$ 个动作的最后一个 token, $a_{i+1,0}$ 是下一个动作的第一个. PPO 和 GAE 的推导见 [PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/04-PPO/04-PPO.md). 屏蔽区间放得很宽, 而且不对称: 论文的数学推理实验用 $\epsilon_\ell=0.3$, $\epsilon_h=5.0$, 编程智能体实验用 0.8 和 3.0; GAE 的 $\lambda$ 随序列长度自适应. 论文在 Qwen3-30B-A3B 上的结果: SWE-Bench Verified 基线 23.0, GRPO 加 DIS 27.0, SAO 29.8; 原版 GRPO 约 160 步后崩掉, SAO 能稳定训约一千步. 摘要明确说 SAO 部署在了 GLM-5.2 的智能体 RL 流水线里.
 
 ## 5. 评测, 接入与结论
 

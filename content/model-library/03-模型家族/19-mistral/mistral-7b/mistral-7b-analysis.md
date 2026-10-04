@@ -26,7 +26,7 @@ Mistral 7B 是 Mistral AI 的第一份技术报告, 篇幅很短: 架构一页�
 
 再加上嵌入. 词表 32000 乘 4096 约 1.31 亿, 输入和输出矩阵如果不共享, 总共约 2.62 亿, 模型总参数约 72.4 亿; 共享的话约 71.1 亿. 两种算法都落在 「7-billion-parameter」 的说法之内, 但论文既没说共享与否, 也没有印出精确参数量, 所以 「7B」 这个名字只能理解成量级. 层归一化的参数量级在 26 万左右, 对总数没有影响.
 
-规格表还决定了缓存成本. 按 fp16 存储, 每个 token 每层要存 key 和 value 各 8 × 128 个数, 32 层合计 2 × 32 × 8 × 128 × 2 字节 = 128 KiB. 如果 KV 头和查询头一样是 32 个, 这个数会变成 512 KiB. 引言里说 GQA 「reduces the memory requirement during decoding, allowing for higher batch sizes」, 这个 4 倍就是它在本模型上的具体含义. 论文没有给 GQA 的消融, 所以 「significantly accelerates the inference speed」 这句话没有对应的数字支撑. GQA 本身的机制见本库 [GQA](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
+规格表还决定了缓存成本. 按 fp16 存储, 每个 token 每层要存 key 和 value 各 8 × 128 个数, 32 层合计 2 × 32 × 8 × 128 × 2 字节 = 128 KiB. 如果 KV 头和查询头一样是 32 个, 这个数会变成 512 KiB. 引言里说 GQA 「reduces the memory requirement during decoding, allowing for higher batch sizes」, 这个 4 倍就是它在本模型上的具体含义. 论文没有给 GQA 的消融, 所以 「significantly accelerates the inference speed」 这句话没有对应的数字支撑. GQA 本身的机制见本库 [GQA](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
 
 ## 3. 滑动窗口: 131K 是上限, 不是实测长度
 
@@ -36,7 +36,7 @@ SWA 的想法很朴素: 每一层只看前面固定长度的窗口, 层数一叠
 
 窗口的边界还有一处前后不一. 图 1 图注说每个 token 「at most W tokens」, 图中 W = 3, 掩码每行恰好 3 个 1, 连自己在内. 正文却写成位置 i - W 到 i, 闭区间是 W + 1 个位置. 图 3 的掩码可以当作裁判: 每个查询 token 都恰好看 4 个位置, 与图 2 的 W = 4 对应. 所以图的约定是 「含自己共 W 个」, 正文的区间写法多了一个. 对 W = 4096 来说差一个位置无关紧要, 但照着正文公式写实现的人会写出和官方掩码不同的边界.
 
-速度方面, 正文只给了一个数: 16K 序列, W = 4096, 改过的 FlashAttention 和 xFormers 比 vanilla attention 快 2 倍. 这个 16K 已经超过了 context_len 的 2 倍, 比较的基线是 vanilla attention 而不是同样用 FlashAttention 的全注意力, 也没有交代硬件, batch 和是否端到端. 所以这个 2 倍更像一个实现层面的示意, 不适合拿去和别的长上下文方法直接比较. 相关背景见本库 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/02-FlashAttention-IO感知分块/02-FlashAttention-IO感知分块.md) 和 [稀疏与压缩注意力](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/2.3.2-稀疏与压缩注意力.md).
+速度方面, 正文只给了一个数: 16K 序列, W = 4096, 改过的 FlashAttention 和 xFormers 比 vanilla attention 快 2 倍. 这个 16K 已经超过了 context_len 的 2 倍, 比较的基线是 vanilla attention 而不是同样用 FlashAttention 的全注意力, 也没有交代硬件, batch 和是否端到端. 所以这个 2 倍更像一个实现层面的示意, 不适合拿去和别的长上下文方法直接比较. 相关背景见本库 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-注意力的高效实现/03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) 和 [稀疏与压缩注意力](../../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/2.4-稀疏注意力.md).
 
 ## 4. 滚动缓存与分块预填充
 
@@ -46,7 +46,7 @@ SWA 的想法很朴素: 每一层只看前面固定长度的窗口, 层数一叠
 
 分块预填充处理的是另一头: 提示词事先已知, 可以一次性算出整段的 key 和 value, 但太长的提示词一次算完会占太多显存, 于是按窗口大小切块. 图 3 展示第三块 「the dog go to」 的掩码: 对更早的 「The cat sat on」 全是 0, 对缓存里的 「the mat and saw」 按滑窗递减, 对本块用因果下三角. 每块的注意力矩阵是 W × 2W, W = 4096 时约 3355 万个分数, 与提示词总长无关, 这就是分块的意义.
 
-图 3 还有一个细节: 缓存块的第一列 「the」 对第三块所有 token 都是 0. 按 「含自己共 W 个」 的约定, 第三块第一个 token 能看到的最早位置是 「mat」, 所以缓存里最旧的那一格在这一块已经用不上, 下一步就会被覆盖. 这和图 2 的环形覆盖逻辑一致. 推理框架里的预填充和缓存管理见本库 [增量式 Prefill 与 KV-Cache 机制](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.1-推理框架/02-增量式Prefill与KV-Cache机制.md) 和 [KV 缓存与内存优化](../../../../llm-guide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md).
+图 3 还有一个细节: 缓存块的第一列 「the」 对第三块所有 token 都是 0. 按 「含自己共 W 个」 的约定, 第三块第一个 token 能看到的最早位置是 「mat」, 所以缓存里最旧的那一格在这一块已经用不上, 下一步就会被覆盖. 这和图 2 的环形覆盖逻辑一致. 推理框架里的预填充和缓存管理见本库 [增量式 Prefill 与 KV-Cache 机制](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.1-推理框架/01-增量式Prefill与KV-Cache机制/01-增量式Prefill与KV-Cache机制.md) 和 [KV 缓存与内存优化](../../../../llm-guide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md).
 
 ## 5. 基座评测: 和 Llama 2 13B 逐列比
 
@@ -98,9 +98,9 @@ SWA 的想法很朴素: 每一层只看前面固定长度的窗口, 层数一叠
 
 从注意力的来路看, SWA 引了两篇: [6] Sparse Transformer (2019) 和 [3] Longformer (2020). 两篇都是稀疏注意力的前作, 局部窗口的思路早已有之, Mistral 7B 的贡献不在窗口本身, 而在把窗口和环形缓存, 分块预填充这套推理工程绑在一起, 并交给 FlashAttention, xFormers, vLLM 去实现. GQA 引的是 [1] Ainslie 等人 2023 年的论文. 正文 「Compared to Llama, it introduces a few changes」 之后列出的三个小节, 是 SWA, 滚动缓存和分块预填充, 可见作者把自己定位成 「在 Llama 架构上做推理效率改造」.
 
-从人员上看, 参考文献里能读出这支团队的来历. [25] Llama 1 的作者列表中有 Thibaut Lavril, Marie-Anne Lachaux, Timothée Lacroix, 三人都在本文作者名单里; [14] 那篇计算最优训练的论文里有 Arthur Mensch 和 Diego de Las Casas, 两人也在本文作者名单里. 结论里批评 「scaling laws in 2 dimensions」 时引的恰好是 [14], 等于是作者在修正自己参与过的框架: 只看训练成本不够, 推理成本要单独算一维. 这个立场和 Mistral 7B 用小模型换推理效率的做法一脉相承. Scaling law 的背景见本库 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md).
+从人员上看, 参考文献里能读出这支团队的来历. [25] Llama 1 的作者列表中有 Thibaut Lavril, Marie-Anne Lachaux, Timothée Lacroix, 三人都在本文作者名单里; [14] 那篇计算最优训练的论文里有 Arthur Mensch 和 Diego de Las Casas, 两人也在本文作者名单里. 结论里批评 「scaling laws in 2 dimensions」 时引的恰好是 [14], 等于是作者在修正自己参与过的框架: 只看训练成本不够, 推理成本要单独算一维. 这个立场和 Mistral 7B 用小模型换推理效率的做法一脉相承. Scaling law 的背景见本库 [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md).
 
-从部署生态看, 参考实现, vLLM, SkyPilot, Hugging Face 集成在引言里占了一整段, 致谢里又专门感谢 Tri Dao 和 Daniel Haziza 在很紧的时间里把改动并入 FlashAttention 和 xFormers. 这说明本文的发布方式和技术内容同样重要: Apache 2.0 许可加开箱即用的推理栈, 是它能被广泛拿来微调的前提. 同目录的 Mistral 家族后续还有 Mixtral 8x7B 等模型, 那些是另外的报告, 数字不在本页. vLLM 的缓存管理见本库 [PagedAttention 与 vLLM](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/04-PagedAttention/04-PagedAttention.md), 窗口类方法的后续演化见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-StreamingLLM与Attention-Sink/07-StreamingLLM与Attention-Sink.md).
+从部署生态看, 参考实现, vLLM, SkyPilot, Hugging Face 集成在引言里占了一整段, 致谢里又专门感谢 Tri Dao 和 Daniel Haziza 在很紧的时间里把改动并入 FlashAttention 和 xFormers. 这说明本文的发布方式和技术内容同样重要: Apache 2.0 许可加开箱即用的推理栈, 是它能被广泛拿来微调的前提. 同目录的 Mistral 家族后续还有 Mixtral 8x7B 等模型, 那些是另外的报告, 数字不在本页. vLLM 的缓存管理见本库 [PagedAttention 与 vLLM](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7.3-长上下文推理优化/01-PagedAttention/01-PagedAttention.md), 窗口类方法的后续演化见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md).
 
 ## 11. 窗口, 上下文与算力: 几笔账
 

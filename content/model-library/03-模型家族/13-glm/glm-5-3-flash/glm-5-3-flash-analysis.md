@@ -31,7 +31,7 @@ GLM-5.3-Flash 没有在线性和稀疏之间二选一, 而是两种都用: 线�
 
 ### 1.4. 线性层: 状态大小固定
 
-配置里线性层的参数放在 `linear_attn_config` 下: 64 个头, 头维 128, 短卷积核长 4, `gate_lower_bound: -5.0`, 层号列表的字段名是 `kda_layers`. 字段名指向 Kimi Delta Attention (KDA): 在 Gated DeltaNet 的基础上把头级标量遗忘门换成通道级的对角遗忘, 写入前先按 delta 规则擦掉当前键方向上的旧值, $q, k, v$ 先过短卷积. 机制和分块并行算法见 [Kimi Delta Attention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md).
+配置里线性层的参数放在 `linear_attn_config` 下: 64 个头, 头维 128, 短卷积核长 4, `gate_lower_bound: -5.0`, 层号列表的字段名是 `kda_layers`. 字段名指向 Kimi Delta Attention (KDA): 在 Gated DeltaNet 的基础上把头级标量遗忘门换成通道级的对角遗忘, 写入前先按 delta 规则擦掉当前键方向上的旧值, $q, k, v$ 先过短卷积. 机制和分块并行算法见 [Kimi Delta Attention](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md).
 
 KDA 的状态递推是 (Kimi Linear 论文式 (1)):
 
@@ -75,7 +75,7 @@ I_{t,s}=\sum_{j=1}^{H^I} w^I_{t,j}\,\mathrm{ReLU}\left(q^I_{t,j}\cdot k^I_s\righ
 \tag{2}
 $$
 
-每个查询要和所有前面的键算一遍, 每层 $O(L^2)$, 是 1M 上下文下 indexer 延迟和显存的来源. 推导见 [QSA 一文的 DSA 与 IndexPool 部分](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/06-QSA-Qwen稀疏注意力/06-QSA-Qwen稀疏注意力.md). IndexPool 的做法是把相邻 4 个位置的 indexer 键加权池化成 1 个:
+每个查询要和所有前面的键算一遍, 每层 $O(L^2)$, 是 1M 上下文下 indexer 延迟和显存的来源. 推导见 [QSA 一文的 DSA 与 IndexPool 部分](../../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/05-QSA-Qwen稀疏注意力/05-QSA-Qwen稀疏注意力.md). IndexPool 的做法是把相邻 4 个位置的 indexer 键加权池化成 1 个:
 
 $$
 \tilde k^I_b=\sum_{i=0}^{3}\omega_{b,i}\,k^I_{4b+i}

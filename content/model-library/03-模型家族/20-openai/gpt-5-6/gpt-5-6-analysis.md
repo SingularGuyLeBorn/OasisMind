@@ -45,11 +45,11 @@ MinerU 抽取的问题比较集中. 第 7, 8, 10, 13, 14 页的第一句都丢�
 
 这页把 「多花算力」 拆成了两条路. 第一条是单个 agent 想得更久: max 比 xhigh 「even more time to reason and explore alternatives, run checks, and revise its approach」. 这就是推理时多花算力 (TestingTime) 的常规做法, 页面列出的档位至少有 medium, xhigh, max 三个, ChatGPT 里 Sol 只开放 medium 及以上. 第二条是横向加人: ultra 默认并行协调 4 个 agent, 用更多 token 换更好的结果和更短的出结果时间. BrowseComp 和 SEC-Bench Pro 的图里还画了 16 agent 的配置, 可惜这三张图都没抓成图片, 只能从总表里读 Ultra 的三个数: BrowseComp 92.2%, SEC-Bench Pro 74.3%, Terminal-Bench 2.1 91.9%, 分别比单 agent 的 Sol 高 1.8, 3.1, 3.1 分.
 
-ultra 为什么能 「更快」, 要看脚注 6 的口径: 多 agent 的延迟只按根 agent 算, 输出 token 和 API 成本把所有 agent 加总. 4 个 agent 并行, 墙钟时间取决于最慢的那条线加上汇总, 当然可能比一个 agent 串行想到底要短; 但 token 至少是 4 路之和, 成本不会低. 所以 ultra 的卖点是时间换钱, 和前面 「每个 token 做更多事」 的效率叙事方向相反, 页面把两者放在同一节 「Efficient by default, maximum performance on demand」 里, 用 「by default」 和 「on demand」 分开. 多 agent 并行的一般设计和汇总方式, 可参见 [多Agent系统](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.3-多Agent系统.md).
+ultra 为什么能 「更快」, 要看脚注 6 的口径: 多 agent 的延迟只按根 agent 算, 输出 token 和 API 成本把所有 agent 加总. 4 个 agent 并行, 墙钟时间取决于最慢的那条线加上汇总, 当然可能比一个 agent 串行想到底要短; 但 token 至少是 4 路之和, 成本不会低. 所以 ultra 的卖点是时间换钱, 和前面 「每个 token 做更多事」 的效率叙事方向相反, 页面把两者放在同一节 「Efficient by default, maximum performance on demand」 里, 用 「by default」 和 「on demand」 分开. 多 agent 并行的一般设计和汇总方式, 可参见 [多Agent系统](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.3-多Agent系统/13.3.3-多Agent系统.md).
 
-程序化工具调用 (Programmatic Tool Calling) 是另一处和 token 效率直接相关的改动. 模型写一段轻量程序, 在程序里调用工具, 过滤中间结果, 监控进度, 决定下一步, 不必把每个工具返回都塞回上下文. 页面给的好处是 「fewer tokens, fewer model round trips, and less guidance」, 第 14 页还补了一句: 程序在内存里运行, 所以兼容 Zero Data Retention. 这一路和 multi-agent beta 一起, 构成 Responses API 上 「让模型自己编排」 的两种方式, 一种是写代码编排工具, 一种是派子 agent. 工具调用从逐次 JSON 往返到代码编排的演进, 可参见 [工具调用演进](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.4-工具调用演进.md).
+程序化工具调用 (Programmatic Tool Calling) 是另一处和 token 效率直接相关的改动. 模型写一段轻量程序, 在程序里调用工具, 过滤中间结果, 监控进度, 决定下一步, 不必把每个工具返回都塞回上下文. 页面给的好处是 「fewer tokens, fewer model round trips, and less guidance」, 第 14 页还补了一句: 程序在内存里运行, 所以兼容 Zero Data Retention. 这一路和 multi-agent beta 一起, 构成 Responses API 上 「让模型自己编排」 的两种方式, 一种是写代码编排工具, 一种是派子 agent. 工具调用从逐次 JSON 往返到代码编排的演进, 可参见 [工具调用演进](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.4-工具调用演进/13.1.4-工具调用演进.md).
 
-这一节有两个空白. 一是 Sol, Terra, Luna 的档位上限是否一样, 页面只说 max 对 ChatGPT Work 和 Codex 里所有能用 GPT-5.6 的用户开放, 没说 Luna 开 max 时和 Sol 开 medium 谁强. 二是总表每个模型只给一个分数, 除了 Ultra 单列, 没标用的是哪个推理档, 正文却在 「medium reasoning」, 「max reasoning」 之间来回切换. 推理档位对分数的影响有多大, 第 2 页的 Agents’ Last Exam 就是例子, 下一节细说. 推理模型怎样在推理时分配思考量的一般讨论, 见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
+这一节有两个空白. 一是 Sol, Terra, Luna 的档位上限是否一样, 页面只说 max 对 ChatGPT Work 和 Codex 里所有能用 GPT-5.6 的用户开放, 没说 Luna 开 max 时和 Sol 开 medium 谁强. 二是总表每个模型只给一个分数, 除了 Ultra 单列, 没标用的是哪个推理档, 正文却在 「medium reasoning」, 「max reasoning」 之间来回切换. 推理档位对分数的影响有多大, 第 2 页的 Agents’ Last Exam 就是例子, 下一节细说. 推理模型怎样在推理时分配思考量的一般讨论, 见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 ## 4. 效率叙事: 分数, token 和估算成本
 
@@ -57,7 +57,7 @@ ultra 为什么能 「更快」, 要看脚注 6 的口径: 多 agent 的延迟�
 
 分数本身也有口径问题. Agents’ Last Exam 正文说 Sol 「sets a new high of 53.6」, 比 Fable 5 高 13.1 分, 反推 Fable 5 是 40.5, 和总表一致; 可总表里 Sol 是 52.7%, 比正文低 0.9. medium 档按 11.4 分推算是 51.9, 总表的 52.7 正好夹在 51.9 和 53.6 之间, 看起来是第三个推理档的结果. 第 3 页曲线里 Sol 那条深蓝线冲出了画面顶端, 也读不出落点. 同一个评测, 正文, 总表, 图各给一个口径, 读者只能按 「53.6 是最高档」 理解.
 
-「within one point」 也值得较真. Artificial Analysis Intelligence Index v4.1 上 Sol 58.9, Fable 5 59.9, 差正好 1.0 分, 方向是 Sol 落后. 正文用 「comes within one point」 加 「61% less time at roughly half the estimated cost」 把一项输了的比较写成了效率胜利. 从 「单位成本的分数」 看这个说法站得住, 从 「谁的分数高」 看, 这一项是 Fable 5 赢. 评测证据该怎么读, 可以对照 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md) 里对口径和对照组的要求.
+「within one point」 也值得较真. Artificial Analysis Intelligence Index v4.1 上 Sol 58.9, Fable 5 59.9, 差正好 1.0 分, 方向是 Sol 落后. 正文用 「comes within one point」 加 「61% less time at roughly half the estimated cost」 把一项输了的比较写成了效率胜利. 从 「单位成本的分数」 看这个说法站得住, 从 「谁的分数高」 看, 这一项是 Fable 5 赢. 评测证据该怎么读, 可以对照 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md) 里对口径和对照组的要求.
 
 内部使用数据是另一类 「效率」 证据. 内部测试期间, 每位活跃研究员日均输出 token 超过 GPT-5.5 时期最高水平的两倍; 过去六个月, 研究算力中用于内部编程推理的份额增长 100 倍, 内部 agentic token 用量增长约 22 倍. 页面自己说 「These adoption metrics do not measure research progress on their own」. 份额增长 100 倍意味着六个月前这个份额不到 1%, 起点和终点都没给. 这组数说明 OpenAI 内部在大量用 agent 写代码, 但换不成 「研究快了多少」.
 
@@ -65,7 +65,7 @@ ultra 为什么能 「更快」, 要看脚注 6 的口径: 多 agent 的延迟�
 
 总表 11 组 39 行 (按 PDF 计, 含 MinerU 丢掉的 GDPval-AA v2). 按 「Sol 不开 Ultra 时是否为该行最高」 数: 26 行最高, 1 行持平 (GPQA Diamond 94.6% 与 Mythos Preview 相同), 12 行被别的模型超过. 被超过的 12 行是: GDPval-AA v2 (Fable 5 1,759.6 Elo 对 1,747.8), Artificial Analysis Intelligence Index (Fable 5 59.9 对 58.9), SWE-Bench Pro (Mythos 5 80.3% 对 64.6%), HealthBench Professional (Fable 5 60.9% 对 60.5%), ExploitBench (Mythos 5 78% 对 73.5%), NanoGPT 和 PostTrainBench Lite (都输给 Terra), FrontierMath Tier 4 (末列 87.8% 对 83%), Toolathlon (Mythos 5 61.7% 对 58%), MRCR 512K-1M (GPT-5.5 74% 对 73.8%), GraphWalks BFS 256k 和 1mil (Mythos 5 91.1% 和 79.4%). 26 行 「最高」 里有不少对手列是 「—」, 比如 DeepSWE, OSWorld, ExploitGym, 实际没有对手分数可比.
 
-对照对象在各组之间换来换去, 是读这张表最大的障碍. 专业工作, 科学, 多模态组对照 Fable 5 和 Opus 4.8; 编程, 电脑操作, 网络安全, 学术, 工具使用组换成 Mythos 5 和 Mythos Preview; 长上下文组是 Mythos 5, Mythos Preview 加 Opus 4.8; ARC-AGI-3 只有 Opus 4.8 和 Gemini. 结果正文第 3 页说编程指数比 Fable 5 高 2.8 分, Luna 超过 Opus 4.8, 编程表里却没有这两个模型; 编程表里 Mythos 5 在 SWE-Bench Pro 上领先 Sol 15.7 分, 正文只字未提, 转而强调 Terminal-Bench 2.1 (领先 Mythos 5 0.8 分) 和 DeepSWE (对手无分数) 的 state of the art. Agent 评测怎样选基准, 怎样读排行, 见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+对照对象在各组之间换来换去, 是读这张表最大的障碍. 专业工作, 科学, 多模态组对照 Fable 5 和 Opus 4.8; 编程, 电脑操作, 网络安全, 学术, 工具使用组换成 Mythos 5 和 Mythos Preview; 长上下文组是 Mythos 5, Mythos Preview 加 Opus 4.8; ARC-AGI-3 只有 Opus 4.8 和 Gemini. 结果正文第 3 页说编程指数比 Fable 5 高 2.8 分, Luna 超过 Opus 4.8, 编程表里却没有这两个模型; 编程表里 Mythos 5 在 SWE-Bench Pro 上领先 Sol 15.7 分, 正文只字未提, 转而强调 Terminal-Bench 2.1 (领先 Mythos 5 0.8 分) 和 DeepSWE (对手无分数) 的 state of the art. Agent 评测怎样选基准, 怎样读排行, 见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 第 7 页的 BrowseComp 是一处数字归属错误. 正文说 「GPT‑5.6 Sol sets new state-of-the-art results on BrowseComp at 92.2%」, 总表里 Sol 是 90.4%, 92.2% 是 Sol Ultra. 不开 Ultra 的 90.4% 仍高于 Mythos 5 的 88%, 结论不变, 但单 agent 和四 agent 的分数被混成了一个. ExploitGym 同理: 正文说 「almost doubles GPT‑5.5’s peak pass rate, from 15.1% to 24.9% under the two-hour cap」, 24.9/15.1 是 1.65 倍; 总表写的是六小时的 33.7%, 拿去对 GPT-5.5 的 15.1%, 两边时限不一定一样. 脚注 3 又说 ExploitGym 在更快的 alpha API 上跑, 延迟折算后部分超出时限.
 
@@ -85,7 +85,7 @@ ARC-AGI-3 是另一处断层. Sol 7.78%, Terra 0.8%, Luna 0.18%, GPT-5.5 0.43%, 
 
 训练方面, 本页没有任何可用信息. 唯一和训练沾边的句子是 「We trained GPT‑5.6 to get more useful work from every token」, 说明训练目标里包含 token 效率, 但没说是通过什么手段: 奖励里加长度惩罚, 数据里筛短轨迹, 还是别的办法, 一概没提. 预训练数据, SFT, 强化学习, 奖励设计, 训练算力, 都没有数字.
 
-间接线索有两处. 一是 「Protections trained into the model」, 说明部分安全防护是训练进模型的, 与外部的实时检查, 监控分层配合; 二是第 11 页说研究员用 GPT-5.6 「optimizing training systems」, 以及自我改进评测里的 「optimizing kernels and training recipes」. 后者说明 GPT-5.6 参与了 OpenAI 自己的训练基础设施工作, 但没说参与了 GPT-5.6 本身还是后续模型. Agent 类模型常见的强化学习训练路线, 可参见 [AgenticRL训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md), 本页没有说 GPT-5.6 用了哪一种.
+间接线索有两处. 一是 「Protections trained into the model」, 说明部分安全防护是训练进模型的, 与外部的实时检查, 监控分层配合; 二是第 11 页说研究员用 GPT-5.6 「optimizing training systems」, 以及自我改进评测里的 「optimizing kernels and training recipes」. 后者说明 GPT-5.6 参与了 OpenAI 自己的训练基础设施工作, 但没说参与了 GPT-5.6 本身还是后续模型. Agent 类模型常见的强化学习训练路线, 可参见 [AgenticRL训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md), 本页没有说 GPT-5.6 用了哪一种.
 
 ## 8. 安全: 评级, 分层防护和算力投入
 
@@ -93,7 +93,7 @@ ARC-AGI-3 是另一处断层. Sol 7.78%, Terra 0.8%, Luna 0.18%, GPT-5.5 0.43%, 
 
 防护结构分四层: 训练进模型的防护, 实时检查, 持续监控, 账户级执法. MinerU 丢掉的那句补上了关键一环: 「Our approach adds a reasoning monitor that reviews the conversation」, 用一个会推理的监控器审阅整段对话, 取代 「classifier flags alone decide what to block」 的做法. 由于部分防护用推理时多花算力 (TestingTime) 来判断, 发现漏洞后可以快速更新, 不必从头重训分类器. 这相当于把安全判断也做成了一个推理任务, 代价是每次判断要消耗推理算力, 页面说整个安全系统 「powered by more compute than ever before」, 与此一致.
 
-两个数字撑起了安全一节. 一是 Sol 的网络安全防护比之前模型 「block roughly ten times more potentially harmful activity」, 没说是次数还是比率, 也没给误拦率, 只承认 「can create friction for benign use」, 并在 ChatGPT 和 Codex 里提供降到低能力模型重试的出口. 二是上线前做了约 700,000 NVIDIA A100 等效 GPU 小时的黑盒自动化红队测试, 约合 80 GPU 年, 1,000 张卡连跑约 29 天. 访问控制上, Trusted Access for Cyber 的个人成员要在 9 月 1 日前开启硬件 passkey, 否则退回默认权限, 同时限制高风险实体和高风险司法辖区. 安全评测和对抗测试的一般方法见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测.md), 先保守上线再按真实使用放宽的部署思路见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证.md).
+两个数字撑起了安全一节. 一是 Sol 的网络安全防护比之前模型 「block roughly ten times more potentially harmful activity」, 没说是次数还是比率, 也没给误拦率, 只承认 「can create friction for benign use」, 并在 ChatGPT 和 Codex 里提供降到低能力模型重试的出口. 二是上线前做了约 700,000 NVIDIA A100 等效 GPU 小时的黑盒自动化红队测试, 约合 80 GPU 年, 1,000 张卡连跑约 29 天. 访问控制上, Trusted Access for Cyber 的个人成员要在 9 月 1 日前开启硬件 passkey, 否则退回默认权限, 同时限制高风险实体和高风险司法辖区. 安全评测和对抗测试的一般方法见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md), 先保守上线再按真实使用放宽的部署思路见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证/5.4-部署治理与持续保证.md).
 
 ## 9. 本文对不上的数字
 

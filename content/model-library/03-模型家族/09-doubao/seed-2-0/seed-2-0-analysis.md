@@ -31,7 +31,7 @@ Seed2.0 的引言先把家族点了一遍: 通用模型 Seed1.6/1.8, 多模态 S
 
 视觉侧共 50 个图像基准和 24 个视频基准, 很多项的计分方式与官方不同. DynaMath 报最差情况准确率, 一道题的 10 个变体全对才得分, 这解释了为什么各家在这一行都只有六七十分; MathKangaroo 取 2025 年各期比赛的平均; MMMU-Pro 合并 10 选项的标准集和纯视觉子集; HiPhO 是 13 场物理奥赛的归一化平均; ArcAGI 同时给文本矩阵和渲染图, 作者注意到加上图像后 Seed2.0 的表现明显提升; MTVQA 用 DeepSeek-V3-0324 当裁判, VibeEval 把 1 到 5 分换算到 0 到 100; MMSIBench 用循环评测消除选项位置偏差. 视频侧, 运动与感知类统一用 2 FPS, 强调物理动态的 Morse-500 用 5 FPS, 对比模型用同样设置. 这些约定大多比官方口径更严或更细, 横向比较时要确认对手是不是在同一口径下重跑.
 
-agent 侧的工程改动更多. 作者重构了测试脚本, 去掉任务级入口配置, 把运行环境合并成预构建镜像, 修复参考环境里已经失效或出错的部分, 把外部包仓库换成内部镜像; 然后按质量过滤掉几类用例: 多容器 Docker Compose 场景, 参考解法自己都通不过验证的用例, 多次运行结果不一致的用例, 异常占用磁盘的任务, 依赖网络且结果不稳定的题, 以及下载量大或验证复杂影响复现的场景. Terminal-Bench 2.0 因网络限制和安全考虑去掉了 extract-moves-from-video, mailman, install-windows-3.11 三题. 除非特别说明, 评测都不接外部工具. 这些改动让 Seed 的数更稳, 也意味着 Seed 列跑的是清洗过的题集, 对手取官方数时题集不同, 表里没有区分. 运行环境的一般讨论见 [运行时环境与沙箱](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md).
+agent 侧的工程改动更多. 作者重构了测试脚本, 去掉任务级入口配置, 把运行环境合并成预构建镜像, 修复参考环境里已经失效或出错的部分, 把外部包仓库换成内部镜像; 然后按质量过滤掉几类用例: 多容器 Docker Compose 场景, 参考解法自己都通不过验证的用例, 多次运行结果不一致的用例, 异常占用磁盘的任务, 依赖网络且结果不稳定的题, 以及下载量大或验证复杂影响复现的场景. Terminal-Bench 2.0 因网络限制和安全考虑去掉了 extract-moves-from-video, mailman, install-windows-3.11 三题. 除非特别说明, 评测都不接外部工具. 这些改动让 Seed 的数更稳, 也意味着 Seed 列跑的是清洗过的题集, 对手取官方数时题集不同, 表里没有区分. 运行环境的一般讨论见 [运行时环境与沙箱](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱/13.3.4-运行时环境与沙箱.md).
 
 高阶任务的四个维度各有自建集. Science Discovery 用 AInstein Bench 考科学编程, 看模型能否实现和操作科研流程里的计算程序, 用 BABE 考生物领域图文交织的科研推理; Vibe Coding 用 NL2Repo-Bench, 要求从自然语言规格一次性端到端生成整个仓库, 考跨文件一致性和依赖管理; Context Learning 除 CL-Bench, KOR-Bench 外加入 DeR², 考从嘈杂的长技术文档里提取信息再推理, 另有客服问答和复杂工作流两个内部场景, 前者专门处理召回信息噪声很大的情况; Real-World Tasks 里 GDPVal-Verified 是 GDPVal 中可用 rubric 自动评分的可靠子集, WorldTravel 考目标分解和可执行的多步规划. 每个维度都说 「锚定实践中观察到的具体失败模式」, 这与 Seed2.1 后来用用户坏例扩充基准是同一条路.
 
@@ -61,7 +61,7 @@ Table 4 里自建的长尾集和公开事实集给出了相反的图景, 正好�
 
 Table 3 的指令遵循组里, MultiChallenge 68.3 与 Gemini-3-Pro High 的 68.7 基本持平, 明显高于 GPT-5.2 High 的 59.5; Inverse IFEval 78.9 仅次于 Gemini 的 79.6. 随后原文用面向中文生产场景的内部集细分, 共 912 个样例, 17 个加权维度, Table 6 列出其中 9 个测试集: 格式, 条件规则, 指定内容, 指定措辞, 语气, emoji, few-shot, 以及中英文长度约束.
 
-Table 7 只拿 Seed2.0 Pro 与 Seed1.8 比. Overall 从 72.89 升到 75.26, 涨 2.37; 涨幅最大的是 Tone +15.16, Phrasing +10.31, Few-shot +9.53. 把表上 9 列简单平均, Seed1.8 约 71.22, Seed2.0 Pro 约 76.67, 差 5.45, 比 Overall 的涨幅大一倍多, 说明表上没露出的 8 个维度整体涨得少, 甚至可能退步. 表上能看到的退步是 Content, 从 90.48 降到 87.76; Format 只从 45.33 到 46.00, 是全表最低的一列. **风格可控性涨得多, 硬约束几乎没动**, 而第 2 节部署数据里企业最需要的恰恰是结构化输出. 结构化输出的一般讨论见 [结构化输出](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.5-结构化输出.md).
+Table 7 只拿 Seed2.0 Pro 与 Seed1.8 比. Overall 从 72.89 升到 75.26, 涨 2.37; 涨幅最大的是 Tone +15.16, Phrasing +10.31, Few-shot +9.53. 把表上 9 列简单平均, Seed1.8 约 71.22, Seed2.0 Pro 约 76.67, 差 5.45, 比 Overall 的涨幅大一倍多, 说明表上没露出的 8 个维度整体涨得少, 甚至可能退步. 表上能看到的退步是 Content, 从 90.48 降到 87.76; Format 只从 45.33 到 46.00, 是全表最低的一列. **风格可控性涨得多, 硬约束几乎没动**, 而第 2 节部署数据里企业最需要的恰恰是结构化输出. 结构化输出的一般讨论见 [结构化输出](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.5-结构化输出/13.1.5-结构化输出.md).
 
 ## 4. 视觉与 Agent
 
@@ -77,11 +77,11 @@ Table 10 还给了 Seed1.8 开关工具的两列, 这让 「换代」 和 「加
 
 ### 4.2. Agent: 搜索强, 长时程编码弱
 
-Table 11 分 Coding Agent, Search Agent, Tool Use, Deep Research, Vision Agent 五组. 搜索和深度研究是 Seed2.0 Pro 最强的部分: BrowseComp-zh 82.4, HLE-Verified 73.6, DeepSearchQA 77.4, DeepResearchBench 53.3 都是全表最高. 这里的口径要看清: 对竞品取官方报告与 Seed 实测中的较高者, Seed 自己用单一实测, **这条规则系统性抬高对手**. 括号里的数字是对齐设置下的分数, BrowseComp 一行 GPT-5.2 High 写作 77.9 (65.3), Seed2.0 Pro 77.3 按括号外排第二, 按对齐口径领先十二分; DeepSearchQA 上 Claude-Opus-4.5 的两个数 76.1 (41.6) 相差 34.5, agent 框架本身就是变量. Agent 评测的一般问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+Table 11 分 Coding Agent, Search Agent, Tool Use, Deep Research, Vision Agent 五组. 搜索和深度研究是 Seed2.0 Pro 最强的部分: BrowseComp-zh 82.4, HLE-Verified 73.6, DeepSearchQA 77.4, DeepResearchBench 53.3 都是全表最高. 这里的口径要看清: 对竞品取官方报告与 Seed 实测中的较高者, Seed 自己用单一实测, **这条规则系统性抬高对手**. 括号里的数字是对齐设置下的分数, BrowseComp 一行 GPT-5.2 High 写作 77.9 (65.3), Seed2.0 Pro 77.3 按括号外排第二, 按对齐口径领先十二分; DeepSearchQA 上 Claude-Opus-4.5 的两个数 76.1 (41.6) 相差 34.5, agent 框架本身就是变量. Agent 评测的一般问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 编码 agent 是另一幅景象. SWE-Evo 上 Seed2.0 Pro 8.5, Claude-Opus-4.5 27.1; SWE-Bench Pro 46.9 对 GPT-5.2 High 55.6; Terminal Bench 2.0 55.8 对 62.4, 而且这一项去掉了 3 道题并做了质量过滤. 能拿第一的只有 SpreadsheetBench Verified 79.1. 工具调用组里 τ²-Bench retail 90.4 全表最高, telecom 却是 94.2, 五家最低, telecom 场景要引导用户自己排查设备, 对话轮数多, 状态复杂. **短时程的调用做得好, 持续改动一个有状态系统做得差**, 这是 agent 部分最清楚的分界. Table 12 里 Lite 对 Gemini-3-Flash High 也是同样的形状: Terminal Bench 45.0 对 60.0, SWE Bench Verified 73.5 对 78.0, Multi-SWE-Bench 41.1 对 59.0, 编码差距并不随尺寸缩小而消失.
 
-Vision Agent 一组是 Seed1.5-VL 那条 GUI 与游戏 agent 线的延续. Seed1.5-VL 当时用 UI-TARS 的数据训 GUI, 在 14 个网页小游戏上看交互轮数增加时的分数; Seed2.0 的 Minedojo-Verified 49.0, MM-BrowseComp 48.8 大幅领先, 但两个 Claude 在这一组都是 「-」, 实际只有三家在比. 这组分数说明视觉 agent 在 2.0 代已是强项, 下一代 Seed2.1 把它扩成了统一的通用 CUA. 编码 agent 的一般讨论见 [IDE 与 Coding Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
+Vision Agent 一组是 Seed1.5-VL 那条 GUI 与游戏 agent 线的延续. Seed1.5-VL 当时用 UI-TARS 的数据训 GUI, 在 14 个网页小游戏上看交互轮数增加时的分数; Seed2.0 的 Minedojo-Verified 49.0, MM-BrowseComp 48.8 大幅领先, 但两个 Claude 在这一组都是 「-」, 实际只有三家在比. 这组分数说明视觉 agent 在 2.0 代已是强项, 下一代 Seed2.1 把它扩成了统一的通用 CUA. 编码 agent 的一般讨论见 [IDE 与 Coding Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
 
 ### 4.3. 高阶任务表: 同名基准, 不同数字
 
@@ -93,7 +93,7 @@ Vibe Coding 组的两个分母说明了长时程编码的真实难度. NL2Repo-B
 
 ### 5.1. TestingTime: 验证器从奖励侧走到了推理侧
 
-Seed1.5-Thinking 把 「会思考的验证器」 用在奖励侧: 训练时判断答案对不对. Seed2.0 把验证搬到了推理侧. Table 2 的 IMO 35/42 和 CMO 114/126 来自附录 E.1 的 **solve-verify-refine 流水线**: 生成候选解, 自查漏洞, 改写, 反复迭代. IMO 正好压在金牌线 35 上, P6 得 0 分; CMO 比金牌线 87 高 27 分. 表里没有迭代轮数, 也没有评分人和细则, 衡量的是 「模型加流水线」. 自我修正的一般讨论见 [反思与自我修正](../../../../llm-guide/13-Agent/13.2-Agent认知架构/13.2.3-反思与自我修正.md), 推理时多花算力的讨论见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
+Seed1.5-Thinking 把 「会思考的验证器」 用在奖励侧: 训练时判断答案对不对. Seed2.0 把验证搬到了推理侧. Table 2 的 IMO 35/42 和 CMO 114/126 来自附录 E.1 的 **solve-verify-refine 流水线**: 生成候选解, 自查漏洞, 改写, 反复迭代. IMO 正好压在金牌线 35 上, P6 得 0 分; CMO 比金牌线 87 高 27 分. 表里没有迭代轮数, 也没有评分人和细则, 衡量的是 「模型加流水线」. 自我修正的一般讨论见 [反思与自我修正](../../../../llm-guide/13-Agent/13.2-Agent认知架构/13.2.3-反思与自我修正/13.2.3-反思与自我修正.md), 推理时多花算力的讨论见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 另两处成绩用的是多次采样. Table 5 的 Putnam-200 是 Pass@8, agent 可多轮调用 Lean, Python 和 Lean 搜索, Lean 编译器本身就是判定器, Seed2.0 Pro 35.5, Lite 30.5, 专门的 Seed-1.5 Prover 与通用的 Gemini-3-Pro 都是 26.5, Gemini 是否在同一框架和预算下运行没说. Figure 7 的 ICPC 同样是 Pass@8, Seed2.0 Pro 73.02%, 原文说 「五场全金」; 人类队伍错误提交要计罚时, 模型的八次提交不计罚时, 这样折算奖牌等于把采样预算换成了排名. Table 15 的 IMO-Bench 一格补上关键信息: Seed2.0 Pro 的 bon 0.87 接近 Gemini-3-Pro 的 0.92, won 0.66 却明显低于 GPT-5.2 High 的 0.81. **上限高, 下限低**, 多次采样加挑选对 Seed2.0 Pro 收益特别大, 这与 Seed1.5-Thinking 的 Codeforces pass@8 高出 avg@8 近二十分是同一种形状.
 

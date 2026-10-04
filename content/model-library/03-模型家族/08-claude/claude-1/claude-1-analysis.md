@@ -37,7 +37,7 @@ excerpt: "这份 PDF 分成两块. 第 1 页到第 5 页是 2023 年 3 月 14 �
 
 「helpful, honest, and harmless」 在全文出现两次, 一次在第 1 页的产品定义里, 一次在第 2 页的后续计划里. 这三个词不是营销新造的: Anthropic 2021 年的 「A General Language Assistant as a Laboratory for Alignment」 就把 HHH 当作助手对齐的目标, 2022 年 4 月的 HH-RLHF 论文用人类偏好比较训练偏好模型, 再用 RL 优化策略, 并公开了一部分 helpful 与 harmless 的比较数据; 2022 年 12 月的 **Constitutional AI** 论文把 harmless 一侧的人类标注换成 AI 按一组书面原则给出的偏好, 即 RLAIF. 公告发布两个月后, Anthropic 在 2023 年 5 月的 「Claude's Constitution」 一文里明确说 Claude 用这套宪法训练. 这条时间线来自公开论文和博客, 本公告自己没有提任何一种方法.
 
-公告里最具体的质量说法来自客户: 早期客户反馈 Claude 更不容易产生有害输出, 更好交谈, 也更 steerable, 用更少的力气就能拿到想要的结果. Anthropic 自己补了一句: Claude 能按指示调整个性, 语气和行为. 把这两句放回上面那条研究线, 「更少有害输出而不过度回避」 正是 Constitutional AI 论文追求的 harmless 且 non-evasive; 但公告没有给任何有害率, 拒答率或对比数据, 所以这只能算方向一致, 算不上证据. **RLHF** 与 RLAIF 的机制见 [基于奖励模型的RL-RLHF-PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/4.4.1-基于奖励模型的RL-RLHF-PPO.md), [Constitutional AI 宪法对齐](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 和 [RLAIF](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLAIF/4.4.3-RLAIF.md).
+公告里最具体的质量说法来自客户: 早期客户反馈 Claude 更不容易产生有害输出, 更好交谈, 也更 steerable, 用更少的力气就能拿到想要的结果. Anthropic 自己补了一句: Claude 能按指示调整个性, 语气和行为. 把这两句放回上面那条研究线, 「更少有害输出而不过度回避」 正是 Constitutional AI 论文追求的 harmless 且 non-evasive; 但公告没有给任何有害率, 拒答率或对比数据, 所以这只能算方向一致, 算不上证据. **RLHF** 与 RLAIF 的机制见 [基于奖励模型的RL-RLHF-PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md), [Constitutional AI 宪法对齐](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 和 [RLAIF](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
 
 ### 2.2. 六家伙伴: 定性评测和检索接入
 
