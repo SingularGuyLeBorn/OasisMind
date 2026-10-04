@@ -339,3 +339,28 @@
 - **dr-tulu-14** 无引用时把引用精确率设为 1 会奖励拒绝引用；若同时按查询次数给奖励，还可能诱导无效搜索等策略性行为. 求证结果:
 - **dr-tulu-15** 训练与推理的搜索预算及后端服务并非完全一致，外部检索、闭源教师和版本漂移都会削弱严格复现. 求证结果:
 - **dr-tulu-16** 定性案例只能展示机制可能如何工作，不能替代盲评、错误率与跨领域统计检验. 求证结果:
+
+### DeepSeek-Coder 系列
+
+解析：`content/deepseek/01-模型技术报告/deepseek-coder/deepseek-coder-analysis.md` 与 `content/deepseek/01-模型技术报告/deepseek-coder-v2/deepseek-coder-v2-analysis.md`。
+
+- **deepseek-coder-1** DeepSeek-Coder 的主体规模写作 33B，但一处示例使用“34B”，模型规模口径前后不一致. 求证结果:
+- **deepseek-coder-2** LeetCode 7–8 月题目的分数偏高，作者明确承认不能排除数据污染，因此该结果不能作为严格未见题泛化的单独证据. 求证结果:
+- **deepseek-coder-3** 64K 是 RoPE 缩放给出的理论上下文范围，报告明确写出的可靠实测范围为 16K，两者不能混作同一个验证结论. 求证结果:
+- **deepseek-coder-v2-1** DeepSeek-Coder-V2 对上一代支持语言数量同时出现 86 与 87 两种口径，需要按具体表格或版本注明. 求证结果:
+- **deepseek-coder-v2-2** Table 7 后的解释把 V2-Instruct 写成 DeepSeek-Coder-Instruct，疑似模型名称笔误. 求证结果:
+- **deepseek-coder-v2-3** exponential normalization 只被描述为造成训练不稳定和梯度尖峰，论文未提供曲线或量化消融来界定影响幅度. 求证结果:
+- **deepseek-coder-v2-4** Figure 3 声称奖励模型信号优于编译器信号，但没有公开足够的可复算数值. 求证结果:
+- **deepseek-coder-v2-5** 强化学习阶段没有公开组大小、KL 系数和奖励模型结构等关键参数，完整复现条件不足. 求证结果:
+
+### DeepSeek-V3.1 系列
+
+解析：`content/deepseek/01-模型技术报告/deepseek-v3-1/deepseek-v3-1-analysis.md` 与 `content/deepseek/01-模型技术报告/deepseek-v3-1-terminus/deepseek-v3-1-terminus-analysis.md`。
+
+- **deepseek-v3-1-1** V3.1 只有发布说明而没有完整技术报告，网络改动、840B token 数据构成、双模式配比、CoT 压缩目标、Agent 轨迹来源和后训练算法均未披露. 求证结果:
+- **deepseek-v3-1-2** Agent 评测表缺少框架、步数、采样参数和工具实现；HLE 在带工具与无工具协议下分别为 29.8 和 15.9，引用时必须注明协议. 求证结果:
+- **deepseek-v3-1-3** UE8M0 只公布格式名称，没有重新声明分块布局，也没有给出独立精度消融. 求证结果:
+- **deepseek-v3-1-terminus-1** Terminus 未公布语言混杂率、随机字符率或对应测试集，“no more random chars”只能作为官方定性声明. 求证结果:
+- **deepseek-v3-1-terminus-2** Terminus 没有给出训练配方和完整评测协议，0.1–0.6 分的变化也缺少方差和置信区间. 求证结果:
+- **deepseek-v3-1-terminus-3** BrowseComp 从 30.0 升到 38.5，但 BrowseComp-zh 从 49.2 降到 45.0，Search Agent 增益不具跨语言一致性. 求证结果:
+- **deepseek-v3-1-terminus-4** Codeforces 从 2091 降到 2046，Aider-Polyglot 从 76.3 降到 76.1，“across benchmarks 更稳定可靠”不能解释为所有指标单调上涨. 求证结果:
