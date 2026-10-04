@@ -19,11 +19,17 @@ import { PostContent } from "@/components/post/PostContent";
 import { TableOfContents, usePostTocVisible } from "@/components/post/TableOfContents";
 import { PageSearch } from "@/components/post/PageSearch";
 import { SelectionExplain } from "@/components/post/SelectionExplain";
+import {
+  PostAnnotationLayer,
+  type PostAnnotationDraft,
+  type PostAnnotationStyle,
+} from "@/components/post/PostAnnotationLayer";
 import { PostExportActions } from "@/components/post/PostExportActions";
 import { RelatedPosts } from "@/components/post/RelatedPosts";
 import { ReadingProgressTracker } from "@/components/post/ReadingProgressTracker";
 import { useAutoSave } from "@/lib/useAutoSave";
 import { cn } from "@/lib/utils";
+import { createPostAnnotationAnchor } from "@/lib/postAnnotationAnchor";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -42,6 +48,8 @@ export interface PostLiveDocModel {
 
 export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; active?: boolean }) {
   const articleRef = useRef<HTMLElement>(null);
+  const readContentRef = useRef<HTMLDivElement>(null);
+  const annotationDraftCounter = useRef(0);
   const tocVisible = usePostTocVisible();
 
   const [title, setTitle] = useState(post.title);
@@ -51,14 +59,29 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
   const [editing, setEditing] = useState(false);
   const [editorEverMounted, setEditorEverMounted] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
+  const [annotationDraft, setAnnotationDraft] = useState<PostAnnotationDraft | null>(null);
 
   const readOnly = false;
 
   const handleEditorReady = useCallback(() => setEditorReady(true), []);
   const enterEditing = useCallback(() => {
+    setAnnotationDraft(null);
     setEditorEverMounted(true);
     setEditing(true);
   }, []);
+
+  const beginAnnotation = useCallback((range: Range, style: PostAnnotationStyle) => {
+    const root = readContentRef.current;
+    if (!root) return;
+    const anchor = createPostAnnotationAnchor(root, range);
+    if (!anchor) return;
+    annotationDraftCounter.current += 1;
+    setAnnotationDraft({
+      key: `${post.id}:${annotationDraftCounter.current}`,
+      anchor,
+      style,
+    });
+  }, [post.id]);
 
   const { lastSavedAt, isSaving, saveNow } = useAutoSave({
     id: post.id,
@@ -198,7 +221,7 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
         </header>
 
         {/* 阅读态静态渲染（首开零编辑器成本）；点过「编辑」的文档两个渲染面都常驻，显隐切换 */}
-        <div hidden={editing}>
+        <div ref={readContentRef} hidden={editing}>
           <PostContent content={content} postSlug={post.slug} postGarden={post.garden} />
         </div>
         {editorEverMounted && (
@@ -230,13 +253,23 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
       {/* 划线解释是阅读功能：阅读态直接可用；编辑态等编辑器就绪后再开 */}
       {!readOnly && (!editing || editorReady) && (
         <SelectionExplain
-          containerRef={articleRef}
+          containerRef={readContentRef}
           title={title}
           slug={post.slug}
           garden={post.garden}
-          enabled={active}
+          enabled={active && !editing}
+          onCreateAnnotation={beginAnnotation}
         />
       )}
+      <PostAnnotationLayer
+        containerRef={readContentRef}
+        garden={post.garden}
+        slug={post.slug}
+        contentVersion={content}
+        enabled={active && !editing}
+        draft={annotationDraft}
+        onDraftChange={setAnnotationDraft}
+      />
       <TableOfContents content={content} containerRef={articleRef} active={active} />
     </div>
   );

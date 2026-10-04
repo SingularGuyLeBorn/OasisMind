@@ -206,6 +206,7 @@ export function RoughAnnotation({
       };
     }
   }, [
+    rnType,
     resolvedType,
     resolvedColor,
     strokeWidth,

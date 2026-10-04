@@ -9,6 +9,7 @@
 import { router } from "./trpc/trpc.js";
 import { gardenRouter } from "./infra/trpcRouters/gardenRouter.js";
 import { postRouter } from "./infra/trpcRouters/postRouter.js";
+import { postAnnotationRouter } from "./infra/trpcRouters/postAnnotationRouter.js";
 import { agentRouter } from "./infra/trpcRouters/agentRouter.js";
 import { skillRouter } from "./infra/trpcRouters/skillRouter.js";
 import { sessionRouter } from "./infra/trpcRouters/sessionRouter.js";
@@ -47,6 +48,7 @@ import { briefingRouter } from "./infra/trpcRouters/briefingRouter.js";
 export const appRouter = router({
   garden: gardenRouter,
   post: postRouter,
+  postAnnotation: postAnnotationRouter,
   agent: agentRouter,
   skill: skillRouter,
   session: sessionRouter,

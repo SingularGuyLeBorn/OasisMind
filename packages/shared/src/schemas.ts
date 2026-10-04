@@ -223,6 +223,47 @@ export const createPostFromChatSchema = z.object({
   appendHeading: z.string().max(200).optional(),
 });
 
+/* ────────────────────────────────────────────────
+   PostAnnotation（业主本地私人批注）
+   ──────────────────────────────────────────────── */
+
+/** 批注锚点同时保存精确引文和两侧上下文，正文轻微改动后仍可重新定位。 */
+export const postAnnotationAnchorSchema = z.object({
+  exact: z.string().trim().min(1).max(2_000),
+  prefix: z.string().max(500).default(""),
+  suffix: z.string().max(500).default(""),
+  startOffset: z.number().int().min(0),
+  endOffset: z.number().int().min(1),
+}).refine((anchor) => anchor.endOffset > anchor.startOffset, {
+  message: "批注结束位置必须晚于开始位置",
+  path: ["endOffset"],
+});
+
+export const postAnnotationStyleSchema = z.enum(["highlight", "underline", "wavy"]);
+
+export const postAnnotationLocatorSchema = z.object({
+  garden: gardenIdSchema,
+  slug: safeEntitySlugSchema,
+});
+
+export const listPostAnnotationsSchema = postAnnotationLocatorSchema;
+
+export const createPostAnnotationSchema = postAnnotationLocatorSchema.extend({
+  anchor: postAnnotationAnchorSchema,
+  style: postAnnotationStyleSchema.default("highlight"),
+  comment: z.string().trim().max(5_000).default(""),
+});
+
+export const updatePostAnnotationSchema = postAnnotationLocatorSchema.extend({
+  id: z.string().uuid(),
+  style: postAnnotationStyleSchema.optional(),
+  comment: z.string().trim().max(5_000).optional(),
+});
+
+export const deletePostAnnotationSchema = postAnnotationLocatorSchema.extend({
+  id: z.string().uuid(),
+});
+
 /** 按花园 + slug 取文 */
 export const getPostBySlugSchema = z.object({
   slug: safeEntitySlugSchema,

@@ -42,6 +42,27 @@ export interface Post {
 }
 
 /** AI Agent 实体 */
+/** 文本引用锚点；offset 是渲染后文章纯文本中的 UTF-16 偏移。 */
+export interface PostAnnotationAnchor {
+  exact: string;
+  prefix: string;
+  suffix: string;
+  startOffset: number;
+  endOffset: number;
+}
+
+/** 仅保存在本机 content/.private 的业主批注，不进入公开内容生成产物。 */
+export interface PostAnnotation {
+  id: string;
+  garden: string;
+  slug: string;
+  anchor: PostAnnotationAnchor;
+  style: "highlight" | "underline" | "wavy";
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Agent {
   id: string;
   name: string;

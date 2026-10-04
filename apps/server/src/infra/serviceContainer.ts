@@ -18,6 +18,7 @@ import { SessionQueueItemService } from "./entityServices/sessionQueueItemServic
 import { MessageService } from "./entityServices/messageService.js";
 import { SessionService } from "./entityServices/sessionService.js";
 import { PostService } from "./entityServices/postService.js";
+import { PostAnnotationService } from "./entityServices/postAnnotationService.js";
 import { AgentService } from "./entityServices/agentService.js";
 import { CredentialService } from "./entityServices/credentialService.js";
 import { LogService } from "./entityServices/logService.js";
@@ -39,6 +40,7 @@ export class ServiceContainer {
   readonly config: AppConfig;
   readonly garden: GardenService;
   readonly post: PostService;
+  readonly postAnnotation: PostAnnotationService;
   readonly agent: AgentService;
   readonly skill: SkillService;
   readonly mcp: McpService;
@@ -66,6 +68,7 @@ export class ServiceContainer {
     this.config = config;
     this.garden = new GardenService(prisma, eventBus, config);
     this.post = new PostService(prisma, eventBus, config);
+    this.postAnnotation = new PostAnnotationService(prisma, config);
     this.agent = new AgentService(prisma, eventBus, config);
     this.skill = new SkillService(prisma, eventBus, config);
     this.mcp = new McpService(prisma, eventBus, config);

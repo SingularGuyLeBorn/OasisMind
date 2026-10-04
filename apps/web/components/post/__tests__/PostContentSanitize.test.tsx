@@ -5,13 +5,20 @@
  * - 正常渲染依赖（className、id、data: 图片、表格、代码高亮、公式）应保持
  */
 
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PostContent } from "@/components/post/PostContent";
 
 vi.mock("next/dynamic", () => ({
   default: () => () => null,
+}));
+
+// 测试只关心 sanitize 是否把安全属性交给标注组件，不启动浏览器绘图库。
+vi.mock("@/components/post/RoughAnnotation", () => ({
+  RoughAnnotation: ({ children, type }: { children: ReactNode; type: string }) => (
+    <span data-rendered-annotation={type}>{children}</span>
+  ),
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -123,5 +130,22 @@ describe("PostContent sanitize", () => {
     const h2 = container.querySelector("h2");
     expect(h2).not.toBeNull();
     expect(h2!.id).toBeTruthy();
+  });
+
+  it("保留手写标注所需属性，同时继续剥离事件处理器", async () => {
+    await act(async () => {
+      root.render(
+        <PostContent
+          content={
+            '<mark data-annotation="underline" data-color="#2563eb" data-stroke-width="2" onclick="alert(1)">重点</mark>'
+          }
+        />,
+      );
+    });
+
+    const annotation = container.querySelector('[data-rendered-annotation="underline"]');
+    expect(annotation).not.toBeNull();
+    expect(annotation?.textContent).toBe("重点");
+    expect(container.innerHTML).not.toMatch(/onclick/i);
   });
 });

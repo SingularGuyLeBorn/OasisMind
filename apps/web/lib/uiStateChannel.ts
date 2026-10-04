@@ -17,6 +17,7 @@ export type UiStateChannelMessage = {
     | "session_tree_updated"
     | "daily_flow_updated"
     | "post_list_changed"
+    | "post_annotation_updated"
     | "comment_updated"
     | "inbox_updated"
     | "dead_letter_updated"

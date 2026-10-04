@@ -11,7 +11,32 @@ import {
   createPostSchema,
   createPostFromChatSchema,
   createPostFromToolResultSchema,
+  createPostAnnotationSchema,
+  updatePostAnnotationSchema,
 } from "../schemas.js";
+
+describe("私人批注 Schema", () => {
+  const locator = { garden: "notes", slug: "chapter/one" };
+
+  it("补齐本地批注的保守默认值", () => {
+    const parsed = createPostAnnotationSchema.parse({
+      ...locator,
+      anchor: { exact: "重点", startOffset: 2, endOffset: 4 },
+    });
+    expect(parsed.style).toBe("highlight");
+    expect(parsed.comment).toBe("");
+    expect(parsed.anchor.prefix).toBe("");
+    expect(parsed.anchor.suffix).toBe("");
+  });
+
+  it("拒绝反向文本区间和非 UUID 批注 id", () => {
+    expect(createPostAnnotationSchema.safeParse({
+      ...locator,
+      anchor: { exact: "重点", startOffset: 4, endOffset: 2 },
+    }).success).toBe(false);
+    expect(updatePostAnnotationSchema.safeParse({ ...locator, id: "../escape", comment: "x" }).success).toBe(false);
+  });
+});
 
 describe("文章发布默认值", () => {
   it("所有文章创建入口在未显式发布时都保持草稿", () => {

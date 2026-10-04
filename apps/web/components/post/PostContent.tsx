@@ -111,10 +111,26 @@ function urlTransform(url: string) {
 /** rehype-sanitize schema：在 defaultSchema 基础上保留 className/id/src(data:) 等现有渲染依赖 */
 const sanitizeSchema = {
   ...defaultSchema,
+  // GFM 的默认安全规则不包含 mark；这里只恢复项目自己的手写标注标签。
+  tagNames: [...(defaultSchema.tagNames ?? []), "mark"],
   attributes: {
     ...defaultSchema.attributes,
     // highlight.js / KaTeX / 自定义组件大量使用 className；heading id 用于 TOC 锚点
     "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "id"],
+    // 手写标注依赖这些受限 data 属性；事件属性仍不在白名单中，不能借此注入脚本。
+    mark: [
+      ...(defaultSchema.attributes?.mark ?? []),
+      "dataAnnotation",
+      "dataColor",
+      "dataBracket",
+      "dataTarget",
+      "dataStrokeWidth",
+      "dataPadding",
+      "dataIterations",
+      "dataMultiline",
+      "dataAnimate",
+      "dataAnimationDuration",
+    ],
   },
   protocols: {
     ...defaultSchema.protocols,
