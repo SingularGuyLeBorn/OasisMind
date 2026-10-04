@@ -160,3 +160,10 @@
 - **bolmo-11** 脚注 2: 把多语言低效记作「problem (ii)」, 正文 (ii) 是分词偏差, 多语言效率在 (iii). 求证结果:
 - **bolmo-12** §3.2.1 $\mathcal{L}_E$ 的记号: 写作 $\mathrm{Pool}(\mathcal{E}(\hat e,\mathcal{B}_\text{subword}(x)))$, 别处是 $\hat e=\mathcal{E}(e)$, $h=\mathrm{Pool}(\hat e,p)$, 括号和参数错位. 求证结果:
 - **bolmo-13** Figure 5 题注: 「either ... and」应为「either ... or」, 中间面板纵轴实际是百分数. 求证结果:
+
+### OLMoTrace (arXiv 2504.07096)
+
+解析: `content/olmo/04-数据与评测/olmotrace/olmotrace-analysis.md`.
+
+- **olmotrace-1** 相关性评测口径: 人工评分 1.90/1.43 来自较早超参数，最终系统的 1.82/1.50 来自 GPT-4o 裁判；两组并非同一设置和同一评审者，不能直接横向比较，也不能用最终自动裁判分数证明人类相关性感受改善. 求证结果:
+- **olmotrace-2** 延迟口径: 4.46 秒是特定 64 vCPU/40 TB SSD 环境下，98 段平均 458 token 会话中步骤 1–3 的平均值；论文未报告 P95、并发压力或长尾，因此不能外推为完整线上请求的稳定延迟. 求证结果:
