@@ -173,3 +173,11 @@
 解析: `content/olmo/05-开源仓库/olmo-core/olmo-core-analysis.md`.
 
 - **olmo-core-repo-1** README 的论文徽章链接与显示文字冲突: `href` 指向 arXiv `2501.00656`，徽章文字却显示 `arxiv-2402.00838`；在上游修正或说明前，不能仅凭该徽章确定它意图引用的论文版本. 求证结果:
+
+### DataDecide (arXiv 2504.11393)
+
+解析: `content/olmo/04-数据与评测/datadecide/datadecide-analysis.md`.
+
+- **datadecide-1** 缩放律符号冲突: 主文 §2.3 在 FLOPs = 6ND 中定义 N 为参数量、D 为 token 数；附录 C 的五参数 (N,D) 拟合却反过来写 N 为 token 数、D 为参数量，导致同文符号含义前后不一致. 求证结果:
+- **datadecide-2** 附录表 2 题注写所有模型的 sequence length 均为 2024；该数值非常规且论文未解释，需要对照发布配置确认是作者有意设置还是排版笔误. 求证结果:
+- **datadecide-3** 名义 750M 配置与实际参数量口径不同: 配置标签为 750M，而表中非 embedding 参数量为 681.3M；缩放律复算应明确使用实际参数量，不能直接使用模型标签. 求证结果:
