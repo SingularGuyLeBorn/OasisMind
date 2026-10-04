@@ -14,7 +14,7 @@ import type { LayoutMode } from "./layoutMode";
  * idle 只预热轻路由。/chat /agents /dashboard /about /office 首次编译极重，
  * 禁止进首页 idle 队列——悬停再拉，否则冷启动访问 / 会连带编译整站一分钟。
  */
-const IDLE_PREFETCH_HREFS = ["/", "/blog", "/gardens"] as const;
+const IDLE_PREFETCH_HREFS = ["/", "/posts", "/gardens"] as const;
 
 /** CmdK 面板按需加载，勿进根布局静态图 */
 const CommandPalette = dynamic(
@@ -110,17 +110,9 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
             首页
           </TopNavLink>
           <TopNavLink
-            href="/blog"
-            active={pathname.startsWith("/blog")}
-            icon={<BookOpen className="h-4 w-4" />}
-            onPrefetch={() => prefetchHref(router, "/blog")}
-          >
-            博客
-          </TopNavLink>
-          <TopNavLink
             href="/gardens"
             active={isKnowledgeActive(pathname)}
-            icon={<LayoutGrid className="h-4 w-4" />}
+            icon={<BookOpen className="h-4 w-4" />}
             onPrefetch={() => prefetchHref(router, "/gardens")}
           >
             知识库

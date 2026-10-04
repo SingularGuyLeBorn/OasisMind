@@ -304,21 +304,6 @@ export function useChatSseSubscriptions({
         utils.post.tags.invalidate().catch(logQueryCatch);
         postUiState({ type: "post_list_changed" });
       });
-      register("comment_updated", (ev) => {
-        let postId: string | undefined;
-        try {
-          const data = JSON.parse(ev.data) as { postId?: string };
-          postId = data.postId;
-        } catch {
-          /* ignore */
-        }
-        if (postId) {
-          utils.comment.listForPost.invalidate({ postId }).catch(logQueryCatch);
-        } else {
-          utils.comment.listForPost.invalidate().catch(logQueryCatch);
-        }
-        postUiState({ type: "comment_updated", postId });
-      });
       register("inbox_updated", () => {
         utils.inbox.list.invalidate().catch(logQueryCatch);
         utils.inbox.stats.invalidate().catch(logQueryCatch);
@@ -550,14 +535,6 @@ export function useChatSseSubscriptions({
         utils.post.tree.invalidate().catch(logQueryCatch);
         utils.post.categories.invalidate().catch(logQueryCatch);
         utils.post.tags.invalidate().catch(logQueryCatch);
-      }
-      if (t === "comment_updated") {
-        const postId =
-          data && typeof data === "object" && "postId" in data && typeof (data as { postId?: unknown }).postId === "string"
-            ? (data as { postId: string }).postId
-            : undefined;
-        if (postId) utils.comment.listForPost.invalidate({ postId }).catch(logQueryCatch);
-        else utils.comment.listForPost.invalidate().catch(logQueryCatch);
       }
       if (t === "inbox_updated") {
         utils.inbox.list.invalidate().catch(logQueryCatch);

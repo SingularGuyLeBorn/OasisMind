@@ -48,7 +48,7 @@ import { traceMiddleware, formatTrace } from "./infra/trace.js";
 import { prisma } from "./db.js";
 import { bootstrapMessageChannels, stopAllChannelAdapters } from "./infra/channels/index.js";
 import { hydrateLlmBudget } from "./infra/llmBudget.js";
-import { notifyCommentUpdated, notifyPostListChanged } from "./infra/uiStateNotify.js";
+import { notifyPostListChanged } from "./infra/uiStateNotify.js";
 import { ensureSqliteColumns } from "./infra/ensureSqliteColumns.js";
 
 const app = express();
@@ -85,12 +85,6 @@ eventBus.on("post.updated", () => {
 });
 eventBus.on("post.deleted", () => {
   notifyPostListChanged(prisma, "post.deleted").catch(() => {});
-});
-eventBus.on<{ postId?: string }>("comment.created", (payload) => {
-  notifyCommentUpdated(prisma, payload.data.postId).catch(() => {});
-});
-eventBus.on<{ postId?: string }>("comment.updated", (payload) => {
-  notifyCommentUpdated(prisma, payload.data.postId).catch(() => {});
 });
 // 种子花园 posts/resources：补 _garden.md + DB 行
 services.garden.ensureSeedGardens().catch((err) => {
@@ -942,5 +936,4 @@ process.on("SIGTERM", handleShutdown);
 
 export type { AppRouter } from "./router.js";
 export type { AsyncQueueStats } from "./infra/asyncJobs/index.js";
-
 

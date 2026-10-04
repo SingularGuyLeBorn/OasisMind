@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * L1 博客基建冒烟 — 文章列表、编辑器、首页
+ * 本地文章工作台冒烟：列表、编辑器、首页与详情阅读。
  */
-
-test.describe("L1 博客冒烟", () => {
+test.describe("文章工作台冒烟", () => {
   test.beforeEach(async ({ request }) => {
     await expect
       .poll(async () => (await request.get("http://127.0.0.1:3010/health")).ok())
@@ -33,7 +32,7 @@ test.describe("L1 博客冒烟", () => {
   test("/posts/[slug] 文章详情页应正常渲染", async ({ page }) => {
     await page.goto("/posts/welcome-to-oasismind");
     await expect(
-      page.locator("header").getByRole("heading", { name: "欢迎使用 OasisMind", level: 1 })
+      page.locator("header").getByRole("heading", { name: "欢迎使用 OasisMind", level: 1 }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("link", { name: "返回文章列表" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "功能特点", level: 2 })).toBeVisible();

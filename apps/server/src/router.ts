@@ -32,8 +32,6 @@ import { workspaceRouter } from "./infra/trpcRouters/workspaceRouter.js";
 import { triggerRouter } from "./infra/trpcRouters/triggerRouter.js";
 import { agentCronRouter } from "./infra/trpcRouters/agentCronRouter.js";
 import { approvalRouter } from "./infra/trpcRouters/approvalRouter.js";
-import { commentRouter } from "./infra/trpcRouters/commentRouter.js";
-import { blogRouter } from "./infra/trpcRouters/blogRouter.js";
 import { askUserRouter } from "./infra/trpcRouters/askUserRouter.js";
 import { toolRouter } from "./infra/trpcRouters/toolRouter.js";
 import { runRouter } from "./infra/trpcRouters/runRouter.js";
@@ -71,8 +69,6 @@ export const appRouter = router({
   trigger: triggerRouter,
   agentCron: agentCronRouter,
   approval: approvalRouter,
-  comment: commentRouter,
-  blog: blogRouter,
   askUser: askUserRouter,
   tool: toolRouter,
   run: runRouter,

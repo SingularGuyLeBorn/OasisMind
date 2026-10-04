@@ -311,11 +311,11 @@ export function HeroSection() {
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
-                href="/blog"
+                href="/posts"
                 className="group inline-flex h-12 items-center gap-2 rounded-full bg-[var(--om-brand)] px-6 text-sm font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--om-brand-dark)]"
               >
                 <BookOpen className="h-4 w-4" />
-                读博客
+                读文章
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </Link>
               <Link

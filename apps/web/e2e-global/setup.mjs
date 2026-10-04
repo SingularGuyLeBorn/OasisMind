@@ -577,7 +577,7 @@ export default async function globalSetup() {
     );
   }
 
-  // 6.5 播种示例文章（blog-smoke 等 spec 依赖 welcome-to-oasismind；seed 幂等 upsert）
+  // 6.5 播种示例文章（post-smoke 等 spec 依赖 welcome-to-oasismind；seed 幂等 upsert）
   const tsxCliForSeed = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
   execFileSync(process.execPath, [tsxCliForSeed, "prisma/seed.ts"], {
     cwd: serverDir,

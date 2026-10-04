@@ -240,9 +240,9 @@
       "id": "8",
       "title": "写文章（编辑器 Post）",
       "coverage": "covered",
-      "note": "过程覆盖靠 post-trash 软删/恢复，不是 blog-smoke heading。文件柜收件提示见 files-accept-hint-mock，不升格为写文章 covered 依据。",
+      "note": "过程覆盖靠 post-trash 软删/恢复，不是 post-smoke heading。文件柜收件提示见 files-accept-hint-mock，不升格为写文章 covered 依据。",
       "tests": [
-        "apps/web/e2e/blog-smoke.spec.ts",
+        "apps/web/e2e/post-smoke.spec.ts",
         "apps/web/e2e/post-trash.spec.ts",
         "evals/golden/G02-post-create.json"
       ],

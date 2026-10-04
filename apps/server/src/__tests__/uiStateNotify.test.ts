@@ -11,7 +11,6 @@ vi.mock("../infra/sessionStreamHub.js", () => ({
 
 import {
   notifyAllMainSessionsUi,
-  notifyCommentUpdated,
   notifyCronJobUpdated,
   notifyDailyFlowUpdated,
   notifyDeadLetterUpdated,
@@ -63,15 +62,10 @@ describe("uiStateNotify PUSH", () => {
     });
   });
 
-  it("comment / inbox / dead letter 推到主会话", async () => {
-    await notifyCommentUpdated(prismaWithSessions(["m1"]), "post-1");
+  it("inbox / approval / dead letter 推到主会话", async () => {
     await notifyInboxUpdated(prismaWithSessions(["m1"]), "created");
     await notifyApprovalUpdated(prismaWithSessions(["m1"]), "appr-exec", "executed");
     await notifyDeadLetterUpdated(prismaWithSessions(["m1"]));
-    expect(pushExternalEvent).toHaveBeenCalledWith(
-      "m1",
-      expect.objectContaining({ type: "comment_updated", postId: "post-1" }),
-    );
     expect(pushExternalEvent).toHaveBeenCalledWith(
       "m1",
       expect.objectContaining({ type: "inbox_updated", reason: "created" }),
