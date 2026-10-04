@@ -7,7 +7,7 @@ excerpt: "RAFT 每轮对每个 prompt 采 K 条回复, 用奖励模型排序, �
 
 # RAFT: 奖励排序微调
 
-> 相关阅读: [04 PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) · [06 RLOO](../../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [Best-of-N 与奖励模型过优化](../01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md) · [BOND](../02-BOND-Best-of-N蒸馏/02-BOND-Best-of-N蒸馏.md) · [RRHF](../../../4.6-偏好优化/4.6.1-离线偏好优化/07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md)
+> 相关阅读: [04 PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) · [05 RLOO](../../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [Best-of-N 与奖励模型过优化](../01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md) · [BOND](../02-BOND-Best-of-N蒸馏/02-BOND-Best-of-N蒸馏.md) · [RRHF](../../../4.6-偏好优化/4.6.1-离线偏好优化/07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md)
 
 材料是 Dong 等的 *RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment* (TMLR 2023, arXiv:2304.06767). 问题是能否只用奖励模型筛选模型自己的样本, 再做 SFT, 来代替 RLHF 第三段的 PPO.
 

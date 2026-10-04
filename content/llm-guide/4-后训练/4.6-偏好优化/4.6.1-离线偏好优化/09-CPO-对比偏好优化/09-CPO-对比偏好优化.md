@@ -6,7 +6,7 @@ excerpt: "CPO (Contrastive Preference Optimization) 把 DPO 的参考策略换�
 ---
 # 09 CPO: 对比偏好优化
 
-> 相关阅读: [4.6.2 其他对齐技术](../../4.6.2-在线偏好与自对弈/4.6.2-在线偏好与自对弈.md) · [01 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) · [02 RRHF](../07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md) · [03 IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) · [01 DPO](../01-DPO/01-DPO.md) · [02 ORPO](../04-ORPO/04-ORPO.md) · [04 SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md)
+> 相关阅读: [4.6.2 其他对齐技术](../../4.6.2-在线偏好与自对弈/4.6.2-在线偏好与自对弈.md) · [06 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) · [07 RRHF](../07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md) · [02 IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) · [01 DPO](../01-DPO/01-DPO.md) · [04 ORPO](../04-ORPO/04-ORPO.md) · [05 SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md)
 
 材料是 Xu, Sharaf, Chen 等 (约翰斯·霍普金斯大学与微软) 的 *Contrastive Preference Optimization: Pushing the Boundaries of LLM Performance in Machine Translation* ([arXiv:2401.08417](https://arxiv.org/abs/2401.08417), ICML 2024). 问题是 7B, 13B 的翻译模型在 SFT 之后已经到顶, 参考译文本身又不完美, 怎样继续提升, 同时不付 DPO 那份参考模型的显存.
 
@@ -329,11 +329,11 @@ COMET-22 这类神经参考型指标与无参考指标更一致: en$\to$xx 上 A
 
 读表:
 
-- CPO 和 [04-SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md) 都不加载参考模型. SimPO 的分数除以长度并减去间隔 $\gamma$, 没有 BC 正则; CPO 的对数概率不除长度, 有 NLL 项. TRL 用同一个 Trainer 实现两者, 区别就在 `loss_type` 和 `cpo_alpha`.
-- [02-ORPO](../04-ORPO/04-ORPO.md) 也是「SFT 项加一个偏好项」, 偏好项用的是几率比. CPO 的起点是已经 SFT 过的 ALMA-13B-LoRA.
-- [01-SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) 的校准项是 hinge, 超过间隔后梯度为 0; CPO 的偏好项是 logistic, 梯度随间隔增大而变小. SLiC-HF 的正负对来自 SFT 采样加排序器, CPO 的来自 QE 打分的三元组.
-- [02-RRHF](../07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md) 的分数做了长度归一, CPO 没有.
-- [03-IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) 仍需要 $\pi_{\mathrm{ref}}$, 损失是平方回归.
+- CPO 和 [05-SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md) 都不加载参考模型. SimPO 的分数除以长度并减去间隔 $\gamma$, 没有 BC 正则; CPO 的对数概率不除长度, 有 NLL 项. TRL 用同一个 Trainer 实现两者, 区别就在 `loss_type` 和 `cpo_alpha`.
+- [04-ORPO](../04-ORPO/04-ORPO.md) 也是「SFT 项加一个偏好项」, 偏好项用的是几率比. CPO 的起点是已经 SFT 过的 ALMA-13B-LoRA.
+- [06-SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) 的校准项是 hinge, 超过间隔后梯度为 0; CPO 的偏好项是 logistic, 梯度随间隔增大而变小. SLiC-HF 的正负对来自 SFT 采样加排序器, CPO 的来自 QE 打分的三元组.
+- [07-RRHF](../07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md) 的分数做了长度归一, CPO 没有.
+- [02-IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) 仍需要 $\pi_{\mathrm{ref}}$, 损失是平方回归.
 
 ### 5.2 失效与边界
 

@@ -6,7 +6,7 @@ excerpt: "GMPO 把 GRPO 目标里 token 级加权奖励的算术平均换成几�
 ---
 # 05 GMPO: 几何平均策略优化
 
-> 相关阅读: [02 GRPO](../01-GRPO/01-GRPO.md) · [03 GSPO](../04-GSPO/04-GSPO.md) · [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [4.4.0 强化学习的数学原理](../../4.4-强化学习基础/01-强化学习的数学原理/01-强化学习的数学原理.md) · [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md)
+> 相关阅读: [01 GRPO](../01-GRPO/01-GRPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [4.4.0 强化学习的数学原理](../../4.4-强化学习基础/01-强化学习的数学原理/01-强化学习的数学原理.md) · [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md)
 
 材料是 Zhao 等人的 *Geometric-Mean Policy Optimization* (arXiv:2507.20673), 作者来自 Microsoft Research 与国科大等, 代码在 [callsys/GMPO](https://github.com/callsys/GMPO); 公式编号沿用论文式 (1)-(6), 表为 Table 1-6. 问题是 GRPO 训练中重要性比率出现极端值时, 怎样在不收窄 clip 窗的前提下让更新保持稳定.
 
@@ -20,7 +20,7 @@ $$
 \hat{A}_i=\frac{r_i-\mathrm{mean}(\{r_1,\ldots,r_G\})}{\mathrm{std}(\{r_1,\ldots,r_G\})} \tag{1}
 $$
 
-式 (1) 是 DeepSeekMath 的结果监督写法, GMPO 论文 §2.2 原样沿用, 推导和数值例子见 [02 GRPO](../01-GRPO/01-GRPO.md). 重要性比率是 token 级的:
+式 (1) 是 DeepSeekMath 的结果监督写法, GMPO 论文 §2.2 原样沿用, 推导和数值例子见 [01 GRPO](../01-GRPO/01-GRPO.md). 重要性比率是 token 级的:
 
 $$
 \rho_{i,t}(\theta)=\frac{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}{\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,<t})} \tag{2}
@@ -370,12 +370,12 @@ Figure 4 画了熵, KL, 梯度范数和验证分. GMPO 的平均 token 熵在 MA
 
 **和 DAPO 的关系.** DAPO 的 clip-higher 建立在算术平均上, 上沿只挪到 1.28, 同时还有动态采样, token 级损失, 超长惩罚. GMPO 只借用了 DAPO「窗太窄会过早确定」的观察, Table 3 也没有和完整的 DAPO 系统对比.
 
-**复现时的分母.** 很多 GRPO 实现 (包括 [02 GRPO](../01-GRPO/01-GRPO.md) 里的示例) 用 batch 内有效 token 总数做分母, 更接近 DAPO 的 token 级损失. 式 (4) 是每条回答先在自己的 $|o_i|$ 上取几何平均, 再对 $G$ 条做算术平均. 两条回答长度差一倍时, 两种分母给出的步长不同, 对照实验要先统一这一点.
+**复现时的分母.** 很多 GRPO 实现 (包括 [01 GRPO](../01-GRPO/01-GRPO.md) 里的示例) 用 batch 内有效 token 总数做分母, 更接近 DAPO 的 token 级损失. 式 (4) 是每条回答先在自己的 $|o_i|$ 上取几何平均, 再对 $G$ 条做算术平均. 两条回答长度差一倍时, 两种分母给出的步长不同, 对照实验要先统一这一点.
 
 ### 4.4 选用
 
 - 可验证奖励, 已经在跑 GRPO, 日志里每步 $\rho_t$ 的最大最小值越拉越开, 一开宽窗熵就塌: 可以先换聚合. 式 (1) 不动, 损失换成式 (7), clip 的 $\epsilon$ 改成对数域 0.4.
-- MoE 上 token 级比率随路由剧烈波动, 需要 Routing Replay 才能收敛: 这是 GSPO 讨论的场景, 见 [03 GSPO](../04-GSPO/04-GSPO.md).
+- MoE 上 token 级比率随路由剧烈波动, 需要 Routing Replay 才能收敛: 这是 GSPO 讨论的场景, 见 [04 GSPO](../04-GSPO/04-GSPO.md).
 - 需要逐 token 的价值估计和 GAE: 用 PPO, 见 [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md).
 - 静态偏好对, 不做在线 rollout: 用 DPO, 见 [01 DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md).
 - 组很小 ($G=2$) 时式 (1) 的均值本身就不稳, 换聚合算子帮不上忙. $G=8$ 时全对全错的组也常见, 先确认 $\mathrm{std}$ 的平滑项和过滤策略, 再调 clip 窗.

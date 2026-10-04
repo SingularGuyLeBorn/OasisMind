@@ -6,7 +6,7 @@ excerpt: "自回归推理要为每个请求保存全部历史 token 的 K 和 V.
 ---
 # 01 · PagedAttention 与 vLLM:分块管理 KV Cache
 
-> 相关:[02 FlashAttention](../../../2.3-注意力的高效实现/03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) · [05 Attention 实现路径对比](../../../2.3-注意力的高效实现/05-Attention实现路径对比/05-Attention实现路径对比.md) · [6.4.1 PagedAttention 原理](../../../../6-训练与推理优化/6.4-KV缓存与内存优化/6.4.1-PagedAttention原理/6.4.1-PagedAttention原理.md)
+> 相关:[03 FlashAttention](../../../2.3-注意力的高效实现/03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) · [05 Attention 实现路径对比](../../../2.3-注意力的高效实现/05-Attention实现路径对比/05-Attention实现路径对比.md) · [6.4.1 PagedAttention 原理](../../../../6-训练与推理优化/6.4-KV缓存与内存优化/6.4.1-PagedAttention原理/6.4.1-PagedAttention原理.md)
 
 ## 1. 问题:KV Cache 的体积和浪费
 

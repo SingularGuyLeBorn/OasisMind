@@ -6,7 +6,7 @@ excerpt: "RRHF 用当前模型的长度归一对数概率给每条回答打分, 
 ---
 # 07 RRHF: 排序响应对齐
 
-> 相关阅读: [4.6.2 其他对齐技术](../../4.6.2-在线偏好与自对弈/4.6.2-在线偏好与自对弈.md) · [01 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) · [04 PRO](../08-PRO-偏好排序优化/08-PRO-偏好排序优化.md) · [04 PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) · [07 RAFT](../../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [01 DPO](../01-DPO/01-DPO.md) · [07 Best-of-N](../../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md)
+> 相关阅读: [4.6.2 其他对齐技术](../../4.6.2-在线偏好与自对弈/4.6.2-在线偏好与自对弈.md) · [06 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) · [08 PRO](../08-PRO-偏好排序优化/08-PRO-偏好排序优化.md) · [04 PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) · [04 RAFT](../../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [01 DPO](../01-DPO/01-DPO.md) · [01 Best-of-N](../../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md)
 
 材料是 Yuan, Yuan, Tan 等的 *RRHF: Rank Responses to Align Language Models with Human Feedback without tears* ([arXiv:2304.05302](https://arxiv.org/abs/2304.05302), NeurIPS 2023), 作者来自阿里达摩院与清华大学. 问题是能否把 PPO 换成一次带排序项的微调, 用多条回答的奖励顺序直接训练语言模型.
 
@@ -312,9 +312,9 @@ RRHF 只训 5 个 epoch, 有无 KL 两种情况下奖励和困惑度都好于 PP
 
 和 [DPO](../01-DPO/01-DPO.md) 比, DPO 从带 KL 约束的 RLHF 目标反解隐式奖励, 分数里有冻结参考 $\pi_{\mathrm{ref}}$ 和温度 $\beta$, 损失是光滑的 $-\log\sigma$, 不除长度. RRHF 的分数只有当前模型, 除了长度, 损失在排对时截断.
 
-和 [01 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) 比, SLiC-HF 的 hinge 有间隔 $\delta$, 序列对数似然不除长度, 交叉熵的目标是 SFT 参考或最优候选. 两者都受 BRIO 一路的序列级排序方法影响.
+和 [06 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) 比, SLiC-HF 的 hinge 有间隔 $\delta$, 序列对数似然不除长度, 交叉熵的目标是 SFT 参考或最优候选. 两者都受 BRIO 一路的序列级排序方法影响.
 
-[04 PRO](../08-PRO-偏好排序优化/08-PRO-偏好排序优化.md) 的分数和式 (1) 相同, 损失换成对剩余集合逐次 softmax 的 Plackett-Luce 形式.
+[08 PRO](../08-PRO-偏好排序优化/08-PRO-偏好排序优化.md) 的分数和式 (1) 相同, 损失换成对剩余集合逐次 softmax 的 Plackett-Luce 形式.
 
 ![四列对照: PPO 四个模型, RAFT 只留第一名, DPO 隐式奖励, RRHF 的长度归一分数与 hinge](./images/fig-rrhf-vs-ppo-raft-dpo.png)
 

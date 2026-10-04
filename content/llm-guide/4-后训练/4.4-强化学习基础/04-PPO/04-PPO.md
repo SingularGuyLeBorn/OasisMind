@@ -6,7 +6,7 @@ excerpt: "PPO 用裁剪后的重要性比率代替 TRPO 的 KL 约束, 只用一
 ---
 # 04 PPO: 近端策略优化
 
-> 相关阅读: [05-TRPO](../03-TRPO/03-TRPO.md) · [02-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [03-GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md) · [06-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [4.4.0 强化学习的数学原理](../01-强化学习的数学原理/01-强化学习的数学原理.md) · [4.4.2 DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md)
+> 相关阅读: [03-TRPO](../03-TRPO/03-TRPO.md) · [01-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [04-GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md) · [05-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [4.4.0 强化学习的数学原理](../01-强化学习的数学原理/01-强化学习的数学原理.md) · [4.4.2 DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md)
 
 ## 1. 问题: 策略梯度的方差和样本效率
 
@@ -28,7 +28,7 @@ $$
 
 1. **方差大.** 式 (2) 用整条轨迹的回报给每一步加权. 前面一个好动作, 后面一个失误, 共用同一个 $R(\tau)$. 信用分配粗, 梯度估计方差大.
 2. **样本只能用一次.** 式 (2) 要求样本来自当前 $\pi_\theta$. 参数一更新, 之前采的轨迹就不再服从当前策略. PPO 论文指出, 直接在同一批数据上对 $L^{PG}=\hat{\mathbb{E}}_t[\log\pi_\theta(a_t\mid s_t)\hat{A}_t]$ 做多步优化缺乏理论依据, 实践中常导致破坏性的大步更新.
-3. **约束求解贵.** TRPO 用 KL 约束限制每步更新, 但求解要共轭梯度和线搜索, 而且不兼容带噪声的结构 (如 dropout) 或策略与价值共享参数的网络. 见 [05-TRPO](../03-TRPO/03-TRPO.md).
+3. **约束求解贵.** TRPO 用 KL 约束限制每步更新, 但求解要共轭梯度和线搜索, 而且不兼容带噪声的结构 (如 dropout) 或策略与价值共享参数的网络. 见 [03-TRPO](../03-TRPO/03-TRPO.md).
 
 PPO 依次处理这三点: 用价值网络和 GAE 降方差, 用重要性比率复用样本, 用裁剪代替 KL 约束.
 
@@ -161,7 +161,7 @@ $$
 
 论文 Algorithm 1: 每轮迭代, $N$ 个并行 actor 各用 $\pi_{\theta_{\mathrm{old}}}$ 跑 $T$ 步, 计算优势; 然后在这 $NT$ 个样本上用 mini-batch 大小 $M\le NT$ 优化 $K$ 个 epoch (通常用 Adam); 最后 $\theta_{\mathrm{old}}\leftarrow\theta$. 采样是 on-policy 的, 同一批上的多次更新带一点 off-policy, 由 clip 控制.
 
-**为什么是下界.** TRPO 的理论 (见 [05-TRPO](../03-TRPO/03-TRPO.md)) 说明, 对所有状态取最大 KL 的罚项目标是策略真实性能的下界, 按罚项优化可以保证单调改进; 但单一的 $\beta$ 很难同时适用于不同问题和训练的不同阶段, 所以 TRPO 改用硬约束. PPO 论文还指出, 只用固定 $\beta$ 加 SGD 不足以复现 TRPO 的单调改进. 裁剪目标换了一种方式构造悲观估计: 它不显式计算 KL, 而是在比率偏离 1 并且对目标有利时截断收益. 论文 Figure 2 在 Hopper 上沿第一次 PPO 更新的方向插值, 更新后的策略与初始策略的 KL 约为 0.02, $L^{\mathrm{CLIP}}$ 恰好在这一点取最大, 而未裁剪的 $L^{\mathrm{CPI}}$ 仍在继续上升. 也就是说, 沿同一方向再走远, 未裁剪目标会继续鼓励, 裁剪目标则开始下降.
+**为什么是下界.** TRPO 的理论 (见 [03-TRPO](../03-TRPO/03-TRPO.md)) 说明, 对所有状态取最大 KL 的罚项目标是策略真实性能的下界, 按罚项优化可以保证单调改进; 但单一的 $\beta$ 很难同时适用于不同问题和训练的不同阶段, 所以 TRPO 改用硬约束. PPO 论文还指出, 只用固定 $\beta$ 加 SGD 不足以复现 TRPO 的单调改进. 裁剪目标换了一种方式构造悲观估计: 它不显式计算 KL, 而是在比率偏离 1 并且对目标有利时截断收益. 论文 Figure 2 在 Hopper 上沿第一次 PPO 更新的方向插值, 更新后的策略与初始策略的 KL 约为 0.02, $L^{\mathrm{CLIP}}$ 恰好在这一点取最大, 而未裁剪的 $L^{\mathrm{CPI}}$ 仍在继续上升. 也就是说, 沿同一方向再走远, 未裁剪目标会继续鼓励, 裁剪目标则开始下降.
 
 论文同时给出另一种做法, 自适应 KL 罚 (论文式 (8)): 目标为 $\hat{\mathbb{E}}_t[r_t\hat{A}_t-\beta\,\mathrm{KL}[\pi_{\theta_{\mathrm{old}}},\pi_\theta]]$, 每次更新后算平均 KL $d$, 若 $d<d_{\mathrm{targ}}/1.5$ 则 $\beta\leftarrow\beta/2$, 若 $d>1.5\,d_{\mathrm{targ}}$ 则 $\beta\leftarrow2\beta$. 论文说 1.5 和 2 是经验取值, 算法对它们不敏感.
 
@@ -263,7 +263,7 @@ $$
 \log\frac{\pi^{\mathrm{RL}}(y\mid x)}{\pi^{\mathrm{SFT}}(y\mid x)}=\sum_{t=1}^{|y|}\Bigl(\log\pi^{\mathrm{RL}}(y_t\mid x,y_{<t})-\log\pi^{\mathrm{SFT}}(y_t\mid x,y_{<t})\Bigr). \tag{13}
 $$
 
-所以把 $-\beta$ 乘逐 token 对数比分摊到每个位置, 再在 $\gamma=1$ 下求和, 与在序列末尾一次扣除 $\beta$ 乘序列对数比完全相同. 分摊到 token 的好处是 GAE 能把 KL 罚分配给具体位置: 某个 token 偏离 SFT 越多, 它所在位置的即时奖励越低. 对 $y\sim\pi^{\mathrm{RL}}$ 取期望, 式 (13) 是 $\mathrm{KL}(\pi^{\mathrm{RL}}\|\pi^{\mathrm{SFT}})$ 的无偏估计, 但单个样本可以为负. GRPO 改用另一种恒非负的估计量并把它放进损失, 推导见 [02-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) §2.2.
+所以把 $-\beta$ 乘逐 token 对数比分摊到每个位置, 再在 $\gamma=1$ 下求和, 与在序列末尾一次扣除 $\beta$ 乘序列对数比完全相同. 分摊到 token 的好处是 GAE 能把 KL 罚分配给具体位置: 某个 token 偏离 SFT 越多, 它所在位置的即时奖励越低. 对 $y\sim\pi^{\mathrm{RL}}$ 取期望, 式 (13) 是 $\mathrm{KL}(\pi^{\mathrm{RL}}\|\pi^{\mathrm{SFT}})$ 的无偏估计, 但单个样本可以为负. GRPO 改用另一种恒非负的估计量并把它放进损失, 推导见 [01-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) §2.2.
 
 ### 4.6 显存的量级
 
@@ -370,9 +370,9 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 3. **建模粒度.** 把整段回答当作一个动作的 REINFORCE 和 RLOO, 在所有数据集和模型上都优于把每个 token 当作动作的 PPO 和 Vanilla PG. Vanilla PG 的胜率比 PPO 高 3.2% 到 20.3%.
 4. **最终胜率** (表 1, GPT-4 模拟评估, 对比数据集原回答). TL;DR, HH (Pythia), HH (Llama) 三组上, PPO 为 67.6, 29.2, 32.0, 两组 HH 上都是全表最低, RLOO ($k=4$) 为 77.9, 43.7, 64.1, 分别高 10.3, 14.5, 32.1 个点. 生成长度也差得多 (HH 表 2): PPO 平均只有 16.5 个 token, 困惑度 40.4, 在各方法中最高, 逐 token 建模的 Vanilla PG 为 39.0, 排第二; RLOO ($k=4$) 为 60.6 个 token, 困惑度 27.6. 同样每题采 $k$ 条时, RLOO 也胜过只拿最高分那条做交叉熵的 RAFT, 三组平均胜率 $k=2$ 时 61.3 对 56.1, $k=4$ 时 61.9 对 59.5. DPO 的回答最长, 平均 104.4 个 token.
 
-论文的解释是: 预训练加 SFT 的初始化很强, 在 prompt 条件下, 每一步的概率质量集中在少数几个 token 上, 环境转移又是确定的, 所以传统深度强化学习里用来压方差和防大步的组件在这里很少被触发. 这和 §4.2 中 InstructGPT 每批只跑 1 个内层 epoch 的设置一致. 详细的序列级推导和 RLOO 见 [06-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md).
+论文的解释是: 预训练加 SFT 的初始化很强, 在 prompt 条件下, 每一步的概率质量集中在少数几个 token 上, 环境转移又是确定的, 所以传统深度强化学习里用来压方差和防大步的组件在这里很少被触发. 这和 §4.2 中 InstructGPT 每批只跑 1 个内层 epoch 的设置一致. 详细的序列级推导和 RLOO 见 [05-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md).
 
-这不等于 PPO 在 LLM 上无用. 推理任务的回答长, 一批 rollout 常切成多个 mini-batch 更新多次, off-policy 程度更高, clip 触发更频繁, 这正是 [03-GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md) 讨论的场景. 需要逐 token 价值估计 (例如过程奖励) 时, 价值网络也仍有用.
+这不等于 PPO 在 LLM 上无用. 推理任务的回答长, 一批 rollout 常切成多个 mini-batch 更新多次, off-policy 程度更高, clip 触发更频繁, 这正是 [04-GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md) 讨论的场景. 需要逐 token 价值估计 (例如过程奖励) 时, 价值网络也仍有用.
 
 ### 6.2 失效模式
 
@@ -400,7 +400,7 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 | RLOO | 留一法基线 | 无 | 无 | 是 |
 | DPO | 无显式优势 | 无 | 无 | 否, 离线偏好对 |
 
-选 PPO 的典型理由: 需要逐 token 的价值估计, 奖励不是简单的对错, 并且能承担价值网络的显存和训练成本. 只有序列级可验证奖励时, 先考虑 [02-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 或 RLOO.
+选 PPO 的典型理由: 需要逐 token 的价值估计, 奖励不是简单的对错, 并且能承担价值网络的显存和训练成本. 只有序列级可验证奖励时, 先考虑 [01-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 或 RLOO.
 
 ## 参考文献
 

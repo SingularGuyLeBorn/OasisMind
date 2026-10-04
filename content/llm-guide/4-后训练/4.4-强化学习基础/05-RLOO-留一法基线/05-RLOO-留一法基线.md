@@ -7,7 +7,7 @@ excerpt: "RLOO 对同一 prompt 采 k 条回复, 第 i 条的基线取其余 k-1
 
 # RLOO: 留一法基线
 
-> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [02 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [07 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [10 序列级 REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) · [ReMax](../06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [Dr. GRPO](../../4.5-GRPO家族与RLVR/02-DrGRPO-去标准差/02-DrGRPO-去标准差.md)
+> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [01 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [04 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [02 序列级 REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) · [ReMax](../06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [Dr. GRPO](../../4.5-GRPO家族与RLVR/02-DrGRPO-去标准差/02-DrGRPO-去标准差.md)
 
 材料是 Ahmadian 等的 *Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs* (ACL 2024, arXiv:2402.14740). 问题是 RLHF 里 PPO 的价值网络, GAE 和比率裁剪是否必要, 以及同一 prompt 的多条样本能否直接充当基线.
 

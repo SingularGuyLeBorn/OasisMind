@@ -6,7 +6,7 @@ excerpt: "同一条 softmax(QK^T/sqrt(d))V,在 PyTorch eager,SDPA,flash-attn 和
 ---
 # 05 · Attention 实现路径对比:eager,SDPA,flash-attn,xFormers 与 GQA
 
-> 相关:[01 Memory-Efficient Attention](../02-Memory-Efficient-Attention/02-Memory-Efficient-Attention.md) · [02 FlashAttention](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) · [03 FlashAttention-3/4](../04-FlashAttention-Hopper与Blackwell/04-FlashAttention-Hopper与Blackwell.md) · [04 PagedAttention](../../2.7-长上下文与外推技术/2.7.3-长上下文推理优化/01-PagedAttention/01-PagedAttention.md) · [2.2.2 多头注意力变体](../../2.2-注意力机制/2.2.2-多头注意力变体/2.2.2-多头注意力变体.md)
+> 相关:[02 Memory-Efficient Attention](../02-Memory-Efficient-Attention/02-Memory-Efficient-Attention.md) · [03 FlashAttention](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) · [04 FlashAttention-3/4](../04-FlashAttention-Hopper与Blackwell/04-FlashAttention-Hopper与Blackwell.md) · [01 PagedAttention](../../2.7-长上下文与外推技术/2.7.3-长上下文推理优化/01-PagedAttention/01-PagedAttention.md) · [2.2.2 多头注意力变体](../../2.2-注意力机制/2.2.2-多头注意力变体/2.2.2-多头注意力变体.md)
 
 材料是 PyTorch SDPA 文档,flash-attn 和 xFormers 的 README 与源码.问题是同一条注意力公式在这几条执行路径上各跑什么 kernel,访存差多少,GQA 又是怎么处理的.
 
@@ -89,7 +89,7 @@ $$
 M_{fused}\approx4BHND. \tag{6}
 $$
 
-FlashAttention 实际还要多次读 $K,V$,访存量的确切形式见 [02 FlashAttention](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md),这里只比较主项.
+FlashAttention 实际还要多次读 $K,V$,访存量的确切形式见 [03 FlashAttention](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md),这里只比较主项.
 
 每个元素 $P$ 字节,算术强度(每字节访存对应的浮点运算)为
 
@@ -249,7 +249,7 @@ $$
 M_{lse}=B\,H\,N\times4\ \text{字节}. \tag{12}
 $$
 
-同样的设置下每层只有 $8\times32\times4096\times4=4$ MiB.代价是反向要多做一次 $QK^\top$,FLOPs 增加,但省掉了 $P$ 的读写,在长序列上总体更快.重算的细节见 [02 FlashAttention](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md).
+同样的设置下每层只有 $8\times32\times4096\times4=4$ MiB.代价是反向要多做一次 $QK^\top$,FLOPs 增加,但省掉了 $P$ 的读写,在长序列上总体更快.重算的细节见 [03 FlashAttention](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md).
 
 ### 2.7 变长序列:padding 和打包
 

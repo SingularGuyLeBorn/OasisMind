@@ -257,11 +257,11 @@ Open LLM Leaderboard 上 (Table 9), SimPO 并非各项第一. Mistral-Base 上�
 
 论文 Table 3 把相关方法的目标写在一起. 下面逐个说明.
 
-**ORPO** 把 chosen 的 SFT 交叉熵和几率比项加在一起, 不用参考模型, 要成对数据, 没有 $\gamma$. ORPO 原文从基座单阶段训练. 为了比较公平, SimPO 论文让 ORPO 也从同一个 SFT 模型出发, 并说这样比从基座开始效果更好. 即便如此, 四套设定里 ORPO 的 AlpacaEval 2 LC 都低于 SimPO: Mistral-Base 上 14.7 对 21.5, Llama-3-Instruct 上 28.5 对 44.7. 见 [02-ORPO](../04-ORPO/04-ORPO.md).
+**ORPO** 把 chosen 的 SFT 交叉熵和几率比项加在一起, 不用参考模型, 要成对数据, 没有 $\gamma$. ORPO 原文从基座单阶段训练. 为了比较公平, SimPO 论文让 ORPO 也从同一个 SFT 模型出发, 并说这样比从基座开始效果更好. 即便如此, 四套设定里 ORPO 的 AlpacaEval 2 LC 都低于 SimPO: Mistral-Base 上 14.7 对 21.5, Llama-3-Instruct 上 28.5 对 44.7. 见 [04-ORPO](../04-ORPO/04-ORPO.md).
 
 **CPO** 用 $-\log\sigma(\beta\log\pi_\theta(y_w)-\beta\log\pi_\theta(y_l))$ 再加 chosen 的 NLL, 也不用参考模型. 它的奖励是未除长度的对数概率差, 所以会把长回答的概率往上抬, 生成偏长. 论文观察到 CPO 的生成平均比 SimPO 长约 50%. Arena-Hard 没有长度惩罚, CPO 偶尔会更好看: Mistral-Instruct 上 CPO 的 Arena-Hard 是 22.6, SimPO 21.0.
 
-**IPO** 要 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$, 把 DPO 的 $\log\sigma$ 换成平方损失, 目标间隔 $\tau^{-1}/2$. Mistral-Base 上 IPO 的 LC 是 11.8. 见 [03-IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md).
+**IPO** 要 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$, 把 DPO 的 $\log\sigma$ 换成平方损失, 目标间隔 $\tau^{-1}/2$. Mistral-Base 上 IPO 的 LC 是 11.8. 见 [02-IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md).
 
 **RRHF** 的奖励形式最接近, 也是 $(1/|y|)\log\pi_\theta$, 区别在损失. RRHF 用 hinge 损失再加 chosen 的 NLL:
 
@@ -271,7 +271,7 @@ $$
 
 它没有 $\gamma$, 也没有 Bradley-Terry 的 $\log\sigma$.
 
-**SLiC-HF** 用未除长度的对数概率差加带间隔的 hinge, 同样带 SFT 项. 见 [01-SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md).
+**SLiC-HF** 用未除长度的对数概率差加带间隔的 hinge, 同样带 SFT 项. 见 [06-SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md).
 
 **R-DPO** 保留参考模型, 在 DPO 上加长度正则. Mistral-Base 上 R-DPO 的 LC 是 17.4, 高于 DPO 的 15.1, 低于 SimPO 的 21.5. Llama-3-Instruct 上 R-DPO 41.1, SimPO 44.7.
 

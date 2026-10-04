@@ -32,7 +32,7 @@ $$
 
 锚点固定在 SFT 上时, Figure 3 显示奖励会饱和. 设定是每 100 步评估一次, KL 到 200 就停止训练 ($\beta=0$ 时约 1k 步就到了). $\beta=0.1$ 时奖励停在约 $-0.62$, $\beta=0.01$ 时停在约 $-0.46$. 每个 $\beta$ 对应一个固定的正则最优解, 训练走到那里就不再前进. 降低 $\beta$ 能把饱和点抬高, 但 KL 也增长得更快, 极端的 $\beta=0$ 约 1k 步就到了 200 的上限. 在这种设定下, 想要更高的奖励只能接受更大的 KL.
 
-WARP 的回答是在三个位置做权重平均, 各自解决一个问题. EMA 锚点处理锚点固定带来的饱和, 让单条 RL 能持续提高奖励; SLERP 合并几条独立 RL, 在 KL 基本不变的情况下提高奖励; LITI 把合并结果往回拉, 用较小的奖励损失换较大的 KL 下降. 三步串起来, 每一步的输出都是下一步的输入. 优化器保持 REINFORCE (见 [10-REINFORCE](../../../4.4-强化学习基础/02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md)), 改动全在锚点和合并方式上.
+WARP 的回答是在三个位置做权重平均, 各自解决一个问题. EMA 锚点处理锚点固定带来的饱和, 让单条 RL 能持续提高奖励; SLERP 合并几条独立 RL, 在 KL 基本不变的情况下提高奖励; LITI 把合并结果往回拉, 用较小的奖励损失换较大的 KL 下降. 三步串起来, 每一步的输出都是下一步的输入. 优化器保持 REINFORCE (见 [02-REINFORCE](../../../4.4-强化学习基础/02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md)), 改动全在锚点和合并方式上.
 
 ### 1.2 算法总览
 
@@ -271,11 +271,11 @@ LITI 的结果当作下一轮初始化, 整个流程重跑 (观察 6, 附录 D.3
 
 WARM ([arXiv:2401.12187](https://arxiv.org/abs/2401.12187)) 平均的是奖励模型, 用来提高奖励的可靠性. 论文把 WARP 写成它在策略侧的对应: WARM 让奖励更可靠, WARP 让策略在给定奖励下的 KL–奖励权衡更好.
 
-[09 BOND](../02-BOND-Best-of-N蒸馏/02-BOND-Best-of-N蒸馏.md) 的 J-BOND 也用 EMA 锚点, 并引用 WARP 说明 EMA 能降低方差; 它只用了第一阶段, 没有 SLERP 和 LITI. 两者的 EMA 速率也不同: J-BOND 主实验取 $\eta=0.02$, 平均滞后约 49 步; WARP 取 $\mu=0.01$, 约 99 步. 在 J-BOND 里锚点还决定蒸馏目标 $\mathrm{Best\text{-}of\text{-}2}(\pi_{\mathrm{anchor}})$, 在 WARP 里锚点只出现在 KL 惩罚中.
+[02 BOND](../02-BOND-Best-of-N蒸馏/02-BOND-Best-of-N蒸馏.md) 的 J-BOND 也用 EMA 锚点, 并引用 WARP 说明 EMA 能降低方差; 它只用了第一阶段, 没有 SLERP 和 LITI. 两者的 EMA 速率也不同: J-BOND 主实验取 $\eta=0.02$, 平均滞后约 49 步; WARP 取 $\mu=0.01$, 约 99 步. 在 J-BOND 里锚点还决定蒸馏目标 $\mathrm{Best\text{-}of\text{-}2}(\pi_{\mathrm{anchor}})$, 在 WARP 里锚点只出现在 KL 惩罚中.
 
 论文相关工作部分还提到: 已有工作把 EMA 当作新的初始化, 也有工作把 EMA 当作 DPO 的参考模型. WARP 的迭代可以对照 DiLoCo: 每轮 $M$ 份并行训练是内循环, LITI 的 $\eta$ 起外层学习率的作用. 写成更新式, 式 (3) 是 $\theta_{\mathrm{init}}\leftarrow\theta_{\mathrm{init}}+\eta\,(\theta_{\mathrm{slerp}}-\theta_{\mathrm{init}})$, 括号里的合并任务向量相当于外层的「伪梯度」, $\eta=0.3$ 是外层步长. 与 DiLoCo 的区别是合并用 SLERP, 内循环是 RL, 外层没有动量.
 
-与 [07 Best-of-N](../01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md) 和 [RAFT](../04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) 相比, WARP 在样本层面不做挑选, 改进来自权重空间的操作. 与 [PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 相比, 它用更简单的 REINFORCE, 没有价值网络.
+与 [01 Best-of-N](../01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md) 和 [RAFT](../04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) 相比, WARP 在样本层面不做挑选, 改进来自权重空间的操作. 与 [PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 相比, 它用更简单的 REINFORCE, 没有价值网络.
 
 ### 6.2 失效模式与边界
 

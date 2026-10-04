@@ -293,13 +293,13 @@ Figure 4 还显示, iter-0 训练更多 epoch 时分数保持稳定, 没有下�
 
 **DPO.** 需要 $(x,y_w,y_l)$. 论文的对照模型 zephyr-7b-beta 从同一个 zephyr-7b-sft-full 出发, 在约 62k 条 UltraFeedback Binarized 上训练, chosen 和 rejected 由 GPT-4 打分决定. SPIN 只用已有 SFT 数据: 从 UltraChat200k 随机取 50k 条 prompt, 由当前模型生成回答, 胜者是原来的人写回答.
 
-**Self-Rewarding.** 让模型自己当裁判给回答打分, 构造偏好对再迭代 DPO, 见 [07-Self-Rewarding](../05-Self-Rewarding-自奖励/05-Self-Rewarding-自奖励.md). SPIN 没有打分这一步, 也没有显式的偏好标签, 对比信号只来自「人写还是模型写」.
+**Self-Rewarding.** 让模型自己当裁判给回答打分, 构造偏好对再迭代 DPO, 见 [05-Self-Rewarding](../05-Self-Rewarding-自奖励/05-Self-Rewarding-自奖励.md). SPIN 没有打分这一步, 也没有显式的偏好标签, 对比信号只来自「人写还是模型写」.
 
 **Iterative DPO.** 论文 §4.2 提到 Xu 等 (2023) 用 Pairwise Cringe Loss 做迭代偏好优化, 把 DPO 推广成迭代形式; 同期的 Self-Rewarding 也用迭代 DPO, 由模型自己提供偏好反馈. 论文的区分是: 这两种方法每轮都要有中间的奖励或偏好反馈来决定胜负, SPIN 的自我评估是隐式的, 胜负由「人写还是模型写」直接确定, 不需要任何中间打分.
 
 **PPO, GRPO.** 在线从当前策略采样, 用奖励模型或规则打分. SPIN 训练中没有奖励, 没有组内归一化, 采样只在每轮开始时做一次, 采样时对手权重冻结.
 
-**RAFT.** 每条 prompt 采多条, 用奖励模型打分, 只拿最高分那条做 SFT, 其余丢弃. SPIN 没有奖励模型, $y'$ 作为反例进入损失. 见 [07-RAFT](../../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md).
+**RAFT.** 每条 prompt 采多条, 用奖励模型打分, 只拿最高分那条做 SFT, 其余丢弃. SPIN 没有奖励模型, $y'$ 作为反例进入损失. 见 [04-RAFT](../../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md).
 
 **其他自训练方法.** 论文提到 Singh 等的合成数据自训练仍需要二值反馈 (正确或错误), Burns 等的弱到强泛化需要弱模型和强模型同时在场. SPIN 只需要一个 SFT 过的模型和它的 SFT 数据.
 
@@ -362,7 +362,7 @@ Figure 4 还显示, iter-0 训练更多 epoch 时分数保持稳定, 没有下�
 
 **生成多样性不足.** 每条 prompt 只采一个 $y'$. 采样温度过低时, $y'$ 集中在少数高概率回答上, 主玩家压低的只是这几种回答.
 
-带奖励的在线采样方法见 [04-PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 和 [02-GRPO](../../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), AI 反馈见 [4.7.1-RLAIF](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
+带奖励的在线采样方法见 [04-PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 和 [01-GRPO](../../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), AI 反馈见 [4.7.1-RLAIF](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
 
 ## 参考文献
 

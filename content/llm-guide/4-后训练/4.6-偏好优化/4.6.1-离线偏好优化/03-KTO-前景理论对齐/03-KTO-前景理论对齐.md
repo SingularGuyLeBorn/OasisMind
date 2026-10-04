@@ -288,9 +288,9 @@ one-$y$-per-$x$ 设定下训练数据量少 72%, 胜率仍高于 DPO. 人工评�
 
 DPO 一条样本是 $(x,y_w,y_l)$, 损失看的是两条隐式奖励之差, 参考点就是那条 $y_l$. 没有 $y_l$, DPO 的损失写不出来. KTO 的参考点是对整个策略估计的 KL, 单条 $y$ 就能产生梯度.
 
-IPO (Azar 等, [arXiv:2310.12036](https://arxiv.org/abs/2310.12036)) 同样要成对数据, 把 $\log\sigma$ 换成平方损失, 让对数比之差回归到固定间隔, 目的是避免偏好接近确定时对数比被推向无穷. 见 [03-IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md).
+IPO (Azar 等, [arXiv:2310.12036](https://arxiv.org/abs/2310.12036)) 同样要成对数据, 把 $\log\sigma$ 换成平方损失, 让对数比之差回归到固定间隔, 目的是避免偏好接近确定时对数比被推向无穷. 见 [02-IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md).
 
-ORPO (Hong 等, [arXiv:2403.07691](https://arxiv.org/abs/2403.07691)) 不用参考模型, 但要成对数据, 损失是 chosen 的 SFT 加几率比项, 见 [02-ORPO](../04-ORPO/04-ORPO.md). KTO 也有不加载参考模型的变体: 假设 $\pi_{\mathrm{ref}}$ 对每个 $x$ 是均匀分布, $r_\theta-z_0$ 化为 $\log\pi_\theta(y\mid x)-H(\pi_\theta(\cdot\mid x))$, $H$ 是熵. 论文在 Zephyr 设定下报告, 这个变体取 $\lambda_D=1.75$ 时 MMLU, GSM8K, HumanEval, BBH 为 57.5, 47.5, 29.5, 51.6, 部分任务上好于 DPO, 部分任务上差, 整体弱于标准 KTO. 它对损失厌恶超参也更敏感, $\lambda_D$ 改成 1.5 或 2.0, GSM8K 和 BBH 都会掉好几个点.
+ORPO (Hong 等, [arXiv:2403.07691](https://arxiv.org/abs/2403.07691)) 不用参考模型, 但要成对数据, 损失是 chosen 的 SFT 加几率比项, 见 [04-ORPO](../04-ORPO/04-ORPO.md). KTO 也有不加载参考模型的变体: 假设 $\pi_{\mathrm{ref}}$ 对每个 $x$ 是均匀分布, $r_\theta-z_0$ 化为 $\log\pi_\theta(y\mid x)-H(\pi_\theta(\cdot\mid x))$, $H$ 是熵. 论文在 Zephyr 设定下报告, 这个变体取 $\lambda_D=1.75$ 时 MMLU, GSM8K, HumanEval, BBH 为 57.5, 47.5, 29.5, 51.6, 部分任务上好于 DPO, 部分任务上差, 整体弱于标准 KTO. 它对损失厌恶超参也更敏感, $\lambda_D$ 改成 1.5 或 2.0, GSM8K 和 BBH 都会掉好几个点.
 
 | | 数据 | 参考模型 | 目标 | 参考点 |
 |--|------|---------|------|--------|
@@ -338,7 +338,7 @@ undesirable 样本把 $z$ 换成 $-z$, 符号相反. $s(1-s)$ 在 $|z|$ 很大�
 
 **需要比较信号的场景.** 只想表达「A 比 B 好」而两者都可接受时, 二值标签丢失了这层信息, 成对方法更合适. 例如两条回答都正确, 区别只在详略和语气, 硬把其中一条标成 undesirable, KTO 会去压低一条本身合格的回答.
 
-PPO 和组相对的在线 RL 见 [02-GRPO](../../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), 无参考的长度平均方法见 [04-SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md).
+PPO 和组相对的在线 RL 见 [01-GRPO](../../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), 无参考的长度平均方法见 [05-SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md).
 
 ## 参考文献
 

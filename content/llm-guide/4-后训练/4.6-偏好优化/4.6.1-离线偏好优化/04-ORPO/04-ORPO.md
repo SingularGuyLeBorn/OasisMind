@@ -303,7 +303,7 @@ ORPO 在同一输入内的相似度更高, 同一个 prompt 下多次采样的�
 | SimPO | 成对 | 不要 | 长度平均对数概率减 $\gamma$ | 从 SFT 或 Instruct 模型继续 |
 | ORPO | 成对 | 不要 | $y_w$ 的 NLL 加 $\lambda$ 倍几率比项 | 是 |
 
-ORPO 和 SimPO 都不用参考模型, 都用到长度平均. 两者的用法不同: SimPO 把平均对数概率当作 Bradley-Terry 里的奖励, 再减一个间隔 $\gamma$, 没有 SFT 项; ORPO 用平均对数概率构造几率, 保留 chosen 的 NLL, 没有 $\gamma$. KTO 的细节见 [03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md), SimPO 见 [04-SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md). 偏好标签也可以由 LLM 生成, 见 [4.7.1-RLAIF](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
+ORPO 和 SimPO 都不用参考模型, 都用到长度平均. 两者的用法不同: SimPO 把平均对数概率当作 Bradley-Terry 里的奖励, 再减一个间隔 $\gamma$, 没有 SFT 项; ORPO 用平均对数概率构造几率, 保留 chosen 的 NLL, 没有 $\gamma$. KTO 的细节见 [03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md), SimPO 见 [05-SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md). 偏好标签也可以由 LLM 生成, 见 [4.7.1-RLAIF](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
 
 ### 6.2 损失计算
 

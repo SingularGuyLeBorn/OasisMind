@@ -284,7 +284,7 @@ MD1 那一列对每一行都超过 $0.5$: 对 SP $0.592$, 对 MD2 $0.575$, 对 M
 | Nash-EMA-PG | 同上 | 成对 $\mathcal{P}$ | 参数 EMA | 正则 Nash 的近似 |
 | SPIN | 人工回答对自生成回答 | 无 | 上一轮自己 | 逼近 $p_{\mathrm{data}}$ |
 
-[DPO](../../4.6.1-离线偏好优化/01-DPO/01-DPO.md) 的解是 BT 加 KL 的闭式最优策略, 依赖 BT 假设, 偏好对在训练前就采好. Nash-MD-PG 每一步对新对手现场采样, 偏好模型不需要 BT. [IPO](../../4.6.1-离线偏好优化/02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) 去掉了 BT, 仍是离线的; 它的在线版本在 [08-Online IPO](../02-Online-IPO-在线偏好/02-Online-IPO-在线偏好.md) 中被证明期望梯度与 Self-Play 相同, 驻点是正则 Nash 均衡, 加上几何混合采样后得到 IPO-MD, 那里的混合用来生成两条回答, 作用与本文的对手不同. Calandriello 等的 Proposition 5.1 进一步算出: Nash-MD-PG 的期望梯度是 $-\mathbb{E}_{y\sim\pi}[g(y)]$, IPO-MD 是 $-\frac{2}{\tau}\mathbb{E}_{y\sim\pi'}[g(y)]$, 被积函数相同, 差别只在 $y$ 从当前策略采 (on-policy) 还是从混合策略采 (off-policy).
+[DPO](../../4.6.1-离线偏好优化/01-DPO/01-DPO.md) 的解是 BT 加 KL 的闭式最优策略, 依赖 BT 假设, 偏好对在训练前就采好. Nash-MD-PG 每一步对新对手现场采样, 偏好模型不需要 BT. [IPO](../../4.6.1-离线偏好优化/02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) 去掉了 BT, 仍是离线的; 它的在线版本在 [02-Online IPO](../02-Online-IPO-在线偏好/02-Online-IPO-在线偏好.md) 中被证明期望梯度与 Self-Play 相同, 驻点是正则 Nash 均衡, 加上几何混合采样后得到 IPO-MD, 那里的混合用来生成两条回答, 作用与本文的对手不同. Calandriello 等的 Proposition 5.1 进一步算出: Nash-MD-PG 的期望梯度是 $-\mathbb{E}_{y\sim\pi}[g(y)]$, IPO-MD 是 $-\frac{2}{\tau}\mathbb{E}_{y\sim\pi'}[g(y)]$, 被积函数相同, 差别只在 $y$ 从当前策略采 (on-policy) 还是从混合策略采 (off-policy).
 
 [PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 优化标量奖励, 通常配价值网络. 式 (12) 用 $\mathcal{P}-1/2$ 当优势, 基线是常数. 附录 G.3 的 RLHF 基线也只是带 KL 的正则策略梯度, 对比的重点是「标量奖励」与「成对偏好」两种信号.
 
@@ -300,7 +300,7 @@ MD1 那一列对每一行都超过 $0.5$: 对 SP $0.592$, 对 MD2 $0.575$, 对 M
 
 **成本.** 每个训练样本要生成两条回答, 其中 $y'$ 的每个 token 要同时跑策略和参考模型; 每对回答还要过一次偏好模型 (实验中是 3B 的 T5X-XL), 输入同时包含两条回答. 相比 RLHF 的「一条回答, 一次奖励打分」, 生成和打分的开销都更高.
 
-**换一组实验, 排序会变.** Calandriello 等在摘要任务上用 T5X-L 策略重新比较了这些方法 (见 [08-Online IPO](../02-Online-IPO-在线偏好/02-Online-IPO-在线偏好.md)), 那里的 Table 2 中在线 IPO 对 Nash-MD-PG 的胜率是 $0.621$, DPO 对 Nash-MD-PG 也有 $0.520$. 任务, 超参搜索范围和裁判提示都不同, 两份结果不能互相否定, 但说明 Nash-MD-PG 的优势依赖具体设置.
+**换一组实验, 排序会变.** Calandriello 等在摘要任务上用 T5X-L 策略重新比较了这些方法 (见 [02-Online IPO](../02-Online-IPO-在线偏好/02-Online-IPO-在线偏好.md)), 那里的 Table 2 中在线 IPO 对 Nash-MD-PG 的胜率是 $0.621$, DPO 对 Nash-MD-PG 也有 $0.520$. 任务, 超参搜索范围和裁判提示都不同, 两份结果不能互相否定, 但说明 Nash-MD-PG 的优势依赖具体设置.
 
 **实验范围.** 只有一个摘要任务, 策略只有 T5X-L 一种规模, 评估只用 LLM 裁判, 没有人类评测. 偏好模型对奖励模型的准确率优势 ($0.78$ 对 $0.76$) 较小.
 

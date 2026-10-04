@@ -306,7 +306,7 @@ SiTU-GLU 管坐标级的大值, RMSNorm 管向量级的尺度, 两者作用在�
 
 ### 5.1 与相近做法的对照
 
-K3 的报告里还有两处与 SiTU-GLU 结构相似的门控: KDA 的输出门是 $\sigma(W_gx_t)\odot\mathrm{RMSNorm}(\tilde o_t)$ (K3 报告式 (6)), 形式上与注意力的输出门控相同 (见 [06 Gated Attention](../../../2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md)); 层间的门控残差见 [03 Gated Residual](../../2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md). 它们用 Sigmoid 做门, 输出天然有界, 和这里要解决的「门控因子无界」不是同一个问题.
+K3 的报告里还有两处与 SiTU-GLU 结构相似的门控: KDA 的输出门是 $\sigma(W_gx_t)\odot\mathrm{RMSNorm}(\tilde o_t)$ (K3 报告式 (6)), 形式上与注意力的输出门控相同 (见 [05 Gated Attention](../../../2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md)); 层间的门控残差见 [03 Gated Residual](../../2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md). 它们用 Sigmoid 做门, 输出天然有界, 和这里要解决的「门控因子无界」不是同一个问题.
 
 针对 SwiGLU 大值增长的几种做法:
 

@@ -7,7 +7,7 @@ excerpt: "SAPO (Soft Adaptive Policy Optimization) 来自 Qwen 团队, 把 GRPO/
 
 # SAPO: 温度软门
 
-> 相关阅读: [02 GRPO](../01-GRPO/01-GRPO.md) · [03 GSPO](../04-GSPO/04-GSPO.md) · [01 GMPO](../05-GMPO/05-GMPO.md) · [08 CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md)
+> 相关阅读: [01 GRPO](../01-GRPO/01-GRPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [05 GMPO](../05-GMPO/05-GMPO.md) · [03 CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md)
 
 材料是 Gao 等 (Qwen 团队) 的 *Soft Adaptive Policy Optimization* (arXiv:2511.20347). 问题是组相对策略优化里的硬裁剪: 带收紧则能算梯度的样本变少, 带放宽则离策略样本的噪声进来, 能否用一个连续的门换掉这把闸.
 
@@ -36,7 +36,7 @@ $$
 
 ### 1.2 为什么比率会散
 
-一批 rollout 通常切成几个 mini-batch 依次更新. 第一个 mini-batch 更新完, 后面的 mini-batch 面对的 $\pi_\theta$ 已经偏离采样时的 $\pi_{\theta_{\mathrm{old}}}$, $r_{i,t}$ 自然离开 1. 论文引言指出, token 级比率的方差在 MoE 模型上更高, 路由的异构和长回答会把各 token 的偏差放大. GSPO 论文给过一个量: 48 层的 Qwen3-30B-A3B-Base, 每次梯度更新后同一条 rollout 上约 10% 的激活专家与旧策略不同 (见 [03 GSPO](../04-GSPO/04-GSPO.md)).
+一批 rollout 通常切成几个 mini-batch 依次更新. 第一个 mini-batch 更新完, 后面的 mini-batch 面对的 $\pi_\theta$ 已经偏离采样时的 $\pi_{\theta_{\mathrm{old}}}$, $r_{i,t}$ 自然离开 1. 论文引言指出, token 级比率的方差在 MoE 模型上更高, 路由的异构和长回答会把各 token 的偏差放大. GSPO 论文给过一个量: 48 层的 Qwen3-30B-A3B-Base, 每次梯度更新后同一条 rollout 上约 10% 的激活专家与旧策略不同 (见 [04 GSPO](../04-GSPO/04-GSPO.md)).
 
 论文对硬裁剪的判断是两头为难: 带收得过紧, 参与梯度计算的有效样本变少; 放得过松, 离策略样本带来的噪声梯度进来. 这里的困难出在「出带即归零」这一刀上, 调 $\varepsilon$ 只是在两种坏处之间挪位置. GSPO 的问题更集中. 几何平均让 $s_i$ 贴近 1, GSPO 论文用的带宽是左 $3\times10^{-4}$, 右 $4\times10^{-4}$; 一条回答里只要少数 token 偏得厉害, $s_i$ 就出带, 整条回答连同其中大量近 on-policy 的 token 一起没有梯度.
 
@@ -229,9 +229,9 @@ GSPO 论文自己报告过, 它被裁掉的 token 比例比 GRPO 高约两个数
 
 ### 3.4 和邻居的区别
 
-**CISPO.** MiniMax-M1 (arXiv:2506.13585) 的 CISPO 裁剪重要性权重本身, 并对裁剪后的权重做 stop-gradient, 梯度只经过 $\log\pi_\theta$, 出带 token 的系数被冻在区间边界上 (见 [08 CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md)). SAPO 没有 stop-gradient, 门是 $r$ 的可微函数, 系数 $w\cdot r$ 随 $r$ 先升后降, 远处趋于 0. CISPO 对 $r$ 很大的 token 仍给满额的上界系数, SAPO 会把它压掉.
+**CISPO.** MiniMax-M1 (arXiv:2506.13585) 的 CISPO 裁剪重要性权重本身, 并对裁剪后的权重做 stop-gradient, 梯度只经过 $\log\pi_\theta$, 出带 token 的系数被冻在区间边界上 (见 [03 CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md)). SAPO 没有 stop-gradient, 门是 $r$ 的可微函数, 系数 $w\cdot r$ 随 $r$ 先升后降, 远处趋于 0. CISPO 对 $r$ 很大的 token 仍给满额的上界系数, SAPO 会把它压掉.
 
-**GMPO.** [01 GMPO](../05-GMPO/05-GMPO.md) 把 token 级目标的算术平均换成几何平均, 裁剪仍作用于每个 token 的比率, 窗口为 $(e^{-0.4},e^{0.4})$. 它改的是聚合方式, SAPO 改的是出带之后的权重形状.
+**GMPO.** [05 GMPO](../05-GMPO/05-GMPO.md) 把 token 级目标的算术平均换成几何平均, 裁剪仍作用于每个 token 的比率, 窗口为 $(e^{-0.4},e^{0.4})$. 它改的是聚合方式, SAPO 改的是出带之后的权重形状.
 
 **GSPO.** 3.2 节的结论只说明小步时 SAPO 的平均行为像连续的 GSPO. 两者的超参不能互换: GSPO 的带宽在 $10^{-4}$ 量级, 作用在 $s_i$ 上; SAPO 的 $\tau$ 在 1 附近, 作用在 token 比率上.
 
@@ -278,7 +278,7 @@ SAPO 用于训练 Qwen3-VL 系列, 论文称在不同尺寸, MoE 和稠密架构
 | 极端离策略 token | 系数很小但不为 0 | $w$ 处处大于 0 | 依赖 $w\cdot r$ 远处趋于 0; 离策略过重时减少 mini-batch 切分 |
 | $\tau_{\mathrm{neg}}<\tau_{\mathrm{pos}}$ | 训练明显不稳 (Figure 5) | 负梯度的门更宽, 扩散到大量未采样 token | 保持 $\tau_{\mathrm{neg}}>\tau_{\mathrm{pos}}$ |
 | 正负共用一个温度 | 能跑, 稳定性居中 | 失去非对称衰减 | 按优势符号选 $\tau$ |
-| 组内奖励全同 | 优势为 0 或分母为 0 | 式 (1) 的组标准化未改 | 按 GRPO 系的办法处理, 见 [02 GRPO](../01-GRPO/01-GRPO.md) 与 [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) |
+| 组内奖励全同 | 优势为 0 或分母为 0 | 式 (1) 的组标准化未改 | 按 GRPO 系的办法处理, 见 [01 GRPO](../01-GRPO/01-GRPO.md) 与 [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) |
 | MoE 上序列内分散度高 | 平均门偏离序列门, 3.2 节的近似变差 | 路由异构使 $\mathrm{Var}_i$ 分布更宽 (Figure 2) | 退回逐 token 软门的理解, 关注离群 token 的占比 |
 | 把 GSPO 带宽填进 $\tau$ | 门极宽或极窄, 行为失常 | 两者作用对象和量级不同 | $\tau$ 取 1 附近 |
 
@@ -286,7 +286,7 @@ SAPO 用于训练 Qwen3-VL 系列, 论文称在不同尺寸, MoE 和稠密架构
 
 表里的情形都有论文的实验或推导支撑, 另有几处条件实验没有覆盖. 第一, 论文的 $\tau$ 只在 0.95 到 1.05 之间做了消融, 更大或更小的温度没有实验. 从式 (6) 看, $\tau$ 很小时门几乎不衰减, 接近未裁剪的 $r\hat{A}$; $\tau$ 很大时门缩成 $r=1$ 附近的尖峰. 第二, 实验里优势在整条回答内共用, 属于结果监督; 换成过程奖励时, 变化发生在 $\hat{A}_{i,t}$ 上, 门仍只看 $r_{i,t}$, 信用分配不归 SAPO 管. 第三, SAPO 在 MoE 上去掉了 routing replay, 但专家负载均衡和路由塌缩等问题仍在 MoE 训练本身, 论文没有讨论. 第四, 受控实验的对比只有 GSPO 和 GRPO-R2 两条基线, 没有与 CISPO, DAPO 这类同样改裁剪方式的方法直接比较; 评测数值也只以曲线给出, 要判断提升幅度只能看图.
 
-选择上可以按问题来源判断. 日志里大量 token 因出带失去梯度, 又不想改优势或采样: SAPO 只换门函数, 改动最小. MoE 上比率波动大, 想彻底避开 token 级比率: 看 [03 GSPO](../04-GSPO/04-GSPO.md). 想保住出带 token 的梯度, 同时让系数有明确上界并冻结权重: 看 [08 CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md). 需要价值网络和 GAE: 回到 [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md).
+选择上可以按问题来源判断. 日志里大量 token 因出带失去梯度, 又不想改优势或采样: SAPO 只换门函数, 改动最小. MoE 上比率波动大, 想彻底避开 token 级比率: 看 [04 GSPO](../04-GSPO/04-GSPO.md). 想保住出带 token 的梯度, 同时让系数有明确上界并冻结权重: 看 [03 CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md). 需要价值网络和 GAE: 回到 [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md).
 
 ## 参考文献
 

@@ -160,7 +160,7 @@ $$
 s_{h,i,j}=\frac{\exp(z_{h,i,j})}{\sum_k \exp(z_{h,i,k})+\exp(z'_h)}. \tag{12}
 $$
 
-$z_{h,i,j}$ 是头 $h$ 中 query $i$ 对第 $j$ 个前序 token 或压缩块的 logit. 分母多一项之后, 每行注意力权重之和可以小于 1, 甚至接近 0, query 找不到相关内容时不必把权重分给某个条目. 报告引的是 StreamingLLM 和 gpt-oss. 和 [07 StreamingLLM](../../2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md) 的做法不同, 这里没有保留任何真实 token 当 sink, 只是一个每头一个的标量.
+$z_{h,i,j}$ 是头 $h$ 中 query $i$ 对第 $j$ 个前序 token 或压缩块的 logit. 分母多一项之后, 每行注意力权重之和可以小于 1, 甚至接近 0, query 找不到相关内容时不必把权重分给某个条目. 报告引的是 StreamingLLM 和 gpt-oss. 和 [01 StreamingLLM](../../2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md) 的做法不同, 这里没有保留任何真实 token 当 sink, 只是一个每头一个的标量.
 
 ### 2.3 层排布与配置
 

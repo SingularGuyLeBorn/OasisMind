@@ -7,7 +7,7 @@ excerpt: "CISPO 来自 MiniMax-M1 技术报告. 它把 PPO 和 GRPO 对 token �
 
 # CISPO: 裁剪重要性权重
 
-> 相关阅读: [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [02 GRPO](../01-GRPO/01-GRPO.md) · [03 GSPO](../04-GSPO/04-GSPO.md) · [09 SAPO](../06-SAPO-温度软门/06-SAPO-温度软门.md) · [GxPO 家族](../4.5-GRPO家族与RLVR.md)
+> 相关阅读: [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [01 GRPO](../01-GRPO/01-GRPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [06 SAPO](../06-SAPO-温度软门/06-SAPO-温度软门.md) · [GxPO 家族](../4.5-GRPO家族与RLVR.md)
 
 材料是 MiniMax-M1 技术报告 (*MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*, arXiv:2506.13585) 的 §3.1, CISPO 全称 Clipped IS-weight Policy Optimization. 问题是同一批 rollout 要更新多轮时, PPO/GRPO 的裁剪会让一部分 token 失去梯度.
 
@@ -295,7 +295,7 @@ assert torch.allclose(g_ppo, lp.grad)
 
 **GSPO** (Zheng 等 2025) 把重要性比率从 token 提到整条回复, 用长度归一化的几何平均 $s_i$, 裁剪也作用在 $s_i$ 上. 一条回复的 $s_i$ 出界, 整条回复都不更新. CISPO 的比率仍在 token 级, 每个 token 都更新, 过大的权重被封顶.
 
-**SAPO** (Gao 等 2025) 用温度控制的 sigmoid 软门代替硬裁剪, 正负优势用不同温度. 它的权重随比率偏离 1 平滑衰减, 远离 1 时梯度趋近 0; CISPO 的系数在上界处截断, 之后保持常数, 不衰减到 0. 取正优势, 比较三种方法乘在 $\hat A\nabla\log\pi_\theta$ 前的系数 (PPO 取 $\epsilon=0.2$, CISPO 上界取 $1.2$, SAPO 取 $\tau=1$, 其系数是 $4\sigma(r-1)(1-\sigma(r-1))\cdot r$, 推导见 [09 SAPO](../06-SAPO-温度软门/06-SAPO-温度软门.md)):
+**SAPO** (Gao 等 2025) 用温度控制的 sigmoid 软门代替硬裁剪, 正负优势用不同温度. 它的权重随比率偏离 1 平滑衰减, 远离 1 时梯度趋近 0; CISPO 的系数在上界处截断, 之后保持常数, 不衰减到 0. 取正优势, 比较三种方法乘在 $\hat A\nabla\log\pi_\theta$ 前的系数 (PPO 取 $\epsilon=0.2$, CISPO 上界取 $1.2$, SAPO 取 $\tau=1$, 其系数是 $4\sigma(r-1)(1-\sigma(r-1))\cdot r$, 推导见 [06 SAPO](../06-SAPO-温度软门/06-SAPO-温度软门.md)):
 
 | $r$ | PPO | CISPO | SAPO ($\tau=1$) |
 |---|---|---|---|

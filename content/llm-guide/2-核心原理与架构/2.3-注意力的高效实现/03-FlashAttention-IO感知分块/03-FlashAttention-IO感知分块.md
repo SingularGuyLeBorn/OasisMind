@@ -380,7 +380,7 @@ print(np.abs(np.exp(s - lse[:, None]).sum(axis=1) - 1).max())   # 用 L 恢复�
 
 **块大小依赖硬件.** 式 (8) 是渐近分析用的块大小,实际内核还要考虑寄存器,共享内存划分,双缓冲,对齐和占用率.v2 的块大小是对每种头维度手工调出来的.
 
-**不是所有硬件特性都用上了.** v2 在 H100 上能跑到 335 TFLOPs/s,但只有 H100 峰值的约三分之一,原因是没有使用 Hopper 的异步执行单元和低精度格式.这部分由 [03 FlashAttention-3 与 FlashAttention-4](../04-FlashAttention-Hopper与Blackwell/04-FlashAttention-Hopper与Blackwell.md) 处理.
+**不是所有硬件特性都用上了.** v2 在 H100 上能跑到 335 TFLOPs/s,但只有 H100 峰值的约三分之一,原因是没有使用 Hopper 的异步执行单元和低精度格式.这部分由 [04 FlashAttention-3 与 FlashAttention-4](../04-FlashAttention-Hopper与Blackwell/04-FlashAttention-Hopper与Blackwell.md) 处理.
 
 **反向的原子加.** v2 反向用原子加合并 $dQ$,不同运行之间浮点求和顺序可能不同,结果不完全可复现.官方实现从 2.4 版开始提供确定性反向选项,代价是更慢.
 

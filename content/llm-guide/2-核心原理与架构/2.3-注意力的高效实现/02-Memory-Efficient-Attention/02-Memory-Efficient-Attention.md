@@ -285,7 +285,7 @@ FlashAttention(Dao 等人,2022)在论文附录 B.5 专门比较了自己与 Rabe
 
 **反向.** MEA 用梯度检查点重算注意力矩阵和每块的临时输出.FlashAttention 对反向做了解析推导,只重算注意力矩阵,不重算每块的临时输出,显存更少,速度更快.
 
-Rabe 和 Staats 在论文第 6 节也提到 FlashAttention,把它描述为 MEA 的 CUDA 实现,并证明显存减少可以在 GPU 上转化为加速.他们解释自己在 TPU 上没有看到同样加速的原因:TPU 上的标准自注意力已经较好地平衡了算力和内存带宽.FlashAttention 的具体算法见 [02 FlashAttention:IO 感知分块](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md).
+Rabe 和 Staats 在论文第 6 节也提到 FlashAttention,把它描述为 MEA 的 CUDA 实现,并证明显存减少可以在 GPU 上转化为加速.他们解释自己在 TPU 上没有看到同样加速的原因:TPU 上的标准自注意力已经较好地平衡了算力和内存带宽.FlashAttention 的具体算法见 [03 FlashAttention:IO 感知分块](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md).
 
 另外两个名字容易混淆:
 

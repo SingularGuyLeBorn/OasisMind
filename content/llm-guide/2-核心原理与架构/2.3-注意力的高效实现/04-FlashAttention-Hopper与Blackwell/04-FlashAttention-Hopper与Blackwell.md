@@ -11,7 +11,7 @@ excerpt: "FlashAttention-2 在 H100 上只用到 35% 的峰值.FlashAttention-3 
 
 ### 1.1 两代 GPU 的吞吐差距
 
-[02 FlashAttention:IO 感知分块](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) 介绍的 v1 和 v2 解决的是 HBM 搬运问题.到了 Hopper 和 Blackwell,瓶颈出现在 SM 内部.
+[03 FlashAttention:IO 感知分块](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) 介绍的 v1 和 v2 解决的是 HBM 搬运问题.到了 Hopper 和 Blackwell,瓶颈出现在 SM 内部.
 
 **Hopper 的情况.** FlashAttention-3 论文给出 H100 SXM5 的数字:FP16 矩阵乘峰值 989 TFLOPs,而指数等特殊函数的吞吐只有 3.9 TFLOPs(每 SM 每周期 16 次,132 个 SM,1830MHz).头维度 $d=128$ 时,一个分数元素对应的矩阵乘运算量是指数运算量的 512 倍,但特殊函数吞吐比矩阵乘低 256 倍,所以指数运算可能占用矩阵乘时间的 50%.如果 softmax 和矩阵乘串行执行,Tensor Core 有相当一部分时间在等待.FA2 在 H100 上只达到峰值的 35%,而优化过的 GEMM 能达到 80% 到 90%.
 
