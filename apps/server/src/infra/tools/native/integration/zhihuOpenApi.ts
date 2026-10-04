@@ -8,9 +8,11 @@ import {
   zhihuFavlistContents,
   zhihuGlobalSearch,
   zhihuHotList,
+  zhihuQuestionAnswers,
   zhihuSearch,
   zhihuUserCollections,
   zhihuUserFavlists,
+  zhihuUserFollowees,
   zhihuZhida,
 } from "../../../zhihuOpenApi.js";
 
@@ -112,6 +114,79 @@ async function zhihuOpenapiFavlistContents(args: Record<string, unknown>, ctx: N
   return { ok: true, data: res.data };
 }
 
+async function zhihuOpenapiQuestionAnswers(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const questionUrl = String(args.questionUrl ?? "").trim();
+  if (!questionUrl) throw new Error("需要 questionUrl（知乎问题链接）");
+  const secret = await requireSecret(ctx);
+  const res = await zhihuQuestionAnswers(secret, questionUrl, {
+    offset: (args.offset as number | string | undefined) ?? 0,
+    limit: typeof args.limit === "number" ? args.limit : 20,
+  });
+  if (!res.ok) throw new Error(`知乎问题回答列表失败 Code=${res.code}: ${res.message}`);
+  return { ok: true, questionUrl, data: res.data };
+}
+
+const FOLLOW_CHECK_MAX_FOLLOWEES = 5000;
+
+async function zhihuOpenapiFollowCheck(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const raw = args.authors;
+  const authors = (Array.isArray(raw) ? raw : [raw])
+    .map((a) => String(a ?? "").trim())
+    .filter(Boolean);
+  if (!authors.length) throw new Error("需要 authors（作者名或 url_token 列表）");
+  const secret = await requireSecret(ctx);
+  const maxFollowees = Math.min(
+    FOLLOW_CHECK_MAX_FOLLOWEES,
+    typeof args.maxFollowees === "number" && args.maxFollowees > 0
+      ? Math.floor(args.maxFollowees)
+      : FOLLOW_CHECK_MAX_FOLLOWEES,
+  );
+
+  // 拉全量关注列表（公开关注），本地比对；命中全部目标或翻到尽头即停
+  const followedTokens = new Set<string>();
+  const followedNames = new Set<string>();
+  let offset: number | string = 0;
+  let scanned = 0;
+  let capped = false;
+  for (let page = 0; page < Math.ceil(maxFollowees / 50); page++) {
+    const res = await zhihuUserFollowees(secret, { offset, limit: 50 });
+    if (!res.ok) {
+      throw new Error(`知乎关注列表失败 Code=${res.code}: ${res.message}（已扫描 ${scanned} 人）`);
+    }
+    const items = res.data.Items ?? [];
+    for (const it of items) {
+      const name = (it.Fullname ?? it.Name ?? "").trim();
+      const token = (it.UrlToken ?? "").trim();
+      if (name) followedNames.add(name);
+      if (token) followedTokens.add(token);
+    }
+    scanned += items.length;
+    const remaining = authors.filter(
+      (a) => !followedNames.has(a) && !followedTokens.has(a),
+    );
+    if (!remaining.length) break;
+    const next = res.data.Paging?.NextOffset;
+    const hasMore = res.data.HasMore ?? (next != null && String(next) !== String(offset));
+    if (!hasMore || !items.length) break;
+    offset = next ?? (typeof offset === "number" ? offset + items.length : scanned);
+    if (scanned >= maxFollowees) {
+      capped = remaining.length > 0;
+      break;
+    }
+  }
+
+  return {
+    ok: true,
+    checked: authors.map((a) => ({
+      author: a,
+      isMyFollow: followedNames.has(a) || followedTokens.has(a),
+    })),
+    followeesScanned: scanned,
+    capped,
+    note: "基于开放平台公开关注列表比对；对方隐藏的关注无法判定。",
+  };
+}
+
 export const zhihuOpenApiDefs: NativeToolDefinition[] = [
   {
     name: "zhihu_openapi_search",
@@ -196,6 +271,42 @@ export const zhihuOpenApiDefs: NativeToolDefinition[] = [
       },
     },
   },
+  {
+    name: "zhihu_openapi_question_answers",
+    concurrencyClass: "B",
+    description:
+      "指定问题下的回答摘要列表（官方 API，任意公开问题）。回答全文用 zhihu_get 或 read_article 按回答 URL 读。",
+    parameters: {
+      type: "object",
+      properties: {
+        questionUrl: { type: "string", description: "问题链接，如 https://www.zhihu.com/question/123" },
+        offset: { type: ["number", "string"], description: "默认 0；下一页用返回的 Paging.NextOffset" },
+        limit: { type: "number", description: "默认 20，最大 50" },
+      },
+      required: ["questionUrl"],
+    },
+  },
+  {
+    name: "zhihu_openapi_follow_check",
+    concurrencyClass: "B",
+    description:
+      "判断指定作者是否在我的关注列表里（官方 API，比对公开关注列表）。authors 传作者名或 url_token。",
+    parameters: {
+      type: "object",
+      properties: {
+        authors: {
+          type: "array",
+          items: { type: "string" },
+          description: "作者名或 url_token，1–50 个",
+        },
+        maxFollowees: {
+          type: "number",
+          description: "最多扫描多少关注（护栏，默认 5000）",
+        },
+      },
+      required: ["authors"],
+    },
+  },
 ];
 
 export const zhihuOpenApiHandlers: Record<string, NativeToolHandler> = {
@@ -205,4 +316,6 @@ export const zhihuOpenApiHandlers: Record<string, NativeToolHandler> = {
   zhihu_openapi_favlists: zhihuOpenapiFavlists,
   zhihu_openapi_recent_collections: zhihuOpenapiRecentCollections,
   zhihu_openapi_favlist_contents: zhihuOpenapiFavlistContents,
+  zhihu_openapi_question_answers: zhihuOpenapiQuestionAnswers,
+  zhihu_openapi_follow_check: zhihuOpenapiFollowCheck,
 };

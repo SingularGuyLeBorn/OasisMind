@@ -193,6 +193,78 @@ export async function zhihuUserFavlists(secret: string, limit = 50) {
   });
 }
 
+export type ZhihuOpenApiQuestionAnswer = {
+  Id?: string | number;
+  Title?: string;
+  QuestionId?: number;
+  AuthorName?: string;
+  AuthorUrlToken?: string;
+  ContentText?: string;
+  VoteUpCount?: number;
+  CommentCount?: number;
+  CreatedTime?: number;
+  UpdatedTime?: number;
+  Url?: string;
+};
+
+export type ZhihuOpenApiFollowee = {
+  Fullname?: string;
+  Name?: string;
+  Url?: string;
+  UrlToken?: string;
+  Headline?: string;
+  AvatarUrl?: string;
+  Gender?: number;
+  FollowerCount?: number;
+};
+
+/** 规范化问题 URL：开放平台只认 https://www.zhihu.com/question/{id} */
+export function normalizeZhihuQuestionUrl(url: string): string {
+  const m = url.match(/question\/(\d+)/);
+  if (!m?.[1]) throw new Error(`无法从 URL 解析问题 id（期望含 question/数字）: ${url}`);
+  return `https://www.zhihu.com/question/${m[1]}`;
+}
+
+/** 指定问题下的回答摘要（分页 Offset/NextOffset），任意公开问题可用 */
+export async function zhihuQuestionAnswers(
+  secret: string,
+  questionUrl: string,
+  opts?: { offset?: number | string; limit?: number },
+) {
+  return zhihuOpenApiRequest<{
+    HasMore?: boolean;
+    Items?: ZhihuOpenApiQuestionAnswer[];
+    Paging?: { NextOffset?: string | number; Totals?: number };
+  }>({
+    path: "/api/v1/content/question_answers",
+    secret,
+    query: {
+      QuestionUrl: normalizeZhihuQuestionUrl(questionUrl),
+      Offset: opts?.offset ?? 0,
+      Limit: Math.max(1, Math.min(50, opts?.limit ?? 20)),
+    },
+  });
+}
+
+/** 本人（或 OAuth 授权用户）的公开关注列表（分页） */
+export async function zhihuUserFollowees(
+  secret: string,
+  opts?: { offset?: number | string; limit?: number },
+) {
+  return zhihuOpenApiRequest<{
+    HasMore?: boolean;
+    Items?: ZhihuOpenApiFollowee[];
+    Paging?: { NextOffset?: string | number; Totals?: number };
+  }>({
+    path: "/api/v1/user/followees",
+    secret,
+    query: {
+      Offset: opts?.offset ?? 0,
+      Limit: Math.max(1, Math.min(50, opts?.limit ?? 20)),
+    },
+  });
+}
+
 export async function zhihuUserCollections(secret: string, limit = 20) {
   return zhihuOpenApiRequest<{ Items?: ZhihuOpenApiFavContent[] }>({
     path: "/api/v1/user/collections",

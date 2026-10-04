@@ -1,8 +1,9 @@
 /**
- * Cursor / 终端用的知乎薄 CLI：搜走开放平台，正文走 read_article。
- * 用法：pnpm --filter @oasismind/server zhihu -- <status|search|read> …
+ * Cursor / 终端用的知乎薄 CLI：搜走开放平台，正文走 read_article，
+ * 计数/评论/关注关系走登录态（zhihu_get / zhihu_comments / zhihu_save）。
+ * 用法：pnpm --filter @oasismind/server zhihu <status|search|read|answers|comments|follow-check|save> …
  *
- * 开放平台搜索只给摘要（ContentText），不是全文。全文必须 zhihu read <url>，
+ * 开放平台搜索只给摘要（ContentText），不是全文。全文必须 read / zhihu_get，
  * 长文跟 nextOffset 翻页。禁止把抓到的正文写入 git。
  */
 
@@ -26,16 +27,26 @@ type Flags = {
   offset?: number;
   maxChars?: number;
   metaOnly?: boolean;
+  limit?: number;
+  max?: number;
+  order?: string;
+  noComments?: boolean;
 };
 
 function usage(): string {
-  return `知乎 CLI（搜=开放平台摘要；读=read_article 全文）
+  return `知乎 CLI（搜=开放平台摘要；读=read_article 全文；计数/评论/关注=登录态）
 
-pnpm --filter @oasismind/server zhihu -- status
-pnpm --filter @oasismind/server zhihu -- search <关键词> [--count 5]
-pnpm --filter @oasismind/server zhihu -- read <url> [--offset 0] [--maxChars 12000] [--meta-only]
+pnpm --filter @oasismind/server zhihu status
+pnpm --filter @oasismind/server zhihu search <关键词> [--count 5]
+pnpm --filter @oasismind/server zhihu read <url> [--offset 0] [--maxChars 12000] [--meta-only]
+pnpm --filter @oasismind/server zhihu answers <question-url> [--limit 20] [--offset 0]
+pnpm --filter @oasismind/server zhihu comments <文章/回答url> [--order score|reverse|ascending] [--max 200]
+pnpm --filter @oasismind/server zhihu follow-check <作者名|url_token ...>
+pnpm --filter @oasismind/server zhihu save <url> [--no-comments] [--max 200] [--maxChars 80000]
 
-status 不打印密钥。search 每条只印摘要字数+前 180 字。read 默认输出该页正文；长文看 nextOffset。`;
+status 不打印密钥。search 每条只印摘要字数+前 180 字。read 默认输出该页正文；长文看 nextOffset。
+answers 走开放平台（需 ZHIHU_ACCESS_SECRET）；comments/save 走登录态（需 platform_login）。
+save 落盘 data/inbox/raw/zhihu/*.md 并入 Inbox。`;
 }
 
 function parseArgs(argv: string[]): { cmd: string; positional: string[]; flags: Flags } {
@@ -47,6 +58,10 @@ function parseArgs(argv: string[]): { cmd: string; positional: string[]; flags: 
     const a = rest[i] ?? "";
     if (a === "--count") flags.count = Number(rest[++i]);
     else if (a === "--offset") flags.offset = Number(rest[++i]);
+    else if (a === "--limit") flags.limit = Number(rest[++i]);
+    else if (a === "--max" || a === "--maxComments") flags.max = Number(rest[++i]);
+    else if (a === "--order") flags.order = String(rest[++i]);
+    else if (a === "--no-comments") flags.noComments = true;
     else if (a === "--maxChars" || a === "--max-chars") flags.maxChars = Number(rest[++i]);
     else if (a === "--meta-only" || a === "--metaOnly") flags.metaOnly = true;
     else if (a === "-h" || a === "--help") return { cmd: "help", positional: [], flags };
@@ -62,6 +77,7 @@ function makeCtx() {
   return {
     config,
     services,
+    prisma,
     invokeTrpc: async () => ({}),
     signal: new AbortController().signal,
   };
@@ -84,7 +100,7 @@ async function cmdStatus(): Promise<void> {
         cookieCount: cookies.length,
         storageState: Boolean(storage),
         storageStatePath: storage ? path.basename(storage) : null,
-        note: "OpenAPI 搜索≠全文；全文用 read。Cookie/Playwright/Jina 由 read_article 自己降级。",
+        note: "OpenAPI 搜索≠全文；全文用 read/zhihu_get。Cookie/Playwright/Jina 由 read_article 自己降级。",
       },
       null,
       2,
@@ -178,6 +194,81 @@ async function cmdRead(url: string, flags: Flags): Promise<void> {
   console.log(JSON.stringify({ ...meta, content }, null, 2));
 }
 
+async function cmdAnswers(questionUrl: string, flags: Flags): Promise<void> {
+  const ctx = makeCtx();
+  const limit = Number.isFinite(flags.limit) ? Math.min(50, Math.max(1, Number(flags.limit))) : 20;
+  const raw = await executeNativeTool(
+    "zhihu_openapi_question_answers",
+    {
+      questionUrl,
+      limit,
+      ...(Number.isFinite(flags.offset) ? { offset: Number(flags.offset) } : {}),
+    },
+    ctx,
+  );
+  const row = raw as {
+    error?: string;
+    data?: {
+      Items?: unknown[];
+      HasMore?: boolean;
+      Paging?: { NextOffset?: number | string; Totals?: number };
+    };
+  };
+  if (row.error) throw new Error(row.error);
+  console.log(
+    JSON.stringify(
+      {
+        questionUrl,
+        itemCount: row.data?.Items?.length ?? 0,
+        hasMore: row.data?.HasMore ?? false,
+        nextOffset: row.data?.Paging?.NextOffset,
+        totals: row.data?.Paging?.Totals,
+        items: row.data?.Items ?? [],
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+async function cmdComments(url: string, flags: Flags): Promise<void> {
+  const ctx = makeCtx();
+  const maxComments = Number.isFinite(flags.max) ? Math.max(1, Math.floor(Number(flags.max))) : 200;
+  const raw = await executeNativeTool(
+    "zhihu_comments",
+    { url, order: flags.order, maxComments },
+    ctx,
+  );
+  const row = raw as Record<string, unknown>;
+  if (row.error) throw new Error(String(row.error));
+  console.log(JSON.stringify(row, null, 2));
+}
+
+async function cmdFollowCheck(authors: string[]): Promise<void> {
+  const ctx = makeCtx();
+  const raw = await executeNativeTool("zhihu_openapi_follow_check", { authors }, ctx);
+  const row = raw as Record<string, unknown>;
+  if (row.error) throw new Error(String(row.error));
+  console.log(JSON.stringify(row, null, 2));
+}
+
+async function cmdSave(url: string, flags: Flags): Promise<void> {
+  const ctx = makeCtx();
+  const raw = await executeNativeTool(
+    "zhihu_save",
+    {
+      url,
+      withComments: !flags.noComments,
+      ...(Number.isFinite(flags.max) ? { maxComments: Math.max(1, Math.floor(Number(flags.max))) } : {}),
+      ...(Number.isFinite(flags.maxChars) ? { maxChars: Math.floor(Number(flags.maxChars)) } : {}),
+    },
+    ctx,
+  );
+  const row = raw as Record<string, unknown>;
+  if (row.error) throw new Error(String(row.error));
+  console.log(JSON.stringify(row, null, 2));
+}
+
 async function main(): Promise<void> {
   const { cmd, positional, flags } = parseArgs(process.argv);
   if (cmd === "help" || cmd === "-h") {
@@ -199,6 +290,30 @@ async function main(): Promise<void> {
     const url = positional[0]?.trim();
     if (!url) throw new Error("read 需要 url");
     await cmdRead(url, flags);
+    return;
+  }
+  if (cmd === "answers") {
+    const url = positional[0]?.trim();
+    if (!url) throw new Error("answers 需要问题 url");
+    await cmdAnswers(url, flags);
+    return;
+  }
+  if (cmd === "comments") {
+    const url = positional[0]?.trim();
+    if (!url) throw new Error("comments 需要文章/回答 url");
+    await cmdComments(url, flags);
+    return;
+  }
+  if (cmd === "follow-check" || cmd === "follow_check" || cmd === "followcheck") {
+    const authors = positional.map((a) => a.trim()).filter(Boolean);
+    if (!authors.length) throw new Error("follow-check 需要至少一个作者名或 url_token");
+    await cmdFollowCheck(authors);
+    return;
+  }
+  if (cmd === "save") {
+    const url = positional[0]?.trim();
+    if (!url) throw new Error("save 需要 url");
+    await cmdSave(url, flags);
     return;
   }
   throw new Error(`未知命令 ${cmd}\n${usage()}`);

@@ -117,6 +117,7 @@ import { feishuDefs, feishuHandlers } from "./integration/feishu.js";
 import { agentPlatformDefs, agentPlatformHandlers } from "./integration/agentPlatform.js";
 import { tikhubDefs, tikhubHandlers } from "./integration/tikhub.js";
 import { zhihuOpenApiDefs, zhihuOpenApiHandlers } from "./integration/zhihuOpenApi.js";
+import { zhihuWebDefs, zhihuWebHandlers } from "./integration/zhihuWeb.js";
 import { swanlabDefs, swanlabHandlers } from "./integration/swanlab.js";
 import { voiceDefs, voiceHandlers } from "./integration/voice.js";
 
@@ -141,6 +142,7 @@ const INTEGRATION_DEFS: NativeToolDefinition[] = [
   ...agentPlatformDefs,
   ...tikhubDefs,
   ...zhihuOpenApiDefs,
+  ...zhihuWebDefs,
   ...swanlabDefs,
   ...voiceDefs,
 ];
@@ -154,6 +156,7 @@ const INTEGRATION_HANDLERS: Record<string, NativeToolHandler> = {
   ...agentPlatformHandlers,
   ...tikhubHandlers,
   ...zhihuOpenApiHandlers,
+  ...zhihuWebHandlers,
   ...swanlabHandlers,
   ...voiceHandlers,
 };
