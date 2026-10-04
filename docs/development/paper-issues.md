@@ -190,3 +190,13 @@
 - **fluid-benchmarking-2** 有效性把两个被认为测量相同能力的基准之间的模型排名距离当作代理真值；如果两套基准共享偏差，高一致性并不等于对真实能力的高有效性. 求证结果:
 - **fluid-benchmarking-3** IRT 参数由 102 个既有开放模型拟合；超过训练模型能力上限时，多数训练模型全错的题会被压到近似最大难度，区分力受限，论文也承认需要持续更新 IRT. 求证结果:
 - **fluid-benchmarking-4** 在线评测节省了题数，但效率比较没有把构建完整响应矩阵及 MCMC 拟合的离线成本纳入统一口径，不能直接解读为端到端总成本下降. 求证结果:
+
+### open-instruct 仓库
+
+解析: `content/olmo/05-开源仓库/open-instruct/open-instruct-analysis.md`.
+
+- **open-instruct-repo-1** `docs/olmo3.md` 明确记录 OLMo 3 7B Think 阶段交接时存在轻微 chat template 不一致；复现实验需要固定模板文件和 tokenizer revision，不能只记录模型名. 求证结果:
+- **open-instruct-repo-2** 文档记录过 `<think>` 首 token 被错误当作 prompt 掩蔽的问题，旧 tokenizer revision 会回退到 prefix labeling；旧实验与现版本的损失掩码可能不等价. 求证结果:
+- **open-instruct-repo-3** README 明确说明内置评测已不维护并推荐改用 OLMES；继续用仓库内旧评测脚本不能视为当前官方评测协议. 求证结果:
+- **open-instruct-repo-4** 仓库定位为研究代码且不保证向后兼容；主分支命令、配置字段和默认值不可直接外推到历史论文实验. 求证结果:
+- **open-instruct-repo-5** `chat_template.jinja` 与 `tokenizer_config.json` 可同时存在，而 Transformers 优先使用前者；两份模板不同步时，相同 tokenizer 名称可能生成不同训练序列. 求证结果:
