@@ -33,7 +33,7 @@ excerpt: "报告自称 model card. 第 1 到 4 节讲用途, 训练数据, 训�
 
 第 2.6 节对预训练的描述是 「在大规模多样数据上预训练, 通过 word prediction 之类的方法获得语言能力」, 也就是 decoder-only 模型标准的 next-token prediction; 是否 decoder-only, 报告没说, 这里按 Anthropic 此前公开的模型形态推测. 第 5.8 节有一句 「as the parameter count scales, from Claude Haiku to Claude Opus」, 是全文唯一确认三档参数量递增的地方. 训练硬件来自 AWS 和 GCP, 框架是 PyTorch, JAX 和 Triton, 两套框架各管哪段没说.
 
-三档之间的评测差距, 可以当作规模的间接证据来读, 但要留心例外. MMLU 5-shot 上 Opus 86.8%, Sonnet 79.0%, Haiku 75.2%; GPQA Diamond 0-shot CoT 上 50.4%, 40.4%, 33.3%, 拉开得很整齐. 反过来, HumanEval 上 Haiku 75.9% 高于 Sonnet 73.0%; ChartQA 上三档依次是 80.8%, 81.1%, 81.7%, 顺序倒过来. 知识和推理题随规模单调上升, 视觉和部分代码题不单调, 说明三档的后训练取舍不同, 或者这些任务的瓶颈在视觉编码器和数据, 不在语言模型规模 (推测). 报告里唯一和预训练直接相关的曲线是图 14: Haiku 在 1M token 长度上 loss 仍在下降, 只能说明长序列预训练做过, 窗口扩展的位置编码和训练阶段本页没有. 规模规律的背景见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.6-Scaling-Law/3.2.6-Scaling-Law.md).
+三档之间的评测差距, 可以当作规模的间接证据来读, 但要留心例外. MMLU 5-shot 上 Opus 86.8%, Sonnet 79.0%, Haiku 75.2%; GPQA Diamond 0-shot CoT 上 50.4%, 40.4%, 33.3%, 拉开得很整齐. 反过来, HumanEval 上 Haiku 75.9% 高于 Sonnet 73.0%; ChartQA 上三档依次是 80.8%, 81.1%, 81.7%, 顺序倒过来. 知识和推理题随规模单调上升, 视觉和部分代码题不单调, 说明三档的后训练取舍不同, 或者这些任务的瓶颈在视觉编码器和数据, 不在语言模型规模 (推测). 报告里唯一和预训练直接相关的曲线是图 14: Haiku 在 1M token 长度上 loss 仍在下降, 只能说明长序列预训练做过, 窗口扩展的位置编码和训练阶段本页没有. 规模规律的背景见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md).
 
 ### 1.4. 后训练: HHH, RLHF, Constitutional AI 和一条新原则
 

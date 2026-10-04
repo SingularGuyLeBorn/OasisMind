@@ -29,7 +29,7 @@ Claude 3 之前, 产品线是 「旗舰加 Instant」 两档: 旗舰是 Claude 2
 
 第 2.5 节的数据描述对三档一致: 截至 2023 年 8 月 的公开网页, 第三方非公开数据, 标注服务和承包商数据, 以及内部生成的数据; 清洗点名去重和分类; 不用任何用户或客户提交的 prompt 与输出. 第 2.6 节说预训练通过 word prediction 之类的方法获得语言能力, 即 next-token prediction. 训练硬件来自 AWS 和 GCP, 框架是 PyTorch, JAX 和 Triton.
 
-三档是否共享同一份预训练数据, 是同一模型族按比例放大, 还是各自单独配方, 本页没有. 唯一相关的是第 5.8 节 「as the parameter count scales, from Claude Haiku to Claude Opus」, 确认 Sonnet 的参数量介于两者之间, 不给数字, 所以不能拿 Scaling Law 反推 Sonnet 的规模. 同一份数据截止也意味着三档的知识边界相同, 在知识型题目上三档的差距主要来自容量, 而不是见过的内容不同 (推测). 预训练数据的一般流程见 [预训练数据](../../../../llm-guide/3-预训练/3.1-预训练数据/3.1-预训练数据.md), 规模规律见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.6-Scaling-Law/3.2.6-Scaling-Law.md).
+三档是否共享同一份预训练数据, 是同一模型族按比例放大, 还是各自单独配方, 本页没有. 唯一相关的是第 5.8 节 「as the parameter count scales, from Claude Haiku to Claude Opus」, 确认 Sonnet 的参数量介于两者之间, 不给数字, 所以不能拿 Scaling Law 反推 Sonnet 的规模. 同一份数据截止也意味着三档的知识边界相同, 在知识型题目上三档的差距主要来自容量, 而不是见过的内容不同 (推测). 预训练数据的一般流程见 [预训练数据](../../../../llm-guide/3-预训练/3.1-预训练数据/3.1-预训练数据.md), 规模规律见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md).
 
 ### 1.4. 后训练: 宪法, 人类偏好和 character training
 

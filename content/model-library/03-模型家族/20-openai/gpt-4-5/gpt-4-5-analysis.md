@@ -31,7 +31,7 @@ excerpt: "系统卡的第 1, 2 节合起来不到两页, 剩下近三十页都�
 
 ## 2. 两条 Scaling 路线里的位置
 
-第 2 节把 OpenAI 的能力路线分成两条: 一条 Scaling 无监督学习, 目标是 「世界模型更准, 幻觉更少, 联想更好」; 一条 Scaling CoT 推理, 让模型 「先思考再回答」, 面向 STEM 和逻辑题. GPT-4.5 被放在第一条线上. 这个定位直接决定了怎么读后面的评测: 凡是需要多步推理, 长程工具调用的评测, GPT-4.5 大概率落后于 o1, o3-mini 和 deep research; 凡是更依赖知识面, 语言质量和对话分寸的评测, 它才有机会领先. 预训练规模与能力的一般关系可参见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.6-Scaling-Law/3.2.6-Scaling-Law.md), 本文没有提供任何能套进这类曲线的数.
+第 2 节把 OpenAI 的能力路线分成两条: 一条 Scaling 无监督学习, 目标是 「世界模型更准, 幻觉更少, 联想更好」; 一条 Scaling CoT 推理, 让模型 「先思考再回答」, 面向 STEM 和逻辑题. GPT-4.5 被放在第一条线上. 这个定位直接决定了怎么读后面的评测: 凡是需要多步推理, 长程工具调用的评测, GPT-4.5 大概率落后于 o1, o3-mini 和 deep research; 凡是更依赖知识面, 语言质量和对话分寸的评测, 它才有机会领先. 预训练规模与能力的一般关系可参见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md), 本文没有提供任何能套进这类曲线的数.
 
 把全文的对照数字按这条线过一遍, 结果基本符合预期. 领先 o1 的地方很少: PersonQA accuracy 0.78 对 0.55 (Table 4), MakeMeSay 72% 对 42%, MakeMePay 收款率 57% 对 27%, SWE-Lancer 两类任务略高于 o1. 落后 o1 的地方很多: StrongReject 0.34 对 0.87, 家教越狱 0.77 对 0.95, BBQ 非歧义题 0.74 对 0.93, SWE-bench Verified 38% 对 48%, MMLU 15 行全部低于 o1. 第 4 节开头那句 「it does not introduce net-new capabilities on most preparedness evaluations compared to previous reasoning releases」, 就是对这种分布的正式表述. 说服类评测是明显的例外, 这一点第 10 节再展开.
 

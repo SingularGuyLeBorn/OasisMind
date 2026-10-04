@@ -119,6 +119,6 @@ Chat 对 Base(Table 6)变化最大的是数学和代码: 67B 的 GSM8K 63.4 到 
 
 ## 5. 谱系位置: 留给后代的几样东西
 
-报告自己列的局限很常规: 预训练后知识不再更新, 会编造, 第一版中文数据不够全, 中英以外的语言要谨慎. 结尾预告了代码报告和 MoE 报告, 也就是后来的 DeepSeek-Coder 和 DeepSeekMoE, 以及「下一版会显著加强推理, 中文知识, 数学和代码」的数据计划, 这条在 V2 的 8.1T 语料里落地. Scaling 部分的方法论背景可对照 [3.2.6-Scaling-Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.6-Scaling-Law/3.2.6-Scaling-Law.md).
+报告自己列的局限很常规: 预训练后知识不再更新, 会编造, 第一版中文数据不够全, 中英以外的语言要谨慎. 结尾预告了代码报告和 MoE 报告, 也就是后来的 DeepSeek-Coder 和 DeepSeekMoE, 以及「下一版会显著加强推理, 中文知识, 数学和代码」的数据计划, 这条在 V2 的 8.1T 语料里落地. Scaling 部分的方法论背景可对照 [3.2.6-Scaling-Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.5-Scaling-Laws/3.2.5-Scaling-Laws.md).
 
 从后代往回看, 这份报告留下的东西可以按训练链条排开. 数据端: 跨 dump 全局去重和 100K BBPE 分词器, V2 直接沿用分词器并扩大语料. 结构端: LLaMA 式 Dense 底座, 只在 67B 上用 GQA; V2 把注意力换成 MLA, FFN 换成 DeepSeekMoE, 这是家族第一次在结构上离开 LLaMA. 预训练端: multi-step 学习率(V2 叫 warmup-and-step-decay), HAI-LLM 框架, 超参随算力的幂律. 后训练端: SFT 加 DPO 的两段式, 以及对重复率的关注; 半年后 DeepSeekMath 用 **GRPO** 替掉了 DPO 的位置. 评测端: 困惑度与生成两套协议, BPB 比较 Pile-test, 保留集查过拟合, 刻意排除选择题数据. 这份 Dense 7B/67B 本身的榜单成绩很快被超过, 但它定下的做事方式在后面每一代报告里都还能看到.
