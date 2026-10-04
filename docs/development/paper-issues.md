@@ -364,3 +364,56 @@
 - **deepseek-v3-1-terminus-2** Terminus 没有给出训练配方和完整评测协议，0.1–0.6 分的变化也缺少方差和置信区间. 求证结果:
 - **deepseek-v3-1-terminus-3** BrowseComp 从 30.0 升到 38.5，但 BrowseComp-zh 从 49.2 降到 45.0，Search Agent 增益不具跨语言一致性. 求证结果:
 - **deepseek-v3-1-terminus-4** Codeforces 从 2091 降到 2046，Aider-Polyglot 从 76.3 降到 76.1，“across benchmarks 更稳定可靠”不能解释为所有指标单调上涨. 求证结果:
+
+### DeepSeekMath-V2
+
+解析：`content/deepseek/01-模型技术报告/deepseek-math-v2/deepseek-math-v2-analysis.md`。
+
+- **deepseek-math-v2-1** 自动标注流程中的 $n$、$m$、$k$ 没有公开，难以复算数据生成规模和筛选强度. 求证结果:
+- **deepseek-math-v2-2** meta-verifier 质量从 0.85 升到 0.96 是模型裁判评价，不是形式化正确性保证. 求证结果:
+- **deepseek-math-v2-3** 最后两轮称完全替代人工标注，但只说明 quality checks 一致，没有给出样本规模和一致率. 求证结果:
+- **deepseek-math-v2-4** Figure 2 的自评选择使用 Best@32，同源模型担任生成与评审可能产生共享偏差. 求证结果:
+- **deepseek-math-v2-5** Heavy 搜索需要 64 份证明乘 64 次验证，最多 16 轮且每个候选有 8 份分析，但没有报告 token 或 GPU 成本. 求证结果:
+- **deepseek-math-v2-6** verifier 与 generator 属于同一模型谱系，可能共享无法由互评发现的盲点. 求证结果:
+- **deepseek-math-v2-7** Putnam 118/120 等成绩来自高计算搜索与专家评分，不能解释为 one-shot 解题率. 求证结果:
+
+### JanusFlow
+
+解析：`content/deepseek/01-模型技术报告/deepseek-janusflow/deepseek-janusflow-analysis.md`。
+
+- **janusflow-1** §4.5 `Impact of Decoupling Visual Encoders` 后出现残句 `e efficacy...`，句首在 PDF 中已经缺失，无法从源文可靠恢复. 求证结果:
+- **janusflow-2** 表 5 转成 Markdown 后多个模型及整列数字挤入单个单元格，逐行对应关系丢失，具体成绩必须回看 PDF. 求证结果:
+- **janusflow-3** 因果注意力与其他 mask 只被描述为初步实验无收益，没有给出定量消融. 求证结果:
+- **janusflow-4** REPA 选取第 6 层、三层 MLP 以及与 RF 损失的相对尺度均没有独立消融. 求证结果:
+- **janusflow-5** 表 6 的 B/C/F 不是完整析因实验，编码器解耦与 SigLIP 预训练的贡献无法完全分离. 求证结果:
+- **janusflow-6** 200 万内部图文数据及增强版 DeepSeek-LLM 扩展语料没有公开. 求证结果:
+- **janusflow-7** 论文只报告约 1600 A100 GPU-days，没有给出 GPU 数、墙钟时间和训练样本或 token 总量. 求证结果:
+- **janusflow-8** 256 分辨率语义分更高的成因只是作者解释，没有由独立实验隔离. 求证结果:
+- **janusflow-9** 评测缺少人类偏好、安全、延迟、显存和吞吐指标. 求证结果:
+- **janusflow-10** Euler 求解没有与高阶求解器比较，少步采样的外推边界不明确. 求证结果:
+
+### DeepSeek-Prover-V2
+
+解析：`content/deepseek/01-模型技术报告/deepseek-prover-v2/deepseek-prover-v2-analysis.md`。
+
+- **deepseek-prover-v2-1** 初版 Putnam 结果受 Lean 4.9.0 `apply?` UI bug 影响，7B 模型还利用 `Cardinal.toNat` 与 `natCast_inj` 形成 reward hacking. 求证结果:
+- **deepseek-prover-v2-2** Putnam 初报 49 题中有 2 题 statement 错构，最终修正为 47 题. 求证结果:
+- **deepseek-prover-v2-3** CombiBench 初报 12 题中有 2 题 statement 错构，最终修正为 10 题. 求证结果:
+- **deepseek-prover-v2-4** miniF2F 还修订了 valid 2 题和 test 1 题，benchmark statement 质量会显著改变结果. 求证结果:
+- **deepseek-prover-v2-5** 88.9% 是 Pass@8192 而非单次通过率，671B 的 CoT 平均输出达到 6751.9 tokens. 求证结果:
+- **deepseek-prover-v2-6** ProofNet 与 Putnam 的版本和基线分母不一致，包括 644 与 658 两种分母，不能直接按解题数横比. 求证结果:
+- **deepseek-prover-v2-7** RL consistency reward 的权重、退出时点和训练成本没有公开. 求证结果:
+- **deepseek-prover-v2-8** ProverBench 的 AIME 子集排除了几何、组合和计数题，15 题也不是随机样本. 求证结果:
+- **deepseek-prover-v2-9** AIME 对比中 V3 负责 find-answer，而 Prover-V2 在给定正确答案后完成 formal proof，两者任务口径不同. 求证结果:
+- **deepseek-prover-v2-10** Lean 编译只能保证给定 statement 内的证明正确，不能保证 formalization 忠实表达原题. 求证结果:
+
+### DeepSeek-OCR
+
+解析：`content/deepseek/01-模型技术报告/deepseek-ocr/deepseek-ocr-analysis.md`。
+
+- **deepseek-ocr-1** 表 3 的指标均为 edit distance 而不是 accuracy，引用时不能把数值直接称为准确率. 求证结果:
+- **deepseek-ocr-2** 表 4 把 `Gundam-M` 拼成 `Guandam-M`，疑似模型名称笔误. 求证结果:
+- **deepseek-ocr-3** Figure 1 出现 `Vison Tokens`，疑似 `Vision Tokens` 的拼写错误. 求证结果:
+- **deepseek-ocr-4** 20 倍压缩下约 60% 的结果受输出格式差异影响，不能只归因于视觉信息损失. 求证结果:
+- **deepseek-ocr-5** 论文只用 OCR 重建间接验证光学上下文压缩，没有进行数字与光学 token 交错预训练或 needle 测试. 求证结果:
+- **deepseek-ocr-6** 论文缺少编码器逐部件消融与多语言分项评测，组件贡献和跨语言稳定性仍不明确. 求证结果:
