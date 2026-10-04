@@ -9,7 +9,7 @@ OCR(Optical Character Recognition)长期以来以“字符识别”或“文本�
 
 ### 2. OCR演进的三个阶段
 
-![](./images/image_0.png)
+![](./images/image_0.webp)
 
 #### **阶段一: 传统OCR (OCR-1.0) 及理论前身**
 

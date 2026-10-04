@@ -179,7 +179,7 @@ CLIP 的核心任务, 就是训练一个**精通"图像语"和"文本语"的翻�
 
 这就像让一个婴儿学语言: 你不需要指着每一个物体教婴儿"这是杯子"、"这是桌子". 你只要在日常生活中自然地说话, 婴儿通过观察什么词在什么情境下出现, 就能逐渐建立词汇与世界的映射. CLIP 的学习过程, 本质上也是这种"统计浸泡式学习"的机器学习版本. 
 
-![对比学习匹配与干扰项对比示意图](../images/contrastive_learning_partner.png)
+![对比学习匹配与干扰项对比示意图](../images/contrastive_learning_partner.jpg)
 
 > **图 1.1 对比学习：在一堆干扰项中找到自己的搭档**
 > * **正样本配对(粗红线)**：对角线上的输入对 $(x_i, y_i)$ 对应了匹配的图像与文本语义(例如：猫的图片 $\leftrightarrow$ "a photo of a cat"). 模型被训练来最大化这些对的点积(相似度), 将它们拉近. 
@@ -350,7 +350,7 @@ $$
 
 - **非对角线元素** $S_{ij}$($j \neq i$): 第 $i$ 张图片与不匹配文本的相似度, 即**负样本相似度**. 
 
-![对比学习正负样本相似度矩阵热力图](../images/clip_similarity_matrix.png)
+![对比学习正负样本相似度矩阵热力图](../images/clip_similarity_matrix.jpg)
 
 > **图 1.2 对比学习相似度矩阵 $S = I \cdot T^\top$ 几何映射**
 > * **对角线高亮(正样本)**：对角线处的元素 $S_{ii} = f_I(x_i)^\top f_T(y_i)$ 对应配对相似度, 由于梯度上升优化, 表现为高相似度(热力图中的亮黄色/橙红色). 
@@ -734,7 +734,7 @@ $$
 
 **关键洞察 4**: 如果我们引入一个假阴性——假设 $(x_1, y_2)$ 实际上是匹配的(都是关于宠物的), 但被错误标记为负样本——在 CLIP 中, 由于 $S_{12} = 0.30$ 在 softmax 分母中是一个相对较大的竞争者($\exp(4.286) \approx 72.7$), 它会严重干扰 $x_1$ 的 softmax 归一化, 导致 $P_{11}$ 无法进一步接近 1. 而在 SigLIP 中, 虽然 $(1,2)$ 仍然会受到负样本损失的影响, 但它不会"拖累" $(1,1)$ 和 $(1,3)$ 的学习. 
 
-![CLIP 的 Softmax 概率与 SigLIP 的 Sigmoid 相似度响应矩阵对比](../images/clip_vs_siglip_matrix.png)
+![CLIP 的 Softmax 概率与 SigLIP 的 Sigmoid 相似度响应矩阵对比](../images/clip_vs_siglip_matrix.jpg)
 
 > **图 1.3 CLIP 与 SigLIP 输出激活特性对比**
 > * **CLIP(左侧, Softmax 归一化)**：由于 Softmax 执行全局分母归一化竞争, 对角线概率被极致推高(趋近 1.0), 而非对角线被极致压低(趋近 0.0). 负样本通过分母高度耦合, 使得模型对假阴性非常敏感且高度依赖巨大的 Batch Size. 
@@ -971,7 +971,7 @@ if __name__ == "__main__":
 | `F.binary_cross_entropy_with_logits(logits, labels)` | $\mathcal{L}_{\text{SigLIP}}$ | 逐对 sigmoid + BCE |
 | `self.logit_scale` | $1/\tau$ | 可学习的温度参数 |
 
-![CLIP 双塔多模态对齐网络架构示意图](../images/clip_architecture_pipeline.png)
+![CLIP 双塔多模态对齐网络架构示意图](../images/clip_architecture_pipeline.jpg)
 
 > **图 1.4 CLIP 统一语义对齐网络架构流程**
 > * **图像编码分支(左侧)**：原始图像输入通过 **Image Encoder(如 ViT 或 CNN)** 提取高维空间特征, 然后经由 **Projection(线性投影)** 层映射到共享维度, 最后进行 L2 归一化得到单位球面的视觉向量 $z_I$. 
