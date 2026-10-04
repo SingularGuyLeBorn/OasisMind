@@ -83,7 +83,7 @@ GxPO 综述把 GKD 的 forward KL 写成 $\mathbb{E}_{y\sim\pi_T}[\cdots]$，那
 
 **图 2 解析**
 
-- **轴 1 蓝格**：固定散度 = GKD / MiniLLM / DistiLLM。自适应 = ToDi（按师生 log 比混 FKL/RKL）、EOPD（教师高熵处加 FKL）、AKL（头/尾质量差加权）。RL 增强 = G-OPD 把 OPD 写成稠密 KL 约束 RL（本库 [05](../../05-G-OPD-广义OPD/05-G-OPD-广义OPD.md) 是 $\lambda$ 光谱）；**GRPO-OPD hybrid** 把教师信号塞进 GRPO 的 $J(\theta)$，不是 MiniLLM 那条散度目标，见 §5。
+- **轴 1 蓝格**：固定散度 = GKD / MiniLLM / DistiLLM。自适应 = ToDi（按师生 log 比混 FKL/RKL）、EOPD（教师高熵处加 FKL）、AKL（头/尾质量差加权）。RL 增强 = G-OPD 把 OPD 写成稠密 KL 约束 RL（本库 [05](../../05-GOPD-散度光谱/05-GOPD-散度光谱.md) 是 $\lambda$ 光谱）；**GRPO-OPD hybrid** 把教师信号塞进 GRPO 的 $J(\theta)$，不是 MiniLLM 那条散度目标，见 §5。
 - **轴 2 绿格**：**01** 外教师全词表 = 白盒。黑盒只看见文本或标量分。**02** 的 $y^\star$ 特权上下文、**04** 的环境 feedback，都是同一套权重的自教师，进 teacher-free。两者的特权内容不同，不是同一件事。
 - **轴 3 橙格**：GKD 的 $\lambda$ 混合与「先 off-policy 热身再 on-policy」是工业常走的稳法。采样 token 上的 $\mathrm{sg}[\log\pi_T/\pi_\theta]$ 省显存、方差大；V4 改全词表 reverse KL。裁剪 / log 压缩是 Demystifying 给长度作弊的药，见 [07](../../07-诊断三篇-OPD失败模式/07-诊断三篇-OPD失败模式.md)。
 

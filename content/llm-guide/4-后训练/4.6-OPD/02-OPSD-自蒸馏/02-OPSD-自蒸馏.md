@@ -1,343 +1,287 @@
 ---
-title: "02 · OPSD: 在线自蒸馏 — 当模型成为自己的神明"
-category: "LLM 指南"
+title: "02 · OPSD: 以参考解为特权信息的 on-policy 自蒸馏"
 published: true
-tags: ["OPSD", "Self-Distillation", "On-Policy", "OPD", "知识蒸馏", "后训练"]
-excerpt: "家谱定位: 本算法属于 OPD(在线策略蒸馏)家族的核心演进变体."
+tags: ["OPSD", "On-Policy Self-Distillation", "Self-Distillation", "OPD", "Qwen3", "数学推理"]
+excerpt: "OPSD 让同一个模型既当学生又当教师: 学生只看题目并自己采样, 教师额外看到参考解, 在学生轨迹上逐 token 给出完整分布. Qwen3 1.7B 到 8B 上, 每题 1 条 1024 token 的 rollout, 100 步内达到或超过 GRPO, SFT 则全部掉分."
 ---
-# 02 · OPSD: 在线自蒸馏 — 当模型成为自己的神明
+# OPSD: 以参考解为特权信息的 on-policy 自蒸馏
 
-## 1. 背景与核心痛点 (Background & Pain Points)
+> 相关阅读: [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) · [03 SDFT](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md) · [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) · [07 失败模式](../07-OPD-失败模式/07-OPD-失败模式.md) · [4.6 OPD 节索引](../4.6-OPD.md)
 
-**家谱定位**: 本算法属于 OPD(在线策略蒸馏)家族的核心演进变体. 
+## 太长不看版
 
-在上一篇《01-OPD基础原理》中，我们见证了 OPD 如何利用逐 Token 的密集监督(Dense Supervision)对 RL 实现了降维打击. 
-**前车之鉴**: 然而，基础 OPD 有一个致命的物理约束: **它需要一个极其强大的外部教师模型(External Teacher)驻留在显存中**. 如果你正在训练一个 7B 的模型，你可以用 72B 当老师; 但如果你正在训练世界上最强的万亿参数 SOTA 模型呢？谁来当它的老师？
+- **出处**: Zhao, Xie, Liu, Huang, Pang, Chen, Grover. *Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models*, arXiv 2601.18734 (UCLA, HKU, Meta Superintelligence Labs). 代码 github.com/siyan-zhao/OPSD.
+- **做法**: 数据集是题目与参考解对 $(x,y^\star)$. 学生 $p_S(\cdot\mid x)$ 只看题目, 采样一条回答 $\hat y$; 教师是同一组参数, 条件为 $(x,y^\star)$. 两者在 $\hat y$ 的每个前缀上给出下一 token 分布, 损失是逐 token 散度之和, 梯度只经过学生. 教师不生成 token, 只做一次前向.
+- **三处实现选择**: 完整词表上的 forward KL (消融里优于 reverse KL 和 JSD); 教师固定为初始策略; 逐点裁剪 $\min(\ell_{n,v},\tau)$, 防止少数风格词主导信号.
+- **主结果 (Table 2, Avg@12)**: 三项平均分 Qwen3-8B 上 Base 61.8, SFT 59.8, GRPO 64.0, OPSD 64.8; 4B 上 61.2, 58.6, 62.7, 63.6; 1.7B 上 37.1, 35.8, 37.7, 43.4.
+- **代价对比**: OPSD 每题 1 条 rollout, 最长 1024 token, 训练 100 步; GRPO 每题 8 条, 最长 16000 token, 训练 500 步. 单题生成上限相差 125 倍. 100 步内 GRPO 一半以上的 batch 组内奖励标准差为零.
+- **局限**: 只做到 8B; 题目超出模型理解能力时, 即使看到参考解, 教师也给不出有效监督; 裁剪阈值 $\tau$ 未调; full-vocab 的峰值显存较高.
 
-**核心动机**: OPSD(On-Policy Self-Distillation，在线自蒸馏)正是为了解决“无外部教师”的约束而提出的. 它的核心哲学极其疯狂: 既然找不到比自己更聪明的大脑，那可不可以通过**赋予当前的自己“特权信息”(Privileged Context)** ，强行制造出一个高维的“神明视角”来教导低维的自己？
+## 1. 动机
 
-## 2. 为什么重要 (Significance)
+OPD (见 [01](../01-OPD基础原理/01-OPD基础原理.md)) 需要一个更强的外部教师, 而且没有用到推理数据集里现成的参考解. RLVR 用了参考解, 但只拿它判定最终答案对错: 每题要采一组回答, 组内全对或全错时优势为零, 采样白费; 奖励是序列级的, 同一条回答里所有 token 拿到相同的信号. SFT 直接模仿参考解, 有暴露偏差, 泛化也弱.
 
-在《Self-Distilled Reasoner (arXiv: 2601.18734)》的实验中，OPSD 展现出了极其恐怖的算力经济学: 
-- 传统的 GRPO(如 DeepSeek-R1-Zero 所用)每个问题需要采样 8-16 条轨迹进行探索，更新数百步. 
-
-- **OPSD 只需要 1 条探索轨迹**，在 AIME 竞赛数学题上，仅用 100 步训练，单步采样预算不到 GRPO 的 1/125. 
-
-- **能力跃迁**: 它能把 Qwen3-1.7B 的 AIME25 分数从 37.1 暴拉到 43.4，甚至超越了经过复杂 RL 训练的版本. 它证明了“左脚踩右脚上天”在逻辑推理模型中是完全可行的. 
-
-## 3. 直觉类比 (Intuition)
-
-我们可以用**“开卷考 vs 闭卷考”**来完美类比 OPSD 的工作原理. 
-
-![OPSD 闭卷与开卷考类比](./images/opsd_open_book.png)
-*图: 虽然权重完全相同，但拥有标准答案的“开卷考”版本具有绝对的上帝视角，能够为“闭卷考”版本提供极其准确的 Token 级指导. *
-
-假设你(学生模型)和另外一个平行宇宙的你(教师模型)，脑容量和智商完全一样(**共享完全相同的模型权重**). 
-现在要解一道极难的奥数题(Prompt). 
-
-- **学生宇宙(闭卷考)** : 只给你题目，让你自己硬算(生成轨迹). 
-
-- **教师宇宙(开卷考/特权上下文)** : 不仅给你题目，还**把这道题的标准答案(Golden Answer)直接放在你桌子上**. 
-
-因为教师宇宙的你看到了标准答案，你的推理逻辑和自信心会瞬间爆棚. 
-OPSD 就是让“闭卷考的你”在写下每一个算符时，去向“开卷考的你”请教: “喂，兄弟，这道题我已经写到第三步了，你看着标准答案告诉我，第四步我写什么比较稳？”
-
-## 4. 数学推导与公式对比 (Mathematical Rigor)
-
-在 OPSD 中，教师分布 $\pi_T$ 和学生分布 $\pi_\theta$ 是**完全同一个参数化模型**，唯一的区别是输入条件的概率分布. 
-
-### 4.1 教师与学生的条件概率定义
-- **学生分布** $\pi_\theta(\cdot | x, y_{<t})$: 只看见问题 $x$ 和自己之前生成的轨迹 $y_{<t}$. 
-
-- **教师分布** $\pi_T(\cdot | x, \underline{\mathbf{y^*}}, y_{<t})$: 不仅看见问题和轨迹，**[高亮差异项]** 还额外看见了**标准答案 $y^*$(Privileged Context)** . 
-
-### 4.2 为什么回归了 Forward KL？
-在基础 OPD 中，我们极力推崇 Reverse KL，因为它能防止学生在面对不确定的教师时瞎猜(防幻觉). 
-**但在 OPSD 中，作者惊人地发现: 必须改用 Forward KL！**
+论文第 2.2 节用 GRPO 的优势公式说明第一个问题. 每题采 $G$ 条回答, 第 $i$ 条的奖励 $r_i\in\{0,1\}$, 优势为
 
 $$
- \mathcal{L}_{OPSD} = \mathbb{E}_{x, y^*} \mathbb{E}_{y \sim \pi_\theta} \left[ \frac{1}{T} \sum_{t=1}^T \underline{\mathbf{D_{KL}(\pi_T \| \pi_\theta)}} \right] \tag{1}
+A_i=\frac{r_i-\mathrm{mean}(\{r_j\}_{j=1}^G)}{\mathrm{std}(\{r_j\}_{j=1}^G)} \tag{1}
 $$
 
-**物理层面的根因剖析**: 
-- 在基础 OPD 中，Teacher 是凭空猜题，它的分布可能是平坦的(High Entropy). 
-- 但在 OPSD 中，Teacher 面前放着标准答案 $y^*$！它的思路极其清晰，概率质量会**高度集中在向正确答案逼近的 Token 上**. 
-- 此时，教师分布 $\pi_T$ 是一个极其高质量的、确定性极强的“软分布(Soft Labels)”. 
+组均值是价值函数 $V(x)$ 的 $G$ 样本蒙特卡洛估计, $r_i$ 是该回答的 (不打折) 回报. 回答内所有 token 共享 $A_i$. 当 $G$ 条回答全对或全错, 分子恒为零, 这一题对梯度没有贡献, 而生成这 $G$ 条回答的成本已经付出. 题目太难或太容易时, 这种情况会占多数.
 
-- **[对比项: 散度方向]** 如果用 Reverse KL($D_{KL}(\pi_\theta \| \pi_T)$)，公式为 $\sum \pi_\theta \log(\pi_\theta / \pi_T)$，由学生加权. 学生只要在错误道路上极度自信，Loss 就会变得很小(陷入局部最优). 
-- 但使用 **Forward KL($D_{KL}(\pi_T \| \pi_\theta)$)** ，公式为 $\sum \pi_T \log(\pi_T / \pi_\theta)$，是由**教师加权**的！教师说哪个 token 对解题有帮助，学生就必须把该 token 的概率提上来. 实验证明，Forward KL 的效果(41.1分)完爆了 Reverse KL(35.0分). 
+要得到密集的 token 级信号, 另一条路是训练过程奖励模型 (PRM), 在 RL 中给每一步打分. 论文第 3.1 节指出, PRM 的训练标签获取成本高, 难以扩展 (Lightman 等 2023; Zhang 等 2025). 外部教师的 OPD 能给密集信号, 但需要单独维护一个更大的模型. 作者想要的信号同时满足三点: 密集, on-policy, 不依赖外部教师或奖励模型.
 
-## 5. 数值走查 (Numerical Example)
+OPSD 的出发点是一个假设: 对足够强的模型来说, 解释一个给定的正确答案比从零生成答案容易. 论文引用了 「评估比生成容易」 的已有结论 (Naor 1996; Sun 等 2024), 并假设 「合理化」 (rationalization) 也是如此. 据此, 让模型在看到参考解之后充当教师, 对自己没看到参考解时写出的回答逐 token 打分.
 
-为什么 Forward KL 能够传递“解题思路”？我们来看一个具体数字. 
+论文 Table 1 用四个属性比较几类方法:
 
-在推理到某一步时，标准解 $y^*$ 提示接下来应该用“勾股定理”. 
-- 教师模型看到了 $y^*$，它给出的 Token 预测概率是: `{"平方": 0.8, "开根号": 0.15, "除以": 0.05}`. 这代表着一种软性的推理倾向. 
-- 学生模型在瞎蒙，给出的概率是: `{"除以": 0.9, "平方": 0.1}`. 
+| | SFT / 离线蒸馏 | GRPO | OPD | OPSD |
+| --- | --- | --- | --- | --- |
+| on-policy 数据 | 否 | 是 | 是 | 是 |
+| 密集信号 | 是 | 否 | 是 | 是 |
+| 采样成本低 | 是 | 否 | 是 | 是 |
+| 无需外部教师 | 是 | 是 | 否 | 是 |
 
-计算 **Forward KL**: $\sum P_T \log(P_T / P_S)$
-- 对于“平方”这个 Token: $0.8 \times \log(0.8 / 0.1) = 0.8 \times 2.079 = 1.66$. 
-- 对于“除以”这个 Token: $0.05 \times \log(0.05 / 0.9) = 0.05 \times (-2.89) = -0.14$. 
-巨大的惩罚项 $1.66$ 会沿着反向传播，强行拉高学生网络预测“平方”的 logits，从而把“看过标准答案的潜意识”完美注入到学生权重中. 
+## 2. 方法
 
-## 6. 简化实现 (PyTorch Code)
+### 2.1 学生与教师
 
-OPSD 有一个极其关键的工程实现技巧: **Pointwise Clipping(逐词裁剪)** . 
-因为文本中包含大量“嗯、然后、所以”等无意义的风格词汇，这些词会产生巨大的无效 KL 梯度. 必须对其裁剪. 
+两种策略来自同一个模型 $p_\theta$, 只是条件不同:
 
-```python
-import torch
-import torch.nn.functional as F
+$$
+p_T(\cdot\mid x,y^\star)\triangleq p_\theta(\cdot\mid x,y^\star),\qquad p_S(\cdot\mid x)\triangleq p_\theta(\cdot\mid x) \tag{2}
+$$
 
-def opsd_train_step(model, question_tokens, golden_answer_tokens, tau_clip=10.0):
-    """
-    OPSD: 同一个模型，双路上下文计算 Forward KL
-    """
-    
-    # 步骤 1: On-Policy 采样 (闭卷考)
-    # 学生利用纯题目生成轨迹
-    model.eval()
-    with torch.no_grad():
-        student_trajectories = model.generate(question_tokens, max_new_tokens=512)
-    
-    # 构建教师的开卷考输入: 题目 + 标准解 + 学生生成的轨迹
-    # 这样教师就能在评估学生的每一步时，随时偷看标准解
-    teacher_input = torch.cat([question_tokens, golden_answer_tokens, student_trajectories], dim=-1)
-    # 对齐维度逻辑: 此处简化演示，实际实现需通过 Attention Mask 让教师预测 student_trajectories 部分
-    
-    # 步骤 2: 学生分布 (闭卷考)
-    model.train()
-    student_logits = model(torch.cat([question_tokens, student_trajectories], dim=-1)).logits
-    student_logprobs = F.log_softmax(student_logits, dim=-1)
-    
-    # 步骤 3: 教师分布 (开卷考) - 冻结梯度
-    with torch.no_grad():
-        teacher_logits = model(teacher_input).logits
-        teacher_probs = F.softmax(teacher_logits, dim=-1)
-    
-    # 步骤 4: 计算 Forward KL: D_KL(Teacher || Student)
-    # PyTorch 的 kl_div 默认是 KL(target || input)，所以输入是对齐的
-    # 公式对应: \pi_T * ( \log \pi_T - \log \pi_\theta )
-    pointwise_kl = F.kl_div(
-        input=student_logprobs, 
-        target=teacher_probs, 
-        reduction='none' # 不要求和，以便进行后续的 Clipping
-    ).sum(dim=-1) # 对词表维度求和，保留 sequence 维度
-    
-    # 步骤 5: 核心工程技巧 Pointwise Clipping
-    # 防止无意义的风格词汇(如语气词)产生巨大的 KL 梯度
-    clipped_kl = torch.clamp(pointwise_kl, min=0.0, max=tau_clip)
-    
-    loss = clipped_kl.mean()
-    loss.backward()
-    
-    return loss.item()
-```
-> **注释对应**: `teacher_input` 中强制塞入 `golden_answer_tokens` 就是构造 Privileged Context 的核心操作. 而 `torch.clamp` 则是工程上保证模型不被风格噪声带偏的关键. 
+学生的提示词只有题目. 教师的提示词在题目后面接上参考解, 再加一句 「理解参考解之后, 用你自己的方法解这道题」. 加这句话是为了让教师从参考解自然过渡到学生的回答, 以 「重新解题」 的姿态评估学生轨迹. 教师并不真正生成, 学生的 $\hat y$ 被直接预填到教师上下文之后, 一次前向得到每个位置的分布.
 
-## 7. 局限性与边界条件 (Limitations & Boundary Conditions)
+论文图 2 给了一个例子. 题目是求 $f(x)=3x^2+2x-5$ 在 $x=2$ 处的导数. 学生提示词是 「题目 + Answer:」. 教师提示词是 「题目 + 参考解 ($f'(x)=6x+2$, $f'(2)=14$) + 理解后用自己的方法解答 + Answer:」. 学生写下的每个 token 随后都在这两个上下文下各算一次概率. 学生若写出 $f'(x)=6x+2$, 两边概率接近; 学生若把导数写错, 教师在出错的那个 token 上会给出很低的概率, 并把概率放在正确的写法上.
 
-世界上没有包治百病的算法. OPSD 存在着严格的边界要求: 
+### 2.2 目标函数
 
-1. **底座模型的基础能力边界**: 
-   - OPSD **绝对无效**的场景: 如果底座模型本身极度愚蠢，即使你把标准答案放在它面前，它也看不懂(比如你给一个纯英文 1B 模型看高等数学的解题过程). 
+学生采样 $\hat y\sim p_S(\cdot\mid x)$ 后, OPSD 最小化 (论文式 (1)):
 
-- **物理根因**: 开卷考的前提是你得能看懂书. 如果 Teacher 在带有 `golden_answer` 时仍然生成混乱的 $\pi_T$ 分布，那么 Forward KL 就会变成把垃圾灌入学生脑子里的毒药. 
+$$
+\mathcal{L}_{\mathrm{OPSD}}(\theta)=\mathbb{E}_{(x,y^\star)\sim\mathcal{S}}\ \mathbb{E}_{\hat y\sim p_S(\cdot\mid x)}\sum_{n=1}^{|\hat y|}D\Big(p_T(\cdot\mid x,y^\star,\hat y_{<n})\,\Big\|\,p_S(\cdot\mid x,\hat y_{<n})\Big) \tag{3}
+$$
 
-2. **捷径学习 (Shortcut Learning)** : 
-   - 当标准答案非常简短(如只给出一个最终数字)时，教师模型可能会因为看到了最终答案而产生“过度自信”，在前面推导步骤中瞎写，导致蒸馏出来的学生也学会了“跳步猜答案”. 
+实现时按轨迹长度取平均 (论文式 (6)). $D$ 可以是任意分布散度, 论文给出广义 JSD 的定义 (论文式 (7)):
 
-## 8. 演进与承上启下 (Evolution & Segue)
+$$
+\mathrm{JSD}_\beta(p_T\|p_S)=\beta\,D_{\mathrm{KL}}(p_T\|m)+(1-\beta)\,D_{\mathrm{KL}}(p_S\|m),\qquad m=\beta p_T+(1-\beta)p_S \tag{4}
+$$
 
-尽管 OPSD 极其优雅地解决了“无需外部教师”的问题，但在真实的工业级大模型训练中，需求变得越来越贪婪. 
-我们不仅希望模型能够自我迭代，还希望模型在每次吸收新知识、新题型时，**不要忘记以前学过的旧知识**(防止灾难性遗忘，Catastrophic Forgetting). 
+梯度只经过学生 $p_S$; 教师作为固定目标. 这与 GKD 的 on-policy 蒸馏 ([01](../01-OPD基础原理/01-OPD基础原理.md) 第 5 节) 形式相同, 区别只在教师是带参考解的模型自身.
 
-如果我们把 OPSD 的“特权上下文”从“标准答案”换成“高质量的专家示范(Demonstration)”，并引入持续学习(Continual Learning)机制，会发生什么化学反应？这自然引出了 OPD 家族的下一位悍将: **SDFT(自蒸馏持续学习)** . 请进入下一章. 
+### 2.3 教师固定为初始策略
 
-## 9. 总结与参考文献 (References)
+实验中教师参数固定为训练开始时的策略, 不随学生更新. 论文给的理由是这样训练更稳, 而且相当于一个隐式正则, 防止策略偏离初始模型太远. 这一点与 SDFT 用 EMA 教师, SDPO 用 EMA 或信赖域教师不同 (见 [03](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md) 与 [04](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)). OPSD 训练只有 100 步, 教师与学生的差距不会拉开太多, 固定教师的代价也较小.
 
-1. **同源双模态**: 完全放弃外部教师，利用同一模型在有/无答案两种上下文下的差异形成 Dense 训练信号. 
+### 2.4 逐点裁剪
 
-2. **Forward KL 胜出**: 当参考分布(带标准解的教师)质量极高且确定性强时，使用教师加权的 Forward KL 效果远超 Mode-seeking 的 Reverse KL. 
+作者发现词表上各项的散度分布很偏: 少量风格词 (「wait」 「maybe」 「so」 「therefore」 这类连接词) 的散度远高于数学相关的词, 训练信号被风格词主导. 对 $f$-散度 $D_f(p_T\|p_S)$, 在位置 $n$, 词 $v$ 上定义单项贡献, 再逐项裁剪:
 
-3. **极低的算力需求**: 单次 Rollout 即可完成梯度更新，将强化学习级别的复杂优化问题转化为简单的有监督分类问题. 
+$$
+\ell^{(f)}_{n,v}=p_T(v\mid\cdot)\,f\Big(\frac{p_S(v\mid\cdot)}{p_T(v\mid\cdot)}\Big),\qquad D^{(f)}_{\mathrm{clip}}(p_T\|p_S)=\frac{1}{|\hat y|}\sum_{n=1}^{|\hat y|}\sum_{v\in\mathcal{V}}\min\big(\ell^{(f)}_{n,v},\tau\big) \tag{5}
+$$
 
-**参考文献: **
-- Self-Distilled Reasoner. arXiv: 2601.18734. URL: https://arxiv.org/abs/2601.18734
-- OpenThoughts: Data Recipes for Reasoning Models.
+取 $f(u)=-\log u$ 时, $\ell_{n,v}=p_T\log(p_T/p_S)$, 求和即 forward KL. 裁剪限制的是每个词各自的贡献, 一个位置上若只有少数几个词散度很大, 它们被截到 $\tau$, 其余词的信号保留下来. 附录 B 说明 $\tau$ 没有调过.
 
----
+### 2.5 另一种目标: 采样 token 上的 policy gradient
 
-## 2026-08 修订（不删上文）
+论文也实现了 Thinking Machines 博客 (Lu 等 2025) 的写法. 对学生采到的 token 定义优势
 
-旧标题「神明」和 §2「暴拉 / 1/125 / 100 步」是 2025 稿修辞，**机制与数字以本节为准**。对象钉死 Zhao、Xie、Liu、Huang、Pang、Chen、Grover 的 [Self-Distilled Reasoner](https://arxiv.org/abs/2601.18734)（打开的是 [HTML](https://arxiv.org/html/2601.18734)）。**OPSD = On-Policy Self-Distillation**：没有更强外部教师时，把特权上下文 $y^{\star}$（参考解，可含 CoT）条件进教师前向；学生仍按自己的 on-policy 轨迹 $\hat y$ 学。教师和学生是**同一套权重的两种条件**，不是另雇一个 72B。本文是 [4.6 OPD](../4.6-OPD.md) 里「自教师」这一格，记号跟论文 $p_S,p_T,\hat y,y^{\star}$。**不是** [01](../01-OPD基础原理/01-OPD基础原理.md) 的外部教师 logits，**不是** [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 的环境 rich feedback，**不是** 把 OPD 塞进 DPO。G-OPD / SCOPE 本波不升格。
+$$
+A_n(x,\hat y)=\log p_T(\hat y_n\mid x,y^\star,\hat y_{<n})-\log p_S(\hat y_n\mid x,\hat y_{<n}) \tag{6}
+$$
 
-### 1. 旧稿数字对回 Table 2 / Table 6
+并把 $A_n$ 当常数, 最小化 $-\mathbb{E}\big[\frac{1}{|\hat y|}\sum_n A_n\log p_S(\hat y_n\mid x,\hat y_{<n})\big]$ (论文式 (9)). 这是带逐 token 奖励的 policy gradient: 奖励衡量带参考解的教师比学生更偏好这个 token 多少. 它只在采到的 token 上起作用, 不匹配完整分布.
 
-摘要与表冲突时**弃摘要、跟表**。37.1 和 43.4 **不是** AIME25 单集。
+### 2.6 逐 token 信号的含义
 
-Table 2 分母：Qwen3 instruct、OpenThoughts 数学子集最多 30K 题解对、评测 **Avg@12**（温度 1.0、最长 38912、Thinking Mode 开，Table 8）、OPSD 每 20 步评一次、**100 步内最好**；GRPO 报 500 步内峰值；SFT 与 OPSD **同样本数**。
+式 (6) 的符号可以逐项解读. 学生采到 $\hat y_n$ 后, 若带参考解的教师给这个 token 的概率高于学生自己, $A_n>0$, 学生被推向更常选它; 若教师认为看过参考解之后不该这样写, $A_n<0$, 这个 token 被压低. 学生与教师一致的位置, $A_n\approx0$, 几乎不更新. 因此一条最终答错的回答里, 前面与参考解思路一致的步骤不会被惩罚, 只有偏离的位置拿到负信号; 一条答对的回答里, 绕远路的步骤也可能拿到负信号. 序列级奖励做不到这种区分.
 
-| 模型 | 方法 | AIME24 | AIME25 | HMMT25 | Average |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Qwen3-1.7B | Base (Instruct) | 51.5 | 36.7 | 23.1 | **37.1** |
-| Qwen3-1.7B | + SFT | 48.4 | 36.3 | 22.7 | 35.8 |
-| Qwen3-1.7B | + GRPO | 51.1 | 38.3 | 23.7 | 37.7 |
-| Qwen3-1.7B | + OPSD | 57.2 | **43.9** | 29.2 | **43.4** |
-| Qwen3-4B | Base | 74.9 | 66.4 | 42.2 | 61.2 |
-| Qwen3-4B | + OPSD | 76.4 | 68.3 | 46.1 | 63.6 |
+full-vocab forward KL 给出的是更强的版本. 在位置 $n$ 上, forward KL 对学生 logits 的梯度是 $p_S(\cdot\mid x,\hat y_{<n})-p_T(\cdot\mid x,y^\star,\hat y_{<n})$, 每个词都被推向教师的概率, 包括学生没采到的词. 于是学生在一个位置上能同时学到 「教师认为还可以怎样写」, 而 sampled-token 版本只知道 「我写的这个词好不好」. 第 5.4 节的对比在数值上支持这一点.
+
+两种写法都要求教师的打分可靠. 教师和学生是同一个模型, 区别只在多看了一份参考解, 所以教师的可靠程度取决于模型能否读懂参考解并把它对应到学生的写法上. 这就是第 7 节 「题目难度」 局限的来源.
+
+附录 D 把它和 STaR (Zelikman 等 2022) 做了对照. STaR 让模型生成推理过程, 只保留最终答案正确的样本再做 SFT, 相当于奖励为 $\mathbf{1}(y=y^\star)$ 的序列级 policy gradient: 一条轨迹内所有 token 拿到同样的信号, 采样全错时信号消失. OPSD 在每个位置都有信号, 与最终答案对错无关.
+
+## 3. 实验设定
+
+- **模型**: Qwen3-1.7B, 4B, 8B 的 instruct 版本.
+- **训练数据**: OpenThoughts 的数学推理子集, 最多 30K 条带 CoT 的题目与解答.
+- **评测**: AIME 2024, AIME 2025, HMMT 2025. 按 Qwen3 博客推荐的采样配置, 温度 1.0, top-p 0.95, 最长生成 38,912 token, 开启 Thinking 模式, 每题 12 个样本取平均 (Avg@12).
+- **基线**: 在同一数据上训练的 SFT, 以及以参考答案判对错, 奖励为 0/1 的 GRPO.
+- **生成风格**: Qwen3 支持 Thinking 开 (TM-on) 和关 (TM-off). 主实验采用 TM-off 学生配 TM-on 教师, 选择依据见第 5.2 节.
+
+训练配置 (论文 Table 6, Table 7):
+
+| 参数 | GRPO | OPSD | SFT |
+| --- | --- | --- | --- |
+| 学习率 | 5e-6 | 5e-6 | 5e-6 |
+| 有效 batch | 32 | 32 | 32 |
+| LoRA rank / alpha | 64 / 128 | 64 / 128 | 64 / 128 |
+| 最长补全 | 16,000 | 1,024 | 16,000 (序列长度) |
+| 每题生成数 | 8 | 1 | - |
+| 采样温度 | 1.2 | 1.1 | - |
+| KL 系数 | 0.0 | - | - |
+| 训练步数 | 500 | 100 | 100 |
+
+LoRA 作用在 q, k, v, o 投影和 gate, up, down 投影上. 训练用 8 张 A100 或 H100, AdamW, bf16, 梯度检查点和 Flash Attention 2.
+
+## 4. 主结果
+
+论文 Table 2 (Avg@12). OPSD 每 20 步评一次, 取 100 步内最好的检查点; GRPO 取 500 步内的峰值; SFT 用与 OPSD 相同的样本数.
+
+| 模型 | 方法 | AIME24 | AIME25 | HMMT25 | 平均 |
+| --- | --- | --- | --- | --- | --- |
 | Qwen3-8B | Base | 75.8 | 65.6 | 43.9 | 61.8 |
-| Qwen3-8B | + GRPO | 76.4 | 68.9 | 46.7 | 64.0 |
-| Qwen3-8B | + OPSD | 77.8 | 70.8 | 45.8 | 64.8 |
+| | + SFT | 72.3 | 64.2 | 42.9 | 59.8 |
+| | + GRPO | 76.4 | 68.9 | 46.7 | 64.0 |
+| | + OPSD | 77.8 | 70.8 | 45.8 | 64.8 |
+| Qwen3-4B | Base | 74.9 | 66.4 | 42.2 | 61.2 |
+| | + SFT | 70.2 | 62.3 | 43.4 | 58.6 |
+| | + GRPO | 75.6 | 68.1 | 44.4 | 62.7 |
+| | + OPSD | 76.4 | 68.3 | 46.1 | 63.6 |
+| Qwen3-1.7B | Base | 51.5 | 36.7 | 23.1 | 37.1 |
+| | + SFT | 48.4 | 36.3 | 22.7 | 35.8 |
+| | + GRPO | 51.1 | 38.3 | 23.7 | 37.7 |
+| | + OPSD | 57.2 | 43.9 | 29.2 | 43.4 |
 
-读法：旧稿「AIME25 从 37.1 到 43.4」应改成 **三集平均 37.1→43.4**；AIME25 单列是 **36.7→43.9**（仍是 1.7B、Avg@12、100 步内最好）。8B 的 HMMT25 上 GRPO 46.7 略高于 OPSD 45.8，不要写成「三集全面碾压 GRPO」。SFT 三集都掉，论文归因于参考解写得短、测时生成变短；OPSD 把短解当成特权信息做合理化，而不是照抄。
+几点读法:
 
-「1/125」跟 Table 6 的**每题每步上限 token**，不是神秘算力折扣：
+1. **OPSD 平均分在三个尺寸上都最高.** 相对 Base 的平均提升是 8B 3.0 分, 4B 2.4 分, 1.7B 6.3 分. 单项上有一处例外: 8B 的 HMMT25, GRPO 46.7 高于 OPSD 45.8.
+2. **1.7B 的增益最大.** 1.7B 上 GRPO 只比 Base 高 0.6 分, OPSD 高 6.3 分. 结合图 3, GRPO 在这一尺寸上大量 batch 拿不到梯度 (见下文), 而 OPSD 的信号与答案对错无关.
+3. **SFT 在 9 个单项里有 8 项低于 Base**, 唯一例外是 4B 的 HMMT25 (43.4 对 42.2). 作者的解释是 OpenThoughts 的参考解推理较简洁, SFT 之后模型推理长度变短. OPSD 用的是同一批参考解, 却把它们转成了教师信号, 学生仍按自己的方式写.
+4. **评测与训练的生成设置差别很大.** 训练时 OPSD 学生最多生成 1024 token 且关闭 Thinking, 评测中开启 Thinking, 最长约 38K token. 只在回答前 1024 token 上训练, 就能改善长推理下的结果, 这与第 5.3 节 「前面的 token 更关键」 的观察一致.
 
-| | GRPO | OPSD |
-| --- | ---: | ---: |
-| 每题采样条数 | 8 | 1 |
-| 训练期最长补全 | 16000 | 1024 |
-| 有效 batch | 32 | 32 |
-| LoRA $r/\alpha$ | 64 / 128 | 64 / 128 |
-| 训练步数 | 500 | 100 |
-| 学习率 | $5\times 10^{-6}$ | $5\times 10^{-6}$ |
+### 4.1 token 效率
 
-$8\times 16000\big/(1\times 1024)=125$。所以「单条探索、100 步、1/125」可以留，但分母必须写成：**1 条 × 1024 token vs GRPO 8 条 × 16k**，再加「OPSD 100 步、GRPO 500 步」。打开的 HTML 摘要只写 superior token efficiency，**没有** 4–8× 这个可对表的数；不要用二次转述补。Figure 3 还写：同样 100 步里，GRPO 超过一半 batch 的组内奖励标准差为零（全对或全错），梯度没了；OPSD 用稠密蒸馏，不受这条约束。
+单题生成上限: GRPO 是 $8\times16000=128{,}000$ token, OPSD 是 $1\times1024=1{,}024$ token, 相差 125 倍. 这是上限之比, 实际生成长度没有报告. 图 3 在相同有效 batch 下比较了 Qwen3-1.7B 上两者随训练步数和累计生成 token 的曲线: 同样步数下 OPSD 生成的 token 少得多, 三个评测集的成绩却都更高. 图 3 最右一栏显示, 100 步内 GRPO 一半以上的 batch 组内奖励标准差为零, 优势全为零, 没有梯度. 作者把这归因于 OpenThoughts 数据集上大多数题目的组内结果一致. GRPO 后期还会因熵塌缩出现部分任务掉分.
 
-旧稿 §4 把 Forward KL 的 41.1 和 Reverse KL 的 35.0 当成主结果。那是 Table 3 **第 100 步**，不是峰值。Table 3 分母：AIME25、Qwen3-1.7B、Avg@12、同一套 pointwise clipping。
+### 4.2 每步计算量
 
-| 散度 | Base | Step 50 | Step 100 |
-| --- | ---: | ---: | ---: |
-| Forward KL $\mathrm{KL}(p_T\parallel p_S)$ | 36.7 | **43.9** | 41.1 |
-| Reverse KL $\mathrm{KL}(p_S\parallel p_T)$ | 36.7 | 37.5 | 35.0 |
+把一步训练拆成三块, 可以看出 OPSD 省在哪里. 记 batch 内题目数为 $B=32$ (论文的有效 batch).
+
+- **生成**: GRPO 每题生成 8 条, 每条最多 16,000 token; OPSD 每题 1 条, 最多 1,024 token. 自回归生成是逐 token 串行的, 通常是 RL 训练中最耗时的部分, 这一块的上限差 125 倍.
+- **打分前向**: GRPO 只需验证最终答案, 不需要额外前向. OPSD 要让教师在 「题目 + 参考解 + 学生回答」 上做一次前向. 参考解是 OpenThoughts 中带 CoT 的解答, 长度可能远超 1024 token, 所以教师前向的序列长度由参考解决定. 这次前向是并行的, 比生成快得多.
+- **反传**: 两者都对学生轨迹做一次前向和反传. GRPO 的轨迹总长上限是 $B\times8\times16000$, OPSD 是 $B\times1024$. full-vocab 版本还需要在每个位置保存师生两份词表大小的 logits.
+
+论文没有报告两者的墙钟时间, 上面只是按配置上限的估算. 训练步数上 OPSD 用 100 步, GRPO 用 500 步, 也有 5 倍的差别.
+
+## 5. 消融
+
+### 5.1 散度选择
+
+论文 Table 3, Qwen3-1.7B, AIME25, Avg@12, 三者都用同样的逐点裁剪:
+
+| 散度 | Base | 第 50 步 | 第 100 步 |
+| --- | --- | --- | --- |
+| Forward KL, $\mathrm{KL}(p_T\|p_S)$ | 36.7 | 43.9 | 41.1 |
+| Reverse KL, $\mathrm{KL}(p_S\|p_T)$ | 36.7 | 37.5 | 35.0 |
 | JSD ($\beta=0.5$) | 36.7 | 36.9 | 39.0 |
 
-主实验采用 Forward KL，因为这条在表上最好。Algorithm 1 的 $D$ 举例写的是 $\mathrm{JSD}_\beta$，**不是**「论文规定必须 JSD」。
+forward KL 第 50 步提升 7.2 分, 第 100 步回落到 41.1, 仍高于 Base. reverse KL 到第 100 步低于 Base. 之后的实验都用 forward KL. 这与 GKD 「最优散度和任务有关」 的结论一致, 也与 SDFT 实践中改用 forward KL 的选择相同.
 
-### 2. 特权信息当自己的教师
+### 5.2 生成风格与风格词
 
-数据集 $\mathcal{S}=\{(x_i,y_i^{\star})\}_{i=1}^{N}$。$y^{\star}$ 是参考解，**可以带思维链**，不是必须只有一个最终数字。同一语言模型 $p_\theta$ 切成两种条件：
+论文 Table 5 按词类统计每个位置上 forward KL 的平均值 (10 道题的平均). 词类按附录 C 的关键词表划分: 风格词包括 maybe, wait, so, therefore, however 等连接词; 数学词包括 exponent, logarithm, prime, equation, denominator 等.
 
-$$
-p_T(\cdot\mid x,y^{\star})\;\triangleq\; p_\theta(\cdot\mid x,y^{\star}),\qquad
-p_S(\cdot\mid x)\;\triangleq\; p_\theta(\cdot\mid x). \tag{R1}
-$$
+| 学生 | 教师 | 1.7B 风格 / 数学 / 其他 | 4B 风格 / 数学 / 其他 | 8B 风格 / 数学 / 其他 |
+| --- | --- | --- | --- | --- |
+| TM-off | TM-off | 0.68 / 0.12 / 0.11 | 0.61 / 0.06 / 0.10 | 0.56 / 0.05 / 0.11 |
+| TM-on | TM-off | 0.51 / 0.10 / 0.17 | 0.41 / 0.05 / 0.18 | 0.33 / 0.05 / 0.15 |
+| TM-on | TM-on | 0.51 / 0.09 / 0.08 | 0.50 / 0.04 / 0.09 | 0.42 / 0.04 / 0.08 |
+| TM-off | TM-on | 0.85 / 0.14 / 0.25 | 0.92 / 0.10 / 0.29 | 0.79 / 0.06 / 0.25 |
 
-学生只看见题，采样自己的轨迹
+两点结论. 一是所有组合里风格词的散度都是数学词的约 5 到 13 倍, 这就是第 2.4 节需要裁剪的原因. 二是 TM-off 学生配 TM-on 教师时, 数学词上的散度在三个尺寸上都最大, 即数学相关的监督最强, 下游表现也最好, 因此被选为主配置. 图 4 显示, 不裁剪时 Qwen3-1.7B 在 AIME24 上训练会崩, 裁剪后稳定.
 
-$$
-\hat y=(\hat y_1,\ldots,\hat y_{|\hat y|})\sim p_S(\cdot\mid x). \tag{R2}
-$$
+### 5.3 生成长度
 
-教师**不生成**。Figure 2 的教师提示是：题 + 参考解 +「看过参考解后请用自己的方式再解一遍」。然后只在学生已经写出的前缀上做一次 prefill，得到逐步分布 $p_T(\cdot\mid x,y^{\star},\hat y_{<n})$。论文原话：rationalization is done implicitly through one forward pass.
+图 5 在 Qwen3-1.7B 上比较学生生成长度 1024 与 4096 (full-vocab 蒸馏), AIME24 与 AIME25 上都没有一致的提升. 作者的解释是前面的 token 更关键: 学生前缀足够长之后, 后面的 token 对教师来说越来越好预测, 受到的惩罚越来越小. Thinking Machines 的博客 (Lu 等 2025) 也报告过这一现象. 论文另一处的假设是, 推理早期的 token 可能是关键的分叉点.
 
-两边都对着**同一条学生轨迹**打分。位置 $n$ 上的全词表散度（式 (6)）再对轨迹取平均：
+这一观察对成本有直接影响. 如果信号主要集中在回答开头, 生成上限就可以压得很短, 生成和反传的开销都随之下降, 这正是 OPSD 能把单题生成上限定在 1024 的前提. 反过来, 在需要长程规划的任务上, 关键的分叉点可能出现在回答中后段, 截断到 1024 就会丢掉这部分信号. 论文只在竞赛数学上验证了 1024 与 4096 的对比, 更长的截断 (例如 16K) 没有测.
 
-$$
-D(p_T\|p_S)(\hat y\mid x)
-=\frac{1}{|\hat y|}\sum_{n=1}^{|\hat y|}
-D\Bigl(p_T(\cdot\mid x,y^{\star},\hat y_{<n})\;\Big\|\; p_S(\cdot\mid x,\hat y_{<n})\Bigr). \tag{R3}
-$$
+### 5.4 完整词表与采样 token
 
-训练目标（式 (8)，与开篇式 (1) 同一件事；式 (1) 写成求和，实现跟 Algorithm 1 的平均）：
+论文 Table 4, Qwen3-4B, 蒸馏时生成长度 2048, pass@8:
 
-$$
-\mathcal{L}(\theta)
-=\mathbb{E}_{(x,y^{\star})\sim\mathcal{S}}
-\Bigl[\mathbb{E}_{\hat y\sim p_S(\cdot\mid x)}\bigl[D(p_T\|p_S)(\hat y\mid x)\bigr]\Bigr]. \tag{R4}
-$$
-
-梯度**只走学生 logits**。§4.1 实验还把教师**钉在初始策略** $\theta_{\mathrm{init}}$，不跟当前正在更新的学生走，当作隐式正则，防止自蒸馏把分布拽飞。所以「同一套权重」指的是**开局同一份 $p_\theta$、靠上下文分饰两角**；跑起来之后教师冻结、学生 LoRA 更新，两套条件会分开。旧稿 §6 把 `golden_answer` 直接 `cat` 进 `teacher_input` 方向对，但缺 Figure 2 那句引导、也没写冻结教师。
-
-> 图 1：开卷教师 vs 闭卷学生。对应论文 Figure 1。旧图 `opsd_open_book.png` 不删，本节改引这张。2026-08 自绘。
-
-**图 1 解析**
-
-- **左（青）**：学生只吃 $x$，自回归写出 $\hat y$。这是 on-policy 的唯一采样源。
-- **右（琥珀）**：教师多吃 $y^{\star}$。虚线框「prefill only」：教师不写卷，只阅卷。
-- **中下**：逐步比较 $p_S(\cdot\mid x,\hat y_{<n})$ 与 $p_T(\cdot\mid x,y^{\star},\hat y_{<n})$。对齐的是学生自己的前缀，不是专家轨迹——这就是和 SFT / 式 (2) 监督蒸馏的差。
-- **红箭头**：损失对 $p_T$ stop-grad。没有第二条 72B 驻留。
-
-Algorithm 1：抽 minibatch → 每题学生采样一条 $\hat y$ → 按 (R3) 算 $\ell$ → batch 平均后更新 $\theta$。旧稿「只需 1 条探索轨迹」对应 Table 6 的 Number of Generations = 1，不是「整个训练只 roll 一次」。
-
-### 3. 全词表 Forward KL + 词表维裁剪
-
-主路径是 **full-vocabulary logit distillation**（GKD 那类：每个位置对整个 $\mathcal{V}$ 做 softmax 再算 $D$），不是只在抽到的那个 token 上算优势。备选式 (9) 才是 sampled-token：把 $A_n=\log p_T(\hat y_n\mid\ldots)-\log p_S(\hat y_n\mid\ldots)$ 当常数，再乘 $\log p_S$。Table 4 分母换成了 **Qwen3-4B、蒸馏生成长 2048、pass@8**（不要和 Table 2 的 Avg@12 混）：全词表 AIME25 **84.1** / HMMT25 **60.0**，sampled-token 82.1 / 57.3。全词表更贵（每步存一份词表 logits）。
-
-$D$ 可以是 Forward KL、Reverse KL 或 $\operatorname{JSD}_\beta$（式 (7)）。表上 Forward KL 赢，见上节 Table 3。旧稿「必须改用 Forward KL」降调成：**在这份特权教师比较尖的设置里，教师加权的 Forward KL 更好**；不要写成 OPD 家族定理。旧稿勾股定理那组 0.8 / 0.1 是示意图，论文表里没有，当数值例即可。
-
-Table 5 解释为什么要 clip。按 token 分成 style / math / other，10 道题平均。主实验配的是 **学生 TM-off、教师 TM-on**（数学词上的 KL 最大）：
-
-| Student | Teacher | 1.7B Style | 1.7B Math | 1.7B Other |
-| --- | --- | ---: | ---: | ---: |
-| TM-off | TM-off | 0.68 | 0.12 | 0.11 |
-| TM-on | TM-off | 0.51 | 0.10 | 0.17 |
-| TM-on | TM-on | 0.51 | 0.09 | 0.08 |
-| **TM-off** | **TM-on** | **0.85** | **0.14** | **0.25** |
-
-style 列比 math 列高一个数量级。不加处理，梯度会去学「therefore / okay」，不学「14」。论文在**词表项**上做 pointwise clip，不是旧稿 §6 那种对已经求和的 KL 做 `clamp(0, 10)`。对 $f$-散度的逐项贡献
-
-$$
-\ell_{n,v}^{(f)}=p_T(v\mid\cdot)\,f\!\left(\frac{p_S(v\mid\cdot)}{p_T(v\mid\cdot)}\right), \tag{R5}
-$$
-
-$$
-D_{\mathrm{clip}}^{(f)}(p_T\|p_S)
-=\frac{1}{|\hat y|}\sum_{n=1}^{|\hat y|}\sum_{v\in\mathcal{V}}\min\bigl(\ell_{n,v}^{(f)},\tau\bigr). \tag{R6}
-$$
-
-Appendix B：他们**没有**扫 $\tau$。Figure 4：1.7B、AIME24，clip 能挡住崩溃。评测时 Thinking Mode 是开的（Table 8），和训练时学生 TM-off 不是同一档——训练省生成、评测按 Qwen3 博客建议拉满。
-
-> 图 2：Algorithm 1 数据流。Box 3 若把 $D$ 的左右写反，以式 (R3) 的 $D(p_T\|p_S)$ 为准。2026-08 自绘。
-
-**图 2 解析**
-
-- **Box 1**：只从 $p_S(\cdot\mid x)$ 采样。对错都留着，不对最终答案做拒绝采样（那是 STaR，见附录 D）。
-- **Box 2**：学生条件 $(x,\hat y_{<n})$；教师条件 $(x,y^{\star},\hat y_{<n})$。图上教师标 $\theta_{\mathrm{init}}$ 对应 §4.1，不是另装一个模型。
-- **Box 3–4**：散度在整张词表上；clip 切的是 $(n,v)$ 格子，不是整句 KL。
-- **Box 5**：学生 LoRA 更新；教师冻结。
-
-式 (9) 可以读成逐步稠密奖励的 policy gradient，附录 D 用来对照 STaR：STaR 的 $R=\mathbf{1}(y=y^{\star})$ 是句级的，全错就没梯度；OPSD 每个位置都有 $r_n$，终局错了也还能学。这是论文自己的对照，**不要**把 OPSD 写成「STaR 换个名」。
-
-### 4. 不是什么
-
-| 名字 | 它在做什么 | OPSD 不是它的理由 |
+| 变体 | AIME25 | HMMT25 |
 | --- | --- | --- |
-| 基础 OPD / GKD 式 on-policy distillation | 学生自己采样，**另一个**教师给逐步分布 | 本篇教师是 $p_\theta(\cdot\mid x,y^{\star})$，不是 72B |
-| SFT / 式 (2) | 在专家轨迹 $y^{\star}$ 上模仿 | 监督前缀来自 $\hat y\sim p_S$，不是 $y^{\star}$ |
-| GRPO | 组内 8 条、句级 0/1 | Table 1：稀疏、采样贵；本篇稠密、每题 1 条 |
-| SDPO | 环境 rich feedback 当自教师 | 邻居 [04](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)；特权信息不是报错回注 |
-| 把 OPD 塞进 DPO | 偏好对上的分类损失 | 式 (R4) 是逐步 $D(p_T\|p_S)$，没有 chosen/rejected 对 |
-| Context distillation (Snell et al.) | 同一模型、教师有特权上下文，但对学生做 **SFT 硬标签** | 论文 Related Work：off-policy、离散 token；本篇是 on-policy 软分布 |
-| STaR / ReST | 生成→按对错过滤→SFT | 句级奖励；全错则无更新 |
-| G-OPD / SCOPE | 后文变体 | 本波不升格，不当金科玉律 |
-| SDFT | 持续学习、示范当特权上下文 | 下一篇 [03](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md)；本篇不写遗忘实验 |
+| full-vocab logit 蒸馏 (GKD 式) | 84.1 | 60.0 |
+| sampled-token policy gradient (Thinking Machines 式) | 82.1 | 57.3 |
 
-### 5. 失效：没有特权上下文时怎么办
+完整分布在两个评测上分别高 2.0 与 2.7 分. 代价是每个位置都要存词表大小的 logits, 峰值显存更高. 两种实现的差别在 [01](../01-OPD基础原理/01-OPD基础原理.md) 第 6 节有更一般的讨论.
 
-OPSD 吃的是 $\mathcal{S}$ 里成对的 $(x,y^{\star})$。**没有 $y^{\star}$**（开放生成、没有参考解的对话、只有对错没有过程）就变不回自教师：式 (R1) 的 $p_T$ 退化成 $p_S$，散度是 0，学不到东西。这时只能退回 [01](../01-OPD基础原理/01-OPD基础原理.md) 的外部教师，或 GRPO 那种可验证奖励——本算法不负责凭空造特权信息。
+### 5.5 消融汇总
 
-即使有 $y^{\star}$，Appendix A 写得很死：题目难过模型的理解阈值，教师「开卷」也讲不明白，监督是噪声。他们只做到 **8B**，再大未测。旧稿「底座太蠢则开卷也看不懂」方向对，来源是这篇附录，不是发挥。
+| 设计选择 | 对照 | 结果 | 出处 |
+| --- | --- | --- | --- |
+| 散度 | forward KL / reverse KL / JSD(0.5) | forward KL 第 50 步 43.9, 其余两者最高 37.5 与 39.0 | Table 3 |
+| 生成风格 | 四种 Thinking 开关组合 | TM-off 学生, TM-on 教师的数学词散度最大 | Table 5 |
+| 逐点裁剪 | 开 / 关 | 不裁剪时性能崩溃 | 图 4 |
+| 学生生成长度 | 1024 / 4096 | 无一致提升 | 图 5 |
+| 散度计算方式 | full-vocab / sampled-token | AIME25 84.1 对 82.1, HMMT25 60.0 对 57.3 | Table 4 |
 
-其它边界：
+除 Table 5 覆盖三个尺寸外, 其余消融都只在一个尺寸上做: 计算方式是 4B, 散度, 裁剪和生成长度是 1.7B. 结论能否推广到其他尺寸, 论文没有给出证据.
 
-| 现象 | 原因 | 说明 |
-| --- | --- | --- |
-| 捷径 / 跳步 | $y^{\star}$ 过短时教师过度自信 | 旧稿 §7.2 可留；论文自己更强调 SFT 会被短解压短思维，OPSD 用合理化把短解变成逐步软标签，**不是**保证不跳步 |
-| 风格词主导 | Table 5 style ≫ math | 必须词表维 clip；旧代码对句级 KL 做 clamp 对不上 (R6) |
-| 生成加长无增益 | Figure 5：1.7B 上 1024 vs 4096 | 后段对教师已可预测，惩罚变小；主实验锁 1024 |
-| 教师跟着学生更新 | §4.1 发现不稳 | 实验冻 $\theta_{\mathrm{init}}$；若实现成「每步师生同一份当前权重」，不是论文主设置 |
-| 只测数学 | AIME24/25、HMMT25 | 代码、多步 agent 未在此文 |
+## 6. 相关工作与定位
 
-没有特权上下文、又没有外部教师：这篇给不出替代损失。不要把「左脚踩右脚」读成无数据永动机。
+**context distillation** (Snell 等 2022) 最接近: 同一模型带特权上下文当教师, 学生在教师生成的样本上做 SFT. 这是离线的, 学习信号是离散 token 序列. ReST (Gulcehre 等 2023) 与 STaR 在推理任务上做迭代自训练: 生成推理, 按答案过滤, 在成功样本上微调, 同样是硬蒸馏. In-context editing (Qi 等 2025) 已经在学生样本上做软蒸馏, 场景是知识编辑. OPSD 的组合是: 推理任务, 学生样本, 逐 token 分布匹配.
 
-下一篇只链 [03-SDFT](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md)：把特权上下文从参考解换成示范、并讨论遗忘。本篇不预写 SDFT 数字。
+同期还有两篇思路相近的工作: SDPO 以环境反馈为特权信息 ([04](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)), SDFT 把 on-policy 自蒸馏用于持续学习 ([03](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md)). 三者的统一形式见 [01](../01-OPD基础原理/01-OPD基础原理.md) 第 8 节. 按各自论文的设定, 三者的主要差异如下:
 
-### 本篇来源（2026-08 核对）
+| | OPSD | SDFT | SDPO |
+| --- | --- | --- | --- |
+| 教师额外看到 | 题目的参考解 (含 CoT) | 一条专家示范 | 环境输出, 组内成功解 |
+| 散度 | full-vocab forward KL, 逐点裁剪 | 解析 token 级估计, 实践用 forward KL | top-$K$ 加尾部桶, reverse KL 或 JSD |
+| 教师参数 | 固定为初始策略 | 学生参数的 EMA | EMA 或与初始教师插值 |
+| 每题 rollout | 1 | 1 | 8 (训练), 16 (单题求解) |
+| 主要任务 | 竞赛数学 | 技能学习, 知识注入 | 科学问答, 工具调用, 编程 |
+| 关注点 | 推理成绩与 token 效率 | 新任务成绩与遗忘 | 稀疏奖励下的信用分配 |
 
-1. Zhao, Xie, Liu, Huang, Pang, Chen, Grover. *Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models*. [arXiv:2601.18734](https://arxiv.org/abs/2601.18734) / [HTML](https://arxiv.org/html/2601.18734)。Table 1–8、Figure 1–5、Algorithm 1、式 (1)(6)(7)(8)(9)、§4.1 冻结初始教师、Appendix A/B/D。
-2. 官方代码：[siyan-zhao/OPSD](https://github.com/siyan-zhao/OPSD)。
-3. 训练数据声明：OpenThoughts 数学子集（Guha et al., 2025），本篇数字仍以 2601.18734 的表为准。
+OPSD 的参考解来自数据集, 不随训练变化. SDPO 的 「组内成功解」 是学生自己刚生成的答对样本, 随训练变化, 而且只有组内至少有一条答对时才有. 两者都把一条正确解放进教师上下文, 来源和可得性不同. SDFT 的示范与 OPSD 的参考解形式最接近, 但 SDFT 关心的是学新任务时不忘旧能力, 实验也包括不含 CoT 的示范.
 
-图 1–2 是示意。勾股定理 0.8/0.1 不是论文表。知乎只学「教师阅卷不做题」的拆法，数字全部回表。
+## 7. 复现要点
+
+按论文与 Algorithm 1, 一个最小实现包括以下几步:
+
+1. 准备 $(x,y^\star)$ 对. 学生提示词只放题目; 教师提示词放题目, 参考解和 「理解参考解后用自己的方法解题」 的指令.
+2. 用学生提示词采样 $\hat y$, 温度 1.1, 截断到 1024 token, 关闭 Thinking 模式.
+3. 把 $\hat y$ 分别接在学生提示词和教师提示词之后, 各做一次前向. 教师使用冻结的初始参数; LoRA 的增量在初始化时为零, 所以这等价于不挂适配器的基座; 学生使用当前参数.
+4. 在每个位置上计算完整词表的逐词 forward KL 贡献 $p_T\log(p_T/p_S)$, 逐词截到 $\tau$, 对词表求和, 再对位置取平均.
+5. 只对学生一侧反传, 有效 batch 32, 学习率 5e-6, 训练约 100 步; 定期在验证集上评估, 选最好的检查点.
+
+第 3 步里教师和学生的前缀不同, 两次前向的位置需要按 $\hat y$ 的 token 对齐: 只取 $\hat y$ 对应的那一段输出比较. 学生关闭 Thinking, 教师开启 Thinking, 两者的对话模板也不同, 对齐时要剔除模板 token.
+
+## 8. 局限
+
+论文附录 A 列出的局限:
+
+- **规模**: 受算力限制只做到 8B, 更大模型上是否成立未知.
+- **没有用答案校验**: 当前框架只做分布匹配, 没有利用生成答案的对错; 加入校验信号可能提供额外目标.
+- **题目难度**: 题目超出模型的理解能力时, 即使教师看到参考解, 也给不出有意义的监督. 作者建议用课程学习, 让题目难度停在模型能力的边缘.
+
+「无需外部教师」 的含义也需要界定. 论文把 SFT 基线描述为 「从生成这些推理轨迹的更强模型做离线蒸馏」, 也就是说 OpenThoughts 的参考解本身来自更强的模型. OPSD 训练时不调用外部模型, 但参考解里已经包含了外部模型的知识. 在只有最终答案, 没有完整解答的数据集上, 教师能拿到的特权信息会少得多, 效果未经验证.
+
+比较口径也要留意. Table 2 中 OPSD 报告的是 100 步内每 20 步评一次的最好成绩, GRPO 报告的是 500 步内的峰值, 两者都是在评测集上挑选的最好点, 没有用独立验证集. 这种口径对两者大体公平, 但会让绝对分数偏高; GRPO 的候选检查点更多, 挑选带来的偏高可能更大.
+
+实验设计上还有几处限制: 裁剪阈值 $\tau$ 未调; 主结果取 100 步内每 20 步一次评测的最好检查点, 而第 5.1 节显示 forward KL 在第 50 步后会回落, 实际使用时需要早停或验证集选择; 所有对比都在 LoRA 设定下进行.
+
+## 9. 讨论: 固定教师意味着什么
+
+教师固定为初始策略, 学习目标就是 「初始模型读过参考解之后的分布」. 学生在训练中变强, 教师不变, 所以学生能逼近的上限由初始模型理解参考解的能力决定. 这与 SDPO 的设计形成对比: SDPO 的教师随学生更新, 论文报告学生的成绩最终超过了初始教师 (见 [04](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)). OPSD 没有做可更新教师的对照, 只说明固定教师更稳.
+
+这一设定也有助于理解第 5.1 节的曲线. forward KL 在第 50 步达到 43.9, 第 100 步回落到 41.1. 一种可能的解释是: 学生接近固定目标之后, 剩余的散度更多来自风格差异而非数学内容, 继续优化收益变小, 还可能偏离对评测有用的行为. 论文没有分析回落的原因, 这里只是推测. 实际使用时, 用验证集选检查点是必要的.
+
+还有一处设置是生成风格的错配. 学生关闭 Thinking, 教师开启 Thinking, 两者的写法本来就不同, Table 5 中这一组合的风格词散度也最大. 作者选它的依据是数学词上的信号最强, 并用裁剪压住风格词. 换一个模型族, Thinking 开关不一定存在, 这一选择需要重新验证.
+
+## 参考文献
+
+1. Zhao, Xie, Liu, Huang, Pang, Chen, Grover. *Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models*. arXiv:2601.18734. [链接](https://arxiv.org/abs/2601.18734)
+2. Agarwal 等. *On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes*. arXiv:2306.13649. [链接](https://arxiv.org/abs/2306.13649)
+3. Lu, Thinking Machines Lab. *On-Policy Distillation*. Thinking Machines Lab: Connectionism, 2025. [链接](https://thinkingmachines.ai/blog/on-policy-distillation/)
+4. Snell, Klein, Zhong. *Learning by Distilling Context*. arXiv:2209.15189. [链接](https://arxiv.org/abs/2209.15189)
+5. Zelikman, Wu, Mu, Goodman. *STaR: Bootstrapping Reasoning With Reasoning*. NeurIPS 2022. [链接](https://arxiv.org/abs/2203.14465)
+6. Guha 等. *OpenThoughts: Data Recipes for Reasoning Models*. arXiv:2506.04178. [链接](https://arxiv.org/abs/2506.04178)
+7. Shao 等. *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300. [链接](https://arxiv.org/abs/2402.03300)

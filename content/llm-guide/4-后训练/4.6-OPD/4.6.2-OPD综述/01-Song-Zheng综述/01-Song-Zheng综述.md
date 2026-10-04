@@ -11,13 +11,13 @@ excerpt: "本库 OPD 的全称是 On-Policy Distillation:学生按当前策略�
 
 本篇读 Song & Zheng(腾讯大模型部)*[A Survey of On-Policy Distillation for Large Language Models](https://arxiv.org/html/2604.00626v3)*([arXiv:2604.00626](https://arxiv.org/abs/2604.00626) v3;附属列表 [Awesome-LLM-On-Policy-Distillation](https://github.com/nick7nlp/Awesome-LLM-On-Policy-Distillation)).作者自称 **first comprehensive OPD survey**:把 OPD 写成学生轨迹上的 $f$-散度最小化,再按三轴(优化什么 / 信号从哪来 / 怎么稳定)收编散落在蒸馏,RLHF,模仿学习三个社区的论文.
 
-记号与 [01](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的式 (1)–(3),(6)–(9) 对齐处沿用 01,不另立一套定义.**不是** Online Preference Distillation,不是 DPO 换名,也不是把 OPD 合成 GRPO 变体.
+记号与 [01](../../01-OPD基础原理/01-OPD基础原理.md) 的式 (1)–(3),(6)–(9) 对齐处沿用 01,不另立一套定义.**不是** Online Preference Distillation,不是 DPO 换名,也不是把 OPD 合成 GRPO 变体.
 
 ## 1. 综述在补什么
 
 知识蒸馏把前沿模型压进可部署学生,工业默认配方仍是 **off-policy**:在教师写好的(或数据集里的)前缀上匹配 next-token.推理时学生自回归,前缀变成自己刚吐出的 token.Ross et al. 的 DAgger 界说:若训练分布上每步误差 $\epsilon$,学习者自己走状态时,轨迹总偏差按 $O(\epsilon T^{2})$ 复合,而不是独立误差的 $O(\epsilon T)$.推理链一长,一步偏后面全是没练过的状态.综述把这叫做把蒸馏从「单次模仿」改成「对学生实际产出做迭代纠偏」.
 
-文献却散在三个社区:知识蒸馏谈 KL 方向,RLHF 谈奖励与 KL 约束,模仿学习谈 DAgger.既有 LLM 蒸馏综述常把 on-policy / off-policy 当成可互换变体.Song & Zheng 的贡献因此很窄,也很硬:给一个共同的 $f$-散度写法,再按**设计轴**而不是按公司名分类.本库已经用另一套拆法写完了地基与变体--[01](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 钉名字与两条梯度,[02](../../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md) 钉 $y^\star$,[04](../../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md) 钉环境 rich feedback,[07](../../07-OPD-失败模式/07-OPD-失败模式.md) 钉失败模式,[09](../../09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md) / [10](../../10-OPD-各家报告对照/10-OPD-各家报告对照.md) 钉厂商捆法.本篇问的是:综述的坐标系怎么接到这些单独成篇上,以及和 GxPO 综述的边界在哪.数字,消融表,报告超参在原单独成篇.
+文献却散在三个社区:知识蒸馏谈 KL 方向,RLHF 谈奖励与 KL 约束,模仿学习谈 DAgger.既有 LLM 蒸馏综述常把 on-policy / off-policy 当成可互换变体.Song & Zheng 的贡献因此很窄,也很硬:给一个共同的 $f$-散度写法,再按**设计轴**而不是按公司名分类.本库已经用另一套拆法写完了地基与变体--[01](../../01-OPD基础原理/01-OPD基础原理.md) 钉名字与两条梯度,[02](../../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) 钉 $y^\star$,[04](../../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 钉环境 rich feedback,[07](../../07-OPD-失败模式/07-OPD-失败模式.md) 钉失败模式,[09](../../09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md) / [10](../../10-OPD-各家报告对照/10-OPD-各家报告对照.md) 钉厂商捆法.本篇问的是:综述的坐标系怎么接到这些单独成篇上,以及和 GxPO 综述的边界在哪.数字,消融表,报告超参在原单独成篇.
 
 ![Off-policy KD trains on teacher prefixes; OPD trains on student prefixes with teacher logits](./images/fig-opd-survey-off-vs-on.png)
 
@@ -27,8 +27,8 @@ excerpt: "本库 OPD 的全称是 On-Policy Distillation:学生按当前策略�
 
 - **左,青格**:token 由教师写出.学生在这些前缀上做 NLL 或 $D_{\mathrm{KL}}(p_T \Vert p_\theta)$.推理一旦自己写偏,就离开训练状态.
 - **右,橙格**:token 由学生写出.教师不再重写一条满分答案,而是对同一条学生轨迹上的每个前缀打分布.这就是「dense on student states」.
-- **红标**:偏好对 $(y^+,y^-)$ 没有这条「教师在学生前缀上给分布」的结构.黑盒设定里可以用 pairwise preference 当**降级接口**(综述 §5.2),那不是把 OPD 定义成 preference optimization.沿用 [01 §10.1](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md).
-- **底栏**:DAgger 的 $O(\epsilon T)$ 假定专家在学习者访问的任意状态上仍接近最优.学生前缀严重 OOD 时,教师条件分布自己会坏--综述 §2.2 Remark 把这写成资格条件,不是免费定理.本库 [01 §10.5](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 同一条.
+- **红标**:偏好对 $(y^+,y^-)$ 没有这条「教师在学生前缀上给分布」的结构.黑盒设定里可以用 pairwise preference 当**降级接口**(综述 §5.2),那不是把 OPD 定义成 preference optimization.沿用 [01 §10.1](../../01-OPD基础原理/01-OPD基础原理.md).
+- **底栏**:DAgger 的 $O(\epsilon T)$ 假定专家在学习者访问的任意状态上仍接近最优.学生前缀严重 OOD 时,教师条件分布自己会坏--综述 §2.2 Remark 把这写成资格条件,不是免费定理.本库 [01 §10.5](../../01-OPD基础原理/01-OPD基础原理.md) 同一条.
 
 ## 2. 综述的定义:$y\sim p_\theta$,损失可以是散度也可以是奖励
 
@@ -38,7 +38,7 @@ $$
 \min_{\theta}\mathbb{E}_{x\sim\mathcal{D}}\,\mathbb{E}_{y\sim p_{\theta}(\cdot \mid x)}\bigl[\mathcal{L}(y,x;\theta,T)\bigr]. \tag{1}
 $$
 
-这与 [01 式 (6)](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 是同一句,**沿用 01**.$\mathcal{L}$ 可以是散度,奖励或混合;关键是外层期望在学生自己的生成上.$\theta$ 一更新,$p_\theta$ 就变,每步都要重新 rollout--这是 OPD 的系统成本,不是实现细节.
+这与 [01 式 (6)](../../01-OPD基础原理/01-OPD基础原理.md) 是同一句,**沿用 01**.$\mathcal{L}$ 可以是散度,奖励或混合;关键是外层期望在学生自己的生成上.$\theta$ 一更新,$p_\theta$ 就变,每步都要重新 rollout--这是 OPD 的系统成本,不是实现细节.
 
 记号沿用综述:小写 $p$ 是 token 级条件分布(教师 $p_T(\cdot \mid x,y_{<t})$,学生 $p_\theta$),大写 $P$ 是序列级.本库 01 用 $\pi_\theta,\pi_T$ 写策略,与这里的 $p_\theta,p_T$ 是同一对象,后文混用时以「学生 / 教师」为准,不另开第三套.
 
@@ -71,7 +71,7 @@ $f$ 凸且 $f(1)=0$.生成元决定似然比对权重:
 | $u\log u-(u+1)\log\frac{u+1}{2}$ | JSD | 对称,有界,在 covering / seeking 之间 | GKD 在翻译(WMT)上最好;既不是单答案也不是完全开放 |
 | $\alpha$-散度 | 连续族 | $\alpha\to 1$ 前向,$\alpha\to 0$ 反向 | 给「哪一种 KL」一个旋钮,不是新定义 |
 
-01 式 (2)(3) 是 MiniLLM 那条 reverse KL 在学生轨迹上的展开,**不是**综述对全体 OPD 的定义.GKD 默认写出的 token 级 $D_{\mathrm{KL}}(p_T \Vert p_S)$ 是 forward KL,散度本身可选 reverse / JSD,哪一种更好写成 **task-dependent**.两条梯度不是「OPD = Reverse KL」.Qwen3 只写 aligning logits to minimize KL,**未点名**正反向.沿用 [01 §10.3](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md).
+01 式 (2)(3) 是 MiniLLM 那条 reverse KL 在学生轨迹上的展开,**不是**综述对全体 OPD 的定义.GKD 默认写出的 token 级 $D_{\mathrm{KL}}(p_T \Vert p_S)$ 是 forward KL,散度本身可选 reverse / JSD,哪一种更好写成 **task-dependent**.两条梯度不是「OPD = Reverse KL」.Qwen3 只写 aligning logits to minimize KL,**未点名**正反向.沿用 [01 §10.3](../../01-OPD基础原理/01-OPD基础原理.md).
 
 三个地基方法在这个平面上的位置(综述 §2.3;公式细节回 01,这里只放坐标):
 
@@ -107,11 +107,11 @@ GxPO 综述把 GKD 的 forward KL 写成 $\mathbb{E}_{y\sim\pi_T}[\cdots]$,那�
 
 | 格子 | 教师看得见什么 | 本库放谁 | 不是谁 |
 |------|----------------|----------|--------|
-| **白盒** | 学生前缀上的全词表 logits / 隐状态 | **[01](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md)**:外部强教师(Qwen3 Strong-to-Weak 的 32B / 235B-A22B 压 8B 是这一格的工业例).跨词表要对齐(综述 DSKD / ULD / SimCT),01 不覆盖 | 不是 02 的开卷 $y^\star$,不是 04 的编译器文本 |
+| **白盒** | 学生前缀上的全词表 logits / 隐状态 | **[01](../../01-OPD基础原理/01-OPD基础原理.md)**:外部强教师(Qwen3 Strong-to-Weak 的 32B / 235B-A22B 压 8B 是这一格的工业例).跨词表要对齐(综述 DSKD / ULD / SimCT),01 不覆盖 | 不是 02 的开卷 $y^\star$,不是 04 的编译器文本 |
 | **黑盒** | API 文本,口头评分,成对排序,rubric | 综述 Lion / GAD / OVD / ROPD.成对偏好是 OPD 的降级接口 | 不是 DPO 本体;DPO 优化偏好对,不必在学生前缀上查教师 logits.见 01 |
-| **Teacher-free** | 同一套 $\theta$,条件不对称 | **[02-OPSD](../../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md)**:教师多看参考解 $y^\star$,学生闭卷采样,**需要 $y^\star$**.**[04-SDPO](../../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md)**:教师多看环境 rich feedback(堆栈,失败单测,同组成功解),对已生成 $y$ 重算 log-prob | 02 不是「全靠自己探索,没有满分答案」--没有 $y^\star$ 时教师退化成学生,散度为 0.04 不是 02 的 golden,也不是把 reverse KL 塞进 DPO |
+| **Teacher-free** | 同一套 $\theta$,条件不对称 | **[02-OPSD](../../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md)**:教师多看参考解 $y^\star$,学生闭卷采样,**需要 $y^\star$**.**[04-SDPO](../../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)**:教师多看环境 rich feedback(堆栈,失败单测,同组成功解),对已生成 $y$ 重算 log-prob | 02 不是「全靠自己探索,没有满分答案」--没有 $y^\star$ 时教师退化成学生,散度为 0.04 不是 02 的 golden,也不是把 reverse KL 塞进 DPO |
 
-[03-SDFT](../../03-SDFT-示范持续学习/03-SDFT-示范持续学习.md) 与 02 同属特权上下文自教师:教师多看示范 $d$,学生仍 $\pi_\theta(\cdot \mid x)$.持续学习那张表(70.6 / 65.4 = Table 5 单任务 Tool Use)在 03.[06-SCOPE](../../06-SCOPE-置信度门控/06-SCOPE-置信度门控.md) 是轴 3:信号进损失前的门控,不改 OPD 目标.
+[03-SDFT](../../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md) 与 02 同属特权上下文自教师:教师多看示范 $d$,学生仍 $\pi_\theta(\cdot \mid x)$.持续学习那张表(70.6 / 65.4 = Table 5 单任务 Tool Use)在 03.[06-SCOPE](../../06-SCOPE-置信度门控/06-SCOPE-置信度门控.md) 是轴 3:信号进损失前的门控,不改 OPD 目标.
 
 白盒还有一条工程分叉,和 09/10 对得上:许多 RL 栈把每步 KL 收成**已采样那个** $y_t$ 上的 $\log\pi_\theta-\log\pi_T$ 当优势;V4 写这条方差大,改**全词表** reverse KL,并缓存教师 hidden,训练时过 lm_head 还原 logits.K3 / MiMo 仍走采样 token 上的 clip 对数比,官方名还叫 MOPD.捆法与超参在 [09](../../09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md) / [10](../../10-OPD-各家报告对照/10-OPD-各家报告对照.md).
 
@@ -125,7 +125,7 @@ Shen et al. *[A Survey of LLM Policy Optimization from First Principles](https:/
 
 **GRPO-OPD hybrid** 被留在 policy-gradient 框内:主目标仍是 $J(\theta)$,教师以稠密 $\tilde r_t$(常见 $\log\pi_T(y_t)/\pi_\theta(y_t)$)进入 GRPO 的重要性比,优势,期望内蒸馏或 KL 正则.这不是「OPD = GRPO」.MiniLLM / GKD 优化的是散度;GRPO 优化的是组相对标量奖励.hybrid 问的是:旁边已经有教师和验证器时,教师信号怎么进 GRPO,而不是把 GRPO 改名.
 
-[04-SDPO](../../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md) 换的是 **GRPO 的 token 级优势**:环境 $f$ 条件化同一套权重当自教师,KL(学生 $\parallel$ stopgrad(教师)),命题把梯度写成词表上的 $A_{i,t}$.它更靠近 hybrid(教师信号当 $A$),而不是 MiniLLM 的序列级 reverse KL + REINFORCE.LCBv6 / Qwen3-8B 的 **48.8 vs GRPO 41.2** 在 04 的表里.SDPO 没有证明「OPD 就是 GRPO」,也没有把 OPD 写成 DPO 变体--04 没有偏好对.
+[04-SDPO](../../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 换的是 **GRPO 的 token 级优势**:环境 $f$ 条件化同一套权重当自教师,KL(学生 $\parallel$ stopgrad(教师)),命题把梯度写成词表上的 $A_{i,t}$.它更靠近 hybrid(教师信号当 $A$),而不是 MiniLLM 的序列级 reverse KL + REINFORCE.LCBv6 / Qwen3-8B 的 **48.8 vs GRPO 41.2** 在 04 的表里.SDPO 没有证明「OPD 就是 GRPO」,也没有把 OPD 写成 DPO 变体--04 没有偏好对.
 
 一张对照就够:
 
@@ -174,6 +174,6 @@ Table 21 的分母已经钉在 01 / 10,这里只复述格子,避免口口相传�
 4. Wang et al. *Demystifying On-Policy Distillation*([arXiv:2607.13399](https://arxiv.org/html/2607.13399)).探索催化剂;mismatch;长度作弊.见 07.
 5. Fu et al. *Revisiting On-Policy Distillation*([arXiv:2603.25562](https://arxiv.org/html/2603.25562)).sampled-token 三病;top-$K$ 局部支撑.见 07.
 6. Shen et al. GxPO 综述([arXiv:2606.16733](https://arxiv.org/html/2606.16733)).纯散度 OPD 退出 $J(\theta)$;GRPO-OPD hybrid 留在 PG 框.
-7. Yang et al. *Qwen3 Technical Report*([arXiv:2505.09388](https://arxiv.org/abs/2505.09388))Table 21.分母以 [01](../../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) / [10](../../10-OPD-各家报告对照/10-OPD-各家报告对照.md) 为准.
+7. Yang et al. *Qwen3 Technical Report*([arXiv:2505.09388](https://arxiv.org/abs/2505.09388))Table 21.分母以 [01](../../01-OPD基础原理/01-OPD基础原理.md) / [10](../../10-OPD-各家报告对照/10-OPD-各家报告对照.md) 为准.
 
 图 1,图 2 是机制示意,格子里没有准确率.

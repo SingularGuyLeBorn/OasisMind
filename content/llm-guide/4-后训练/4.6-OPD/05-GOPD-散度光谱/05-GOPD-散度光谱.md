@@ -1,1064 +1,332 @@
 ---
-title: "05 · G-OPD:散度光谱"
+title: "05 · G-OPD: 散度光谱"
 published: true
-tags: ["OPD", "G-OPD", "f-Divergence", "Reverse KL", "广义散度", "后训练"]
-excerpt: "在OPD算法家族的演进谱系中,我们已经系统性地走过了基础OPD(Reverse KL驱动的在线策略蒸馏),OPSD(在线自蒸馏,用同一模型的不同上下文消解外部教师依赖),SDFT(自蒸馏持续学习,解决灾难性遗忘)以及SDPO(自蒸馏策略优化,将OPD与DPO在数学上统一). 这些算法各自解决了基础O…"
+tags: ["OPD", "G-OPD", "ExOPD", "Reward Extrapolation", "f-Divergence", "Reverse KL", "后训练"]
+excerpt: "G-OPD 把 OPD 改写成奖励与 KL 正则权重相等的稠密 KL 约束 RL, 再引入奖励缩放系数 λ 和可选参考模型. λ=1.25 的 ExOPD 在 Qwen3-4B 多教师合并中让学生在全部 7 个基准上超过两个领域教师."
 ---
-# 05 · G-OPD:散度光谱
+# 05 · G-OPD: 散度光谱
 
-## 1. 背景与核心痛点 (Background & Pain Points)
+## 太长不看版
 
-### 1.1 家谱定位:从固定公式到统一框架的跃迁
+- **出处**: Yang, Liu, Xie, Yang, Yang, Lin. *Learning beyond Teacher: Generalized On-Policy Distillation with Reward Extrapolation*, arXiv 2602.12125 (人大高瓴人工智能学院, 腾讯大模型部门). 代码 github.com/RUCBM/G-OPD.
+- **理论**: 引入一个任意的参考模型 $\pi_{\mathrm{ref}}$ 后, OPD 的目标可以改写成 KL 约束 RL: 奖励是 token 级隐式奖励 $\log(\pi^*/\pi_{\mathrm{ref}})$, KL 正则加在学生与 $\pi_{\mathrm{ref}}$ 之间, 两项权重固定为 1:1, 见式 (5).
+- **方法**: G-OPD 在奖励项前加系数 $\lambda$, 见式 (7). 最优解的对数概率是教师与参考模型的线性组合 $\lambda\log\pi^*+(1-\lambda)\log\pi_{\mathrm{ref}}$. $0<\lambda<1$ 是奖励内插, 学生落在参考模型与教师之间; $\lambda>1$ 是奖励外推, 称为 ExOPD. 强到弱蒸馏中把参考模型换成教师 RL 之前的版本, 称为奖励校正.
+- **结果**: Qwen3-4B-Non-Thinking 上, 把数学与代码两个 RL 教师合并回学生, ExOPD ($\lambda=1.25$) 在 4 个数学基准和 3 个代码基准上都超过对应的领域教师, 数学平均 47.7 对教师 46.0, 代码平均 62.0 对 61.2. 以 Qwen3-30B-A3B-Instruct-2507 为教师蒸馏 Qwen3-4B, 数学平均从 OPD 的 42.6 提到 45.3.
+- **局限**: $\lambda=1.5$ 时出现不稳定, 成绩下降; ExOPD 的回答更长; $\lambda\neq1$ 要多算一次参考模型的对数概率; 奖励校正需要拿到教师 RL 之前的模型.
+- **标题里的 「光谱」**: 本篇有两条轴. 一条是 G-OPD 的 $\lambda$ 轴, 从参考模型 ($\lambda=0$) 经教师 ($\lambda=1$) 延伸到教师之外; 另一条是 f-散度族里蒸馏损失的选择, 属于 GKD 与 f-distill 等前人工作, 第 11 节单独交代.
 
-在OPD算法家族的演进谱系中,我们已经系统性地走过了基础OPD(Reverse KL驱动的在线策略蒸馏),OPSD(在线自蒸馏,用同一模型的不同上下文消解外部教师依赖),SDFT(自蒸馏持续学习,解决灾难性遗忘)以及SDPO(自蒸馏策略优化,将OPD与DPO在数学上统一). 这些算法各自解决了基础OPD在不同工程维度上的局限,但它们共享一个更深层的理论预设:蒸馏的目标函数是固定的,不可调节的.
+## 1. 三种训练目标
 
-基础OPD的核心公式建立在这样一个优化动机之上:迫使学生策略 $\pi_\theta$ 在自己生成的轨迹分布上,与教师策略 $\pi_T$ 尽可能对齐. 该目标函数将 Reverse KL 散度在策略 rollout 上取期望,同时惩罚了学生在每个状态下的分布偏离:
+记输入分布为 $D$, 学生为 $\pi_\theta$, 教师为 $\pi^*$. 知识蒸馏的一般形式是在教师生成的轨迹上最小化前向 KL:
 
 $$
-\mathcal{L}_{OPD} = \mathbb{E}_{s_t \sim \pi_\theta} \left[ D_{KL}\big(\pi_\theta(\cdot|s_t) \,\big\|\, \pi_T(\cdot|s_t)\big) \right] \tag{1}
+\mathcal{J}_{\mathrm{KD}}(\theta)=\min_\theta\ \mathbb{E}_{x\sim D,\,y\sim\pi^*(\cdot\mid x)}\bigl[\mathrm{KL}(\pi^*(y\mid x)\,\|\,\pi_\theta(y\mid x))\bigr]. \tag{1}
 $$
 
-这个公式在后训练领域掀起了一场算力经济学革命. Qwen3 的技术报告以无可辩驳的数据证明,OPD 用大约 RL 十分之一的 GPU 小时,实现了超越 RL 的精度上限. 然而,当我们把视野从"单一模型,单一任务,单一教师"的实验室环境,扩展到2025-2026年工业界真正的后训练战场时,这个公式的理论边界开始像冰山一样浮出水面.
+拿到教师完整分布代价高, 实践中常退化为在教师轨迹上做 SFT. 它是 off-policy 的: 学生模仿教师的行为, 而没有从自己动作引出的奖励中学习.
 
-**前车之鉴**:基础OPD解决了 Exposure Bias 和 Sparse Reward 两大顽疾,但它的理论内核仍然是**单一固定教师**,**单一Reverse KL散度**,**固定1:1蒸馏-奖励权重**的三位一体. 在真实的生产 pipeline 中,我们面对的往往不是一个静止的,孤立的概率分布 $\pi_T$,而是一个更复杂的动力学系统. DeepSeek-V4 的后训练 pipeline 中,数学,代码,agent,指令遵循四个领域分别训练了专家模型,最终需要将所有专家的能力无损融合回一个统一的通用模型. 基础OPD只能对齐单个教师,面对多个教师时梯度信号会相互冲突. 在 RLHF 流程中,Reward Model 提供的不是固定的概率分布,而是随学生策略演化而动态变化的标量反馈. 基础OPD的公式对此束手无策.
+KL 约束的 on-policy RL 目标为
 
-**核心动机**:本文把两项扩展分开处理:一是用教师先验与reward构造增强目标 $q_\lambda$;二是把固定 Reverse KL 推广为可选 f-散度.$\lambda$ 控制增强目标的温度,较小值使目标更尖锐,较大值使目标更平坦.这套构造本身不建立 OPD、OPSD、SDFT、SDPO 的演进谱系,也不单凭 $\lambda\to\infty$ 推出纯RL.
-
-### 1.2 基础OPD的Reverse KL三大局限:为什么必须走向"广义"
-
-为了深刻理解G-OPD的必要性,我们必须先回到基础OPD的数学内核,逐层剥开它的假设边界,看清每一个假设在何种现实约束下必然失效.
-
-为了逐层剥开基础OPD的假设边界,我们先将目标函数重新写出,并关注每一个符号背后的隐含约束:
-
-$$
-\mathcal{L}_{OPD} = \mathbb{E}_{s_t \sim \pi_\theta} \left[ D_{KL}\big(\pi_\theta(\cdot|s_t) \,\big\|\, \pi_T(\cdot|s_t)\big) \right] \tag{2}
-$$
-
-其中 $D_{KL}(P \| Q) = \sum_x P(x) \log \frac{P(x)}{Q(x)}$ 是学生分布 $P$ 相对于教师分布 $Q$ 的 Reverse KL. 这个公式表面上只有一个期望和一个散度,但它隐含了三个**未言明的强假设**. 正是这三个假设,构成了基础OPD无法逾越的理论围墙.
-
-#### 局限 a) 强教师依赖:必须有一个显式教师模型
-
-**假设一:教师的分布是静态且唯一的.** $\pi_T$ 在整个训练过程中不发生任何变化,且只有一个教师. 这对应着工程上的理想情境:我们有一个预先训练好的,比学生强大得多的模型,可以一直放在显存里提供 logits.
-
-但在实际生产中,"教师"的定义远比这复杂. 在 DeepSeek-V4 的多领域融合 pipeline 中,"教师"不是一个模型,而是四个领域专家模型的集合--数学专家,代码专家,指令遵循专家,工具使用专家. 当学生模型在自己的 rollout 上生成一个token时,四个专家可能给出截然不同的分布信号. 数学专家可能强烈偏好 "$=$" 符号,而代码专家可能偏好 "==". 基础OPD没有数学机制来协调这种冲突,因为公式中只有一个 $\pi_T$.
-
-更严重的问题出现在**自蒸馏**场景中. OPSD 已经证明,模型可以通过"更深思熟虑的上下文"来充当自己的教师. 但在这个情境下,教师 $\pi_T$ 并不是静态的--它随着学生模型参数的更新而不断演化. 基础OPD的公式假设 $\pi_T$ 固定,这意味着它无法刻画"教师自身也在学习"这一动态过程.
-
-#### 局限 b) 固定散度方向:KL只是f-散度族的特例
-
-**假设二:散度度量被硬编码为Reverse KL.** Reverse KL的Mode-seeking特性固然解决了Forward KL的幻觉问题,但它同时带来了自身的病理行为.
-
-当教师的分布在某个状态极度平坦(High Entropy,即没有一个选项具有明显统治力,所有token概率都在5%左右)时,Reverse KL的Mode-seeking特性会导致灾难. 学生会"强行捏造"一个极端的概率尖峰(比如 $P_\theta(A)=99\%$),因为这样能让Reverse KL Loss变得极小--只要教师的support覆盖了A(即 $\pi_T(A) > 0$),无论 $\pi_T(A)$ 是5%还是50%,学生把全部概率放在A上都会让 $\sum_a \pi_\theta(a) \log \frac{\pi_\theta(a)}{\pi_T(a)}$ 中的权重项 $\pi_\theta(A)=1$ 消去了对 $\pi_T(A)$ 的敏感依赖,只剩下 $\log \frac{1}{\pi_T(A)}$. 如果 $\pi_T(A)$ 很小,这个值很大,但如果存在某个B使得 $\pi_T(B)$ 也很小,学生完全可以忽略B(因为 $\pi_\theta(B)=0$ 时该项权重为零). 这种"选择性失明"是Reverse KL的结构性缺陷.
-
-如果我们能灵活地选择散度类型--例如Jensen-Shannon散度(JS Divergence),它在 $P$ 和 $Q$ 的支撑集不交时不会像KL那样爆炸; 或者Total Variation Distance,它对分布差异的惩罚是线性的,提供了更强的数值稳定性--就可以在不同的训练阶段使用不同的"距离尺子"来度量师生差异,从而规避单一散度的病态区域.
-
-#### 局限 c) 无法超越:Mode-seeking特性将学生限制在教师的support内
-
-**假设三:KL正则项与奖励项的权重被锁定为1:1.** 这是G-OPD理论揭示的一个关键洞察. 基础OPD本质上是"密集KL约束强化学习"的一个特例,其中**奖励函数(即教师相对于学生的对数概率优势)与KL正则化的权重严格相等**. 这意味着我们没有任何旋钮来调节"多相信教师一点"还是"多保持自身特性一点".
-
-在强化学习中,这个权重通常由 $\beta$ 参数控制--你可以自由调节"多相信奖励信号"vs"多保持靠近参考模型". 但在基础OPD中,它被固定了. 后果是残酷的:学生再强也只能逼近教师,永远不可能在教师的support之外发现新的,更优的策略区域. 当经过多轮自蒸馏或领域融合后的模型在某些子任务上**超越任何单一教师**时,基础OPD的公式无法解释这一现象,更无法主动引导它.
-
-**这三个假设的叠加,使得基础OPD在以下场景中必然失效或表现次优:**
-
-1. **多教师知识融合**:当多个领域专家的 logits 在某个token位置上给出冲突信号时,基础OPD没有数学机制来协调冲突.
-2. **从弱到强的反向蒸馏**:在某些边缘设备部署场景中,我们需要把经过RL优化的7B模型蒸馏到1.5B模型. 基础OPD只能让小模型模仿大模型,而无法让小模型在模仿的同时"选择性放大"高置信度模式.
-3. **预算可控推理**:在某些低延迟场景中,我们希望模型的行为介于基础模型和完全蒸馏模型之间. 基础OPD无法做这种"程度调节".
-
-**核心问题的提出**:如果把OPD看作一个优化问题,它的"目标函数"是否可以更一般化?我们是否可以用任意f-散度替代KL?我们是否可以将外部reward信号注入教师分布?我们是否可以用一个连续的参数 $\lambda$ 来调节"模仿"与"探索"之间的权衡?
-
-本文直接讨论的推广是reward增强目标、f-散度选择与目标温度;多教师冲突处理还需要额外的混合权重或路由机制,不能由这三项自动推出.
-
-## 2. 为什么重要 (Significance)
-
-### 2.1 G-OPD:连接蒸馏与RL的数学桥梁
-
-G-OPD之所以在2025-2026年的后训练领域占据核心地位,是因为它第一次从数学上**统一了知识蒸馏和强化学习**这两个长期平行发展的技术路线.
-
-在传统认知中,Knowledge Distillation(KD)和 Reinforcement Learning(RL)是两个完全不同的范式:
-
-- KD 关注的是分布匹配(Distribution Matching),损失函数是散度,教师提供的是密集的概率分布信号.
-- RL 关注的是奖励最大化(Reward Maximization),损失函数是带KL约束的策略梯度,Reward Model 提供的是稀疏的标量反馈.
-
-这两个范式的数学语言完全不同:KD 说"让我和你的分布尽可能接近"; RL 说"让我获得尽可能高的奖励,但不要偏离参考模型太远". G-OPD的理论推导揭示了一个令人震惊的事实:**这两种语言实际上是同一门语言的两种方言**. 基础OPD本身就是RLHF的一个特例--具体来说,它是"密集KL约束强化学习"在奖励函数 $r_t = \log \pi_T(a_t|s_t) - \log \pi_{ref}(a_t|s_t)$ 且KL权重 $\beta = 1$ 时的特例.
-
-G-OPD通过引入f-散度和$\lambda$参数,把这个离散的两个点扩展成了一条**连续的光谱**. 在这条光谱上:
-
-- 左端($\lambda \to 0$)是极端保守的蒸馏,学生几乎不偏离教师;
-- 中间($\lambda = 1$)是标准OPD,学生在教师的support内精准模仿;
-- 右端($\lambda \to \infty$)是纯强化学习,学生只追求reward最大化,教师信号退化为背景约束.
-
-这种统一不仅是理论上的美感--它直接带来了工程上的巨大便利. 在真实的后训练 pipeline 中,你不再需要为"蒸馏阶段"和"RL阶段"编写两套完全不同的代码. G-OPD提供了一个单一的,参数化的训练框架,只需调节 $\lambda$ 和 $f$ 的选择,就可以在同一个循环中实现从保守蒸馏到激进探索的连续过渡.
-
-### 2.2 2025-2026年后训练pipeline的标准组件
-
-G-OPD及其变体已经被多家头部机构的实验报告验证为后训练的核心组件:
-
-**Qwen3 系列(Alibaba, 2025)** :Qwen3-8B 的后训练pipeline中,研究人员对比了三种后训练策略. OPD 用约 RL **十分之一** 的算力,实现了全面超越 RL 的精度. 而 G-OPD 的 ExOPD 变体($\lambda=1.25$)在后续的消融实验中进一步将这一上限推高,证明了**奖励外推可以让学生超越教师的性能边界**.
-
-**DeepSeek-V4(DeepSeek-AI, 2026)** :在 V4 的技术报告中,研究团队披露了一个革命性的 pipeline 变更--V3/R1 时代用于合并多领域能力的统一混合RL阶段,在 V4 中被完全替换为**多教师OPD(Multi-Teacher OPD)** . 数学,代码,agent,指令遵循四个领域分别训练了专家模型,然后一个统一的学生模型在自己的 rollout 上优化 Reverse KL,对齐专家集合的分布. 当引入G-OPD的$\lambda$外推机制后,融合模型的多领域综合评分首次超越了任何一个单一领域专家.
-
-**Nemotron Cascade 2(NVIDIA, 2026)** :在RL阶段之间插入"Multi-Domain On-Policy Distillation",其技术文档明确提到,通过调节"reward extrapolation coefficient"(即$\lambda$)来控制学生模型在推理时的响应长度和精度之间的 trade-off.
-
-### 2.3 理论意义:统一了看似无关的两个范式
-
-除了工程上的突破,G-OPD在理论层面完成了以下三重统一:
-
-1. **统一了蒸馏与强化学习**:证明OPD是KL约束RL的特例,G-OPD是这个光谱的完整展开.
-2. **统一了Forward KL与Reverse KL的争论**:f-Divergence框架告诉我们,KL只是f函数取 $f(u) = u \log u$ 或 $f(u) = -\log u$ 时的特例. G-OPD允许我们通过选择不同的生成函数 $f$ 来在Mode-seeking和Mass-covering之间做连续调节.
-3. **统一了插值与外推**:$\lambda$坐标系使得"保守学习"($\lambda < 1$),"精准模仿"($\lambda = 1$),"超越教师"($\lambda > 1$)三种看似矛盾的目标,成为同一数学公式的不同参数取值.
-
-## 3. 直觉类比 (Intuition)
-
-### 3.1 基础OPD = 固定教练在副驾驶指导
-
-基础OPD的"驾校学车"类比(详见01-OPD-学生前缀蒸馏)已经非常直观:**学生自己握着方向盘在赛道上开,教练坐在副驾驶上对每个动作给出密集指导**. 但这个类比有一个隐含前提--教练是固定的,全知的,且他的意见是唯一权威的.
-
-想象你正在学习驾驶一辆高度自动化的赛车. 在基础OPD的世界里,你旁边坐着一位经验丰富的退休赛车手(固定教师 $\pi_T$). 你每踩一脚油门,他就根据他那个年代的经验告诉你"这样对"或"这样错". 他的建议非常宝贵,但也有局限:他只熟悉一条赛道,对最新的实时路况一无所知. 更严重的是,他的建议有一个奇怪的"全有或全无"属性--要么你完全按他说的做(Mode-seeking),要么你们之间的"分歧度"就会爆炸(Reverse KL在偏离时的惩罚增长是非线性的). 他无法教你任何超出他经验范围的新技巧,因为Reverse KL的Mode-seeking特性把你的学习空间严格限制在了他的"support"之内.
-
-### 3.2 G-OPD = 智能导航系统
-
-在G-OPD的世界里,你的驾驶舱变成了一个**多源信息融合的智能指挥系统**. 这不是简单的升级,而是根本性的范式转换:
-
-**实时路况雷达(Reward Model)** :系统不断地将当前道路的交通密度,天气状况,路面摩擦系数转换成一个实时的"路况评分" $R(a,s)$. 这不是一个固定的地图,而是随着你的驾驶行为不断变化的动态信号. 当你选择以60km/h的速度过弯时,雷达立即反馈"当前路面湿滑,这个速度的风险评分为 +0.3(相对于安全速度)". 这个信号不是来自任何一位教练,而是来自环境本身--它是你探索新策略的实时指南针.
-
-**可调节的激进程度($\lambda$参数)** :这是G-OPD的灵魂. 导航系统的"风险偏好"可以通过一个旋钮 $\lambda$ 来连续调节:
-
-- **$\lambda < 1$** :教师先验与reward的联合差异被放大,增强目标更尖锐;这不是跨任务通用的“安全模式”,需要监控support、熵与梯度.
-- **$\lambda = 1$** :增强目标是 $\pi_T(a|s)\exp(R(a,s))$ 的归一化结果.只有 $R=0$ 时才还原原教师,不能把有reward的情况直接称为基础OPD.
-- **$\lambda > 1$** :教师先验与reward差异同时被压缩,增强目标更平坦.这可能给学生更多自由度,但并不自动保证奖励外推或超越教师.
-- **$\lambda \to \infty$** :在有限词表、教师全支撑且reward固定有界时,增强目标趋于均匀.这不是纯RL;纯RL还需另设显式reward目标与权重调度.
-
-### 3.3 为什么$\lambda$坐标系是"连续相变"而非"离散开关"
-
-关键点是:$\lambda$不是离散模式开关,而是增强目标的连续温度参数.改变 $\lambda$ 会连续改变 $q_\lambda$ 的尖锐度;但学生训练是否更稳定、是否获得任务收益,仍要通过消融与验证曲线判断,不能从温度公式直接推出固定调度配方.
-
-## 4. 数学推导与公式对比 (Mathematical Rigor)
-
->  **前置约定**:本节中出现的符号体系与01-OPD-学生前缀蒸馏,02-OPSD-参考解自蒸馏保持一致.
->
-> - $\pi_\theta(a|s)$:学生策略(当前待优化的模型).
-> - $\pi_T(a|s)$:教师策略(外部强模型,领域专家,或经过特权上下文增强的自身).
-> - $\pi_{ref}(a|s)$:参考策略(Reference Model),通常为学生的初始Checkpoint.
-> - $R(a,s)$:外部奖励函数(Reward Model 输出,规则评分,或任务特定收益).
-> - $s_t$:第 $t$ 步的状态(前缀/上下文),由prompt + 已生成的token序列构成.
-> - $\mathcal{V}$:词表(Vocabulary).
-
-### 4.1 f-散度族(f-Divergence):从特例到统一框架
-
-基础OPD被锁死在Reverse KL上,而Reverse KL只是**f-散度(f-Divergence)** 家族中的一个具体成员. 为了打破这一锁定,我们需要上升到f-散度的统一框架,看清KL散度在整个"距离几何"中的位置.
-
-#### 4.1.1 f-散度的定义与生成函数的物理意义
-
-f-散度由Csiszár(1967)提出,是概率分布之间"差异"的一种广义度量. 给定两个定义在同一可测空间上的概率分布 $P$ 和 $Q$,以及一个**凸的生成函数(Generator Function)** $f: (0, \infty) \to \mathbb{R}$,满足 $f(1) = 0$ 和 $f$ 的凸性,为了统一度量两个概率分布之间的偏离,f-散度以基准分布 $Q$ 的密度为权重,对概率比 $P/Q$ 施加凸惩罚 $f$. 离散动作空间下的形式为:
-
-$$
-D_f(P \| Q) = \sum_{x} Q(x) \cdot f\left( \frac{P(x)}{Q(x)} \right) \tag{3}
-$$
-
-当策略作用于连续空间(如实值控制或高维嵌入)时,求和退化为积分,但核心逻辑不变--仍以 $Q$ 的局部密度为权重对逐点偏离进行累积:
-
-$$
-D_f(P \| Q) = \int q(x) \cdot f\left( \frac{p(x)}{q(x)} \right) dx \tag{4}
-$$
-
-如式 (3) 和式 (4) 所示,f-散度以基准分布 $Q$ 的视角审视差异:它以基准分布 $Q$ 的视角来审视差异--$Q(x)$ 作为权重因子,决定了各个位置对总散度的贡献份额,基准概率越高的区域越受关注. 被加权的是概率比 $P(x)/Q(x)$,它度量了 $P$ 相对于 $Q$ 在点 $x$ 上的相对密度:比值大于1表示 $P$ 比 $Q$ 更"看好"该区域,小于1则表示相对看衰. 而真正决定惩罚形态的,是生成函数 $f(u)$ 的选择--同一个概率比,在不同的 $f$ 下可能遭受截然不同的惩罚强度,f-散度家族的丰富性正完全来源于此. 为了让这个度量具备"距离"的基本品质,生成函数 $f$ 必须满足两个数学约束:首先是 $f(1) = 0$,这确保了当两个分布完全重合时散度为零,即"没有差异就是零差异"; 其次是 $f$ 的凸性,结合Jensen不等式可严格证明 $D_f(P \| Q) \ge 0$ 恒成立,且等号当且仅当 $P = Q$ 时取得--这正是散度作为非负差异度量的公理化基础.
-
-#### 4.1.2 证明KL是f-散度的特例
-
-KL散度有两个版本:Forward KL 和 Reverse KL. 它们都是f-散度的特例,只是选择了不同的生成函数 $f$.
-
-**Forward KL(基础SFT蒸馏)** :
-
-取生成函数 $f(u) = u \log u$. 让我们验证它满足f-散度的条件:
-
-- $f(1) = 1 \cdot \log 1 = 0$ ✓
-- $f''(u) = \frac{1}{u} > 0$ 对 $u > 0$,所以 $f$ 是严格凸的 ✓
-
-代入f-散度的定义:
-
-$$
-D_f(P \| Q) = \sum_x Q(x) \cdot \frac{P(x)}{Q(x)} \log \frac{P(x)}{Q(x)} = \sum_x P(x) \log \frac{P(x)}{Q(x)} = D_{KL}(P \| Q) \tag{5}
-$$
-
-这正是Forward KL. 它的物理意义是"以 $P$ 的视角看差异"--在 $P$ 概率高的区域,即使 $Q$ 稍有偏差,也会被强烈惩罚. 这导致了 **Mass-covering(质量覆盖)** 行为:学生被迫学会教师所有的概率质量分布,包括长尾区域.
-
-**Reverse KL(基础OPD)** :
-
-取生成函数 $f(u) = -\log u$. 验证:
-
-- $f(1) = -\log 1 = 0$ ✓
-- $f''(u) = \frac{1}{u^2} > 0$,严格凸 ✓
-
-基于上述分析,建立如下数学关系:
-
-$$
-D_f(P \| Q) = \sum_x Q(x) \cdot \left( -\log \frac{P(x)}{Q(x)} \right) = \sum_x Q(x) \log \frac{Q(x)}{P(x)} = D_{KL}(Q \| P) \tag{6}
-$$
-
-当 $P = \pi_T$(教师),$Q = \pi_\theta$(学生)时,这就是Reverse KL $D_{KL}(\pi_\theta \| \pi_T)$. 它的物理意义是"以 $Q$(学生)的视角看差异"--在学生自己概率高的区域,如果教师不给支持,惩罚会很重; 但在学生概率低的区域,无论教师多么支持,惩罚都几乎为零. 这导致了 **Mode-seeking(寻模态)** 行为:学生只挑自己最擅长,且老师也认可的方向去贴近.
-
-**关键洞察**:Forward KL 和 Reverse KL 不是两个独立的"距离",而是**同一个数学家族中两个对称的成员**. 它们的差异完全来自于生成函数 $f$ 的选择,而 $f$ 的选择决定了"谁的视角更重要".
-
-#### 4.1.3 其他重要散度及其物理意义
-
-f-散度家族远不止KL. 以下是几个在大模型蒸馏和后训练领域具有重要工程价值的成员:
-
-**Jensen-Shannon散度(JS Divergence)** :
-
-取生成函数:
-
-$$
-f(u) = \frac{1}{2}\left[u \log u - (u + 1) \log \frac{u + 1}{2}\right] \tag{7}
-$$
-
-JS散度对应的距离是**对称的**:$D_{JS}(P \| Q) = D_{JS}(Q \| P)$,且上界为 $\log 2$. 它在GAN的训练中被广泛使用,因为它在 $P$ 和 $Q$ 的支撑集不交时不会像KL那样爆炸(KL会趋向 $+\infty$). 在蒸馏中,JS散度提供了一种介于Forward和Reverse KL之间的平衡行为--它既不像Forward KL那样强迫学生覆盖所有长尾,也不像Reverse KL那样完全忽略教师的高概率但学生未采样的区域.
-
-**$\chi^2$散度(Chi-Square Divergence)** :
-
-取生成函数:
-
-$$
-f(u) = (u - 1)^2 \tag{8}
-$$
-
-该生成函数对概率比偏离 1 的程度施加二次惩罚,对应的散度为:
-
-$$
-D_{\chi^2}(P \| Q) = \sum_x Q(x) \left( \frac{P(x)}{Q(x)} - 1 \right)^2 = \sum_x \frac{(P(x) - Q(x))^2}{Q(x)} \tag{9}
-$$
-
-$\chi^2$散度对概率比的惩罚是**二次的**. 当 $P(x) \gg Q(x)$ 时,$\chi^2$的惩罚比KL更温和(二次 vs 对数线性); 但当 $P(x) \ll Q(x)$ 且 $Q(x)$ 很小时,分母 $Q(x)$ 会让惩罚爆炸. 在蒸馏中,$\chi^2$提供了比KL更"柔和"的尾部惩罚,但在极端不匹配区域仍保持敏感性.
-
-**Total Variation Distance(总变差距离)** :
-
-取生成函数:
-
-$$
-f(u) = \frac{1}{2} |u - 1| \tag{10}
-$$
-
-该生成函数对概率比偏离 1 的程度施加线性惩罚,对应的散度为:
-
-$$
-D_{TV}(P, Q) = \frac{1}{2} \sum_x |P(x) - Q(x)| \tag{11}
-$$
-
-Total Variation 对分布差异的惩罚是**线性的**. 它度量了两个分布在所有点上的"绝对概率质量差异"之和的一半. TV距离的最大值为1(当 $P$ 和 $Q$ 的支撑集完全不交时),最小值为0. 这提供了比KL更强的数值稳定性(不会爆炸),但梯度信号相对粗糙--因为绝对值函数在 $u=1$ 处不可导.
-
-**$\alpha$-散度(Alpha Divergence)** :
-
-取生成函数:
-
-$$
-f(u) = \frac{u^\alpha - \alpha(u - 1) - 1}{\alpha(\alpha - 1)} \quad (\alpha \neq 0, 1) \tag{12}
-$$
-
-$\alpha$-散度是一个参数化家族:
-
-- 当 $\alpha \to 1$ 时,趋近Forward KL;
-- 当 $\alpha \to 0$ 时,趋近Reverse KL;
-- 当 $\alpha = 0.5$ 时,给出Hellinger Distance的平方.
-
-这提供了一个连续的"散度旋钮",可以在Mass-covering和Mode-seeking之间做光滑插值.
-
-#### 4.1.4 物理意义对比表:不同散度对"学生偏离教师"的惩罚形态
-
-| 散度           | 生成函数$f(u)$                                        | 对$P \gg Q$ 的惩罚 | 对$P \ll Q$ 的惩罚 | 主要行为      | 数值稳定性           |
-| -------------- | ------------------------------------------------------- | -------------------- | -------------------- | ------------- | -------------------- |
-| Forward KL     | $u \log u-u+1$                                      | 按 $u\log u$ 增长    | 趋于1                | Mass-covering | 低(支撑集不交时爆炸) |
-| Reverse KL     | $-\log u+u-1$                                       | 渐近线性             | 趋于$+\infty$       | Mode-seeking  | 中(除零风险)         |
-| JS             | $\frac12\left[u\log u-(u+1)\log\frac{u+1}{2}\right]$ | 渐近线性          | 趋于$\frac12\log2$ | 平衡          | 高(散度有界)         |
-| $\chi^2$     | $(u-1)^2$                                             | 二次增长             | 极端(分母小)         | 柔和尾部      | 中                   |
-| TV             | $\frac{1}{2}\|u-1\|$                                  | 线性                 | 线性                 | 鲁棒          | 高(不可导点)         |
-| $\alpha$-Div | $\frac{u^\alpha - \alpha(u-1) - 1}{\alpha(\alpha-1)}$ | 参数化               | 参数化               | 可调          | 参数化               |
-
-**解读**:为避免方向歧义,这里固定 $P$ 为教师、$Q$ 为学生.于是 Forward KL 是 $D_{KL}(P\|Q)$,倾向覆盖教师支持集;Reverse KL 是 $D_{KL}(Q\|P)$,更偏向寻模态.JS 与 TV 是有界散度,但“散度有界”不等于其某个等价生成函数本身有界.此外,给生成函数加上线性项 $c(u-1)$ 不改变 $D_f$,所以这里统一使用在 $u=1$ 取最小值0的居中等价形式.
-
-### 4.2 G-OPD的广义目标函数:从固定教师到动态增强教师
-
-现在我们进入G-OPD的核心推导. 基础OPD之所以被锁定在1:1权重和单一散度上,是因为它的目标函数本质上是从一个简化的Reverse KL出发的. G-OPD的突破口是:**不再把目标看作固定的教师分布 $\pi_T$,而是把目标重新定义为融合了外部reward信号的增强教师 $\pi_T^{(\lambda)}$,并将散度度量推广到任意的f-散度. **
-
-#### 4.2.1 增强教师 $\pi_T^{(\lambda)}$ 的构造:Reward Shaping的数学本质
-
-在G-OPD框架中,教师不再是静止的 $\pi_T$,而是一个**动态的,由$\lambda$参数化的增强分布** $\pi_T^{(\lambda)}$. 它的定义是:
-
-$$
-\pi_T^{(\lambda)}(a|s) = \frac{1}{Z(s)} \cdot \pi_T(a|s)^{1/\lambda} \cdot \exp\left(\frac{R(a,s)}{\lambda}\right) \tag{13}
-$$
-
-其中 $Z(s)$ 是归一化常数(partition function),它将教师先验与 reward 信号的联合"能量"重新缩放为合法概率分布:
-
-$$
-Z(s) = \sum_{a \in \mathcal{V}} \pi_T(a|s)^{1/\lambda} \cdot \exp\left(\frac{R(a,s)}{\lambda}\right) \tag{14}
-$$
-
-增强教师 $\pi_T^{(\lambda)}$ 的构造融合了教师先验和外部reward信号,并通过 $\lambda$ 统一控制两者的"温度". 具体而言,教师概率经过温度缩放 $\pi_T(a|s)^{1/\lambda}$ 后参与计算:当 $\lambda = 1$ 时教师按原始强度参与; 当 $\lambda < 1$ 时,$1/\lambda > 1$,教师的高概率token被进一步放大,低概率token被进一步压制,教师的"意见"变得极端尖锐; 当 $\lambda > 1$ 时,$1/\lambda < 1$,教师概率被压缩到更接近1的范围内,教师的意见变得温和宽容. 与此同时,奖励信号也以同样的温度进行缩放 $\exp(R(a,s)/\lambda)$:$\lambda$ 越小,微小的reward差异被指数放大; $\lambda$ 越大,reward差异几乎被抹平. 因此 $1/\lambda$ 扮演着逆温度参数的角色--$\lambda$ 越小,增强教师越"有主见"; $\lambda$ 越大,增强教师越"宽容". 从对数空间的视角看,增强教师的定义可以重写为:
-
-$$
-\log \pi_T^{(\lambda)}(a|s) = \frac{1}{\lambda} \log \pi_T(a|s) + \frac{1}{\lambda} R(a,s) - \log Z(s) \tag{15}
-$$
-
-这是对数概率空间中的线性叠加--教师先验和reward信号以 $1/\lambda$ 为权重相加,在概率空间中对应于几何加权平均,天然抑制了低概率噪声. **关键理解**:$\pi_T^{(\lambda)}$ 不是"教师的概率分布",而是"在教师先验的基础上,经过reward信号修正后的后验目标分布",是一个虚拟的,理想的"超级教师"--既有教师的语言先验,又有环境reward的实时反馈.
-
-#### 4.2.2 G-OPD的广义目标函数
-
-基于增强教师,G-OPD的目标函数定义为:
-
-$$
-\mathcal{L}_{G\text{-}OPD} = \mathbb{E}_{s_t \sim \pi_\theta} \left[ D_f\big(\pi_\theta(\cdot|s_t) \,\big\|\, \pi_T^{(\lambda)}(\cdot|s_t)\big) \right] \tag{16}
-$$
-
-**`<u>`高亮差异项:与基础OPD的核心对比`</u>`**
-
-让我们将G-OPD与基础OPD的目标函数并排放置,用**粗体和下划线**标出每一处差异:
-
-|          | 基础OPD                                                                                                                                              | G-OPD                                                                                                                                                                                                   |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 目标函数 | $\mathcal{L}_{OPD} = \mathbb{E}_{s_t \sim \pi_\theta} \left[ D_{KL}\big(\pi_\theta \,\big\|\, \underline{\underline{\mathbf{\pi_T}}}\big) \right]$ | $\mathcal{L}_{G\text{-}OPD} = \mathbb{E}_{s_t \sim \pi_\theta} \left[ \underline{\underline{\mathbf{D_f}}}\big(\pi_\theta \,\big\|\, \underline{\underline{\mathbf{\pi_T^{(\lambda)}}}}\big) \right]$ |
-| 教师分布 | **`<u>`固定教师 $\pi_T$`</u>`**                                                                                                          | **`<u>`动态增强教师 $\pi_T^{(\lambda)} \propto \pi_T^{1/\lambda} \cdot e^{R/\lambda}$`</u>`**                                                                                               |
-| 散度类型 | **`<u>`固定Reverse KL`</u>`**                                                                                                              | **`<u>`可选f-散度 $D_f$(KL/JS/$\chi^2$/TV/$\alpha$-Div)`</u>`**                                                                                                                         |
-| 可调参数 | **`<u>`无(1:1锁定)`</u>`**                                                                                                                 | **`<u>`连续参数 $\lambda \in (0, +\infty)$`</u>`**                                                                                                                                          |
-
-**物理意义的根本性转变**:基础OPD的学生只是在模仿一个静止的教师,而G-OPD的学生在追逐一个由教师先验和实时reward共同决定的移动"北极星",$\lambda$ 精确控制着这两者的相对权重. 与此同时,度量差异的"尺子"也从单一的Reverse KL扩展为整个f-散度族--你可以在训练初期使用JS散度(温和,有界)避免数值爆炸,在后期切换到Reverse KL(尖锐,Mode-seeking)进行精准对齐. 最重要的是,基础OPD中"模仿教师"与"保持自身特性"之间被硬编码为1:1的权衡,在G-OPD中通过 $\lambda$ 变成了连续可调的光谱,从而在同一个损失函数内实现从保守蒸馏到激进探索的无缝过渡.
-
-### 4.3 $\lambda$坐标系的完整推导:从保守正则到纯RL的连续谱
-
-$\lambda$参数是G-OPD的灵魂. 为了彻底理解它的作用,我们需要在不同的$\lambda$取值区间内,严格推导增强教师 $\pi_T^{(\lambda)}$ 的行为,以及学生策略 $\pi_\theta$ 在优化过程中的响应.
-
-#### 4.3.1 $\lambda = 1$:标准蒸馏
-
-当 $\lambda = 1$ 时,增强教师退化为:
-
-$$
-\pi_T^{(1)}(a|s) = \frac{1}{Z(s)} \cdot \pi_T(a|s) \cdot \exp(R(a,s)) \tag{17}
-$$
-
-在标准温度下,教师先验和reward信号以自然强度融合. 如果 $R(a,s)$ 是正值(reward model认为这个动作好),该动作的概率相对于教师先验会被指数放大; 如果 $R(a,s)$ 是负值,概率会被指数压制.
-
-如果进一步假设 $R(a,s) \equiv 0$(即没有外部reward信号,纯蒸馏场景),则:
-
-$$
-\pi_T^{(1)}(a|s) = \frac{1}{Z(s)} \cdot \pi_T(a|s) \tag{18}
-$$
-
-由于 $Z(s) = \sum_a \pi_T(a|s) = 1$,所以 $\pi_T^{(1)} = \pi_T$. 此时G-OPD精确退化为基础OPD:
-
-$$
-\mathcal{L}_{G\text{-}OPD} \big|_{\lambda=1, R=0} = \mathbb{E}_{s_t \sim \pi_\theta} \left[ D_f\big(\pi_\theta \,\big\|\, \pi_T\big) \right] \tag{19}
-$$
-
-如果同时选择 $f(u) = -\log u$(Reverse KL),这就是**完全等价**于基础OPD.
-
-**结论**:$\lambda = 1$ 且 $R = 0$ 且 $D_f = D_{KL}(\text{Reverse})$ 时,G-OPD是基础OPD的精确子集.
-
-#### 4.3.2 $\lambda > 1$:"青出于蓝"的数学证明
-
-当 $\lambda > 1$ 时,$1/\lambda < 1$. 让我们分析增强教师的行为:
-
-$$
-\pi_T^{(\lambda)}(a|s) \propto \pi_T(a|s)^{1/\lambda} \cdot \exp\left(\frac{R(a,s)}{\lambda}\right) \tag{20}
-$$
-
-**关键观察**:当 $\lambda$ 增大时,两个因子 $\pi_T^{1/\lambda}$ 和 $e^{R/\lambda}$ 都趋向于1(因为任何正数的0次方都是1,$e^0 = 1$). 这意味着:**$\lambda$ 越大,增强教师 $\pi_T^{(\lambda)}$ 的分布越平坦,越接近均匀分布. **
-
-让我们严格证明这一点. 假设 $\pi_T(a|s) > 0$ 对所有 $a \in \mathcal{V}$ 成立(教师具有完全support),且 $R(a,s)$ 有界. 则:
-
-$$
-\lim_{\lambda \to \infty} \pi_T(a|s)^{1/\lambda} = \lim_{\lambda \to \infty} \exp\left(\frac{\log \pi_T(a|s)}{\lambda}\right) = \exp(0) = 1 \tag{21}
-$$
-
-$$
-\lim_{\lambda \to \infty} \exp\left(\frac{R(a,s)}{\lambda}\right) = \exp(0) = 1 \tag{22}
-$$
-
-基于上述分析,建立如下数学关系:
-
 $$
-\lim_{\lambda \to \infty} \pi_T^{(\lambda)}(a|s) = \frac{1}{\sum_{a'} 1} = \frac{1}{|\mathcal{V}|} \tag{23}
+\mathcal{J}_{\mathrm{RL}}(\theta)=\max_\theta\ \mathbb{E}_{x\sim D,\,y\sim\pi_\theta(\cdot\mid x)}\bigl[r(x,y)-\beta\,\mathrm{KL}(\pi_\theta\,\|\,\pi_{\mathrm{ref}})\bigr]. \tag{2}
 $$
-
-**即增强教师趋向均匀分布. **
-
-**这似乎与"青出于蓝"的直觉矛盾,但物理意义极其深刻**:
-
-当 $\pi_T^{(\lambda)}$ 趋向均匀分布时,最小化 $D_f(\pi_\theta \| \pi_T^{(\lambda)})$ 对学生的约束越来越弱. 如果 $D_f$ 是Reverse KL,$D_{KL}(\pi_\theta \| U) = -H(\pi_\theta) + \log |\mathcal{V}|$,最小化它等价于**最大化学生策略的熵**--学生会趋向均匀分布.
-
-但这只是G-OPD目标函数的**蒸馏部分**. 在真实的训练框架中,G-OPD通常与外部reward最大化联合使用,或者 $R$ 本身就已经内嵌在 $\pi_T^{(\lambda)}$ 中. 更深刻的理解来自以下视角:
-
-**视角一:增强教师作为"软约束"**
-
-当 $\lambda$ 很大时,$\pi_T^{(\lambda)}$ 很平坦,KL约束的"拉力"很弱. 学生不再被教师牢牢束缚,可以自由地探索那些reward更高但教师概率并不突出的动作. 这就像驾校教练从"手把手指导"变成了"在远处观望"--学生获得了更大的自主探索空间.
-
-**视角二:$\lambda$ 作为KL正则化系数**
-
-如果我们把G-OPD重写为标准RL的形式(这是4.4节的核心内容),$\lambda$ 扮演的角色与KL约束RL中的正则化系数 $\beta$ **成反比**. $\lambda$ 越大,KL约束越弱,学生越可以自由追求reward最大化. 当 $\lambda \to \infty$,KL约束消失,学生完全以reward为唯一导向--这就是纯RL.
 
-**视角三:中间值 $\lambda \in (1, \infty)$ 的光滑插值**
+奖励 $r$ 可以是在偏好数据上训练的奖励模型, 也可以是推理任务中的规则验证器. RL 的奖励通常只在最后一个 token 给出, 其余位置为 0, 优化效率低.
 
-对于有限的 $\lambda > 1$,增强教师既不是尖锐的 $\pi_T$ 也不是完全均匀的 $U$,而是一个"被温度软化"的融合分布. 学生的优化目标是在"模仿这个软化目标"和"保持自身特性"之间寻找平衡. 随着 $\lambda$ 逐渐增大,这种平衡逐渐从"严格模仿"滑向"自由探索"--这是一个**光滑的,可微的**过渡,而不是离散的模式切换.
+OPD 让学生自己生成轨迹, 在这些轨迹上最小化学生到教师的反向 KL:
 
-#### 4.3.3 $\lambda < 1$:保守正则,强制学生更接近教师
-
-当 $\lambda < 1$ 时,$1/\lambda > 1$. 这是与 $\lambda > 1$ 完全对称的极端:
-
 $$
-\pi_T^{(\lambda)}(a|s) \propto \pi_T(a|s)^{1/\lambda} \cdot \exp\left(\frac{R(a,s)}{\lambda}\right) \tag{24}
+\mathcal{J}_{\mathrm{OPD}}(\theta)=\min_\theta\ \mathbb{E}_{x\sim D,\,y\sim\pi_\theta(\cdot\mid x)}\bigl[\mathrm{KL}(\pi_\theta(y\mid x)\,\|\,\pi^*(y\mid x))\bigr]. \tag{3}
 $$
 
-**关键观察**:当 $\lambda \to 0^+$ 时,$1/\lambda \to +\infty$. 假设教师和reward的联合得分 $\log \pi_T(a|s) + R(a,s)$ 在某个最优动作 $a^*$ 处取得最大值,则:
+附录 A 推出式 (3) 的精确梯度含 $\sum_{t'\ge t}$ 的未来项. Thinking Machines 的博客与 MiMo-V2-Flash 技术报告 (Xiao 等) 都把折扣因子取 0, 只优化下一 token, 得到近似梯度
 
 $$
-\lim_{\lambda \to 0^+} \pi_T^{(\lambda)}(a|s) = \begin{cases} 1 & \text{if } a = a^* \\ 0 & \text{otherwise} \end{cases} \tag{25}
+\nabla_\theta\mathcal{J}_{\mathrm{OPD}}\approx\mathbb{E}\Bigl[\sum_{t=1}^{T}\bigl(\log\pi_\theta(y_t\mid x,y_{<t})-\log\pi^*(y_t\mid x,y_{<t})\bigr)\nabla_\theta\log\pi_\theta(y_t\mid x,y_{<t})\Bigr]. \tag{4}
 $$
-
-即增强教师趋向于**在教师和reward联合最优处的退化分布(Dirac delta)** .
-
-$\lambda < 1$ 是"高逆温度"区域. 教师和reward信号都被极度放大,增强教师变得极其尖锐. 学生被强制要求紧密跟随这个尖锐目标--任何偏离都会带来巨大的散度惩罚. 这在工程上用于:
-
-1. **训练初期的稳定化**:在模型尚未学会基本模式时,用小的 $\lambda$(如0.5)强制学生严格模仿教师,防止早期探索导致的分布崩溃.
-2. **防止漂移(Drift Prevention)** :在多轮迭代蒸馏中,用 $\lambda = 0.8$ 作为"锚定",确保学生不会偏离参考模型太远.
-3. **高风险领域的保守学习**:在医疗,法律等对准确性要求极高的领域,用 $\lambda < 1$ 抑制模型的"创新冲动".
-
-#### 4.3.4 $\lambda$坐标系的"相变图"
-
-综合上述分析,我们可以画出G-OPD的$\lambda$坐标系相变图:
-
-| 区域                 | $\lambda$ 范围         | 增强教师$\pi_T^{(\lambda)}$ 的行为             | 学生行为                 | 应用场景               |
-| -------------------- | ------------------------ | ------------------------------------------------ | ------------------------ | ---------------------- |
-| **保守区**     | $\lambda \to 0^+$      | 趋向Delta分布(在$\arg\max(\log \pi_T + R)$ 处) | 极端模仿,几乎无偏离     | 初始化稳定,高风险领域 |
-| **保守正则区** | $0 < \lambda < 1$      | 高度尖锐,教师和reward被放大                     | 紧密跟随教师,少量探索   | 防止漂移,渐进学习     |
-| **自然温度点** | $\lambda = 1$ | 教师先验与reward自然融合;仅 $R=0$ 时还原教师 | 匹配reward增强目标 | 常规增强蒸馏 |
-| **探索区** | $1 < \lambda < \infty$ | 逐渐平坦,趋向uniform | 蒸馏约束趋向最大熵,自由度增加 | 与外部reward联合探索 |
-| **均匀目标极限** | $\lambda \to \infty$ | 趋向均匀分布 | 蒸馏项趋向最大熵;纯RL还需显式reward目标或权重调度 | 退火约束,与reward联合 |
-
-**相变的物理直觉**:$\lambda$ 就像增强目标的温度.低温($\lambda < 1$)下,教师先验与reward的联合高分动作被放大;中温($\lambda = 1$)下,二者按自然温度融合;高温($\lambda > 1$)下,增强目标逐渐变平.对式 (13)/(23) 本身而言,$\lambda \to \infty$ 得到的是均匀目标;只有再引入显式reward目标与相应权重调度,才能把这一极限解释为纯RL.
 
-### 4.4 从G-OPD到RL的连续谱:极限推导
+与 RL 的策略梯度对比, $-(\log\pi_\theta-\log\pi^*)$ 相当于 token 级优势, 每个位置都有信用分配. 这些基本形式在 [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) 中有更完整的推导.
 
-G-OPD最深刻的价值在于它揭示了蒸馏与RL之间的数学连续性. 本节将严格证明:当选择特定的 $f$ 并取适当的极限时,G-OPD退化为标准的强化学习目标.
+## 2. OPD 是 KL 约束 RL 的特例
 
-#### 4.4.1 KL约束RL的标准形式回顾
+### 2.1 改写
 
-强化学习中的策略优化问题,通常被形式化为在KL散度约束下最大化期望累积奖励:
+在式 (3) 中插入一个第三方模型 $\pi_{\mathrm{ref}}$, 加一项再减一项:
 
 $$
-\max_{\pi_\theta} \, \mathbb{E}_{s_t \sim \pi_\theta} \left[ \sum_{t=1}^{T} R(s_t, a_t) \right] \quad \text{s.t.} \quad D_{KL}(\pi_\theta \| \pi_{ref}) \le \epsilon \tag{26}
+\begin{aligned}
+\mathcal{J}_{\mathrm{OPD}}
+&=\max_\theta\ \mathbb{E}\bigl[\log\pi^*(y\mid x)-\log\pi_\theta(y\mid x)\bigr]\\
+&=\max_\theta\ \mathbb{E}\Bigl[\bigl(\log\pi^*-\log\pi_{\mathrm{ref}}\bigr)-\bigl(\log\pi_\theta-\log\pi_{\mathrm{ref}}\bigr)\Bigr]\\
+&=\max_\theta\ \mathbb{E}\Bigl[\log\frac{\pi^*(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}-\mathrm{KL}\bigl(\pi_\theta(y\mid x)\,\|\,\pi_{\mathrm{ref}}(y\mid x)\bigr)\Bigr].
+\end{aligned} \tag{5}
 $$
 
-直接求解带不等式约束的优化问题较为困难,因此我们引入拉格朗日乘子 $\beta > 0$,将约束吸收进目标函数,得到其拉格朗日形式:
+最后一行与式 (2) 同形: 奖励为 $r=\log(\pi^*/\pi_{\mathrm{ref}})$, KL 正则加在学生与 $\pi_{\mathrm{ref}}$ 之间, 且 $\beta=1$. 这一改写沿用了 Xiao 等 (ICLR 2025) 关于模仿学习与 RLHF 联系的做法. 推导中 $\log\pi_{\mathrm{ref}}$ 一加一减互相抵消, 所以改写对任意 $\pi_{\mathrm{ref}}$ 都成立, 式 (5) 与式 (3) 的最优解和梯度完全相同.
 
-$$
-\max_{\pi_\theta} \, \mathbb{E}_{s_t \sim \pi_\theta} \left[ \mathbb{E}_{a \sim \pi_\theta} [R(a,s_t)] - \beta \cdot D_{KL}\big(\pi_\theta(\cdot|s_t) \,\big\|\, \pi_{ref}(\cdot|s_t)\big) \right] \tag{27}
-$$
+### 2.2 与普通 RL 的三处区别
 
-这里 $\beta$ 扮演着KL正则化系数的角色:$\beta$ 越大,策略被约束得越靠近参考模型 $\pi_{ref}$; $\beta$ 越小,策略越自由地追求高奖励. 对该目标应用变分法,可以导出经典的**闭式解析解**--最优策略在参考模型基础上按 reward 进行指数加权重采样:
+**稠密奖励**. 普通 RL 中 $r_t$ 只在 $t=T$ 非零. OPD 的每个 token 都有奖励
 
 $$
-\pi^*(a|s) = \frac{1}{Z(s)} \cdot \pi_{ref}(a|s) \cdot \exp\left(\frac{R(a,s)}{\beta}\right) \tag{28}
+r_t^{\mathrm{OPD}}=\log\frac{\pi^*(y_t\mid x,y_{<t})}{\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})},\qquad t=1,\dots,T. \tag{6}
 $$
 
-#### 4.4.2 G-OPD与KL约束RL的等价性
+它与 DPO 的隐式奖励同形. 式 (2) 的闭式解给出 $r(x,y)=\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}+\beta\log Z(x)$, $\log Z(x)$ 只依赖 $x$, 所以对数概率比可以当作真实奖励的代理, PRIME 等工作就用它给 RL 提供稠密监督. 区别在于, OPD 的隐式奖励并没有要求 $\pi^*$ 由 $\pi_{\mathrm{ref}}$ 经过 RL 得到, 两者甚至可以是不同尺寸的模型. 它仍然刻画了从参考分布到教师分布的对数概率偏移, 所以仍能作为有效的训练信号.
 
-现在,让我们把G-OPD的目标函数也写成类似的拉格朗日形式,从而建立与式 (27) 的直接可比性. 考虑以下**扩展的G-OPD目标**:
-
-$$
-\mathcal{J}_{G\text{-}OPD}(\theta) = \mathbb{E}_{s_t \sim \pi_\theta} \left[ \mathbb{E}_{a \sim \pi_\theta} [R(a,s_t)] - \lambda \cdot D_{KL}\big(\pi_\theta(\cdot|s_t) \,\big\|\, \pi_T(\cdot|s_t)\big) \right] \tag{29}
-$$
+**权重固定**. 奖励与 KL 正则的权重恒为 1:1, 没有旋钮调节两者的相对强度.
 
-**`<u>`注意式 (29) 与基础OPD的关键差异`</u>`**:
+**参考模型任意**. RL 中 $\pi_{\mathrm{ref}}$ 通常取策略的初始 checkpoint. 在式 (5) 中, $\pi_{\mathrm{ref}}$ 无论取什么, 化简后都回到式 (3), 所以它可以是任何模型. 默认取学生的初始策略.
 
-- **`<u>`差异项一:显式的reward项`</u>`**. 基础OPD的目标函数中只有 $D_{KL}$,没有显式的 $R$. G-OPD的扩展形式将reward最大化显式地写入了目标函数.
-- **`<u>`差异项二:$\lambda$ 作为KL正则化系数`</u>`**. 在标准RL中,KL系数记为 $\beta$; 在G-OPD中,这个系数就是 $\lambda$. $\lambda$ 越大,KL约束越强,学生越靠近教师; $\lambda$ 越小,KL约束越弱,学生越自由追求reward.
+于是 OPD 相对 RL 有两个长处 (稠密奖励, 参考模型自由), 但把奖励与正则的比例锁死在 1:1. G-OPD 就从这一点放开.
 
-现在,让我们将式 (28) 中的KL约束RL最优解与G-OPD的增强教师进行结构对比. 如式 (28) 所示,KL约束RL的最优解具有如下形式:
+## 3. G-OPD 目标
 
-$$
-\pi^*(a|s) \propto \pi_{ref}(a|s) \cdot \exp\left(\frac{R(a,s)}{\beta}\right) \tag{30}
-$$
+### 3.1 定义
 
-而G-OPD的增强教师在取 $\pi_T = \pi_{ref}$ 时写为:
+G-OPD 在奖励项前加一个奖励缩放系数 $\lambda$:
 
 $$
-\pi_T^{(\lambda)}(a|s) \propto \pi_{ref}(a|s)^{1/\lambda} \cdot \exp\left(\frac{R(a,s)}{\lambda}\right) \tag{31}
+\mathcal{J}_{\mathrm{G\text{-}OPD}}(\theta)=\max_\theta\ \mathbb{E}_{x\sim D,\,y\sim\pi_\theta(\cdot\mid x)}\Bigl[\lambda\log\frac{\pi^*(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}-\mathrm{KL}\bigl(\pi_\theta(y\mid x)\,\|\,\pi_{\mathrm{ref}}(y\mid x)\bigr)\Bigr]. \tag{7}
 $$
 
-**关键观察**:如果我们令 $\beta = \lambda$ 且对 $\pi_{ref}$ 取 $\pi_{ref}^{1/\lambda}$ 的近似(在 $\pi_{ref}$ 接近uniform或 $\lambda \approx 1$ 时,$\pi_{ref}^{1/\lambda} \approx \pi_{ref}$),这两个公式在结构上高度一致.
+$\lambda$ 相当于式 (2) 中的 $1/\beta$. 相对 RL, G-OPD 保留稠密信用分配与参考模型的自由; 相对 OPD, 它多了奖励权重这一维. $\lambda=1$ 时回到 OPD, $\lambda=0$ 时最优解就是参考模型本身.
 
-更严格的联系来自以下极限推导. 首先写出G-OPD的损失函数(Reverse KL版本):
-
-$$
-\mathcal{L}_{G\text{-}OPD} = \mathbb{E}_{s_t \sim \pi_\theta} \left[ D_{KL}\big(\pi_\theta \,\big\|\, \pi_T^{(\lambda)}\big) \right] \tag{32}
-$$
+### 3.2 最优解: 内插与外推
 
-将式 (32) 中的散度项逐项展开,目的是把 $\pi_T^{(\lambda)}$ 的显式构造代入,从而看清 $\lambda$ 在各项中的真实作用:
+式 (7) 的最优解满足
 
 $$
-D_{KL}(\pi_\theta \| \pi_T^{(\lambda)}) = \sum_a \pi_\theta(a|s) \left[ \log \pi_\theta(a|s) - \log \pi_T^{(\lambda)}(a|s) \right] \tag{33}
+\log\pi_\theta(y\mid x)=\lambda\log\pi^*(y\mid x)+(1-\lambda)\log\pi_{\mathrm{ref}}(y\mid x)=\log\pi^*(y\mid x)+(\lambda-1)\bigl(\log\pi^*(y\mid x)-\log\pi_{\mathrm{ref}}(y\mid x)\bigr), \tag{8}
 $$
 
-代入 $\pi_T^{(\lambda)}$ 的定义(忽略归一化常数 $Z(s)$,因为它对 $\pi_\theta$ 的梯度无贡献):
+两边相差一个只依赖 $x$ 的归一化常数, 论文省略未写. 式 (8) 是序列级的结论, 由式 (7) 套用 KL 约束 RL 的闭式解得到, 此时 $\beta=1/\lambda$, 最优策略 $\propto\pi_{\mathrm{ref}}\exp(\lambda\log(\pi^*/\pi_{\mathrm{ref}}))=(\pi^*)^\lambda\pi_{\mathrm{ref}}^{1-\lambda}$. 实际训练用的是式 (9) 那种只看下一 token 的近似梯度, 学生最终是否收敛到式 (8) 的序列级目标, 论文没有分析.
 
-$$
-= \sum_a \pi_\theta(a|s) \left[ \log \pi_\theta(a|s) - \frac{1}{\lambda} \log \pi_T(a|s) - \frac{1}{\lambda} R(a,s) + \log Z(s) \right] \tag{34}
-$$
+**$0<\lambda<1$, 奖励内插**. 学生的对数概率匹配教师与参考模型的线性内插, 等价于把式 (5) 中的奖励 $r$ 换成 $\lambda r+(1-\lambda)\cdot0$. 作者的预期是学生的成绩, 回答长度等行为都落在参考模型与标准 OPD 之间.
 
-将展开式中与 $\lambda$ 无关的项合并为常数,得到:
+**$\lambda>1$, 奖励外推**. 学生除了匹配教师的对数概率, 还要额外拟合一项偏移 $(\lambda-1)(\log\pi^*-\log\pi_{\mathrm{ref}})$: 参考模型到教师的变化方向上再往前走一段. 这一设置称为 ExOPD. 作者提出的问题是: 外推能否胜过标准 OPD; 当多个教师都是同一学生在不同领域做 RL 得到的专家时, 外推能否蒸出一个超过所有领域教师的统一学生.
 
-$$
-= D_{KL}(\pi_\theta \| \pi_T^{\text{uniform}}) - \frac{1}{\lambda} \mathbb{E}_{a \sim \pi_\theta}[\log \pi_T(a|s) + R(a,s)] + \text{const} \tag{35}
-$$
+### 3.3 梯度
 
-其中 $\pi_T^{\text{uniform}}$ 是一个与 $\lambda$ 无关的参考项. 当 $\lambda \to \infty$ 时,含 $1/\lambda$ 的教师匹配项衰减为零,主导项只剩下 reward 的期望:
+沿用折扣因子为 0 的近似, G-OPD 的梯度为
 
 $$
-\mathcal{L}_{G\text{-}OPD} \approx -\frac{1}{\lambda} \mathbb{E}_{a \sim \pi_\theta}[R(a,s)] + \text{terms independent of } R \text{ at leading order} \tag{36}
+\nabla_\theta\mathcal{J}_{\mathrm{G\text{-}OPD}}\approx\mathbb{E}\Bigl[\sum_{t=1}^{T}A_t^{\mathrm{G\text{-}OPD}}\,\nabla_\theta\log\pi_\theta(y_t\mid x,y_{<t})\Bigr], \tag{9}
 $$
-
-**`<u>`核心极限结果`</u>`**:
 
-如果我们考虑**以 $\lambda$ 缩放的G-OPD目标** $\lambda \cdot \mathcal{L}_{G\text{-}OPD}$,或者在优化过程中让KL项相对于reward项的权重按 $1/\lambda$ 衰减,则取极限可得:
-
 $$
-\lim_{\lambda \to \infty} \lambda \cdot \mathcal{L}_{G\text{-}OPD} = -\mathbb{E}_{a \sim \pi_\theta}[R(a,s)] + \text{const} \tag{37}
+A_t^{\mathrm{G\text{-}OPD}}=\bigl(\log\pi_\theta(y_t\mid\cdot)-\log\pi^*(y_t\mid\cdot)\bigr)+(\lambda-1)\bigl(\log\pi_{\mathrm{ref}}(y_t\mid\cdot)-\log\pi^*(y_t\mid\cdot)\bigr). \tag{10}
 $$
-
-这意味着:**当 $\lambda \to \infty$ 时,最小化G-OPD损失等价于最大化期望奖励--这正是纯强化学习的定义. **
 
-#### 4.4.3 物理意义:G-OPD是"带蒸馏正则的RL",RL是"无蒸馏约束的极限"
+第一项是 OPD 原有的优势 (按式 (4) 的符号约定), 第二项是外推带来的修正, $\lambda=1$ 时为 0. 实现上只需在 OPD 的基础上多算一次参考模型在采样 token 上的对数概率. 这也是 $\lambda\neq1$ 的额外开销.
 
-上述推导揭示了一个深刻的物理图景:
+## 4. 参考模型的选择与奖励校正
 
-- **G-OPD(有限 $\lambda$)** :学生在一个"软约束"的漏斗中探索. 漏斗的形状由增强教师 $\pi_T^{(\lambda)}$ 决定,$\lambda$ 控制漏斗的"陡峭程度". $\lambda$ 越小,漏斗越陡峭,学生被约束得越紧; $\lambda$ 越大,漏斗越平缓,学生的探索空间越大.
-- **均匀目标极限($\lambda \to \infty$)** :对式 (13)/(23),教师先验与reward的有限差异都被温度抹平,增强目标趋于均匀;这不等同于纯RL.
-- **基础OPD($\lambda = 1, R = 0$)** :漏斗是刚性的,固定的(由 $\pi_T$ 决定),学生只能沿着漏斗的壁下滑到教师分布处.
+$\lambda=1$ 时参考模型不影响目标; $\lambda\neq1$ 时, 不同的 $\pi_{\mathrm{ref}}$ 给出不同的目标. 论文分两种场景讨论.
 
-这里更稳妥的直觉不是未经推导的“损失地形”,而是**增强目标分布的温度变化**:$\lambda$ 较小时联合高分动作被放大;$\lambda=1$ 时教师先验与reward按自然温度融合;$\lambda$ 增大时二者差异同时缩小,目标趋向均匀.
+**多教师合并**. 多个领域专家都是从同一个基座出发做领域 RL 得到的, 要把它们的能力合并回原基座, 这是 MiMo-V2-Flash 技术报告采用的多任务后训练方式. 此时 $\pi_{\mathrm{ref}}$ 自然取原基座, G-OPD 的奖励正好是式 (6) 那种由 RL 后训练诱导的隐式奖励.
 
-## 5. 数值走查 (Numerical Example)
+**强到弱蒸馏**. 把大教师蒸馏到小学生. $\pi_{\mathrm{ref}}$ 有两种选择: 学生的基座 $\pi_{\mathrm{base}}^{\mathrm{student}}$, 这是只拥有教师与学生基座时的默认设置; 或者教师 RL 之前的基座 $\pi_{\mathrm{base}}^{\mathrm{teacher}}$, 前提是它可得. 把式 (7) 改写成等价形式:
 
-为了将上述抽象的数学公式转化为可触摸的物理直觉,我们用一个**极其简化的3-token词表**来走查G-OPD在不同$\lambda$值下的增强教师分布和优化行为. 这个例子虽然简单,但足以揭示$\lambda$坐标系的所有核心特征.
-
-### 5.1 问题设定
-
-假设在某个特定的状态 $s_t$ 下,我们的词表只有三个token:$\mathcal{V} = \{A, B, C\}$.
-
-**教师模型**的分布为:
-
 $$
-\pi_T = [0.5, \, 0.3, \, 0.2] \tag{38}
+\mathcal{J}_{\mathrm{G\text{-}OPD}}=\max_\theta\ \mathbb{E}\Bigl[(\lambda-1)\log\frac{\pi^*(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}-\mathrm{KL}\bigl(\pi_\theta(y\mid x)\,\|\,\pi^*(y\mid x)\bigr)\Bigr]. \tag{11}
 $$
 
-这意味着教师最看好A(概率50%),B次之(30%),C最弱(20%).
+KL 正则强度相同的前提下, 取 $\pi_{\mathrm{ref}}=\pi_{\mathrm{base}}^{\mathrm{teacher}}$ 更合理: $\log(\pi^*/\pi_{\mathrm{base}}^{\mathrm{teacher}})$ 对应教师自身 RL 后训练诱导的隐式奖励, 按式 (6) 前后的讨论是良定义的. $\log(\pi^*/\pi_{\mathrm{base}}^{\mathrm{student}})$ 则混入了大小两个基座在知识和容量上的差距, 噪声更大. 在默认奖励上加一项 $\log(\pi_{\mathrm{base}}^{\mathrm{student}}/\pi_{\mathrm{base}}^{\mathrm{teacher}})$ 即可得到前者, 论文称之为奖励校正.
 
-**外部奖励函数**为:
+奖励校正有两个代价: 需要额外拿到教师 RL 之前的模型; 参考模型从小模型换成大模型, 计算对数概率的开销更高.
 
-$$
-R(A) = 1.0, \quad R(B) = 0.5, \quad R(C) = 0.0 \tag{39}
-$$
+## 5. 三词表算例
 
-Reward Model 认为A是最好的动作(reward=1.0),B也不错(0.5),C没有价值(0.0). 注意,教师的偏好和reward信号**并不完全一致**:教师最看好A(与reward一致),但教师认为C(20%)比reward信号认为的更有价值(reward=0). 这种不一致正是真实后训练中的常态--教师分布来自语言模型的概率先验,而reward来自任务特定的评分规则.
+下面用一个构造的三词表例子看式 (8) 在单个位置上的效果. 设某一位置教师分布 $\pi^*=[0.5,0.3,0.2]$, 参考模型 $\pi_{\mathrm{ref}}=[0.2,0.3,0.5]$. 隐式奖励 $\log(\pi^*/\pi_{\mathrm{ref}})$ 依次为 $0.916,\ 0,\ -0.916$: 教师相对参考模型加强了第一个 token, 削弱了第三个. 按 $q_\lambda\propto(\pi^*)^\lambda(\pi_{\mathrm{ref}})^{1-\lambda}$ 归一化:
 
-**归一化说明**:增强教师的计算需要先求未归一化的"能量"值 $\tilde{\pi}(a) = \pi_T(a)^{1/\lambda} \cdot \exp(R(a)/\lambda)$,然后除以总和 $Z = \sum_a \tilde{\pi}(a)$.
+| $\lambda$ | $q_\lambda$ | 熵 (nats) |
+| --- | --- | --- |
+| 0 | [0.200, 0.300, 0.500] | 1.030 |
+| 0.5 | [0.339, 0.322, 0.339] | 1.098 |
+| 1 | [0.500, 0.300, 0.200] | 1.030 |
+| 1.25 | [0.578, 0.276, 0.146] | 0.953 |
+| 1.5 | [0.650, 0.246, 0.104] | 0.861 |
+| 2 | [0.767, 0.184, 0.049] | 0.663 |
 
-### 5.2 逐个$\lambda$计算增强教师分布
+$\lambda$ 从 0 到 1, 目标从参考模型移到教师; 中点 $\lambda=0.5$ 是两者的几何平均, 这里几乎均匀. $\lambda>1$ 时, 目标沿 「参考模型到教师」 的方向继续走: 被 RL 加强的 token 更强, 被削弱的更弱, 分布变尖. 隐式奖励为 0 的 token (第二个) 不受外推直接作用, 只因归一化而变化.
 
-#### Case 1: $\lambda = 0.5$(保守区,高逆温度)
+这个例子也能看出外推的风险. $\lambda=2$ 时第三个 token 只剩 0.049. 如果某些位置的对数概率比因为偏差而异常大, 外推会把这种偏差一起放大, 这正是第 7.1 节作者对 $\lambda=1.5$ 不稳定的解释.
 
-此时 $1/\lambda = 2$. 计算未归一化能量:
-
-$$
-\tilde{\pi}(A) = 0.5^2 \cdot e^{2.0} = 0.25 \cdot 7.389 = 1.847 \tag{40}
-$$
+## 6. 实验设置
 
-$$
-\tilde{\pi}(B) = 0.3^2 \cdot e^{1.0} = 0.09 \cdot 2.718 = 0.245 \tag{41}
-$$
+**同尺寸设置 (第 4.1 节)**. 学生与基座都是 Qwen3-4B-Non-Thinking. 数学 RL 数据取 DeepMath 中难度不低于 6 的 57K 条, 代码 RL 数据为 Eurus-RL-Code 的 25K 条, 分别做 GRPO 得到 Qwen3-4B-Non-Thinking-RL-Math 与 Qwen3-4B-Non-Thinking-RL-Code 两个领域教师; 蒸馏数据与 RL 数据相同. RL 奖励为二元: 数学答案正确或代码通过全部单元测试得 1.0, 否则 0.0. G-OPD 的 $\lambda$ 取 $\{0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5\}$, 参考模型固定为 Qwen3-4B-Non-Thinking. GRPO 与 G-OPD 都做 token 级 rollout 修正, 缓解训练与推理不一致, 实现基于 verl.
 
-$$
-\tilde{\pi}(C) = 0.2^2 \cdot e^{0} = 0.04 \cdot 1.0 = 0.040 \tag{42}
-$$
+**评测**. 数学: AIME24, AIME25, HMMT25 (2 月), HMMT25 (11 月), 每题采 32 个解, 用 Math-Verify 判对错. 代码: HumanEval+, MBPP+, LiveCodeBench v6 (2025 年 2 月至 5 月), 每题采 4 个解. 温度 1.0, top-p 1.0, 最长生成 16384 token, 报平均准确率.
 
-归一化因子 $Z = 1.847 + 0.245 + 0.040 = 2.132$.
+**超参 (附录 B)**:
 
-归一化后:
+| | 数学 GRPO | 代码 GRPO | G-OPD | SFT |
+| --- | --- | --- | --- | --- |
+| batch | 128 | 128 | 1024 | 1024 |
+| 每题回答数 | 8 | 8 | 1 | 与 OPD 轨迹数一致 |
+| 最长回答 | 16384 | 8192 | 16384 | 序列 32768 |
+| 学习率 | 1e-6 | 1e-6 | 1e-5 | 1e-5 |
+| 步数 | 500 | 300 | 50 / 100 | 与 G-OPD 一致 |
+| KL 系数 | 0 | 0 | | |
 
-$$
-\pi_T^{(0.5)} = [0.866, \, 0.115, \, 0.019] \tag{43}
-$$
+G-OPD 在同尺寸实验中训练 50 步, 强到弱实验中 100 步. 作者发现在 「prompt 数 × 每题回答数」 固定时, prompt 数更大收敛更平滑; 继续增加蒸馏步数会因过拟合损害泛化. SFT 基线使用的教师轨迹数与 OPD 中学生生成的轨迹数相同.
 
-**物理意义解读**:
+## 7. 同尺寸单教师
 
-- A的概率从教师的0.5被**急剧放大**到0.866. 这是因为A同时拥有教师的最高概率和reward的最高分数,两个信号在高逆温度下产生了"共振放大".
-- B的概率从0.3被**压制**到0.115. 虽然B的reward(0.5)不错,但教师概率只有0.3,在高逆温度下被教师的低先验拖累了.
-- C的概率从0.2被**严重压制**到0.019. C既没有reward支持,教师概率也不高,在高逆温度下几乎被"冻结出局".
+### 7.1 $\lambda$ 的影响
 
-**结论**:$\lambda = 0.5$ 时,增强教师极其尖锐,几乎把所有概率质量集中在A上. 学生如果优化这个目标,会被强制要求以86.6%的概率输出A--这是一种极端保守的"必须选对"策略.
+把数学或代码教师各自蒸馏回 Qwen3-4B-Non-Thinking, 结果见论文图 2 至图 4, 结论有三条.
 
-#### Case 2: $\lambda = 1.0$(标准蒸馏区)
+1. 标准 OPD 能完整恢复后训练的效果, 学生的准确率与回答长度都与领域教师接近.
+2. 奖励内插 ($0<\lambda<1$) 得到的学生, 成绩与回答长度都介于基座与教师之间, 并随 $\lambda$ 单调增长. 作者指出这一性质可用于控制推理预算.
+3. 奖励外推 ($\lambda>1$) 优于标准 OPD. $\lambda=1.25$ 在所有设置下都超过 OPD 和领域教师; $\lambda=1.5$ 可能不稳定, 成绩下降. 作者的解释是, $\lambda$ 继续增大时, 学生有 hack 式 (6) 隐式奖励的风险: 它会激进地拟合对数概率比的峰值, 哪怕某些 token 的比值因偏差而过大. ExOPD 学生的回答长度持续增加, 作者认为可能来自隐式奖励的长度偏差, 这一偏差在他们此前的 LaSeR 工作中讨论过.
 
-此时 $1/\lambda = 1$. 计算未归一化能量:
+第 2 条结论给了 $\lambda$ 一个实用的用途: 在 $[0,1]$ 内调 $\lambda$, 可以得到一系列能力与回答长度都单调变化的学生, 作者引用 ORBIT 等多预算推理工作, 认为可以借此做推理预算控制. 论文没有给出内插区间各点的具体数值, 只有图 2 至图 4 的曲线.
 
-$$
-\tilde{\pi}(A) = 0.5^1 \cdot e^{1.0} = 0.5 \cdot 2.718 = 1.359 \tag{44}
-$$
+### 7.2 与继续 RL 的教师比较
 
-$$
-\tilde{\pi}(B) = 0.3^1 \cdot e^{0.5} = 0.3 \cdot 1.649 = 0.495 \tag{45}
-$$
+为排除 「教师训练不足」 的解释, 论文把数学教师再做 100 步 RL, 与只训练 50 步的 ExOPD 比较 (Table 1):
 
-$$
-\tilde{\pi}(C) = 0.2^1 \cdot e^{0} = 0.2 \cdot 1.0 = 0.200 \tag{46}
-$$
+| | AIME24 | AIME25 | HMMT25 (2 月) | HMMT25 (11 月) | 平均 |
+| --- | --- | --- | --- | --- | --- |
+| 教师 | 58.0 | 54.6 | 32.5 | 38.9 | 46.0 |
+| 教师 + 继续 RL 100 步 | 60.9 | 55.6 | 32.8 | 38.4 | 46.9 |
+| ExOPD (50 步) | 62.7 | 56.1 | 33.9 | 39.3 | 48.0 |
 
-归一化因子 $Z = 1.359 + 0.495 + 0.200 = 2.054$.
+继续 RL 平均只涨 0.9, ExOPD 涨 2.0, 并且 ExOPD 的训练步数更少.
 
-归一化后:
+## 8. 多教师合并
 
-$$
-\pi_T^{(1.0)} = [0.662, \, 0.241, \, 0.097] \tag{47}
-$$
+### 8.1 设置
 
-**物理意义解读**:
+把数学与代码两个 RL 教师合并回 Qwen3-4B-Non-Thinking. 根据第 7 节的结果, 后续所有实验固定 $\lambda=1.25$, 不再单独调参. 为了公平, OPD 与 ExOPD 中把数学数据下采样到与代码数据同量. 基线除 OPD 外还有两种: 在教师轨迹上做交叉熵的 SFT; 权重外推方法 ExPO, 先平均所有领域教师的权重, 再相对学生做外推, 外推系数在 $\{0.25, 0.5\}$ 中选.
 
-- A的概率被放大到66.2%(比教师的50%更高,因为reward在加持),但不如$\lambda=0.5$时极端.
-- B的概率被略微压低到24.1%(教师给30%,但reward不如A高).
-- C的概率从20%下降到9.7%(reward=0的惩罚在标准温度下已经显著).
+### 8.2 结果
 
-**结论**:$\lambda = 1$ 时,增强教师是教师先验和reward信号的"自然温度"融合. 学生需要学会A是首选,但也被允许在约24%的情况下选择B. 这是标准的蒸馏行为--在教师的指导下适度修正.
+Table 2 (教师行为对应领域的教师, 学生行为初始 Qwen3-4B-Non-Thinking):
 
-#### Case 3: $\lambda = 2.0$(探索区,低逆温度)
+| 方法 | AIME24 | AIME25 | HMMT 2 月 | HMMT 11 月 | 数学平均 | HumanEval+ | MBPP+ | LCB | 代码平均 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 教师 | 58.0 | 54.6 | 32.5 | 38.9 | 46.0 | 86.0 | 70.2 | 27.3 | 61.2 |
+| 学生 | 21.5 | 21.9 | 10.0 | 8.0 | 15.4 | 74.7 | 64.7 | 17.9 | 52.4 |
+| 单教师 ExPO | 58.7 | 55.2 | 32.4 | 37.0 | 45.8 | 84.8 | 70.2 | 28.0 | 61.0 |
+| 单教师 OPD | 60.7 | 55.0 | 32.4 | 37.9 | 46.5 | 85.2 | 69.9 | 27.3 | 60.8 |
+| 单教师 ExOPD | 62.7 | 56.1 | 33.9 | 39.3 | 48.0 | 86.9 | 70.7 | 28.6 | 62.1 |
+| 多教师 SFT | 58.5 | 53.3 | 30.7 | 34.8 | 44.3 | 86.4 | 69.6 | 26.4 | 60.8 |
+| 多教师 ExPO | 57.5 | 54.5 | 31.7 | 36.3 | 45.0 | 86.7 | 72.0 | 29.0 | 62.6 |
+| 多教师 OPD | 60.6 | 54.1 | 32.5 | 38.3 | 46.4 | 84.6 | 69.5 | 27.6 | 60.6 |
+| 多教师 ExOPD | 61.0 | 56.0 | 34.4 | 39.2 | 47.7 | 86.3 | 70.6 | 29.0 | 62.0 |
 
-此时 $1/\lambda = 0.5$. 计算未归一化能量:
+SFT 得到的学生次优; OPD 的上限基本被教师框住, 多教师 OPD 在 AIME25, HMMT 11 月, HumanEval+ 和 MBPP+ 上低于教师. ExPO 不需训练, 代码平均最高 (62.6), 但数学四项全部低于教师, 可控性差. 多教师 ExOPD 是唯一在全部 7 个基准上都超过对应领域教师的方法.
 
-$$
-\tilde{\pi}(A) = 0.5^{0.5} \cdot e^{0.5} = 0.707 \cdot 1.649 = 1.166 \tag{48}
-$$
+单教师与多教师 ExOPD 相比, 合并两个领域只损失很少: 数学平均 48.0 对 47.7, 代码平均 62.1 对 62.0, 其中 HMMT 2 月 (34.4 对 33.9) 和 LCB (29.0 对 28.6) 多教师反而更高. 多教师 OPD 与单教师 OPD 也接近 (数学 46.4 对 46.5, 代码 60.6 对 60.8). 这说明在同一基座派生的教师之间, 合并本身代价不大, ExOPD 的增益主要来自外推.
 
-$$
-\tilde{\pi}(B) = 0.3^{0.5} \cdot e^{0.25} = 0.548 \cdot 1.284 = 0.704 \tag{49}
-$$
+### 8.3 训练动态
 
-$$
-\tilde{\pi}(C) = 0.2^{0.5} \cdot e^{0} = 0.447 \cdot 1.0 = 0.447 \tag{50}
-$$
+论文图 5 比较多教师设置下 OPD 与 ExOPD 的训练曲线 (系数 0.5 的 EMA 平滑): ExOPD 的训练奖励更高, 回答更长, 与图 4 的评测趋势一致; ExOPD 学生的回答熵也更高, 作者归因于回答更长带来更多样的输出.
 
-归一化因子 $Z = 1.166 + 0.704 + 0.447 = 2.317$.
+## 9. 强到弱蒸馏
 
-归一化后:
+### 9.1 默认设置
 
-$$
-\pi_T^{(2.0)} = [0.503, \, 0.304, \, 0.193] \tag{51}
-$$
+教师为 Qwen3-30B-A3B-Instruct-2507, 学生分别为 Qwen3-1.7B-Non-Thinking 与 Qwen3-4B-Non-Thinking, 只做数学, 训练与评测数据同第 6 节. 默认只假设拥有教师和学生基座, 参考模型取学生基座. Table 3:
 
-**物理意义解读**:
+| | AIME24 | AIME25 | HMMT 2 月 | HMMT 11 月 | 平均 |
+| --- | --- | --- | --- | --- | --- |
+| 教师 | 74.7 | 62.8 | 44.2 | 57.2 | 59.7 |
+| 1.7B 基座 | 12.3 | 11.4 | 6.8 | 4.5 | 8.8 |
+| 1.7B SFT | 18.1 | 20.5 | 9.2 | 6.3 | 13.5 |
+| 1.7B OPD | 33.0 | 28.7 | 15.7 | 14.9 | 23.1 |
+| 1.7B ExOPD | 37.3 | 31.5 | 16.2 | 16.5 | 25.4 |
+| 4B 基座 | 21.5 | 21.9 | 10.0 | 8.0 | 15.4 |
+| 4B SFT | 45.4 | 40.9 | 22.4 | 31.6 | 35.1 |
+| 4B OPD | 55.0 | 48.0 | 29.8 | 37.7 | 42.6 |
+| 4B ExOPD | 58.7 | 50.8 | 33.0 | 38.8 | 45.3 |
 
-- A的概率回落到50.3%,几乎与教师的原始概率(50%)持平. $\lambda=2$ 的低温缩放已经大大削弱了reward信号的放大效应.
-- B的概率上升到30.4%,甚至略高于教师的原始概率(30%). 这是因为B的reward(0.5)在相对意义上得到了更多"发言权".
-- C的概率为19.3%,接近教师的原始概率(20%). 在低逆温度下,C的reward=0的惩罚被大幅缓和.
+ExOPD 相对 OPD 平均提升 2.3 (1.7B) 与 2.7 (4B), 八个单项全部提升. 尽管 $\log(\pi^*/\pi_{\mathrm{base}}^{\mathrm{student}})$ 因大小模型的知识差距与分布偏差带有噪声, 外推仍然有效. 两个规模上 OPD 都远好于 SFT, 1.7B 上 OPD 的平均成绩是 SFT 的 1.7 倍.
 
-**结论**:$\lambda = 2$ 时,增强教师变得相当"宽容". 教师先验和reward信号的融合效果已经非常温和,学生有很大的自由度. 如果你观察概率分布,它几乎回到了教师的原始形态--reward的修正作用被$\lambda$大幅稀释了.
+论文标题里的 「超越教师」 只在同尺寸设置中出现. 强到弱设置中, 4B ExOPD 的平均 45.3 离教师的 59.7 还差 14.4, 1.7B 差得更多; 外推缩小了师生差距, 没有让小学生追上大教师. 这与式 (8) 的含义一致: 外推方向由 $\log(\pi^*/\pi_{\mathrm{ref}})$ 决定, 学生容量不足时, 沿这个方向能走多远受学生自身限制.
 
-#### Case 4: $\lambda = 5.0$(深度探索区)
+### 9.2 奖励校正
 
-此时 $1/\lambda = 0.2$. 计算未归一化能量:
+Qwen3-30B-A3B-Instruct-2507 的 RL 前版本拿不到, 论文改用自己训练的 Qwen3-4B-Non-Thinking-RL-Math/Code 作教师, 以 Qwen3-4B-Non-Thinking 作为教师 RL 前的版本, 学生为 Qwen3-1.7B-Non-Thinking. 图 6 显示, 在数学 (四项平均) 与代码 (三项平均) 上, 奖励校正都进一步提升了 ExOPD. 论文正文只给出图, 没有对应的数值表.
 
-$$
-\tilde{\pi}(A) = 0.5^{0.2} \cdot e^{0.2} = 0.871 \cdot 1.221 = 1.064 \tag{52}
-$$
+## 10. 训练更充分的教师
 
-$$
-\tilde{\pi}(B) = 0.3^{0.2} \cdot e^{0.1} = 0.786 \cdot 1.105 = 0.869 \tag{53}
-$$
+附录 C 把领域教师的 RL 训练加到 1200 步, 其余设置同第 6 节 (Table 8). 教师更强之后, ExOPD 的领先幅度变小:
 
-$$
-\tilde{\pi}(C) = 0.2^{0.2} \cdot e^{0} = 0.725 \cdot 1.0 = 0.725 \tag{54}
-$$
+| | 数学平均 | 代码平均 |
+| --- | --- | --- |
+| 教师 | 51.9 | 63.1 |
+| 单教师 OPD | 51.7 | 62.9 |
+| 单教师 ExOPD | 52.2 | 64.3 |
+| 多教师 OPD | 51.9 | 62.0 |
+| 多教师 ExOPD | 52.5 | 64.4 |
 
-归一化因子 $Z = 1.064 + 0.869 + 0.725 = 2.658$.
+平均分上 ExOPD 仍然超过教师与 OPD. 单项上并非全部超过: 单教师 ExOPD 的 AIME25 为 59.2, HMMT 11 月为 42.8, 都略低于教师的 59.3 与 42.9; 多教师 ExOPD 的 HMMT 11 月为 42.7, 也略低于教师. 对比第 8 节 「全部 7 项超过教师」 的结论, 在教师训练充分时, 这一结论只在平均分上成立. 代码侧的优势保持得更好: 两种 ExOPD 的三个代码单项全部高于教师, 多教师 OPD 的代码平均反而比教师低 1.1. 教师训练 1200 步后, 数学平均从 46.0 升到 51.9, 外推可挖的余量也随之减少.
 
-归一化后:
+## 11. 散度光谱: 与 f-散度蒸馏的关系
 
-$$
-\pi_T^{(5.0)} = [0.400, \, 0.327, \, 0.273] \tag{55}
-$$
+G-OPD 只改了奖励与正则的权重和参考模型, 散度始终是反向 KL. 蒸馏损失本身选哪种散度, 是另一条轴, 由前人工作展开.
 
-**物理意义解读**:
-
-- A的概率进一步回落到40.0%. 在$\lambda=5$的低温缩放下,A的reward优势和教师优势都被严重压缩.
-- B的概率上升到32.7%,非常接近A. B和A之间的差距从$\lambda=0.5$时的75.1个百分点缩小到了仅7.3个百分点.
-- C的概率上升到27.3%,几乎与A和B平起平坐. reward=0的惩罚在$\lambda=5$时几乎被抹平.
-
-**结论**:$\lambda = 5$ 时,增强教师已经相当平坦. 三个token的概率差距被大幅压缩,学生有极大的探索自由度. 这对应于"教练几乎不干预,只告诉你基本路况"的自动驾驶模式.
-
-### 5.3 汇总对比表与核心规律
-
-|  $\lambda$  | $\pi_T^{(\lambda)}(A)$ | $\pi_T^{(\lambda)}(B)$ | $\pi_T^{(\lambda)}(C)$ | 分布尖锐度 | 物理意义                   |
-| :------------: | :----------------------: | :----------------------: | :----------------------: | :--------: | :------------------------- |
-|      0.5      |     **0.866**     |          0.115          |          0.019          |    极高    | 保守冻结:几乎强制选A      |
-|      1.0      |     **0.662**     |          0.241          |          0.097          |     高     | 标准蒸馏:A主导但允许B     |
-|      2.0      |     **0.503**     |          0.304          |          0.193          |     中     | 探索开始:三者差距缩小     |
-|      5.0      |     **0.400**     |          0.327          |          0.273          |     低     | 深度探索:接近均匀分布     |
-| $\to \infty$ |     **0.333**     |          0.333          |          0.333          |     零     | 纯RL极限:完全均匀,无约束 |
-
-**核心规律总结**:
-
-1. **单调性**:随着$\lambda$增大,增强教师的最大概率(A的概率)单调递减,最小概率(C的概率)单调递增. 分布的"不公平度"(最大-最小)从$\lambda=0.5$时的0.847单调下降到$\lambda \to \infty$时的0.
-2. **相变光滑性**:从$\lambda=0.5$到$\lambda=5.0$,A的概率从86.6%平滑下降到40.0%,没有任何断崖或突变. 这验证了$\lambda$作为**连续调节器**的工程价值--你可以精确地选择任意中间值来控制"模仿强度".
-3. **Reward与先验的博弈**:在$\lambda=0.5$时,reward信号完全主导(A的reward最高,所以A的概率被极端放大); 在$\lambda=5.0$时,教师先验几乎主导(概率分布接近教师的原始形态$[0.5, 0.3, 0.2]$,只是被uniform拉平了一些). $\lambda$就是这场博弈的"裁判"--它决定谁的嗓门更大.
-
-### 5.4 学生策略的优化方向
-
-假设学生当前的分布为 $\pi_\theta = [0.4, 0.4, 0.2]$(对A和B持观望态度),我们来看在不同$\lambda$下,Reverse KL散度 $D_{KL}(\pi_\theta \| \pi_T^{(\lambda)})$ 会把学生推向何方.
-
-Reverse KL的梯度方向(以概率空间为例)指向降低 $\sum_a \pi_\theta(a) \log \frac{\pi_\theta(a)}{\pi_T^{(\lambda)}(a)}$ 的方向. 直观上,学生会被推向增强教师的高概率区域.
-
-- **$\lambda = 0.5$**:增强教师要求A≈87%. 学生必须从当前的$[0.4, 0.4, 0.2]$大幅转向A. 梯度会强烈压制B和C,快速提升A.
-- **$\lambda = 1.0$**:增强教师要求A≈66%. 学生需要提升A,适度压制B,显著压制C. 优化方向明确但不如$\lambda=0.5$极端.
-- **$\lambda = 2.0$**:增强教师几乎与原始教师相同. 学生只需微调,从$[0.4, 0.4, 0.2]$向$[0.5, 0.3, 0.2]$小幅移动.
-- **$\lambda = 5.0$**:增强目标相当平坦,约为$[0.400,0.327,0.273]$.若仍以相同权重最小化 Reverse KL,蒸馏项会把学生拉向这一高熵目标;只有另设显式reward目标时,才能讨论reward与蒸馏之间的权衡.
-
-**工程启示**:$\lambda$ 可以固定也可以调度,但不存在由这组玩具数值自动推出的通用步数配方.应在固定预算和数据切分下分别比较候选值或调度,同时记录任务指标、目标/学生熵、长度、reward/KL 与梯度.
-
-## 6. 简化实现 (PyTorch Code)
-
-以下是G-OPD核心训练逻辑的PyTorch实现,约100行. 代码严格对应上述数学公式,每段注释都标注了对应的公式编号和物理意义.
-
-```python
-import torch
-import torch.nn.functional as F
-
-def compute_f_divergence(student_logprobs, target_probs, divergence_type='kl'):
-    """
-    计算f-散度 D_f(student || target)
-  
-    对应数学公式: D_f(P || Q) = sum Q(x) * f(P(x)/Q(x))
-    注意:在PyTorch中,student_logprobs是log P,target_probs是Q
-  
-    Args:
-        student_logprobs: (B, L, V) 学生模型的log概率 log π_θ(a|s)
-        target_probs: (B, L, V) 目标分布概率 Q(a|s)
-        divergence_type: 'kl' | 'js' | 'chi2' | 'tv'
-    Returns:
-        loss: 标量,f-散度值
-    """
-    # 将log概率转回概率(保持数值稳定)
-    student_probs = torch.exp(student_logprobs)
-  
-    # 计算概率比 r = P(x) / Q(x)
-    # 对应数学公式: r = P(x) / Q(x)
-    ratio = student_probs / (target_probs + 1e-10)
-  
-    if divergence_type == 'kl':
-        # Reverse KL: f(u) = -log(u), D_f = sum Q * (-log(P/Q)) = sum Q * log(Q/P)
-        # 对应数学公式: D_KL(P || Q) = sum P log(P/Q)
-        # 注意PyTorch的kl_div输入是 (log_input, target),计算的是 D_KL(target || input)
-        # 我们要计算 D_KL(student || target),所以 input=student_logprobs, target=target_probs
-        loss = F.kl_div(
-            input=student_logprobs,
-            target=target_probs,
-            reduction='batchmean'
-        )
-      
-    elif divergence_type == 'js':
-        # JS散度: D_JS(P||Q) = 0.5 * D_KL(P||M) + 0.5 * D_KL(Q||M), M = (P+Q)/2
-        # 对应数学公式: M = (P + Q) / 2
-        mixture = 0.5 * (student_probs + target_probs)
-        loss = 0.5 * F.kl_div(
-            input=student_logprobs,
-            target=mixture,
-            reduction='batchmean'
-        ) + 0.5 * F.kl_div(
-            input=torch.log(mixture + 1e-10),
-            target=target_probs,
-            reduction='batchmean'
-        )
-      
-    elif divergence_type == 'chi2':
-        # chi^2散度: f(u) = (u-1)^2, D_f = sum Q * (P/Q - 1)^2 = sum (P-Q)^2 / Q
-        # 对应数学公式: D_χ²(P||Q) = sum (P(x) - Q(x))^2 / Q(x)
-        loss = torch.sum((student_probs - target_probs)** 2 / (target_probs + 1e-10))
-        loss = loss / (student_probs.size(0) * student_probs.size(1))
-      
-    elif divergence_type == 'tv':
-        # Total Variation: f(u) = |u-1|/2, D_TV = 0.5 * sum |P - Q|
-        # 对应数学公式: D_TV(P,Q) = 0.5 * sum |P(x) - Q(x)|
-        loss = 0.5 * torch.sum(torch.abs(student_probs - target_probs))
-        loss = loss / (student_probs.size(0) * student_probs.size(1))
-      
-    else:
-        raise ValueError(f"Unknown divergence type: {divergence_type}")
-  
-    return loss
-
-def compute_augmented_teacher(teacher_logits, reward_vector, lambda_param, temperature=1.0):
-    """
-    计算增强教师分布 π_T^(λ)
-  
-    对应数学公式: π_T^(λ)(a|s) ∝ π_T(a|s)^(1/λ) * exp(R(a,s)/λ)
-  
-    Args:
-        teacher_logits: (B, L, V) 教师模型的原始logits
-        reward_vector: (V,) 每个token的外部奖励 R(a),与词表对齐
-        lambda_param: 温度缩放参数 λ(标量,必须 > 0)
-        temperature: softmax温度
-    Returns:
-        aug_teacher_probs: (B, L, V) 增强教师概率分布
-    """
-    assert lambda_param > 0, "lambda_param must be positive"
-  
-    # 步骤1: 计算教师的概率分布 π_T
-    # 对应数学公式: π_T(a|s) = softmax(logits / temperature)
-    teacher_logprobs = F.log_softmax(teacher_logits / temperature, dim=-1)
-  
-    # 步骤2: 对教师概率进行温度缩放 π_T^(1/λ)
-    # 对应数学公式: π_T(a|s)^(1/λ) = exp((1/λ) * log π_T(a|s))
-    scaled_teacher_logprobs = teacher_logprobs / lambda_param
-  
-    # 步骤3: 对reward进行温度缩放 exp(R/λ)
-    # 对应数学公式: exp(R(a,s) / λ)
-    # reward_vector形状为(V,),需要广播到(B, L, V)
-    scaled_rewards = reward_vector.view(1, 1, -1) / lambda_param
-  
-    # 步骤4: 在对数空间融合两个信号
-    # 对应数学公式: log π_T^(λ) = (1/λ) * log π_T + (1/λ) * R - log Z
-    aug_logits = scaled_teacher_logprobs + scaled_rewards
-  
-    # 步骤5: 归一化得到概率分布
-    # 对应数学公式: π_T^(λ)(a|s) = exp(aug_logits) / sum_a' exp(aug_logits_a')
-    aug_teacher_probs = F.softmax(aug_logits, dim=-1)
-  
-    return aug_teacher_probs
-
-def g_opd_train_step(student_model, teacher_model, reward_vector, prompts,
-                     lambda_param=1.0, divergence_type='kl', temperature=1.0):
-    """
-    G-OPD单次训练步
-  
-    对应数学公式: L_G-OPD = E_{s_t ~ π_θ}[ D_f(π_θ || π_T^(λ)) ]
-  
-    Args:
-        student_model: 待优化的学生模型(带梯度)
-        teacher_model: 提供logits的教师模型(冻结参数)
-        reward_vector: (V,) 每个token的奖励值
-        prompts: list[str] 或 (B, L) 输入prompts
-        lambda_param: λ参数,控制保守/探索程度
-        divergence_type: f-散度类型
-        temperature: softmax温度
-    Returns:
-        loss: 标量损失
-    """
-  
-    # === 阶段1: On-Policy采样 ===
-    # 对应数学公式: s_t ~ π_θ
-    # 学生利用自己的参数进行自回归生成,获得轨迹
-    student_model.eval()  # 采样阶段不更新梯度
-    with torch.no_grad():
-        # 假设student_model.generate已实现
-        # trajectories = student_model.generate(prompts, max_new_tokens=512)
-        trajectories = prompts  # 简化:假设prompts已经包含生成序列
-  
-    # === 阶段2: 计算学生在自己轨迹上的log概率 ===
-    # 对应数学公式: log π_θ(a|s_t)
-    student_model.train()  # 切回训练模式,开启梯度
-    student_logits = student_model(trajectories).logits
-    student_logprobs = F.log_softmax(student_logits / temperature, dim=-1)
-  
-    # === 阶段3: 计算增强教师分布 π_T^(λ) ===
-    # 对应数学公式: π_T^(λ)(a|s) ∝ π_T(a|s)^(1/λ) * exp(R(a,s)/λ)
-    teacher_model.eval()
-    with torch.no_grad():
-        teacher_logits = teacher_model(trajectories).logits
-        aug_teacher_probs = compute_augmented_teacher(
-            teacher_logits, reward_vector, lambda_param, temperature
-        )
-  
-    # === 阶段4: 计算f-散度损失 ===
-    # 对应数学公式: L_G-OPD = E[ D_f(π_θ || π_T^(λ)) ]
-    loss = compute_f_divergence(
-        student_logprobs, aug_teacher_probs, divergence_type
-    )
-  
-    # === 阶段5: 反向传播 ===
-    loss.backward()
-    # optimizer.step()  # 由调用方执行
-  
-    return loss
-
-# === 使用示例 ===
-if __name__ == "__main__":
-    # 超参数设置
-    VOCAB_SIZE = 3  # 词表大小(对应A, B, C)
-    BATCH_SIZE = 2
-    SEQ_LEN = 4
-    LAMBDA = 2.0    # 探索模式
-    DIVERGENCE = 'kl'
-  
-    # 奖励向量:R(A)=1.0, R(B)=0.5, R(C)=0.0
-    # 对应数值走查中的reward设定
-    reward_vec = torch.tensor([1.0, 0.5, 0.0])
-  
-    # 模拟输入(实际中应该是token IDs)
-    dummy_prompts = torch.randint(0, VOCAB_SIZE, (BATCH_SIZE, SEQ_LEN))
-  
-    # 模拟模型(实际中替换为真实的Transformer模型)
-    class DummyModel(torch.nn.Module):
-        def __init__(self, vocab_size, hidden_dim=16):
-            super().__init__()
-            self.embedding = torch.nn.Embedding(vocab_size, hidden_dim)
-            self.head = torch.nn.Linear(hidden_dim, vocab_size)
-      
-        def forward(self, x):
-            h = self.embedding(x)
-            logits = self.head(h)
-            return type('Output', (), {'logits': logits})()
-  
-    student = DummyModel(VOCAB_SIZE)
-    teacher = DummyModel(VOCAB_SIZE)
-  
-    # 执行一次G-OPD训练步
-    loss = g_opd_train_step(
-        student, teacher, reward_vec, dummy_prompts,
-        lambda_param=LAMBDA, divergence_type=DIVERGENCE
-    )
-  
-    print(f"G-OPD Loss (λ={LAMBDA}, divergence={DIVERGENCE}): {loss.item():.4f}")
-```
-
-**代码-公式对照说明**:
-
-| 代码段                                     | 对应公式                                                    | 物理意义                              |
-| ------------------------------------------ | ----------------------------------------------------------- | ------------------------------------- |
-| `compute_f_divergence`                   | $D_f(P \| Q) = \sum Q(x) f\left(\frac{P(x)}{Q(x)}\right)$ | f-散度选择器,支持KL/JS/$\chi^2$/TV |
-| `teacher_logprobs / lambda_param`        | $\pi_T^{1/\lambda}$                                       | 教师信号的温度缩放                    |
-| `reward_vector / lambda_param`           | $R/\lambda$                                               | reward信号的温度缩放                  |
-| `scaled_teacher + scaled_rewards`        | $\log \pi_T^{(\lambda)} = \frac{\log \pi_T + R}{\lambda}$ | 对数空间的线性融合                    |
-| `F.softmax(aug_logits)`                  | $\pi_T^{(\lambda)} = \frac{\exp(\dots)}{Z}$               | 归一化得到增强教师                    |
-| `student_model.generate`                 | $s_t \sim \pi_\theta$                                     | On-Policy采样                         |
-| `student_model.train()` + `backward()` | $\nabla_\theta \mathcal{L}_{G\text{-}OPD}$                | 策略梯度更新                          |
-
-## 7. 局限性与边界条件 (Limitations & Boundary Conditions)
-
-世界上没有包治百病的算法. G-OPD虽然提供了一个强大的统一框架,但它在工程实践中同样面临严峻的边界条件和理论约束. 深刻理解这些局限,是避免在实际训练中踩坑的前提.
-
-### 7.1 f-散度选择的敏感性:不同散度导致截然不同的训练动态
-
-G-OPD的一个核心卖点是"可以自由选择f-散度",但这种自由同时也是一把双刃剑. **不同的散度选择会导致完全不同的优化景观和收敛行为**,而目前并没有系统性的理论指导来告诉你"对于任务X,应该选择散度Y".
-
-**Reverse KL的陷阱**:Reverse KL是G-OPD的默认选择,因为它与基础OPD兼容. 但正如我们在4.1.4节中分析的,Reverse KL在教师分布极度平坦(High Entropy)时会导致**状态崩塌(Degeneration)** --学生会捏造一个虚假的概率尖峰. 在G-OPD中,这个问题被进一步放大:当$\lambda > 1$时,增强教师本身就被拉平了,Reverse KL的Mode-seeking特性会让学生更加激进地"寻找"一个模态来降低散度,可能导致比基础OPD更严重的模式崩溃.
-
-**Forward KL的幻觉风险**:如果你选择Forward KL($f(u) = u \log u$)作为散度,G-OPD会变成Mass-covering的. 当$\lambda < 1$时,增强教师已经非常尖锐,Forward KL会强迫学生覆盖这个尖锐分布的所有support--这在教师有多个高概率峰值时会导致学生产生"四不像"的输出(即幻觉).
-
-**JS散度的梯度稀疏性**:JS散度虽然数值稳定(有界),但它在$P \approx Q$时梯度信号极其微弱. 这意味着当学生已经较好地逼近了增强教师后,JS散度提供的进一步优化信号会迅速衰减,导致收敛停滞.
-
-**TV距离的不可导性**:Total Variation 在$P = Q$处不可导(因为绝对值函数的尖点),这会给基于梯度的优化带来数值不稳定. 虽然可以使用平滑近似(如Huber损失),但这又引入了额外的超参数.
-
-**当前的最佳实践**是:在训练初期使用JS散度(温和,避免爆炸),在中期切换到Reverse KL(精准,Mode-seeking),在后期如果需要探索可以短暂尝试$\alpha$-散度($\alpha = 0.5$). 但这种"散度调度"策略目前主要基于经验,缺乏严格的理论保证.
-
-### 7.2 $\lambda$过大导致的不稳定性:梯度爆炸与分布崩溃
-
-$\lambda$坐标系虽然优美,但$\lambda > 1$的区域是一片**充满暗礁的水域**.
-
-**梯度爆炸**:当$\lambda$很大时,$1/\lambda$很小,增强教师 $\pi_T^{(\lambda)}$ 趋向平坦. 在Reverse KL中,$D_{KL}(\pi_\theta \| \pi_T^{(\lambda)}) = \sum_a \pi_\theta(a) [\log \pi_\theta(a) - \log \pi_T^{(\lambda)}(a)]$. 如果$\pi_T^{(\lambda)}(a)$在某些token上极其微小(因为归一化$Z(s)$的吸收效应),$-\log \pi_T^{(\lambda)}(a)$ 会变成一个巨大的正数. 如果学生恰好采样到了这个token($\pi_\theta(a) > 0$),梯度会爆炸.
-
-**长度偏差(Length Bias)** :G-OPD论文(Yang et al., 2026)和后续的工业实践反复观察到,当$\lambda > 1.5$时,模型的输出长度会显著增加. 这是因为增强教师在$\lambda$较大时更平坦,KL约束减弱,模型倾向于生成更多token来"试探"reward更高的路径--这是一种隐式的reward hacking. 在数学推理任务中,这表现为模型生成大量冗余的中间步骤; 在代码生成中,表现为过度冗长的注释和重复逻辑.
-
-**分布崩溃的相变**:当$\lambda$从1.0逐渐增加到2.0时,模型性能通常先上升(探索带来收益),然后在某个临界点(通常在1.3-1.8之间,取决于任务和模型规模)突然下降. 这个相变点的位置目前无法先验预测,只能通过网格搜索(Grid Search)或贝叶斯优化来确定.
-
-### 7.3 增强教师的计算开销:归一化常数的诅咒
-
-增强教师的定义中包含一个归一化常数:
+给定凸函数 $f$ 且 $f(1)=0$, f-散度定义为
 
 $$
-Z(s) = \sum_{a \in \mathcal{V}} \pi_T(a|s)^{1/\lambda} \cdot \exp\left(\frac{R(a,s)}{\lambda}\right) \tag{56}
+D_f(P\,\|\,Q)=\sum_x Q(x)\,f\Bigl(\frac{P(x)}{Q(x)}\Bigr). \tag{12}
 $$
-
-在大型语言模型中,$|\mathcal{V}|$ 通常是32K(Qwen),128K(LLaMA 3)甚至256K(Gemini). **精确计算$Z(s)$需要在每个token位置对整个词表做一次求和**,这在计算上是极其昂贵的.
-
-**近似策略一:Top-K截断**. 只计算教师和reward在Top-K(如K=1024)token上的贡献,忽略长尾. 这在$\lambda \ge 1$时效果尚可(因为低温缩放下长尾贡献很小),但在$\lambda < 1$时会导致严重偏差(高逆温度会放大长尾的相对重要性).
-
-**近似策略二:重要性采样**. 从教师分布中采样一批token来估计$Z(s)$. 但这引入了采样方差,且当$\lambda$很小时,增强教师与教师分布差异很大,重要性采样的效率会急剧下降.
-
-**近似策略三:避免显式归一化**. 在某些特定的f-散度选择下(如Reverse KL配合特定的参数化),梯度计算可以绕过$Z(s)$. 但这大大限制了散度选择的灵活性.
 
-在工程实践中,$Z(s)$的计算开销通常是G-OPD训练 pipeline 中最主要的瓶颈之一. 对于70B规模的模型,即使使用Top-1024截断,单次前向传播中增强教师的计算量也可能占到总计算量的15%-20%.
+由 Jensen 不等式 $D_f\ge0$, 等号当且仅当 $P=Q$. 取 $f(u)=u\log u$ 得 $\mathrm{KL}(P\|Q)$; 取 $f(u)=-\log u$ 得 $\mathrm{KL}(Q\|P)$. 设 $P$ 为教师, $Q$ 为学生, 前者是前向 KL, 倾向覆盖教师的全部概率质量; 后者是反向 KL, 倾向集中到教师的高概率模式上, OPD 与 G-OPD 用的是它. 取 $f(u)=\tfrac12|u-1|$ 得总变差 $\tfrac12\sum_x|P(x)-Q(x)|$, 取值在 $[0,1]$. Jensen-Shannon 散度 $\tfrac12\mathrm{KL}(P\|M)+\tfrac12\mathrm{KL}(Q\|M)$, $M=\tfrac12(P+Q)$, 也是 f-散度, 上界为 $\log2$. α-散度族 $f(u)=\frac{u^\alpha-\alpha(u-1)-1}{\alpha(\alpha-1)}$ 在 $\alpha\to1$ 时趋于前向 KL, $\alpha\to0$ 时趋于反向 KL, $\alpha=0.5$ 时与 Hellinger 距离的平方成正比.
 
-### 7.4 与RLHF的兼容性:Reward Model的校准问题
+在序列级蒸馏中系统使用 f-散度的是 Wen, Li, Du, Mou 的 f-distill (ACL 2023). 他们把序列级蒸馏写成最小化 f-散度, 给出 KL, 反向 KL, JS 与总变差四种变体, 指出已有的 SeqKD 与 ENGINE 分别是 KL 与反向 KL 蒸馏的近似, 并把序列级散度逐步分解为可计算的词级损失. 在四个文本生成数据集上, 对师生对称的 JS 与总变差损失优于非对称的两种, 作者认为对称损失缓解了模式平均与模式坍缩. GKD (Agarwal 等, ICLR 2024) 把散度作为超参, 既可用前向 KL, 反向 KL, 也可用以 $\beta$ 插值的广义 JSD, 并结合学生生成的数据. [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 在不同实验中分别用 JSD 与反向 KL, [02 OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) 的消融里全词表前向 KL 优于反向 KL 与 JSD.
 
-G-OPD将外部reward信号$R(a,s)$注入了增强教师,这隐含地假设了reward model的输出是**良好校准的(Well-Calibrated)** --即$R(a,s)$的数值尺度在不同状态$s$之间是可比的.
+两条轴的作用对象不同. 散度轴决定每个位置上学生如何逼近一个给定目标; $\lambda$ 轴决定这个目标本身是什么, 由式 (8), 目标在对数空间里沿参考模型到教师的直线移动, $\lambda>1$ 时越过教师. G-OPD 论文只研究了后一条轴, 两条轴的组合 (例如外推后的目标配合 JSD 或前向 KL) 论文没有实验.
 
-但在真实的RLHF pipeline 中,reward model往往存在严重的**尺度漂移(Scale Drift)** 和**状态依赖偏差(State-Dependent Bias)** :
+## 12. 复现要点
 
-- **尺度漂移**:同一个reward model,对于简单的算术题可能输出$R \in [0, 1]$,对于复杂的证明题可能输出$R \in [-10, 10]$. 这种尺度不一致会被$\lambda$参数进一步放大或压缩.
-- **长度偏差**:未经校准的reward model往往对更长的回答给予更高的分数(因为更长的回答更有可能包含正确答案的某些片段). 当$\lambda > 1$时,G-OPD的低逆温度会削弱对长度的惩罚,导致模型学会"用长度换reward".
-- **分布偏移**:Reward model通常是在静态数据集上训练的,而G-OPD的学生策略$\pi_\theta$在训练过程中不断演化. 当$\pi_\theta$偏离了reward model的训练分布时,reward的可靠性会急剧下降(这就是经典的reward hacking问题).
+按论文的设置, 在现有 OPD 实现上改成 ExOPD 只需几处:
 
-**缓解策略**:在使用G-OPD之前,必须对reward model进行**逐prompt归一化**(per-prompt normalization),例如将同一prompt下所有候选回答的reward转换为z-score:$R_{norm}(a) = (R(a) - \mu_R) / \sigma_R$. 这可以消除尺度漂移,但无法解决分布偏移问题.
-
-### 7.5 多教师场景下的权重冲突
-
-虽然G-OPD在理论上可以通过f-散度处理多教师,但在工程实践中,当多个教师(如数学专家和代码专家)在某个token上给出**相互矛盾的分布信号**时,G-OPD没有内置的冲突解决机制.
-
-例如,数学教师可能在"="token上给出0.8的概率,而代码教师在同一位置给出0.1的概率(因为代码中可能期望"=="). 如果简单地将两个教师的增强教师做平均,G-OPD会得到一个模糊的中间分布("="的概率约为0.45),学生可能会输出一个既不像数学也不像代码的奇怪混合体.
-
-当前的工业解决方案(如DeepSeek-V4的多教师OPD)是引入**显式的领域权重** $w_k$,但这已经超出了纯G-OPD框架的范畴,进入了工程启发式(Heuristics)的领域.
-
-## 8. 演进与承上启下 (Evolution & Segue)
-
-G-OPD通过f-散度和$\lambda$坐标系,为后训练领域提供了一个前所未有的统一框架. 但正如我们在局限性分析中看到的,G-OPD本身并不是终点. 它打开了大门,同时也揭示了新的问题--而这些问题正是下一代算法的出发点.
-
-### 8.1 引出SCOPE:如果增强教师本身质量不高,如何过滤?
-
-G-OPD假设增强教师 $\pi_T^{(\lambda)}$ 是一个可靠的优化目标. 但在实际工程中,教师模型并不总是正确的. 特别是在OPSD(自蒸馏)场景中,"教师"就是学生自己通过一个更长的思考链或更好的上下文生成的--如果学生本身就在某些问题上"一知半解",那么教师信号就是有毒的.
-
-SCOPE(Selective Feedback,选择性反馈)正是为了解决这一问题而诞生的. 它的核心洞察是:**并非所有的rollout都值得被蒸馏**. SCOPE引入了一个基于困惑度(Perplexity)的质量过滤机制:
-
-- 对于答错的轨迹,只有当教师在该轨迹上的困惑度很低(即教师"很有信心")时,才进行KL蒸馏;
-- 对于答对的轨迹,只有当学生的困惑度很高(即学生"做对了但不太确定",是边界样本)时,才进行强化.
-
-这对应于G-OPD框架中的以下扩展:**在计算增强教师之前,先通过一个二元门控函数 $g(s_t) \in \{0, 1\}$ 来决定是否使用当前token的蒸馏信号. ** G-OPD提供了统一的损失函数,SCOPE为这个损失函数提供了选择性的"开关".
-
-### 8.2 引出SDPO:将G-OPD与DPO统一
-
-G-OPD使用f-散度来度量学生与增强教师之间的分布差异,而DPO(Direct Preference Optimization)使用成对偏好数据来直接优化策略. 表面上看,这两者一个是"分布匹配",一个是"偏好排序",风马牛不相及.
-
-但SDPO(Self-Distillation Policy Optimization)揭示了它们的深层联系:**如果增强教师 $\pi_T^{(\lambda)}$ 本身是通过偏好数据构造的(例如,用DPO的目标来定义一个隐式教师),那么G-OPD的f-散度最小化就等价于DPO的偏好最大化. **
-
-具体来说,SDPO证明:如果选择特定的 $f$(与DPO的隐式reward相关)并将 $\pi_T^{(\lambda)}$ 定义为Bradley-Terry模型下的最优策略,那么:
-
-$$
-D_f(\pi_\theta \| \pi_T^{(\lambda)}) \propto \mathcal{L}_{DPO}(\pi_\theta; \pi_{ref}) \tag{57}
-$$
+1. 准备三个模型: 学生 $\pi_\theta$, 教师 $\pi^*$, 参考模型 $\pi_{\mathrm{ref}}$. 同基座多教师合并时参考模型就是学生的初始 checkpoint, 可以和学生共用一份冻结权重; 强到弱蒸馏默认也用学生基座, 能拿到教师 RL 前版本时换成它做奖励校正.
+2. 学生对每个 prompt 采 1 条回答 (batch 1024, 温度 1.0, top-p 1.0, 最长 16384 token), 采样引擎与训练引擎的数值差异用 token 级 rollout 修正.
+3. 在采样到的 token 上分别取学生, 教师, 参考模型的对数概率, 按式 (10) 算优势, $\lambda$ 取 1.25.
+4. 以学习率 1e-5 做策略梯度更新; 同尺寸实验训练 50 步, 强到弱实验 100 步, 再多可能过拟合.
+5. 监控训练奖励, 回答长度和熵. 论文中 ExOPD 这三项都高于 OPD; 若长度失控或成绩下降, 首先怀疑 $\lambda$ 偏大.
 
-这意味着,**G-OPD,DPO,RLHF三者位于同一个数学光谱上**,只是使用了不同的坐标参数化. G-OPD用$\lambda$和$f$来参数化,DPO用偏好对来参数化,RLHF用显式reward model来参数化. SDPO的工作正在把这个"大统一理论"逐步完善.
+多教师时, 蒸馏数据就是各领域的 RL 数据, 数学 prompt 对应数学教师, 代码 prompt 对应代码教师, 两个领域的样本量要先对齐. 训练与评测使用同一提示模板: 数学题后接 `Please reason step by step, and put your final answer within \boxed{}.`, 代码题要求先思考再在末尾给出 Python 代码块.
 
-### 8.3 未来方向:自适应$\lambda$调度与多教师G-OPD
+## 13. 局限与开放问题
 
-G-OPD的当前实现通常使用固定的或简单线性调度的$\lambda$. 但理论上,$\lambda$可以根据训练动态**自适应地调整**:
+论文自身给出的限制:
 
-- **基于梯度的自适应**:如果监控到KL散度项的梯度范数在增大(学生正在快速偏离教师),自动减小$\lambda$(增强约束)来防止崩溃; 如果KL项已经很小且reward增长停滞,自动增大$\lambda$来释放探索空间.
-- **基于任务难度的自适应**:对于模型已经熟练掌握的简单任务,使用较大的$\lambda$(鼓励探索更优解); 对于模型尚未掌握的高难度任务,使用较小的$\lambda$(强制模仿教师).
-- **多教师G-OPD**:将$\lambda$扩展为一个向量$\vec{\lambda} = (\lambda_1, \lambda_2, \dots, \lambda_K)$,每个$\lambda_k$对应一个领域专家教师. 这允许在不同领域使用不同的探索强度--数学推理可能需要$\lambda = 1.2$(适度外推),而创意写作可能需要$\lambda = 0.8$(保守模仿).
+1. **外推过度不稳定**. $\lambda=1.5$ 时成绩下降, 原因可能是学生 hack 隐式奖励. 论文只扫描了到 1.5 的若干点, 后续实验固定 1.25; 不同任务, 模型的合适 $\lambda$ 是否相同, 没有研究.
+2. **回答变长**. ExOPD 的回答长度高于 OPD 与教师, 推理成本随之增加. 作者把它归因于隐式奖励的长度偏差, 但没有给出长度控制的办法.
+3. **额外计算**. $\lambda\neq1$ 要计算 $\log\pi_{\mathrm{ref}}$; 奖励校正还要求参考模型是更大的教师基座.
+4. **奖励校正的前提**. 需要拿到教师 RL 之前的版本. 对外部发布的教师 (如本文所用的 Qwen3-30B-A3B-Instruct-2507) 往往做不到, 论文自己也只能在 4B 教师上验证.
 
-## 9. 总结与参考文献 (References)
+作者列出的后续工作: 在更大规模的模型上验证 ExOPD; 在更多, 更多样的领域教师上检验多教师合并的稳健性; 研究跨模型家族的 OPD 中 ExOPD 的效果.
 
-### 9.1 核心要点总结
+从实验设计看还有两点. 一是多教师实验只有数学与代码两个教师, 且两者都由同一学生 RL 得到; 第 10 节显示教师训练充分后, 超过教师的幅度缩小到平均分的 0.3 到 1.3 分. 二是全部实验都在 Qwen3 家族内完成, 教师与学生共用同一套分词器.
 
-1. **f-散度统一框架**:G-OPD将基础OPD从单一的Reverse KL推广到任意的f-散度族(KL/JS/$\chi^2$/TV/$\alpha$-Div),使得后训练的设计者可以根据任务特性选择最合适的"距离尺子".
-2. **$\lambda$坐标系的连续相变**:通过增强教师 $\pi_T^{(\lambda)} \propto \pi_T^{1/\lambda} \cdot e^{R/\lambda}$,G-OPD在单一公式中同时涵盖了保守正则($\lambda < 1$),标准蒸馏($\lambda = 1$),奖励外推($\lambda > 1$)和纯RL极限($\lambda \to \infty$)四种模式.
-3. **蒸馏与RL的数学桥梁**:G-OPD严格证明了基础OPD是KL约束RL的特例,而G-OPD本身是这个光谱的完整展开. 这意味着后训练pipeline不再需要为蒸馏和RL编写两套独立代码--一个统一的,参数化的框架足以覆盖全部需求.
-4. **工程实践的边界意识**:f-散度的选择会显著影响训练动态; $\lambda > 1$的区域存在梯度爆炸和长度偏差的风险; 增强教师的归一化常数$Z(s)$是主要的计算瓶颈; reward model的校准问题是与RLHF兼容性的核心挑战.
+## 14. 与其他 OPD 方法的关系
 
-### 9.2 参考文献
+G-OPD 给 OPD 提供了一个 RL 视角: 教师相对参考模型的对数概率偏移是 token 级奖励, 蒸馏强度是这个奖励的权重. 这一视角对本章其他方法也适用.
 
-1. **MiniLLM: Knowledge Distillation of Large Language Models** (arXiv: 2306.08543). URL: https://arxiv.org/abs/2306.08543 -- 早期在大模型上使用Reverse KL进行蒸馏的开创性工作.
-2. **GKD: Generalized Knowledge Distillation for Large Language Models** (arXiv: 2306.13649). URL: https://arxiv.org/abs/2306.13649 -- 将知识蒸馏推广到On-Policy场景的奠基论文.
-3. **f-Distill: Functional Knowledge Distillation via f-Divergence** (Wen et al., 2023). -- 系统性地将f-散度引入蒸馏框架的理论工作.
-4. **Qwen3 Technical Report** (Alibaba Group, 2025). -- 工业界首次大规模验证OPD在算力经济学上超越RL的实战报告.
-5. **DeepSeek-V4 Technical Report** (DeepSeek-AI, 2026). -- 披露多教师OPD与$\lambda$外推机制在超大规模模型上的应用.
-6. **SCOPE: Selective Feedback for On-Policy Distillation** (arXiv: 2604.10688). URL: https://arxiv.org/abs/2604.10688 -- 解决G-OPD中"教师信号质量不确定"问题的直接后继工作.
-7. **A Survey of On-Policy Distillation for Large Language Models** (arXiv: 2604.00626, 2026). -- OPD算法家族(包括G-OPD,OPSD,SDFT,SDPO,SCOPE)的系统性综述.
-8. **Csiszár, I. (1967). Information-type measures of difference of probability distributions and indirect observations.** Studia Scientiarum Mathematicarum Hungarica, 2, 299-318. -- f-散度的原始数学奠基.
+- [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) 是 $\lambda=1$ 的特例.
+- 多教师蒸馏见 [09 MOPD](../09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md). 第 8 节沿用 MiMo-V2-Flash 的设置, 把同一基座的多个领域 RL 专家合并回基座, G-OPD 在其上加了奖励外推.
+- [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 与 [03 SDFT](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md) 中, 教师是带额外上下文的同一模型. SDFT 把示范条件化教师与当前策略的对数比解释为隐式奖励, 与式 (6) 的形式相同, 只是参考模型换成了不带示范的自己.
+- [06 SCOPE](../06-SCOPE-选择性反馈/06-SCOPE-选择性反馈.md) 讨论哪些 token 的教师信号可以采用, [07 OPD 失败模式](../07-OPD-失败模式/07-OPD-失败模式.md) 讨论 OPD 在哪些条件下失效, 都与第 13 节的奖励 hack 和长度偏差相关.
+- OPD 方法的整体梳理见 [4.6-OPD](../4.6-OPD.md) 与 [OPD 综述](../4.6.2-OPD综述/01-Song-Zheng综述/01-Song-Zheng综述.md), 状态分布视角见 [4.6.3](../4.6.3-状态分布视角/4.6.3-状态分布视角.md).
 
----
+## 参考文献
 
-> **下一篇预告**:在理解了G-OPD的统一框架之后,我们将面临一个更尖锐的问题--如果增强教师 $\pi_T^{(\lambda)}$ 本身的质量无法保证(例如自蒸馏时教师也是"半瓶醋"),我们该如何选择性地接受或拒绝教师信号?**SCOPE(选择性反馈)** 通过困惑度加权机制,为答对和答错的轨迹设计了完全不同的反馈策略,在保留多样性的同时大幅提升了蒸馏效率. 详见 [06-SCOPE-置信度门控](../06-SCOPE-置信度门控/06-SCOPE-置信度门控.md).
+1. Yang, W., Liu, W., Xie, R., Yang, K., Yang, S., Lin, Y. *Learning beyond Teacher: Generalized On-Policy Distillation with Reward Extrapolation*. arXiv:2602.12125, 2026. 代码: https://github.com/RUCBM/G-OPD
+2. Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Garea, S. R., Geist, M., Bachem, O. *On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes*. ICLR 2024. arXiv:2306.13649.
+3. Gu, Y., Dong, L., Wei, F., Huang, M. *MiniLLM: Knowledge Distillation of Large Language Models*. ICLR 2024. arXiv:2306.08543.
+4. Wen, Y., Li, Z., Du, W., Mou, L. *f-Divergence Minimization for Sequence-Level Knowledge Distillation*. ACL 2023. arXiv:2307.15190.
+5. Lu, K., Thinking Machines Lab. *On-Policy Distillation*. Thinking Machines Lab: Connectionism, 2025. https://thinkingmachines.ai/blog/on-policy-distillation
+6. Rafailov, R. et al. *Direct Preference Optimization: Your Language Model is Secretly a Reward Model*. NeurIPS 2023.
+7. Cui, G. et al. *Process Reinforcement through Implicit Rewards*. arXiv:2502.01456, 2025.
+8. Zheng, C., Wang, Z., Ji, H., Huang, M., Peng, N. *Model Extrapolation Expedites Alignment* (ExPO). ACL 2025.
+9. Xiao, B. et al. *MiMo-V2-Flash Technical Report*. arXiv:2601.02780, 2026.
+10. Yang, W. et al. *LaSeR: Reinforcement Learning with Last-Token Self-Rewarding*. arXiv:2510.14943, 2025.
+11. Csiszár, I. *Information-type measures of difference of probability distributions and indirect observations*. Studia Scientiarum Mathematicarum Hungarica, 2: 299–318, 1967.

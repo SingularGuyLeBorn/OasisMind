@@ -7,7 +7,7 @@ excerpt: "分域 RL 能把数学,代码,agent 各自推到峰值,交付却只要
 ---
 # MOPD:多教师蒸馏
 
-分域 RL 能把数学,代码,agent 各自推到峰值,交付却只要**一份**权重.多教师在线蒸馏做的事很窄:学生 $\pi_\theta$ **自己采样**,按题目找对应教师,用教师分布给学生稠密监督,把多份专家并进一个学生.本文是 [4.6 OPD](../4.6-OPD.md) 里「多教师合并」单独成篇,记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 reverse KL 与 on-policy 采样.**不是** 把三家合成一条「标准 MOPD」:DeepSeek-V4 报告仍叫 **OPD**(全词表 reverse KL);Kimi K3 与 MiMo-V2-Flash 才用 **MOPD** 这个词,损失和裁剪也不一样.正文以各家原始报告为证据,并把模型身份统一收口到主流模型知识库的版本正本.
+分域 RL 能把数学,代码,agent 各自推到峰值,交付却只要**一份**权重.多教师在线蒸馏做的事很窄:学生 $\pi_\theta$ **自己采样**,按题目找对应教师,用教师分布给学生稠密监督,把多份专家并进一个学生.本文是 [4.6 OPD](../4.6-OPD.md) 里「多教师合并」单独成篇,记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD基础原理/01-OPD基础原理.md) 的 reverse KL 与 on-policy 采样.**不是** 把三家合成一条「标准 MOPD」:DeepSeek-V4 报告仍叫 **OPD**(全词表 reverse KL);Kimi K3 与 MiMo-V2-Flash 才用 **MOPD** 这个词,损失和裁剪也不一样.正文以各家原始报告为证据,并把模型身份统一收口到主流模型知识库的版本正本.
 
 ---
 
@@ -16,7 +16,7 @@ excerpt: "分域 RL 能把数学,代码,agent 各自推到峰值,交付却只要
 2026 年几家开源报告走同一条流水线骨架:先 SFT 冷启动,再按域(有时再按 reasoning effort)各自做 RL,得到一排专家.剩下的问题不是「会不会 RL」,而是 **怎么并**:
 
 1. **权重合并.** 省一次训练.MiMo-V2-Flash 报告点名它会和顺序训练一样做能力 trade-off.Xiaomi 另文<MOPD>(数字以该文 Table 2 为准,链接见 inbox)在 Qwen3-30B-A3B 上把线性平均的归一化分打到 **0.328**(Task Arithmetic 才回到 0.857).这是权重空间融合,不是策略空间对齐.
-2. **离线蒸馏 / 拿教师轨迹做 SFT.** 学生拟合的是教师写过的前缀.推理时它走自己的前缀--[01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 里的暴露偏差.
+2. **离线蒸馏 / 拿教师轨迹做 SFT.** 学生拟合的是教师写过的前缀.推理时它走自己的前缀--[01](../01-OPD基础原理/01-OPD基础原理.md) 里的暴露偏差.
 3. **混合 RL / 级联 RL.** 多域奖励进同一条策略,或按域串着训.V4 写他们用 OPD **整段换掉** V3.2 的 mixed RL 合并;Xiaomi 另文把 Mix-RL,Cascade RL 当作对照,归一化分分别是 **0.882 / 0.775**,都低于他们的 MOPD **0.937**.
 
 三家给出的合并手段,共同的只有半句:**轨迹从学生来(on-policy),监督从多个冻结教师来.** 损失怎么写,裁剪裁哪一项,一次前向看几个词表位置,必须分节读,不能共用一套超参.
@@ -192,9 +192,9 @@ Flash Table 7 与该文 Table 3 对 Flash 的列不完全同一套基准(该文 
 
 | 对象 | 差在哪 | 去哪篇 |
 |------|--------|--------|
-| MiniLLM / GKD 式单教师 on-policy | 一个 $\pi_T$,没有「按域派教师再并进一份权重」 | [01-OPD](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) |
-| OPSD 特权上下文 | 教师和学生**同一份权重**,差在输入里塞不塞标准答案 | [02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md) |
-| SDPO rich feedback | 监督来自编译器/验证器的富反馈,不是多份冻结专家的 logits | [04-SDPO](../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md) |
+| MiniLLM / GKD 式单教师 on-policy | 一个 $\pi_T$,没有「按域派教师再并进一份权重」 | [01-OPD](../01-OPD基础原理/01-OPD基础原理.md) |
+| OPSD 特权上下文 | 教师和学生**同一份权重**,差在输入里塞不塞标准答案 | [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) |
+| SDPO rich feedback | 监督来自编译器/验证器的富反馈,不是多份冻结专家的 logits | [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) |
 | GLM-5 跨阶段 OPD | 顺序 RL 之后用蒸馏收尾,打的是遗忘/阶段切换,不是「十余或九个并行专家」这套捆法 | 对照见 [10-OPD-各家报告对照](../10-OPD-各家报告对照/10-OPD-各家报告对照.md) |
 
 V4 / K3 / MiMo 引用的共同祖先仍是 MiniLLM 与 Thinking Machines 的 on-policy distillation:学生采样,教师打分,常用 reverse KL.本篇只把「教师从 1 变成一排,损失各家怎么裁」钉死.
@@ -222,6 +222,6 @@ V4 / K3 / MiMo 引用的共同祖先仍是 MiniLLM 与 Thinking Machines 的 on-
 2. Moonshot AI. (2026). Kimi K3 技术报告.§4.1.3 式 (15).公式以 HTML 为准.导航:[Kimi K3 正本](../../../../model-library/03-模型家族/02-kimi/kimi-k3/kimi-k3-bi.md).
 3. Xiaomi LLM-Core. (2026). [MiMo-V2-Flash 技术报告](https://arxiv.org/abs/2601.02780).§4.1,§4.4 式 (5)–(9),Table 7;版本入口见 [MiMo-V2-Flash](../../../../model-library/03-模型家族/05-mimo/mimo-v2-flash/mimo-v2-flash-bi.md).
 4. Ma et al. (2026). <MOPD>因式论文.Qwen3-30B-A3B Table 2;与 Flash 正文公式分列,不合并超参.链接只在 inbox.
-5. MiniLLM;Agarwal et al. on-policy distillation / GKD;Lu and Thinking Machines Lab (2025) On-Policy Distillation--三家报告共同引用的单教师祖先,细节在 [01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md).
+5. MiniLLM;Agarwal et al. on-policy distillation / GKD;Lu and Thinking Machines Lab (2025) On-Policy Distillation--三家报告共同引用的单教师祖先,细节在 [01](../01-OPD基础原理/01-OPD基础原理.md).
 
 知乎只学讲法(「一个 prompt 派一名域教师,梯度在 batch 上合成」),数字与公式不以专栏为准.

@@ -79,7 +79,7 @@ MTP 的用法承自 MiMo-7B, 时间表也一样: 预训练只挂 1 个 MTP head,
 
 ### 3.1. 后训练主轴: 从分域教师到 MOPD
 
-Figure 3 / §4.1 把后训练分三步. Stage 1 通用 SFT, 解决指令跟随. Stage 2 训分域教师: agentic (search, coding, tool) 与 non-agentic (数学, 通识推理, 安全) 各自 RL 或 SFT. Stage 3 是 **MOPD** (Multi-Teacher On-Policy Distillation): 学生从自身分布采样, 由对应领域的教师逐 token 打分, 再叠加结果奖励. 报告的动机是把 RL 算力花在教师上, 再用蒸馏把多个专家合进一个学生, 避免参数合并的互相干扰和离线蒸馏的分布偏移. §4.1 把要解决的问题说成两个: 能力失衡, 提升一项技能会让另一项退步 (see-saw 效应); 学习低效, 合并多个专家时训练信号没被充分利用. 顺序多阶段训练容易出前者, 参数合并和离线蒸馏容易出后者. 机制单独成篇见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md) 与 [On-Policy Distillation 深度解析](../../../../llm-guide/4-后训练/4.4-对齐技术/On-Policy-Distillation深度解析.md).
+Figure 3 / §4.1 把后训练分三步. Stage 1 通用 SFT, 解决指令跟随. Stage 2 训分域教师: agentic (search, coding, tool) 与 non-agentic (数学, 通识推理, 安全) 各自 RL 或 SFT. Stage 3 是 **MOPD** (Multi-Teacher On-Policy Distillation): 学生从自身分布采样, 由对应领域的教师逐 token 打分, 再叠加结果奖励. 报告的动机是把 RL 算力花在教师上, 再用蒸馏把多个专家合进一个学生, 避免参数合并的互相干扰和离线蒸馏的分布偏移. §4.1 把要解决的问题说成两个: 能力失衡, 提升一项技能会让另一项退步 (see-saw 效应); 学习低效, 合并多个专家时训练信号没被充分利用. 顺序多阶段训练容易出前者, 参数合并和离线蒸馏容易出后者. 机制单独成篇见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md) 与 [On-Policy Distillation 深度解析](../../../../llm-guide/4-后训练/4.6-OPD/01-OPD基础原理/01-OPD基础原理.md).
 
 on-policy distillation 的来路要讲清, 才看得懂 MOPD 改了什么. 传统蒸馏让学生模仿教师写好的整段回答 (离线, 学生没见过自己犯错后的状态). GKD 提出让学生自己采样, 教师在学生走到的每个前缀上给 token 分布, 并指出 reverse KL 是 「mode seeking」 的, 学生会集中到教师高概率的那一种行为上, 而不是把概率摊到多个平庸选项. Thinking Machines 把逐 token 的 reverse KL 取负直接当作 RL 优势, 教师在学生采到的 token 上算 log-prob 即可, 不用枚举全词表. MOPD 在这个框架上加了两件事: 教师按 prompt 所属领域切换 (多教师), 以及可以再加上 GRPO 一类结果奖励.
 

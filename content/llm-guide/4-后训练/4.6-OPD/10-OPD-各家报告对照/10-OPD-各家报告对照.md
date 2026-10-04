@@ -7,15 +7,15 @@ excerpt: "报告里的 on-policy distillation 不是同一道工序.Qwen3 用大
 ---
 # OPD:各家报告对照
 
-报告里的 on-policy distillation 不是同一道工序.Qwen3 用大号教师压小号学生;V4 用十几个领域专家合进一个权重,损失写全词表 reverse KL;K3 / MiMo-V2-Flash 把合版叫 **MOPD**,损失仍是逐 token 的 $\mathrm{sg}[\log\pi_T/\pi_\theta]$;GLM-5 的教师是自己流水线的旧 checkpoint.本篇是对照表 + 机制分叉,**不是**再推一遍 MiniLLM.记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 $\pi_\theta$,$\pi_T$;公式只写各报告自己写下的那一行,模型身份统一回到主流模型知识库的版本正本,技术细节引用原始报告.
+报告里的 on-policy distillation 不是同一道工序.Qwen3 用大号教师压小号学生;V4 用十几个领域专家合进一个权重,损失写全词表 reverse KL;K3 / MiMo-V2-Flash 把合版叫 **MOPD**,损失仍是逐 token 的 $\mathrm{sg}[\log\pi_T/\pi_\theta]$;GLM-5 的教师是自己流水线的旧 checkpoint.本篇是对照表 + 机制分叉,**不是**再推一遍 MiniLLM.记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD基础原理/01-OPD基础原理.md) 的 $\pi_\theta$,$\pi_T$;公式只写各报告自己写下的那一行,模型身份统一回到主流模型知识库的版本正本,技术细节引用原始报告.
 
 ---
 
 ## 1. 具体问题:同一个英文名,卡在三个不同槽里
 
-[01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 把 OPD 立成 Reverse KL + 学生自己采样.学术起点是 Gu et al. MiniLLM 与 GKD,厂商报告也引用它们.本篇不重推.落地之后名字开始打架:
+[01](../01-OPD基础原理/01-OPD基础原理.md) 把 OPD 立成 Reverse KL + 学生自己采样.学术起点是 Gu et al. MiniLLM 与 GKD,厂商报告也引用它们.本篇不重推.落地之后名字开始打架:
 
-- [4.6 节首页](../4.6-OPD.md) 把 OPD 写成 Online Preference/Policy Distillation,又「泛指」Online Self-Distillation.报告里的官方名是 **On-Policy Distillation**(同策略蒸馏).自蒸馏是另一条线,见 [02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md).
+- [4.6 节首页](../4.6-OPD.md) 把 OPD 写成 Online Preference/Policy Distillation,又「泛指」Online Self-Distillation.报告里的官方名是 **On-Policy Distillation**(同策略蒸馏).自蒸馏是另一条线,见 [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md).
 - 01 把 17,920 / 1,800 GPU hours,AIME 67.6→74.4 指回了 Qwen3 报告,但漏了分母:**Qwen3-8B,同一份 off-policy 蒸馏检查点,只做 math+code,括号里是 pass@64**.
 - [DeepSeek-V4 身份页](../../../../model-library/03-模型家族/01-deepseek/deepseek-v4/deepseek-v4-bi.md) 的 §5.5 应写成:V4 的 multi-teacher OPD 没有 17,920 / 1,800 这组 GPU 小时对照;那两个格子是 Qwen3 Table 21 的,不要安到 V4.
 
@@ -147,8 +147,8 @@ GLM-5 连 MOPD / OPD 缩写都不打,官方名是 on-policy **cross-stage** dist
 
 ## 7. 下一篇
 
-- Reverse KL 与 on-policy 采样的教材推导:[01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md).本篇数字以各版本正本所链的一手报告为准;01 里未出现在 Table 21 的步数不跟.
-- 自蒸馏(同一权重,不同上下文):[02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md).
+- Reverse KL 与 on-policy 采样的教材推导:[01-OPD-学生前缀蒸馏](../01-OPD基础原理/01-OPD基础原理.md).本篇数字以各版本正本所链的一手报告为准;01 里未出现在 Table 21 的步数不跟.
+- 自蒸馏(同一权重,不同上下文):[02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md).
 - 厂商精读只走主流模型知识库的版本正本,见 §2 表最后一列;不要在机制课里再抄一套报告正文.
 
 ---
