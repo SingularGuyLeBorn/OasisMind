@@ -1,151 +1,146 @@
 ---
-title: "MOPD:多教师蒸馏"
+title: "09 · MOPD: 多教师在线蒸馏"
 category: "LLM 指南"
 published: true
 tags: ["MOPD", "OPD", "多教师", "On-Policy Distillation", "DeepSeek-V4", "Kimi K3", "MiMo-V2-Flash"]
-excerpt: "分域 RL 能把数学,代码,agent 各自推到峰值,交付却只要一份权重.多教师在线蒸馏做的事很窄:学生 \\pi_\\theta 自己采样,按题目找对应教师,用教师分布给学生稠密监督,把多份专家并进一个学生."
+excerpt: "分域 RL 训出一排专家, 再让学生在自己的 rollout 上按题目找对应教师做 reverse KL, 把多份专家并进一份权重. DeepSeek-V4 用全词表 logit, Kimi K3 与 MiMo-V2-Flash 用 sampled-token 的对数比当优势. Ma 等在 Qwen3-30B-A3B 上的对照里, MOPD 归一化分 0.937, 高于 Mix-RL 的 0.882 与参数平均的 0.328."
 ---
-# MOPD:多教师蒸馏
+# MOPD: 多教师在线蒸馏
 
-分域 RL 能把数学,代码,agent 各自推到峰值,交付却只要**一份**权重.多教师在线蒸馏做的事很窄:学生 $\pi_\theta$ **自己采样**,按题目找对应教师,用教师分布给学生稠密监督,把多份专家并进一个学生.本文是 [4.6 OPD](../4.6-OPD.md) 里「多教师合并」单独成篇,记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD基础原理/01-OPD基础原理.md) 的 reverse KL 与 on-policy 采样.**不是** 把三家合成一条「标准 MOPD」:DeepSeek-V4 报告仍叫 **OPD**(全词表 reverse KL);Kimi K3 与 MiMo-V2-Flash 才用 **MOPD** 这个词,损失和裁剪也不一样.正文以各家原始报告为证据,并把模型身份统一收口到主流模型知识库的版本正本.
+> 相关阅读: [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) · [07 OPD 失败模式](../07-OPD-失败模式/07-OPD-失败模式.md) · [10 OPD 报告落地对照](../10-OPD-报告落地对照/10-OPD-报告落地对照.md)
 
----
+本文的材料是三份技术报告和一篇方法论文: DeepSeek-V4 技术报告 §5.1-5.2, Kimi K3 技术报告 §4.1, MiMo-V2-Flash 技术报告 (arXiv:2601.02780) §4.1 与 §4.4, 以及 Xiaomi 的 Ma 等人的 *MOPD: Multi-Teacher On-Policy Distillation for Capability Integration in LLM Post-Training* (arXiv:2606.30406). 要回答的问题是: 分域 RL 已经训出一排专家之后, 怎样把它们并进一份权重而不掉分, 几家的做法在损失, 裁剪和工程上各差在哪.
 
-## 1. 具体问题:专家已经训好,合并会打回原形
+记号沿用 [01](../01-OPD基础原理/01-OPD基础原理.md): 学生 $\pi_\theta$, 提示 $x$, 学生自己采样的回答 $y$, 第 $t$ 个位置的前缀 $y_{<t}$, $\mathrm{sg}[\cdot]$ 为 stop-gradient.
 
-2026 年几家开源报告走同一条流水线骨架:先 SFT 冷启动,再按域(有时再按 reasoning effort)各自做 RL,得到一排专家.剩下的问题不是「会不会 RL」,而是 **怎么并**:
+## 1. 合并问题
 
-1. **权重合并.** 省一次训练.MiMo-V2-Flash 报告点名它会和顺序训练一样做能力 trade-off.Xiaomi 另文<MOPD>(数字以该文 Table 2 为准,链接见 inbox)在 Qwen3-30B-A3B 上把线性平均的归一化分打到 **0.328**(Task Arithmetic 才回到 0.857).这是权重空间融合,不是策略空间对齐.
-2. **离线蒸馏 / 拿教师轨迹做 SFT.** 学生拟合的是教师写过的前缀.推理时它走自己的前缀--[01](../01-OPD基础原理/01-OPD基础原理.md) 里的暴露偏差.
-3. **混合 RL / 级联 RL.** 多域奖励进同一条策略,或按域串着训.V4 写他们用 OPD **整段换掉** V3.2 的 mixed RL 合并;Xiaomi 另文把 Mix-RL,Cascade RL 当作对照,归一化分分别是 **0.882 / 0.775**,都低于他们的 MOPD **0.937**.
+不同任务域的 RL 流程差别很大: 数学用可验证答案的 RL, 软件工程在可执行沙箱里做 agent RL, 指令跟随和创意写作用 rubric 打分, 搜索 agent 在网页环境里训. 每条流程单独跑都能把本域推上去, 最终交付的却只能是一个模型. Ma 等把已有的合并办法归成四类, 并按三个维度对比 (原文 Table 1):
 
-三家给出的合并手段,共同的只有半句:**轨迹从学生来(on-policy),监督从多个冻结教师来.** 损失怎么写,裁剪裁哪一项,一次前向看几个词表位置,必须分节读,不能共用一套超参.
+| 方法 | 稠密优化信号 | on-policy | 各域可并行开发 |
+|------|------------|-----------|--------------|
+| Param-Merge (权重平均或任务向量) | 否 | 不适用 | 是 |
+| Off-Policy Finetune (拿教师 rollout 做 SFT) | 是 | 否 | 是 |
+| Mix-RL (各域提示混进一个数据集联合 RL) | 否 | 是 | 否 |
+| Cascade RL (各域按顺序 RL) | 否 | 是 | 否 |
+| MOPD | 是 | 是 | 是 |
 
-**图 1 解析**
+各自的问题: Mix-RL 里各域的训练信号互相干扰, 出现跷跷板效应, 联合模型低于各域专家; Cascade RL 训后面的域时前面的能力会衰退, 总训练链路长, 稳定性风险累积; Off-Policy Finetune 学的是教师写过的前缀, 推理时学生走自己的前缀, 有暴露偏差; Param-Merge 在权重空间融合, 结果不稳定, 很难同时追平所有教师. 权重合并这一支本身有不少变体: Model Soups 平均同一初始化下各自微调的权重, 任务向量算术在权重空间加减「任务向量」, TIES-Merging, DARE, AdaMerging 等后续方法处理参数冲突. 它们都不需要额外训练, 代价是结果依赖合并系数. 经典蒸馏 (Hinton 等, Kim 与 Rush 的序列级蒸馏) 在固定的教师生成语料上最小化 forward KL, 属于 off-policy; MiniLLM 与 Agarwal 等的 on-policy 蒸馏改为在学生 rollout 上由教师打分, 但只有一个教师, 一个域. MOPD 保留「学生采样, 教师打分」的模板, 把教师扩展成按提示路由的多个域教师.
 
-- **左 · V4 仍叫 OPD.** 目标是加权 reverse KL,比较的是**整段词表**分布.报告批评把 KL 收成单个已采样 token 的 advantage.
-- **中 · K3 叫 MOPD.** 九个 RL 专家(三域 × 三档 effort).逐 token 奖励是对 $\log(\pi_T/\pi_\theta)$ 做 $\mathrm{clip}$.他们试过更细的 top-$k$ 蒸馏,报告写没有明显好处.
-- **右 · MiMo-V2-Flash 也叫 MOPD.** 采样在推理引擎 $\mu_\theta$,梯度在训练引擎 $\pi_\theta$;裁剪的是重要性比,不是 K3 的 $R_{\max}$.默认再叠一层 ORM / GRPO 的结果优势.
+MiMo-V2-Flash 报告 §4.1 把合并面临的问题概括为「能力失衡」(提升一项导致其他回退) 和「学习低效」(合并多个专家时没有用足训练信号).
 
----
+多教师在线蒸馏 (Multi-Teacher On-Policy Distillation) 的共同骨架是三段: 通用 SFT, 从 SFT 检查点出发分域做 RL 得到教师, 最后学生 (同样从 SFT 检查点初始化) 在自己的 rollout 上接受对应域教师的逐 token 监督. 轨迹来自学生, 监督来自多个冻结的教师. 合并发生在策略空间: 每条提示路由到一位教师, 梯度在混合域的 batch 上累加到同一份参数.
 
-## 2. DeepSeek-V4:名字仍是 OPD,式 (29) 是全词表 reverse KL
+名字上有一处差别. DeepSeek-V4 报告把这一步仍叫 OPD (multi-teacher OPD), Kimi K3 与 MiMo-V2-Flash 叫 MOPD. 下面分家写, 最后再并表对照.
 
-一手:库内 [V4 mineru-en §5.1.2](../../../../model-library/03-模型家族/01-deepseek/deepseek-v4/deepseek-v4-bi.md).后训练骨架沿 V3.2,但 **mixed RL 合并阶段整段换成 OPD**(引 MiniLLM;Thinking Machines Lab 的 on-policy distillation).专家先分域 SFT + GRPO,再蒸进一个学生.这一阶段用了 **十余个**覆盖多域的教师.
+## 2. DeepSeek-V4: 全词表 reverse KL
 
-给定专家集合 $\{\pi_{E_1},\ldots,\pi_{E_N}\}$,报告式 (29):
+### 2.1 专家与目标
 
-$$
-\mathcal{L}_{\mathrm{OPD}}(\boldsymbol{\theta})=\sum_{i=1}^{N} w_i\cdot\mathrm{D}_{\mathrm{KL}}\bigl(\pi_{\boldsymbol{\theta}}\parallel\pi_{E_i}\bigr). \tag{1}
-$$
+DeepSeek-V4 的后训练流程沿用 V3.2, 关键替换一处: 混合 RL 阶段整段换成 OPD. 专家训练按域进行, 每个专家先在本域数据上 SFT, 再用 GRPO 做 RL, 超参与之前的工作接近. 推理力度也通过专家区分: V4-Pro 与 V4-Flash 都支持 Non-think, Think High, Think Max 三档, 每档在 RL 时用不同的长度惩罚和上下文窗口, 以 `<think>` 与 `</think>` 标记响应格式区分; Think Max 还在 system prompt 开头加一段固定指令 (报告 Table 3). 难验证任务不训标量奖励模型, 改用 rubric 引导的数据和生成式奖励模型 (GRM) 评轨迹, 并对 GRM 本身做 RL.
 
-$w_i$ 是各专家权重,报告只写「通常按相对重要性」.reverse KL 的期望要在学生 $\pi_\theta$ 自己的轨迹上算,才保持 on-policy.同一段还写:统一策略会按**当前任务语境**对齐相应专家(数学题对数学专家,代码题对代码专家).式 (1) 在纸面上是对 $i$ 求和;实现上 $w_i$ 在无关域可以是 0.报告**没有**再给一套路由公式,本篇不补.
-
-### 2.1 他们批评的先前做法:token 级 advantage
-
-先前工作常把全词表 KL 收成每个位置只看**已采样那一个** token,并复用 RL 框架,把
+给定 $N$ 个专家 $\{\pi_{E_1},\dots,\pi_{E_N}\}$, 报告式 (29) 是
 
 $$
-\mathrm{sg}\Biggl[\log\frac{\pi_{E_i}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid x,y_{<t})}\Biggr] \tag{2}
+\mathcal L_{\mathrm{OPD}}(\theta)=\sum_{i=1}^{N}w_i\cdot D_{\mathrm{KL}}\bigl(\pi_\theta\,\|\,\pi_{E_i}\bigr) \tag{1}
 $$
 
-当作逐 token advantage($\mathrm{sg}$ 是 stop-gradient).报告承认这样省资源,但 **梯度方差高,训练不稳**.V4 因此改用 **full-vocabulary logit distillation**:每个位置保留完整 logit,再算 reverse KL.
+$w_i$ 是各专家的权重, 报告只写「通常由专家的相对重要性决定」. reverse KL 要求轨迹从学生采样. 报告的解释是统一策略按当前任务语境对齐相应专家, 数学题对数学专家, 代码题对代码专家; 在实现上, 这相当于与当前任务无关的专家权重为 0. 这一阶段用了十余个覆盖不同领域的教师.
 
-注意:式 (2) 的形状和下一节 K3 式 (15),MiMo 的 $\hat A_{\mathrm{MOPD},t}$ 看起来像一家人.V4 的立场是--**这正是他们拒绝当主损失的那条路**.
+### 2.2 为什么不用 sampled-token 优势
 
-### 2.2 工程:缓存教师 hidden,按教师索引排 batch
-
-词表规模超过十万时,把十余个教师的整表 logit 物化出来(哪怕落到盘上)报告认为不可行.§5.2.2 的做法:
-
-- 教师权重卸到集中式分布式存储,教师前向按需加载,ZeRO 式参数分片.
-- 前向只把教师**最后一层 hidden** 打进集中缓冲;训练时再过对应 LM head,当场重建满词表 logit.
-- 数据分发时按**教师索引排序**样本:每个 distinct 教师头每个 mini-batch 只加载一次,设备上同一时刻最多驻留一个教师头.
-- 精确 KL 用 TileLang kernel,减少动态显存分配.
-
-**图 2 解析**
-
-- **不存 logit 存 $h$.** 瓶颈是词表大小乘教师数,不是「再写一份学生 KV」.
-- **排序不是负载均衡算法.** 目的是让教师 head 在 GPU 上串行出现,避免十余个 head 同时驻留.
-- **QAT / MXFP4 不在本篇.** 报告把它写在 §5.2.1,和 OPD 调度并列,不是 OPD 公式的一部分.训推量化与稳定性见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md).**不要**为 V4-Flash / Flash-Lite 另开后训练目录.
-
-V4 §5.1.2 **没有**给出「蒸馏前学生 / 教师 / 蒸馏后学生」对照表.能力数字在系列评测里,不能当成 OPD 消融.
-
----
-
-## 3. Kimi K3:九个 RL 专家,式 (15) 是 clip 过的对数比
-
-一手:K3 报告 HTML §4.1.3(公式以 HTML 为准);库内 [Kimi K3 正本 §8](../../../../model-library/03-模型家族/02-kimi/kimi-k3/kimi-k3-bi.md) 只作导航.流水线三阶段:SFT 冷启动 → 分域分 effort 的 RL → **MOPD** 合成一份权重.
-
-三个域,每域三档 reasoning effort $\{\mathrm{low},\mathrm{high},\mathrm{max}\}$,共 **九个**专家:
-
-| 域 | 报告写进这一域的子任务 |
-|----|------------------------|
-| 通用 | 体验,视觉,推理,忠实性,搜索,知识工作 |
-| 通用 agent | 长程助手,深度研究,段落级写作 |
-| coding agent | SWE,编码体验,kernel,Web 开发 |
-
-训练时给定域 $d$ 和采样到的 effort $e$,只用对应的那一个教师 $\pi_{\mathrm{teacher}}^{(d,e)}$.报告式 (15):
+报告批评了先前工作的常见简化: 把全词表 KL 收成每个位置只看已采样 token 的估计, 复用 RL 框架, 把
 
 $$
-r^{d}_{\mathrm{opd}}(y_t\mid e,x,y_{<t})=\mathrm{clip}\Biggl(\mathrm{sg}\Biggl(\log\frac{\pi_{\mathrm{teacher}}^{(d,e)}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid e,x,y_{<t})}\Biggr),-R_{\max},R_{\max}\Biggr). \tag{3}
+\mathrm{sg}\Bigl[\log\frac{\pi_{E_i}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})}\Bigr] \tag{2}
 $$
 
-$\mathrm{sg}$ 仍是 stop-gradient.$R_{\max}>0$ 用来夹住极端 advantage,稳定 RL.分母里学生带了条件 $e$--effort 不只是选哪位教师,也进了 $\pi_\theta$ 的条件.这条奖励是**稠密,逐 token** 的,报告写它可以直接塞进现有 RL 框架,于是长程任务上的 **partial rollout**(一批 $NK$ 条轨迹,完成比例 $\lambda$ 就开优化,暂停的下轮优先续)对蒸馏同样适用.
+当作逐 token 的优势. 这样省资源, 但梯度估计方差高, 训练常常不稳. V4 因此采用全词表 logit 蒸馏, 每个位置保留完整分布计算 reverse KL. 式 (2) 正是后面 K3 与 MiMo 使用的形式 (各自再加裁剪), 两条路线的分歧就在这里. 各种 KL 估计器的方差比较见 [07](../07-OPD-失败模式/07-OPD-失败模式.md) 第 1 节.
 
-**图 3 解析**
+### 2.3 让全词表可行的工程
 
-- **不是**「九个教师对同一条 $y$ 加权求和」.域 $d$ 和 effort $e$ 先定教师,再算 $r_{\mathrm{opd}}$.
-- **clip 夹的是标量奖励**,不是 V4 那种整表 KL,也不是下一节 MiMo 的 $\pi_\theta/\mu_\theta$ 重要性比.
-- **top-$k$.** 报告原句:试过更细的 top-$k$ 蒸馏目标,在他们的设定里收敛速度和最终性能都**没有明显优势**.不要改写成「top-$k$ 已被证伪」--这是 K3 自己的消融句.
+全词表的代价在 logit 的体积. §5.2.2 的说法是, 词表 $|V|>100\mathrm{k}$ 时, 为所有教师物化 logit 即使落盘也不可行. 他们的办法:
 
-K3 报告 **没有** 一张与 MiMo Table 7 同构的「MOPD 前 / 教师 / MOPD 后」数字表.本篇不编.量化感知训练写在他们的 §4.1.4,同样不在本篇展开,见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md).
+- 教师权重卸到集中式分布式存储, 教师前向时按需加载, 用 ZeRO 式参数分片减轻 I/O 和内存压力. 教师数量实际上不设上限, 单个教师可达万亿参数.
+- 前向时只把教师最后一层 hidden state 写进集中缓冲. 训练时取回, 过对应教师的预测头, 当场重建完整 logit. 重计算开销可以忽略.
+- 分发数据时按教师下标给样本排序, 保证每个 mini-batch 里每个教师头只加载一次, 设备上同一时刻最多驻留一个教师头.
+- 参数与 hidden state 的加载卸载都在后台异步进行, 不挡关键路径. 师生之间的精确 KL 用专门的 TileLang 内核计算.
 
----
+报告 §5.1.2 没有给「蒸馏前学生 / 教师 / 蒸馏后学生」的对照表, 系列评测里的分数不能当作 OPD 的消融结果.
 
-## 4. MiMo-V2-Flash:也叫 MOPD,裁剪的是训推比,不是 $R_{\max}$
+## 3. Kimi K3: 九个专家, 裁剪过的对数比
 
-一手:[MiMo-V2-Flash 技术报告](https://arxiv.org/abs/2601.02780) §4.1 与 §4.4;版本身份与边界见 [MiMo-V2-Flash](../../../../model-library/03-模型家族/05-mimo/mimo-v2-flash/mimo-v2-flash-bi.md).**不要**用上一节的 $\mathrm{clip}(\cdot,-R_{\max},R_{\max})$ 去填 Flash 公式里没写的空.
+### 3.1 九个专家怎么来
 
-§4.1 把后训练写成三阶段(报告 Figure 3):(1) 通用 SFT;(2) 分域 RL / SFT 得到教师--agentic(搜索,代码,通用工具)与 non-agentic(数学,通用推理,安全);(3) MOPD:学生从自己正在演化的分布采样,用教师 logits 的 KL 奖励做 token 级监督,并可与可验证的结果奖励并用.教师可以是 RL 专家,另一个 SFT,甚至学生自己.
+K3 的后训练也是三段: SFT 冷启动, 分域分推理力度的 RL, 再用 MOPD 合成一个模型. RL 不为单个任务训专门模型, 而是在三个大域上做, 每个域涵盖一串子任务:
 
-§4.4 把蒸馏写成 on-policy RL.$\pi_\theta$ 是训练引擎里要更新的学生,$\mu_\theta$ 是推理引擎里的采样学生,$\pi_{\mathrm{domain}_x}$ 是 prompt $x$ 所属域的教师.报告式 (5):
+| 域 | 子任务 |
+|----|-------|
+| 通用任务 | 通用体验, 视觉, 推理, 忠实性, 搜索, 知识工作 |
+| 通用 agent | 长程助手任务, 深度研究, 段落级写作 |
+| coding agent | 软件工程 (SWE), 编码体验, kernel 任务, Web 开发 |
+
+三个域乘三档推理力度 $\{\mathrm{low},\mathrm{high},\mathrm{max}\}$, 共九个专家.
+
+推理力度靠按题的 token 预算控制. 每道题 $x$ 有一个由冷启动模型估计的初始预算 $b_0(x)$, 轨迹总 token 数 $T(y)$ 超过 $\tau\cdot b_0(x)$ 时任务奖励改写为 $-1$. 通用任务的 $T(y)$ 只计 thinking token, agent 任务计累计输出 token (含推理和工具调用参数). 训练对预算乘数 $\tau$ 做分阶段课程: 先用较大的 $\tau$ 训 max 档 (仍封顶最大预算, 抑制过度思考), 再把 $\tau$ 逐步调小, 得到 high 与 low 档; $\tau$ 的调整按域配置, 有人工介入. 各档专家产生的轨迹一并收集, 用于 SFT 和多教师蒸馏.
+
+### 3.2 奖励
+
+训练时给定域 $d$ 与采样到的力度 $e$, 由九个专家中对应的 $\pi_{\mathrm{teacher}}^{(d,e)}$ 指导. 报告式 (15):
 
 $$
-\mathcal{L}_{\mathrm{reverse\text{-}KL}}(\theta)=-\mathbb{E}_{x\sim\mathcal{D},\,y_t\sim\pi_{\theta}(\cdot\mid x,y_{<t})}\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid x,y_{<t})}. \tag{4}
+r^{d}_{\mathrm{opd}}(y_t\mid e,x,y_{<t})=\mathrm{clip}\Bigl(\mathrm{sg}\Bigl(\log\frac{\pi_{\mathrm{teacher}}^{(d,e)}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid e,x,y_{<t})}\Bigr),-R_{\max},R_{\max}\Bigr) \tag{3}
 $$
 
-梯度(报告式 (6))把对数比乘在 $\nabla_\theta\log\pi_\theta$ 前面,形状就是 REINFORCE,对数比充当 advantage.真正拿去优化的是 surrogate(报告式 (7)(8)):轨迹改从 $\mu_\theta$ 采样,并跟 Zhao et al. (2025) 做训练–推理重要性采样,**差异过大的 token 丢掉**:
+$R_{\max}>0$ 是裁剪阈值, 用来约束极端的优势信号. 式中学生的条件里带着 $e$, 教师没有: 力度既决定选哪位教师, 也作为输入进了学生. 每个位置的奖励只依赖一位教师, 九个教师不会对同一条 $y$ 加权求和.
+
+这是一个稠密的逐 token 奖励, 能直接接进 K3 现有的 RL 框架. 于是 RL 里的 partial rollout 也能用于蒸馏: 每轮对 $N$ 个提示各采 $K$ 条, 完成比例达到 $\lambda\in(0,1)$ 就暂停生成开始优化, 暂停的轨迹入队, 下一轮优先续跑. 长程 agent 轨迹因此会跨多轮, 数据带有陈旧性, K3 的策略优化靠 per-token 正则把更新限制在局部邻域内来容忍这种 off-policy.
+
+报告还写了一句消融结论: 试过更细的 top-$k$ 蒸馏目标, 在他们的设定下收敛速度和最终表现都没有明显优势. K3 没有给出「MOPD 前 / 教师 / MOPD 后」的数字表.
+
+## 4. MiMo-V2-Flash: 裁剪训推比, 叠加结果奖励
+
+### 4.1 三段流程
+
+MiMo-V2-Flash 是 309B 总参数, 15B 激活的 MoE. 后训练三段 (报告 Figure 3):
+
+1. **通用 SFT**, 在高质量指令响应对上建立指令跟随能力.
+2. **分域训练**, 在聚焦任务上独立做 RL, 得到一组教师: agent 类 (搜索, 编码, 通用工具使用) 与非 agent 类 (数学推理, 通用推理, 安全对齐).
+3. **MOPD**, 不合并参数, 也不从专家生成离线数据集, 而是把多教师整合写成 on-policy RL: 学生从自己正在变化的分布采样, 通过 KL 奖励接受对应域教师的 token 级监督.
+
+报告列了这个框架的几点性质. 教师选择灵活, 可以是 RL 专家, 另一个 SFT 模型, 甚至学生自己; 接入新教师不必重构整条流程; 能与已有的结果奖励模型 (ORM) 一起用, 对复杂 agent 任务尤其方便. 还支持师生交替迭代: 蒸馏后的学生可以重新进入分域 RL, 产出更强的教师, 再监督下一代学生.
+
+### 4.2 损失
+
+记 $\pi_\theta$ 为训练引擎里优化的学生, $\mu_\theta$ 为推理引擎里采样的学生, $\pi_{\mathrm{domain}_x}$ 为提示 $x$ 所属域的教师. 报告式 (5) 的 reverse KL 损失
 
 $$
-\mathcal{L}_{\mathrm{MOPD}}(\theta)=-\mathbb{E}_{x\sim\mathcal{D},\,y\sim\mu_{\theta}(\cdot\mid x)}\Biggl[\frac{1}{|y|}\sum_{t=1}^{|y|} w_t\,\hat A_{\mathrm{MOPD},t}\,\log\pi_{\theta}(y_t\mid x,y_{<t})\Biggr], \tag{5}
+\mathcal L_{\mathrm{reverse\text{-}KL}}(\theta)=-\mathbb E_{x\sim\mathcal D,\,y_t\sim\pi_\theta(\cdot\mid x,y_{<t})}\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})} \tag{4}
+$$
+
+梯度 (报告式 (6)) 是对数比乘 $\nabla_\theta\log\pi_\theta(y_t\mid x,y_{<t})$, 即 REINFORCE 形式, 对数比充当优势. 实际优化的 surrogate (报告式 (7)(8)) 按 Zhao 等 (2025) 加训推重要性采样, 并丢掉训推差异过大的 token:
+
+$$
+\mathcal L_{\mathrm{MOPD}}(\theta)=-\mathbb E_{x\sim\mathcal D,\,y\sim\mu_\theta(\cdot\mid x)}\Bigl[\frac{1}{|y|}\sum_{t=1}^{|y|}w_t\,\hat A_{\mathrm{MOPD},t}\log\pi_\theta(y_t\mid x,y_{<t})\Bigr] \tag{5}
 $$
 
 $$
-w_t(\theta)=\begin{cases}
-\mathrm{sg}\bigl[\pi_{\theta}(y_t\mid x,y_{<t})/\mu_{\theta}(y_t\mid x,y_{<t})\bigr], & \epsilon_{\mathrm{low}}\le \pi_{\theta}/\mu_{\theta}\le\epsilon_{\mathrm{high}},\\
-0, & \text{otherwise},
-\end{cases}
+w_t(\theta)=\begin{cases}\mathrm{sg}\bigl[\pi_\theta(y_t\mid x,y_{<t})/\mu_\theta(y_t\mid x,y_{<t})\bigr], & \epsilon_{\mathrm{low}}\le\pi_\theta/\mu_\theta\le\epsilon_{\mathrm{high}}\\ 0, & \text{其他}\end{cases}
 \qquad
-\hat A_{\mathrm{MOPD},t}=\mathrm{sg}\Biggl[\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid x,y_{<t})}\Biggr]. \tag{6}
+\hat A_{\mathrm{MOPD},t}=\mathrm{sg}\Bigl[\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})}\Bigr] \tag{6}
 $$
 
-默认再把 ORM(含 GRPO)的结果优势加进去(报告式 (9)):
+默认再加上 ORM (含 GRPO) 算出的优势 $\hat A_{\mathrm{ORM}}$ (报告式 (9)):
 
 $$
-\hat A_{\mathrm{MOPD},t}=\mathrm{sg}\Biggl[\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid x,y_{<t})}\Biggr]+\alpha\,\hat A_{\mathrm{ORM}}. \tag{7}
+\hat A_{\mathrm{MOPD},t}=\mathrm{sg}\Bigl[\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})}\Bigr]+\alpha\,\hat A_{\mathrm{ORM}} \tag{7}
 $$
 
-$\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha$ 报告没有给出数值.本篇不编.训推两套引擎为什么不是同一个分布,见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md).
+与 K3 对比, MiMo 的裁剪位置不同: $w_t$ 裁的是训练引擎与推理引擎之间的概率比, 越界的 token 权重直接为 0; 优势 $\hat A_{\mathrm{MOPD},t}$ 本身没有对称裁剪. $\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha$ 报告没有给数值. 训推两套引擎为什么分布不一致, 见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md). 基础设施上, MiMo 的 RL 与 MOPD 用 SGLang 做推理引擎, Megatron-LM 做训练引擎, 训推都用 FP8.
 
-**图 4 解析**
+### 4.3 Table 7
 
-- **一名 prompt 一名教师.** $\pi_{\mathrm{domain}_x}$ 按下标就是「这个 $x$ 的域」.多教师是在混合域 batch 上分别打分,梯度累到同一份 $\theta$,不是 V4 纸面那种 $\sum_i w_i D_{\mathrm{KL}}$ 写进单条样本.
-- **$w_t$ 的 clip 在重要性比.** 超出 $[\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}}]$ 的 token 权重为 0.这和 K3 夹 $r_{\mathrm{opd}}$ 不是同一道闸.图上若写成 $\pi_{\mathrm{domain}}/\mu$,以式 (6) 的 $\pi_\theta/\mu_\theta$ 为准.
-- **$\hat A_{\mathrm{MOPD},t}$ 本身没有 $R_{\max}$.** Flash 正文没写对 advantage 再做一次对称 clip.
-
-### 4.1 报告有数字的表:Table 7
-
-数字抄 mineru Table 7(与 PDF 同行).老师类型是报告标注的 RL / SFT / Self(学生自己).
+报告 Table 7 给出 MOPD 前后的学生与各项最强教师. 教师类型标注为 RL, SFT 或 Self (学生自己).
 
 | Benchmark | MOPD 前学生 | 最强教师 | MOPD 后学生 | 学生减教师 |
 |-----------|------------:|---------:|-----------:|----------:|
@@ -162,18 +157,41 @@ $\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha$ 报告没有给出数�
 | Tau2-Bench (Telecom) | 92.7 | 95.0 (RL) | 95.3 | +0.3 |
 | BrowseComp | 42.5 | 51.7 (SFT) | 45.4 | −6.3 |
 
-怎么读:有强 RL 教师的可验证域(AIME / HMMT / LiveCodeBench / Tau2)学生贴上甚至略超教师;BrowseComp 相对 SFT 教师掉 **6.3**,创意写作掉 **3.9**,SWE-Verified 相对 RL 教师掉 **0.8**.报告主张「保住各域最强教师的峰值」--表上是大多数域接近,不是零损失.Figure 6 另有 ORM / MOPD without ORM / MOPD 三条训练曲线,本篇不手绘假坐标,数字以 mineru 抽出的 step 表为准.
+有 RL 教师的可验证域 (AIME, HMMT, LiveCodeBench, Tau2) 学生追平或略超教师. 四项为负: BrowseComp 相对 SFT 教师低 6.3, 创意写作低 3.9, SWE-Bench Verified 相对 RL 教师低 0.8, GPQA-Diamond 低 0.6. 报告正文说 MOPD「在所有域保留最强教师的峰值」, 表上是多数域接近, BrowseComp 和创意写作差距明显. 报告 Figure 6 在 AIME 2025 与 LiveCodeBench 上画了三条训练曲线: 带 ORM 的 RL, 不带结果奖励的 MOPD, 完整 MOPD.
 
-### 4.2 同团队另文:不要和 Flash 正文合成一套超参
+## 5. Ma 等: 方法论文与对照实验
 
-Xiaomi 另文<MOPD>(inbox 记链接)把范式写成因式论文,主实验在 **Qwen3-30B-A3B**,并声称同一范式用在 Flash.那里的公式分叉必须单列:
+MiMo-V2-Flash 报告只给了 MOPD 在 Flash 上的结果. 同团队的 Ma 等把它写成独立论文, 在 Qwen3-30B-A3B 上做了与其他合并方法的受控对照, 并说明 MOPD 已部署在 Flash 的后训练中.
 
-- **PG 实现**(该文式 (4))对 $\hat A_{\mathrm{MOPD},t}$ 做对称 clip $[-A_{\max},+A_{\max}]$.形状像 K3 式 (15),**不是** Flash §4.4 写出的那一版.
-- **Top-$k$ 实现**(该文式 (5))在教师 top-$k$ 集合上算带偏置修正的 reverse KL;他们取 $k=64$,归一化分 **0.909 vs PG 的 0.937**,认为同起源教师下两者差不多.这和 K3「top-$k$ 没有明显好处」是两条独立消融,不要并成一句行业结论.
-- 同起源教师:把数学教师换成更强但分布更远的 Qwen3-235B-A22B,初始逐 token KL 大约 **0.19 vs 0.04**,PG 会掉点,top-$k$ 在他们的图上大约第 18 步发散.Flash 正文没写这组替换实验.
-- Qwen3-30B-A3B 能力合并(该文 Table 2,归一化分定义见该文 §4.1):
+### 5.1 流程与两种实现
 
-| 方法 | AIME25 | AIME26 | IFBench | IFEval | SWE-bench Verified | Norm. |
+第三阶段每步: 采一批提示; 学生为每条提示生成轨迹并记录逐 token 分布; 按任务域把轨迹派给对应教师, 教师在轨迹上 prefill 得到逐 token 分布; 最小化学生与该教师沿轨迹的逐 token reverse KL:
+
+$$
+\mathcal L_{\mathrm{rev\text{-}KL}}=\mathbb E_{x,\,y\sim\pi_\theta}\Bigl[\frac{1}{|y|}\sum_t\sum_v\pi_\theta(v)\log\frac{\pi_\theta(v)}{\pi_{\phi_d}(v)}\Bigr] \tag{8}
+$$
+
+$\pi_{\phi_d}$ 是派给提示 $x$ 的教师, $\pi_\theta(v)$ 与 $\pi_{\phi_d}(v)$ 都以 $(x,y_{<t})$ 为条件.
+
+**策略梯度实现** (原文式 (2)-(4)) 沿用 MiniLLM, 优势取 $\hat A_{\mathrm{MOPD},t}=\mathrm{sg}[\log\pi_{\phi_d}(y_t)-\log\pi_\theta(y_t)]$, 再做对称裁剪 $\mathrm{clip}(\hat A_{\mathrm{MOPD},t},-A_{\max},+A_{\max})$. 这一版的裁剪形状与 K3 式 (3) 相同, 和 Flash 报告式 (5)-(7) 写出的版本不同. 改动只在优势计算, 能直接放进现有 PPO/GRPO 框架.
+
+**top-$k$ 实现** (原文式 (5)) 在教师 top-$k$ 集合 $\mathcal T^{d}_t$ 上算
+
+$$
+\mathcal L^{\mathrm{TopK}}_{\mathrm{MOPD}}=\mathbb E_{x,y}\Bigl[\frac{1}{|y|}\sum_t\sum_{v\in\mathcal T^d_t}\Bigl(\pi_\theta(v)\log\frac{\pi_\theta(v)}{\pi_{\phi_d}(v)}-\pi_\theta(v)+\pi_{\phi_d}(v)\Bigr)\Bigr] \tag{9}
+$$
+
+多出来的 $\pi_{\phi_d}(v)-\pi_\theta(v)$ 用来修正截断带来的偏置. 把每个 $\pi_\theta(v)$ 看成独立变量求导可以看出原因: 单项 $p\log(p/q)$ 对 $p$ 的导数是 $\log(p/q)+1$, 在 $p=q$ 处等于 1, 不为零; 加上 $-p+q$ 后导数变成 $\log(p/q)$, 在 $p=q$ 处为零. 完整词表上概率和为 1 的约束会吸收那个常数 1, 截断到 top-$k$ 后约束不再成立, 所以要显式修正. 论文还指出 top-$k$ 形式让教师 prefill 的回传量小到可以像奖励信号一样传输, 全词表蒸馏则每个 token 要传整张分布.
+
+### 5.2 教师作为 prefill 服务
+
+第三阶段额外的操作只有教师 prefill. 论文认为它与 RL 里的奖励计算性质相同, 于是把每个域教师部署成 RL 训练器之外的独立 prefill 服务. 学生采样器持续生成, 一条序列 rollout 结束, 训练器就向对应教师服务发异步 prefill 请求. 教师 prefill 与其他序列的采样在时间上重叠, 墙钟时间主要由采样决定. 论文报告在他们的部署里教师几乎没有可测的额外墙钟开销. 这与 DeepSeek-V4 的「缓存 hidden, 训练时重建全词表 logit」是两种不同的工程取舍: 前者传 sampled-token 或 top-$k$ 的 log 概率, 后者保留完整分布.
+
+### 5.3 Qwen3-30B-A3B 对照 (Table 2)
+
+所有方法从同一个 SFT 检查点出发. 三个域: 数学 (AIME25, AIME26), 指令跟随 (IFBench, IFEval), 软件工程 (SWE-bench Verified). 各域的绝对提升空间不同, 论文用归一化分: 域 $d$ 上 $\tilde s_d=(s_d-s^{\mathrm s}_d)/(s^{\mathrm t}_d-s^{\mathrm s}_d)$, SFT 学生为 0, 该域专家教师为 1, 再对三个域取平均.
+
+| 方法 | AIME25 | AIME26 | IFBench | IFEval | SWE-bench Verified | 归一化分 |
 |------|-------:|-------:|--------:|-------:|-------------------:|------:|
 | Student (SFT-only) | 45.42 | 54.48 | 42.69 | 84.17 | 35.80 | 0.0000 |
 | RL Teacher | 54.79 | 63.65 | 78.40 | 95.50 | 51.20 | 1.0000 |
@@ -184,44 +202,90 @@ Xiaomi 另文<MOPD>(inbox 记链接)把范式写成因式论文,主实验在 **Q
 | Param-Merge (Task Arith.) | 49.38 | 63.96 | 78.23 | 95.81 | 48.80 | 0.8574 |
 | MOPD | 51.46 | 65.31 | 77.89 | 93.84 | 50.40 | 0.9373 |
 
-Flash Table 7 与该文 Table 3 对 Flash 的列不完全同一套基准(该文 Table 3 写「全部教师为 RL」;Flash Table 7 含 Self / SFT 标签).对 Flash 数字以 Table 7 为准.
+超参按附录 A. 分域 RL 用 on-policy GRPO 加动态采样, 学习率 $3\times10^{-6}$; 数学与 IF 的 batch 144, 每题 8 条, 约 175K 条序列; SWE 的 batch 80, 每题 8 条, 约 150K 条序列, 最长 65,536 token, 最多 50 轮交互. Mix-RL 学习率 $4\times10^{-6}$, batch 256, 每题 8 条, 每个 batch 按 Math : IF : SWE $=0.35:0.35:0.3$ 混合. MOPD 不用动态采样, batch 2048, 每题只采 1 条, 域比例同 Mix-RL; 策略梯度形式的 $A_{\max}$ 默认取 5, top-$k$ 形式默认 $k=64$. 数学基准每题采 32 次取平均 (avg@32).
 
----
+论文的逐域分析:
 
-## 5. 不是:单教师 OPD,特权上下文,rich feedback,跨阶段收尾
+- **Cascade RL** 按 IF → Math → SWE 顺序训练. 先训的 IF 补上了 98% 的差距, 第二阶段的 Math 只补上 57%, 训练曲线 (Figure 1) 显示 Math 在随后的 SWE 阶段继续下降.
+- **Off-Policy Finetune** 在 IF 上超过教师 (逐域归一化分 1.01), SWE 上只补上 65%, 离线模仿教师轨迹在不同任务类型上的迁移很不均匀.
+- **Mix-RL** 是最均衡的基线 (逐域极差 0.064), 总分仍比 MOPD 低 5.5 个点.
+- **MOPD** 三个域的逐域分落在 $[0.91,0.95]$, 极差 0.044, 是所有方法中最小的. 相比之下 Cascade RL 是 0.57 到 0.98, Off-Policy Finetune 是 0.65 到 1.01.
+- **Param-Merge** 对合并方式很敏感: 线性平均只有 0.328; 任务向量算术回到 0.857, 但 IF 上达到教师水平 (1.00), Math 只补上 73%.
+- **样本效率**. 按每个域消耗的样本数计, MOPD 在 IF 上约 25K 样本, SWE 上约 30K 样本就到达教师水平的平台, Mix-RL 要用完每域 150K 到 180K 的预算才接近.
 
-| 对象 | 差在哪 | 去哪篇 |
-|------|--------|--------|
-| MiniLLM / GKD 式单教师 on-policy | 一个 $\pi_T$,没有「按域派教师再并进一份权重」 | [01-OPD](../01-OPD基础原理/01-OPD基础原理.md) |
-| OPSD 特权上下文 | 教师和学生**同一份权重**,差在输入里塞不塞标准答案 | [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) |
-| SDPO rich feedback | 监督来自编译器/验证器的富反馈,不是多份冻结专家的 logits | [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) |
-| GLM-5 跨阶段 OPD | 顺序 RL 之后用蒸馏收尾,打的是遗忘/阶段切换,不是「十余或九个并行专家」这套捆法 | 对照见 [10-OPD-各家报告对照](../10-OPD-各家报告对照/10-OPD-各家报告对照.md) |
+### 5.4 MiMo-V2-Flash 上的结果 (Table 3)
 
-V4 / K3 / MiMo 引用的共同祖先仍是 MiniLLM 与 Thinking Machines 的 on-policy distillation:学生采样,教师打分,常用 reverse KL.本篇只把「教师从 1 变成一排,损失各家怎么裁」钉死.
+论文在 Flash 上用覆盖数学, 代码, 指令跟随, SWE, 工具使用的域教师, 全部是 RL 教师:
 
----
+| | AIME25 | HMMT25 | LCB | IFBench | SWE-Bench V. | $\tau^2$-Bench | $\tau^2$-Telecom |
+|---|------:|------:|----:|-------:|------------:|--------------:|----------------:|
+| 学生 | 89.3 | 76.9 | 77.5 | 55.4 | 67.8 | 75.9 | 92.7 |
+| 教师 | 93.9 | 82.6 | 82.6 | 68.9 | 74.2 | 79.6 | 95.0 |
+| MOPD | 94.1 | 84.4 | 83.2 | 66.7 | 73.4 | 80.3 | 95.3 |
+| 差值 | +0.2 | +1.8 | +0.6 | −2.2 | −0.8 | +0.7 | +0.3 |
 
-## 6. 失效模式
+与 Flash 报告 Table 7 重合的六项数字一致. 论文多出了 IFBench 一列 (−2.2), Flash 报告则多出了 MMLU-Pro, GPQA, HLE, Arena-Hard, BrowseComp 等以 Self 或 SFT 为教师的项目, 两张表的基准集合不同.
 
-| 现象 | 报告里是谁说的 | 说明 |
-|------|----------------|------|
-| token 级 $\mathrm{sg}[\log\pi_T/\pi_\theta]$ 当 advantage,方差大 | V4 §5.1.2 | V4 因此改全词表;K3 / MiMo Flash 仍走 token 级信号,另用 clip 或丢掉离群 token |
-| 全词表 logit 物化爆内存 | V4 §5.2.2 | 不缓存 $h$,不按教师索引排序,十余教师乘超大词表会卡死 |
-| 教师–学生不同源 | Xiaomi 另文 §4.4.2 | 更强但更远的外部教师,KL 抬大约 5×,优化可以塌甚至发散 |
-| 复杂搜索 / 创意写作贴不住教师 | Flash Table 7 | BrowseComp −6.3,Creative Writing −3.9;不是「MOPD 万能无损合并」 |
-| top-$k$ 更细未必更强 | K3 §4.1.3;Xiaomi 另文 $k=64$ | 两家各自写「没有明显好处 / 差不多」;不要合成一个 $k$ |
-| 把三家超参抄进同一份配置 | 本篇 | $w_i$,$R_{\max}$,$(\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha)$,$A_{\max}$,$k$ 从未在同一张表里出现过 |
+### 5.5 分析实验
 
-下一篇:[10-OPD-各家报告对照](../10-OPD-各家报告对照/10-OPD-各家报告对照.md)(GLM-5 跨阶段等发布捆法).QAT / 训推量化不在本篇,见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md).
+**策略梯度与 top-$k$ 相当**. 同一流程下取 $k=64$, top-$k$ 在数学上相当, IF 与 SWE 略差, 归一化分 0.909 对 0.937. 两种损失的训练曲线几乎重合: 数学准确率平稳上升, 逐 token reverse KL 从本就很低的约 0.04 单调下降, 策略熵稳定在 0.30 左右. 论文的解释是师生分布接近时, 学生的 rollout 集中在教师的高概率区, 两种梯度估计拿到的信息相近. 这与 K3「top-$k$ 没有明显优势」是两家独立的消融, 设定不同.
 
----
+**同源教师是稳定的前提**. 每个教师都从学生的初始化检查点出发做 RL, 师生分布接近, 初始 KL 低. 为验证这一点, 论文把数学教师换成更大, 数学更强但分布不同源的 Qwen3-235B-A22B, 其余不变. 学生的数学表现在两种损失下都下降. 初始逐 token KL 约 0.19, 是同源设定 (约 0.04) 的 5 倍左右. 策略梯度形式下数学准确率逐步下降, 熵从 0.30 收缩到 0.21, 学生收到的主要是来自教师低概率区的惩罚信号, 策略向单一模式收窄; top-$k$ 形式更糟, 约第 18 步训练发散, KL 与熵剧烈震荡. 教师与学生分布差距大时 OPD 为什么会失败, Li 等的分析见 [07](../07-OPD-失败模式/07-OPD-失败模式.md) 第 4 节.
+
+**多轮迭代** (Table 4). 第一轮 MOPD 之后, 以学生为初始化重新训数学与 IF 教师 (SWE 本轮不训也不蒸馏), 再做第二轮 MOPD:
+
+| 轮次 | AIME25 | AIME26 | IFBench | IFEval | SWE-bench Verified | 归一化分 |
+|------|-------:|-------:|--------:|-------:|-------------------:|------:|
+| 第 1 轮 MOPD | 51.46 | 65.31 | 77.89 | 93.84 | 50.40 | 0.937 |
+| 第 2 轮 RL 教师 | 54.27 | 65.52 | 81.46 | 95.65 | 50.40 | 1.030 |
+| 第 2 轮 MOPD | 53.44 | 64.90 | 79.76 | 95.44 | 50.20 | 0.986 |
+
+从第一轮学生出发训出的教师更强 (1.030), 第二轮学生从 0.937 升到 0.986. 这就是 Flash 报告所说的师生交替迭代的实测.
+
+### 5.6 对开发流程的影响
+
+论文 §5 强调 MOPD 把「产出能力」(分域 RL) 和「整合能力」(蒸馏) 拆开. 各域教师互相独立, 各团队可以同时迭代自己的奖励, 沙箱和数据, 不必排先后; 每个域可以自选 RL 算法, rollout 方式, 奖励函数和超参; RL 调参常需要重启, 联合多域 RL 重启意味着整条训练回到起点, 并行开发教师时重启只影响出问题的那个域.
+
+### 5.7 后续: MiMo-V2.6 的 MOPD2
+
+Xiaomi 在 MiMo-V2.6 报告 §5.6 把这条路线扩展为 MOPD2 (Multi-Prefix Multi-Teacher On-Policy Distillation), 放在混合 RL 之后, 目的是把难以验证的任务也并进来. 教师分两类: 可验证任务上用 MixRL 训出的 RL 教师, 开放域任务上用高质量合成演示训出的 SFT 教师. 有合适 RL 教师的域保留原来的做法 (Standard MOPD), 由学生自主生成完整 rollout. 另加一种前缀条件的单轮 rollout: 前缀取自教师 rollout (Teacher-Prefix OPD) 或 SFT 数据 (SFT-Prefix OPD). 一条有 $k$ 个 assistant 轮的轨迹给出 $k$ 个完整的历史前缀, 学生从每个前缀只采样新的一轮, 不重新生成之前的交互, 预先指定的教师在同一历史和学生已生成的 token 上给逐 token 监督.
+
+SFT-Prefix 的理由与 SFT 教师的覆盖范围有关. 报告认为 SFT 教师的训练数据很少覆盖长程任务里学生反复偏离之后到达的历史, 所以从固定的演示前缀起步, 限制采样轮之前的偏离. 演示只提供上下文, 续写仍是学生自己生成的, 不是模仿固定回答. 报告把 MOPD2 用于长程游戏开发, 科研, 具身智能这类训练中难做可靠验证的场景. 这和 [4.6.3 状态分布视角](../4.6.3-状态分布视角/4.6.3-状态分布视角.md) 讨论的问题相关: 蒸馏发生在什么状态分布上, 由前缀从哪来决定.
+
+## 6. 四种做法对照
+
+| | DeepSeek-V4 | Kimi K3 | MiMo-V2-Flash 报告 | Ma 等 (PG 版) |
+|---|------------|---------|-------------------|--------------|
+| 叫法 | OPD | MOPD | MOPD | MOPD |
+| 教师数 | 十余个, 覆盖多域 | 9 (3 域 × 3 档力度) | 分域, agent 与非 agent 两类 | 实验中 3 域 (Qwen3), 5 域 (Flash) |
+| 信号 | 全词表 reverse KL | sampled-token 对数比 | sampled-token 对数比 + $\alpha\hat A_{\mathrm{ORM}}$ | sampled-token 对数比, 或 top-$k$ |
+| 裁剪 | 无 | 优势对称裁剪 $R_{\max}$ | 训推比越界置零 | 优势对称裁剪 $A_{\max}$ |
+| 工程重点 | 缓存 hidden, 按教师排序, TileLang KL | 复用 partial rollout | 训推重要性采样 | 教师作为异步 prefill 服务 |
+| top-$k$ | 未用 | 试过, 无明显优势 | 未写 | $k=64$, 0.909 对 0.937 |
+
+公开了数值的只有 Ma 等的 $A_{\max}=5$ 与 $k=64$; DeepSeek-V4 的 $w_i$, K3 的 $R_{\max}$, Flash 报告的 $(\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha)$ 都没有给出. MOPD 每题只采 1 条 rollout, 不做组内比较, 这一点与 GRPO 的配置不同, 因为优势来自教师而不是组内相对奖励.
+
+## 7. 已报告的失效与边界
+
+| 现象 | 出处 | 说明 |
+|------|-----|------|
+| sampled-token 优势方差大 | DeepSeek-V4 §5.1.2 | V4 改用全词表; K3, MiMo 仍用 sampled-token, 另加裁剪或丢弃离群 token |
+| 全词表 logit 物化放不下 | DeepSeek-V4 §5.2.2 | 十余个教师乘以超过十万的词表, 需缓存 hidden 并按教师排序 |
+| 非同源教师导致退化或发散 | Ma 等 §4.4.2 | 初始 KL 约 5 倍, 熵 0.30 → 0.21, top-$k$ 约第 18 步发散 |
+| 部分域追不上教师 | Flash Table 7 | BrowseComp −6.3, Creative Writing −3.9 |
+| 单轮合并留有余量 | Ma 等 Table 4 | 第二轮把归一化分从 0.937 提到 0.986 |
+| 更细的 top-$k$ 不一定更好 | K3 §4.1.3, Ma 等 §4.4.1 | 两家各自的设定下与 sampled-token 版相当或略差 |
+
+单教师 OPD, 特权上下文自蒸馏, 富反馈自蒸馏分别见 [01](../01-OPD基础原理/01-OPD基础原理.md), [02 OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md), [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md). 顺序 RL 之后用 OPD 收尾 (如 GLM-5) 等其他发布方案见 [10](../10-OPD-报告落地对照/10-OPD-报告落地对照.md).
 
 ## 参考文献
 
-1. DeepSeek-AI. (2026). DeepSeek-V4 技术报告.§5.1.2 式 (29),§5.2.2 教师调度.库内:[03-DeepSeek-V4-mineru-en.md](../../../../model-library/03-模型家族/01-deepseek/deepseek-v4/deepseek-v4-bi.md).
-2. Moonshot AI. (2026). Kimi K3 技术报告.§4.1.3 式 (15).公式以 HTML 为准.导航:[Kimi K3 正本](../../../../model-library/03-模型家族/02-kimi/kimi-k3/kimi-k3-bi.md).
-3. Xiaomi LLM-Core. (2026). [MiMo-V2-Flash 技术报告](https://arxiv.org/abs/2601.02780).§4.1,§4.4 式 (5)–(9),Table 7;版本入口见 [MiMo-V2-Flash](../../../../model-library/03-模型家族/05-mimo/mimo-v2-flash/mimo-v2-flash-bi.md).
-4. Ma et al. (2026). <MOPD>因式论文.Qwen3-30B-A3B Table 2;与 Flash 正文公式分列,不合并超参.链接只在 inbox.
-5. MiniLLM;Agarwal et al. on-policy distillation / GKD;Lu and Thinking Machines Lab (2025) On-Policy Distillation--三家报告共同引用的单教师祖先,细节在 [01](../01-OPD基础原理/01-OPD基础原理.md).
-
-知乎只学讲法(「一个 prompt 派一名域教师,梯度在 batch 上合成」),数字与公式不以专栏为准.
+1. DeepSeek-AI. (2026). DeepSeek-V4 技术报告. §5.1.1 专家训练, §5.1.2 式 (29), §5.2.2 教师调度. 库内: [DeepSeek-V4](../../../../model-library/03-模型家族/01-deepseek/deepseek-v4/deepseek-v4-bi.md).
+2. Moonshot AI. (2026). Kimi K3 技术报告. §4.1.2 推理力度 RL, §4.1.3 式 (15). 库内: [Kimi K3](../../../../model-library/03-模型家族/02-kimi/kimi-k3/kimi-k3-bi.md).
+3. Xiaomi LLM-Core. (2026). [MiMo-V2-Flash Technical Report.](https://arxiv.org/abs/2601.02780) *arXiv:2601.02780*. §4.1, §4.4 式 (5)-(9), Table 7, Figure 6. 库内: [MiMo-V2-Flash](../../../../model-library/03-模型家族/05-mimo/mimo-v2-flash/mimo-v2-flash-bi.md).
+4. Ma, W., Wei, J., Zhao, L., Zhang, H., Xiao, B., Li, L., Yang, Q., Gao, B., Wang, Y., Li, R., Dong, J., Sui, Z., & Luo, F. (2026). [MOPD: Multi-Teacher On-Policy Distillation for Capability Integration in LLM Post-Training.](https://arxiv.org/abs/2606.30406) *arXiv:2606.30406*. Table 1-4, §3, §4.4, §5.
+5. Xiaomi LLM-Core. (2026). MiMo-V2.6 技术报告. §5.6 MOPD2, Figure 13. 库内: [MiMo-V2.6](../../../../model-library/03-模型家族/05-mimo/mimo-v2-6/mimo-v2-6-bi.md).
+6. Gu, Y., Dong, L., Wei, F., & Huang, M. (2024). [MiniLLM: Knowledge Distillation of Large Language Models.](https://arxiv.org/abs/2306.08543) *ICLR*.
+7. Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Ramos, S., Geist, M., & Bachem, O. (2024). [On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.](https://arxiv.org/abs/2306.13649) *ICLR*.
+8. Lu, K., & Thinking Machines Lab. (2025). [On-Policy Distillation.](https://thinkingmachines.ai/blog/on-policy-distillation/) *Thinking Machines Lab: Connectionism*.
+9. Li, Y., Zuo, Y., He, B., et al. (2026). [Rethinking On-Policy Distillation of Large Language Models: Phenomenology, Mechanism, and Recipe.](https://arxiv.org/abs/2604.13016) *arXiv:2604.13016*.

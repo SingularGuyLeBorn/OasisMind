@@ -1,544 +1,316 @@
 ---
-title: "OPD 失败模式:证据,诊断与干预"
+title: "07 · OPD 失败模式: 三篇诊断论文"
 published: true
-tags: ["OPD", "On-Policy Distillation", "Failure Analysis", "Diagnostics", "Stability"]
-excerpt: "在线策略蒸馏(On-Policy Distillation,OPD)让学生在自己采样的轨迹上接受教师监督."
+tags: ["OPD", "On-Policy Distillation", "Failure Analysis", "Stable-OPD", "Local Support Matching"]
+excerpt: "三篇 2026 年的诊断论文分别从估计器, 长度和教师选择拆解 OPD 为何失败: sampled-token 信号失衡且在漂移前缀上失真 (Fu 等), rollout 在约 30 步内突然被重复与截断占满 (Luo 等), 教师思维模式不兼容或没有新知识时 OPD 不涨分甚至倒退 (Li 等). 对应的修复是教师 top-K 局部支持匹配, Stable-OPD, 以及 off-policy 冷启动与教师对齐的 prompt."
 ---
-# OPD 失败模式:证据,诊断与干预
+# OPD 失败模式: 三篇诊断论文
 
-在线策略蒸馏(On-Policy Distillation,OPD)让学生在自己采样的轨迹上接受教师监督.它减少了离线蒸馏的前缀分布错位,却把教师带到了另一类状态:教师要在学生生成,甚至已经出错的前缀上给出分布.这使 OPD 的失败不能只看一个 loss 或一个准确率.
+> 相关阅读: [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) · [05 G-OPD](../05-GOPD-散度光谱/05-GOPD-散度光谱.md) · [06 SCOPE](../06-SCOPE-选择性反馈/06-SCOPE-选择性反馈.md) · [4.6.3 状态分布视角](../4.6.3-状态分布视角/4.6.3-状态分布视角.md) · [4.6.2 OPD 综述](../4.6.2-OPD综述/4.6.2-OPD综述.md)
 
-本文把判断分成三个证据等级:
+本文的材料是 2026 年的三篇诊断论文: Fu 等 *Revisiting On-Policy Distillation* (arXiv:2603.25562) 从梯度估计器和 sampled-token 信号入手, Luo 等 *Demystifying OPD* (arXiv:2604.08527) 研究训练中途的长度膨胀, Li 等 *Rethinking On-Policy Distillation* (arXiv:2604.13016) 研究什么样的教师能教会学生. 三篇共同的问题是: OPD 在哪些条件下不涨分, 甚至让学生变差.
 
-1. **已被论文或实验直接观察**:有明确实验协议,对照和指标;
-2. **由目标函数可推导的风险**:数学上可能发生,但是否成为实际故障取决于数据,模型和实现;
-3. **待验证工程假设**:可作为排障候选,不能包装成公认症候.
+## 1. 估计器: 序列级与逐 token
 
-这种分级很重要.表面上相同的"准确率下降",可能来自教师在坏前缀上失准,sampled-token 梯度偏差,tokenizer 错位,探索多样性下降,长度爆炸或评测器故障.没有对照实验就给它命名,只会把诊断变成故事.
+### 1.1 两种梯度
 
-## 1. 先钉住目标与两条数学边界
-
-### 1.1 OPD 的状态和局部目标
-
-给定提示 $x$,学生或行为策略生成轨迹:
+OPD 最小化学生到教师的 reverse KL. 对提示 $x$, 记学生 $\pi_\theta$, 教师 $q$, 前缀 $c_t=(x,y_{<t})$, 定义得分函数与逐 token 奖励 (Fu 等 §2.1):
 
 $$
-y=(a_1,\ldots,a_T),\qquad y\sim\pi_{\mathrm{rollout}}(\cdot\mid x).
+s_t=\nabla_\theta\log\pi_\theta(y_t\mid c_t),\qquad r_t=\log\frac{\pi_\theta(y_t\mid c_t)}{q(y_t\mid c_t)} \tag{1}
 $$
 
-第 $t$ 个状态为:
+序列级 reverse KL 的梯度展开为
 
 $$
-s_t=(x,a_{<t}).
+\hat g_{\mathrm{seq}}=\sum_{t=1}^{T}\Bigl(\sum_{t'=1}^{T}r_{t'}\Bigr)s_t \tag{2}
 $$
 
-全词表的局部 reverse KL 是:
+$t'<t$ 的项期望为零, 因为 $r_{t'}$ 只依赖步 $t$ 之前的前缀, 而 $\mathbb E[s_t\mid c_t]=0$. 所以期望等于因果的 reward-to-go 形式, 每个 token 的更新与它之后的全部奖励耦合. 大模型实现中普遍只保留即时项:
 
 $$
-D_{\mathrm{KL}}\!\left(
-\pi_\theta(\cdot\mid s_t)
-\middle\|
-\pi_T(\cdot\mid s_t)
-\right)
-=
-\sum_{a\in\mathcal V}
-\pi_\theta(a\mid s_t)
-\log
-\frac{\pi_\theta(a\mid s_t)}
-{\pi_T(a\mid s_t)}.
+\hat g_{\mathrm{tok}}=\sum_{t=1}^{T}r_t\,s_t \tag{3}
 $$
 
-许多大模型 OPD 实现为了降低教师传输与显存成本,只在学生已采样 token $a_t$ 上使用:
+两者的期望差就是被丢掉的未来耦合项 $\mathbb E\bigl[\sum_t\sum_{t'>t}r_{t'}s_t\bigr]$ (Fu 等附录 D.1), 一般不为零, 所以式 (3) 相对序列级目标有偏.
+
+另一个层面的结论不同. Li 等 §2.2 指出, 对固定状态, 若 $\hat y_t\sim p_t$, 则 $\mathbb E[\log p_t(\hat y_t)-\log q_t(\hat y_t)]=D_{\mathrm{KL}}(p_t\|q_t)$, 采样 token 的 log-ratio 是该位置 KL 数值的无偏单样本估计. 「有偏」指的是梯度相对序列级目标, 「无偏」指的是局部损失值, 两者讨论的对象不同.
+
+### 1.2 方差上界
+
+设 $|r_t|\le B_r$, $\|s_t\|\le B_s$. 逐 token 估计器满足 $\|\hat g_{\mathrm{tok}}\|\le TB_rB_s$, 于是
 
 $$
-\log\pi_\theta(a_t\mid s_t)-\log\pi_T(a_t\mid s_t),
+\mathbb E\|\hat g_{\mathrm{tok}}\|^2\le T^2B_r^2B_s^2 \tag{4}
 $$
 
-再把它放入策略梯度式 surrogate.这里要区分两个层面:
-
-- 对固定状态 $s_t$,若 $a_t\sim\pi_\theta(\cdot\mid s_t)$,上述 log-ratio 的期望等于该位置的 reverse KL,所以它是**局部 KL 数值**的单样本无偏估计;
-- 若训练更新只使用当前位置的即时 log-ratio,并切断未来 token 的回报耦合,它相对**完整序列 reverse-KL 的梯度**仍是有偏估计;在<Revisiting OPD>附录采用的有界 reward/log-ratio 与有界 score-gradient 假设下,它有更低的最坏情况长序列方差上界.
-
-因此,"sampled-token 是否有偏"必须说明是在讨论局部损失值,还是完整序列目标的梯度.它与 full-vocabulary,top-$k$ 目标在方差,token 支持和特殊 token 敏感性上也不同,诊断时必须记录实际实现.
-
-### 1.2 Reverse KL 对均匀教师的正确结论
-
-若教师在某个状态上严格均匀:
+序列级估计器可写成 $\hat g_{\mathrm{seq}}=RS$, $R=\sum_tr_t$, $S=\sum_ts_t$, 各自至多 $T$ 倍, 于是
 
 $$
-\pi_T(a\mid s)=\frac{1}{V},
+\mathbb E\|\hat g_{\mathrm{seq}}\|^2\le T^4B_r^2B_s^2 \tag{5}
 $$
 
-则:
+这是保守的最坏情况上界, 不是实际方差的增长律. 对一条 16K token 的推理轨迹, 两个上界相差 $T^2\approx2.7\times10^8$ 倍; 实际差距小得多, 但方向说明了为什么长序列上几乎都用式 (3).
+
+两端之间可以用折扣插值 $\hat g_\gamma=\sum_t\bigl(\sum_{t'\ge t}\gamma^{t'-t}r_{t'}\bigr)s_t$, $\gamma=0$ 是逐 token, $\gamma=1$ 是序列级. Fu 等在一维连续控制的双任务玩具环境 (约 4K 参数的三层 MLP 学生, 先用 REINFORCE 训两个教师再交替蒸馏) 中扫 $\gamma\in\{0,0.25,0.5,0.75,1\}$, 三个随机种子上都是 $\gamma$ 越大梯度方差越高; 若干运行中 $\gamma=0.75$ 或 1 的方差比小 $\gamma$ 高一到几个数量级, $\gamma=1$ 的策略常常偏离目标方向, 停在次优区域.
+
+### 1.3 均匀教师上的 reverse KL
+
+教师分布退化成均匀分布时, reverse KL 往哪个方向推学生, 可以直接算出来. 若教师在状态 $s$ 上均匀, $q(a\mid s)=1/V$, 则
 
 $$
-\begin{aligned}
-D_{\mathrm{KL}}(\pi_\theta\|\pi_T)
-&=
-\sum_a\pi_\theta(a\mid s)
-\log\frac{\pi_\theta(a\mid s)}{1/V}\\
-&=
-\log V-H(\pi_\theta).
-\end{aligned}
+D_{\mathrm{KL}}(\pi_\theta\|q)=\sum_a\pi_\theta(a\mid s)\log\frac{\pi_\theta(a\mid s)}{1/V}=\log V-H(\pi_\theta) \tag{6}
 $$
 
-因此:
+最小值 0 在学生也均匀时取到; delta 分布的熵为 0, KL 为 $\log V$, 是最大值. 所以对均匀教师做 reverse KL 会把学生推向均匀. reverse KL 的 mode-seeking 出现在教师多峰且峰间低密度的情形: 学生几乎不采样的那个峰在式 (6) 的期望里权重很小, 学生可以只覆盖其中一个峰.
 
-- 最小值是 0,在学生也均匀时取得;
-- delta 分布的熵为 0,KL 为 $\log V$,是最大值而不是最小值.
+## 2. sampled-token 信号的三类失败 (Fu 等)
 
-所以,最小化 $\mathrm{KL}(\text{student}\|\text{uniform teacher})$ 会把学生推向均匀,而不会把学生推向 delta.
+Fu 等的观察来自数学推理上的 sampled-token OPD: 学生 Qwen2.5-7B-Instruct, 教师 OpenThinker3-7B (在 Qwen2.5-7B-Instruct 上 SFT 得到).
 
-Reverse KL 的 mode-seeking 性质仍然可以在**非均匀,多峰且峰间低密度**的教师分布上出现:学生对自己几乎不采样的教师模态承担的代价很小,可能集中到其中一个峰.但"reverse KL 往往 mode-seeking"不能替代对具体教师分布的分析,更不能用均匀分布推出相反结论.
+### 2.1 信号失衡
 
-### 1.3 平均 token KL 不天然线性惩罚长度
+每一步的更新由单个采样 token 的 $\log q(y_t\mid c_t)-\log\pi_\theta(y_t\mid c_t)$ 决定. 只要学生给采样 token 的概率高于教师, 这个奖励就是负的. Figure 2 是第一轮迭代时采样 token 上师生概率的散点, 大部分点落在负奖励一侧. 结果是优化被少数局部为正的 token 主导, 高频的填充词和短续写容易拿到有利的局部分数, 对整条轨迹的质量却贡献很小.
 
-总和形式:
+### 2.2 漂移前缀上的教师信号
 
-$$
-\mathcal L_{\mathrm{sum}}(y)=\sum_{t=1}^{T}d_t
-$$
+sampled-token OPD 默认教师在学生 token 上的概率是轨迹质量的代理. 在学生常见, 教师少见的前缀上, 这个代理失效: 轨迹已经陷入重复, 推理不断重来, 或者续写没有意义时, 教师概率高的 token 仍然被奖励 (Figure 3). 论文认为有两个放大因素: 教师分布尖锐时, 师生的小差异就会产生很大的 log-ratio; 长 rollout 上师生差距随位置变大. Figure 4 按位置分桶画师生 log-prob 差, 靠后的若干桶下尾更宽, 极端值更多.
 
-在每 token 平均散度近似不变时,会随 $T$ 近似线性增长.
+附录 H 的 reward hacking 案例按时间顺序展示了这种失效. 答案已经得到之后, 局部信号仍然把质量放在「implies」这类通用推理填充词和连接词上, 鼓励继续写而不是停下; 之后出现重复的「wait」和以标点为主的续写, 仍然可以得到局部奖励; 学生进一步漂移到格式错乱的非英文文本时, 许多 token 依旧拿到较高的教师概率.
 
-平均形式:
+SCOPE 的预实验给了同一现象的定量版本: 教师困惑度高的错误前缀, 教师从截断处续写的恢复率更低, 前缀越长越难恢复 (见 [06](../06-SCOPE-选择性反馈/06-SCOPE-选择性反馈.md) 第 1.2 节).
 
-$$
-\mathcal L_{\mathrm{mean}}(y)=\frac{1}{T}\sum_{t=1}^{T}d_t
-$$
+### 2.3 tokenizer 与特殊 token 不一致
 
-消除了这个简单的线性尺度.它不意味着长度完全中性,因为长度仍会通过以下路径影响训练:
+sampled-token 比较的是学生生成的那个 token 在教师分布下的概率. 两个模型切分不同时, 同一段文本会被切成不同的 token. 论文的例子: 学生把 `<think>` 切成 `<`, `think`, `>`, 教师期望的是 `<th`, `ink`, `>`, 于是 `<` 在教师下概率很低, 尽管两者生成的语义内容相同. 结束符等特殊 token 也会出现类似的错配 (Figure 5). 一 token 的比较把切分差异当成了语义分歧.
 
-- 长轨迹更容易进入低质量或未覆盖状态;
-- 截断和 EOS 处理改变样本选择;
-- 不同长度的 token mask 与 batch reduction 可能改变实际权重;
-- completion 上限会把长轨迹标成截断样本;
-- reward,重要性比,教师可靠性和位置分布都可能随深度改变.
+这一项在 Fu 等的实验中影响很大: 单任务数学上, 只给 sampled-token OPD 加上特殊 token 掩码, 平均分就从 36.4 升到 40.7 (第 5.2 节表格, 原文 Table 1).
 
-因此,观察到长度缩短或变长时,第一步是确认 loss 的真实 reduction,而不是直接归因于"KL 天然惩罚长链".
+## 3. 长度膨胀与重复饱和 (Luo 等)
 
-## 2. 已被论文或实验直接观察
+### 3.1 两个指标
 
-### 2.1 学生错误前缀上的教师不可靠
+Luo 等对一批 rollout 定义:
 
-这是目前证据最直接的 OPD 风险之一.
+- **截断率** TruncRate: 因用完长度预算而停止, 没有输出 EOS 的比例.
+- **重复率** RepRate: 取回答最后 $L$ 个字符, 用 zlib 压缩, 压缩比 $|\mathrm{bytes}|/|c(\mathrm{bytes})|$ 超过 $\tau$ 且尾部长度超过 $L$ 的比例. 实验取 $L=10{,}000$, $\tau=10$.
 
-SCOPE 在 2,000 个 DeepMath 问题上生成学生轨迹,把错误轨迹按教师困惑度分为四组,并让教师从不同比例的截断错误前缀继续作答.低教师 PPL 组的恢复率高于高 PPL 组;前缀保留得越长,所有组的恢复率越低.例如在 20% 截断比例下,最低 PPL 组与最高 PPL 组恢复率为 64.9% 和 45.4%;在 80% 截断比例下为 35.8% 和 28.6%.
+压缩比衡量的是尾部的可压缩程度, 一段话反复出现时 zlib 可以压到原来的十分之一以下.
 
-<Revisiting On-Policy Distillation>也把"教师在学生生成前缀上不可靠"列为 sampled-token OPD 的三类实证故障之一.
+### 3.2 相变
 
-| 诊断项 | 建议 |
-|---|---|
-| 可测信号 | 教师 sequence PPL,token entropy,教师从截断前缀恢复正确答案的概率,教师 PPL 与恢复率/正确率的可靠性曲线,指标随前缀深度的变化 |
-| 必做对照 | 同一题的正确学生前缀,错误学生前缀,教师自身前缀和随机扰动前缀;固定采样温度与续写次数 |
-| 干预 | SCOPE 式错误组教师 PPL 重加权;只在教师已校准的状态区域蒸馏;做前缀恢复实验后按轨迹深度或可教性路由,截断或拒绝蒸馏 |
-| 误判边界 | 高 PPL 可能来自多解,稀有符号或 tokenizer 差异;低 PPL 也可能是教师对错误启发式过度自信.PPL 只有经过目标域校准后才能作为可靠性代理 |
+训练数据是 OpenR1-Math-220k 的 13K 子集. 学生取 Qwen2.5-Math-1.5B 或 7B, 教师取 DeepSeek-R1-Distill-7B 或 OpenThinker3-7B, 共三组. OPD 用 GRPO 式裁剪目标, 把序列级优势换成逐 token 优势 $A_{i,t}=\log\pi_T(\hat y_{i,t}\mid\cdot)-\log\pi_\theta(\hat y_{i,t}\mid\cdot)$.
 
-#### 最小验证实验
+三组都有同样的轨迹 (Figure 2):
 
-对每条错误轨迹取多个截断点 $r\in\{0.2,0.4,0.6,0.8\}$:
+1. **稳定期**. 验证准确率逐步上升. 训练 rollout 截断率 1.5B 约 0.5, 7B 约 0.23; MATH500 验证集上分别约 0.2 和 0.1. 重复率接近 0.
+2. **相变**. 在大约 30 步的窗口内, 训练 rollout 截断率冲向 1, 几乎所有生成都撞到长度上限; 重复率从接近 0 跳到 0.3-0.6. 验证集上截断率和重复率在几乎同一步跳升, 准确率同时骤降, 之后一直停在高位.
 
-1. 固定截断到最近的语义或换行边界;
-2. 让教师从该前缀独立续写 $n$ 次;
-3. 记录原错误轨迹的教师 PPL 和续写成功率;
-4. 按 PPL 分桶,并在每个截断深度内比较恢复率;
-5. 用 bootstrap 置信区间而不是单一均值判断相关性.
+论文把它称为 abrupt truncation-repetition inflation, 并强调这一过程中教师和损失都没有变, 不稳定来自 OPD 自身的 on-policy 动力学. 它与 GRPO 式 RL 里常见的长度偏置不同: Dr.GRPO 和 DAPO 处理的是序列级的长度相关梯度缩放, 这里是重复 token 在逐 token 优势上占优.
 
-如果 PPL 与恢复率在目标域内没有稳定单调关系,就不应使用 PPL 作为主要权重.
+### 3.3 机制
 
-### 2.2 Sampled-token 信号失衡,支持截断与 tokenizer 错位
+**rollout 层面** (Figure 3). 长度突增前后, 学生和教师的 log-prob 都变得不那么负, 教师涨得更多, 平均优势 $\log\pi_T-\log\pi_\theta$ 随之跳升. 重复内容对两个模型都容易预测, 但教师对它的确定性提高得更快.
 
-<Revisiting On-Policy Distillation>直接识别了三类问题:
+**token 层面** (Figure 4). 重复 token 的平均优势在整个训练中都高于普通 token. 崩塌前它们很少见, 总贡献有限; 崩塌后重复 token 约占 30%, 平均优势是普通 token 的 4-9 倍.
 
-1. 单个采样 token 的监督失衡,无法完整表示局部分布匹配;
-2. 学生前缀使教师信号失真;
-3. tokenizer 或特殊 token 不匹配.
-
-论文从理论上指出,即时 token-level 梯度估计器相对 sequence-level reverse-KL 梯度有偏;在附录的有界 reward/log-ratio 与有界 score-gradient 假设下,其最坏方差上界随序列长度为 $O(T^2)$,低于 sequence-level 估计器的 $O(T^4)$.这些是带假设的最坏情况上界,不是无条件的实际方差规律.论文提出 teacher top-$K$ local support matching,top-$p$ rollout 和特殊 token masking 来修复 sampled-token 支持与信号问题;这不否认 sampled log-ratio 是固定状态下局部 KL 数值的无偏单样本估计.
-
-| 诊断项 | 建议 |
-|---|---|
-| 可测信号 | 每位置 top-k teacher mass,采样 token 在教师排序中的分位,梯度范数按 token 类型的集中度,特殊 token 梯度占比,全词表 KL 与 sampled-token surrogate 在小批量上的相关性 |
-| 必做对照 | sampled-token,teacher top-k,可承受规模上的 full-vocabulary KL;同 tokenizer 与跨 tokenizer;特殊 token mask 开/关 |
-| 干预 | teacher-supported top-k 局部匹配,top-p rollout,BOS/EOS/padding/tool token 显式 mask,词表映射和规范化测试 |
-| 误判边界 | 梯度集中在少数 token 不必然是故障,代码符号,答案 token 或领域术语本来就可能承载主要信号;必须配合功能消融 |
-
-#### Tokenizer 检查不应只比词表大小
-
-至少核对:
-
-- 同一原始文本编码出的 token ID 和边界;
-- BOS,EOS,padding,换行,空白和对话模板;
-- 工具调用与结构化输出的特殊 token;
-- teacher log-probability 是否确实对应学生采样的同一文本片段;
-- 截断是否切在 UTF-8 字符,数字或多 token 特殊标记内部.
-
-若师生 tokenizer 不同,不能直接把学生 token ID 发送给教师打分;需要在文本或字节层重对齐,并明确一个学生 token 对应多个教师 token 时如何聚合概率.
-
-### 2.3 正确轨迹均匀强化导致覆盖下降
-
-SCOPE 论文汇总了两项固定协议下的结果:
-
-- 它引用 Zhu et al. 的 Qwen2.5-7B Positive Sample Reinforcement 实验:Pass@1 提升,但 Pass@32 从 93.7% 降到 84.9%;
-- 它自己的 DeepSeek-R1-Distill-Qwen-1.5B 标准 OPD 实验:AIME24 Pass@1 提升,但 Pass@32 从 76.5% 降到 75.0%.
-
-这支持"均匀强化会偏向主导解法并降低多样性覆盖"的解释,也直接动机化了正确轨迹的 student-PPL 加权.
-
-| 诊断项 | 建议 |
-|---|---|
-| 可测信号 | Pass@1 与 Pass@k,Avg@k,每题独立解法簇数量,答案与推理轨迹 self-BLEU,生成熵,组内正确轨迹的学生 PPL 分布 |
-| 必做对照 | 固定温度/top-p/top-k/最大长度和 $k$;均匀 MLE,均匀 OPD,只开学生权重,完整双路径 |
-| 干预 | 正确轨迹按学生 PPL 组内加权;保留稀有但经验证正确的解法;调整 rollout 探索参数;监控权重 ESS |
-| 误判边界 | Pass@k 会受采样温度,答案解析器,重复过滤和最大长度影响;Pass@1 提升而 Pass@k 下降不能单独证明参数空间发生"模式坍缩" |
-
-不应使用固定熵阈值判定"坍缩".阈值必须来自基线分布,目标任务和固定采样协议下的统计区间.
-
-### 2.4 长度膨胀,重复饱和与截断崩溃
-
-StableOPD 的一手实验观察到的主要长度故障是**长度膨胀**,而不是统一的轨迹缩短现象:
-
-- rollout 长度在训练中突然上升;
-- 截断轨迹占比增加;
-- 重复模式饱和;
-- 截断样本带来有偏梯度;
-- 验证性能随之明显下降.
-
-该工作使用 reference-based divergence constraint 和 rollout mixture distillation 稳定训练.对 Qwen2.5-Math-1.5B 主表,六项数学基准的平均准确率由标准 OPD 的 28.9 提升至 36.1,即 **+7.2 个百分点**;这不是"相对提高 7.2%"的同义表达,也不能脱离该模型,教师和数据设置外推.
-
-| 诊断项 | 建议 |
-|---|---|
-| 可测信号 | completion 长度分位数,命中最大长度比例,EOS 率,重复 n-gram,循环段长度,截断样本 loss/梯度占比,长度与正确率联合分布 |
-| 必做对照 | 纯 on-policy,混入稳定 rollout,加入/移除 reference constraint;相同 token 预算与采样参数 |
-| 干预 | reference divergence constraint,rollout mixture,重复检测,截断样本单独处理,最大长度敏感性实验 |
-| 误判边界 | 更难题目或能力提升可能真实需要更长轨迹;平均长度增加不是故障,只有与重复,截断和性能退化联动才构成证据 |
-
-长度监控应同时看短尾和长尾.只看均值会漏掉"多数样本正常,少量样本顶满上下文"的截断崩溃.
-
-### 2.5 教师—学生模式不兼容,或教师没有新增能力
-
-<Rethinking On-Policy Distillation>在受控实验中提出两个经验条件:教师与学生的高概率 token 模式需要有足够重合;即使教师分数更高,模式也兼容,教师还要提供学生训练中尚未获得的能力.该论文的结论来自 Qwen3 与 DeepSeek 系列的数学推理设置,不是"任何跨家族教师必然失败"的定理.一个更大但局部目标分布与学生错位的教师,也可能提供难以利用的信号.
-
-| 诊断项 | 建议 |
-|---|---|
-| 可测信号 | 师生 top-k token overlap,教师相对学生的 held-out 增益,教师在学生前缀上的校准,随位置加深的 margin 与 KL |
-| 必做对照 | 同一学生下比较高/低 top-$k$ overlap 教师;同训练流水线教师与额外 RL 后训练教师;强教师与同能力教师;离线冷启动后再 OPD |
-| 干预 | 基于 overlap 与 held-out 增益做教师匹配;teacher-aligned prompt 过滤;教师轨迹 SFT 冷启动;只在教师有可验证新增能力的领域路由 |
-| 误判边界 | top-k overlap 低也可能代表教师提供真正新颖的路径;要结合学生是否能吸收以及最终功能指标判断 |
-
-## 3. 由目标函数可推导,但必须实证的风险
-
-### 3.1 非均匀多峰教师下的覆盖收缩
-
-Reverse KL 的期望由学生分布加权.若学生几乎不访问教师的某个模态,该模态对损失的贡献也很小,因此学生可能集中于一个高密度峰.
-
-可测信号:
-
-- 教师高概率模态的覆盖率;
-- 多次采样的语义簇数量;
-- Pass@k 与 Pass@1 的分离;
-- reverse KL,forward KL,JS 或混合散度的对照.
-
-干预:
-
-- 适应性选择散度;
-- 提高 rollout 覆盖;
-- 对经验证的稀有模式单独加权;
-- 使用 full-vocabulary 或 teacher top-k 信号保留更多支持.
-
-误判边界:单峰集中在确定性任务中可能是正确行为;不能把所有熵下降都视为退化.
-
-### 3.2 行为策略陈旧造成 importance ratio 漂移
-
-使用旧 rollout 更新当前策略时:
+**形式化** (§3.5). 忽略裁剪, 记 $d_{\pi_\theta}(s)$ 为学生诱导的前缀访问分布, $A(s,y)=\log\pi_T(y\mid s)-\log\pi_\theta(y\mid s)$, 则
 
 $$
-\rho_t(\theta)=
-\frac{\pi_\theta(a_t\mid s_t)}
-{\pi_{\mathrm{old}}(a_t\mid s_t)}
+g(\theta)\propto\mathbb E_{s\sim d_{\pi_\theta},\,y\sim\pi_\theta(\cdot\mid s)}\bigl[A(s,y)\nabla_\theta\log\pi_\theta(y\mid s)\bigr] \tag{7}
 $$
 
-可能出现重尾.多轮复用同一批 rollout,异步延迟或高学习率都会扩大漂移.
-
-可测信号:
-
-- $\rho_t$ 的均值,方差和极端分位;
-- effective sample size;
-- rollout age;
-- KL$(\pi_\theta\|\pi_{\mathrm{old}})$;
-- 梯度范数与 ratio 极值的相关性.
-
-对照实验:
-
-- 每批 1 次更新与多次更新;
-- 新鲜 rollout 与延迟 rollout;
-- 不同 clip 或 trust-region 设置.
-
-误判边界:某些稀有高优势 token 合理地产生较大 ratio;只有和方差,性能或数值异常联动时才说明失稳.
-
-### 3.3 困惑度权重被异常样本主导
-
-SCOPE 一类方法把 PPL 通过 softmax 变成组内权重.若温度过小或 log-probability 计算异常,单个样本可能占据几乎全部权重.
-
-可测信号:
+记 $\mathcal R$ 为重复尾部的状态集合, $\Delta(s)=\mathbb E_{y\sim\pi_\theta}[A(s,y)\nabla_\theta\log\pi_\theta(y\mid s)]$, 式 (7) 拆成
 
 $$
-\operatorname{ESS}(w)=\frac{1}{\sum_i w_i^2},
+g(\theta)=\mathbb E_{s\sim d_{\pi_\theta}}\bigl[\mathbf 1\{s\notin\mathcal R\}\Delta(s)\bigr]+\mathbb E_{s\sim d_{\pi_\theta}}\bigl[\mathbf 1\{s\in\mathcal R\}\Delta(s)\bigr] \tag{8}
 $$
 
-以及最大权重,权重熵,PPL 分位数和样本长度.
+第二项的份额等于「访问频率乘优势大小」. 重复状态一旦被访问得多一些, 第二项就占更大份额, 而它的更新又进一步鼓励留在 $\mathcal R$ 里. 用论文给的数估算: 重复 token 占 30%, 优势是 4-9 倍, 第二项与第一项的优势加权比约为 $0.3\times4/0.7\approx1.7$ 到 $0.3\times9/0.7\approx3.9$, 重复部分已经在更新里占多数. 这是一个自我强化的回路, 也解释了为什么转变如此突然.
 
-干预:
+### 3.4 Stable-OPD
 
-- 在 log-space 计算;
-- 温度敏感性实验;
-- winsorization 或上限裁剪,但必须作为新变体做消融;
-- 检查 EOS,padding 和异常超长样本.
+两个组件:
 
-误判边界:真正位于能力边界的样本可能理应获得较高权重.低 ESS 是调查信号,不是自动失败判据.
+**混合蒸馏**. 维护一个高质量完整解的固定集合 $\mathcal D_{\mathrm{gold}}$, 每个 prompt 除了学生的 on-policy rollout, 再配一条 golden 解, 在同一个 minibatch 里联合优化:
 
-### 3.4 自教师闭环可能放大共同偏差
+$$
+\mathcal L_{\mathrm{mix}}(\theta)=\mathcal L_{\mathrm{OPD}}(\theta)+\lambda_{\mathrm{gold}}\,\mathbb E_{(x,y)\sim\mathcal D_{\mathrm{gold}}}\bigl[\mathcal L_{\mathrm{SFT}}(\theta;x,y)\bigr] \tag{9}
+$$
 
-在 OPSD/SDPO 等自蒸馏中,教师和学生共享参数或归纳偏差.若额外上下文,环境反馈或 stop-gradient 不能提供真正的新信息,闭环可能反复强化同一错误启发式.
+从状态分布看, 训练是在学生诱导的分布与 golden 数据诱导的固定分布的混合上进行, 即使 on-policy rollout 开始退化, 梯度里仍有一部分来自完整, 不截断, 不重复的轨迹. 论文特别区分了它与 SDPO, OPSD 中 golden 解的用法: 那里 golden 解用来改造教师信号本身, Kim 等 (2026) 指出这会压低教师在推理中的不确定性; Stable-OPD 不改 on-policy rollout 上的教师信号, golden 数据只通过辅助的 SFT 项起作用.
 
-可测信号:
+**参考 KL**. 以初始学生为 $\pi_{\mathrm{ref}}$, 在访问到的前缀上惩罚偏离:
 
-- feedback-conditioned teacher 相对原学生的真实准确率增益;
-- 师生在错误 token 上是否有可解释的概率差;
-- 多轮自蒸馏后错误类型是否集中;
-- 外部 verifier 或独立模型对错误的复核.
+$$
+\mathcal L_{\text{Stable-OPD}}(\theta)=\mathcal L_{\mathrm{mix}}(\theta)+\beta_{\mathrm{KL}}\,\mathbb E_{s_t}\bigl[D_{\mathrm{KL}}(\pi_\theta(\cdot\mid s_t)\|\pi_{\mathrm{ref}}(\cdot\mid s_t))\bigr] \tag{10}
+$$
 
-干预:
+混合蒸馏改的是训练分布, 不直接限制每步更新的幅度; 参考 KL 限制的是策略漂移.
 
-- 保证反馈携带新信息;
-- 加入外部验证器或异质教师;
-- 周期性与冻结基座/独立教师做对照;
-- 对 self-teacher 的置信度—正确率做校准.
+### 3.5 结果
 
-误判边界:师生输出相似不等于没有学习信号;局部 token 概率变化可能足以提供有效 credit assignment.
+训练数据: OpenR1-Math-220k 按 Yan 等 (2025) 的流程过滤, 去掉超过 8192 token 或被 Math-Verify 判错的生成, 从 94K 剩 46K. 先在 33K 上 SFT, 再在剩下 13K 上做 OPD. rollout batch 64, 每题 4 条, 采样温度 1.0, Adam 学习率 $1\times10^{-6}$, 4 张 H200. 评测中 AIME24, AIME25, AMC 报 avg@32, 其余报 pass@1, 温度 0.6.
 
-## 4. 待验证的工程假设
+Qwen2.5-Math-1.5B, 教师 OpenThinker3-7B (附录 Table 3):
 
-以下现象可以进入排障清单,但不能在没有目标域证据时命名为 OPD 的普遍失败模式.
+| 方法 | 平均 | MATH-500 | Minerva | Olympiad | AMC | AIME24 | AIME25 |
+|------|-----|---------|---------|----------|-----|--------|--------|
+| 基座 | 16.0 | 28.0 | 9.6 | 21.2 | 26.4 | 7.2 | 3.6 |
+| Qwen2.5-Math-1.5B-Instruct | 35.7 | 77.4 | 28.7 | 39.1 | 48.1 | 12.1 | 8.9 |
+| SFT | 31.9 | 70.6 | 26.8 | 31.3 | 37.8 | 11.7 | 13.2 |
+| GRPO | 30.1 | 61.8 | 26.8 | 32.0 | 40.2 | 11.8 | 7.7 |
+| OPD | 28.9 | 56.7 | 23.4 | 31.0 | 35.9 | 11.1 | 15.0 |
+| **Stable-OPD** | **36.1** | 73.9 | 32.6 | 37.4 | 43.0 | 13.8 | 16.0 |
 
-| 假设 | 可测信号 | 对照实验 | 可尝试干预 | 主要误判边界 |
-|---|---|---|---|---|
-| 学生学会答案解析器或 verifier 的捷径 | verifier 通过但独立测试失败,扰动输入后性能骤降,规则外样本失败 | 主 verifier 与隐藏 verifier;表面格式相同但语义改变的对抗集 | 多验证器,隐藏测试,语义扰动,过程检查 | 简短或模板化解法不等于作弊 |
-| 推理轨迹过度缩短 | 长度下降同时复杂题,步骤验证或校准下降 | 固定答案正确率下比较 trace 质量;控制 EOS/reward | 保留必要中间验证,难度分层,step verifier | 更短可能是去除冗余并提升效率 |
-| 校准能力恶化 | ECE,Brier,选择性准确率,拒答曲线变差 | 同准确率 checkpoint 对照;温度校准前后 | 校准损失,独立 held-out calibration,保留不确定性表达 | 生成 token 熵不等于答案置信度 |
-| 通用能力遗忘 | 非目标域,语言,工具和安全评测下降 | 相同训练 token 的 SFT,RLVR,OPD 对照 | replay,reference constraint,混合域 rollout | 评测波动或模板变化可能造成假下降 |
-| 多教师信号冲突 | 同 token 教师梯度余弦为负,router 频繁抖动,领域外退化 | 单教师,均匀混合,领域路由 | competence router,冲突检测,分域 batch | 不同教师的多样性不必然是破坏性冲突 |
-| 多轮 Agent 结构退化 | 工具调用轮数,有效 observation 使用率,任务成功率脱钩 | 单轮/多轮,固定/更新教师,终局/步骤信号 | 轨迹结构约束,turn-level credit,稳定 teacher update | 更少轮次可能是更高效策略 |
-| 过短或过长两端失稳 | 长度分布双峰,短答错误率与截断率同时上升 | 多个最大长度,温度和 reward 版本 | 分层采样,长度条件评测,对截断单独建模 | 任务混合本身可能自然产生双峰 |
+论文写的 +7.2 是 28.9 到 36.1 的绝对差, 单位是百分点. 标准 OPD 在这里不如 SFT 和 GRPO, 论文的解读是训练不稳定限制了它. 官方的 Qwen2.5-Math-1.5B-Instruct 平均 35.7, Stable-OPD 只高 0.4 个点, MATH-500, Olympiad, AMC 三项仍低于 Instruct, 优势集中在 Minerva 和两届 AIME 上. 换成 R1-Distill-7B 做教师 (Table 4), OPD 28.0, Stable-OPD 35.7, 在 Minerva (32.7), AIME24 (14.6), AIME25 (17.2) 上是表中最好.
 
-对这些假设的阈值应来自基线置信区间,历史稳定运行和预注册验证集,而不是写死 entropy 0.5,confidence 0.95,固定 token 数或统一温度.
+Qwen2.5-Math-7B (Table 1): OPD 平均 43.8, 低于 SFT 的 44.1 和 GRPO 的 45.5; Stable-OPD 47.6, 也高于 Oat-Zero (43.8), OpenReasoner-Zero (41.0), PRIME-Zero (40.8), SimpleRL-Zero (37.4).
 
-## 5. 统一诊断面板
+消融 (Table 2, 1.5B, 教师 R1-Distill-7B):
 
-### 5.1 数据与 rollout
+| 方法 | 平均 |
+|------|-----|
+| 基座 | 16.0 |
+| OPD | 28.0 |
+| OPD + KL | 29.7 |
+| OPD + KL + 混合蒸馏 | 35.7 |
 
-每个 prompt 和每条轨迹至少记录:
+参考 KL 单独只加 1.7 个点, 混合蒸馏再加 6.0 个点. 训练动态上 (Figure 5), Stable-OPD 在 1.5B + OpenThinker3 一组截断率保持中等, 重复率接近 0; 1.5B + R1-Distill-7B 一组在训练末尾有轻微上漂, 幅度和时间都远小于 OPD.
 
-- prompt ID,数据版本,领域和难度分层;
-- rollout policy checkpoint,生成时间和 rollout age;
-- 温度,top-p,top-k,最大长度和随机种子;
-- completion token 数,EOS,截断,重复率;
-- 结果正确性和验证器版本;
-- 正确组,错误组和组大小.
+## 4. 教师选不对 (Li 等)
 
-### 5.2 师生概率
+Li 等的出发点是一个反常现象: 更强的教师可能完全教不动学生, 而初始对齐更低的较弱教师反而能教会. 论文引言提到 Qwen3, MiMo, GLM-5 的后训练都用了 OPD, Thinking Machines Lab 也以远低于 RL 的算力复现了 Qwen3 的 OPD 配方, 但什么条件下 OPD 失败, 此前很少有系统研究. Li 等的实验全部在数学上, 训练集 DAPO-Math-17K, 评测 AIME24, AIME25, AMC23, 每题 16 个样本, 温度 0.7, top-p 0.95, 最长 31,744 token, 报 avg@16.
 
-按 token 保存或可重算:
+### 4.1 三个动态指标
 
-- $\log\pi_{\mathrm{old}}(a_t\mid s_t)$;
-- $\log\pi_\theta(a_t\mid s_t)$;
-- $\log\pi_T(a_t\mid s_t)$;
-- teacher/student entropy;
-- teacher/student top-k mass 与 overlap;
-- sampled-token log-ratio;
-- sequence PPL;
-- 特殊 token mask.
+记学生与教师在步 $t$ 的 top-$k$ 集合为 $S_t^{(p)}$, $S_t^{(q)}$:
 
-若成本不允许全量保存,至少在固定审计子集上保留完整词表或 teacher top-k,以便检查 sampled-token 近似.
+- **重合率**: $\mathcal M_{\mathrm{overlap}}=\mathbb E_t\bigl[|S_t^{(p)}\cap S_t^{(q)}|/k\bigr]$.
+- **重合 token 优势**: 在交集上重新归一化得 $\bar p_t,\bar q_t$, $A_t(v)=\bar p_t(v)(\log\bar q_t(v)-\log\bar p_t(v))$, 对交集取平均. 接近 0 表示学生在教师偏好的 token 上分配了合适的质量, 大的负值表示学生在交集内比教师更自信.
+- **熵差**: $\Delta H_t=|H(q_t)-H(p_t)|$, 在学生 rollout 上计算.
 
-### 5.3 梯度与优化
+### 4.2 条件一: 思维模式兼容
 
-监控:
+学生 Qwen3-1.7B-Base, 两个教师: Qwen3-4B (Non-thinking) 与 Qwen3-4B-Base-GRPO (在 Qwen3-4B-Base 上做 zero-RL). 两个教师的分数大体相当, 后者初始重合率更高, 蒸馏效果始终更好. 两条重合率曲线后期会合, 性能差距却一直保留, 论文的解读是早期模式不匹配损失的收益后面补不回来.
 
-- loss 的 token-sum,token-mean 和 sequence-mean;
-- 梯度范数及按 token 类型,位置,正确性分支的贡献;
-- importance ratio 分位数;
-- 权重最大值,权重熵与 ESS;
-- 不同位置深度的 teacher margin 和 KL;
-- NaN,Inf,overflow,underflow 与被 mask 比例.
+### 4.3 条件二: 分数高不等于有新知识
 
-### 5.4 功能指标
+两组对照, 关键对比是同一流水线的教师与额外做过 RL 的教师:
 
-至少同时报告:
+- DeepSeek 家族: 学生 R1-Distill-1.5B, 教师 R1-Distill-7B 对 Skywork-OR1-Math-7B (在 R1-Distill-7B 上做 RL).
+- Qwen 家族: 学生 Qwen3-1.7B (Non-thinking), 教师 Qwen3-4B (Non-thinking) 对在 DeepMath 57K 子集上做过 RL 的版本.
 
-- Pass@1,Avg@k,Pass@k;
-- 多种固定采样预算下的 accuracy-cost 曲线;
-- completion 长度分布,截断率和重复率;
-- OOD,跨领域和遗忘评测;
-- ECE,Brier,选择性准确率等校准指标;
-- 语义解法簇或功能行为多样性;
-- 教师从错误前缀恢复的成功率.
+两个家族里, 同流水线教师的提升都有限, 做过 RL 的教师提升明显大, 差距恢复率 $(\mathrm{Acc}_{\text{OPD 后}}-\mathrm{Acc}_{\text{OPD 前}})/(\mathrm{Acc}_{\text{教师}}-\mathrm{Acc}_{\text{OPD 前}})$ 也高得多. RL 后的教师来自同一基座, 思维模式仍然兼容, 收益来自 RL 带来的新能力.
 
-任何指标都要绑定采样参数.改变温度后比较 Pass@k,不能归因于训练方法本身.
+### 4.4 反向蒸馏
 
-## 6. 对照实验矩阵
+JustRL-1.5B 由 R1-Distill-1.5B 做 RL 得到. 把方向反过来: 以 JustRL-1.5B 为学生, 分别用 R1-Distill-1.5B (它自己 RL 前的检查点) 和 R1-Distill-7B 做教师. R1-Distill-7B 的分数略高于 JustRL-1.5B, R1-Distill-1.5B 明显更弱.
 
-当训练出现退化时,推荐按最小改动逐层隔离.
+结果 (Figure 5): 两次蒸馏都把学生拉回大约 RL 前的水平, RL 学到的增益全部被抹掉, 两条训练曲线几乎重合. 由于 OPD 在学生访问的状态上最小化 reverse KL, 这说明两个尺寸的教师在这些状态上给出几乎相同的局部目标分布. 论文从中得出三点: OPD 学的是教师的思维模式并覆盖学生自己的; 教师的 benchmark 分数不能预测 OPD 的结果, 甚至可能方向相反; 同家族里大模型的高分可能只是对同样数据拟合程度不同, 不代表新能力.
 
-### 6.1 采样轴
+### 4.5 机制: 高概率 token 上的逐步对齐
 
-- 静态教师轨迹 vs 学生 on-policy 轨迹;
-- 当前策略 rollout vs 延迟策略 rollout;
-- 温度/top-p/top-k 的固定网格;
-- rollout 数量 $G$ 和最大长度敏感性.
+学生 R1-Distill-1.5B, 教师 JustRL-1.5B (成功) 对 R1-Distill-7B (失败), 两个教师数学能力相当, 后者略强. 成功的一组最终恢复了超过 80% 的师生差距, 失败的一组没有任何提升 (Figure 6). 成功时重合率稳步上升, 重合 token 优势向 0 靠近, 熵差收窄; 失败时三个指标从一开始就停滞. 整个训练中重合 token 都占两个模型 97%-99% 的概率质量 (附录 B.1).
 
-### 6.2 信号轴
+进一步的消融 (Figure 7, $k=16$) 只改损失覆盖哪些 token: 学生全部 top-$k$, 只用交集, 只用对称差. 只用交集与全部 top-$k$ 的效果几乎一样, 只用对称差明显更弱. 前两者的重合率都从约 72% 升到 91% 以上, 只用对称差时重合率先降后部分回升. 机制是自我强化的: 一个 token 进入共同高概率区且被教师偏好, reverse KL 就往它上面集中更多质量, 把非重合的竞争 token 挤出学生的 top-$k$.
 
-- full-vocabulary KL;
-- teacher top-k local support;
-- sampled-token surrogate;
-- 正确轨迹 MLE;
-- 结果奖励;
-- feedback-conditioned self-teacher.
+### 4.6 两条修复
 
-### 6.3 教师轴
+**off-policy 冷启动** (§5.1). 学生 Qwen3-1.7B-Base, 教师 Qwen3-4B (Non-thinking). 先让教师在 OpenThoughts3-1.2M 数学子集上生成 200K 条回答, 学生在上面 SFT, 再在去重后剩下的约 30K prompt 上做 OPD. 与直接从 Base 开始 OPD 相比, 冷启动后的学生初始重合率高得多, 熵差小, 曲线平稳, 验证性能在整个训练中都更高, 最终上限也更高.
 
-- 同家族与跨家族;
-- 固定教师,EMA teacher,周期 hard copy;
-- 外部教师与 self-teacher;
-- 单教师与多教师;
-- 正确前缀,错误前缀和教师自身前缀.
+**教师对齐的 prompt** (§5.2). 两个粒度:
 
-### 6.4 稳定化轴
+- 模板: 学生 R1-Distill-1.5B, 教师 JustRL-1.5B, 题目同为 DAPO-Math-17K, 只把模板从 DAPO 格式 (要求最后一行写 `Answer:`) 换成 JustRL 训练时的格式 (`Please reason step by step, and put your final answer within \boxed{}.`). 三个基准都提升, 重合率起点更高, 收敛也更高.
+- 内容: 学生 Qwen3-1.7B-Base, 教师 Qwen3-4B-Base-GRPO, 对比 DAPO-Math-17K (教师 RL 用过的数据) 与等量的 DeepMath 子集. 前者下游更好, 重合率反而更低, 但学生在重合 token 上的累计质量明显更高, 学生熵也低得多. 论文建议把教师对齐的 prompt 与教师没见过的 prompt 混用, 以免熵过低, 失去探索.
 
-- reference constraint 开/关;
-- rollout mixture 开/关;
-- 特殊 token mask 开/关;
-- 均匀权重与自适应权重;
-- 不同 weight temperature;
-- 每批更新次数和 rollout freshness.
+### 4.7 稠密奖励的代价
 
-每个实验只改变一个主因素,并报告至少多个随机种子.若同时换教师,采样温度,loss reduction 和数据 mixture,就无法定位故障.
+**长度有甜点** (§6.1). R1-Distill-1.5B 对 JustRL-1.5B, 最大回答长度取 0.5K 到 15K 六档, 各训 200 步. 0.5K 和 1K 的监督 token 太少; 3K 和 7K 最好; 10K 和 15K 持平或下降, 后期重合率骤降, 学生熵和梯度范数出现尖峰. 15K 设定下按位置画学生熵, 高熵先出现在回答末尾, 随训练逐步向前蔓延; 教师熵也有同样的从后往前的趋势.
 
-## 7. 从症状到根因
+**教师续写随前缀变长而失效**. 从 DAPO-Math-17K 抽 2K 题, 取学生超过 16K token 的 rollout, 在多个位置截断让教师续写. 教师相对学生的准确率优势从 1K 前缀的 +0.37 单调降到 16K 前缀的 +0.02.
 
-### 症状一:loss 下降,准确率不升
+**全局有信息不等于局部可用** (§6.2). 对每条 rollout 算序列平均奖励 $\bar r(y)=\frac1T\sum_t[\log\pi_T-\log\pi_\theta]$, 两个教师下正确 rollout 的平均奖励都高于错误的, AUROC 分别是 0.73 (JustRL-1.5B, 成功) 和 0.75 (R1-Distill-7B, 失败). 失败的教师并没有给出更弱的全局信号. 论文观察到失败组后期重合 token 优势的幅度更大, 梯度范数却一直更小, 提出一个未经验证的假设: 7B 教师的逐 token 优势在序列内各位置方向不一致, 聚合后相互抵消.
 
-依次检查:
+**sampled-token 已经够用** (§6.3). Top-$k$ OPD 取 $k\in\{1,4,16,64\}$ 与 sampled-token 比较. sampled-token 与 top-$k$ 三项平均相当; 只有 Top-1 明显更差, 重合率增长不稳, 熵和梯度范数有尖峰; $k$ 超过 4 几乎没有额外收益, Top-4 后期还有一次下探, Top-16 和 Top-64 全程平滑. 论文的解释: sampled-token 每步按学生分布抽不同的 token, 长期看是对高概率区的无偏覆盖; Top-1 永远取 argmax, 小的策略变化就会让第一名换人, 奖励信号不会平均掉.
 
-1. 验证器和数据是否正确;
-2. loss 是否主要由特殊 token,格式 token 或 persistent high-loss token 驱动;
-3. sampled-token surrogate 与小规模 full-KL 是否相关;
-4. 教师在学生前缀上是否仍有恢复能力;
-5. 教师是否确实提供了学生尚未掌握的新能力.
+这一条与 Fu 等的结论表面上冲突. Fu 等的 sampled-token 基线没有用 top-$p$ rollout, 师生来自不同的 SFT 流水线, 还受 tokenizer 不一致影响; Li 等这组师生同属 R1-Distill-1.5B 家族, 模板也一致. 两篇的结论各自对应自己的设定.
 
-### 症状二:Pass@1 上升,Pass@k 下降
+## 5. 修复: 教师 top-K 局部支持匹配 (Fu 等)
 
-检查:
+### 5.1 目标
 
-1. 评测采样参数是否完全一致;
-2. 正确轨迹是否被均匀强化;
-3. 学生 PPL 较高但正确的轨迹是否消失;
-4. 解法簇数量和生成熵是否同时下降;
-5. 答案解析器是否把多样表达错误判错.
+不再只比较采样 token, 在每个前缀上取教师 top-$K$ 集合 $S(c_{i,t})=\mathrm{TopK}_q(c_{i,t})$, 在集合内对师生分布重新归一化:
 
-干预优先级:先修评测,再做正确轨迹重加权或探索调整;不要仅凭 token entropy 强行加熵正则.
+$$
+\hat\pi_\theta(v\mid c_{i,t})=\frac{\pi_\theta(v\mid c_{i,t})}{\sum_{u\in S(c_{i,t})}\pi_\theta(u\mid c_{i,t})},\qquad\hat q(v\mid c_{i,t})=\frac{q(v\mid c_{i,t})}{\sum_{u\in S(c_{i,t})}q(u\mid c_{i,t})} \tag{11}
+$$
 
-### 症状三:长度突然增加并顶满上下文
+局部支持匹配 (LSM) 对所有 rollout 位置平均截断的 reverse KL:
 
-检查:
+$$
+\mathcal L_{\mathrm{LSM}}=\mathbb E\Bigl[\frac{1}{\sum_i|o_i|}\sum_{i=1}^{G}\sum_{t=1}^{|o_i|}\sum_{v\in S(c_{i,t})}\hat\pi_\theta(v\mid c_{i,t})\log\frac{\hat\pi_\theta(v\mid c_{i,t})}{\hat q(v\mid c_{i,t})}\Bigr] \tag{12}
+$$
 
-1. 重复 n-gram 与循环段;
-2. EOS 概率和特殊 token mask;
-3. 截断轨迹在 loss 中的权重;
-4. reference divergence;
-5. rollout 是否完全由最新学生产生.
+更新不再由单个 token 的 log-ratio 的正负与大小决定, 仍然是逐 token 的局部更新, 成本远低于全词表 KL. 集合外的 token 不从这一项得到梯度, 相对全词表 reverse KL 是有偏的.
 
-若长度增加但正确率,非重复步骤数和完成率同步改善,不应直接压短.
+配套的三件事:
 
-### 症状四:长度变短且复杂题退化
+- **集合内重新归一化**. 在集合内单独做 softmax, 否则集合内师生的概率质量不可比; 去掉这一步训练迅速崩塌.
+- **top-$p$ rollout**. 无约束采样偶尔采到极低概率的 token, 制造教师信号失效的前缀. 实验取 $p=0.9$, 温度 1.
+- **特殊 token 掩码**. 掩掉切分约定不兼容的特殊 token, 减少假阴性. 它对 sampled-token OPD 帮助很大, 对 LSM 影响很小.
 
-检查:
+实现在 verl-agent 上, 8 张 H100. 数学: 最大回答 16,384, 组大小 8, $K=32$, AdamW 学习率 $2\times10^{-6}$, batch 128, mini batch 64, 共 400 步.
 
-1. 训练 loss 到底是 token-sum 还是 token-mean;
-2. EOS 是否获得异常监督;
-3. 数据 mixture 是否偏向短答案;
-4. verifier 是否只看最终答案而忽略必要过程;
-5. 短轨迹是否只是去冗余.
+### 5.2 结果
 
-"长度变短"本身不是根因.只有独立步骤验证,困难分层或校准指标也退化时,才有理由干预.
+单任务数学 (Table 1, 训练集 DAPO-Math-17K 英文部分, pass@1):
 
-### 症状五:训练早期正常,后期突然失稳
+| 方法 | Math500 | AIME24 | AIME25 | Minerva | Olympiad | 平均 |
+|------|---------|--------|--------|---------|----------|-----|
+| Qwen2.5-7B-Instruct | 68.2 | 13.3 | 0.0 | 26.5 | 32.9 | 28.2 |
+| OpenThinker3-7B (教师) | 92.2 | 53.3 | 40.0 | 39.0 | 55.6 | 56.0 |
+| sampled-token OPD | 80.0 | 10.0 | 16.7 | 32.4 | 43.1 | 36.4 |
+| sampled-token + 掩码 | 81.4 | 26.7 | 16.7 | 34.2 | 44.7 | 40.7 |
+| LSM 无掩码 | 80.4 | 23.3 | 26.7 | 34.2 | 43.9 | 41.7 |
+| LSM + 掩码 | 82.0 | 23.3 | 23.3 | 34.9 | 43.9 | 41.5 |
 
-检查:
+掩码对 LSM 几乎无影响 (41.7 对 41.5), 说明 LSM 的增益不只来自处理 tokenizer 错配. 与教师的 56.0 相比仍有 14 个点以上的差距.
 
-1. rollout age 和 importance ratio 重尾;
-2. teacher 更新或 hard-copy 事件;
-3. PPL 权重 ESS 是否骤降;
-4. 长度,重复和截断率是否发生相变;
-5. 数据课程或 prompt 难度是否越过学生可学边界.
+数学与 ALFWorld 交替训练 (Table 2, ALFWorld 教师是 GiGPO-Qwen2.5-7B-Instruct-ALFWorld, 400 步中两类各 200 步): sampled-token OPD 的 ALFWorld 成功率 90.6, 数学平均 34.8; LSM 无掩码 95.3 与 41.7, 数学提升 19.8%, 这就是摘要里的 +19.8%; LSM 加掩码 ALFWorld 最高 97.7, 数学降到 38.6. 拆到单项, LSM 无掩码的增益主要在 MATH500 (74.8 到 82.0) 和 AIME24 (13.3 到 33.3) 上, AIME25 和 Minerva 与 sampled-token 相差不到 4 个点. 论文的解读是局部支持匹配主要帮的是推理这一侧, 推理轨迹更长, sampled-token 信号更容易受前缀漂移影响; 掩码在这次运行里则把取舍推向了智能体任务. 附录 G.1 在 WebShop 上用 Qwen2.5-1.5B-Instruct 做学生, 成功率从 sampled-token 的 50.0 升到 57.8, 教师是 66.4.
 
-## 8. 干预的适用边界
+组件消融 (Table 3, AIME24 avg@32): sampled-token 20.4, 加 top-$p$ 21.6; 只换成教师 top-$K$ 是 17.7, 反而更低; 教师 top-$K$ 加 top-$p$ 23.6. 两者要一起用. 支持集合的选法 (Table 4 与附录 G.3) 在单任务上差别不大, 在多任务上默认的教师 top-$K$ (数学平均 41.7) 远好于学生 top-$K$ 加采样 token (28.4) 和教师 top-$K$ 加采样 token (26.9); 带无偏尾部校正的 EMA-PG 变体也没有更好 (36.2 与 33.7).
 
-| 干预 | 主要针对 | 不解决 |
-|---|---|---|
-| SCOPE 双路径权重 | 正确轨迹重复强化,错误前缀上的教师可靠性差异 | verifier 错误,跨 tokenizer 对齐,教师没有新能力 |
-| Teacher top-k local support | sampled-token 支持不足和梯度失衡 | 教师本身在坏前缀上错误 |
-| 特殊 token masking | tokenizer/模板 token 污染 | 语义层教师错误 |
-| Reference constraint | 策略漂移,长度与重复失稳 | 教师—学生能力不匹配 |
-| Rollout mixture | 纯 on-policy 自反馈失稳,长度膨胀 | 静态数据本身质量差 |
-| Forward/JS/混合散度 | 覆盖与 mode-seeking 权衡 | 错误验证器,过期 rollout |
-| Curriculum/competence routing | 全错组,低梯度 SNR,题目超出学生边界 | 教师无法在这些状态上提供可靠信号 |
-| 外部 verifier/异质教师 | 自蒸馏共同偏差 | 额外信号本身不可靠或分布外 |
+## 6. 从症状对照到论文
 
-不存在一组可跨模型复用的默认阈值.干预参数必须通过目标域消融选择,并在 held-out 集上验证是否只是改变了生成长度或采样熵.
+| 症状 | 先查什么 | 依据 |
+|------|---------|------|
+| 训练早期正常, 某一刻截断率在几十步内冲高, 准确率骤降 | 截断率, zlib 尾部压缩比, 重复 token 的优势与占比 | Luo 等 §3 |
+| 回答末尾先出现高熵, 再往前蔓延 | 最大回答长度, 教师从长前缀续写的增益 | Li 等 §6.1 |
+| 学生陷入重复或乱码, 损失仍在降 | 重复 token 上的教师概率, 位置分桶的师生 log-prob 差 | Fu 等 §2.2, 附录 H |
+| 换了不同家族的教师后分数不涨 | tokenizer 切分与特殊 token, 先试掩码 | Fu 等 §2.2, Table 1 |
+| 强教师不如弱教师 | 初始 top-$k$ 重合率, 熵差, 教师是否有学生没见过的能力 | Li 等 §3-4 |
+| 学生原本 RL 学到的能力消失 | 教师是否就是学生 RL 前的同家族模型 | Li 等 §3.3 |
+| 重合率不涨, 梯度范数持续很小 | 冷启动 SFT, 换成教师训练时的模板与 prompt | Li 等 §5 |
 
-## 9. 发布前验证清单
+这几类失败会互相叠加. 漂移前缀上的教师失准 (第 2.2 节) 是重复饱和 (第 3 节) 能自我强化的前提: 教师若在重复内容上给低分, 式 (8) 的第二项就不会占优. 回答越长, 学生越可能走进教师少见的前缀 (第 4.7 节), 两者又都与最大长度的设置有关.
 
-### 公式与实现
+## 7. 局限
 
-- [ ] 均匀教师的 reverse KL 单元测试验证最优学生也是均匀分布.
-- [ ] 明确使用 full-vocabulary,top-k 还是 sampled-token 目标.
-- [ ] 明确 token-sum,token-mean,sequence-mean 和 batch reduction.
-- [ ] importance ratio 分母来自真实行为策略.
-- [ ] stop-gradient 位置与论文一致.
-- [ ] prompt,padding,EOS,工具 token 和截断 mask 有单元测试.
+- **领域**. 三篇的主要实验都在数学上; Fu 等加了 ALFWorld 和 WebShop, Li 等明确把代码和开放式任务列为未来工作.
+- **模型规模**. 学生在 1.5B 到 7B, 教师 4B 到 7B. 更大模型上相变是否出现, 出现的时间点, 都没有数据.
+- **自蒸馏**. 三篇都研究独立的教师. 自蒸馏里同一个模型借助特权信息 (标准答案, 执行反馈) 充当教师, 思维模式天然一致, 新知识来自特权信息. Li 等把这种情形下两个条件是否成立列为下一步.
+- **假设未验证**. Li 等关于 7B 教师逐 token 优势方向不一致的解释, 论文自己说明尚未验证. Fu 等的方差上界是最坏情况, 玩具实验只是定性的.
+- **训练与推理不一致**. Fu 等的 rollout 由 vLLM 以 top-$p$ 生成, 训练引擎没有对这个采样过程做校正, 论文把这列为未解决的问题.
+- **与教师的差距**. 修复之后学生离教师仍有明显距离 (Fu 等单任务 41.7 对 56.0), 更好的局部监督只解决了其中一部分.
 
-### 教师可靠性
+## 参考文献
 
-- [ ] 在学生正确/错误前缀上分别测教师正确率与 PPL.
-- [ ] 画 PPL—恢复率可靠性曲线和前缀深度曲线.
-- [ ] 检查低 PPL 高错误率的过度自信区域.
-- [ ] 检查师生 top-k overlap 与教师能力增益.
-
-### 训练稳定性
-
-- [ ] 记录 rollout age,ratio 分位数,梯度范数和 NaN/Inf.
-- [ ] 记录长度全分布,截断率,EOS 和重复率.
-- [ ] 对自适应权重记录最大值,熵和 ESS.
-- [ ] 将正确/错误分支,不同位置和 token 类型的梯度分开统计.
-
-### 功能与边界
-
-- [ ] 固定采样协议报告 Pass@1,Avg@k 和 Pass@k.
-- [ ] 对复杂度,领域,长度和 OOD 分层.
-- [ ] 报告校准,遗忘和非目标能力.
-- [ ] 用多个随机种子和置信区间.
-- [ ] 每项干预有单因素消融.
-- [ ] 工程假设不写成已证实的普遍规律.
-
-## 10. 一手来源
-
-1. Song and Zheng, [A Survey of On-Policy Distillation for Large Language Models](https://arxiv.org/abs/2604.00626), arXiv:2604.00626v4, 2026.该综述标注为 ongoing work;本文用它建立分类,具体结论回到下列一手论文.
-2. Fu et al., [Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes](https://arxiv.org/abs/2603.25562), arXiv:2603.25562v2, 2026.
-3. Zheng et al., [SCOPE: Signal-Calibrated On-Policy Distillation Enhancement with Dual-Path Adaptive Weighting](https://arxiv.org/abs/2604.10688), arXiv:2604.10688v2, 2026.
-4. Luo et al., [Demystifying OPD: Length Inflation and Stabilization Strategies for Large Language Models](https://arxiv.org/abs/2604.08527), arXiv:2604.08527v1, 2026.
-5. Agarwal et al., [On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes](https://arxiv.org/abs/2306.13649), ICLR 2024;arXiv 初稿提交于 2023 年.
-6. Gu et al., [MiniLLM: On-Policy Distillation of Large Language Models](https://arxiv.org/abs/2306.08543), arXiv:2306.08543, 2023.
-7. Zhao et al., [Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models](https://arxiv.org/abs/2601.18734), arXiv:2601.18734v3, 2026.
-8. Hübotter et al., [Reinforcement Learning via Self-Distillation](https://arxiv.org/abs/2601.20802), arXiv:2601.20802v2, 2026.
-9. Li et al., [Rethinking On-Policy Distillation of Large Language Models: Phenomenology, Mechanism, and Recipe](https://arxiv.org/abs/2604.13016), arXiv:2604.13016v2, 2026.
+1. Fu, Y., Huang, H., Jiang, K., Liu, J., Jiang, Z., Zhu, Y., & Zhao, D. (2026). [Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes.](https://arxiv.org/abs/2603.25562) *arXiv:2603.25562*. §2 估计器与失败模式, §3 式 (6)-(8), Table 1-4, 附录 D-H.
+2. Luo, F., Chuang, Y.-N., Wang, G., Xu, Z., Han, X., Zhang, T., & Braverman, V. (2026). [Demystifying OPD: Length Inflation and Stabilization Strategies for Large Language Models.](https://arxiv.org/abs/2604.08527) *arXiv:2604.08527*. §3 指标与机制, 式 (3)-(6), Table 1-4.
+3. Li, Y., Zuo, Y., He, B., et al. (2026). [Rethinking On-Policy Distillation of Large Language Models: Phenomenology, Mechanism, and Recipe.](https://arxiv.org/abs/2604.13016) *arXiv:2604.13016*. §3-6, Figure 2-16. 代码: [thunlp/OPD](https://github.com/thunlp/OPD).
+4. Zheng, B., Ma, X., et al. (2026). [SCOPE: Signal-Calibrated On-Policy Distillation Enhancement with Dual-Path Adaptive Weighting.](https://arxiv.org/abs/2604.10688) *arXiv:2604.10688*.
+5. Lu, K., & Thinking Machines Lab. (2025). [On-Policy Distillation.](https://thinkingmachines.ai/blog/on-policy-distillation) *Thinking Machines Lab: Connectionism*.
+6. Gu, Y., Dong, L., Wei, F., & Huang, M. (2024). [MiniLLM: Knowledge Distillation of Large Language Models.](https://arxiv.org/abs/2306.08543) *ICLR*.
+7. Agarwal, R., et al. (2024). [On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.](https://arxiv.org/abs/2306.13649) *ICLR*.
+8. Zhang, L., & Ba, J. (2026). [EMA Policy Gradient: Taming Reinforcement Learning for LLMs with EMA Anchor and Top-k KL.](https://arxiv.org/abs/2602.04417) *arXiv:2602.04417*.
