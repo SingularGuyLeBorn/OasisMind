@@ -20,7 +20,7 @@ excerpt: "在前面的章节中,我们已经深入剖析了大语言模型的数
 
 AI 工程化的技术栈,可以清晰地划分为四个自底向上的层次. 理解这个分层,是阅读本章的地图: 
 
-![AI工程化与系统基础设施四层金字塔技术栈](images/ai_engineering_pyramid.png)
+![AI工程化与系统基础设施四层金字塔技术栈](images/ai_engineering_pyramid.jpg)
 
 > **图 9.1 AI 工程化与基础设施四层级技术金字塔**
 > * **推理服务层(顶层, 绿色)**:面向最终业务场景, 解决高吞吐与低延迟的挑战. 代表框架有 vLLM,TensorRT-LLM,TGI, 主要优化技术包括 PagedAttention,Continuous Batching 和动态自动扩缩容. 

@@ -130,7 +130,7 @@ U-Net 的卷积操作本质上是局部的. 一个 $3 \times 3$ 的卷积核只�
 
 当然,这种全局通信也是有代价的--如果让 1000 个工匠同时两两对话,对话的总数会是 $1000 \times 1000 = 1,000,000$ 次. 这就是为什么我们需要**分解时空注意力**--把全局对话拆分成"空间层内对话"和"时间层内对话",从而将对话次数从百万级降低到万级. 我们稍后在数学推导中会严格量化这种效率提升. 
 
-![不同扩散模型架构与去噪机制概念对比](../images/dit_backbone_comparison.png)
+![不同扩散模型架构与去噪机制概念对比](../images/dit_backbone_comparison.jpg)
 
 > **图 6.1 传统图像扩散,U-Net 视频扩散与 DiT 时空注意力机制类比**
 > * **单帧图像雕刻(左侧)**:传统图像扩散模型(如 Stable Diffusion)单次只处理单一的 2D 静态图像, 不涉及时间轴的时序约束. 
@@ -324,7 +324,7 @@ Transformer 的输入必须是离散的 token 序列. DiT 的第一步是将连�
 - $D = 16 \times 2 \times 4 \times 4 = 512$
 - 输出序列维度: $512 \times 512$
 
-![时空 Patchify 机制与 Token 化过程](../images/spacetime_patchify_flow.png)
+![时空 Patchify 机制与 Token 化过程](../images/spacetime_patchify_flow.jpg)
 
 > **图 6.2 视频潜在空间的时空 Patchify 机制**
 > * **视频潜在空间(左侧)**:输入视频经由 3D VAE 编码后, 得到形状为 $C \times T' \times H' \times W'$ 的 4D 时空潜在张量. 

@@ -60,7 +60,7 @@ Muon 优化的核心洞察正是卡在这个夹缝之中:**我们能否以接近
 
 这样优化器关注的对象从「每个坐标轴的曲率」变成了「整个矩阵的谱分布」, 下文称这种特性为**谱感知(Spectrum-Aware)**. Muon 的修正发生在矩阵奇异向量张成的坐标系里, 既不像 Adam 那样忽略矩阵结构, 也不需要 Shampoo 那两个额外的方阵状态. 
 
-![AdamW vs Shampoo vs Muon 优化器地形搜索对比](../images/optimizer_landscape_analogy.png)
+![AdamW vs Shampoo vs Muon 优化器地形搜索对比](../images/optimizer_landscape_analogy.jpg)
 
 > **图 1 AdamW, Shampoo 与 Muon 在各方向曲率差别很大的损失面上的路径示意**
 > * **AdamW**: 逐坐标自适应, 当下降方向不沿坐标轴时, 路径在陡峭方向两侧来回震荡. 
@@ -127,7 +127,7 @@ Jordan 的博客给了一个经验上的动机: 人工检查 Transformer 里二�
 
 Newton-Schulz 迭代做的事是: 保持 $\mathbf{G}$ 的左右奇异向量不变, 把每个奇异值逐步推向 1. 迭代几步 (第 3.2 节的标准三次式所需步数取决于最小奇异值的起点, 见 5.2 节; Jordan 调过系数的五次式 5 步) 之后, 输出矩阵 $\tilde{\mathbf{G}}$ 满足 $\tilde{\mathbf{G}}^T \tilde{\mathbf{G}} \approx \mathbf{I}$, 是一个近似 (半) 正交矩阵. 这一步消掉的是梯度在各个奇异方向上的幅度差异, 留下的是方向. 
 
-![Newton-Schulz 矩阵正交化拉平奇异值过程](../images/newton_schulz_orthogonalization.png)
+![Newton-Schulz 矩阵正交化拉平奇异值过程](../images/newton_schulz_orthogonalization.jpg)
 
 > **图 2 Newton-Schulz 迭代拉平奇异值的过程**
 > * **椭圆(左)**: 原始梯度矩阵的奇异值分布各向异性, 长轴是步长偏大的谱方向, 短轴是步长偏小的谱方向. 
@@ -628,7 +628,7 @@ $$
 
 4. **实际意义**: 训练中不需要奇异值精确等于 1. Jordan 的实验表明奇异值停在 $[0.7, 1.3]$ 内不影响损失曲线, 所以 Muon 只跑约 5 步. 
 
-![Newton-Schulz 奇异值收敛与误差曲线](../images/newton_schulz_convergence_chart.png)
+![Newton-Schulz 奇异值收敛与误差曲线](../images/newton_schulz_convergence_chart.jpg)
 
 > **图 4 Newton-Schulz 迭代中奇异值 $s_1, s_2$ 的变化与误差 $\epsilon$ 的对数曲线**
 > * **奇异值(左轴)**: 最大奇异值 $s_1$ 归一化后停在不动点 1.0, 较小的奇异值 $s_2$ 从 $0.472$ 起步, 前几步沿 S 形曲线逼近 $1.0$. 

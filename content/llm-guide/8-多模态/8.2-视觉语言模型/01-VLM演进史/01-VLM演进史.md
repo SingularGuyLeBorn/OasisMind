@@ -18,7 +18,7 @@ excerpt: "要理解视觉语言模型(Vision-Language Model, VLM)在整个人工
 
 VLM 正是诞生在这两个分支的交汇点上. 它的核心使命非常明确:**让一个已经具备强大语言推理能力的大模型, 获得"看见"物理世界的能力**. 这不是简单的"把图像信息塞进去", 而是一场深刻的架构革命--我们需要回答一个根本性的工程问题:**如何将二维的,空间结构化的图像特征, 无损地注入到为一维序列化文本设计的 Transformer 架构中?**
 
-![VLM 技术演化家族树](../images/vlm_family_tree.png)
+![VLM 技术演化家族树](../images/vlm_family_tree.jpg)
 
 > **图 1.1 VLM 在多模态技术演进中的承上启下定位**
 > * **GPT-3(左侧分支)**:代表纯文本语言大模型(Text LLM), 具备极强的自回归语言理解与推理能力, 但输入输出完全局限于一维文本 token 序列, 缺乏对物理世界的直观感知("盲眼哲学家"). 
@@ -52,7 +52,7 @@ VLM 正是诞生在这两个分支的交汇点上. 它的核心使命非常明�
 
 VLM 架构演进的整个历史, 本质上就是工程师和研究人员如何一步步解决这三重不匹配的故事. 
 
-![VLM 设计中解决异构模态对接的三重不匹配挑战](../images/vlm_three_mismatches.png)
+![VLM 设计中解决异构模态对接的三重不匹配挑战](../images/vlm_three_mismatches.jpg)
 
 > **图 1.2 多模态架构对接面临的三重不匹配(Mismatch)挑战**
 > * **维度不匹配(Dimensional Mismatch, 左栏)**:视觉编码器(如 CLIP ViT-L)输出的特征维度(如 $d_{\text{vis}} = 1024$)与大语言模型(如 LLaMA)词嵌入空间维度(如 $d_{\text{llm}} = 4096$)物理上不兼容. 这就如同粗细不同的管道无法对接, 需要通过投影层(Projector)进行线性或非线性升维. 
@@ -109,7 +109,7 @@ VLM 的重要性不仅体现在具体的应用案例上, 更在于它正在重�
 
 - **哲学家基于描述进行的推理和回答** = **LLM 的自回归生成过程**. LLM 接收投影后的视觉 token, 把它们当作一种特殊的"外语"来理解, 然后结合用户的问题, 生成连贯的回答. 
 
-![VLM 盲眼哲学家与猫头鹰视觉助理拟人化模拟图](../images/vlm_philosopher_owl.png)
+![VLM 盲眼哲学家与猫头鹰视觉助理拟人化模拟图](../images/vlm_philosopher_owl.jpg)
 
 > **图 1.3 拟人化视角:盲眼哲学家(LLM)与猫头鹰视觉助理(Vision Encoder + Projector)的协同工作流**
 > * **盲眼哲学家(左侧)**:象征大语言模型(LLM), 拥有极强的逻辑推理与自回归语言生成能力, 但由于缺乏直接的视觉输入通道, 对像素和色彩的世界是"盲目"的. 
@@ -266,7 +266,7 @@ $$
 
 最终, Q-Former 的输出是 $\mathbb{R}^{N_q \times d}$, 也就是 32 个 $d$ 维向量. **无论输入图像有多大,视觉Encoder 输出了多少个 patch token, Q-Former 的输出始终是固定的 32 个 token. ** 这 32 个 token 随后通过一个轻量级的线性投影层, 输入到 LLM 中. 
 
-![Q-Former 视觉特征压缩与自注意力瓶颈设计](../images/vlm_qformer_flow.png)
+![Q-Former 视觉特征压缩与自注意力瓶颈设计](../images/vlm_qformer_flow.jpg)
 
 > **图 1.4 Q-Former 模块的视觉特征注意力压缩与信息瓶颈机制**
 > * **原始视觉输入(左侧)**:输入的高清图像经由 ViT 分块, 输出包含 $N_{\text{patch}} = 576$ 个变长,高冗余的 patch 特征序列(每个维度为 $d_{\text{vis}}$). 
@@ -337,7 +337,7 @@ $$
 
 在实践中, MLP Projector 通常能带来 2-5 个百分点的性能提升(取决于具体基准测试), 但它的参数量也相应增加. 一个 Linear Projector 的参数量是 $d_{\text{llm}} \times d_{\text{vis}}$(约 300 万参数), 而一个带隐藏层的 MLP Projector 的参数量是 $d_{\text{hidden}} \times d_{\text{vis}} + d_{\text{llm}} \times d_{\text{hidden}}$(如果 $d_{\text{hidden}} = 4096$, 则约 1500 万参数). 尽管如此, 相比于 LLM 本身的数十亿参数, Projector 的参数量仍然可以忽略不计. 
 
-![Linear Projector 与 MLP Projector 对齐映射几何对比](../images/vlm_projector_comparison.png)
+![Linear Projector 与 MLP Projector 对齐映射几何对比](../images/vlm_projector_comparison.jpg)
 
 > **图 1.5 Linear Projector 与 MLP Projector 对齐映射几何对比**
 > * **Linear Projector(左侧)**:采用单层矩阵变换 $H_{\text{vis}}^{\text{proj}} = W \cdot H_{\text{vis}}^T$. 这相当于在向量空间中做了一次均匀的旋转和缩放. 其物理假设是视觉特征空间与文本嵌入空间的几何分布在语义差值(如 $\Delta \vec{v}$)上呈线性一致性, 映射简单直接. 
