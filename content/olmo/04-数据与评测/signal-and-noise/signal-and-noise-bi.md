@@ -924,7 +924,7 @@ Intuitively, a benchmark developer may increase the statistical power of a compa
 
 Setup. Typically, models are only compared using the evaluation of the final checkpoint. In the previous sections, we argued that noise is a good indicator of whether we can use a benchmark to predict a large scale phenomenon. In this section, we want to measure the effect of averaging this particular source of step-to-step noise, as a way of improving our ability to make a prediction. In the decision accuracy setting, we can average the results of the small model, the large model (in this case, the 1B model), or both. In the prediction error setting, averaging the small models will help in fitting the scaling law, but averaging the target model will just make the result more reliable, so we average the target model in both settings and only change whether we average the models used to fit the scaling law. Finally, we introduce an additional way to average step-to-step noise during a training run, by evaluating whether the ranking of the 1B models during training agrees with the ranking at the end of training. Note, as our measure of noise is between intermediate training checkpoints, we are only reducing one of many sources of modeling noise.
 
-设置。通常，仅使用最终检查点的评估来比较模型。在前面的章节中，我们认为噪声是我们是否可以使用基准来预测大规模现象的一个很好的指标。在本节中，我们希望测量对这种特定的步进噪声源进行平均的效果，作为提高预测能力的一种方法。在决策精度设置中，我们可以对小模型、大模型（在本例中为 1B 模型）或两者的结果进行平均。在预测误差设置中，对小模型进行平均将有助于拟合缩放定律，但对目标模型进行平均只会使结果更加可靠，因此我们在两种设置中对目标模型进行平均，并且仅更改是否对用于拟合缩放定律的模型进行平均。最后，我们引入了另一种方法，通过评估训练期间 1B 模型的排名是否与训练结束时的排名一致，来平均训练运行期间的逐步噪声。请注意，由于我们的噪声测量是在中间训练检查点之间，因此我们只是减少了许多建模噪声源之一。
+设置。通常，仅使用最终检查点的评估来比较模型。在前面的章节中，我们认为噪声是我们是否可以使用基准来预测大规模现象的一个很好的指标。在本节中，我们希望测量对这种特定的步进噪声源进行平均的效果，作为提高预测能力的一种方法。在决策精度设置中，我们可以对小模型、大模型（在本例中为 1B 模型）或两者的结果进行平均。在预测误差设置中，对小模型进行平均将有助于拟合缩放定律，但对目标模型进行平均只会使结果更加可靠，因此我们在两种设置中对目标模型进行平均，并且仅更改是否对用于拟合缩放定律的模型进行平均。最后，我们引入了另一种方法，通过评估训练期间 1B 模型的排名是否与训练结束时的排名一致，来平均训练运行期间的逐步噪声。由于我们的噪声测量是在中间训练检查点之间，因此我们只是减少了许多建模噪声源之一。
 
 Results on Final Checkpoints. In Table 1, we observe averaging the noise improved both measures of error. Averaging noise improved decision accuracy by +2.4% for the 30-task average, this procedure improved decision accuracy in all but two tasks. For reducing the scaling law prediction error, averaging the training checkpoints improved prediction error for 20 of 30 tasks.
 
@@ -1972,7 +1972,7 @@ i=1 1{ci ≤t} −t
 
 Note, we include metrics that are sensitive and non sensitive to outliers, and find our results hold when measuring both types of spread (Table 3). We also include variants of these terms, such using a min-max normalization or scaling by the mean.
 
-请注意，我们包括对异常值敏感和不敏感的指标，并发现我们的结果在测量这两种类型的价差时都成立（表 3）。我们还包括这些术语的变体，例如使用最小-最大归一化或按平均值缩放。
+我们同时采用对异常值敏感和不敏感的指标，并发现我们的结果在测量这两种类型的价差时都成立（表 3）。我们还包括这些术语的变体，例如使用最小-最大归一化或按平均值缩放。
 
 Choosing the a signal measurement. In Table 3, we calculate the correlation between signal- to-noise ratio and decision accuracy when using each of the signal variants. We see that many
 

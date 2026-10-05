@@ -256,7 +256,7 @@ In reality, we shard the infini-gram index because each shard is limited to 500B
 
 Note that to retrieve documents containing the longest matching prefix, we need to run a second FIND query to locate all its occurrences in the SA. In practice, we run this query immediately after the first one to leverage temporal locality in the disk cache.
 
-请注意，要检索包含最长匹配前缀的文档，我们需要运行第二个 FIND 查询来定位 SA 中出现的所有内容。实际上，我们在第一个查询之后立即运行此查询，以利用磁盘缓存中的时间局部性。
+要检索包含最长匹配前缀的文档，我们需要运行第二个 FIND 查询来定位 SA 中出现的所有内容。实际上，我们在第一个查询之后立即运行此查询，以利用磁盘缓存中的时间局部性。
 
 Suppressing non-maximal spans. We gather the longest matching prefix of all suffixes into a list of spans. These spans begin at monotonically in- creasing positions, but end at monotonically non- decreasing positions that may still be identical, and thus there may still be non-maximal spans (see Figure 3). To remove the non-maximal spans, we make a pass on the spans in increasing order of the beginning position, and only keep spans with an ending position larger than that of the previously encountered spans.
 
@@ -280,7 +280,7 @@ We envision that researchers and the general public
 
 can use OLMOTRACE in many ways to understand the behavior of LMs. Below we discuss three ex- ample use cases, and we invite the community to explore additional ones.
 
-可以通过多种方式使用 OLMOTRACE 来了解 LM 的行为。下面我们讨论三个示例用例，并邀请社区探索其他用例。
+可以通过多种方式使用 OLMOTRACE 来了解 LM 的行为。以下讨论三个示例用例，并邀请社区探索其他用例。
 
 Fact checking. If the LM states a fact, users may be able to fact-check the statement against its train- ing data. In Figure 5(a), OLMo outputs “The space needle was built for the 1962 World Fair,”. OLMO- TRACE highlights this span of tokens as it appears verbatim in the training data and shows the corre- sponding documents (the screenshot captured one of the ten documents). For most documents from the pretraining data (like this one), users can click on the “View Document” button and find the URL to the original webpage where this document was crawled.
 

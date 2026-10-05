@@ -970,7 +970,7 @@ We choose the models in Table 4 by choosing the ‘canonical’ best versions (t
 
 We provide a brief description of each model evaluated in Table 4 below. For all models, we use the provided chat template for prompt formatting when available.
 
-下面我们简要描述表 4 中评测的每个模型. 对所有模型, 只要有提供的 chat template, 我们就用它来做 prompt 格式化.
+表 4 中评测的各个模型简述如下. 对所有模型, 只要有提供的 chat template, 我们就用它来做 prompt 格式化.
 
 • MPT Chat: A version of MPT 7B finetuned on the ShareGPT-Vicuna (Chiang et al., 2023), HC3 (Guo et al., 2023), Alpaca (Taori et al., 2023), HH-RLHF (Bai et al., 2022), and Evol-Instruct (Xu et al., 2024) datasets. Retrieved from [https://huggingface.co/mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat).
 

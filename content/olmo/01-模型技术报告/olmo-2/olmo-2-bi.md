@@ -177,7 +177,7 @@ Modern language model development is an iterative process, whereby limitations o
 
 • **Infrastructure as a Research Catalyst.** High performance and reliable infrastructure is crucial for successful pretraining; yet, many pretraining papers do not discuss their training stack, or 略过crucial details. We discuss changes from OLMo-0424 that enable the improvements of OLMo 2, and how investing in solutions that let us monitor and orchestrate infrastructure helped us reduce failure rates and increase cluster utilization (Section §6).
 
-- 基础设施作为研究催化剂. 高性能和可靠的基础设施对成功预训练至关重要; 然而, 许多预训练论文不讨论它们的训练栈, 或 略过关键细节. 我们讨论了从 OLMo-0424 到 OLMo 2 的改进所依赖的变化, 以及投资让我们能够监控和编排基础设施的解决方案如何帮助我们降低故障率和提高集群利用率(第 6 节).
+- 基础设施作为研究催化剂. 高性能和可靠的基础设施对成功预训练至关重要; 然而, 许多预训练论文不讨论它们的训练栈, 或 略过关键细节. 我们讨论了从 OLMo-0424 到 OLMo 2 的改进所依赖的变化, 以及对监控和编排基础设施的投入如何帮助我们降低故障率和提高集群利用率(第 6 节).
 
 Alongside these deep dives, we provide a description of the full model development procedure in Section §2: training data, pretraining, post-training, and evaluation. We highlight changes from OLMo 1 and OLMo-0424 when appropriate, and reference related projects, such as our scaling laws effort to efficiently estimate model downstream performance (Bhagia et al., 2024) and benchmark standardization through the OLMES evaluation framework (Gu et al., 2024).
 
@@ -588,7 +588,7 @@ Figure 4 shows the improvement to training stability from OLMo 2’s initializat
 
 We perform several analyses to study the impact of initialization, showing that OLMo 2’s initialization is superior to OLMo-0424 initialization. Our empirical analysis suggests it better preserves the scale of activations and gradients across layers, allowing deep models to be trained more stably, and it exhibits properties associated with hyperparameter transfer across models of different widths. These two properties together give us confidence that deep models will train stably and that the initialization hyperparameters of our smaller models could transfer to larger scales.
 
-我们进行了多项分析来研究初始化的影响, 结果表明 OLMo 2 的初始化优于 OLMo-0424 的初始化. 我们的实证分析表明, 它能更好地保持各层之间激活值和梯度的尺度, 使得深层模型的训练更加稳定; 并且它表现出了与跨不同宽度的模型的超参数迁移相关的特性. 这两个特性共同让我们确信深层模型将稳定训练, 且我们较小模型的初始化超参数可以迁移到更大的规模.
+我们进行了多项分析来研究初始化的影响, 结果表明 OLMo 2 的初始化优于 OLMo-0424 的初始化. 我们的实证分析表明, 它能更好地保持各层之间激活值和梯度的尺度, 使得深层模型的训练更加稳定; 并且它表现出了与跨不同宽度的模型的超参数迁移相关的特性. 这两个特性共同增强了我们的信心: 深层模型将稳定训练, 且我们较小模型的初始化超参数可以迁移到更大的规模.
 
 **Gradient and activation growth** A fundamental concern for training deep networks is ensuring that the activations and gradients do not blow up or vanish across layers, causing learning to become unstable or stagnate. Rather, we want the scale of the activations and gradients to remain roughly the same from layer to layer. Inspired by recent related work (Cowsik et al., 2024), we evaluate different candidate initializations in terms of how they affect the 2-norm of the activations and gradients across layers. Concretely, we randomly initialize a model, pass 50 random documents from The Pile (Gao et al., 2021) through it, and collect the activations and gradients (of loss with respect to the activations) at the initial and final layers (ignoring embeddings). We then average these tensors across documents and time steps to get vectors v at the initial layer and $v ^ { i }$ at the final layer, both of length $d _ { \mathrm { m o d e l } }$ . Finally, we compute the following measure of expansion or contraction across layers, which we call the growth exponent:
 
@@ -982,7 +982,7 @@ We describe both the data sources and their generation/filtration procedure in S
 
 **DolminoSynthMath** This is a collection of 28M synthetic math tokens designed specifically to improve performance on GSM8K as well as raw mathematical calculations. It is composed of three parts: first we generate 11M tokens of basic mathematical question and answer pairs such as $`` 77 \;  *  \; 14 = 1078  ''$ and pair each of these with a variety of prompts. We find that including such data dramatically mitigates the mistakes our model makes within individual CoT reasoning steps at inference time. Next we include a custom collection of 7,924 synthetic GSM8K examples, which are produced by consuming a GSM8K training example and replacing all of its numbers in both the provided question and answer, with the hope that this would provide signal to the model to extract the computation graph from a word problem and ignore irrelevant semantic features. Finally we include a MIND-rewriting (Akter et al., 2024) of each of the GSM8K training examples, where the synthetic data was generated using Qwen2.5-7B-Instruct (Qwen et al., 2024).
 
-这是一个包含 2800 万个合成数学 token 的集合, 专门设计用于提升 GSM8K 以及原始数学计算的性能. 它由三部分组成: 首先, 我们生成 1100 万个基本数学问答对 token, 例如「77 × 14 = 1078」, 并将每个问答对与多种提示配对. 我们发现, 包含此类数据极大地缓解了我们模型在推理时单个 CoT 推理步骤中犯的错误. 接下来, 我们包含一个自定义的 7,924 个合成 GSM8K 示例集合, 这些示例通过获取一个 GSM8K 训练示例并替换所提供问题和答案中的所有数字来生成, 希望这能为模型提供从文字问题中提取计算图并忽略不相关语义特征的信号. 最后, 我们包含每个 GSM8K 训练示例的 MIND 重写 (Akter et al., 2024), 其中合成数据使用 Qwen2.5-7B-Instruct (Qwen et al., 2024) 生成.
+这是一个包含 2800 万个合成数学 token 的集合, 专门设计用于提升 GSM8K 以及原始数学计算的性能. 它由三部分组成: 首先, 我们生成 1100 万个基本数学问答对 token, 例如「77 × 14 = 1078」, 并将每个问答对与多种提示配对. 我们发现, 包含此类数据极大地缓解了我们模型在推理时单个 CoT 推理步骤中犯的错误. 接下来, 我们包含一个自定义的 7,924 个合成 GSM8K 示例集合, 这些示例通过获取一个 GSM8K 训练示例并替换所提供问题和答案中的所有数字来生成, 目的是为模型提供从文字问题中提取计算图并忽略不相关语义特征的信号. 最后, 我们包含每个 GSM8K 训练示例的 MIND 重写 (Akter et al., 2024), 其中合成数据使用 Qwen2.5-7B-Instruct (Qwen et al., 2024) 生成.
 
 **TinyGSM-MIND** We generated approximately 6.5B tokens of synthetic math data from rewritten versions of Tiny-GSM (Liu et al., 2023a). Tiny-GSM is a collection of 11M synthetic GSM8K-like questions, where the answers are provided in the form of python code. We filter this set to only include answers that have code that is executable and only contains statements that are variable assignments. We then annotate each line of the code that is an assignment operator with the numerical value of the resulting variable. Then we pass all of these annotated examples to Qwen2.5-7B-Instruct to be rewritten in the style of MIND (Akter et al., 2024) using the ‘Two Students’ and ‘Problem Solving’ prompts.
 
@@ -1041,7 +1041,7 @@ This procedure facilitates evaluating the quality of individual data sources at 
 
 We illustrate how microanneals lead to our final math mix through three sets of experiments reported in Table 12. The primary evaluation metrics we use to evaluate the quality here is MMLU, and GSM\*, which
 
-我们通过表 12 中报告的三组实验来说明微退火如何引导我们得到最终的数学混合配方. 我们在此用于评估质量的主要评测指标是 MMLU 和 GSM*, 后者是我们从 GSM8K 评测集中抽取的 200 个示例子集. 请注意, 中期训练的一个目标是提升 GSM8K 性能, 但我们只允许自己在 1319 个 GSM8K 示例中的 200 个上检查性能, 以指导数据混合配方的决策.
+我们通过表 12 中报告的三组实验来说明微退火如何引导我们得到最终的数学混合配方. 我们在此用于评估质量的主要评测指标是 MMLU 和 GSM*, 后者是我们从 GSM8K 评测集中抽取的 200 个示例子集. 中期训练的一个目标是提升 GSM8K 性能, 但我们只允许自己在 1319 个 GSM8K 示例中的 200 个上检查性能, 以指导数据混合配方的决策.
 
 <!-- page 25 of 58 -->
 

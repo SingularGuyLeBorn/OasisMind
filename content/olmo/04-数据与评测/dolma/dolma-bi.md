@@ -2634,7 +2634,7 @@ For the Reddit subset, we use the following filters that substantially reduce th
 
 所有数据来源均使用 FastText 语言识别模型（Joulin 等，2016a、2016b）过滤，英语阈值为 0.5。
 
-对于 Common Crawl 和 C4 子集，我们采用以下会显著改变原始数据的过滤器。请注意，一份数据可能被一个或多个过滤器标记为删除。
+对于 Common Crawl 和 C4 子集，我们采用以下会显著改变原始数据的过滤器。一份数据可能被一个或多个过滤器标记为删除。
 
 - **仅 Common Crawl，在其分发流水线中：** 将所有 HTML 线性化为纯文本文件（生成 WET 文件）。
 - **仅 Common Crawl，在 CCNet 流水线中：** 通过在每个快照的小型子集中识别重复段落，删除 Common Crawl 中频繁出现的段落。这会去除许多页面共享的导航页眉等内容。具体操作如下：假设每个快照由编号 1…n…N 的分片组成，把分片组成集合 $S=\{n-k,n\}$，然后删除 S 中完全重复的段落。段落定义为由换行符分隔的文档切片，并通过 SHA1 比较。选择 k，使每个集合最多为 20GB（约删除 70% 的段落）。

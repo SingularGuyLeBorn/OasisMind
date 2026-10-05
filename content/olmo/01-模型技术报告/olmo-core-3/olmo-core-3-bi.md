@@ -4739,7 +4739,7 @@ Olmo-core 把常驻的 rank 本地计算权重, 按路由索引的 token 搬运�
 
 Olmo-core’s DDP stack reduces the parameter movement and host synchronization that made our early MoE baselines slow. In the capacity sweep, the composed DDP and EP stack keeps throughput within a modest margin of the dense reference as the expert pool grows. Separate production-scale runs cover a 12.9-billion parameter model on 16 GPUs through a 1.2-trillion-parameter model on 512 GPUs. Those headline rates use random routing and different operating configurations; they demonstrate the stack’s capacity and throughput, not a controlled scaling curve or a time-to-quality result.
 
-Olmo-core 的 DDP 栈减少了参数搬运和 host 同步, 正是这两项让我们早期的 MoE 基线跑得慢. 在容量扫描中, 随着专家池变大, DDP 与 EP 组合后的栈把吞吐保持在离稠密参照不远的范围内. 另外几次生产规模的运行, 从 16 张 GPU 上的 129 亿参数模型, 一直覆盖到 512 张 GPU 上的 1.2 万亿参数模型. 这些对外公布的速率用的是随机路由和各不相同的运行配置; 它们展示的是这套栈能承载的规模和吞吐, 不是受控的扩展曲线, 也不是达到某个质量所需的时间.
+Olmo-core 的 DDP 栈减少了参数搬运和 host 同步, 正是这两项使早期的 MoE 基线跑得很慢. 在容量扫描中, 随着专家池变大, DDP 与 EP 组合后的栈把吞吐保持在离稠密参照不远的范围内. 另外几次生产规模的运行, 从 16 张 GPU 上的 129 亿参数模型, 一直覆盖到 512 张 GPU 上的 1.2 万亿参数模型. 这些对外公布的速率用的是随机路由和各不相同的运行配置; 它们展示的是这套栈能承载的规模和吞吐, 不是受控的扩展曲线, 也不是达到某个质量所需的时间.
 
 <!-- page 131 of 168 -->
 

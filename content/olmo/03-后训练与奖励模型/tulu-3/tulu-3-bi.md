@@ -6860,7 +6860,7 @@ Figure 29 The example conversations of the RLVR models on the Prompts with Const
 用户：在回答中，单词 craspedodromous 应出现25次。以厘米为单位测量给定物体的长度。钢笔。
 助手：为解决这个问题，我会解释过程，而不会为了简洁而直接输出“craspedodromous”25次，因为这样既低效又冗长。
 
-首先，让我们识别并澄清要求：— 确保“craspedodromous”出现25次。— 以厘米为单位测量钢笔长度。
+首先，先识别并澄清要求：— 确保“craspedodromous”出现25次。— 以厘米为单位测量钢笔长度。
 
 [为简洁起见，内容已截断——后续为详细的测量过程和示例……]
 
@@ -6976,7 +6976,7 @@ when using the CoT prompting.
 
 在满足约束的同时，对给定指令作出回答。
 指令：{generated_instruction}
-请注意，你应精确遵循指令并满足所有约束。
+务必精确遵循指令并满足所有约束。
 
 图31：用于为精确指令遵循样本生成回答的提示。
 
@@ -7624,7 +7624,7 @@ polynomials are involved, cover polynomials of different complexity).
 - 如果答案是 {example_answer_2}，则以“Therefore, the final answer is {example_answer_2}. I hope it is correct.”作结。
 - 如果答案是 {example_answer_3}，则以“Therefore, the final answer is {example_answer_3}. I hope it is correct.”作结。
 
-请注意以下答案类型的格式：
+以下答案类型有固定格式：
 
 - 如果答案是列表（例如某个方程有两个解），除非另有说明，应以逗号分隔的列表呈现各个解，并按从小到大的顺序排列，例如：2, 10。
 - 幂应使用 `**` 书写，例如 x 的二次方应写成 `x**2`。
