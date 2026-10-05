@@ -131,11 +131,30 @@ def main() -> int:
     parser.add_argument("paths", nargs="+", help="Markdown 文件或目录")
     parser.add_argument("--fail-on-soft", action="store_true", help="SOFT 命中也返回失败")
     parser.add_argument("--summary", action="store_true", help="只输出分类计数和总计")
+    parser.add_argument(
+        "--by-file",
+        action="store_true",
+        help="按文件汇总 HARD/SOFT 数量，便于决定人工朗读顺序",
+    )
     args = parser.parse_args()
 
     files = iter_markdown(args.paths)
     findings = [item for path in files for item in scan_file(path)]
-    if not args.summary:
+    if args.by_file:
+        by_file: dict[Path, tuple[int, int]] = {}
+        for item in findings:
+            hard_count, soft_count = by_file.get(item.path, (0, 0))
+            if item.severity == "HARD":
+                hard_count += 1
+            else:
+                soft_count += 1
+            by_file[item.path] = (hard_count, soft_count)
+        for path, (hard_count, soft_count) in sorted(
+            by_file.items(),
+            key=lambda pair: (-(pair[1][0] + pair[1][1]), str(pair[0])),
+        ):
+            print(f"FILE\thard={hard_count}\tsoft={soft_count}\t{path}")
+    elif not args.summary:
         for item in findings:
             print(f"{item.severity}\t{item.category}\t{item.path}:{item.line}\t{item.excerpt[:240]}")
     else:
