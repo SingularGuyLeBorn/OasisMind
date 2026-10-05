@@ -109,6 +109,23 @@ describe("文章发布默认值", () => {
   it("业主显式传 published=true 时仍允许发布", () => {
     expect(createPostSchema.parse({ title: "公开文章", published: true }).published).toBe(true);
   });
+
+  it("Chat 覆盖或追加已有文章时，不凭空改变原发布状态", () => {
+    const shared = {
+      sessionId: "clx12345678901234567890123",
+      messageId: "clx12345678901234567890124",
+      targetPostId: "clx12345678901234567890125",
+    };
+    expect(createPostFromChatSchema.parse({ ...shared, mode: "update" }).published).toBeUndefined();
+    expect(createPostFromChatSchema.parse({ ...shared, mode: "append" }).published).toBeUndefined();
+    expect(
+      createPostFromToolResultSchema.parse({
+        path: "data/tool-results/post.md",
+        mode: "append",
+        targetPostId: shared.targetPostId,
+      }).published,
+    ).toBeUndefined();
+  });
 });
 
 describe("createGitRepoSchema path 校验", () => {

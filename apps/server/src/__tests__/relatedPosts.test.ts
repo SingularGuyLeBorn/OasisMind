@@ -67,9 +67,9 @@ describe("post.related + createFromChat", () => {
       mode: "create",
       garden: "posts",
       tags: ["from-chat"],
-      published: true,
     });
     expect(created.success).toBe(true);
+    expect(created.data!.published).toBe(false);
     expect(created.data!.content).toContain("createFromChat 测试内容");
     expect(created.data!.tags).toContain("from-chat");
 
@@ -105,9 +105,9 @@ describe("post.related + createFromChat", () => {
       mode: "append",
       targetPostId: base.data!.id,
       appendHeading: "对话补充",
-      published: true,
     });
     expect(appended.success).toBe(true);
+    expect(appended.data!.published).toBe(true);
     expect(appended.data!.content).toContain("原始段落");
     expect(appended.data!.content).toContain("## 对话补充");
     expect(appended.data!.content).toContain("追加段落内容");

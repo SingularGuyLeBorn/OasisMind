@@ -192,35 +192,42 @@ export const relatedPostsSchema = z.object({
  * - append：在已有文章末尾追加（可选二级标题）
  * 正文以服务端 messageId 为准，防前端篡改。
  */
-export const createPostFromToolResultSchema = z.object({
-  path: z.string().min(1).max(500),
+const postFromExistingContentShape = {
   mode: z.enum(["create", "update", "append"]).default("create"),
   garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
   title: z.string().min(1).max(200).optional(),
   targetPostId: z.string().cuid().optional(),
   category: z.string().max(100).optional().nullable(),
   tags: z.array(z.string().max(40)).max(20).optional(),
-  /** Chat 工具结果落库同样默认草稿，防止后台产物未经审阅直接公开。 */
-  published: z.boolean().default(false),
+  published: z.boolean().optional(),
   appendHeading: z.string().max(200).optional(),
+} as const;
+
+/**
+ * 只有 create 模式补出 published=false；update/append 未传时必须保留 undefined，
+ * 否则“追加一段对话”会顺带把原文章改成草稿。发布默认值属于创建不变量，
+ * 不是更新已有文章时应被强塞的字段。
+ */
+function withCreateDraftDefault<T extends z.ZodRawShape>(sourceShape: T) {
+  return z
+    .object({ ...sourceShape, ...postFromExistingContentShape })
+    .transform((input) => ({
+      ...input,
+      published: input.mode === "create" ? input.published ?? false : input.published,
+    }));
+}
+
+export const createPostFromToolResultSchema = withCreateDraftDefault({
+  path: z.string().min(1).max(500),
 });
 
 export const inspectSessionTurnSchema = z.object({
   sessionId: z.string().cuid(),
 });
 
-export const createPostFromChatSchema = z.object({
+export const createPostFromChatSchema = withCreateDraftDefault({
   sessionId: z.string().cuid(),
   messageId: z.string().cuid(),
-  mode: z.enum(["create", "update", "append"]).default("create"),
-  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
-  title: z.string().min(1).max(200).optional(),
-  targetPostId: z.string().cuid().optional(),
-  category: z.string().max(100).optional().nullable(),
-  tags: z.array(z.string().max(40)).max(20).optional(),
-  /** Chat 消息转文章同样默认草稿，发布必须由业主显式确认。 */
-  published: z.boolean().default(false),
-  appendHeading: z.string().max(200).optional(),
 });
 
 /* ────────────────────────────────────────────────

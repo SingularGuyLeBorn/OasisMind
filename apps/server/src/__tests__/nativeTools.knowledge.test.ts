@@ -37,6 +37,24 @@ describe("native:post_create / post_update", () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
+  it("post_create 未显式发布时只创建草稿", async () => {
+    const root = createTempProjectDir();
+    const postService = {
+      create: vi.fn(async () => ({
+        success: true,
+        data: { id: "draft-1", garden: "posts", slug: "draft", title: "草稿" },
+      })),
+    };
+    const ctx = createNativeCtx(root, { services: { post: postService } as never });
+
+    await executeNativeTool("post_create", { title: "草稿", content: "待审阅" }, ctx);
+
+    expect(postService.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "草稿", published: false }),
+    );
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   it("post_update 调用 post.update", async () => {
     const root = createTempProjectDir();
     const postService = {
@@ -114,6 +132,7 @@ describe("native:article_import", () => {
     let capturedContent = "";
     let capturedGarden = "";
     let capturedSlug = "";
+    let capturedPublished: unknown;
 
     const ctx = createNativeCtx(root, {
       services: {
@@ -122,6 +141,7 @@ describe("native:article_import", () => {
             capturedContent = String(input.content || "");
             capturedGarden = String(input.garden || "");
             capturedSlug = String(input.slug || "");
+            capturedPublished = input.published;
             return {
               success: true,
               data: { id: "post-123", garden: capturedGarden, slug: capturedSlug },
@@ -134,7 +154,7 @@ describe("native:article_import", () => {
     try {
       const result = (await executeNativeTool(
         "article_import",
-        { url: `${server.url}/article`, method: "direct", published: true },
+        { url: `${server.url}/article`, method: "direct" },
         ctx,
       )) as {
         imageCount: number;
@@ -147,6 +167,7 @@ describe("native:article_import", () => {
       expect(capturedContent).toContain("/uploads/imports/");
       expect(capturedContent).toContain("![dot]");
       expect(capturedContent).toContain("This is a paragraph.");
+      expect(capturedPublished).toBe(false);
       expect(result.path).toBe(`content/${capturedGarden}/${capturedSlug}.md`);
       const importsDir = path.join(root, "content", "uploads", "imports");
       const dirs = fs.readdirSync(importsDir);

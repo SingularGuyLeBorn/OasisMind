@@ -83,7 +83,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
         slug: { type: "string", description: "文章路径（默认由标题生成）" },
         category: { type: "string", description: "分类（默认 转载）" },
         tags: { type: "array", items: { type: "string" }, description: "标签（默认 [转载]）" },
-        published: { type: "boolean", description: "写入后即可阅读，默认 true" },
+        published: { type: "boolean", description: "true = 导入后公开；默认 false（草稿）" },
         method: { type: "string", enum: ["playwright", "direct"], description: "抓取方式：playwright（默认，可渲染 JS/登录墙）或直接 HTTP" },
         timeout: { type: "number", description: "抓取超时毫秒，默认 30000" },
       },

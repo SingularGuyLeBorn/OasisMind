@@ -172,7 +172,8 @@ async function postCreateTool(args: Record<string, unknown>, ctx: NativeToolCont
     coverImage: args.coverImage ? String(args.coverImage) : null,
     category: args.category ? String(args.category) : null,
     tags: Array.isArray(args.tags) ? args.tags.map(String) : undefined,
-    published: args.published !== false,
+    // Agent 产物未经业主复核时必须留在草稿；只有显式 true 才允许进入公开构建。
+    published: args.published === true,
   };
   const result = await ctx.services.post.create(input);
   if (!result.success) throw new Error(result.error?.message || "创建文章失败");
@@ -656,7 +657,7 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
         coverImage: z.string().describe("封面图 URL").optional(),
         category: z.string().describe("分类（元数据，不是目录）").optional(),
         tags: z.array(z.string()).describe("标签列表").optional(),
-        published: z.boolean().describe("写入后即可阅读，默认 true").optional(),
+        published: z.boolean().describe("true = 写入后公开；默认 false（草稿）").optional(),
       }),
     ),
   },
@@ -676,7 +677,7 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
         coverImage: z.string().describe("封面图 URL").optional(),
         category: z.string().describe("分类").optional(),
         tags: z.array(z.string()).describe("标签列表").optional(),
-        published: z.boolean().describe("写入后即可阅读，默认 true").optional(),
+        published: z.boolean().describe("是否改变发布状态；不填则保持原状态").optional(),
       }),
     ),
   },

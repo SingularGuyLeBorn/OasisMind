@@ -298,7 +298,8 @@ export async function draftPostsFromRssItems(
           excerpt,
           category: defaultCategory,
           tags: ["RSS", source.name].join(","),
-          published: true,
+          // RSS 条目只是待整理素材，drafted 状态不能与公开发布混为一谈。
+          published: false,
           garden: "posts", // RSS 草稿固定进博客花园
         },
       });

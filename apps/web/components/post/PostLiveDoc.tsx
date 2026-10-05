@@ -89,7 +89,8 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
     content,
     category: post.category || "",
     tags: (post.tags || []).join(", "),
-    published: true,
+    // 编辑草稿时必须保持草稿；自动保存不得偷偷改变发布状态。
+    published: post.published,
     enabled: editorReady && editing,
   });
 
@@ -199,7 +200,7 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
                 excerpt: null,
                 category: post.category,
                 tags: post.tags,
-                published: true,
+                published: post.published,
               }}
               articleRef={articleRef}
             />
