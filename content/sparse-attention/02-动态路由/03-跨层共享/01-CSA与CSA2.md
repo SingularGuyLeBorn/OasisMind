@@ -321,6 +321,44 @@ CSA2 由学习型 indexer 产生候选，Full 建全域 pool，Reindex 用当前
 
 层组刷新间隔与候选池容量也需要一并记录。
 
+## 7. 共享状态的版本与失效
+
+### 7.1. Prefix Cache 不能只校验 token 前缀
+
+普通 prefix cache 常以 token IDs、模型权重与位置配置构造键. CSA2 还要保证层组状态来自同一套 Full/Reindex/Reuse排布、相同压缩步长、候选池容量和量化格式. 两个服务实例即使加载同名权重, 一个改变了 pool大小或 indexer kernel的 tie-break, 复用旧 $P_g,I_g$ 后也可能得到不同邻接图.
+
+因此缓存元数据至少包含模型 revision、稀疏配置哈希、层组编号、压缩 entry计数和 index格式版本. Main KV、indexer K、pool与 final indices应作为一个事务提交. 写入中途失败时, 不能保留完整 KV却缺少最后一组索引; 读取端若发现 generation不一致, 应从最近完整 Full边界重建, 而不是让 Reuse层消费半旧状态.
+
+### 7.2. Speculative Decode 会产生分支状态
+
+草稿模型一次提出多个 token后, 目标模型验证其中一部分. 被拒绝的 token可能已经进入未满压缩组、更新 indexer K或触发新的 Full pool. 回滚必须覆盖这些派生状态. 只回退主 KV长度, 保留后来生成的压缩摘要或候选池, 下一步 selector会看到不属于当前序列的内容.
+
+一种实现是为未确认 token维护临时尾部, 接受后再合并到持久状态. 另一种实现给每项状态附逻辑长度, 回滚时统一截断. Full层建立的 pool如果依赖被拒绝 token, 即使索引本身只指向更早位置, query状态已经改变, 仍需失效并重算. 共享层越多, 一次错误状态传播的范围越大.
+
+### 7.3. 位置编码与压缩坐标
+
+压缩 entry代表一组原 token, 主 attention仍需要明确它在 RoPE或其他位置编码中的坐标. 取组首、组尾、中心或学习到的位置, 会改变长距离相位. CED bridge若从 encoder hidden state生成 decoder K, 还要确认使用 encoder位置、decoder消费层的位置变换, 还是已经在 hidden state中吸收的位置关系.
+
+Cache迁移时必须保存逻辑原 token区间, 不能只保存 entry顺序. 左截断、sliding window或文档打包会让 entry编号与绝对位置脱钩. 若 main KV已经旋转而 indexer K未旋转, 两者的位置元数据也可能不同. 验收用同一内容放在不同绝对 offset, 比较 Full层候选、Reindex结果与 bridge输出, 能暴露位置被错误重置的问题.
+
+### 7.4. 层组刷新间隔是一条质量—成本曲线
+
+设组长为 $G$, 其中一个 Full、$R$ 个 Reindex, 其余为 Reuse. Selector比较量近似为:
+
+$$
+C_{sel}(G,R)=n_cd_I+Rrd_I. \tag{24}
+$$
+
+增大 $G$ 会让一次 Full状态服务更多层, 单层平均成本下降; 若 $R$ 不同步增加, indices陈旧时间变长. 增大 $R$ 能用当前 query修正排序, 仍受 Full候选池限制. 候选池 $r$ 增大提高粗召回, 同时增加每次 Reindex成本和状态字节.
+
+实验应固定总层数, 扫描 $(G,R,r,k)$ 并报告组首与组尾的概率质量覆盖. 组尾退化随深度单调扩大, 通常指向共享时间过长; 各位置都缺同一批远程 entry, 更可能是 pool太小; pool recall高而 final recall低, 则要检查 Reindex容量或 indexer表达. 这比只给一个默认层表更能说明设计为何成立.
+
+系统侧同时记录每组 Full峰值时间、Reindex分位数、Reuse主 attention时间和状态容量. Full层形成周期性延迟尖峰时, 平均吞吐仍可能很好, 单请求TPOT尾延迟却出现规律抖动. 调度器可以错开不同请求的 Full层, 但不能改变模型内部层顺序; 只能通过请求批次组合平滑设备负载.
+
+层表调整还会改变训练梯度路径. Reuse层增多以后, indexer参数收到更新的层数减少, 共享 main KV承担更长的跨层责任. 因而从已有 checkpoint修改 $G$ 或 $R$, 需要继续训练并重新观察各层梯度、候选覆盖和 loss曲线. 单纯在推理配置里延长复用间隔, 得到的是另一个计算图, 不能用原层表的质量结果替它背书.
+
+实际部署也要保留这组训练配置.
+
 ## 参考资料
 
 - [DeepSeek V4 Technical Report](https://arxiv.org/abs/2606.19348)
