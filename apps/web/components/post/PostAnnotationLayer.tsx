@@ -89,6 +89,18 @@ function annotationStyleLabel(style: PostAnnotationStyle): string {
   return "高亮";
 }
 
+function annotationTimeLabel(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "时间未知";
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function AnnotationComposer({
   draft,
   pending,
@@ -154,20 +166,25 @@ function AnnotationComposer({
 
 function AnnotationCard({
   annotation,
+  resolved,
   pending,
   onLocate,
   onUpdate,
   onDelete,
 }: {
   annotation: PostAnnotation;
+  /** 当前正文能否重建锚点；失配必须直接展示，不能等用户点击后才暴露。 */
+  resolved: boolean;
   pending: boolean;
   onLocate: () => boolean;
-  onUpdate: (comment: string) => void;
+  onUpdate: (comment: string, style: PostAnnotationStyle) => void;
   onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [comment, setComment] = useState(annotation.comment);
-  const [locateFailed, setLocateFailed] = useState(false);
+  const [style, setStyle] = useState<PostAnnotationStyle>(annotation.style);
+  const [locateAttemptFailed, setLocateAttemptFailed] = useState(false);
+  const locateFailed = !resolved || locateAttemptFailed;
 
   return (
     <article className="rounded-xl border border-[var(--om-divider-light)] bg-white p-3 shadow-sm">
@@ -175,19 +192,41 @@ function AnnotationCard({
         <span className="text-[11px] font-semibold text-[var(--om-brand-deep)]">
           {annotationStyleLabel(annotation.style)}
         </span>
-        {locateFailed && <span className="text-[10px] font-medium text-amber-700">正文已变化，暂未定位</span>}
+        <span className="text-[10px] text-[var(--om-text-3)]">
+          {annotationTimeLabel(annotation.updatedAt)}
+        </span>
       </div>
+      {locateFailed && <p className="mt-1 text-[10px] font-medium text-amber-700">正文已变化，暂未定位</p>}
       <blockquote className="mt-2 border-l-2 border-[var(--om-brand)]/40 pl-2 text-xs leading-relaxed text-[var(--om-text-2)]">
         {annotation.anchor.exact}
       </blockquote>
       {editing ? (
-        <textarea
-          value={comment}
-          onChange={(event) => setComment(event.target.value)}
-          rows={4}
-          maxLength={5_000}
-          className="mt-2 w-full resize-y rounded-lg border border-[var(--om-divider)] px-2.5 py-2 text-xs outline-none focus:border-[var(--om-brand)]"
-        />
+        <div className="mt-2 space-y-2">
+          <div className="flex flex-wrap gap-1" aria-label="批注样式">
+            {(["highlight", "underline", "wavy"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setStyle(option)}
+                className={`rounded-md border px-2 py-1 text-[10px] font-medium ${
+                  style === option
+                    ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                    : "border-[var(--om-divider)] text-[var(--om-text-3)]"
+                }`}
+                aria-pressed={style === option}
+              >
+                {annotationStyleLabel(option)}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            rows={4}
+            maxLength={5_000}
+            className="w-full resize-y rounded-lg border border-[var(--om-divider)] px-2.5 py-2 text-xs outline-none focus:border-[var(--om-brand)]"
+          />
+        </div>
       ) : (
         <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-[var(--om-text-1)]">
           {annotation.comment || "仅划线，没有文字笔记。"}
@@ -196,7 +235,7 @@ function AnnotationCard({
       <div className="mt-3 flex items-center justify-end gap-1">
         <button
           type="button"
-          onClick={() => setLocateFailed(!onLocate())}
+          onClick={() => setLocateAttemptFailed(!onLocate())}
           className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-slate-100"
           title="定位到原文"
         >
@@ -207,7 +246,7 @@ function AnnotationCard({
             type="button"
             disabled={pending}
             onClick={() => {
-              onUpdate(comment);
+              onUpdate(comment, style);
               setEditing(false);
             }}
             className="rounded-md px-2 py-1.5 text-[11px] font-medium text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
@@ -248,6 +287,7 @@ export function PostAnnotationLayer({
   onDraftChange,
 }: PostAnnotationLayerProps) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [unmatchedIds, setUnmatchedIds] = useState<Set<string>>(() => new Set());
   const utils = trpc.useUtils();
   const locator = { garden, slug };
   const listQuery = trpc.postAnnotation.list.useQuery(locator, { enabled });
@@ -297,18 +337,23 @@ export function PostAnnotationLayer({
     if (!enabled) return;
     clearHighlights();
     const root = containerRef.current;
-    const api = getHighlightApi();
-    if (!root || !api) return;
+    if (!root) return;
 
     const rangesByStyle: Record<PostAnnotationStyle, Range[]> = {
       highlight: [],
       underline: [],
       wavy: [],
     };
+    const nextUnmatchedIds = new Set<string>();
     annotations.forEach((annotation) => {
       const range = createRangeFromPostAnnotationAnchor(root, annotation.anchor);
       if (range) rangesByStyle[annotation.style].push(range);
+      else nextUnmatchedIds.add(annotation.id);
     });
+    setUnmatchedIds(nextUnmatchedIds);
+
+    const api = getHighlightApi();
+    if (!api) return;
     Object.entries(rangesByStyle).forEach(([style, ranges]) => {
       if (ranges.length === 0) return;
       api.registry.set(
@@ -372,9 +417,10 @@ export function PostAnnotationLayer({
               <AnnotationCard
                 key={`${annotation.id}:${annotation.updatedAt}`}
                 annotation={annotation}
+                resolved={!unmatchedIds.has(annotation.id)}
                 pending={updateMutation.isPending || deleteMutation.isPending}
                 onLocate={() => locate(annotation)}
-                onUpdate={(comment) => updateMutation.mutate({ ...locator, id: annotation.id, comment })}
+                onUpdate={(comment, style) => updateMutation.mutate({ ...locator, id: annotation.id, comment, style })}
                 onDelete={() => deleteMutation.mutate({ ...locator, id: annotation.id })}
               />
             ))}

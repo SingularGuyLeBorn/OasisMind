@@ -103,4 +103,41 @@ describe("PostAnnotationService", () => {
       comment: "",
     })).rejects.toThrow("文章不存在");
   });
+
+  it("损坏的批注文件会报告具体路径，不会静默丢失", async () => {
+    const { contentDir, service } = fixture();
+    const created = await service.create({
+      garden: "notes",
+      slug: "broken",
+      anchor: { exact: "原文", prefix: "", suffix: "", startOffset: 0, endOffset: 2 },
+      style: "highlight",
+      comment: "稍后会损坏",
+    });
+    const storageRoot = path.join(contentDir, ".private", "annotations");
+    const articleDirectory = path.join(storageRoot, fs.readdirSync(storageRoot)[0]!);
+    const target = path.join(articleDirectory, `${created.id}.yaml`);
+    fs.writeFileSync(target, "anchor: [损坏", "utf8");
+
+    await expect(service.list({ garden: "notes", slug: "broken" }))
+      .rejects.toThrow(`读取私人批注失败：${target}`);
+  });
+
+  it("恶意 garden 和 slug 也只能落到哈希隔离目录", async () => {
+    const { contentDir, service } = fixture();
+    const created = await service.create({
+      garden: "../../config",
+      slug: "../data/secret",
+      anchor: { exact: "隔离", prefix: "", suffix: "", startOffset: 0, endOffset: 2 },
+      style: "underline",
+      comment: "不能路径穿越",
+    });
+    const storageRoot = path.join(contentDir, ".private", "annotations");
+    const files = fs.readdirSync(storageRoot, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile());
+
+    expect(files).toHaveLength(1);
+    expect(files[0]?.name).toBe(`${created.id}.yaml`);
+    expect(fs.existsSync(path.join(contentDir, "config"))).toBe(false);
+    expect(fs.existsSync(path.join(contentDir, "data"))).toBe(false);
+  });
 });
