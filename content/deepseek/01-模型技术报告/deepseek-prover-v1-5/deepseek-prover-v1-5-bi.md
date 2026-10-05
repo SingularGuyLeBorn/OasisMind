@@ -687,7 +687,7 @@ Finally, recent work has progressed beyond proving individual theorems to addres
 
 
 
-近期工作已从单定理走向复杂多定理 Lean 文件里的真实理论形式化(Hu et al., 2024), 正是整证生成路线的自然延伸. 观察显示当前模型已有一定文件级上下文理解; 后续会加强这一面, 服务前沿 Lean 形式化开发者.
+近期工作已从单定理走向复杂多定理 Lean 文件里的真实理论形式化(Hu et al., 2024), 正是整证生成路线的自然延伸. 观察显示当前模型已有一定文件级上下文理解; 后续工作将继续增强文件级上下文能力, 服务前沿 Lean 形式化开发者.
 
 ## References
 
