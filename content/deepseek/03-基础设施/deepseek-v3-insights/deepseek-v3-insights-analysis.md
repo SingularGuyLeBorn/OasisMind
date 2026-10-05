@@ -9,7 +9,7 @@ excerpt: "DeepSeek 在 ISCA 2025 的这篇论文把 V3 的 MLA, MoE, FP8 和多�
 
 材料是论文 *Insights into DeepSeek-V3: Scaling Challenges and Reflections on Hardware for AI Architectures* (arXiv 2505.09343, 2025-05, ISCA 2025 工业论文, 15 页), 作者为 DeepSeek-AI 的 Chenggang Zhao, Wenfeng Liang 等 15 人. 论文没有新模型, 讲的是 [DeepSeek-V3](../../01-模型技术报告/deepseek-v3/deepseek-v3-analysis.md) 在 2048 张 H800 上训练与部署时碰到的硬件约束, 以及模型和集群为此做的协同设计. 文中提到的代码都已开源: EP 通信库 [DeepEP](../../04-开源仓库/deepep/deepep-analysis.md), FP8 GEMM 库 [DeepGEMM](../../04-开源仓库/deepgemm/deepgemm-analysis.md), MLA decode kernel [FlashMLA](../../04-开源仓库/flashmla/flashmla-analysis.md), 存储网络上的文件系统 [3FS](../../04-开源仓库/3fs/3fs-analysis.md). 逐段对照见 [对照译稿](deepseek-v3-insights-bi.md).
 
-论文的写法是先给一个具体的数, 再把它和硬件参数对上: MLA 每 token 的 KV cache 是 70.272 KB, 一次 EP 往返是 120.96 μs, H800 的 Tensor Core 累加只保留 13 位尾数, NVLink 对 IB 是 4:1, 训练时 132 个 SM 里有 20 个在搬数据. 每条硬件建议都挂在这样一个数上. 下文逐个复算这些数, 指出它们成立的前提, 以及前提换掉以后结论怎么变. 复算用的模型参数以 V3 技术报告为准: 61 层, 隐藏维 7168, 128 个注意力头, MLA 潜变量 512 维加 64 维 RoPE, 每层 1 个共享专家和 256 个路由专家, 每个专家中间维 2048, 每 token 激活 8 个路由专家.
+论文把硬件建议落在一组可复核的数字上: MLA 每 token 的 KV cache 是 70.272 KB, 一次 EP 往返是 120.96 μs, H800 的 Tensor Core 累加只保留 13 位尾数, NVLink 对 IB 是 4:1, 训练时 132 个 SM 里有 20 个在搬数据. 这些数字的成立条件来自 V3 技术报告公开的模型参数: 61 层, 隐藏维 7168, 128 个注意力头, MLA 潜变量 512 维加 64 维 RoPE, 每层 1 个共享专家和 256 个路由专家, 每个专家中间维 2048, 每 token 激活 8 个路由专家. 硬件或模型配置变化后, 对应的字节数、通信时间与瓶颈判断也要重新计算.
 
 ## 1. 内存与算力: 每 token 要搬多少字节, 算多少 FLOPs
 
@@ -253,4 +253,3 @@ combine 的网内归约更难做. 论文的理由是 EP combine 的归约范围�
 - PyTorch 团队, *Some Matrix Multiplication Engines Are Not As Accurate As We Thought*. [PyTorch Blog](https://pytorch.org/blog/some-matrix-multiplication-engines-are-not-as-accurate-as-we-thought/)
 - Bita Darvish Rouhani 等, *Microscaling Data Formats for Deep Learning*. [arXiv 2310.10537](https://arxiv.org/abs/2310.10537)
 - 同库: [DeepSeek-V3 解析](../../01-模型技术报告/deepseek-v3/deepseek-v3-analysis.md), [DeepSeek-V4 解析](../../01-模型技术报告/deepseek-v4/deepseek-v4-analysis.md), [DeepEP 解析](../../04-开源仓库/deepep/deepep-analysis.md), [DeepGEMM 解析](../../04-开源仓库/deepgemm/deepgemm-analysis.md), [Fire-Flyer 2 解析](../fire-flyer/fire-flyer-analysis.md), [对照译稿](deepseek-v3-insights-bi.md)
-

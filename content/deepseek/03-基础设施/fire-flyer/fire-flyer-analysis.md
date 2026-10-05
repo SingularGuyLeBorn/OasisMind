@@ -8,7 +8,7 @@ excerpt: "按论文表格逐项复核 Fire-Flyer 2 的成本与能耗口径, 两
 
 # Fire-Flyer 2 拆解: 一万张 PCIe A100 如何用一半成本接近 DGX-A100
 
-来源: 论文 *Fire-Flyer AI-HPC: A Cost-Effective Software-Hardware Co-Design for Deep Learning* (arXiv 2408.14158, v2 发布于 2024-08-31, 收录于 SC24), 作者单位 DeepSeek-AI, 系统由幻方 (High-Flyer) 建设和运维. 相关开源代码有两个: 文件系统 [deepseek-ai/3FS](https://github.com/deepseek-ai/3FS) 和调度平台 [HFAiLab/hai-platform](https://github.com/HFAiLab/hai-platform). HFReduce 与 HaiScale 没有开源, 涉及它们的数字只能以论文为准. 3FS 的代码层面另见 [3FS 仓库解析](../../04-开源仓库/3fs/3fs-analysis.md), 论文逐段译文见 [Fire-Flyer AI-HPC 对照译稿](fire-flyer-bi.md). 文中的每个数字都注明出处表格或图, 论文没有直接给出的数字会写明「文中没有给出」以及推算方式.
+来源: 论文 *Fire-Flyer AI-HPC: A Cost-Effective Software-Hardware Co-Design for Deep Learning* (arXiv 2408.14158, v2 发布于 2024-08-31, 收录于 SC24), 作者单位 DeepSeek-AI, 系统由幻方 (High-Flyer) 建设和运维. 相关开源代码有两个: 文件系统 [deepseek-ai/3FS](https://github.com/deepseek-ai/3FS) 和调度平台 [HFAiLab/hai-platform](https://github.com/HFAiLab/hai-platform). HFReduce 与 HaiScale 没有开源, 因而只能依据论文分析其实现与性能. 3FS 的代码层面另见 [3FS 仓库解析](../../04-开源仓库/3fs/3fs-analysis.md), 论文逐段译文见 [Fire-Flyer AI-HPC 对照译稿](fire-flyer-bi.md).
 
 ## 1. 成本口径与节点设计
 

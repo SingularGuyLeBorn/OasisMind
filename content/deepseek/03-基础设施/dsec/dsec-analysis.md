@@ -9,7 +9,7 @@ excerpt: "DSec 用统一 SDK 管理 FnCall, 容器, microVM 和完整虚拟机�
 
 材料是 DeepSeek-AI 与清华大学的系统论文 *DeepSeek Elastic Compute (DSec): A Sandbox Infrastructure for Effective Agentic Training at Scale* ([arXiv 2609.22978](https://arxiv.org/abs/2609.22978), 2026-09-19, cs.DC, 31 页, 正文 24 页). 论文说从 DeepSeek-V3.2 到 V4.1, RL 训练和评测用到的全部沙箱负载都跑在 DSec 上. 平台本身没有开源, 开源的只有 microVM 存储路径用到的 Rust 版 OverlayBD 与 ublk 库, 放在 [kvcache-ai/AgentENV 的 storage 目录](https://github.com/kvcache-ai/AgentENV/tree/main/storage/overlaybd). DSec 此前在 [V4 解析](../../01-模型技术报告/deepseek-v4/deepseek-v4-analysis.md) 对应的报告 §5.2.5 和 [V4.1-Flash 解析](../../01-模型技术报告/deepseek-v4-1-flash/deepseek-v4-1-flash-analysis.md) 对应的报告 §5.1.3 里各有两页左右的介绍, 这篇论文是第一次完整交代架构, 生产负载测量和机制对照实验.
 
-论文要解决的问题可以压成一句: Agent RL 的 rollout 需要成千上万个隔离, 有状态, 互不相同的真实环境, 这些环境要在几秒到几分钟内成批就绪, 在 CPU 几乎空闲的情况下长时间占着内存, 还要扛住会主动找漏洞的模型. 一般的 serverless 平台假设镜像少, 复用高, 函数短命; Kubernetes 一类编排器假设放置要强一致. DSec 的设计就是把这些假设逐条换掉. Agent RL 的训练流程本身见 [Agentic RL 训练](../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md), 沙箱运行时的一般概念见 [运行时环境与沙箱](../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱/13.3.4-运行时环境与沙箱.md), 这里只讲 DSec 自己的设定, 实验和工程.
+Agent RL 的 rollout 需要成千上万个隔离、有状态、互不相同的真实环境. 这些环境要在几秒到几分钟内成批就绪, 在 CPU 几乎空闲时长时间占用内存, 还要防住会主动寻找漏洞的模型. 一般的 serverless 平台假设镜像少、复用高、函数短命; Kubernetes 一类编排器强调强一致放置. DSec 针对的正是这组不同的负载条件. Agent RL 的训练流程见 [Agentic RL 训练](../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md), 沙箱运行时的一般概念见 [运行时环境与沙箱](../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱/13.3.4-运行时环境与沙箱.md).
 
 ## 1. 负载画像: Agent 沙箱和普通执行服务差在哪
 
