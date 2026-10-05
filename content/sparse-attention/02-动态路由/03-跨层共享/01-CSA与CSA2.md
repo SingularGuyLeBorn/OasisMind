@@ -1,0 +1,221 @@
+---
+title: CSA、HCA 与 CSA2: 压缩序列上的稀疏检索和跨层复用
+description: 解析 DeepSeek V4 的 CSA/HCA 混合层及 V4.1 Flash 的 Full、Reindex、Reuse 三模式, 核算 KV、索引和层排布.
+published: true
+---
+
+# CSA、HCA 与 CSA2: 压缩序列上的稀疏检索和跨层复用
+
+DeepSeek V4 将长上下文 attention 的两个成本同时改写: 先沿 token 轴压缩 KV, 再让部分层只访问压缩序列中的少量位置. 官方名称 **Compressed Sparse Attention(CSA)** 指「压缩后再稀疏选择」, **Heavily Compressed Attention(HCA)** 指「更强压缩后对全部压缩项做 attention」. 本文的 CSA 不是同名的 Calibrated 或 Consensus Sparse Attention; 讨论对象只限 DeepSeek V4 技术报告中的 Compressed Sparse Attention.
+
+V4.1 Flash 进一步引入 **CSA2**. 每个 attention layer 静态标为 Full、Reindex 或 Reuse, 在层间共享 main KV、indexer K 与 top-k indices. decoder 中的 Hierarchical Sparse Indexer 还把后续索引限制在首个 Full layer 产生的候选池内. 这使「稀疏」从单层 selector 问题变成层组状态机: 哪一层产生完整缓存, 哪一层刷新索引, 哪一层只复用已有选择, 都由层类型决定.
+
+公开材料给出了模式、压缩率、缓存口径与模型卡描述; 生产 kernel 的全部调度细节没有完整开放. 因此本文只在报告和官方代码能支持的层面描述张量与执行, 对未公开的 tile、流水和集群策略不作推断.
+
+## 1. V4 为什么先压缩 token 轴
+
+### 1.1. 压缩发生在哪个维度
+
+设原序列长度为 $n$, hidden states 为 $X\in\mathbb{R}^{B\times n\times d}$. 压缩率 $m$ 将连续或学习聚合后的 $m$ 个 token变成一个 compressed entry, 压缩序列长度为 $n_c=\lceil n/m\rceil$. compressed K/V 可写成 $K_c,V_c\in\mathbb{R}^{B\times H_{kv}\times n_c\times d_h}$.
+
+DeepSeek V4 官方配置和 Transformers 文档给出 CSA 默认 $m=4$, HCA 默认重压缩率 $m'=128$. 在 1M token 时, CSA 的压缩序列约 250K entries, HCA 约 7813 entries. 压缩先把候选空间缩短, CSA 再在 $n_c$ 中做动态 top-k; HCA 则可以读取整个更短序列.
+
+压缩不是简单 KV 量化. 量化降低每个元素的 bit 数, token压缩减少时间轴上的 entry 数. 两者可以叠加. 压缩 entry代表一段 token, selector命中它时读取的是聚合状态, 不再是原始块内每个 token的独立 KV. 因而压缩率直接决定细粒度信息损失与 cache容量.
+
+### 1.2. CSA 的 indexer 和主 attention
+
+CSA 延续 DSA 的检索结构, 但 indexer与主 attention都作用在压缩序列上. 对当前 query $q_t$, indexer为每个 compressed key $k^I_r$ 生成代理分数 $I_{t,r}$, selector返回 $k$ 个 compressed positions. 主 attention再对这些 positions的完整 compressed KV计算精确 softmax.
+
+若不计压缩生成, indexer从扫描 $n$ 个 token降为扫描 $n/m$. 主 attention从访问原序列的 $k$ 个 token变为访问 $k$ 个 compressed entries. 这里的 $k$ 与原 token预算不能直接比较, 因为一个 entry汇总 $m$ 个 token的信息. 质量由压缩器能否保留块内关键细节决定, 性能由 $n/m$、top-k与 entry宽度共同决定.
+
+CSA 的输入输出 shape 与普通 attention兼容: 输入仍为每个 token的 query, 输出仍为 $B\times n\times H_q\times d_h$. 历史轴变短, query轴在 Prefill仍有 $n$ 行. 因此逻辑关系约为 $O(nk)$, indexer若平坦扫描则约为 $O(nn_c)$, 即 $O(n^2/m)$.
+
+### 1.3. HCA 为什么不需要 sparse selector
+
+HCA 将 token轴压缩到约 $n/m'$, $m'$ 远大于 CSA 的 $m$. 当 compressed sequence已经足够短, 对全部 HCA entries做 attention可避免 indexer和top-k. 1M token在 $m'=128$ 下只有约7813个压缩项, 每个 query全读仍比原始百万历史短两个数量级.
+
+HCA 提供密集覆盖的全局摘要, CSA 提供较细粒度的动态检索. 两者交错能减轻单一路线的缺陷: HCA不会漏掉 compressed entries, 但每个 entry信息粗; CSA entry更细, 却可能被 selector漏选. V4-Pro 的公开结构为61层, 前两层 HCA, 后续层在 CSA与HCA间交替, 末尾 MTP block使用滑动窗口. 具体变体应以对应模型配置为准.
+
+**CSA 与 HCA 的分工是「稀疏地读较细压缩」和「完整地读重压缩」.** 它们都已经丢掉原 token级 KV, 不能把 HCA称为原序列 full attention, 也不能把 CSA等同于 V3.2 的 token-level DSA.
+
+## 2. 层排布怎样改变 cache 与信息流
+
+### 2.1. 交错层不是独立重复的模块
+
+若每层都独立产生 compressed KV, 缓存仍随层数 $L$ 线性增长, 只是每层沿 token轴更短. V4 的混合层让不同压缩率承担不同信息路径, 层间 residual继续传递 token级 hidden state. attention读取压缩历史, 输出写回每个 query位置, 所以下一层仍处理长度 $n$ 的 hidden states.
+
+这一区别常被误写成「序列永久缩短」. 实际缩短的是被读取的 K/V历史轴, query和残差流没有缩成 $n/m$. Prefill 的 Q投影与MLP仍按 $n$ token执行. attention FLOPS和 KV cache下降不会同比降低整模 FLOPS.
+
+交错频率决定远程细节多久由 CSA刷新. 连续 HCA层只能访问重压缩全局状态, 细粒度恢复依赖后续 CSA. 连续 CSA层都有更细的候选, 但 indexer和cache更贵. 层排布因此同时是质量预算与系统预算.
+
+### 2.2. Prefill 的压缩与索引顺序
+
+Prefill拿到整段 $X$. 每个压缩模块先沿时间轴构造 entries, 写出 compressed main KV和可能独立的 indexer K. CSA indexer随后对 query rows和 compressed keys打分, top-k生成整数索引, sparse kernel读取选中 entries. HCA直接对全部重压缩 entries运行 attention.
+
+压缩器必须服从 causal约束. query $t$ 不能读取包含未来 token的 compressed entry. 尾部未满组的 entry要带有效长度或只聚合可见前缀. 若同一压缩块内 query和key时间交叠, kernel需对边界块施加细粒度 causal处理, 不能把完整块都视为过去.
+
+Prefill 的代理分数若物化为 $n\times n_c$, 1M上下文仍很大. 高效实现需要分块生成索引或层次筛选. 官方公开描述确认动态选择与优化 kernel, 但未把所有中间工作区和融合策略完全公开. 评测时应测峰值工作区, 不能只按最终 cache估算.
+
+### 2.3. Decode 的追加状态
+
+Decode每步产生一个新 hidden state. 压缩 entry通常在积累足够 token后完成, 未满组需要暂存聚合状态. 新 query读取历史 compressed cache; CSA还读取 indexer K并生成top-k. HCA读取全部重压缩cache. 单步主关系分别约为 $k$ 和 $t/m'$.
+
+压缩引入更新延迟. 最近不足 $m$ 或 $m'$ 个 token若尚未形成稳定entry, 需要局部分支、未压缩tail或可更新entry保留. 公开报告中的实际机制应以官方实现为准; 如果模型卡未说明尾块处理, 不能自行假定均值池化或延后一整个块.
+
+Decode带宽账包含 main compressed KV、indexer K、整数top-k和最近状态. CSA 的 indexer仍可能比 sparse main attention读更多entries. CSA2正是继续减少跨层重复索引与缓存.
+
+## 3. CSA2 的 Full、Reindex 与 Reuse
+
+### 3.1. 三种层模式各自持有什么
+
+V4.1 Flash 官方模型卡说明, CSA2为每个 attention layer指定三种静态模式之一. **Full Mode** 建立层组的权威状态, 计算并缓存 main KV与indexer K, 同时生成top-k候选池或索引. **Reindex Mode** 复用共享的main KV与indexer K, 但用当前层query重新计算或刷新top-k. **Reuse Mode** 同时复用共享KV和已有top-k indices, 省掉本层indexer.
+
+三种模式的输出仍回到各自层的residual stream, 层参数和query不是同一个. 共享的是历史表示和选择结果, 不是整层attention输出. Reindex允许当前层query改变候选, Reuse假设层间重要位置足够稳定.
+
+可以把一个层组写成状态 $(K^{main},K^{idx},S)$. Full更新三者; Reindex保留前两者并更新 $S$; Reuse全部只读. 这种明确状态比模糊的「跨层KV共享」更容易核算: Full付投影、cache和索引, Reindex付索引, Reuse只付Sparse Attention.
+
+### 3.2. Hierarchical Sparse Indexer 限制深层搜索域
+
+decoder中的 Hierarchical Sparse Indexer让首个Full layer从全历史生成候选池 $C_t$, 后续Reindex layers只在 $C_t$ 内打分. 若全历史 compressed长度为 $n_c$, 候选池为 $c\ll n_c$, 深层indexer成本由 $O(n_c)$ 降为 $O(c)$, 不再随完整上下文同速增长.
+
+Reindex在候选池内选最终top-k:
+
+$$
+S_t^{(l)}=\operatorname{TopK}\{I_{t,r}^{(l)}:r\in C_t\},k. \tag{1}
+$$
+
+Reuse layer直接令 $S_t^{(l)}=S_t^{(l_0)}$. 候选池召回是新的上限: Full若漏掉位置, 后续任何Reindex都无法恢复. 因而 $|C_t|$ 应大于最终 $k$, 用更多一次性候选换深层多次省算.
+
+这一结构与HISA相似之处是粗召回加局部精排, 区别在候选池还跨层共享. 评测要分别报告 Full候选池对原索引的recall、Reindex后的top-k重合和Reuse层质量, 不能只给最终任务分.
+
+### 3.3. KV 字节与 FP4
+
+V4.1 Flash 将 CSA2跨层复用与 FP4 main KV cache组合. 官方模型卡给出的格式为 E2M1 main KV, 每16 channels一个E4M3 scale, 全局KV cache为每token 890 bytes, 约为V4 Flash的四分之一. API官方说明还给出 HBM为上一代四分之一、SSD存储为八分之一的产品口径.
+
+890 bytes包含官方定义的全局cache口径, 不应拿它除以单层head维反推未公开的层数组合. indexer K、局部状态、scale和对齐是否计入某个具体统计, 要按报告表格口径. 量化降低main KV字节, top-k索引仍是整数, indexer K可能使用另一精度.
+
+FP4误差发生在被选主KV的精确attention中; indexer量化误差发生在候选排序. 两者分别影响值重构与集合选择. Reuse会把一次top-k误差传播到多层, 所以CSA2对索引稳定性的要求高于每层独立重算.
+
+## 4. 训练迁移与质量边界
+
+### 4.1. 压缩器需要学会保留什么
+
+压缩entry要同时服务未来不同query. 若只优化平均语言模型loss, 高频局部结构可能主导, 罕见实体在128倍压缩中消失. HCA依赖全量重压缩覆盖, CSA依赖较细压缩加selector. 训练必须让两条路径在交错层中形成互补.
+
+从已有模型迁移时, 新增压缩器、共享KV和层模式会同时改变attention分布. 仅蒸馏单层输出不能保证长序列递推稳定. 应分阶段验证短上下文等价、长上下文召回和Decode累计误差. DeepSeek官方报告给出的训练方案属于模型整体, 不能缩成一个可直接套用的后处理.
+
+### 4.2. Reuse 的失效不是平均相似度低
+
+相邻层top-k平均IoU很高, 仍可能稳定漏掉某层新增的关键位置. Reuse组越长, 偏好漂移越可能积累. 代码、表格和多跳任务中, 某个深层head可能突然需要此前低分的定义; 已锁定的候选池无法响应.
+
+诊断应按layer和query测对独立Reindex教师的recall, 特别关注组尾. 若误差随层深单调增加, 缩短Reuse组或插入Reindex. 若候选池已经漏选, 需要扩大Full候选或增加Full频率. 两种修复作用在不同层级.
+
+### 4.3. token压缩与block选择的双重边界
+
+CSA先把原token合并为entry, 再选entry. 原始关键token可能在压缩时已被稀释, 即使对应entry被top-k选中也无法完整恢复. 另一方面, selector可能漏掉保存良好的entry. 质量评测应将「压缩重构」和「索引召回」分开消融.
+
+压缩率越大, cache和indexer越便宜, 单entry承载信息越多. top-k越大, selector召回越高, mainattention越贵. Full/Reindex频率越高,层间适应更好, cache与索引成本更高. 三组参数共同形成性能面, 不能分别取各自最激进值.
+
+## 5. 工程验收
+
+### 5.1. shape 与地址检查
+
+实现首先记录每种层模式的main KV来源、indexer K来源、候选来源和压缩位置映射. 对batch、head、query position与compressed position逐项检查causal边界. Full到Reuse的共享引用必须在请求结束、prefix复用和分页迁移时保持生命周期一致.
+
+小张量测试可显式构造压缩映射, 固定候选后比较Sparse Attention与朴素实现. Reindex应只改变整数索引, 不重写共享KV; Reuse应既不生成indexer分数也不改变索引. 模式切换若产生隐式复制, cache字节会偏离设计.
+
+### 5.2. 性能拆分
+
+Prefill分别测压缩、Full index、Reindex、Reuse attention、HCA attention和其他层. Decode测每步cache读字节、candidate pool大小、top-k与Sparse Attention. 端到端TTFT和TPOT还受MoE、MLP、通信与调度影响, attention倍数不会原样转化.
+
+物理指标包含compressed entries数、候选池、最终top-k、唯一cache pages和量化scale字节. 若Sparse Attention的候选分散, gather可能比连续HCA更慢. 若Full layer过少,质量下降; 这两种问题不能用同一个「稀疏率」解释.
+
+### 5.3. 来源与版本
+
+DeepSeek V4、V4 Flash、V4.1 Flash结构不同. V4.1官方模型卡明确使用CSA2和三类层模式, 旧模型名在API中可能路由到新模型, 不能据API别名判断本地权重架构. 复现时固定具体checkpoint、config和报告版本.
+
+公开模型代码与Transformers实现能核对配置字段和shape, 官方技术报告给出设计与训练口径. 未开放的生产kernel、集群cache分层和服务调度只能作为未知项记录. **跨层共享的可验证事实是共享了什么状态、哪些层刷新、缓存口径是多少; 未公开的执行细节不应由热图补写.**
+
+### 5.4. 一个层组的数值账
+
+取原长度 $n=131072$, CSA压缩率 $m=4$, 得到 $n_c=32768$. 假设Full层建立候选池 $c=4096$, Reindex最终取 $k=1024$. 平坦indexer每个query比较32768个entries; 层次Reindex只比较4096个, 打分数量降为八分之一. Sparse Attention读取1024个compressed entries, 相当于原序列位置数的 $0.78125\%$, 但每个entry包含四token聚合信息.
+
+若层组由1个Full、2个Reindex、5个Reuse组成, 平坦方案需要8次全压缩序列索引. CSA2只在Full做一次全域候选, 两个Reindex各扫4096候选, 五个Reuse不打分. 比较量从 $8\times32768=262144$ 降为 $32768+2\times4096=40960$. 主Sparse Attention仍执行8次, 整层组不会获得同倍加速.
+
+若每层独立main KV为 $M$, indexer K为 $J$, 独立8层需 $8(M+J)$. 层组共享后接近 $M+J$ 加indices与query临时量. FP4再降低main KV元素字节. 这里没有计算residual、MLP与MoE状态, 只代表attention cache.
+
+candidate pool若为每个Prefill query物化4096个32位indices, 131072 queries约需2GiB. 实现必须流式生成、分块处理或压缩表示. 官方资料未给出生产工作区时, 不能只按最终top-k的1024整数估算峰值.
+
+### 5.5. 正确性与退化测试
+
+构造三层小模型, 第一层Full, 第二层Reindex, 第三层Reuse. 固定共享 $K^{main},V^{main},K^{idx}$, 让第二层query不同. Reindex应产生不同indices但读取相同KV; Reuse应与来源层indices逐项一致, 即便自己的query若独立索引会选别处.
+
+将candidate pool设为全部compressed positions, Hierarchical Reindex应退化为平坦indexer. 将最终 $k$ 设为pool大小, Sparse Attention应退化为对pool的dense attention. 两个退化测试能区分pool剪枝、top-k与attention kernel错误.
+
+量化测试先固定indices比较FP4与高精度main KV输出, 再固定main KV比较量化indexer造成的indices变化. 一次同时量化两套状态, 无法区分值误差和召回误差. Reuse组还要检查误差是否随层位置累积.
+
+### 5.6. 分布式布局
+
+main KV跨层共享后, tensor parallel各rank持有的cache分片应与所有Reuse layers的query head映射一致. 若不同层使用不同head partition, 共享会引入all-to-all或复制. 静态layer modes有利于提前规划地址和通信组.
+
+candidate pool和top-k indices比KV小, 可以复制到各rank, 也可按query heads分片. Full层若把indexer heads分到多个rank, 需要全局top-k或复制完整轻量indexer. 选择取决于indexer宽度与显存.
+
+pipeline parallel若把一个层组切到不同stage, 共享KV就要跨stage传输. 部署通常应让Full及其Reindex/Reuse组共置. 因而layer pattern不仅决定质量, 也约束并行切分边界.
+
+### 5.7. 与V3.2 DSA的区别
+
+V3.2 DSA保存token级MLA latent KV和独立indexer K, 每层selector从全部历史token取2048. V4 CSA先把token轴压缩4倍, 再在compressed entries上选择. 选择单位、cache内容和训练结构都改变, CSA不是DSA后面简单加pooling.
+
+HCA没有DSA式top-k, 它完整读取128倍重压缩序列. HCA误差来自压缩而不来自候选漏选; CSA两类误差都有. V4交替两种层, 让重压缩全覆盖与较细稀疏检索互补.
+
+CSA2将单层CSA变成层组协议. Reuse不运行selector, Reindex只在Full候选池搜索. V4.1 Flash不能用统一 $O(nk)$ 描述每层, 必须按三种模式核算.
+
+### 5.8. 三轴消融
+
+增大压缩率减少cache和indexer长度, 可能损害块内细节. 缩小candidate pool减少深层索引, 可能限制层间偏好. 增加Reuse减少刷新, 可能让候选陈旧. 三者作用不同, 消融应一次改变一轴.
+
+质量轴含长检索、多证据、代码引用和多轮agent; 缓存轴含main KV、indexer K、scale、indices与工作区; 算力轴含压缩投影、Full index、Reindex、Sparse/HCA attention. 只用最终KV bytes无法判断TTFT.
+
+prefix cache也受益于较小层组状态, 但cache key必须编码checkpoint、层模式和量化格式. API中的旧模型名可能路由新模型, 不能把服务别名当成缓存兼容依据.
+
+### 5.9. Prefill与Decode的逐项账本
+
+Prefill中, 压缩器首先把一段原始token映射成较短entries. 这一步通常是规则批量计算, 可以与投影融合, 但仍需读入整段hidden states. Full层随后在完整压缩序列上建立候选池; Reindex层只在候选池内用当前query重排; Reuse层直接读取既有positions. 主attention每层仍要执行, 因为query、输出和残差属于当前层. 所以Reuse省掉的是选择器, 不是整层attention.
+
+Decode每步只新增一个原始token, 压缩entry却可能跨越多个token. 在一个压缩组尚未填满时, 实现必须定义部分entry如何更新、什么时候固化以及因果query能看到哪些成员. 如果直接覆写已被其他请求或prefix共享的entry, 会破坏cache不可变性. 安全实现通常把未完成组作为请求私有尾部状态, 组满后再并入可共享页. 官方没有披露的具体布局应留作实现选择.
+
+Full层的全域索引读取量随压缩历史增长, Reindex读取候选池, Reuse只读取最终top-k对应的main KV. 因而每token成本不是一个统一常数. 设三类层数分别为 $L_F,L_R,L_U$, 压缩长度为 $n_c$, 候选池为 $c$, 最终预算为 $k$, 忽略head维度时索引比较量近似
+
+$$
+C_{idx}\propto L_Fn_c+L_Rc,
+$$
+
+主attention读取量近似 $(L_F+L_R+L_U)k$. 如果Full层本身采用不同attention路径, 还要单列其主计算, 不能把索引比较量当作完整attention FLOPs. 这组公式适合检查量级, 不替代模型报告中的实际层模式.
+
+批处理会进一步改变账本. 不同请求的历史长度不同, Full索引与Reuse gather形成不同shape; 为追求kernel利用率而padding到最长请求会吞掉部分稀疏收益. continuous batching应按模式和长度分桶, 同时避免把共享组拆成过多小kernel. 因此单请求microbenchmark与在线吞吐都需要报告.
+
+### 5.10. 训练迁移的分阶段方法
+
+若研究目标是从已有dense或DSA checkpoint探索CSA, 最稳妥的实验不是一次替换全部层. 第一阶段只加入压缩表示, 让HCA式全覆盖路径学习在压缩轴上保留信息; 第二阶段加入稀疏selector, 以原attention分布或输出作为蒸馏目标; 第三阶段才扩大层组并开启Reindex、Reuse. 每阶段都保留未压缩teacher, 才能判断误差由压缩、选择还是跨层陈旧造成.
+
+压缩器训练目标不能只优化token重构. attention需要保留的是后续query可检索的信息, 其中包含少见实体、远距离代码符号和多证据关系. 可同时使用输出蒸馏、attention mass覆盖与语言建模损失, 但权重属于实验超参数. V4与V4.1 Flash的公开结果说明其原生结构可以训练, 并不公开保证上述迁移流程或任意初始化可复现同等性能.
+
+开启FP4应放在结构稳定之后. 先以高精度确认Full候选池、Reindex排序和Reuse语义, 再分别量化main KV与indexer状态. selector分数靠近top-k边界时, 很小的量化扰动也会替换候选; main KV量化则在候选不变时改变attention输出. 两者需要不同校准集与容差.
+
+### 5.11. 故障注入与线上可观测性
+
+跨层共享容易产生结果合理但状态错误的静默故障. 可以有意把Reuse层indices错位一个token、交换两个层组的KV页、延迟一次partial entry提交, 检查断言与监控是否能发现. 必要元数据至少包括请求ID、来源Full层、压缩位置范围、有效长度、dtype与量化scale版本.
+
+线上指标应按层模式聚合索引时延、候选页数、cache命中、组尾候选稳定度和数值异常. 只观察总token/s时, Reindex退化成全域搜索或Reuse意外重算都可能被其他阶段波动遮蔽. 对固定canary prompt定期比对高精度参考logits, 能及早发现cache生命周期和kernel版本问题.
+
+异常回退也要保持语义完整. 若层次化索引器失败, 可以扩大候选池或切换平坦索引; 若共享页校验失败, 应重建整个层组状态, 而不是只重算当前层. 回退到更密集路径会增加显存和时延, 调度器必须预留容量并限制同时回退的请求数.
+
+发布前还应做跨长度与跨batch回归. 在压缩边界前后分别选择序列长度, 覆盖空候选、候选不足、完整压缩组和未完成尾组; 再让不同长度请求共享一个batch, 检查padding位置不会进入top-k. 对每个案例保存Full、Reindex与Reuse的来源映射, 升级kernel或量化格式后逐项比较. 这些测试虽不直接提高基准分数, 却决定层组状态在长期服务中是否可靠.
+
+## 参考资料
+
+- [DeepSeek V4 Technical Report](https://arxiv.org/abs/2606.19348)
+- [DeepSeek V4 官方模型文档](https://huggingface.co/docs/transformers/model_doc/deepseek_v4)
+- [DeepSeek V4.1 Flash Technical Report](https://arxiv.org/abs/2609.19969)
+- [DeepSeek V4.1 Flash 官方模型卡](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash)
+- [DeepSeek 官方发布说明](https://api-docs.deepseek.com/news/news260910/)
