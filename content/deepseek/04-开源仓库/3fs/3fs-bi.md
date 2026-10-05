@@ -65,6 +65,7 @@ The following figure demonstrates the throughput of read stress test on a large 
 
 ![Large block read throughput under stress test on a 180-node cluster](images/peak_throughput.jpg)
 
+图注: 3FS 180 节点集群的大块读压力测试：训练背景流量同时存在时，聚合吞吐在约半分钟后稳定在 6.6 TiB/s 附近，短时下探约 6.3–6.4 TiB/s。
 To benchmark 3FS, please use our [fio engine for USRBIO](https://github.com/deepseek-ai/3FS/blob/main/benchmarks/fio_usrbio/README.md).
 
 如需自行压测 3FS, 请使用仓库提供的 [USRBIO fio 引擎](https://github.com/deepseek-ai/3FS/blob/main/benchmarks/fio_usrbio/README.md).
@@ -85,6 +86,7 @@ The test cluster comprised 25 storage nodes (2 NUMA domains/node, 1 storage serv
 ![](images/gray_sort_server.png)
 ![](images/gray_sort_client.png)
 
+图注: GraySort 全流程吞吐：上图是存储节点、下图是计算节点的读写曲线；四条竖线分隔数据生成、shuffle 与分区内排序，110.5 TiB 排序阶段耗时约 30 分 14 秒。
 > **拆开:** 30 分 14 秒包含生成输入数据的时间吗?
 > 答: README 没有写. [smallpond 的 benchmarks/gray_sort_benchmark.py](https://github.com/deepseek-ai/smallpond/blob/main/benchmarks/gray_sort_benchmark.py) 在未传 `input_paths` 时会把 gensort 生成数据也放进同一个逻辑计划. 两张吞吐图上有四条红色竖虚线, 约 17:55, 18:01, 18:15, 18:31. 第一段只有写流量, 形态符合生成输入; 18:01 到 18:31 这一段约 30 分钟, 与 30m14s 吻合, 中间 18:15 的虚线把 shuffle 和分区内排序分开. 按图读出的结论是计时只覆盖两阶段排序, 不含生成, 这一点只能从图上推出, 文档没有给出原话. 平均吞吐 $110.5 \times 1024 / 1814 \approx 62.4\ \text{GiB/s}$, 与 3.66 TiB/min 对得上.
 
@@ -99,6 +101,7 @@ KVCache 是优化 LLM 推理过程的一种技术: 把解码器各层里之前 t
 ![KVCache Read Throughput](images/kvcache_read_throughput.png)
 ![KVCache GC IOPS](images/kvcache_gc_iops.png)
 
+图注: 3FS KVCache 同期负载：上图显示单客户端读吞吐峰值接近 40 GiB/s、平均约 2–3 GiB/s；下图显示 GC 删除以约 0.8–1.4 MIOPS 的周期性脉冲出现。
 > **问:** 40 GiB/s 是整个 KVCache 集群的总吞吐还是单台客户端的吞吐?
 > 答: 按原句「read throughput of all KVCache clients ... highlighting both peak and average values」, 图里画的是各客户端吞吐的峰值线与平均线, 散点是单台客户端的采样. 40 GiB/s 接近单台 400Gbps 网卡的上限 (50 GB/s ≈ 46.6 GiB/s, 占 86%), 所以这是单台客户端能达到的峰值, 平均线只在 2 到 3 GiB/s. 网卡规格是 2025-03-03 的 [PR #58](https://github.com/deepseek-ai/3FS/pull/58) 才补进 README 的, 初版没有, 社区早期引用时常把它当作集群总量.
 

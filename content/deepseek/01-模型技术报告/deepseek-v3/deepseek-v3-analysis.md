@@ -68,6 +68,7 @@ Table 5 在两个规模上比较纯辅助损失和无辅助损失. 小档 15.7B 
 
 ![报告 Figure 9: Pile 三个领域上 16B 模型的专家相对负载, 无辅助损失模型的专家特化更明显](images/p28-figure-9-expert-load-of-auxiliary-loss-free-and.png)
 
+图注: 报告 Figure 9: Pile 三个领域上 16B 模型的专家相对负载, 无辅助损失模型的专家特化更明显。
 *报告 Figure 9: Pile 三个领域上 16B 模型的专家相对负载, 无辅助损失模型的专家特化更明显*
 
 ### 1.5. MTP: 训练时多预测一个 token
@@ -76,6 +77,7 @@ Table 5 在两个规模上比较纯辅助损失和无辅助损失. 小档 15.7B 
 
 ![报告 Figure 3: MTP 模块结构——每深度一个模块, 串行往后推, 嵌入层与输出头与主模型共享](images/p10-figure-3-illustration-of-our-multi-token-prediction-mtp.png)
 
+图注: 报告 Figure 3: MTP 模块结构——每深度一个模块, 串行往后推, 嵌入层与输出头与主模型共享。
 *报告 Figure 3: MTP 模块结构——每深度一个模块, 串行往后推, 嵌入层与输出头与主模型共享*
 
 拿 V3 实际用的 D = 1 走一遍. 主模型在「爱」这个位置算出一个 hidden state——由「我」「爱」两个 token 算出。MTP 模块收到两样输入: 这个 hidden state, 和「北」的嵌入——嵌入就是输入层那张查表矩阵, 把 token 查成向量, 宽度和 hidden state 一样是 7168:
@@ -126,10 +128,12 @@ $$
 
 ![报告 Figure 4: 一对前向/反向 chunk 的四段拆分与交错排列, all-to-all 被计算掩盖](images/p12-figure-4-overlapping-strategy-for-a-pair-of-individual.png)
 
+图注: 报告 Figure 4: 一对前向/反向 chunk 的四段拆分与交错排列, all-to-all 被计算掩盖。
 *报告 Figure 4: 一对前向/反向 chunk 的四段拆分与交错排列, all-to-all 被计算掩盖*
 
 ![报告 Figure 5: 8 路流水并行的 DualPipe 调度, 前向流与反向流从两端同时送入](images/p13-figure-5-example-dualpipe-scheduling-for-8-pp-ranks-and.png)
 
+图注: 报告 Figure 5: 8 路流水并行的 DualPipe 调度, 前向流与反向流从两端同时送入。
 *报告 Figure 5: 8 路流水并行的 DualPipe 调度, 前向流与反向流从两端同时送入*
 
 Table 2 给出三种调度的气泡与显存. 1F1B 的气泡是 (PP−1)(F+B), ZB1P 是 (PP−1)(F+B−2W), DualPipe 是 (PP/2−1)(F&B+B−3W), 其中 F&B 是一对互相重叠的前向与反向 chunk 的执行时间. V3 的 PP = 16, 1F1B 的系数是 15, DualPipe 是 7, 而且括号里的项更小. 代价是每张卡存两份模型参数, 峰值激活多 1/PP. 两份参数听起来很贵, 但专家并行已经把 MoE 参数切到 64 张卡上, 每卡上的参数本来不多, 报告认为这一开销可以接受. DualPipe 只要求流水级数和 micro-batch 数能被 2 整除, 气泡和激活显存都不随 micro-batch 数增长. 本页没有给出 DualPipe 与 1F1B 的实测吞吐对比, 只有公式层面的比较.
@@ -170,6 +174,7 @@ FP8 的难点是动态范围小, 常规做法按整个张量的最大绝对值�
 
 ![报告 Figure 8: SFT 后的大海捞针, 128K 内全部命中; 只测检索, 不测长文推理](images/p23-figure-8-evaluation-results-on-the-needle-in-a-haystack.png)
 
+图注: 报告 Figure 8: SFT 后的大海捞针, 128K 内全部命中; 只测检索, 不测长文推理。
 *报告 Figure 8: SFT 后的大海捞针, 128K 内全部命中; 只测检索, 不测长文推理*
 
 ### 3.3. Base 模型评测

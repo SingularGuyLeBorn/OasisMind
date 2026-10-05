@@ -124,8 +124,7 @@ Our test results show that after chain-of-thought compression training, V3.1-Thi
 
 ![Chart block](images/p04-v3-1-deepseek-v3-0324.png)
 
-
-
+图注: V3.1 思考与非思考模式的长度—性能对比：思考模式用更少输出 token 达到同档推理表现，非思考模式相对 V3-0324 也能在保持性能时缩短回答。
 Figure (p04) | Thinking / non-thinking length–performance chart in the source release note.
 
 
@@ -251,8 +250,7 @@ Output:
 
 ![Image block](images/p05-2025-9-6-00-00.png)
 
-
-
+图注: DeepSeek-V3.1 API 定价图：区分缓存命中、缓存未命中的输入 token 与输出 token 单价，并注明价格自 2025 年 9 月 6 日 00:00 生效。
 Figure (p05) | API pricing graphic effective 2025-09-06 00: 00.
 
 

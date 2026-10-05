@@ -13,6 +13,7 @@ Qdeepseek
 
 ![Image block](images/p01-janus-decoupling-visual-encoding-for-unified-multimodal.png)
 
+图注: Janus 论文首页；主题是通过视觉编码解耦，在同一模型中统一多模态理解与图像生成。
 # Janus: Decoupling Visual Encoding for Unified Multimodal Understanding and Generation / Janus: 解耦视觉编码, 统一多模态理解与生成
 
 Chengyue Wu<sup>1, 2</sup> Xiaokang Chen<sup>1, ∗, †</sup> Zhiyu Wu<sup>1, 3</sup> Yiyang Ma<sup>1, 3</sup> Xingchao Liu<sup>1</sup> Zizheng Pan<sup>1</sup> Wen Liu<sup>1</sup> Zhenda Xie<sup>1</sup> Xingkai Yu<sup>1</sup> Chong Ruan<sup>1</sup> Ping Luo<sup>2, ∗</sup>
@@ -471,6 +472,7 @@ Table 5 | Ablation studies. We verify the effectiveness of decoupling visual enc
 
 ![Image block](images/p11-sdxl.png)
 
+图注: 同一组文本提示下 SDXL 的图像生成结果，用于与 LlamaGen 和 Janus 对照。
 SDXL
 
 LlamaGen
@@ -481,14 +483,17 @@ SDXL
 
 ![Image block](images/p11-llamagen.png)
 
+图注: 同一组文本提示下 LlamaGen 的图像生成结果，用于与 SDXL 和 Janus 对照。
 LlamaGen
 
 ![Image block](images/p11-janus-ours.png)
 
+图注: 同一组文本提示下 Janus 的图像生成结果，对照 SDXL 与 LlamaGen 的构图和语义遵循。
 Janus (Ours)
 
 ![Image block](images/p11-a-close-up-high-contrast-photo-of-sydney-opera-house.png)
 
+图注: 文生图样例；输入提示为「近景高对比照片: 悉尼歌剧院紧挨埃菲尔铁塔, 蓝色夜空翻涌能量, 黄色星辰炸开, 蓝色漩涡辐射开来」，该图为模型生成结果。
 A close-up high-contrast photo of Sydney Opera House sitting next to Eiffel tower, under a blue night sky of roiling energy, exploding yellow stars, and radiating swirls of blue.
 
 
@@ -497,6 +502,7 @@ A close-up high-contrast photo of Sydney Opera House sitting next to Eiffel towe
 
 ![Image block](images/p11-a-detailed-portrait-of-the-roman-god-janus-featuring.png)
 
+图注: 文生图样例；输入提示为「罗马双面神 Janus 的细腻肖像: 两张脸朝向相反. 一侧苍老, 皱纹深陷, 神情睿智沉思; 另一侧年轻, 充满活力与好奇. 卷发环绕双脸, 呈神圣对称. 色彩对比强烈: 左侧冷蓝银, 象征冬与反思; 右侧暖金红, 象征春与新生. 背景为星空织锦, 点缀时间与流转的象征母题」，该图为模型生成结果。
 A detailed portrait of the Roman god Janus, featuring his two faces looking in opposite directions. One face appears aged, with deep-set wrinkles and a wise, contemplative expression, while the other face is youthful, exuding vigor and curiosity. His hair is styled in flowing curls, framing both faces with a sense of divine symmetry. The artwork is rich in contrasting colors, with the left side dominated by cold blues and silvers, symbolizing winter and reflection, and the right side awash with warm golds and reds, representing spring and renewal. The background is a celestial tapestry, adorned with stars and symbolic motifs of time and passage.
 
 
@@ -515,6 +521,7 @@ A wise old owl with golden plumage perched on a luminous crystal tree in a magic
 
 ![Image block](images/p11-a-brave-dog-wearing-a-futuristic-space-suit-exploring.png)
 
+图注: 文生图样例；输入提示为「勇敢的狗穿未来宇航服, 在星尘沙丘与流星雨中探索外星; 发光晶体与空灵地形点缀, 天空漩涡像遥远星系的永恒之舞」，该图为模型生成结果。
 A brave dog wearing a futuristic space suit, exploring an alien planet amidst swirling dunes of stardust and meteor showers. The landscape is dotted with glowing crystal formations and ethereal terraforms, creating a surreal environment in which swirling vortexes in the sky depict the endless dance of distant galaxies.
 
 
@@ -543,6 +550,7 @@ modal understanding, although there is still a considerable gap compared to our 
 
 ![Image block](images/p12-janus-ours-the-meme-is-a-humorous-take-on-the-concept.png)
 
+图注: 图像理解对比样例：面对同一张诺贝尔物理学奖梗图，Janus 正确联系上下两格中男子由困惑到高兴的表情变化；Show-o 的解释误读了画面与文字。
 **Janus (Ours):** The meme is a humorous take on the concept of a Nobel Prize in Physics. The top panel shows a man in a red jacket with his hand up, seemingly confused or surprised, while the bottom panel shows the same man with a smile on his face, seemingly pleased or proud, as if he has just won the Nobel Prize. The meme is a play on the idea that the man in the top panel might be confused or surprised by the idea of winning a Nobel Prize in Physics, while the man in the bottom panel seems to be genuinely happy about it.
 
 
@@ -680,6 +688,7 @@ We present the integration of the semantic tokenizer and the LLM in Figure 6 (b)
 
 ![Image block](images/p16-a-young-woman-looks-like-mix-of-lana-del-rey-and-grimes.png)
 
+图注: 文生图样例；输入提示为「年轻女性, 神似 Lana Del Rey 与 Grimes 的混合; 冷色流动发丝, 大理石纹与虹彩, 少女漫画与拉斐尔前派气质, K-pop, 镀金, 珍珠, 纺丝, 云, 幽灵, 发光水母, 轻纱鼓荡, Alexander McQueen, 手工蕾丝与花卉刺绣, 蛇皮纹理, 戏剧光效」，该图为模型生成结果。
 a young woman, looks like mix of Lana Del Rey and grimes, flowing cool colored hair, marbled, iridescent, shoujo manga, pre-raphaelite, k-pop, gilded, pearl, spun silk, clouds, ghost, glowing jellyfish, billowing gossamer cloth, Alexander McQueen, handmade lace, floral embroidery, snakeskin, dramatic lighting
 
 
@@ -688,6 +697,7 @@ a young woman, looks like mix of Lana Del Rey and grimes, flowing cool colored h
 
 ![Image block](images/p16-real-photo-of-a-cup-of-hot-steaming-coffee-and-a-brass.png)
 
+图注: 文生图样例；输入提示为「写实照片: 日出时老橡木窗边, 一杯热气腾腾的咖啡与黄铜花瓶里大束春花; 细节细腻, 色彩丰富; Nikon Z6 + Nikkor 50mm f/5.6, ISO 100, 快门叙述按原文保留; UHD / HDR / 8K」，该图为模型生成结果。
 Real photo of a cup of hot steaming coffee and a brass vase with a large bouquet of spring flowers by an old oak window at sunrise, fine details, rich colors taken with a nikon z6 camera and a nikon nikkor lens with 50 f5.6 iso 100 and a shutter speed of 1400 knot. UHD dtm HDR 8k
 
 
@@ -696,6 +706,7 @@ Real photo of a cup of hot steaming coffee and a brass vase with a large bouquet
 
 ![Image block](images/p16-portrait-of-a-beautiful-curvaceous-pirate-princess.png)
 
+图注: 文生图样例；输入提示为「美丽曲线的海盗公主肖像, 红发, 繁复华丽服饰, 加勒比户外海景; 参考 ArtGerm, Alphonse Mucha, Roberto Ferri, Ross Tran, Pixar; 仰拍, 数字绘画, 电影边缘光, Unreal Engine 5, 8K」，该图为模型生成结果。
 Portrait of a beautiful, curvaceous, Pirate princess goddess babe, red hair, intricate ornate costume, Caribbean background + outdoors + Ocean, painted by ArtGerm, Alphonse Mucha, Roberto Ferri, Ross Tran, Pixar, low angle shot, digital painting, cinematic rim lighting, Unreal Engine 5, 8K
 
 
@@ -704,6 +715,7 @@ Portrait of a beautiful, curvaceous, Pirate princess goddess babe, red hair, int
 
 ![Image block](images/p16-a-cute-fluffy-chubby-marmot-sunbathing-on-a-pile-of.png)
 
+图注: 文生图样例；输入提示为「可爱毛茸胖土拨鼠在石堆上晒太阳; 背景雪山, 远处碧绿冰川湖, 晴空; 高细节, 黄金时刻自然光, Octane / Unreal」，该图为模型生成结果。
 a cute fluffy chubby marmot sunbathing on a pile of rocks, snow mountains background, turquoise glacier lake afar, clear blue sky, highly detailed, golden hour, natural light, octane render, unreal engine
 
 
@@ -714,6 +726,7 @@ a cute fluffy chubby marmot sunbathing on a pile of rocks, snow mountains backgr
 
 ![Image block](images/p16-epic-3d-portrait-of-white-king-kong-wearing-mech-armor.png)
 
+图注: 文生图样例；输入提示为「史诗 3D 肖像: 白色金刚穿黑色水晶机甲, 甲缘金色纹饰, 身体对称; 超写实, 细节繁密, 闪亮, 电影感; Unreal / ArtStation / Octane」，该图为模型生成结果。
 epic 3d portrait of white King Kong wearing mech armor made of black crystals, golden ornate around the armor, symmetrical body, hyperrealistic, intricate details, shiny, cinematic, unreal engine, artstation, octane render,
 
 
@@ -728,6 +741,7 @@ Tiny cute adorable mouse dressed as a king in a castle, anthropomorphic, Jean-Ba
 
 ![Image block](images/p16-a-panda-that-has-been-cybernetically-enhanced-more.png)
 
+图注: 文生图样例；输入提示为「赛博增强熊猫, 更多机械义体; 3D / 4K / Unreal; chaos 20」，该图为模型生成结果。
 a panda that has been cybernetically enhanced more cybernetics3d 4k unreal engine chaos 20
 
 
@@ -736,6 +750,7 @@ a panda that has been cybernetically enhanced more cybernetics3d 4k unreal engin
 
 ![Image block](images/p16-a-stunning-princess-from-kabul-in-red-white-traditional.png)
 
+图注: 文生图样例；输入提示为「来自喀布尔的公主, 红白传统服饰, 蓝眼棕发」，该图为模型生成结果。
 A stunning princess from kabul in red, white traditional clothing, blue eyes, brown hair.
 
 
@@ -744,6 +759,7 @@ A stunning princess from kabul in red, white traditional clothing, blue eyes, br
 
 ![Image block](images/p16-the-ultimate-wrist-watch-watch-time-machine-super.png)
 
+图注: 文生图样例；输入提示为「终极腕表 / 时间机器, 超先进科技, 全息显示, 精密机芯」，该图为模型生成结果。
 The ultimate wrist watch watch time machine , super advanced technology, holographic display, intricate mechanism.
 
 
@@ -752,6 +768,7 @@ The ultimate wrist watch watch time machine , super advanced technology, hologra
 
 ![Image block](images/p16-tiny-cute-adorable-fluffy-baby-raccoon-with-knitted.png)
 
+图注: 文生图样例；输入提示为「毛茸小浣熊宝宝戴蓝针织围巾, 靠在中世纪酒馆桌边端咖啡杯, 拟人; Jean-Baptiste Monge, 柔和电影光, 8K, 皮克斯角色感, 老派电影风」，该图为模型生成结果。
 Tiny cute adorable fluffy baby raccoon with knitted blue scarf leaning at a table in a medieval pub holding a coffee cup, anthropomorphic, Jean-Baptiste Monge, soft cinematic lighting, 8k, intricate details, portrait, Pixar style character, old fashioned movie style
 
 
@@ -760,6 +777,7 @@ Tiny cute adorable fluffy baby raccoon with knitted blue scarf leaning at a tabl
 
 ![Image block](images/p16-architectural-parametric-pavilion-made-from-wood-and.png)
 
+图注: 文生图样例；输入提示为「参数化木玻亭, 有机空洞, 四周森林; 戏剧场景, 照片级 / 超写实, 光线追踪反射, 8K, 细节繁密, Frank Lloyd Wright 风格」，该图为模型生成结果。
 Architectural parametric pavilion made from wood and glass, with organic cavities, surrounded by a beautiful forest. Dramatic scene, photorealistic, hyperrealistic, raytracing reflections, 8k hd, intrincate detail in the style of Frank Lloyde Wright
 
 
@@ -768,6 +786,7 @@ Architectural parametric pavilion made from wood and glass, with organic cavitie
 
 ![Image block](images/p16-figure-7-more-text-to-image-generation-results-we.png)
 
+图注: Janus 文生图补充样例：输入要求生成带天界光晕、黑发棕眼和电影合成质感的克娄巴特拉全身像；论文将输出放大到 1024×1024 展示。
 <sup>Beautiful</sup> surreal symbolism the mesmerizing vision of a Cleopatra Queen of Egypt , full body , mesmerizing brown eyes, black hair and ethereal features, radiating celestial aura, super high definition, true lifelike color, perfect exposure, razor sharp focus, golden ratio, soft reflections, bokeh effect, fine art photography, cinematic compositing, authentic, professional by Rorianai style 36k s1000
 
 

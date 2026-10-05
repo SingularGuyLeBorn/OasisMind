@@ -13,6 +13,7 @@ Qdeepseek
 
 ![Image block](images/p01-janus-pro-unified-multimodal-understanding-and.png)
 
+图注: Janus-Pro 论文首页；主题是通过数据与模型规模扩展，在同一模型中统一多模态理解与图像生成。
 # Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling / Janus-Pro: 用数据与模型缩放统一多模态理解与生成
 
 Xiaokang Chen, Zhiyu Wu, Xingchao Liu, Zizheng Pan, Wen Liu, Zhenda Xie, Xingkai Yu, Chong Ruan
@@ -356,10 +357,12 @@ We present results on multimodal understanding in Figure 4. Janus-Pro exhibits i
 
 ![Image block](images/p08-image-description.png)
 
+图注: 多模态理解定性案例组：从图像详细描述、地标识别、文字识别到常识问答。
 Image Description 图像描述
 
 ![Image block](images/p08-describe-this-scene-in-detail.png)
 
+图注: 图像描述输入案例：用户要求「详细描述这个场景」，模型根据图像输出场景细节。
 Describe this scene in detail.
 
 
@@ -382,6 +385,7 @@ Landmark Recognition 地标识别
 
 ![Image block](images/p08-image.png)
 
+图注: 地标识别案例：输入西湖三潭印月图像并询问地点，模型需识别建筑与环境。
 猜猜这是哪里?
 
 Text Recognition
@@ -392,10 +396,12 @@ Text Recognition
 
 ![Image block](images/p08-general-knowledge.png)
 
+图注: 常识问答案例组：围绕图中蛋糕的文化背景和黑板文字进行识别与解释。
 General Knowledge 常识问答
 
 ![Image block](images/p08-can-you-introduce-the-background-story-of-this-cake.png)
 
+图注: 常识与文字识别案例：模型一边解释图中蛋糕的文化背景，一边读取大黑板上的文字，考查视觉识别与外部常识的联合使用。
 Can you introduce the background story of this cake?
 
 What‘s written on the large black board?
@@ -428,6 +434,7 @@ Text-To-Image Generation
 
 ![Image block](images/p08-a-golden-retriever-lying-peacefully-on-a-wooden-porch.png)
 
+图注: 文生图样例；输入提示为「一只金毛寻回犬安详趴在木廊上, 周围散落秋叶」，该图为模型生成结果。
 A golden retriever lying peacefully on a wooden porch, with autumn leaves scattered around.
 
 
@@ -436,6 +443,7 @@ A golden retriever lying peacefully on a wooden porch, with autumn leaves scatte
 
 ![Image block](images/p08-a-young-woman-with-freckles-wearing-a-straw-hat.png)
 
+图注: 文生图样例；输入提示为「雀斑少女戴草帽, 站在金色麦田里」，该图为模型生成结果。
 A young woman with freckles wearing a straw hat, standing in a golden wheat field.
 
 
@@ -444,6 +452,7 @@ A young woman with freckles wearing a straw hat, standing in a golden wheat fiel
 
 ![Image block](images/p08-a-single-drop-of-water-clinging-to-a-green-leaf-with.png)
 
+图注: 文生图样例；输入提示为「一滴水挂在绿叶上, 阳光折射出淡淡彩虹」，该图为模型生成结果。
 A single drop of water clinging to a green leaf, with sunlight creating a faint rainbow pris
 
 
@@ -452,6 +461,7 @@ A single drop of water clinging to a green leaf, with sunlight creating a faint 
 
 ![Image block](images/p08-an-ancient-stone-bridge-arching-over-a-crystal-clear.png)
 
+图注: 文生图样例；输入提示为「古石桥横跨清澈山溪，四周绿意浓」，图像检验主体、环境与空间关系能否同时落实。
 An ancient stone bridge arching over a crystal-clear mountain stream, surrounded by lush greenery.
 
 
@@ -460,6 +470,7 @@ An ancient stone bridge arching over a crystal-clear mountain stream, surrounded
 
 ![Image block](images/p08-a-glowing-crystal-ball-floating-above-a-sandstone-table.png)
 
+图注: 文生图样例；输入提示为「沙漠日落中, 发光水晶球浮在砂岩桌上」，该图为模型生成结果。
 A glowing crystal ball floating above a sandstone table in the middle of a desert at sunset.
 
 
@@ -468,6 +479,7 @@ A glowing crystal ball floating above a sandstone table in the middle of a deser
 
 ![Image block](images/p08-a-tiny-galaxy-contained-inside-a-glass-bottle-glowing.png)
 
+图注: 文生图样例；输入提示为「玻璃瓶里装进小小星系, 在深色绒布上发亮」，该图为模型生成结果。
 A tiny galaxy contained inside a glass bottle, glowing brightly against a dark velvet cloth.
 
 
@@ -476,6 +488,7 @@ A tiny galaxy contained inside a glass bottle, glowing brightly against a dark v
 
 ![Image block](images/p08-a-giant-whale-flying-through-a-city-skyline-surrounded.png)
 
+图注: 文生图样例；输入提示为「巨鲸飞过城市天际线, 四周漂浮发光灯笼」，该图为模型生成结果。
 A giant whale flying through a city skyline, surrounded by floating glowing lanterns.
 
 
@@ -484,6 +497,7 @@ A giant whale flying through a city skyline, surrounded by floating glowing lant
 
 ![Image block](images/p08-astronaut-in-a-jungle-cold-color-palette-muted-colors.png)
 
+图注: 文生图样例；输入提示为「丛林中的宇航员，冷色调、低饱和、细节丰富、8K」，图像检验人物与反常环境组合以及风格词遵循。
 Astronaut in a jungle, cold color palette, muted colors, detailed, 8k
 
 

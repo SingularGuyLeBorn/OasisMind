@@ -27,6 +27,7 @@ We introduce DeepSeek-V3.2, a model that harmonizes high computational efficienc
 
 ![Chart block](images/p01-reasoning-capabilities.png)
 
+图注: DeepSeek-V3.2、V3.2-Speciale 与同期模型的能力对比：上半部分汇总数学与知识推理基准，下半部分汇总工具调用和 Agent 基准，展示主模型与高算力变体的定位差异。
 Reasoning Capabilities
 
 Agentic Capabilities

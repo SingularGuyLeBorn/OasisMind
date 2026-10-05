@@ -437,6 +437,7 @@ An example of using DeepSeek-Coder-Instruct 34B is depicted in Figure 4. This ex
 
 ![Image block](images/p10-q1-write-a-game-snake-using-pygame.png)
 
+图注: DeepSeek-Coder-Instruct 多轮代码生成示例的第一轮：用户要求用 Pygame 编写贪吃蛇，模型返回包含方向控制、吃食物增长以及碰撞结束条件的完整实现。
 ## Q1: Write a game snake using pygame Q1: 用 pygame 写一个贪吃蛇游戏
 
 Sure, here is a simple implementation of the classic Snake game using Pygame. This code will create a window with a snake that can be controlled using the arrow keys. The snake will grow in length each time it eats the food. The game will end if the snake hits the edge of the window or its own tail.
@@ -463,6 +464,7 @@ This code sets up a basic game loop where the snake moves in response to key pre
 
 ![Image block](images/p10-in-this-updated-code-we-ve-added-a-score-variable-to.png)
 
+图注: 同一段多轮代码对话的第二轮：用户要求在左上角增加计分，模型新增 `score` 状态与 `display_score` 渲染函数，并在画面刷新前绘制分数。
 In this updated code, we've added a \`score\` variable to keep track of the player's score, which is incremented each time the snake eats the food. The \`display\_score\` function is used to render the score text and display it in the top left corner of the window. The \`display\_score\` function is called after the snake has moved and the screen has been filled with the black color, but before the \`pygame. display. flip()\` call, so that the score is drawn on top of everything else.
 
 

@@ -1950,6 +1950,7 @@ We record the expert load of the 16B auxiliary-loss-based baseline and the auxil
 
 ![Image block](images/p51-51.png)
 
+图注: 16B MoE 专家负载分面图之一：按领域展示辅助损失模型与无辅助损失模型在不同层的相对专家负载，用于观察专家是否形成稳定分工。
 续附录 C 专家负载分面图(含 aux-loss-based 第 13 层等).
 
 <!-- page 52 of 53 -->
@@ -1976,6 +1977,7 @@ We record the expert load of the 16B auxiliary-loss-based baseline and the auxil
 
 ![Chart block](images/p52-52.png)
 
+图注: 16B MoE 更深层专家负载分面图：继续对比两种负载均衡方法在 Pile 不同领域上的专家激活分布；无辅助损失模型的峰谷更分明。
 续附录 C 更深一层专家负载分面图(含 aux-loss-based 第 19 层等).
 
 <!-- page 53 of 53 -->

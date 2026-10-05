@@ -41,6 +41,7 @@ Figure 4 用 DeepSeek-Coder-V2-Lite(16B MoE, 2.4B 激活)在 MATH 上比较两�
 
 ![报告 Figure 4: 数学题上 GRPO 相对 PPO 的优势](images/p16-figure-4-performance-of-ppo-and-grpo-on-the-math-task.png)
 
+图注: 报告 Figure 4: 数学题上 GRPO 相对 PPO 的优势。
 *报告 Figure 4: 数学题上 GRPO 相对 PPO 的优势*
 
 公式层面有一处要留意. 式 1 的比率写成整条回答的概率比 $\pi_\theta(o_i|q)/\pi_{\theta_{old}}(o_i|q)$, 没有写出按 token 平均的项; 但 §3.2.1 又说截断系数太小「会截断大量 token 的梯度」, 说明实现里比率是逐 token 计算的. 社区后来的分析(Understanding R1-Zero-Like Training, 提出 Dr. GRPO)指出, DeepSeekMath 原式里按回答长度 $1/|o_i|$ 平均, 以及按组内标准差归一化, 会让长的错误回答受罚更轻, 人为推高回答长度. R1 的实现是否带这两项, 本页无法确认. 按式 3 的写法, 标准差归一化是存在的. 这一偏置的讨论见 [Dr. GRPO 去标准差](../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/02-DrGRPO-去标准差/02-DrGRPO-去标准差.md).
@@ -65,6 +66,7 @@ Figure 1 显示, AIME 2024 的 pass@1 从 15.6% 升到 77.9%, 用 16 次采样�
 
 ![报告 Figure 1: R1-Zero 训练过程中 AIME 准确率随步数的变化](images/p04-figure-1-a-aime-accuracy-of-deepseek-r1-zero-during.png)
 
+图注: 报告 Figure 1: R1-Zero 训练过程中 AIME 准确率随步数的变化。
 *报告 Figure 1: R1-Zero 训练过程中 AIME 准确率随步数的变化*
 
 补充材料 C 做了行为分析. 在 MATH 按难度分层, 1 到 3 级很快达到 0.90 到 0.95, 4 级从约 0.78 升到 0.95, 5 级从约 0.55 升到 0.90(读图); 1 级只有 43 题, 95% 到 97% 的正确率意味着只错一两道, 多是几何题. 三位专家选了 wait, mistake, however, but, retry, error, verify, wrong, evaluate, check 等反思词, 训练中这些词的出现频率涨了 **5 到 7 倍**. 其中 wait 在训练早期几乎没有, 4000 到 7000 步偶尔出现, 8000 步之后骤增. Table 2 的「aha moment」就是模型在推导中写出「Wait, wait. Wait. That's an aha moment I can flag here」然后重新检查.
@@ -79,6 +81,7 @@ R1-Zero 有两个问题: 可读性差, 同一段 CoT 里中英混杂. R1 的流�
 
 ![报告 Figure 2: R1 多阶段训练流程——冷启动 SFT、推理 RL、拒绝采样、全场景 RL](images/p06-figure-2-the-multi-stage-pipeline-of-deepseek-r1-a.png)
 
+图注: 报告 Figure 2: R1 多阶段训练流程——冷启动 SFT、推理 RL、拒绝采样、全场景 RL。
 *报告 Figure 2: R1 多阶段训练流程——冷启动 SFT、推理 RL、拒绝采样、全场景 RL*
 
 制作流程是: 先请人工标注员把 R1-Zero 的推理轨迹改写成自然的对话风格, 再用这些改写样例提示一个 LLM 按同样风格改写更多数据, 最后对 LLM 的输出做第二轮人工核验. 
@@ -121,6 +124,7 @@ $$
 
 ![报告 Figure 6: 奖励持续上升、真实表现 plateau——reward hacking 的实证](images/p36-figure-6-reward-hacking-the-reward-exhibits-an.png)
 
+图注: 报告 Figure 6: 奖励持续上升、真实表现 plateau——reward hacking 的实证。
 *报告 Figure 6: 奖励持续上升、真实表现 plateau——reward hacking 的实证*
 
 报告说这一阶段代码和数学只有小幅提升, 但表里 Codeforces 评分从 Dev3 的 1746 升到 2029, 百分位从 92.1 升到 96.3, 是整个流程中最大的一次单步提升; Aider-Polyglot 也从 44.8 升到 53.3. 最后 400 步之前的 1,300 步推理 RL 大概起了作用, 报告的「小幅」只对 AIME 和 MATH 成立. R1 阶段的训练成本是 41K GPU 小时, 报告写「用同样的 512 张卡约 4 天, 约 80 小时」, 4 天是 96 小时, 按 41K 反推是 80 小时, 前一个说法有误. 整个 R1 系列(R1-Zero 101K, SFT 数据制作 5K, R1 41K)合计 147K GPU 小时, 约 29.4 万美元, 不含 V3-Base 的预训练.
@@ -131,6 +135,7 @@ $$
 
 ![报告 Figure 5: RL 框架总览](images/p17-figure-5-overview-of-our-rl-framework.png)
 
+图注: 报告 Figure 5: RL 框架总览。
 *报告 Figure 5: RL 框架总览*
 
 训练模块加载策略模型(用 PPO 时还有 critic), 支持 PPO, GRPO, DPO 等算法. 为减少填充浪费, 先把全局 batch 按长度排序分给数据并行组内各进程, 每个进程内按 Best-Fit 装进固定长度的块, 再把各进程块数补齐. 训练用 V3 的 DualPipe 做流水并行. 每个模块结束后, 模型实例从显存卸载到内存或磁盘, 给下一个模块腾地方. 这套设计说明 R1 的训练瓶颈在生成而不在反向传播: 每题 16 个回答, 每个可能上万 token, 生成量远大于梯度计算量. GRPO 一次迭代的完整流程见 [GRPO 计算流程全解析](../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md).
@@ -157,6 +162,7 @@ Table 8 与闭源模型对比: R1 的 AIME 2024 79.8 对 o1-1217 的 79.2, MATH-
 
 ![报告 Figure 18: test-time compute scaling(经样条平滑)](images/p59-figure-18-test-time-compute-scaling-measured-by-the.png)
 
+图注: 报告 Figure 18: test-time compute scaling(经样条平滑)。
 *报告 Figure 18: test-time compute scaling(经样条平滑)*
 
 报告拿多数投票做了对照. GPT-4o 在 AIME 2024 上 64 次投票只从 9.3% 升到 13.4%, 在 366 题集上 16 次投票几乎没有提升, 尽管总 token 数已超过 R1. 报告的解释是独立采样的回答之间不会互相借鉴, 不会回溯纠错, 多采样只是重复错误答案. 反过来, R1 自己的 pass@64 是 90.0%, 比 pass@1 的 79.8% 高 10 个百分点, 多数投票能到 86.7%, 说明长推理有时也会陷在错误路径里, 并行采样仍有互补作用.

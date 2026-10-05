@@ -204,6 +204,7 @@ Engram 作为条件记忆的一种实现, 在结构上与 MoE 专家提供的条
 
 ![Image block](images/p07-figure-3-sparsity-allocation-and-engram-scaling-left-validation.jpg)
 
+图注: Engram 稀疏预算分配与缩放规律：左图显示 MoE/Engram 混合比例的验证损失呈 U 形且优于纯 MoE，右图显示无限内存设定下损失随嵌入槽数量呈近似对数线性下降。
 Number of Embedding Slots (Log Scale)
 
 Figure 3 | Sparsity allocation and Engram scaling. Left: Validation loss across allocation ratios $\rho .$ Two compute budgets are shown (2e20 and 6e20 FLOPs). Both regimes exhibit a U-shape, with hybrid allocation surpassing Pure MoE. Right: Scaling behavior in the infinite-memory regime. Validation loss exhibits a log-linear trend with respect to the number of embeddings.

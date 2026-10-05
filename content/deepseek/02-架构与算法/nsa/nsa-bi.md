@@ -338,6 +338,7 @@ Following the common practice in state-of-the-art LLMs, our experiments adopt a 
 
 ![Image block](images/p10-chart.jpg)
 
+图注: NSA 与全注意力的通用基准对比：两种 27B 模型使用同一骨干和训练数据，NSA 在 9 项基准中的平均分为 0.456，高于全注意力的 0.443。
 | Model | MMLU Acc. 5-shot | MMLU-PRO Acc. 5-shot | CMMLU Acc. 5-shot | BBH Acc. 3-shot | GSM8K Acc. 8-shot | MATH Acc. 4-shot | DROP F1 1-shot | MBPP Pass@1 3-shot | HumanEval Pass@1 0-shot | Avg. |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Full Attn | 0.567 | 0.279 | 0.576 | 0.497 | 0.486 | 0.263 | 0.503 | 0.482 | 0.335 | 0.443 |

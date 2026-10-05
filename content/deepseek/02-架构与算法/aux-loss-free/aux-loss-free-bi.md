@@ -109,6 +109,7 @@ Preprint
 
 ![Image block](images/p04-chart.jpg)
 
+图注: 无辅助损失负载均衡算法：每步统计各专家接收的 token 数，超载专家下调偏置、欠载专家上调偏置，再用更新后的偏置参与下一批 Top-K 路由。
 Algorithm 1: Adjusting the per-expert bias $b_i$ during training
 
 Input: MoE model $\theta$, training batch iterator $B$, bias update rate $u$.

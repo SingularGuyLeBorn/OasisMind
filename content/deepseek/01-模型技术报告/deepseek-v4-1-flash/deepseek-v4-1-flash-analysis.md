@@ -23,6 +23,7 @@ excerpt: "DeepSeek-V4.1-Flash 用因果 encoder-decoder 和跨层复用的 CSA2 
 
 ![报告 Figure 1(b): 四代模型每 token global KV 字节数——V1 389,120 → V3.2 48,068 → V4-Flash 3,514 → V4.1-Flash 890](images/p01-b.png)
 
+图注: 报告 Figure 1(b): 四代模型每 token global KV 字节数——V1 389,120 → V3.2 48,068 → V4-Flash 3,514 → V4.1-Flash 890。
 *报告 Figure 1(b): 四代模型每 token global KV 字节数——V1 389,120 → V3.2 48,068 → V4-Flash 3,514 → V4.1-Flash 890*
 
 这条曲线里, 每一代压的是不同的维度. 报告第 2.3 节把长上下文的 KV 成本拆成三个相乘因子: 条目大小, 序列维, 层维. V1 到 V3.2 主要压条目大小, 从多头 K/V 变成跨头共享的小潜变量, 机制见 [MLA](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md), 与之对照的是 [GQA](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md) 减 KV 头的路线. V3.2 到 V4 压序列维, 每 m 个 token 压成一条, 见 [CSA-HCA](../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/04-CSA-HCA-混合压缩注意力/04-CSA-HCA-混合压缩注意力.md). V4 到 V4.1 压的是层维和精度. 图 1(b) 统计的是始终驻留 HBM 的 global KV, 不含 SWA KV, 后者长度固定, 与上下文无关.
@@ -63,6 +64,7 @@ CSA2 给每个 CSA2 层静态指定三种模式之一(图 4). **Full** 走完整
 
 ![报告 Figure 4: CSA2 的 Full / Reindex / Reuse 三种模式](images/p10-figure-4-three-operating-modes-of-csa2-the-modes-differ.png)
 
+图注: 报告 Figure 4: CSA2 的 Full / Reindex / Reuse 三种模式。
 *报告 Figure 4: CSA2 的 Full / Reindex / Reuse 三种模式*
 
 相关工作里, **IndexCache** 只复用 Top-K 索引, 省下 indexer 计算但省不了主 KV 存储; YOIO 全网共享一次路由, 报告认为会限制性能; HySparse 让稀疏层复用稠密层的 KV, 但仍保留全注意力层. 报告的判断是这些方法都没有同时覆盖三个维度.
@@ -81,12 +83,14 @@ indexer K 从主 KV 投影这一点, 和跨层复用是配套的. 如果 indexer
 
 ![报告 Figure 5: 分层稀疏 Indexer 的块级候选选择](images/p11-figure-5-hierarchical-sparse-indexer-each-square.png)
 
+图注: 报告 Figure 5: 分层稀疏 Indexer 的块级候选选择。
 *报告 Figure 5: 分层稀疏 Indexer 的块级候选选择*
 
 可以算一下 1M 上下文时每个 decode token 的 indexer 打分次数. encoder 三个 Full 层各扫约 50 万条目(m=2), decoder 的 Full 层扫约 100 万, 四个 Reindex 层各扫 16,384, 合计约 257 万次; 如果 38 个 CSA2 层都独立打分, 是 18 × 50 万 + 20 × 100 万 = 2900 万次, 约 **11 倍**(推导). 图 2 用精度加权的 FLOPs 画单 token decode 算力, BF16, FP8, FP4 分别按 1, 0.5, 0.25 计. 读图, V4.1-Flash 在 4K 处约 20 GFLOPs, 1M 处约 25 GFLOPs, 与正文 「上下文放大 256 倍, decode FLOPs 只增加约 1/4」 一致; V4-Flash 从约 17 涨到约 60, 两条线在 100K 到 128K 之间相交(读图). 若 indexer 打分按每条目 32 × 128 次乘加, FP4 权重 0.25 计, 257 万次约合 5 GFLOPs, 与图上约 5 GFLOPs 的增量同一量级(推导). 短上下文时 V4.1 略高于 V4-Flash, 原因是它 decode 激活 16B, 多于 V4-Flash 的 13B.
 
 ![报告 Figure 2: 单 token decode FLOPs 随上下文的变化, V4.1 与 V4-Flash 在 100K–128K 处相交](images/p05-figure-2-single-token-decode-flops-versus-context.png)
 
+图注: 报告 Figure 2: 单 token decode FLOPs 随上下文的变化, V4.1 与 V4-Flash 在 100K–128K 处相交。
 *报告 Figure 2: 单 token decode FLOPs 随上下文的变化, V4.1 与 V4-Flash 在 100K–128K 处相交*
 
 ## 3. 架构扩展, 量化与优化器
@@ -191,6 +195,7 @@ ViT 先单独训练两阶段. 对比预训练用 SigLIP 的 sigmoid 对比损失
 
 ![报告 Figure 6: 内部 held-out 语料上的 bits-per-byte 对比](images/p25-figure-6-bits-per-bytes-bpb-comparison-of-deepseek-v4.png)
 
+图注: 报告 Figure 6: 内部 held-out 语料上的 bits-per-byte 对比。
 *报告 Figure 6: 内部 held-out 语料上的 bits-per-byte 对比*
 
 ## 6. 后训练, 评测与局限
@@ -207,6 +212,7 @@ RL 在两个方向上放大: 训练算力和 scaffold 数量. 跨 scaffold 训�
 
 ![报告 Figure 7: 累计 RL 步数与模型合并对代码 Agent 表现的影响](images/p27-figure-7-performance-improves-on-various-code-agent.png)
 
+图注: 报告 Figure 7: 累计 RL 步数与模型合并对代码 Agent 表现的影响。
 *报告 Figure 7: 累计 RL 步数与模型合并对代码 Agent 表现的影响*
 
 DSec 此时要支撑数百万并发沙箱: 计算节点分片, 用放松一致性的自研调度器替代 Kubernetes, 各节点自行做准入校验; 节点内用 sub-NUMA 分区, 单物理节点的并发活容器从约 1000 提升到 2500 以上; 时延敏感任务单独一类, 非敏感任务用 `SCHED_IDLE`, 并用 core scheduling 隔离超线程. 训练中 Agent 利用过 XFS 权限问题, AppArmor 非法内存访问, 包镜像服务泄露答案等漏洞, 还会删关键二进制甚至文件系统; 报告用逐沙箱 AppArmor 配置和 eBPF 网络策略防护, 环境崩溃按失败轨迹处理.
@@ -223,16 +229,19 @@ V4 的推理力度是 Non-think, High, Max 三个离散档. V4.1 改成标量 $b
 
 ![报告 Figure 9: 推理力度与 Pass@1/输出长度的关系——收益前重](images/p35-figure-9-performance-and-output-length-as-a-function-of.png)
 
+图注: 报告 Figure 9: 推理力度与 Pass@1/输出长度的关系——收益前重。
 *报告 Figure 9: 推理力度与 Pass@1/输出长度的关系——收益前重*
 
 附录 B.2 的图 11 在三个编码 scaffold 上看力度: 轨迹长度随力度单调增长, Pass@1 只是松散跟随, 多数面板中间档有平台或回落. DeepSWE 上 Claude Code 曲线最平, 多花的 token 最少; DeepSeek Harness Minimal 起点最低, 涨得最多, token 也花得最多; mini-SWE 居中. Terminal-Bench 2.1 上三者挤在很窄的区间, 报告说任务接近饱和时, scaffold 的选择至少和力度档一样重要. 附录 B.3 的图 12 覆盖八项推理基准, 长度统一放大 2.0 到 3.1 倍, AIME 2026 从每响应约 4.6k 到 11.4k token, MathArena Apex 2025 从约 29.1k 到 86.1k; Apex 从 25.3% 升到 65.6%, 涨 40.3 分, AIME 2026 到 100%, 已饱和的 GPQA 只涨 1.3, LiveCodeBench 涨 2.6.
 
 ![报告 Figure 11: 三个编码 scaffold 上力度与轨迹长度, Pass@1 的关系](images/p49-figure-11-reasoning-effort-drives-trajectory-length.png)
 
+图注: 报告 Figure 11: 三个编码 scaffold 上力度与轨迹长度, Pass@1 的关系。
 *报告 Figure 11: 三个编码 scaffold 上力度与轨迹长度, Pass@1 的关系*
 
 ![报告 Figure 12: 八项推理基准上力度驱动的长度与分数变化](images/p50-figure-12-performance-and-output-length-as-a-function.png)
 
+图注: 报告 Figure 12: 八项推理基准上力度驱动的长度与分数变化。
 *报告 Figure 12: 八项推理基准上力度驱动的长度与分数变化*
 
 ### 6.4. 异步后训练基础设施与大规模 OPD
@@ -259,6 +268,7 @@ ProgramBench 的高置信子集只保留参考解通过率至少 95% 的题, 剩
 
 ![报告 Figure 10: 多智能体 vs 单智能体在不同墙钟截止下的 Almost@1(FrontierSWE 子集 Mean@5 亦见图)](images/p36-deadline-per-rollout-wall-clock-hours-log-scale.png)
 
+图注: 报告 Figure 10: 多智能体 vs 单智能体在不同墙钟截止下的 Almost@1(FrontierSWE 子集 Mean@5 亦见图)。
 *报告 Figure 10: 多智能体 vs 单智能体在不同墙钟截止下的 Almost@1(FrontierSWE 子集 Mean@5 亦见图)*
 
 ### 6.7. 局限与谱系位置

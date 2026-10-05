@@ -1202,6 +1202,7 @@ Agent Teams Test-Time Compute Scaling
 
 ![Chart block](images/p36-deadline-per-rollout-wall-clock-hours-log-scale.png)
 
+图注: 测试时计算扩展曲线：横轴为单次 rollout 的墙钟截止时间，比较单智能体与多智能体在 ProgramBench 的 Almost@1 和 FrontierSWE v2 的 Mean@5；更长截止时间下团队配置继续获益。
 Deadline per rollout (wall-clock hours, log scale)
 
 Figure 10 | Test-time compute scaling for single-agent and multi-agent configurations on ProgramBench (Almost@1) and FrontierSWE v2 (Mean@5) as functions of the per-rollout wall-clock deadline.

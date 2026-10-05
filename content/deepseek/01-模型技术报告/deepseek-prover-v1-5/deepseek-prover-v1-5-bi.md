@@ -217,6 +217,7 @@ RL 已被证明能抬高 SFT 语言模型的数学推理(Shao et al., 2024). 在
 
 ![Chart block](images/p07-model-passminif2f-test-128proofnet-test.png)
 
+图注: 证明助手反馈训练的阶段对比：Base、SFT 与 RL 在 miniF2F-test 和 ProofNet-test 上的通过率逐级提高，带 CoT 的 RL 最高，分别为 51.6% 和 18.2%。
 | Model | PassminiF2F-test | @128ProofNet-test |
 | --- | --- | --- |
 | Base (3-shot) | 29.7%±0.5% | 9.7%±0.7% |
@@ -640,6 +641,7 @@ advantages across different problems. The model’s theorem proving strategy in 
 
 ![Chart block](images/p18-sample-budget-minif2f-test.png)
 
+图注: RMaxTS 消融：在不同采样预算下比较单次生成、UCT、移除内在奖励以及将 DUCB 换成 UCB1；16×6400 预算下完整 RMaxTS 的 miniF2F-test 为 62.7%。
 |  | Sample budget | miniF2F-test |
 | --- | --- | --- |
 | Single-Pass Generation | 4 × 640016 × 6400 | 58.4%±0.5%60.2% |

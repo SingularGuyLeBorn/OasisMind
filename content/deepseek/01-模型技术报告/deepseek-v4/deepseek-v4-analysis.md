@@ -113,6 +113,7 @@ $$
 
 ![报告 Figure 1: V4 与 V3.2 的单 token FLOPs 及 benchmark 对比](images/p01-figure-1-left-benchmark-performance-of-deepseek-v4-pro.png)
 
+图注: 报告 Figure 1: V4 与 V3.2 的单 token FLOPs 及 benchmark 对比。
 *报告 Figure 1: V4 与 V3.2 的单 token FLOPs 及 benchmark 对比*
 
 可以按配置复算 KV 比例. Pro 每个 CSA 层每 token 平均存 512/4 维主 KV 加 128/4 维索引键, 约 160 个元素; 每个 HCA 层 512/128 = 4 个元素; 30 层 CSA 加 31 层 HCA 合计约 4900 个元素每 token. V3.2 每层存 576 维潜变量加 128 维索引键, 61 层约 4.3 万个元素. 两者之比约 11%, 考虑到 V4 索引键用 FP4, 与报告的 10% 接近. 报告另以 BF16 GQA8, 头维 128 为基线, 说 V4 的 KV 约为其 2%: GQA8 每层每 token 存 2×8×128 = 2048 个 BF16 元素, 61 层约 25 万字节; V4 按 FP8 为主约 5000 字节, 比值约 2.0%. 这两组复算都不含滑动窗口的 128 个 token, 那部分不随长度增长.
@@ -191,12 +192,14 @@ MRCR 表中 Pro-Max 的 「MRCR 1M」 是 83.5, 高于 Gemini-3.1-Pro 的 76.3, 
 
 ![报告 Figure 9: MRCR 8-needle 曲线上 Pro-Max 随长度的衰减](images/p40-figure-9-deepseek-v4-series-performance-on-the-mrcr-task.png)
 
+图注: 报告 Figure 9: MRCR 8-needle 曲线上 Pro-Max 随长度的衰减。
 *报告 Figure 9: MRCR 8-needle 曲线上 Pro-Max 随长度的衰减*
 
 Table 7 显示推理档位的影响很大. Pro 的 HLE 从 Non-think 7.7 到 High 34.5 再到 Max 37.7; HMMT 从 31.7 到 94.0 到 95.2. Non-think 档里, Pro 在 HMMT(31.7)和 IMOAnswerBench(35.3)上反而低于 Flash(40.8, 41.9). Flash-Max 在推理上接近 Pro-Max: LiveCodeBench 91.6 对 93.5, HMMT 94.8 对 95.2; 知识上差距大: SimpleQA-Verified 34.1 对 57.9. 图 10 的成本曲线上, Terminal Bench 2.0 的 Pro 三档约用 2.8 万, 3.6 万, 5.0 万 token, Flash 三档约 3.7 万, 4.7 万, 5.7 万 token, Flash 每一档都比 Pro 用的 token 多, 分数却低(读图). 所以 Flash 单 token 便宜, 但完成同一任务的总开销要按 token 数一起算.
 
 ![报告 Figure 10: HLE 与 Terminal Bench 2.0 上 Pro 和 Flash 各推理档的分数与 token 开销](images/p41-figure-10-hle-and-terminal-bench-2-0-performance-by.png)
 
+图注: 报告 Figure 10: HLE 与 Terminal Bench 2.0 上 Pro 和 Flash 各推理档的分数与 token 开销。
 *报告 Figure 10: HLE 与 Terminal Bench 2.0 上 Pro 和 Flash 各推理档的分数与 token 开销*
 
 ### 6.3. 真实场景评测
