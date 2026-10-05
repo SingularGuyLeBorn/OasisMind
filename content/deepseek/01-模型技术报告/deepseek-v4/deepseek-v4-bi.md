@@ -814,7 +814,7 @@ Firstly, we carefully design and implement fused kernels of mHC for both trainin
 
 Collectively, these optimizations constrain the wall-time overhead of mHC to only 6.7% of the overlapped 1F1B pipeline stage. More details of the engineering optimization can be found in the dedicated mHC paper (Xie et al., 2026).
 
-mHC 相对传统残差连接会抬高激活显存与流水段间通信. 对策三条: 为训练与推理都写 mHC 融合 kernel; 选择性重计算-- 重算层间大部分隐状态与全部归一化层输入, 绕开算力密集操作, 在省显存与算力开销间折中; 改造 DualPipe 1F1B 重叠方案以消化新增流水通信, 并让 mHC 部分操作并发执行. 合计把 mHC 的 wall-time 开销压到重叠后 1F1B 流水段的 6.7%; 工程细节见 mHC 专文 (Xie et al., 2026).
+mHC 相对传统残差连接会抬高激活显存与流水段间通信. 对策三条: 为训练与推理都写 mHC 融合 kernel; 选择性重计算-- 重算层间大部分隐状态与全部归一化层输入, 绕开算力密集操作, 在省显存与算力开销间折中; 改造 DualPipe 1F1B 重叠方案以消化新增流水通信, 并让 mHC 部分操作并发执行. 合计把 mHC 的 wall-time 开销压到重叠后 1F1B 流水段的 6.7%; mHC 的工程细节见 Xie et al. (2026).
 
 #### 3.5.3. Contextual Parallelism for Long-Context Attention 长上下文注意力的上下文并行
 
@@ -2034,4 +2034,3 @@ Table 14 | DeepSeek-V4-Pro vs. Claude-Opus-4.5 on Complex Instruction Following 
 
 
 58
-
