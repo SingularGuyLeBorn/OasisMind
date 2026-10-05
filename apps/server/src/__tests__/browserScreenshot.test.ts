@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
+import type { ChannelAttachment } from "@oasismind/shared";
 import { createNativeCtx, createTempProjectDir } from "./helpers/toolTestFixtures.js";
 
 vi.mock("../infra/metablog/index.js", async (importOriginal) => {
@@ -43,19 +44,28 @@ import { performOcrFromFile } from "../infra/ocrService.js";
 import { chatCompletion } from "../infra/llmClient.js";
 import { executeMcpToolRaw } from "../infra/mcpClient.js";
 import { executeNativeTool, listNativeTools } from "../infra/nativeTools.js";
+import {
+  __resetMessageGatewayForTests,
+  registerChannelAdapter,
+  type ChannelSendTarget,
+  type ImChannel,
+} from "../infra/messageGateway.js";
+import { sendChannelAttachment } from "../infra/channels/channelTransfer.js";
 
 describe("browser_screenshot / read_image", () => {
   let root: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     root = createTempProjectDir();
+    await __resetMessageGatewayForTests();
     vi.mocked(screenshotPage).mockReset();
     vi.mocked(performOcrFromFile).mockReset();
     vi.mocked(chatCompletion).mockReset();
     vi.mocked(executeMcpToolRaw).mockReset();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await __resetMessageGatewayForTests();
     fs.rmSync(root, { recursive: true, force: true });
   });
 
@@ -187,6 +197,80 @@ describe("browser_screenshot / read_image", () => {
       expect.objectContaining({ agentTools: ctx.agentSnapshot.tools }),
     );
   });
+
+  it.each(["qq", "weixin"] satisfies ImChannel[])(
+    "capture_screenshot(web_viewport) 产生的附件可经 %s 统一出站且幂等重试不重复发送",
+    async (channel) => {
+      const png = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64",
+      );
+      vi.mocked(screenshotPage).mockResolvedValue({
+        success: true,
+        data: {
+          url: "https://example.com/debug",
+          title: "Remote debug",
+          buffer: png,
+          width: 1280,
+          height: 800,
+          fullPage: false,
+        },
+      });
+
+      const screenshot = (await executeNativeTool(
+        "capture_screenshot",
+        { mode: "web_viewport", url: "https://example.com/debug" },
+        createNativeCtx(root),
+      )) as { attachment: ChannelAttachment };
+      const sendAttachment = vi.fn<
+        (target: ChannelSendTarget, attachment: ChannelAttachment) => Promise<unknown>
+      >(async (_target, attachment) => {
+        expect(attachment.localPath).toBeTruthy();
+        expect(fs.existsSync(path.join(root, attachment.localPath!))).toBe(true);
+        return { messageId: `${channel}-screenshot-1` };
+      });
+      registerChannelAdapter({
+        channel,
+        name: channel === "qq" ? "QQ 测试适配器" : "微信测试适配器",
+        enabled: true,
+        capabilities: {
+          inbound: ["text", "image", "video", "audio", "file"],
+          outbound: ["text", "image", "video", "audio", "file"],
+          maxBytes: 10 * 1024 * 1024,
+          supportsCaption: true,
+          supportsQuote: true,
+        },
+        getStatus: () => ({ state: "connected" }),
+        start: async () => {},
+        stop: async () => {},
+        reply: async () => {},
+        sendAttachment,
+      });
+
+      const request = {
+        dataDir: path.join(root, "data"),
+        channel,
+        target: { peerId: `${channel}-owner` },
+        attachment: screenshot.attachment,
+        idempotencyKey: `${channel}-same-screenshot`,
+      };
+      const first = await sendChannelAttachment(request);
+      const duplicate = await sendChannelAttachment(request);
+
+      expect(first.record).toMatchObject({ channel, status: "sent" });
+      expect(duplicate).toMatchObject({ duplicate: true });
+      expect(sendAttachment).toHaveBeenCalledTimes(1);
+      expect(sendAttachment).toHaveBeenCalledWith(
+        request.target,
+        expect.objectContaining({
+          kind: "image",
+          status: "ready",
+          localPath: screenshot.attachment.localPath,
+          sha256: screenshot.attachment.sha256,
+        }),
+      );
+    },
+  );
 
   it("read_image(path, mode=ocr) 调用 OCR 并只回文本", async () => {
     const rel = "content/uploads/screenshots/unit-test.png";
