@@ -454,3 +454,9 @@
 - **harness-composability-6** 分布式扩展没有覆盖消息乱序、网络分区和重复投递. 求证结果:
 - **harness-composability-7** `FAILED` 状态或 inverse 抛错后的清理策略没有完整定义. 求证结果:
 - **harness-composability-8** 自演化 agent 只作为未来应用提出，没有实验验证. 求证结果:
+
+### REINFORCE
+
+解析：`content/rl/1.1-数学基础与经典强化学习/1.1.4-reinforce/1.1.4-reinforce.md`。
+
+- **reinforce-1** 仓库旧附件标注为 arXiv `1807.04077`，实际对应一篇心脏异常检测论文，并非 REINFORCE 原论文。REINFORCE 的一手来源是 Ronald J. Williams 1992 年发表于 *Machine Learning* 的 *Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning*，DOI `10.1007/BF00992696`. 求证结果: 正文已改用正确论文链接，旧附件不再作为来源。
