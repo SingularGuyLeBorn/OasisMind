@@ -29,7 +29,7 @@ DDP 不广播 optimizer update。all-reduce 完成后，各 rank 拥有数值相
 
 若每个参数梯度都单独 all-reduce，几千次小 collective 会被启动延迟支配。Reducer 因此在构造 DDP 时按参数顺序、dtype 与容量上限组织 bucket。`bucket_cap_mb` 控制近似容量；实际 bucket 边界还受参数大小和实现重建行为影响。第一次迭代观察到真实梯度 ready 顺序后，实现可以重建 bucket，使后续通信更贴近反向顺序。
 
-设某个 bucket 含梯度 $g_1,ldots,g_k$，总元素数为 $n_b$，每元素 $w$ byte，则逻辑载荷为 $q_b=n_bw$。Ring all-reduce 可视为 reduce-scatter 加 all-gather，每个 rank 的理想发送量约为
+设某个 bucket 含梯度 $g_1,\ldots,g_k$，总元素数为 $n_b$，每元素 $w$ byte，则逻辑载荷为 $q_b=n_bw$。Ring all-reduce 可视为 reduce-scatter 加 all-gather，每个 rank 的理想发送量约为
 
 $$
 Q_b=2\frac{D-1}{D}q_b.
@@ -181,7 +181,108 @@ Profile 进一步显示最后一个 256 MiB bucket 混合了多个早期层参�
 
 回归结果必须绑定模型提交、框架版本、通信库、驱动、拓扑和输入长度分布。同名 bucket 配置在参数注册顺序改变后可能对应完全不同的梯度集合；只保存 `bucket_cap_mb` 无法复现实验。至少要保留参数到 bucket 的映射摘要和各 rank 的 ready 分位数，才能判断新版本改变了计算图还是链路表现。
 
-## 15. 来源与可核对事实
+### 14.4. 分层 All-Reduce 的流量怎么走
+
+跨节点 DDP 常把 GPU 分为节点内组与节点间组。每节点有 $G$ 张 GPU、节点数为 $N$ 时，一种分层实现先在节点内 reduce-scatter，让每张 GPU 得到梯度的一段；相同 local rank 再跨 $N$ 个节点规约对应分段；最后节点内 all-gather。大流量优先走 NVLink/NVSwitch，跨节点网络只承载每个 local rank 的分片。
+
+假设 bucket 为 256 MiB，单节点 8 卡、共 16 节点。节点内 reduce-scatter 后每卡保留 32 MiB；跨节点 ring 对这 32 MiB 的每 rank 算法流量约为 $2\times15/16\times32=60$ MiB；节点内还要完成 reduce-scatter 与 all-gather。若直接让 128 个 rank 在同一平面 ring 上处理 256 MiB，算法字节虽然仍接近两倍 payload，慢速跨节点边会承载更多分段并受拓扑映射影响。分层算法的收益来自让不同链路承担匹配其带宽的阶段。
+
+节点内阶段与节点间阶段形成依赖，较小 bucket 更容易流水：bucket A 的跨节点规约进行时，bucket B 可做节点内 reduce-scatter。可是两个阶段可能争用 GPU copy/SM 和 PCIe root，流水深度也会增加在途 buffer。profile 应分别标出 intra-node 与 inter-node kernel，不能把整段都归为一个 NCCL 时间。
+
+拓扑感知还包括 rail、NIC 与 NUMA 亲和。GPU 到 NIC 若经过额外 PCIe switch 或跨 CPU socket，理论网络带宽无法兑现。每个 rank 记录 GPU bus id、NIC、CPU affinity 和 communicator 拓扑摘要；出现单 rank 慢时，先比较路径，而不是把所有节点一起调参。
+
+### 14.5. Bucket 时间线可以直接手算
+
+设三个 bucket 的 ready 时刻分别为 40、70、100 ms，单通信流上的持续时间为 35、35、20 ms，backward 在 110 ms 结束。第一个从 40 到 75 ms；第二个虽在 70 ms ready，也要等到 75 ms 才开始，至 110 ms 完成；第三个 100 ms ready，却排到 110–130 ms。暴露尾部是 20 ms。
+
+若将第一个 bucket 减半，使两部分在 25、40 ms ready，各耗 19 ms，队列变成 25–44、44–63、70–105、105–125 ms，尾部降为 15 ms；启动和小消息损失已体现在 19 ms 中。若实际半桶各耗 24 ms，完成序列变为 25–49、49–73、73–108、108–128 ms，尾部仍是 18 ms，收益很小。调 bucket 前只需把 profiler 的 ready 与持续时间代入一次，就能淘汰许多没有窗口的方案。
+
+多个通信 stream 不一定让最后两个 bucket 并行。它们使用相同 NIC/NVLink，底层协议可能共享通道；并发只把带宽分开，还会增加调度。独立 DP group、TP collective 与 checkpoint I/O 同时发生时，也要放进同一链路队列。单独 microbenchmark 的 200 GB/s 不等于训练中每条流都能获得 200 GB/s。
+
+### 14.6. 通信与计算为何互相拖慢
+
+反向 GEMM 读取权重、activation 并写梯度，all-reduce 同时读取和写入 bucket；两者都可能吃 HBM。假设反向单独需要 12 TB/s，collective 的 GPU 侧搬运需要 4 TB/s，而设备可持续 13 TB/s，并发时总需求超过供给。即使网络尚未满，GEMM 与 collective 都会延长。
+
+某些 collective kernel 还占用 SM 处理规约与协议。为通信保留更多 channel 能提高网络吞吐，却减少计算可用执行资源；channel 太少又让尾部暴露。评估配置时报告单独 backward、单独 collective 和并发后的两者时间，计算干扰系数
+
+$$
+I_c=\frac{T_{backward}^{overlap}}{T_{backward}^{alone}},\qquad
+I_n=\frac{T_{comm}^{overlap}}{T_{comm}^{alone}}.
+$$
+
+$I_c=1.18,I_n=1.10$ 表示所谓重叠已经让计算慢 18%、通信慢 10%。如果隐藏的区间小于新增的干扰，关闭部分 overlap 或延后大 bucket 反而更快。这里的选择要靠训练 shape 实测，因为不同 GEMM 算术强度、GPU 和链路差异很大。
+
+## 15. 混合精度下的规约顺序
+
+BF16/FP16 计算不自动决定梯度通信 dtype。参数梯度可能以 BF16 写入 bucket，也可能累加到 FP32 buffer 后通信。BF16 将 payload 减半，却让规约舍入更明显；FP32 稳定性更好，带宽和显存翻倍。框架、优化器与模型设置共同决定实际 dtype，必须从 bucket storage 检查。
+
+FP16 训练常配 loss scaling。Forward loss 乘缩放因子 $s$，反向得到 $sg$；规约具有线性，先 all-reduce 再除以 $s$ 与先除再规约在实数中等价，浮点溢出检测和舍入却不同。若任一 rank 出现 Inf/NaN，所有 rank 必须对 overflow 标志做一致规约并共同跳过更新，否则参数分叉。
+
+全局梯度裁剪也依赖同步后的整体范数。数据并行每个 rank 在 all-reduce 后有相同完整梯度，可本地计算同一范数；若在 bucket 完成前逐段裁剪，不同 bucket 的缩放因子会破坏向量方向。完全分片则计算本地平方和，再跨 rank 规约标量。DDP 通信 hook 若返回压缩梯度，裁剪看到的是解压后的近似量，语义要在实验中固定。
+
+### 15.1. Uneven Input 与 Join
+
+数据集尾部、过滤或在线流可能让各 rank 的迭代数不同。某 rank 提前耗尽数据后不再进入下一轮 collective，其他 rank 会等待。DDP Join 类机制让已结束 rank 用占位 collective 跟随剩余 rank 的通信序列，直到所有 rank 完成；这解决控制流匹配，不会凭空补齐样本。
+
+剩余 rank 数变化时，梯度除数需要明确。若仍按初始 world size 平均，占位 rank 相当于贡献零梯度；若按有效 rank 数缩放，优化尺度保持每样本平均，却改变 collective 后的除法。Join 配置必须与 loss reduction、batch 统计和学习率语义一致。最简单的训练通常在 sampler 层补齐或丢弃尾部，让各 rank step 数相同。
+
+不均匀输入也可能发生在同一 step 内：每 rank 样本数相等，但有效 token 差异很大。Collective 序列仍能匹配，长 token rank 却成为稳定 straggler。按总 token 平衡分片，并用全局有效 token 数归一 loss，可同时改善 ready 偏差和数学语义。
+
+## 16. 从一次卡住定位到第一个不同事件
+
+Collective timeout 通常是最后表现，最早差异可能早很多。每个 rank 为 step、bucket 和 collective sequence 编号，记录参数 ready bitmap 的摘要。故障发生时先比较最后一个所有 rank 都完成的 sequence，再查看下一 sequence：某 rank 没有 enqueue，问题位于其反向图或数据路径；所有 rank 都 enqueue 但没有完成，才进入链路、进程与设备故障检查。
+
+控制流错位的典型迹象是 rank 0 的 sequence 27 对应 bucket A，rank 3 的 sequence 27 对应 bucket B。二者 payload 大小甚至可能相同，通信库无法知道语义不同，结果可能是挂起，也可能完成后把错误梯度混合。启动时的 bucket 映射 hash 只能发现静态差异，运行时动态分支还要比较每轮 ready 集合。
+
+链路故障则表现为所有 rank 对同一 sequence 和 payload 达成一致，GPU kernel 已发起，但某个 channel 长时间无进展。收集 NIC 错误、重传、GPU Xid、进程存活和拓扑状态。自动重启前保留这些信息；单看重启后恢复，无法区分瞬时网络、硬件故障与程序错位。
+
+### 16.1. DDP 健康面板的最小集合
+
+每 step 记录计算开始、首个 bucket ready、最后 bucket ready、最后 collective 完成和 optimizer 完成。由此直接得到 forward/backward、ready 展宽、暴露尾部和更新时间。按 rank 报 p50/p99 以及最慢 rank id，能发现稳定热点和偶发长尾。
+
+每 bucket 记录 payload、dtype、参数数量、ready spread、排队时间与传输时间。Ready spread 是最早与最晚 rank 的到达差；排队时间是本地 ready 到 kernel start；传输时间是 kernel start 到 complete。三者分别指向计算偏斜、链路队列和实际 collective。
+
+再配上有效 token、数据等待、GPU 时钟、HBM 带宽、网络吞吐与错误计数。若 ready spread 随 token 差异增长，调整数据平衡；若排队随 TP collective 增长，检查多通信域争用；若传输时间在固定 payload 下增长且伴随重传，检查网络。面板围绕可区分的因果量组织，比单一「通信占比」更适合长期回归。
+
+指标采样本身也要控制代价。每个 step 收集所有参数时间会制造大量 CPU 事件和同步压力；常态只保留 bucket 级聚合，出现回归时再对少量 step 打开参数级追踪。不同 rank 的主机时钟可能有偏差，跨 rank 比较优先使用 collective 序号和相对 GPU event；需要绝对时间时先校准时钟。采样窗口包含 warmup、稳定段和异常段，避免只截取最快的几十步。
+
+面板上的总通信时间允许重叠计算，因此各阶段相加可能超过 step wall time。这属于时间区间交叠，不是统计错误。告警使用 exposed tail、排队与传输分量；总通信时间适合判断链路工作量，不能直接当作可消除的延迟。
+
+长期趋势还应按模型阶段分段：序列长度、解冻参数或并行组变化都会改变梯度集合。跨阶段比较先归一到每 token 字节与固定 payload 带宽，再讨论通信库回归。
+
+所有结论都应由同一输入与拓扑复测。
+
+### 16.2. 调 Bucket 的顺序
+
+第一步固定输入与拓扑，保存每个参数的 ready 时刻和现有 bucket 映射。把参数按中位 ready 排序，再看跨多轮的波动；中位接近且波动小的参数适合放在同一 bucket。某个参数 ready 方差很大，常见于条件分支或动态 shape，把它混入大 bucket 会让整个 bucket 的时间难以预测。
+
+第二步找 exposed tail 的第一个空档。若链路从 30 ms 到 backward 结束一直繁忙，早期 bucket 已经足够细，继续拆早期参数没有收益；应处理最后 ready 的 bucket、减少总字节或提高链路。若链路在 50–70 ms 空闲，而一批梯度在 55 ms 已 ready 却因同 bucket 的晚参数等到 80 ms，就有明确的重组空间。
+
+第三步只改一组边界，测至少几十个稳定 step。记录总字节、collective 数、暴露尾部、backward 干扰、峰值显存和 p99。Bucket 变小后尾部下降 4 ms、backward 增加 3 ms、启动增加 1 ms，净收益接近零；只看尾部会误判。结果与参数映射摘要一同保存，模型结构改变后重新测。
+
+### 16.3. 一个参数就绪错配的例子
+
+某 bucket 有四个梯度：attention 输出投影 32 MiB、MLP 下投影 48 MiB、早期 LayerNorm 1 MiB、embedding 64 MiB。前三者分别在 40、44、96 ms ready，embedding 因 tied output head 到 108 ms 才 ready，整个 145 MiB bucket 只能在 108 ms 发起。把大小相近放一起并没有获得重叠。
+
+将 80 MiB 的两个晚梯度组成 bucket B，前两个 80 MiB 组成 bucket A，A 在 44 ms 发起；B 仍到 108 ms 才发起。总字节不变，A 获得 64 ms 的计算窗口。若 B 通信 6 ms、backward 在 110 ms 结束，只暴露约 4 ms；原 145 MiB bucket 若耗 10 ms，会暴露约 8 ms。
+
+若 embedding 每隔几轮因未使用而缺席，Bucket B 还需 unused 语义。所有 rank 同时不使用时可标记 ready 并贡献零梯度；不同 rank 分支不一致时，仍要参加同一 collective，否则通信序列错位。性能分组不能改变参数在全局梯度中的数学身份。
+
+### 16.4. 梯度压缩的误差状态
+
+Top-k、量化与低秩通信减少 payload，却引入近似。误差反馈常保存残差 $e_t$，先令 $u_t=g_t+e_t$，发送压缩值 $C(u_t)$，再更新
+
+$$
+e_{t+1}=u_t-C(u_t).
+$$
+
+残差与参数同 shape 时会增加一份长期状态，7B 模型即使 BF16 也需要约 14 GB；分片或更低精度能减小容量，但会影响误差补偿。只比较网络字节而漏掉残差显存与压缩 kernel，方案可能根本放不进训练配置。
+
+压缩还改变重叠窗口。编码只能在 bucket ready 后开始，解码在通信后完成；若原 collective 已被计算遮住，新增编码/解码可能直接延长尾部。先对暴露 bucket 使用压缩比全量启用更容易评估，但不同 bucket 使用不同近似也要经过收敛验证。
+
+恢复时必须保存每个 bucket 的残差及映射版本。参数顺序或 bucket 边界改变后，旧残差不能按字节直接套用。可以按参数名重组，或在结构变化时显式丢弃并记录优化轨迹发生重置。静默错位会把某个参数的历史误差加到另一个参数上，数值仍有限却失去含义。
+
+## 17. 来源与可核对事实
 
 | 事实 | 一手来源 | 这里的使用位置 |
 | --- | --- | --- |
