@@ -30,6 +30,8 @@ Table 1 列出的近期模型里, $\alpha_P$ 一路往下走. DeepSeek-V3 是 67
 
 ![](images/p14-figure-4-throughput-as-total-expert-capacity-grows-at.jpg)
 
+> 图 1: 总专家容量增长时, 旧 FSDP 栈与新 DDP + EP 栈的单卡吞吐变化, 横轴为总参数量, 纵轴为 token/s/GPU.
+
 **图 1 解析** (报告 Figure 4): 8 层模型, top-4, 8 张 B300, 随机路由, 激活参数固定 3.2B, 横轴是总参数. 旧 FSDP 栈从 4.6B 的 50.5K token/s/GPU 一路掉到 47B 的 19.4K; 新栈 (DDP + EP8) 从 54.5K 只降到 52K, 降幅约 4.6%. 稠密基线从 61K 到 63K, 说明新旧之差主要来自 MoE 路径. 博客里 「47B 下快约 2.7 倍」 就是 52K 对 19.4K. 这张图比较的是两套完整系统, 并没有单独隔离 FSDP 与 DDP 的作用, 单独对照在 Fig. 8.
 
 ### 1.3. 在 Olmo 谱系里的位置
@@ -49,6 +51,8 @@ Fig. 8a 关掉 EP 做了对照: 48 个专家, 约 3.2B 激活, 19B 总参数, �
 ### 2.2. 每个参数 18 字节怎么切
 
 ![](images/p26-figure-9-the-distributed-optimizer-and-ep-reduce-different.jpg)
+
+> 图 2: DDP, 分布式优化器与 EP 对权重, 梯度和 AdamW 状态采用不同切分轴后的单参数显存组成.
 
 **图 2 解析** (报告 Figure 9): 朴素 DDP 每个参数存 BF16 权重 2 字节, FP32 梯度 4 字节, FP32 主权重 4 字节, AdamW 两个 FP32 矩 8 字节, 共 18 字节. 分布式优化器把后三项按数据并行度 $D$ 切开, 变成 $6+12/D$ 字节. 再叠加 EP, 专家的 BF16 权重和 FP32 梯度按专家并行度 $M_E$ 切开, 专家参数变成 $6/M_E+12/D$ 字节. 图中例子 $D=8$, $M_E=4$, 专家参数每个只要 $1.5+1.5=3$ 字节.
 
@@ -80,6 +84,8 @@ EP 的基线路径用 `all_to_all_single`. 这个集合通信要求发给每个 
 
 ![](images/p36-figure-16-rowwise-ep-targets-remote-expert-rows-without.jpg)
 
+> 图 3: Rowwise EP 根据 router 输出把 token 行直接写入远端专家容量槽, 再由 grouped GEMM 处理各专家收到的行.
+
 **图 3 解析** (报告 Figure 16): 两个 rank, 各 5 个 token, top-2, 4 个专家 (W0, W1 在 rank 0, W2, W3 在 rank 1). router 输出的专家下标和权重留在 GPU 上, rowwise kernel 直接把每一行写进目标 rank 上按专家排好的容量槽, grouped GEMM 不再需要第二次重排. 图里的 rank 容量是 $1.2\times5\times2=12$ 行, 由所有来源 rank 共享. 「AllToAll」 只表示逻辑上的 rank 交换, 实现是逐行的单边读写, 没有调用 NCCL 集合通信.
 
 具体做法是先在 GPU 上为每个路由构建两张表 `dst_ranks[T,K]` 和 `dst_rows[T,K]`: 第 $t$ 个 token 的第 $k$ 个路由去哪个 rank, 写到那个 rank 容量缓冲区的哪一行; 负值表示这条路由无效或被丢弃. 有了目标地址, 就需要能直接寻址远端显存. NVSHMEM 的对称堆让 EP-MP 组内每个 rank 以相同顺序分配形状相同的缓冲区, 本地偏移加 peer 编号就能定位远端对应的行. 每个 EP-MP 进程组就是 rowwise kernel 使用的 NVSHMEM bootstrap world.
@@ -108,6 +114,8 @@ SwiGLU 专家是 $f_e(x)=W_{down}(\mathrm{SiLU}(W_{gate}x)\odot W_{up}x)$ (eq. 1
 
 ![](images/p65-figure-38-grouped-gemm-and-capacity-padded-bmm-across.jpg)
 
+> 图 4: 不同路由行数下 grouped GEMM 与 capacity-padded BMM 的耗时比, 阴影区标出中大型模型常见工作范围.
+
 **图 4 解析** (报告 Figure 38): $d=h=4096$, 16 个本地专家, 纵轴是 BMM 时间除以 grouped GEMM 时间, 大于 1 表示 grouped GEMM 更快. 总行数在 4K 到 8K 之间 (每专家 256 到 512 行) 两者打平, 更少时 BMM 更快. 曲线并不单调, 约 6K 处到 1.19 后在 16K 回落到 1.11, 再缓慢升到 128K 的 1.29, 即 BMM 慢 28.9%. 阴影是中大型模型的工作区间, 每 rank 16K 到 96K 路由行.
 
 $d=h=2048$ 时 (Fig. 71) 打平点在 8K 到 16K, 128K 时 BMM 慢 15.4%. Fig. 39 把 $8192\times81920$ 的矩阵乘拆成若干组, 与同尺寸稠密 GEMM 比: 每组 $T\le128$ 行时只有稠密的约 60%, 256 行时到 96%, 行数很大时反而降到 83% 到 88%. 附录 A.12 把后一段归因于功耗限制: SM 时钟从 1174 降到 960 MHz, 吞吐从 1366 降到 1163 TFLOP/s, 而每 MHz 的吞吐稳定在 1.16 到 1.19 TFLOP/s.
@@ -121,6 +129,8 @@ EP 超过 8 卡就要跨节点. rowwise 路径逐行发送, 行数多而每行�
 通信和计算重叠的收益条件是 $T_{overlap}<T_{comm}+T_{gemm}$ (eq. 10). 两者同时跑时争抢 SM, 显存带宽和 L2. Table 9 在 2 节点 16 卡, EP-MP 为 16, 每 rank 16,384 token, top-8, $d=h=6144$ 下测量: grouped GEMM 单独跑 4.645 到 4.679 ms, 与 rowwise dispatch 同时跑时变成 5.736 到 5.874 ms, 慢 22.9% 到 26.0%, 与 combine 同时跑慢 23.0% 到 27.0%; 把通信的 launch 宽度降到 1 个 block 也躲不开这个减速, 只会让通信本身慢一个数量级. 在 128 block 的 launch 下, dispatch 加 GEMM 的总耗时从串行的 7.768 ms 降到重叠的 5.833 ms, combine 一侧从 7.560 降到 5.868 ms, 缩短 22% 到 25%.
 
 ![](images/p44-figure-24-no-wave-execution-is-fastest-after-tuning.jpg)
+
+> 图 5: 两组跨节点 EP 配置中, wave overlap 与无重叠执行在不同通信 SM 预算下的耗时对照.
 
 **图 5 解析** (报告 Figure 24): 左图是 2 节点, EP-MP 为 16, 128 个专家, top-8, $d=h=8192$, BF16; 四段 wave 重叠在每个通信 SM 预算下都比不重叠慢, 不重叠在 32 个 SM 时最快. 右图是另一组 4 节点, EP-MP 为 32, 256 个专家的配置; 只给 8 个 SM 时通信成为瓶颈, wave 胜出, 但全图最快点仍是 32 个 SM 下的不重叠执行. 两组都是 Nsight 下的单独开发测量, 每组 5 次计时取最慢 rank 的中位数, 不是多次训练运行.
 
@@ -166,6 +176,8 @@ $$
 
 ![](images/p76-figure-42-the-load-balancing-loss-falls-while-load.jpg)
 
+> 图 6: 调低 LBL 系数前后, 辅助损失与实际专家负载不均衡度出现相反变化的训练曲线.
+
 **图 6 解析** (报告 Figure 42): 48 层模型 (第 0 层稠密, 其余 47 层各 64 专家, top-4, sigmoid, dropless), instance 级 LBL. 橙线 $\lambda_{LBL}=0.05$; 蓝线在第 17,000 步 (71.3B token) 载入同一个 checkpoint, 只把系数改成 0.005. 左图是 47 层未加权 LBL 之和, 橙线从约 47 掉到 41 附近; 右图是所有层和 rank 中最差的 max/mean 专家计数, 橙线从约 2.7 升到 6.6 左右, 蓝线一直平稳.
 
 Table 20 取两个窗口的中位数: 高系数一支 CE 从 2.473 升到 2.523 (+2.0%), LBL 从 46.864 降到 41.278 (−11.9%), 最差不均衡度从 2.748 升到 6.317 (+129.9%); 低系数分支 CE 从 2.469 降到 2.358 (−4.5%), 不均衡度从 2.655 降到 2.544 (−4.2%). 加权后的 LBL 贡献从 2.343 降到 2.064, 足以让重建的总目标从 4.820 降到 4.591 (−4.8%), 尽管 CE 在变差. 附录 B.7 交代了条件: 这组运行用的是生产预训练栈的 HSDP 和 BF16, 不走本报告的 EP 路径; 学习率 $3\times10^{-5}$; 只有一对分支. 存档指标里没有同一范围的 $f$ 和 $P$ 向量, 所以无法直接验证 eq. 41 中的反向内积.
@@ -186,6 +198,8 @@ MXFP8 是否更快取决于形状. Table 22 在单张 B300 上扫描: 4096→409
 
 ![](images/p94-figure-57-routed-expert-mxfp8-forward-and-backward-forward.jpg)
 
+> 图 7: 路由专家在前向和反向中的 MXFP8 数据流, 标出量化, dispatch, grouped GEMM, combine 与权重缓存的位置.
+
 **图 7 解析** (报告 Figure 57): 上半是前向, dispatch 时把 BF16 行量化成 qdata 和 scale 发到目标专家, up/gate 和 down 两次 grouped GEMM 用 MXFP8, SwiGLU 和量化融合成一个 kernel, down 输出 BF16 后再量化用于 combine 传输. 下半是反向, dgrad 用两份缓存中对应方向的一份, combine 的反向把路由权重乘法和梯度量化融合; 路由专家的 Wgrad 先反量化再走 BF16 grouped GEMM, 结果累加进 FP32 梯度桶.
 
 Wgrad 没用 MXFP8 是测出来的. Wgrad 的累加维是 token 维, 前向产生的 scale 沿隐藏维分块, 方向对不上. Table 33 对比了保持原排布的 MXFP8 Wgrad 原型和反量化后 BF16 grouped GEMM: $K=N=2048, 4096, 8192$ 时前者分别用 0.380, 1.449, 5.522 ms, 后者 0.118, 0.334, 1.232 ms. attention 部分, QKV 投影的 Wgrad 输入存成 MXFP8, 输出投影的输入保持 BF16, 因为 attention 图本来就留着那份 BF16 激活, 再加一份 MXFP8 只会多占显存.
@@ -197,6 +211,8 @@ scale 规则的影响用 checkpoint 分支检验 (Fig. 56): 31 层, 8.36B 激活
 checkpoint 只存 FP32 主权重, 两个 FP32 矩和少量元数据, 即每参数 12 字节, 166.7B 的模型是 1,863.33 GiB. 张量按全局身份保存, 与 DP, EP, PP 的切法无关, 换并行度重启时在加载阶段重新切分. 专家张量用一个只供 checkpoint 使用的扁平视图写出, 它直接别名到优化器存储, 记录 EP-MP 分片顺序和 EP-DP 的切分或复制, 不需要先在 GPU 上 gather 成完整张量. 在一次 FP8 开发运行里, 保存期间的 allocated 和 reserved 峰值显存停在保存前的 93.1 和 121.4 GiB. MXFP8 缓存和 BF16 视图都是派生量, 不写进 checkpoint, 加载后重建.
 
 ![](images/p102-figure-62-block-recompute-removes-nearly-two-thirds-of.jpg)
+
+> 图 8: Block recompute 开关对单卡吞吐与峰值显存的影响, 并把常驻状态和可重算激活分开统计.
 
 **图 8 解析** (报告 Figure 62): 1 个稠密 block 加 7 个 MoE block, $d_{model}=4096$, 32 个专家 top-4 加 1 个共享专家, 4 张 B300, EP4, 均匀路由无丢弃, BF16, 每种模式 3 个独立进程. 左图是吞吐, 逐层重算从 54.68K 降到 43.22K token/s/GPU, 精确值 −20.95%. 右图是峰值显存, 从 103.03 降到 76.90 GiB (−26.13 GiB, −25.36%); 常驻部分 62.2 GiB 两边相同, 减少的全部来自激活, 从 40.8 降到 14.7 GiB, 约 −64%.
 
