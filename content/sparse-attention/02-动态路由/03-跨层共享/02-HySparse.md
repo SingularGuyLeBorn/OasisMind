@@ -28,7 +28,7 @@ $$
 
 ### 1.2. FlashAttention 怎样暴露score
 
-标准FlashAttention不物化 $n\times n$ 权重. 它按tile计算logits, 维护行最大值 $m_t$ 和指数和 $\ell_t$. HySparse修改kernel, 保存每个key tile的row maximum, 最后用全行统计缩放为block score. 输出 $S\in\mathbb{R}^{n\times\lceil n/B\rceil}$, 远小于token级矩阵.
+标准FlashAttention不物化 $n\times n$ 权重. 它按tile计算logits, 维护行最大值 $m_t$ 和指数和 $\ell_t$. HySparse修改kernel, 保存每个key tile的row maximum, 再用全行统计缩放为block score. 输出 $S\in\mathbb{R}^{n\times\lceil n/B\rceil}$, 远小于token级矩阵.
 
 这仍有工作区. 1M token且 $B=64$ 时, 每个query有15625个block scores; 对整段Prefill直接物化依旧很大. 论文算法说明block scores随full attention产生, 实际超长实现需要分块top-k、精度控制或工作区管理. 报告没有给出所有生产kernel细节时, 不能把「negligible overhead」外推到任意长度和硬件.
 
@@ -54,7 +54,7 @@ $q_t^l$ 来自当前层, 被读KV来自前面的full layer. 共享的不是query
 
 普通Transformer每层为全部历史保存独立KV, cache约随层数 $L$ 增长. HySparse只为hybrid block的full layer保存全长global KV; 后续sparse layers读取它, 不保存自己的全长KV. 若一组为1 full+N sparse, global KV副本数约降为原来的 $1/(N+1)$.
 
-80B MoE实验有49层, full:sparse为1:11且最后一层full, 共5层full attention, 因而全长KV层数从49降到5, 接近10倍. 这是结构容量比, 还要加sparse layers的local SWA cache、indices与元数据. 论文表述为近10倍, 不应写成精确9.8倍端到端显存.
+80B MoE实验有49层, full:sparse为1:11且第49层为full, 共5层full attention, 因而全长KV层数从49降到5, 接近10倍. 这是结构容量比, 还要加sparse layers的local SWA cache、indices与元数据. 论文表述为近10倍, 不应写成精确9.8倍端到端显存.
 
 共享KV要求sparse layer学习使用上游表示. $q_t^l$ 与 $K^{full}$ 来自不同层, 参数需在预训练中共同适配. 这不是把已有模型某些layer cache指针改成同一地址就能保持行为的推理插件.
 
@@ -180,7 +180,7 @@ $$
 
 如果把聚合规则换成块内求和, 四个分数变成 $(0.10,0.35,0.20,0.35)$, top-2在第二与第四块上仍不变. 但当一个块包含多个中等权重位置时, max与sum可能产生不同排序. HySparse公开设计使用从full attention中得到的block importance, 工程复现必须固定归约规则、GQA组间归约规则和并列分数的稳定排序, 不能只写「按块top-k」.
 
-再把recent window设为最后两个token. 在HySparse中, global分支仍计算选中的第二、第四块, SWA分支独立计算token 7、8, 两个分支各自归一化后由门控融合. 第四块虽然重复出现, 也不能简单从一个分支删掉, 因为两条分支的softmax分母和输出投影语义不同. 在HySparse2中, recent token与global token先做集合并与去重, 再进行一次统一attention. 两代模型即使候选位置相同, 数学结果也不相同.
+再把recent window设为最近两个token. 在HySparse中, global分支仍计算选中的第二、第四块, SWA分支独立计算token 7、8, 两个分支各自归一化后由门控融合. 第四块虽然重复出现, 也不能简单从一个分支删掉, 因为两条分支的softmax分母和输出投影语义不同. 在HySparse2中, recent token与global token先做集合并与去重, 再进行一次统一attention. 两代模型即使候选位置相同, 数学结果也不相同.
 
 ### 5.6. 跨层误差应按组尾测量
 
@@ -236,7 +236,7 @@ HySparse2多出self/cross边界. 请求迁移到另一设备时, 不能仅传传
 
 质量回退可以缩短full间隔、扩大global预算或临时执行更密集attention. 三者分别增加全域扫描、gather和主attention成本. 系统应在上线前测出每种回退的显存峰值, 否则大量异常请求同时进入dense路径会造成容量雪崩. 公开论文没有规定生产回退协议, 这些属于部署时必须自行验证的边界.
 
-最后, 监控应把算法与物理指标配对: oracle覆盖质量对应选中blocks或tokens, 跨层漂移对应组内位置, 稀疏预算对应unique pages与实际读取字节, Prefill早退对应跳过的cross层数和TTFT. 只有这种配对才能区分模型退化、索引错误和kernel效率不足.
+监控还应把算法与物理指标配对: oracle覆盖质量对应选中blocks或tokens, 跨层漂移对应组内位置, 稀疏预算对应unique pages与实际读取字节, Prefill早退对应跳过的cross层数和TTFT. 只有这种配对才能区分模型退化、索引错误和kernel效率不足.
 
 回归集合还要覆盖block边界与recent window边界. 序列长度取63、64、65等邻近值, 能暴露末块padding和因果掩码错误; window刚好与global block相交时, 可验证HySparse双分支是否保持独立语义, HySparse2并集是否正确去重. 多个GQA query heads共享一组KV heads时, 还需确认block importance的组间归约与候选广播一致. 这些边界错误往往只影响少数位置, 但会在长生成中逐步放大.
 

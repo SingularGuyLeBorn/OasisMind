@@ -8,7 +8,7 @@ published: true
 
 token 级 Sparse Attention 要完成一次有约束的检索: 对每个 query, 从全部历史 token 中召回少量候选, 再用主 attention 的完整表示精确计算. 候选太少会漏证据, 候选太多又失去稀疏收益. 更棘手的是, 一个为每对 query-key 打分的 selector 自己也会形成 $n\times n$ 分数矩阵. 主 attention 从平方降到 $O(nk)$ 以后, indexer 可能接替它成为最长的 kernel.
 
-[DeepSeek-V3.2](https://arxiv.org/abs/2512.02556)中的 DeepSeek Sparse Attention(DSA)给出一条完整路径: **Lightning Indexer** 用低维、多头 query 与共享 key 产生标量索引分数, top-k selector 为每个 query 选出 2048 个历史位置, Sparse MLA 只读取这些位置. DSA 由 DeepSeek-V3.1-Terminus 继续训练而来, 先用稠密 attention 预热 indexer, 再让主模型适应稀疏拓扑. 它不是给任意稠密模型临时套一个 top-k mask, 而是把选择器、训练目标、MLA 表示和 kernel 一起设计.
+[DeepSeek-V3.2](https://arxiv.org/abs/2512.02556)中的 DeepSeek Sparse Attention(DSA)给出一条完整路径: **Lightning Indexer** 用低维、多头 query 与共享 key 产生标量索引分数, top-k selector 为每个 query 选出 2048 个历史位置, Sparse MLA 只读取这些位置. DSA 由 DeepSeek-V3.1-Terminus 继续训练而来, 先用稠密 attention 预热 indexer, 再让主模型适应稀疏拓扑. 选择器、训练目标、MLA 表示和 kernel 都属于模型设计的一部分, 临时给任意稠密模型添加 top-k mask 无法得到同一条计算路径.
 
 DSA 之后的优化大多没有否定 token 级选择, 而是追问「索引阶段能否更便宜」. [HISA](https://arxiv.org/abs/2603.28458)先筛块再在候选块内运行原 indexer; [MISA](https://arxiv.org/abs/2605.07363)把 indexer heads 当成专家池, 每个 query 只激活少量 heads; [LISA](https://arxiv.org/abs/2607.19358)把线性 attention 的长程状态与 indexer 引导的 sparse self-attention 并联. 四者提供了三种不同的降本轴: 缩小 token 搜索范围、缩小参与打分的 head 数、用线性状态承接未进入 top-k 的全局信息.
 
@@ -22,7 +22,7 @@ $$
 I_{t,s}=\sum_{j=1}^{H^I}w^I_{t,j}\operatorname{ReLU}\left((q^I_{t,j})^Tk^I_s\right). \tag{1}
 $$
 
-对整段 Prefill, $Q^I\in\mathbb{R}^{B\times n\times H^I\times d^I}$, $K^I\in\mathbb{R}^{B\times n\times d^I}$, 权重 $W^I\in\mathbb{R}^{B\times n\times H^I}$. indexer 输出 $I\in\mathbb{R}^{B\times n\times n}$, 加 causal mask 后沿最后一维取 top-k, 得到位置张量 $S\in\mathbb{N}^{B\times n\times k}$. Sparse MLA 的主 attention 根据 $S_{t,:}$ gather 对应 latent KV, 输出 shape 仍与原 MLA 一致.
+对整段 Prefill, $Q^I\in\mathbb{R}^{B\times n\times H^I\times d^I}$, $K^I\in\mathbb{R}^{B\times n\times d^I}$, 权重 $W^I\in\mathbb{R}^{B\times n\times H^I}$. indexer 输出 $I\in\mathbb{R}^{B\times n\times n}$, 加 causal mask 后沿历史位置维取 top-k, 得到位置张量 $S\in\mathbb{N}^{B\times n\times k}$. Sparse MLA 的主 attention 根据 $S_{t,:}$ gather 对应 latent KV, 输出 shape 仍与原 MLA 一致.
 
 式 (1)的共享 key 很重要. selector 最终为一个 query 的全部主 attention heads 选择同一组 token, 才能让选中的 latent KV 被多个 query heads 复用. 如果每个主 head 各选一套位置, token 数可能成倍增长, K/V gather 也更碎. 多个 indexer heads 的作用是给相关性提供多种子空间, 加权求和后仍输出一个共享标量 $I_{t,s}$.
 
@@ -144,7 +144,7 @@ Prefill 可以一次生成整段 $K^I$ 并执行大矩阵 kernel; Decode 每步�
 
 ### 4.1. HISA: 先筛块, 再按原式精排 token
 
-HISA 将 DSA 的平坦全量扫描改为两阶段层次搜索. 首先把历史 $K^I$ 按块聚合成代表, query 对块代表打分并保留少量候选块; 随后只在这些块内部计算原 DSA indexer 式 (1), 最终仍输出 token 级 top-k. Sparse MLA 接口和候选数不变, 因而 HISA 是 indexer 的免训练替换.
+HISA 将 DSA 的平坦全量扫描改为两阶段层次搜索. 历史 $K^I$ 先按块聚合成代表, query 对块代表打分并保留少量候选块; 随后只在这些块内部计算原 DSA indexer 式 (1), 最终仍输出 token 级 top-k. Sparse MLA 接口和候选数不变, 因而 HISA 是 indexer 的免训练替换.
 
 设块大小为 $b$, 块数 $N=\lceil n/b\rceil$, 粗选保留 $r$ 个块. 平坦 DSA 每个 query 打分 $n$ 个 token; HISA 粗筛约比较 $N$ 个代表, 精排约比较 $rb$ 个 token. 忽略 head 维, 成本从 $O(n)$ 变成 $O(n/b+rb)$. $b$ 太小会让粗筛接近全量, 太大则每个候选块带入更多无关 token. $r$ 决定 coarse recall, 最终 top-k 无法找回被整块剪掉的 token.
 
@@ -198,7 +198,7 @@ FP8 indexer 的误差主要表现为排序变化. 对相差很大的分数, 量�
 
 Prefill 与 Decode 分开: Prefill 报每层整段 indexer 和 Sparse MLA 时间; Decode 报不同 cache 长度的单 token 延迟以及 batch 扩展. 量化实验同时给出 indexer K dtype、scale 粒度与 top-k 重合. 跨层共享实验注明每几层刷新、共享哪种状态, 不能只写一个总体加速.
 
-**selector 的成功标准不是把分数算得便宜, 而是在候选预算内召回主 attention 需要的位置, 并让后续 kernel以更少字节完成精确计算.** DSA 建立可训练基线, HISA 缩小 token 搜索域, MISA 缩小 head 搜索域, LISA 增加一条线性全局通道. 它们最终都要通过同一张质量—索引—访存表接受检验.
+**selector 要在固定候选预算内召回主 attention 需要的位置, 同时让后续 kernel以更少字节完成精确计算.** DSA 建立可训练基线, HISA 缩小 token 搜索域, MISA 缩小 head 搜索域, LISA 增加一条线性全局通道. 它们最终都要通过同一张质量—索引—访存表接受检验.
 
 ### 5.5. selector 的预算怎样分配
 
@@ -218,7 +218,7 @@ HISA 的两级预算包含候选块数 $r$ 与最终 token 数 $k$. 粗筛必须
 
 ### 5.6. 从公式到 FP8 缓存的数值路径
 
-式 (1)省略了实现中的缩放. 低精度点积需要控制 $q^I$、$k^I$ 与 head 权重的尺度, 否则 ReLU 前的大量值溢出或全部落在零侧. 常见路径是对 indexer key 分块量化, 保存 FP8 数据和每块 scale; query 在寄存器中转换到计算类型, 点积累积使用更高精度, 最后乘 $w^I$ 并跨 head reduce.
+式 (1)省略了实现中的缩放. 低精度点积需要控制 $q^I$、$k^I$ 与 head 权重的尺度, 否则 ReLU 前的大量值溢出或全部落在零侧. 常见路径是对 indexer key 分块量化, 保存 FP8 数据和每块 scale; query 在寄存器中转换到计算类型, 点积使用更高精度累积, 再乘 $w^I$ 并沿 head 维求和.
 
 设真实 key 为 $k$, 量化值为 $\hat k=\operatorname{round}(k/a)$, scale 为 $a$. 重构误差 $e=a\hat k-k$ 使单 head 分数变化为 $q^Te$. 若 $\|q\|_2\|e\|_2$ 小于 top-k cutoff 的 margin, 排序保持; margin 更小时可能翻转. 因而 scale 粒度不只决定均方误差, 还决定 selector 的离散稳定性. 分块越细, 误差越小, scale 元数据和反量化操作越多.
 
@@ -272,7 +272,7 @@ Native Sparse Attention(NSA)将压缩、选择与局部分支组合为原生训�
 
 第四步评测 HISA/MISA 替换. 以原 DSA top-k 为教师, 分别画 recall—索引时间曲线. HISA改变 token搜索域, MISA改变 active heads, 两者预算轴不同, 应换算为实际 indexer MACs与读字节. 层次精排变体还要把第二遍读取算入成本.
 
-最后跑端到端任务和服务. 任务覆盖短上下文、长检索、多证据、代码与长推理; 服务覆盖 Prefill/Decode、batch、PD 分离和多卡. 只有 selector质量、Sparse MLA正确性和系统延迟同时通过, 才能把理论 $O(nk)$ 视为落地收益.
+算子测试通过后运行端到端任务和服务. 任务覆盖短上下文、长检索、多证据、代码与长推理; 服务覆盖 Prefill/Decode、batch、PD 分离和多卡. 只有 selector质量、Sparse MLA正确性和系统延迟同时通过, 才能把理论 $O(nk)$ 视为落地收益.
 
 ### 5.11. 一次 Decode 的逐项成本
 

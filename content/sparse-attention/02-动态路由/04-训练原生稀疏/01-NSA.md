@@ -6,9 +6,9 @@ published: true
 
 # NSA: 压缩、选择与滑窗的训练原生稀疏 attention
 
-Native Sparse Attention(NSA)不是给稠密checkpoint追加的推理插件, 而是从预训练开始就存在的attention结构. 它把历史信息分到压缩、选择和滑窗三条并行分支: 压缩分支低成本覆盖全局, 选择分支从重要连续块恢复细节, 滑窗分支稳定处理局部依赖. 三个分支分别softmax, 再由可学习gate合并输出.
+Native Sparse Attention(NSA)从预训练开始就采用稀疏attention结构, 无法当作推理插件直接追加到稠密checkpoint上. 它把历史信息分到压缩、选择和滑窗三条并行分支: 压缩分支低成本覆盖全局, 选择分支从重要连续块恢复细节, 滑窗分支稳定处理局部依赖. 三个分支分别softmax, 再由可学习gate合并输出.
 
-论文的目标同时包含算法与硬件. Prefill和训练通常受算力限制, 需要减少实际QK与AV运算并支持反向传播; Decode通常受KV读取带宽限制, 需要让同一GQA组的query heads共享连续KV块. 因此NSA的block设计不是把token级top-k换一个名字, 而是让候选单位、GQA共享和kernel tile从一开始对齐.
+论文的目标同时包含算法与硬件. Prefill和训练通常受算力限制, 需要减少实际QK与AV运算并支持反向传播; Decode通常受KV读取带宽限制, 需要让同一GQA组的query heads共享连续KV块. NSA的block设计让候选单位、GQA共享和kernel tile从训练开始对齐, 与token级top-k的物理执行不同.
 
 ## 1. 三分支计算图
 
@@ -58,7 +58,7 @@ $$
 
 ### 2.2. 不同block划分的映射
 
-设压缩块长度为 $l$, 步长为 $d$, selection块长度为 $l'$, 且 $d$整除二者. 一个selection块会与多个重叠compression blocks相交. 论文把相应 $p_t^{cmp}$ 项求和得到 $p_t^{slc}[j]$. 这不是重新对原始keys做QK, 而是把已经得到的粗分数按空间关系重新归约.
+设压缩块长度为 $l$, 步长为 $d$, selection块长度为 $l'$, 且 $d$整除二者. 一个selection块会与多个重叠compression blocks相交. 论文把相应 $p_t^{cmp}$ 项求和得到 $p_t^{slc}[j]$. 这一步复用已有粗分数并按空间关系归约, 无需重新对原始keys做QK.
 
 以 $l=32,d=16,l'=64$ 为例, 一个64-token选择块跨越多个起点间隔16的压缩窗口. 边界附近的压缩窗口还可能同时覆盖相邻选择块, 因而importance不是简单每四项分一组. 实现必须严格复现公式的索引偏移、序列开头处理和因果边界; 用直觉分桶会在块边界产生系统偏差.
 
@@ -154,17 +154,17 @@ HySparse保留独立SWA分支, 与NSA专门的window分支有表面相似性; �
 
 ### 5.4. 工程验收清单
 
-首先验证compression窗口数量、重叠关系、块内位置编码和因果边界. 然后验证importance从compression到selection的索引映射, 特别是序列开头、未满末块与固定激活块. 接着验证GQA组内聚合、top-n稳定排序、去重与连续KV地址.
+工程验收先核对compression窗口数量、重叠关系、块内位置编码和因果边界. importance从compression映射到selection时, 序列开头、未满末块与固定激活块都要单独检查. GQA路径还要核对组内聚合、top-n稳定排序、去重与连续KV地址.
 
 分支输出测试要确认三次softmax、三套K/V和gate顺序. 将某一gate置零应只移除对应分支; 将selected budget覆盖全部历史时, selection分支应退化为相应投影上的dense attention; window扩展到全历史时也应与该分支的dense参考对齐.
 
-最后把质量、训练吞吐、Prefill TTFT、Decode时延、逻辑FLOPs、实际读字节和峰值显存放在同一配置表. **NSA的核心不是单一稀疏模式, 而是让粗粒度全局覆盖、细粒度连续块和局部窗口共同进入原生训练与硬件对齐执行.** 缺少任一分支或只在Decode启用选择, 都不能直接沿用论文结论.
+同一张验收表应列出质量、训练吞吐、Prefill TTFT、Decode时延、逻辑FLOPs、实际读字节和峰值显存. **NSA让粗粒度全局覆盖、细粒度连续块和局部窗口共同进入原生训练, 并按同一组block约束执行.** 缺少任一分支或只在Decode启用选择, 都不能直接沿用论文结论.
 
 ### 5.5. 一个短序列的完整手算
 
-设历史长度为128, compression block长度32、stride 16, 则完整窗口起点为1、17、33、49、65、81、97, 共7个compressed entries. selection block长度64时只有前后两个原始块. 对位于序列末尾的query, compression分支对7个entries做attention; selection分支根据7个压缩权重向两个64-token块归约; window若为32则读取最后32个token.
+设历史长度为128, compression block长度32、stride 16, 则完整窗口起点为1、17、33、49、65、81、97, 共7个compressed entries. selection block长度64时只有前后两个原始块. 对位于序列末尾的query, compression分支对7个entries做attention; selection分支根据7个压缩权重向两个64-token块归约; window若为32则读取最近32个token.
 
-假设归约后前块分数0.35、后块0.65, 动态预算只允许一个block, selection选择后64个token. 这个结果与直接对128个原始token取top-64不同: 后块内即使只有一个关键位置, 其余63个邻居仍会参与selection softmax. 同时window的最后32个token也位于后块, 但它们通过独立window K/V和独立softmax再次贡献. gate决定两种表示的组合, 不能对positions去重后只算一次.
+假设归约后前块分数0.35、后块0.65, 动态预算只允许一个block, selection选择后64个token. 这个结果与直接对128个原始token取top-64不同: 后块内即使只有一个关键位置, 其余63个邻居仍会参与selection softmax. 同时window覆盖的最近32个token也位于后块, 但它们通过独立window K/V和独立softmax再次贡献. gate决定两种表示的组合, 不能对positions去重后只算一次.
 
 再考虑因果位置70. 起点49的32-token compression窗口跨到token 80, 其中未来部分对该query不可见; 起点65窗口也未完整可见. 实现可只使用已经完整的窗口, 或对尾部做带mask的部分压缩, 但必须与训练定义一致. selection的第二个64-token块也只能访问65到70. 这说明「按块读取」仍需token级因果mask, 不能因block被选中就暴露完整物理块.
 

@@ -120,7 +120,7 @@ CSA先把原token合并为entry, 再选entry. 原始关键token可能在压缩�
 
 ### 5.1. shape 与地址检查
 
-实现首先记录每种层模式的main KV来源、indexer K来源、候选来源和压缩位置映射. 对batch、head、query position与compressed position逐项检查causal边界. Full到Reuse的共享引用必须在请求结束、prefix复用和分页迁移时保持生命周期一致.
+实现需要记录每种层模式的main KV来源、indexer K来源、候选来源和压缩位置映射. 对batch、head、query position与compressed position逐项检查causal边界. Full到Reuse的共享引用必须在请求结束、prefix复用和分页迁移时保持生命周期一致.
 
 小张量测试可显式构造压缩映射, 固定候选后比较Sparse Attention与朴素实现. Reindex应只改变整数索引, 不重写共享KV; Reuse应既不生成indexer分数也不改变索引. 模式切换若产生隐式复制, cache字节会偏离设计.
 
@@ -180,7 +180,7 @@ prefix cache也受益于较小层组状态, 但cache key必须编码checkpoint�
 
 ### 5.9. Prefill与Decode的逐项账本
 
-Prefill中, 压缩器首先把一段原始token映射成较短entries. 这一步通常是规则批量计算, 可以与投影融合, 但仍需读入整段hidden states. Full层随后在完整压缩序列上建立候选池; Reindex层只在候选池内用当前query重排; Reuse层直接读取既有positions. 主attention每层仍要执行, 因为query、输出和残差属于当前层. 所以Reuse省掉的是选择器, 不是整层attention.
+Prefill中, 压缩器先把一段原始token映射成较短entries. 这一步通常是规则批量计算, 可以与投影融合, 但仍需读入整段hidden states. Full层随后在完整压缩序列上建立候选池; Reindex层只在候选池内用当前query重排; Reuse层直接读取既有positions. 主attention每层仍要执行, 因为query、输出和残差属于当前层. 所以Reuse省掉的是选择器, 不是整层attention.
 
 Decode每步只新增一个原始token, 压缩entry却可能跨越多个token. 在一个压缩组尚未填满时, 实现必须定义部分entry如何更新、什么时候固化以及因果query能看到哪些成员. 如果直接覆写已被其他请求或prefix共享的entry, 会破坏cache不可变性. 安全实现通常把未完成组作为请求私有尾部状态, 组满后再并入可共享页. 官方没有披露的具体布局应留作实现选择.
 
