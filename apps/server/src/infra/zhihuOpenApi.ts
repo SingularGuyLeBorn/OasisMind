@@ -18,6 +18,33 @@ export type ZhihuOpenApiEnvelope<T> = {
   Data?: T;
 };
 
+export type ZhihuOpenApiRequestOptions = {
+  /** CLI 和测试显式控制请求上限；省略时沿用客户端统一的 30 秒。 */
+  timeoutMs?: number;
+  /** 严格 fixture 注入点，生产调用省略后使用 Node 全局 fetch。 */
+  fetchImpl?: typeof fetch;
+};
+
+export type ZhihuOpenApiSearchItem = {
+  Title?: string;
+  ContentType?: string;
+  ContentID?: string | number;
+  ContentText?: string;
+  Url?: string;
+  CommentCount?: number;
+  VoteUpCount?: number;
+  AuthorName?: string;
+  AuthorUrlToken?: string;
+  EditTime?: number;
+  CreatedTime?: number;
+  AuthorityLevel?: string | number;
+  RankingScore?: number;
+  QuestionId?: string | number;
+  QuestionTitle?: string;
+  Tags?: unknown[];
+  Topics?: unknown[];
+};
+
 export type ZhihuOpenApiFavlist = {
   UrlToken: number;
   Url: string;
@@ -65,6 +92,7 @@ export async function zhihuOpenApiRequest<T = unknown>(opts: {
   body?: unknown;
   oauthToken?: string;
   timeoutMs?: number;
+  fetchImpl?: typeof fetch;
 }): Promise<{ ok: true; data: T; raw: ZhihuOpenApiEnvelope<T> } | { ok: false; code: number; message: string; status: number }> {
   const method = opts.method ?? "GET";
   const url = new URL(
@@ -89,12 +117,20 @@ export async function zhihuOpenApiRequest<T = unknown>(opts: {
   const timer = setTimeout(() => ac.abort(), opts.timeoutMs ?? 30_000);
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await (opts.fetchImpl ?? fetch)(url, {
       method,
       headers,
       body: method === "POST" ? JSON.stringify(opts.body ?? {}) : undefined,
       signal: ac.signal,
     });
+  } catch (error) {
+    if (ac.signal.aborted) {
+      throw new Error(`知乎开放平台请求超时（${opts.timeoutMs ?? 30_000}ms）`, { cause: error });
+    }
+    throw new Error(
+      `知乎开放平台网络请求失败：${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
   } finally {
     clearTimeout(timer);
   }
@@ -134,18 +170,30 @@ export async function zhihuOpenApiRequest<T = unknown>(opts: {
   return { ok: true, data: (json.Data as T) ?? (json as unknown as T), raw: json };
 }
 
-export async function zhihuSearch(secret: string, query: string, count = 10) {
-  return zhihuOpenApiRequest<{ HasMore?: boolean; Items?: unknown[]; SearchHashId?: string }>({
+export async function zhihuSearch(
+  secret: string,
+  query: string,
+  count = 10,
+  request?: ZhihuOpenApiRequestOptions,
+) {
+  return zhihuOpenApiRequest<{ HasMore?: boolean; Items?: ZhihuOpenApiSearchItem[]; SearchHashId?: string }>({
     path: "/api/v1/content/zhihu_search",
     secret,
     query: { Query: query, Count: Math.max(1, Math.min(10, count)) },
+    ...request,
   });
 }
 
 export async function zhihuGlobalSearch(
   secret: string,
   query: string,
-  opts?: { count?: number; filter?: string; searchDb?: "all" | "realtime" | "static" },
+  opts?: {
+    count?: number;
+    filter?: string;
+    searchDb?: "all" | "realtime" | "static";
+    timeoutMs?: number;
+    fetchImpl?: typeof fetch;
+  },
 ) {
   return zhihuOpenApiRequest<{ HasMore?: boolean; Items?: unknown[] }>({
     path: "/api/v1/content/global_search",
@@ -156,14 +204,21 @@ export async function zhihuGlobalSearch(
       SearchDB: opts?.searchDb ?? "all",
       Filter: opts?.filter,
     },
+    timeoutMs: opts?.timeoutMs,
+    fetchImpl: opts?.fetchImpl,
   });
 }
 
-export async function zhihuHotList(secret: string, limit = 30) {
+export async function zhihuHotList(
+  secret: string,
+  limit = 30,
+  request?: ZhihuOpenApiRequestOptions,
+) {
   return zhihuOpenApiRequest<{ Total?: number; Items?: unknown[] }>({
     path: "/api/v1/content/hot_list",
     secret,
     query: { Limit: Math.max(1, Math.min(30, limit)) },
+    ...request,
   });
 }
 
@@ -229,7 +284,12 @@ export function normalizeZhihuQuestionUrl(url: string): string {
 export async function zhihuQuestionAnswers(
   secret: string,
   questionUrl: string,
-  opts?: { offset?: number | string; limit?: number },
+  opts?: {
+    offset?: number | string;
+    limit?: number;
+    timeoutMs?: number;
+    fetchImpl?: typeof fetch;
+  },
 ) {
   return zhihuOpenApiRequest<{
     HasMore?: boolean;
@@ -243,13 +303,20 @@ export async function zhihuQuestionAnswers(
       Offset: opts?.offset ?? 0,
       Limit: Math.max(1, Math.min(50, opts?.limit ?? 20)),
     },
+    timeoutMs: opts?.timeoutMs,
+    fetchImpl: opts?.fetchImpl,
   });
 }
 
 /** 本人（或 OAuth 授权用户）的公开关注列表（分页） */
 export async function zhihuUserFollowees(
   secret: string,
-  opts?: { offset?: number | string; limit?: number },
+  opts?: {
+    offset?: number | string;
+    limit?: number;
+    timeoutMs?: number;
+    fetchImpl?: typeof fetch;
+  },
 ) {
   return zhihuOpenApiRequest<{
     HasMore?: boolean;
@@ -262,6 +329,8 @@ export async function zhihuUserFollowees(
       Offset: opts?.offset ?? 0,
       Limit: Math.max(1, Math.min(50, opts?.limit ?? 20)),
     },
+    timeoutMs: opts?.timeoutMs,
+    fetchImpl: opts?.fetchImpl,
   });
 }
 
