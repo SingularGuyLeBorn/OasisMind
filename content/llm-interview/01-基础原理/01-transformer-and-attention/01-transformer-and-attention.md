@@ -1,110 +1,582 @@
 ---
-title: "算法类：Transformer 与注意力机制"
+title: "Transformer 与注意力机制"
 published: true
 tags: ["算法", "Transformer", "Attention", "RoPE", "MoE", "positional-encoding"]
 ---
-# 算法类：Transformer 与注意力机制
+# Transformer 与注意力机制
 
-这一组问题要求从张量形状、概率分布和硬件约束推出结论.回答时先写变量和假设,再给公式;涉及吞吐或显存时必须补充序列长度、精度、batch、并行方式与硬件.
+Transformer 的公式很短，真正容易混淆的是公式背后的对象。$QK^T$ 为什么能表示 token 之间的关系？多头到底多出了什么？RoPE 旋转的是哪条轴？FlashAttention 为什么更快，却没有改掉 $O(S^2)$ 的计算量？这些问题若只背一句结论，换一个张量布局就容易答错。比较稳妥的办法是先固定符号，再沿着「投影—打分—归一化—搬运信息—残差更新」走一遍。
 
----
+本文统一采用下列符号：批大小为 $B$，序列长度为 $S$，模型宽度为 $D$，查询头数为 $H_q$，KV 头数为 $H_{kv}$，每头宽度为 $d_h$，且通常有 $D=H_qd_h$。输入隐藏状态记为 $X\in\mathbb{R}^{B\times S\times D}$。为便于阅读，公式先省略 batch 轴，涉及实现时再把它补回来。
 
-## 1. Self-Attention 的 Softmax 之前为什么要除以 $\sqrt{d_k}$？
+## 1. 一层 Transformer 在做什么
 
-**核心要点**：
-- $Q K^{T}$ 的方差随 $d_k$ 增大而增大（$\approx d_k$），不缩放则 Softmax 进入饱和区，梯度消失
-- 除以 $\sqrt{d_k}$ 后方差稳定在 $\sim 1$，梯度正常流通
-
-设 $q_i,k_j \sim \mathcal{N}(0,1)$ 独立，则 $\mathrm{Var}(q\cdot k)=d_k$。缩放后：
+以常见的 Pre-Norm 解码器为例，一层可以写成
 
 $$
-\mathrm{Var}\left(\frac{q\cdot k}{\sqrt{d_k}}\right)=1,\qquad
-\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^{T}}{\sqrt{d_k}}\right)V
+\begin{aligned}
+U &= X+\operatorname{Attention}(\operatorname{Norm}(X)),\\
+Y &= U+\operatorname{FFN}(\operatorname{Norm}(U)).
+\end{aligned}
 $$
 
-若 $d_k=4096$ 且各分量方差近似为1,未缩放点积的标准差约为64.许多logit会落进softmax的饱和区,大部分位置的梯度很小;具体是否接近one-hot还取决于相关性、初始化和mask,不能直接断言模型一定无法训练.
+残差支路保留原状态，注意力子层负责在 token 之间搬运信息，FFN 则逐 token 地变换通道。这里的「逐 token」有严格含义：在忽略张量并行切分后，FFN 对每个位置应用同一组参数，不直接读取其他位置；跨位置交互发生在注意力里。因此，分析一层的信息流时可以先问两个问题：当前位置从哪里取信息，以及取回的信息经过什么通道变换。
 
----
+### 1.1 从隐藏状态得到 Q、K、V
 
-## 2. 位置编码方式对比：Sinusoidal → RoPE → ALiBi
-
-| 方式 | 原理 | 外推能力 | 代表模型 |
-|---|---|---|---|
-| Sinusoidal (绝对) | 正弦/余弦固定 | 有限 | Transformer 原始 |
-| 可学习 (BERT) | 训练学到 | ❌ | BERT |
-| **RoPE** (旋转) | 在 Q/K 上做位置相关旋转 | 需要缩放或续训验证 | LLaMA, Qwen, DeepSeek |
-| ALiBi | 注意力分数加线性距离偏置 | 可延伸,质量仍依任务变化 | MPT, BLOOM |
-
-**RoPE 核心**：在高维空间旋转 $Q$/$K$，使内积仅与相对位置差有关：
+对多头注意力，线性投影为
 
 $$
-\langle \mathrm{RoPE}(q,m),\mathrm{RoPE}(k,n)\rangle = \langle q,\, R(n-m)\, k\rangle
+Q=XW_Q,\qquad K=XW_K,\qquad V=XW_V.
 $$
 
-RoPE把绝对位置编码进旋转相位,使注意力内积显式依赖相对位移.这不等于天然外推:训练长度之外会出现未见过的相位组合,高频维度旋转更快,注意力分布可能失真.位置插值、NTK-aware缩放、YaRN和长上下文续训都在处理这一问题;效果必须在目标长度与任务上验证.
+在 MHA 中，$W_Q,W_K,W_V\in\mathbb{R}^{D\times H_qd_h}$。投影并 reshape 后：
 
----
+$$
+Q,K,V\in\mathbb{R}^{B\times H_q\times S\times d_h}.
+$$
 
-## 3. MHA → MQA → GQA → MLA 的演进
+以 $Q_{b,h,i,:}$ 为例，它表示第 $b$ 个样本、第 $h$ 个头、第 $i$ 个 token 的查询向量。$K_{b,h,j,:}$ 是候选来源 $j$ 的键，$V_{b,h,j,:}$ 是真正被搬运的内容。查询与键的点积只负责产生权重；输出向量来自 $V$。把注意力称作「软检索」有助于入门，但要记住它会混合所有未被 mask 的 value，并非离散数据库中的精确 top-k 检索。
 
-| 变体 | 共享方式 | KV Cache 节省 | 代表模型 |
-|---|---|---|---|
-| **MHA** (Multi-Head) | 每头独立 Q/K/V | 基线 | Transformer 原始 |
-| **MQA** (Multi-Query) | 所有查询头共享一组 K/V | 约缩到 $1/H_q$ | PaLM, Falcon |
-| **GQA** (Grouped-Query) | 每组查询头共享 K/V | 约缩到 $H_{kv}/H_q$ | LLaMA 2/3, Mistral |
-| **MLA** (Multi-head Latent) | 缓存低秩潜变量与RoPE分量 | 由潜变量维度决定 | DeepSeek-V2/V3 |
+单头的分数矩阵与输出为
 
-MQA保留每个查询头独立的Q投影,只共享K/V.它显著降低decode阶段读取KV cache的字节数,代价是K/V头的表示多样性下降.质量损失大小取决于模型规模、训练配方和任务;GQA用多组K/V在带宽与质量之间提供连续折中.
+$$
+L=\frac{QK^T}{\sqrt{d_h}}+M,
+\qquad A=\operatorname{softmax}(L),
+\qquad O=AV.
+$$
 
----
+其中 $Q,K,V\in\mathbb{R}^{S\times d_h}$，所以 $L,A\in\mathbb{R}^{S\times S}$，$O\in\mathbb{R}^{S\times d_h}$。$M$ 是 mask。因果语言模型令未来位置对应的 $M_{ij}=-\infty$，其余合法位置取 $0$，于是第 $i$ 行 softmax 后只有 $j\le i$ 的位置具有非零概率。
 
-## 4. Transformer 计算量分布与稀疏注意力优化
+**自注意力只做一件事：依据 QK 形成的权重，从各位置的 V 中汇总信息。** 多头机制把这套操作放进多个子空间并行执行，随后拼接并通过输出投影 $W_O$ 写回模型宽度：
 
-注意力 $QK^{T}$ 与概率矩阵乘 $V$ 的计算复杂度随序列长度呈 $O(n^{2}d)$ 增长,但端到端占比还受FFN宽度、FlashAttention实现、batch、prefill/decode阶段和硬件影响.不能仅凭$n=4096$或$n=8192$给出固定百分比.
+$$
+\operatorname{MHA}(X)=\operatorname{Concat}(O_1,\ldots,O_{H_q})W_O.
+$$
 
-**常见优化**：
-| 方案 | 原理 | 复杂度 |
-|---|---|---|
-| Sparse Attention (Longformer/BigBird) | 局部、全局与随机连接的组合 | 固定窗口时近似 $O(nw)$ |
-| FlashAttention | 分块与在线softmax减少HBM往返 | 计算仍为 $O(n^{2})$ |
-| Linear Attention (Performer) | 核方法近似 | $O(n)$ |
+### 1.2 为什么除以 $\sqrt{d_h}$
 
-FlashAttention主要减少IO和中间矩阵存储,并未让全注意力的二次计算消失.稀疏注意力直接减少被计算的边,需要额外解释选择模式、kernel规则性和质量损失;两者解决的问题不同,也可以组合.
+假设初始化附近，查询和键各维独立、均值为零、方差为一。点积
 
----
+$$
+z=q^Tk=\sum_{r=1}^{d_h}q_rk_r
+$$
 
-## 5. MoE (Mixture of Experts) 的负载均衡与分布式
+由 $d_h$ 项组成。独立假设下，每项均值为零、方差为一，因此
 
-**核心组件**：Gate Network（选 top-k 专家）+ Experts（子网络）+ Load Balancing Loss
+$$
+\operatorname{Var}(z)=\sum_{r=1}^{d_h}\operatorname{Var}(q_rk_r)=d_h.
+$$
 
-需要同时说明三件事：
-1. **负载均衡 Loss**：防止所有 token 选同一个专家，给 Gate 加辅助 loss 鼓励均分
-2. **Expert Capacity**：部分实现限制每个专家接收的 token 数;溢出后可能丢弃、转给候选专家或由drop-free策略动态处理,不存在统一的 bypass 规则
-3. **分布式部署**：专家可以放在不同 GPU 上，Gate 做路由。DeepSeek V2 做了细粒度 expert 分裂
+点积的标准差随 $\sqrt{d_h}$ 增长。除以 $\sqrt{d_h}$ 后，缩放分数 $\tilde z=z/\sqrt{d_h}$ 的方差回到约 $1$。这样做是为了让 softmax 输入在不同头宽下保持接近的尺度。
 
-DeepSeek-V3还展示了另一条负载控制路径:不依赖传统辅助损失主导路由,而是按专家负载更新偏置.因此回答具体模型时必须回到相应版本的路由公式与部署拓扑.
+softmax 对第 $i$ 个 logit 的导数为
 
----
+$$
+\frac{\partial p_i}{\partial z_j}=p_i(\delta_{ij}-p_j).
+$$
 
-## 6. 手撕代码实战题
+若 logits 的差距过大，最大的 $p_i$ 接近 $1$，其他概率接近 $0$，大量导数便会很小。缩放缓解了初始化阶段的饱和。这个推导依赖独立同分布近似；训练后的 Q、K 显然不再满足该假设，因此不能把它理解成任何阶段都严格保持单位方差的定理。
 
-下面这些小实现适合检查公式是否真正落到张量操作：
+做一个小计算。令 $d_h=64$，未缩放点积的标准差约为 $8$；缩放后约为 $1$。若某一行未缩放 logits 是 $[8,0,-8]$，softmax 约为 $[0.9997,0.00034,0]$；除以 $8$ 后成为 $[1,0,-1]$，softmax 约为 $[0.665,0.245,0.090]$。这组数只是展示尺度如何影响概率分布，不代表真实模型的注意力一定呈现同样数值。
 
-| 题目 | 检查重点 | 难度 |
-|---|---|---|
-| Attention forward | shape、mask位置、稳定softmax | mid |
-| Top-K softmax | 稀疏索引与归一化范围 | junior |
-| AdamW 更新 | 解耦weight decay与bias correction | senior |
-| RoPE 旋转 | 偶奇维配对、广播与位置轴 | senior |
-| sqrt(x) 数值实现 | 初值、收敛条件与精度 | junior |
+### 1.3 手算一次因果注意力
 
----
+取三个 token、单头宽度 $d_h=2$，并令
 
-## 延伸阅读
+$$
+Q=\begin{bmatrix}1&0\\1&1\\0&1\end{bmatrix},\quad
+K=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix},\quad
+V=\begin{bmatrix}1&0\\0&2\\3&1\end{bmatrix}.
+$$
 
-- [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
-- [RoFormer](https://arxiv.org/abs/2104.09864)
-- [Fast Transformer Decoding: One Write-Head is All You Need](https://arxiv.org/abs/1911.02150)
-- [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245)
-- [FlashAttention](https://arxiv.org/abs/2205.14135)
-- [DeepSeek-V2](https://arxiv.org/abs/2405.04434)
+第二个 token 的查询是 $q_2=[1,1]$。在因果 mask 下，它能读取前两个位置，打分为
+
+$$
+\ell_2=\frac{[q_2^Tk_1,q_2^Tk_2]}{\sqrt2}
+=\left[\frac1{\sqrt2},\frac1{\sqrt2}\right].
+$$
+
+两个分数相等，softmax 得到 $[0.5,0.5]$，所以
+
+$$
+o_2=0.5v_1+0.5v_2=[0.5,1].
+$$
+
+第三个 token 的查询为 $[0,1]$，对三个键的未缩放分数是 $[0,1,1]$。加入 $1/\sqrt2$ 缩放后，令 $a=e^{1/\sqrt2}\approx2.028$，归一化分母为 $1+2a\approx5.056$，权重约为 $[0.198,0.401,0.401]$。输出为
+
+$$
+o_3\approx0.198[1,0]+0.401[0,2]+0.401[3,1]
+=[1.401,1.203].
+$$
+
+这一步同时说明了两件事。第一，注意力权重每行归一化，表示当前查询对可见来源的相对分配；第二，最终向量是 value 的加权和，分数矩阵本身不会作为隐藏状态继续传递。
+
+## 2. 多头、mask 与数值稳定性
+
+### 2.1 多头为什么有意义
+
+若只看参数量，在 $d_h=D/H_q$ 时，多头与单个 $D$ 维注意力的投影量级接近。多头的作用来自结构约束：每个头分别计算 softmax，因而分别拥有一张归一化分布。一个头可偏向近邻句法关系，另一个头可聚合远处实体信息；这只是可能出现的功能分工，不能依据注意力热图就断言某个头已经学会了可解释规则。
+
+把所有头写开，第 $h$ 个头为
+
+$$
+O_h=\operatorname{softmax}\left(\frac{XW_Q^{(h)}(XW_K^{(h)})^T}{\sqrt{d_h}}+M\right)XW_V^{(h)}.
+$$
+
+其中 $W_Q^{(h)},W_K^{(h)},W_V^{(h)}\in\mathbb{R}^{D\times d_h}$。每个头拥有自己的 Q、K、V 子空间和概率矩阵。拼接后的 $W_O$ 允许不同头的信息重新混合。
+
+### 2.2 mask 应加在哪里
+
+mask 应加在 softmax 前的 logits 上。若先 softmax 再把未来位置乘零，剩余权重之和小于 $1$，输出尺度也会改变；若随后重新归一化，虽可恢复概率和，却多做了一套操作并增加数值处理难度。实际实现常用 dtype 能表示的很小有限数代替 $-\infty$，同时要处理整行均被遮挡的情况，否则可能产生 NaN。
+
+padding mask 与 causal mask 约束的轴也不同。padding mask 表示某个样本里的填充 token 不应作为键值来源；causal mask 表示位置 $i$ 不能读取未来位置。组合后，广播形状通常可写为 $[B,1,S_q,S_k]$，再作用到 $[B,H_q,S_q,S_k]$ 的分数张量。
+
+### 2.3 稳定 softmax
+
+直接计算 $e^{z_i}$ 容易溢出。利用 softmax 的平移不变性，令 $m=\max_i z_i$：
+
+$$
+\operatorname{softmax}(z)_i=
+\frac{e^{z_i-m}}{\sum_j e^{z_j-m}}.
+$$
+
+最大的指数项变为 $e^0=1$，其余项不超过 $1$。在线 softmax 进一步允许分块读取 logits。若已经处理的块有最大值 $m$、指数和 $l$，新块最大值为 $m_b$、指数和为 $l_b$，合并统计量为
+
+$$
+m'=\max(m,m_b),\qquad
+l'=e^{m-m'}l+e^{m_b-m'}l_b.
+$$
+
+同样的缩放也可施加到累计输出上。这是 FlashAttention 在不物化完整 $S\times S$ 概率矩阵时仍能得到精确 softmax 的数学基础之一。
+
+## 3. 位置信息如何进入注意力
+
+去掉位置编码后，自注意力对输入位置的排列具有等变性：以同样方式置换 token，输出也随之置换。语言顺序显然不能被忽略，因此模型需要位置相关信号。
+
+### 3.1 正弦位置编码
+
+原始 Transformer 将固定位置向量加到 token embedding 上。第 $p$ 个位置、第 $2i$ 与 $2i+1$ 个通道为
+
+$$
+\operatorname{PE}(p,2i)=\sin\left(p/10000^{2i/D}\right),
+$$
+
+$$
+\operatorname{PE}(p,2i+1)=\cos\left(p/10000^{2i/D}\right).
+$$
+
+不同通道对应不同频率。利用三角恒等式，$p+\Delta$ 处的正弦和余弦可以由 $p$ 处的一对分量线性表示，因此相对位移具有规整结构。位置向量直接加到隐藏状态后，位置信息会同时进入 Q、K、V，并在后续层中继续混合。
+
+### 3.2 RoPE 的二维旋转
+
+RoPE 将通道两两配对。对第 $r$ 对通道，位置 $p$ 对应角度 $p\theta_r$，旋转矩阵为
+
+$$
+R(p\theta_r)=
+\begin{bmatrix}
+\cos(p\theta_r)&-\sin(p\theta_r)\\
+\sin(p\theta_r)&\cos(p\theta_r)
+\end{bmatrix}.
+$$
+
+查询和键分别变为 $R(p\theta_r)q$ 与 $R(t\theta_r)k$。由于二维旋转矩阵满足 $R(a)^TR(b)=R(b-a)$，二者内积为
+
+$$
+(R(p\theta_r)q)^TR(t\theta_r)k
+=q^TR((t-p)\theta_r)k.
+$$
+
+分数显式依赖相对位移 $t-p$。RoPE 通常只作用于 Q、K，因为位置主要参与「从哪里取」的决策；V 负责承载内容。实现中常见 interleaved 与 half-split 两种通道配对布局，权重转换时若把二者混用，维度虽然对得上，旋转结果却会错误。
+
+RoPE 的相对位置结构不自动保证长上下文外推。训练长度外会遇到未充分训练的相位组合，高频维度尤其容易快速绕圈。位置插值把更长的位置压回训练范围；NTK-aware scaling 与 YaRN 调整不同频率的缩放策略；长上下文继续训练让模型适应新的位置分布。评估时需要同时检查目标长度上的困惑度、检索能力与实际任务，单看「支持多少 token」的配置字段不够。
+
+### 3.3 ALiBi 与位置偏置
+
+ALiBi 不向隐藏状态添加位置向量，而是在注意力分数中加入与距离相关的线性偏置。对因果注意力中的头 $h$：
+
+$$
+L_{h,i,j}=\frac{q_{h,i}^Tk_{h,j}}{\sqrt{d_h}}-m_h(i-j),\qquad j\le i.
+$$
+
+$m_h>0$ 是各头不同的斜率，较远位置受到更大惩罚。其归纳偏置直接作用在注意力概率上，计算简单，也能自然计算训练长度外的距离；实际质量仍受训练配方和任务影响。RoPE 改写 Q、K 的几何关系，ALiBi 直接修改 logits，两者在张量流中的位置不同。
+
+## 4. MHA、MQA、GQA 与 MLA
+
+自回归生成包含两个阶段。prefill 一次处理提示词的多个 token，能够用大矩阵乘法充分利用 GPU；decode 每步只产生一个或少量 token，却需要读取此前所有 token 的 K、V。随着上下文变长，decode 容易受显存带宽限制，KV cache 因而成为注意力变体的重要切入点。
+
+### 4.1 KV cache 的容量
+
+对普通 MHA，一层 KV cache 的元素数为
+
+$$
+N_{KV}=2BSH_qd_h.
+$$
+
+乘以层数 $L$ 和每元素字节数 $b_e$，总容量为
+
+$$
+M_{KV}=2BLSH_qd_hb_e.
+$$
+
+例：$B=1,L=32,S=8192,H_q=32,d_h=128$，使用 BF16，每元素 2 字节，则
+
+$$
+M_{KV}=2\times1\times32\times8192\times32\times128\times2
+=4\ \text{GiB}.
+$$
+
+这还没有计入参数、激活、临时工作区、allocator 碎片与服务框架元数据。若并发批次增至 16，仅这部分理论容量便达到 64 GiB。PagedAttention 一类技术能改善 cache 的分配和碎片问题，却不会把逻辑上的每 token KV 数据凭空消除。
+
+### 4.2 MQA 与 GQA 的连续关系
+
+MQA 保留 $H_q$ 个查询头，只使用一组 K、V：$H_{kv}=1$。GQA 使用 $1<H_{kv}<H_q$ 个 KV 头，每组 $g=H_q/H_{kv}$ 个查询头共享一组 K、V。reshape 后
+
+$$
+Q\in\mathbb{R}^{B\times H_q\times S\times d_h},qquad
+K,V\in\mathbb{R}^{B\times H_{kv}\times S\times d_h}.
+$$
+
+计算时，第 $h$ 个查询头使用索引 $\lfloor h/g\rfloor$ 对应的 KV 头。相对于 MHA，KV cache 容量比例为
+
+$$
+\frac{M_{GQA}}{M_{MHA}}=\frac{H_{kv}}{H_q}.
+$$
+
+当 $H_{kv}=H_q$ 时退化为 MHA；$H_{kv}=1$ 时就是 MQA。以上一组参数为例，将 $H_{kv}$ 从 32 改成 8，理论 KV cache 从 4 GiB 降到 1 GiB。查询投影并未减少，变化集中在 K/V 投影、缓存容量以及 decode 时读取的字节数。
+
+共享 KV 会限制键值表示的多样性。GQA 用组数提供一条可调轴，具体质量取决于模型规模、训练方式与任务。论文中的 checkpoint uptraining 还说明，已有 MHA 模型可以通过合并 KV 头并继续训练转成 GQA；从头训练与转换旧权重是两种不同实验条件。
+
+### 4.3 MLA 压缩了什么
+
+MLA 进一步把 K、V 的内容信息压缩到低维潜变量。用简化符号表示：
+
+$$
+c_t^{KV}=W^{DKV}h_t,qquad
+k_t^C=W^{UK}c_t^{KV},\qquad
+v_t^C=W^{UV}c_t^{KV}.
+$$
+
+$c_t^{KV}\in\mathbb{R}^{d_c}$ 是位置 $t$ 的低维表示。若推理时缓存 $c_t^{KV}$，后续可通过上投影恢复内容键和值；带 RoPE 的键还需保留位置相关部分。DeepSeek-V2 对查询也使用低秩压缩训练参数，但查询只在当前步使用，历史 Q 不进入 KV cache。
+
+高效实现不会在每次 decode 时为所有历史 token 显式恢复完整 K、V。以内容分数为例：
+
+$$
+q_t^T k_s^C=q_t^TW^{UK}c_s^{KV}
+=(W^{UKT}q_t)^Tc_s^{KV}.
+$$
+
+把与历史位置无关的矩阵吸收到当前查询侧，便能直接让变换后的查询与缓存潜变量做内积。value 路径也可结合输出投影作矩阵吸收。这样，缓存容量才真正随 $d_c$ 而非完整 KV 头宽变化。量化时还要考虑潜变量与 RoPE 分量的精度、反量化开销以及 kernel 支持，不能只比较元素个数。
+
+## 5. 计算量、访存与 FlashAttention
+
+### 5.1 一层大约算多少
+
+忽略 bias 与常数较小的操作，标准注意力的四个线性投影 $Q,K,V,O$ 约需 $4BSD^2$ 次乘加；分数矩阵 $QK^T$ 与 $AV$ 各约需 $BS^2D$ 次乘加，合计
+
+$$
+C_{attn}\approx4BSD^2+2BS^2D.
+$$
+
+若 FFN 中间宽度为 $D_{ff}$，两次线性层约需
+
+$$
+C_{ffn}\approx2BSDD_{ff}.
+$$
+
+当 $D_{ff}\approx4D$ 时，FFN 约为 $8BSD^2$。于是短序列和大模型宽度下，线性层与 FFN 可能占主要计算；$S$ 增大后，$S^2D$ 项逐渐突出。不能只凭「注意力是二次复杂度」就断言它在任意配置中占固定比例。
+
+手算一个量级。取 $B=1,S=2048,D=4096,D_{ff}=11008$。注意力投影约为 $4SD^2\approx1.37\times10^{11}$ 次乘加，两个二次项约为 $2S^2D\approx3.44\times10^{10}$，FFN 约为 $2SDD_{ff}\approx1.85\times10^{11}$。在这个配置下，二次注意力项仍小于投影与 FFN；若把 $S$ 增至 32768，二次项相对权重会显著上升。
+
+### 5.2 为什么 $O(S^2)$ 不等于一定慢
+
+算法复杂度只描述随输入规模增长的趋势。GPU 执行时间还取决于并行度、算术强度、数据布局、kernel 启动与显存带宽。训练或 prefill 的矩阵较大，容易发挥 tensor core；单 token decode 的矩阵在某些维度上很窄，常常读了大量权重和 KV，却没有足够计算来掩盖访存延迟。
+
+可以用 roofline 的粗略判断：算术强度 $I=\text{FLOPs}/\text{Bytes}$，硬件峰值计算吞吐为 $P_{max}$，显存带宽为 $BW$，可达到的性能上界近似
+
+$$
+P\le\min(P_{max},I\cdot BW).
+$$
+
+若 $I$ 很低，增加理论 FLOPs 峰值帮助有限；减少读写字节或提高复用更重要。decode 读取长 KV cache 正是典型带宽压力来源。
+
+### 5.3 FlashAttention 改变了数据搬运
+
+朴素实现会生成 $S\times S$ 的 logits 和概率矩阵，并在 GPU 高带宽显存 HBM 与片上 SRAM 之间多次搬运。FlashAttention 将 Q、K、V 分块载入片上存储，使用在线 softmax 维护每行最大值、归一化因子和输出累积量，从而避免把完整分数矩阵写回 HBM。
+
+它计算的仍是精确的全注意力，乘法量级依旧为 $O(S^2D)$。减少的是中间张量存储与 HBM 访问。反向传播可保存少量统计量，并在需要时重算局部分数，以额外计算换取更少显存读写。这里的收益依赖 head dimension、序列长度、mask 类型、GPU 架构和 kernel 版本；短序列或不规则模式下，调度开销可能影响收益。
+
+稀疏注意力走另一条路：只计算选中的连接。固定窗口宽度 $w$ 时，局部注意力的边数约为 $Sw$，计算可降为 $O(SwD)$。代价在于远距离信息如何传播、稀疏索引是否规则、选择器开销以及漏选关键 token 的风险。FlashAttention 与稀疏模式可以结合，前提是 kernel 能高效处理相应块结构。
+
+## 6. MoE：路由、容量与通信
+
+MoE 通常替换 Transformer 层中的 FFN。每个 token 先经过路由器：
+
+$$
+r_t=W_rh_t,\qquad p_t=\operatorname{softmax}(r_t),
+$$
+
+再选择 top-$k$ 专家集合 $\mathcal{T}_t$。输出可写为
+
+$$
+y_t=\sum_{e\in\mathcal{T}_t}\tilde p_{t,e}E_e(h_t),
+$$
+
+其中 $E_e$ 是第 $e$ 个专家，$\tilde p$ 表示对选中专家的权重；不同实现会选择是否在 top-$k$ 内重新归一化。若总共有 $N$ 个专家、每个 token 激活 $k$ 个，参数量可以随着 $N$ 增大，而单 token 的专家计算更接近 $k$ 个 FFN 的成本。这便是稀疏激活的主要价值。
+
+### 6.1 负载为何会失衡
+
+路由器若持续偏向少数专家，热门专家收到过多 token，其他专家训练不足。在专家并行中，一次前向必须等待最慢设备完成，负载不均会直接形成尾部延迟。Switch Transformer 使用辅助项鼓励路由概率与实际 token 分配更均匀。用 $f_e$ 表示分给专家 $e$ 的 token 比例，$P_e$ 表示平均路由概率，一种常见形式为
+
+$$
+L_{aux}=\alpha N\sum_{e=1}^{N}f_eP_e.
+$$
+
+它试图让两种统计都接近 $1/N$。辅助损失过强可能干扰主任务，过弱又不足以控制拥塞。DeepSeek-V3 展示了基于专家负载更新路由 bias 的方法，将负载控制信号与用于选择专家的原始 affinity 分开处理；具体实现应按相应版本的公式说明。
+
+### 6.2 capacity 与 token 去向
+
+部分 MoE 为每个专家设置容量。若一个 batch 共有 $T$ 个 token，每个 token 路由到 $k$ 个专家，平均每个专家接收 $Tk/N$ 个分配。容量因子 $c$ 下可设
+
+$$
+C=\left\lceil c\frac{Tk}{N}\right\rceil.
+$$
+
+某专家超过 $C$ 后如何处理，取决于实现：可能丢弃溢出分配、尝试备选专家，也可能采用无丢弃的动态缓冲与负载调度。讨论 MoE 时应明确训练框架与路由策略，不能假设存在统一规则。容量过小会损失 token 的专家计算，容量过大则增加 padding、显存与通信预留。
+
+### 6.3 专家并行的 all-to-all
+
+专家分布在不同 GPU 时，token 需要按路由结果发往专家所在设备，计算结束后再送回原位置。于是一次 MoE 前向常包含 dispatch all-to-all、专家 FFN 和 combine all-to-all。若本设备有 $T_{local}$ 个 token、隐藏宽度为 $D$、激活采用 $b_e$ 字节，单次发送的有效载荷量级约为 $T_{local}kDb_e$，还需考虑元数据、对齐和网络拓扑。
+
+因此，MoE 的 FLOPs 下降或参数增大不能直接推出端到端更快。小 batch 下专家 GEMM 过碎、跨节点带宽不足、路由偏斜、通信与计算未能重叠，都可能吞掉理论收益。工程评估至少应分别记录各专家 token 数、all-to-all 时间、专家计算时间、溢出率与端到端吞吐。
+
+## 7. 从公式落到实现
+
+下面的 PyTorch 片段实现一个最小 GQA 因果注意力。代码重点是 shape 与共享关系，并未包含 RoPE、dropout、FlashAttention kernel 和张量并行：
+
+```python
+import math
+import torch
+
+def gqa_attention(q, k, v):
+    """对应 softmax(QK^T/sqrt(d_h))V.
+
+    q: [B, Hq, S, Dh]
+    k: [B, Hkv, S, Dh]
+    v: [B, Hkv, S, Dh]
+    """
+    b, hq, s, dh = q.shape
+    bk, hkv, sk, dkh = k.shape
+    assert (b, s, dh) == (bk, sk, dkh)
+    assert v.shape == k.shape
+    assert hq % hkv == 0
+
+    group = hq // hkv
+    # 每个 KV 头服务 group 个相邻查询头.
+    k = k.repeat_interleave(group, dim=1)
+    v = v.repeat_interleave(group, dim=1)
+
+    scores = q @ k.transpose(-1, -2) / math.sqrt(dh)
+    causal = torch.ones(s, s, dtype=torch.bool, device=q.device).triu(1)
+    scores = scores.masked_fill(causal, torch.finfo(scores.dtype).min)
+    probs = torch.softmax(scores.float(), dim=-1).to(q.dtype)
+    out = probs @ v
+    assert out.shape == (b, hq, s, dh)
+    return out
+```
+
+这里用 `repeat_interleave` 便于看清头的对应关系，实际 kernel 可以通过广播或索引共享 KV，避免真的复制 cache。softmax 暂时转到 FP32 是常见的稳定性做法，但融合 kernel 可能采用不同的累积策略。若加入 padding，需要把每个样本的有效长度也编码进 mask；若用于增量 decode，$S_q$ 通常为 $1$，$S_k$ 是已有上下文长度，二者不能继续偷懒写成同一个 $S$。
+
+### 7.1 如何检查一个注意力实现
+
+第一步检查 shape。输入、头数、序列轴和每头宽度应逐项写出，尤其留意 transpose 后哪两条轴参与矩阵乘法。第二步检查概率轴，softmax 必须沿 key 位置归一化。第三步检查 mask 时机与广播范围。第四步用小张量和高精度参考实现比较前向与梯度。第五步才看性能，分别测 prefill 与 decode，并报告 batch、上下文长度、生成长度、dtype、硬件和 kernel 版本。
+
+可以构造三个简单测试：长度为 1 时，注意力权重应为 1；把未来位置的 V 改成极大值，因果模型较早位置的输出不应变化；GQA 在 $H_{kv}=H_q$ 时应与相同权重的 MHA 一致，在 $H_{kv}=1$ 时应符合 MQA 的共享关系。数值误差阈值需依据 dtype 设置，BF16 与 FP32 不应使用同一绝对误差要求。
+
+## 8. 常见追问的推导路径
+
+遇到「为什么 GQA 更适合推理」时，可以从 decode 的字节读取开始：每一步只生成一个查询，却要读取所有历史 K、V；将 KV 头数从 $H_q$ 降到 $H_{kv}$，cache 容量和理论读取量按 $H_{kv}/H_q$ 缩小。随后补上代价：共享降低表示自由度，端到端收益还受 kernel、量化和批调度影响。
+
+遇到「FlashAttention 是否把复杂度降成线性」时，直接写出 $QK^T$ 的分块仍覆盖全部 $S^2$ 对，并说明完整概率矩阵不落 HBM。它优化 IO 复杂度和中间存储，算术量级依旧为二次。若题目继续追问长上下文，可再比较块稀疏、滑动窗口和检索式选择各自减少了哪些边。
+
+遇到「RoPE 为什么能表示相对位置」时，从 $R(p)^TR(t)=R(t-p)$ 推出内积即可。继续追问外推，则说明相对形式与训练分布是两件事：公式能计算更远位置，不代表模型已经学会处理那些相位与距离。
+
+遇到「MoE 为什么未必更快」时，把路由后的 token dispatch、专家 GEMM、combine 三段列出来。稀疏激活降低每 token 参与的参数比例，但 all-to-all、负载偏斜和小矩阵效率决定了真实吞吐。一个完整回答应给出可测量指标，而不是只报总参数和激活参数。
+
+## 9. 残差、归一化与训练稳定性
+
+注意力不能脱离残差结构单独理解。若子层记为 $F$，Post-Norm Transformer 使用
+
+$$
+y=\operatorname{Norm}(x+F(x)),
+$$
+
+Pre-Norm 则使用
+
+$$
+y=x+F(\operatorname{Norm}(x)).
+$$
+
+二者只是把归一化挪过一个加号，却会改变梯度路径。Pre-Norm 中存在从 $y$ 到 $x$ 的恒等支路。对损失 $\mathcal{L}$，其局部梯度为
+
+$$
+\frac{\partial\mathcal{L}}{\partial x}
+=\frac{\partial\mathcal{L}}{\partial y}
+\left(I+\frac{\partial F}{\partial \operatorname{Norm}(x)}
+\frac{\partial \operatorname{Norm}(x)}{\partial x}\right).
+$$
+
+即使子层雅可比在某些方向很小，恒等项仍为梯度提供直接路径。Post-Norm 的梯度还必须经过最外层归一化的雅可比，深层训练通常更依赖学习率 warmup、初始化和残差缩放。这里不能推成「Pre-Norm 永远优于 Post-Norm」；两者在最终表征、深度扩展和训练配方上各有研究，具体模型也可能使用 sandwich norm、额外归一化或可学习缩放。
+
+LayerNorm 对单个 token 的通道做统计。给定 $x\in\mathbb{R}^{D}$：
+
+$$
+\mu=\frac1D\sum_{i=1}^{D}x_i,qquad
+\sigma^2=\frac1D\sum_{i=1}^{D}(x_i-\mu)^2,
+$$
+
+$$
+\operatorname{LN}(x)_i=\gamma_i\frac{x_i-\mu}{\sqrt{\sigma^2+\epsilon}}+\beta_i.
+$$
+
+RMSNorm 去掉均值中心化：
+
+$$
+\operatorname{RMSNorm}(x)_i=gamma_i
+\frac{x_i}{\sqrt{D^{-1}\sum_jx_j^2+\epsilon}}.
+$$
+
+它少算均值与减法，保留向量的整体偏移信息。是否带来明显速度收益取决于融合 kernel 和整个层的瓶颈；归一化计算少一些，不代表端到端延迟必然按相同比例下降。
+
+做一个四维手算。令 $x=[1,2,3,4]$，则 $\mu=2.5$，方差为
+
+$$
+\sigma^2=\frac{2.25+0.25+0.25+2.25}{4}=1.25.
+$$
+
+忽略 $\epsilon$ 并取 $\gamma=1,\beta=0$，LayerNorm 输出约为 $[-1.342,-0.447,0.447,1.342]$。RMS 为 $\sqrt{(1+4+9+16)/4}=\sqrt{7.5}\approx2.739$，RMSNorm 输出约为 $[0.365,0.730,1.095,1.461]$。两者都控制尺度，但只有 LayerNorm 把通道均值移到零。
+
+## 10. 注意力的反向传播
+
+前向公式简洁，反向传播能暴露 softmax 轴与矩阵方向是否真正掌握。单头忽略 mask，写成
+
+$$
+S=\frac{QK^T}{\sqrt{d_h}},\qquad P=\operatorname{softmax}(S),\qquad O=PV.
+$$
+
+假设上游梯度 $G_O=\partial\mathcal{L}/\partial O$。由矩阵乘法可得
+
+$$
+G_V=P^TG_O,qquad G_P=G_OV^T.
+$$
+
+$G_P$ 还需经过逐行 softmax。对某一行向量 $p$ 与上游梯度 $g_p$，softmax 雅可比为 $J=\operatorname{diag}(p)-pp^T$，因此
+
+$$
+g_s=Jg_p=p\odot\left(g_p-\langle p,g_p\rangle\mathbf1\right).
+$$
+
+这一形式比显式构造 $S\times S$ 雅可比更实用。它表示先计算概率加权的梯度均值，再从每个位置的梯度中减去该均值并乘以对应概率。经过分数矩阵乘法可得：
+
+$$
+G_Q=\frac{G_SK}{\sqrt{d_h}},qquad
+G_K=\frac{G_S^TQ}{\sqrt{d_h}}.
+$$
+
+shape 可以逐项核对：$G_S\in\mathbb{R}^{S\times S}$，乘 $K\in\mathbb{R}^{S\times d_h}$ 得到与 Q 相同的 $S\times d_h$；转置后乘 Q 得到与 K 相同的 shape。因果 mask 对应的概率为零，理论上这些位置的分数梯度也为零。使用有限大负数近似 mask 时，低精度下仍要确认被遮挡位置没有因数值处理重新获得概率。
+
+这一推导也解释了为何注意力概率接近 one-hot 时训练可能变慢。若某行 $p_r\approx1$，其余 $p_j\approx0$，上式中的乘数 $p_j$ 会压低多数位置的梯度；最大位置又因减去加权均值而出现抵消。缩放、归一化、初始化和训练动态共同影响 logits 的范围。
+
+## 11. 参数量怎样算
+
+先算普通 MHA。忽略 bias，Q、K、V 与输出投影均为 $D\times D$，所以注意力参数量约为
+
+$$
+N_{MHA}=4D^2.
+$$
+
+GQA 保持查询与输出投影为 $D\times D$，K、V 的输出宽度变成 $H_{kv}d_h$：
+
+$$
+N_{GQA}=2D^2+2D(H_{kv}d_h).
+$$
+
+例如 $D=4096,H_q=32,d_h=128,H_{kv}=8$，MHA 为 $4\times4096^2\approx67.1$ 百万参数；GQA 为
+
+$$
+2\times4096^2+2\times4096\times1024
+\approx41.9\text{ 百万}.
+$$
+
+参数减少约 37.5%，但整层还包含 FFN。若采用门控 FFN：
+
+$$
+\operatorname{FFN}(x)=W_{down}
+\left(\operatorname{SiLU}(W_{gate}x)\odot W_{up}x\right),
+$$
+
+三块矩阵的参数量约为 $3DD_{ff}$。当 $D_{ff}=11008$ 时约 135.3 百万，超过上述注意力参数。由此可见，KV 共享对 cache 和 decode 带宽的影响往往比它对整模型参数比例的影响更值得关注。
+
+训练显存也不能用「参数量乘精度」一项概括。以混合精度 AdamW 为例，可能同时存在低精度参数、梯度、FP32 主参数、一阶矩与二阶矩，不同框架与优化器实现会改变具体组成。再加上激活、临时张量和通信缓冲，实际峰值需要从分布式切分方式与保存策略逐项计算。仅凭模型参数文件大小推断训练所需 GPU 数量，通常会低估很多。
+
+## 12. Prefill 与 Decode 分开分析
+
+设已有上下文长度为 $S$，一次生成一个新 token。decode 时单层、单查询头组需要让当前 Q 与 $S$ 个历史 K 做点积，再用 $S$ 个概率汇总 V，算术量级约为 $2SH_qd_h=2SD$ 次乘加。与此同时，至少需要读取历史 K、V，理论字节量约为
+
+$$
+R_{KV}=2SH_{kv}d_hb_e.
+$$
+
+用 $S=8192,H_{kv}=8,d_h=128,b_e=2$ 代入，每层每个序列约读取 32 MiB KV 数据；32 层合计约 1 GiB。实际系统会受到 cache 布局、并发、分片、缓存命中以及融合 kernel 影响，这个计算提供的是量级参考。
+
+prefill 的 $S$ 个查询可以一起计算。QK 与 AV 的算术量级变为 $2S^2D$，同时 K、V 能在块内复用，大矩阵也更适合 tensor core。因此，prefill 常更偏计算受限，decode 更容易偏带宽受限。服务系统会分别报告首 token 延迟 TTFT 与逐 token 延迟 TPOT，因为二者对应的工作负载不同。
+
+连续批处理把不同请求在每个 decode step 重新编排，提升设备利用率。批次增大能摊薄权重读取与 kernel 启动成本，却同步增加 KV cache 占用；长短请求混在一起还涉及调度公平性和尾延迟。prefix caching 可以复用共享前缀的 KV，适合系统提示或固定模板，但缓存键必须涵盖模型版本、适配器、token 序列和影响计算的配置，否则错误复用会直接改变输出。
+
+量化 KV cache 能减少容量与读取字节，例如从 BF16 降到 8 bit，理想容量减半。真实实现还需保存 scale，有时按 token、按头或按分组设置；反量化会增加计算，离群值也可能带来质量损失。评估应在目标上下文长度和任务上比较质量、吞吐与延迟，单独报告压缩倍数不能代表部署收益。
+
+## 13. 从结论回到公式与测量
+
+「GQA 节省显存」可以用 $H_{kv}/H_q$ 和具体配置核算；「FlashAttention 降低 IO」对应不再物化 $S\times S$ 的分数与概率矩阵；「RoPE 表示相对位置」可由旋转矩阵乘法得到 $t-p$；「MoE 有通信代价」则落在 dispatch 和 combine 两次数据交换上。结论一旦落到公式、shape 或可测指标，隐藏条件也会随之显现。
+
+还要区分模型定义与具体实现。数学上的 MHA 可以使用朴素 kernel，也可以使用 FlashAttention；逻辑上的 GQA 可以复制 KV 头后调用通用 kernel，也可以让 kernel 原生广播；同一 MoE 路由公式可以部署在单机高速互联或跨节点网络上。模型公式决定结果应满足的关系，kernel 与系统设计决定用多少时间和显存得到它。
+
+注意力热图只能显示某层某头在给定输入上的权重分布。高权重表示该头对相应 value 给予较大系数，经过 value 投影、输出投影、其他头、残差和后续层后，对最终预测的因果贡献仍需额外分析。将热图当作线索是合理的，把它直接当作模型解释会遗漏整条计算链。
+
+## 14. 三类常见故障怎样定位
+
+第一类是训练一开始就出现 NaN。检查顺序可以沿数值路径展开：先记录归一化前后激活的最大绝对值，再观察 Q、K 的范数和 attention logits 范围，随后确认 mask 是否产生整行无合法元素，softmax 与损失归约是否采用足够精度。若只在长序列发生，还需检查位置索引、RoPE cache 长度以及 fused kernel 对特定 head dimension 的支持。梯度裁剪能暂时限制梯度范数，但它无法修复错误 mask 或越界索引。
+
+第二类是训练损失正常，增量生成却与整段前向不一致。对同一 token 序列，分别运行一次完整因果前向和逐 token KV cache 前向，逐层比较隐藏状态。常见原因包括 cache 写入位置偏一、RoPE 使用了局部位置而非全局位置、GQA 的查询头映射到错误 KV 组、滑动窗口淘汰范围不一致，以及 padding 后的位置编号变化。比较应关闭采样并使用相同 dtype；误差首次明显放大的层，通常就是继续排查的起点。
+
+第三类是理论显存足够，线上并发却达不到估算。容量公式给出的是有效 KV 数据，还要加入 block 粒度造成的内部碎片、未完成请求暂占的页、CUDA graph 固定缓冲、采样与通信工作区、模型权重和框架预留。可以按请求记录已分配 block 数、有效 token 数和实际 cache 字节，计算
+
+$$
+\eta_{cache}=\frac{\text{有效 token 所需字节}}{\text{实际分配的 cache 字节}}.
+$$
+
+$\eta_{cache}$ 显著低于 1 时，应先分析块大小与调度，而非继续压缩模型参数。若利用率接近 1 仍受限，再考虑 KV 量化、GQA/MLA、跨设备 cache 切分或降低最大并发上下文。
+
+### 14.1 最小对照实验
+
+注意力 kernel 的正确性可以用双精度小张量建立参考。固定随机种子，取 $B=2,H_q=4,H_{kv}=2,S=7,d_h=8$，用朴素矩阵运算得到输出与梯度，再与优化实现逐项比较。测试集合至少包含普通因果序列、不同有效长度的 padding、只有一个 token、极大负 logits、非连续内存布局和 $S_q\ne S_k$ 的 decode 情形。
+
+性能测试则应使用真实部署精度与足够预热。prefill 扫描多个输入长度和 batch，decode 固定提示长度后连续生成若干步，分别记录中位数与高分位延迟。若只测一个大矩阵，很可能只能说明 kernel 在理想形状上的峰值；线上请求的长度分布、批调度和 cache 命中才决定服务吞吐。
+
+### 14.2 结论的适用范围
+
+「降低 KV 头数能减少读取量」建立在每个历史 token 的 KV 均需从相应存储层读取这一模型上；片上缓存命中、跨卡切分和压缩格式会改变实际流量。「FlashAttention 节省显存」指避免保存完整注意力矩阵，训练框架若在别处保留额外激活，进程峰值未必按理论比例下降。「更长上下文」至少有三种含义：位置编码允许更大索引、前向能够执行，以及模型在该长度仍完成任务。三者需要分别验证。
+
+适用条件应与结论放在一起。数学关系、实现路径、测量方法和失败条件可以互相校验，也能避免用孤立术语代替推导。
+
+## 参考资料
+
+- [Vaswani et al., Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+- [Su et al., RoFormer: Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864)
+- [Press et al., Train Short, Test Long: Attention with Linear Biases](https://arxiv.org/abs/2108.12409)
+- [Shazeer, Fast Transformer Decoding: One Write-Head is All You Need](https://arxiv.org/abs/1911.02150)
+- [Ainslie et al., GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245)
+- [Dao et al., FlashAttention](https://arxiv.org/abs/2205.14135)
+- [Fedus et al., Switch Transformers](https://arxiv.org/abs/2101.03961)
+- [DeepSeek-AI, DeepSeek-V2](https://arxiv.org/abs/2405.04434)
+- [DeepSeek-AI, DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437)
