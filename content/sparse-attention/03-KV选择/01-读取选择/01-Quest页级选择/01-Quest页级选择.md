@@ -280,6 +280,51 @@ kernel 侧分别测摘要更新、criticality estimation、Top-K 与候选 atten
 
 上线监控还要区分选择失败与服务退化。候选页召回需要稠密参考，无法对每个生产 token 都计算；可以抽样请求或在离线回放中计算。在线则记录摘要扫描、Top-K、候选 attention 的时间与实际页数，监测预算是否因回退频繁膨胀。质量报警出现后，用保存的请求在 full attention 下重放，确认问题是否随恢复全部页而消失。
 
+## 7. 页摘要、量化与缓存生命周期
+
+### 7.1. 未满页需要增量更新
+
+对每个 KV head和维度, Quest页摘要保存当前页的最小值与最大值. 新 key $k_t$ 进入未满页 $p$ 时更新:
+
+$$
+m_{p,r}\leftarrow\min(m_{p,r},k_{t,r}),\qquad
+M_{p,r}\leftarrow\max(M_{p,r},k_{t,r}). \tag{13}
+$$
+
+页第一次写入时令 $m=M=k_t$. 页填满后摘要变为只读, 可以随 prefix cache共享. 当前尾页继续追加, 多个会话分支不能共同修改同一摘要; fork时要么复制尾页, 要么使用copy-on-write. 只复制 K/V却让两个分支共享可变 min/max, 会让一个请求的候选受另一个请求影响.
+
+Rollback也要恢复摘要. 已填满并整体回滚的页可以直接移除; 回滚落在尾页内部时, 仅靠当前 min/max无法删除被撤销 token的贡献. 若被撤销 key恰好提供某维极值, 摘要会继续覆盖不存在的点. 解决办法是重新扫描尾页有效 key生成摘要, 或为 speculative token保留临时摘要, 接受后再合并. 页面较小时重扫通常直接可靠.
+
+### 7.2. KV量化会改变上界含义
+
+若 attention实际读取量化后重构的 key $\hat k$, 页摘要可以基于原始 $k$ 或重构值 $\hat k$. 基于 $\hat k$ 时, 式 (13)对实际点积保持区间上界; 基于原始值时, 量化误差可能让重构值落到区间外. 可以给每维区间扩张误差界 $\epsilon_r$:
+
+$$
+[m_{p,r}-\epsilon_r,\ M_{p,r}+\epsilon_r]. \tag{14}
+$$
+
+扩张保证安全, 上界会更松, 假阳性页增加. 每页/每通道 scale越粗, $\epsilon_r$越大. 另一种做法是在写入量化 cache后, 直接从量化码与scale更新重构区间, 让selector与主 attention使用完全相同的 key语义.
+
+Value量化不影响页选择分数, 会影响候选 attention输出. 消融时分别恢复 K和V精度: 候选集合变化来自 K摘要与打分, 候选不变而输出改善来自主 QK或V重构. 将二者一起切换只能看到总质量, 无法判断应把更高bit预算给哪一侧.
+
+### 7.3. 摘要压缩本身有代价
+
+每页若保存 min和max, 摘要元素数为原 K cache的 $2/S$, $S$ 是页内token数. page size 16时约为 K元素的12.5%, page size 64时约3.125%, 未计scale与对齐. 摘要通常比完整KV小很多, 在大量层和并发请求下仍是需要核算的常驻状态.
+
+摘要dtype也影响扫描. FP16 min/max稳定但字节较多; FP8摘要减少带宽, 需要保持区间外包. 普通舍入可能把最小值向上或最大值向下, 上界不再严格. 若要保守, min采用向负无穷方向量化, max向正无穷方向量化, 或额外扩大一个量化步长. 保守量化增加假阳性, 不会漏掉因摘要收缩造成的候选.
+
+摘要布局应按 criticality kernel的读取顺序排列. 若一个 query head连续扫描所有页, 按 head-page-dim布局容易合并; GQA若组内 query heads共享 KV head, 同一摘要会被多次读取, 留在L2的机会增加. 布局转换不能在每个decode step临时进行, 应在页写入时一次形成.
+
+### 7.4. Prefix复用与页表映射
+
+Quest selector返回逻辑页号, PagedAttention通过block table映射到物理页. Prefix cache让多个请求的逻辑页指向同一物理页, 摘要也应绑定物理页内容, 避免为每个请求重复保存. 当前请求的候选表仍是query相关状态, 不能随prefix直接共享.
+
+页面迁移或offload时, 摘要可留在GPU帮助先选页, 选中后再把完整KV从主机或远端搬回. 这样才真正减少链路流量. 若摘要随KV一起offload, 每步为了选页先搬摘要仍可行, 延迟取决于摘要大小和链路; 若先搬全部KV再计算criticality, Quest已经失去主要价值.
+
+物理页回收必须同时释放摘要. 复用槽位写入新请求前先初始化min/max, 否则旧极值会让新页上界异常高, 长期占据候选. 单元测试应让同一物理槽经历分配、填满、释放、再分配, 并与新分配页的摘要逐维比较.
+
+这项检查也应覆盖实际量化页.
+
 ## 参考资料
 
 - [Tang et al., Quest: Query-Aware Sparsity for Efficient Long-Context LLM Inference](https://arxiv.org/abs/2406.10774)
