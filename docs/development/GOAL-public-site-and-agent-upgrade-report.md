@@ -1,7 +1,9 @@
 # 公开站与 Agent 能力改造验收记录
 
-> 验收日期：2026-10-05  
-> 施工目录：`D:\ALL IN AI\OasisMind-public-site-worktree`  
+> 验收日期：2026-10-05
+>
+> 施工目录：`D:\ALL IN AI\OasisMind-public-site-worktree`
+>
 > 分支：`codex/public-site-split`
 
 ## 当前结论
