@@ -179,30 +179,55 @@ describe("weixinMedia crypto", () => {
     expect(large.localPath).toContain("content/uploads/channels/weixin/");
   });
 
-  it("微信入站图片经过统一校验后落盘为 ChannelAttachment", async () => {
-    const tinyJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
-    const fetchImpl = vi.fn(async () =>
-      new Response(tinyJpeg, {
-        status: 200,
-        headers: { "content-type": "image/jpeg" },
-      }),
-    ) as unknown as typeof fetch;
+  it("微信入站图片/视频/语音/文件经过统一校验后落盘", async () => {
+    const fixtures = new Map<string, Buffer>([
+      ["tiny.jpg", Buffer.from([0xff, 0xd8, 0xff, 0xd9])],
+      [
+        "clip.mp4",
+        Buffer.from([0, 0, 0, 16, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]),
+      ],
+      ["voice.mp3", Buffer.from("ID3voice-fixture")],
+      ["report.pdf", Buffer.from("%PDF-1.7 fixture")],
+    ]);
+    const fetchImpl = vi.fn(async (url: string | URL) => {
+      const name = new URL(String(url)).pathname.split("/").pop() ?? "";
+      const bytes = fixtures.get(name);
+      if (!bytes) throw new Error(`微信入站测试出现未知附件：${name}`);
+      return new Response(bytes, { status: 200 });
+    }) as unknown as typeof fetch;
 
     const result = await materializeWeixinInboundMedia(
-      [{ kind: "image", url: "https://cdn.example/tiny.jpg", fileName: "tiny.jpg" }],
+      [
+        { kind: "image", url: "https://cdn.example/tiny.jpg", fileName: "tiny.jpg" },
+        { kind: "video", url: "https://cdn.example/clip.mp4", fileName: "clip.mp4" },
+        { kind: "voice", url: "https://cdn.example/voice.mp3", fileName: "voice.mp3" },
+        { kind: "file", url: "https://cdn.example/report.pdf", fileName: "report.pdf" },
+      ],
       fetchImpl,
     );
 
-    expect(result.attachments).toHaveLength(1);
-    expect(result.attachments[0]).toMatchObject({
-      type: "channel",
-      kind: "image",
-      source: "weixin",
-      status: "ready",
-      mimeType: "image/jpeg",
-    });
-    expect(result.attachments[0]?.localPath).toContain("content/uploads/channels/weixin/");
-    expect(result.attachments[0]?.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.attachments).toHaveLength(4);
+    expect(result.attachments.map((attachment) => attachment.kind)).toEqual([
+      "image",
+      "video",
+      "audio",
+      "file",
+    ]);
+    expect(result.attachments.map((attachment) => attachment.mimeType)).toEqual([
+      "image/jpeg",
+      "video/mp4",
+      "audio/mpeg",
+      "application/pdf",
+    ]);
+    for (const attachment of result.attachments) {
+      expect(attachment).toMatchObject({
+        type: "channel",
+        source: "weixin",
+        status: "ready",
+      });
+      expect(attachment.localPath).toContain("content/uploads/channels/weixin/");
+      expect(attachment.sha256).toMatch(/^[a-f0-9]{64}$/);
+    }
   });
 
   it("微信出站文件严格走取上传地址、加密上传和 sendmessage 三步", async () => {
