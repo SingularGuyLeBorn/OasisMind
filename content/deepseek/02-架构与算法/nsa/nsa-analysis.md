@@ -9,7 +9,7 @@ excerpt: "NSA 用压缩, 选择, 滑窗三路分支加门控替代全注意力, 
 
 材料是 DeepSeek-AI, 北京大学和华盛顿大学的论文 *Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention* (arXiv 2502.11089, 2025 年 2 月, 25 页), 后来获 ACL 2025 最佳论文, 正式版对部分表格题注做了修改. 论文没有放出训练代码, 下文涉及实现细节的地方对照两个社区实现: [fla-org/native-sparse-attention](https://github.com/fla-org/native-sparse-attention) 和 [XunhaoLai/native-sparse-attention-triton](https://github.com/XunhaoLai/native-sparse-attention-triton). 逐段译文见 [NSA 对照译稿](nsa-bi.md).
 
-NSA 的机制推导已经写在 [原生稀疏注意力机制 NSA](../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md), 稀疏注意力各路做法的总览见 [稀疏注意力](../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/2.4-稀疏注意力.md). 这里只处理那篇文章没有展开的部分: 三路分支在论文公式里的具体形式和公式本身的问题, 选择分数的来源, GQA 组共享与 kernel 的关系, 加速数字的口径, 以及实验数字是在什么条件下得到的. 后续 DeepSeek-V3.2 的 DSA 与 NSA 走了不同的路, 最后一节对比两者.
+NSA 的完整机制推导见 [原生稀疏注意力机制 NSA](../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md), 稀疏注意力各路线总览见 [稀疏注意力](../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/2.4-稀疏注意力.md). 本文进一步检查三路分支的公式、选择分数来源、GQA 组共享与 kernel 的关系、加速数字口径和实验条件, 并与后续 DeepSeek-V3.2 采用的 DSA 路线比较.
 
 ## 1. 问题设定: 理论加速和可训练性两头落空
 
