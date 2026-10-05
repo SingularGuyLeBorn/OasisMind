@@ -129,6 +129,52 @@ describe("buildPublicContent", () => {
     expect(post.post.content).toMatch(/\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.webp/);
   });
 
+  it("视频、音频和普通附件都进入公开白名单，并改写为项目站哈希地址", async () => {
+    const { contentDir, outputDir } = createFixture();
+    const mediaDir = path.join(contentDir, "notes", "media");
+    fs.mkdirSync(mediaDir, { recursive: true });
+    fs.writeFileSync(path.join(mediaDir, "lesson.mp4"), Buffer.from("public-video"));
+    fs.writeFileSync(path.join(mediaDir, "voice.mp3"), Buffer.from("public-audio"));
+    fs.writeFileSync(path.join(mediaDir, "handout.pdf"), Buffer.from("%PDF-public-handout"));
+    fs.writeFileSync(
+      path.join(contentDir, "notes", "media-post.md"),
+      [
+        "---",
+        "title: 多媒体文章",
+        "published: true",
+        "---",
+        '<video controls><source src="media/lesson.mp4" type="video/mp4"></video>',
+        '<audio controls src="media/voice.mp3"></audio>',
+        "[下载讲义](media/handout.pdf)",
+        "",
+      ].join("\n"),
+    );
+
+    const result = await buildPublicContent({
+      contentDir,
+      outputDir,
+      publicBasePath: "/OasisMind",
+    });
+
+    expect(result.assetCount).toBe(3);
+    const envelope = JSON.parse(
+      fs.readFileSync(path.join(outputDir, "posts", "notes", "media-post.json"), "utf8"),
+    );
+    const content = String(envelope.post.content);
+    expect(content).not.toContain('src="media/');
+    expect(content).not.toContain("](media/");
+    expect(content).toMatch(/src="\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.mp4"/);
+    expect(content).toMatch(/src="\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.mp3"/);
+    expect(content).toMatch(/\]\(\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.pdf\)/);
+
+    const extensions = fs.readdirSync(path.join(outputDir, "assets"), { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => path.extname(entry.name))
+      .sort();
+    expect(extensions).toEqual([".mp3", ".mp4", ".pdf"]);
+    expect(verifyPublicContentProjection(contentDir, outputDir)).toMatchObject({ assetCount: 3 });
+  });
+
   it("拒绝把域名、查询串或末尾斜杠当作项目站挂载路径", async () => {
     const { contentDir, outputDir } = createFixture();
     for (const publicBasePath of ["OasisMind", "/OasisMind/", "//example.com", "/OasisMind?draft=1", "/Oasis Mind"]) {
