@@ -137,13 +137,20 @@ describe("buildPublicContent", () => {
     fs.writeFileSync(path.join(mediaDir, "voice.mp3"), Buffer.from("public-audio"));
     fs.writeFileSync(path.join(mediaDir, "handout.pdf"), Buffer.from("%PDF-public-handout"));
     fs.writeFileSync(
+      path.join(mediaDir, "poster.png"),
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    );
+    fs.writeFileSync(
       path.join(contentDir, "notes", "media-post.md"),
       [
         "---",
         "title: 多媒体文章",
         "published: true",
         "---",
-        '<video controls><source src="media/lesson.mp4" type="video/mp4"></video>',
+        '<video controls poster="media/poster.png"><source src="media/lesson.mp4" type="video/mp4"></video>',
         '<audio controls src="media/voice.mp3"></audio>',
         "[下载讲义](media/handout.pdf)",
         "",
@@ -156,7 +163,7 @@ describe("buildPublicContent", () => {
       publicBasePath: "/OasisMind",
     });
 
-    expect(result.assetCount).toBe(3);
+    expect(result.assetCount).toBe(4);
     const envelope = JSON.parse(
       fs.readFileSync(path.join(outputDir, "posts", "notes", "media-post.json"), "utf8"),
     );
@@ -165,14 +172,15 @@ describe("buildPublicContent", () => {
     expect(content).not.toContain("](media/");
     expect(content).toMatch(/src="\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.mp4"/);
     expect(content).toMatch(/src="\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.mp3"/);
+    expect(content).toMatch(/poster="\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.webp"/);
     expect(content).toMatch(/\]\(\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.pdf\)/);
 
     const extensions = fs.readdirSync(path.join(outputDir, "assets"), { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
       .map((entry) => path.extname(entry.name))
       .sort();
-    expect(extensions).toEqual([".mp3", ".mp4", ".pdf"]);
-    expect(verifyPublicContentProjection(contentDir, outputDir)).toMatchObject({ assetCount: 3 });
+    expect(extensions).toEqual([".mp3", ".mp4", ".pdf", ".webp"]);
+    expect(verifyPublicContentProjection(contentDir, outputDir)).toMatchObject({ assetCount: 4 });
   });
 
   it("拒绝把域名、查询串或末尾斜杠当作项目站挂载路径", async () => {

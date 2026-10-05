@@ -312,6 +312,10 @@ function rewriteAssetReferences(
     (_match, prefix: string, reference: string, suffix: string) => `${prefix}${rewrite(reference)}${suffix}`,
   );
   rewritten = rewritten.replace(
+    /(<video\b[^>]*?\sposter=["'])([^"']+)(["'][^>]*>)/gi,
+    (_match, prefix: string, reference: string, suffix: string) => `${prefix}${rewrite(reference)}${suffix}`,
+  );
+  rewritten = rewritten.replace(
     /(^[ \t]{0,3}\[[^\]]+\]:[ \t]*)(<?\S+>?)/gm,
     (_match, prefix: string, reference: string) => `${prefix}${rewrite(reference)}`,
   );
