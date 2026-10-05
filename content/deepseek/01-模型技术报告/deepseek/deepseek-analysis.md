@@ -21,7 +21,7 @@ excerpt: "微观结构基本是 LLaMA 的配方: Pre-Norm 加 RMSNorm, FFN 用 S
 
 宏观上有两处和 LLaMA 不同. 第一, 层数选成 30 和 95, 报告说这样方便 pipeline 切分. 第二, 67B 用 GQA 省下的参数预算没有照惯例加到 FFN 宽度上, 而是加到深度上, 所以 95 层配 $d_{\mathrm{model}}=8192$. 报告只说「为了更好性能」, 没有给深宽对比的消融, 这一点报告没有证据. 按 Table 2 的规格粗算: 每层注意力约 $2.25d^2$(Q, O 满头, K, V 只有 1/8), FFN 约 $8d^2$, 95 层合计约 65B, 加上词表约 1.7B, 正好落在 67B 附近. 训练框架是自研的 **HAI-LLM**: 数据, 张量, 序列并行加 1F1B 流水, FlashAttention, ZeRO-1 切优化器状态, bf16 前向, fp32 累梯度, cross-entropy 在 kernel 内就地把 bf16 logits 转成 fp32 再覆写成梯度. 权重和优化器状态每 5 分钟异步落盘, 最坏只丢 5 分钟训练. 这些细节后来在 V2 和 V3 里一路沿用.
 
-训练常数写在 §2.3 和 Table 2. 权重按标准差 0.006 初始化, 优化器 **AdamW**, $\beta_1=0.9$, $\beta_2=0.95$, weight decay 0.1, 梯度裁剪 1.0. 两档模型的上下文都是 4096. Table 2 的 batch 以序列计, 7B 为 2304 条, 67B 为 4608 条, 换成 token 分别约 940 万和 1890 万每步; 训完 2T token, 7B 约走 21 万步, 67B 约 10.6 万步. 上下文只有 4K, 报告里没有任何长上下文扩展, 这一面本页没有. 到 V2 才在 4K 预训练之后用 YaRN 把窗口拉到 128K, 那是另一份报告的事.
+训练常数写在 §2.3 和 Table 2. 权重按标准差 0.006 初始化, 优化器 **AdamW**, $\beta_1=0.9$, $\beta_2=0.95$, weight decay 0.1, 梯度裁剪 1.0. 两档模型的上下文都是 4096. Table 2 的 batch 以序列计, 7B 为 2304 条, 67B 为 4608 条, 换成 token 分别约 940 万和 1890 万每步; 训完 2T token, 7B 约走 21 万步, 67B 约 10.6 万步. 这份报告的训练窗口止于 4K, 没有长上下文扩展. 到 V2 时, 团队才在 4K 预训练之后用 YaRN 把窗口拉到 128K.
 
 框架里已经能看到 DeepSeek 后来反复做的那件事: 把通信藏到计算后面. 最后一个 micro-batch 的反向和 ZeRO-1 的 reduce-scatter 重叠, 序列并行里的 GEMM 和 all-gather/reduce-scatter 重叠; LayerNorm, GEMM, Adam 更新尽量融合成单个算子. 训练还支持换一套 3D 并行配置从 checkpoint 续跑, 用来应对集群负载变化. 评测端生成任务走 vLLM, 非生成任务用 continuous batching, 省掉手调 batch 和 padding. 这些在报告里只占一段, 但 V3 的 DualPipe 和算通重叠, 思路上就是从这里一路加码过去的.
 

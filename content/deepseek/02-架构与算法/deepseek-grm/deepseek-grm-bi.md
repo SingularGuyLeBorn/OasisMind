@@ -413,7 +413,7 @@ Preprint. Under review.
 
 Secondly, expanded applicability of the inference-time scalable GRMs across diverse domains might raise concerns regarding transparency, accountability, etc. Since the reward generation behavior is largely emerged from self-bootstrapping, the potential for unfaithful principles and critiques is non-negligible. We demonstrate case studies in Appendix F.1 and limitations in Appendix B, and open-source the model under public supervision, which is essential for maintaining trust and ensuring responsible deployment of the artifact.
 
-第二, 可在推理时扩展的 GRM 适用范围扩大到更多领域, 可能引发透明性, 问责等方面的担忧. 由于奖励生成行为主要是通过自举涌现出来的, 不忠实的原则和评语出现的可能性不可忽视. 我们在附录 F.1 给出了案例研究, 在附录 B 说明了局限, 并在公众监督下开源模型, 这对维持信任, 保证负责任地部署这一成果至关重要.
+第二, 可在推理时扩展的 GRM 适用范围扩大到更多领域, 可能引发透明性和问责方面的担忧. 奖励生成行为主要通过自举形成, 其中可能出现不忠实的原则和评语. 我们在附录 F.1 给出案例研究, 在附录 B 说明局限, 并开源模型接受公众监督, 以便外部检查这些风险并支持负责任部署.
 
 Finally, robust validation and ongoing vigilance across varied RM benchmarks and practical scenarios remain crucial. Ethical use of DeepSeek-GRM necessitates proactive management of risks and continuous evaluation against biases, requiring efforts in research about RM evaluation.
 
