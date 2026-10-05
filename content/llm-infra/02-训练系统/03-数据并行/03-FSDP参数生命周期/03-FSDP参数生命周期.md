@@ -249,7 +249,7 @@ $$
 
 Backward 开始时 activation 尚有 26 GiB，当前/预取参数仍为 3 GiB，并出现 2 GiB gradient bucket，峰值升到 54 GiB。若 reduce-scatter 与下一 gather 双缓冲再需要 1.5 GiB workspace，可到 55.5 GiB。80 GiB 卡看似余量充分，但编译图池、checkpoint 保存与最长序列还要另算。
 
-把 wrap 改成四层一组，完整参数变为 6 GiB。Collective 次数降为四分之一，当前与预取却需 12 GiB，forward 估算升到 61 GiB，backward 接近 64.5 GiB。通信启动减少是否值得，要比较 9 GiB 额外峰值与实际时间节省；若因此被迫减 micro-batch，整体 token/s 可能下降。
+把 wrap 改成四层一组，完整参数变为 6 GiB。Collective 次数降为四分之一，当前与预取却需 12 GiB，forward 估算升到 61 GiB，backward 接近 64.5 GiB。通信启动次数减少是否值得，要比较 9 GiB 额外峰值与实际通信时间节省；若因此被迫减 micro-batch，整体 token/s 可能下降。
 
 开启 activation checkpoint 后 activation 从 26 降到 12 GiB，重算窗口临时恢复 5 GiB，backward 峰值近似 $18+12+5+3+2+1.5+5=46.5$ GiB。式尾的 5 GiB 是重算 activation；它与常驻 activation 同时存在，不能只拿 26-12 得到净节省。
 
