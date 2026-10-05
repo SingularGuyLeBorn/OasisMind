@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildPublicContent } from "../../infra/publicContentBuilder.js";
+import { verifyPublicContentProjection } from "../../infra/publicContentVerifier.js";
 
 const temporaryRoots: string[] = [];
 
@@ -60,6 +62,11 @@ describe("buildPublicContent", () => {
     expect(garden.posts).toHaveLength(1);
     expect(garden.garden.apiPath).toBe("/api/v1/gardens/notes.json");
     expect(fs.existsSync(path.join(outputDir, "posts", "notes", "draft.json"))).toBe(false);
+    expect(verifyPublicContentProjection(contentDir, outputDir)).toMatchObject({
+      postCount: 1,
+      gardenCount: 1,
+      assetCount: 0,
+    });
   });
 
   it("只复制公开文章实际引用的白名单资源，并把链接改为公开 API 路径", async () => {
@@ -90,6 +97,31 @@ describe("buildPublicContent", () => {
 
     const index = JSON.parse(fs.readFileSync(path.join(outputDir, "index.json"), "utf8"));
     expect(index.gardens[0]).toMatchObject({ title: "notes", description: null, homeContent: "" });
+    expect(verifyPublicContentProjection(contentDir, outputDir).assetCount).toBe(1);
+  });
+
+  it("压缩超宽图片并按原始内容哈希去重", async () => {
+    const { contentDir, outputDir } = createFixture();
+    const image = await sharp({
+      create: { width: 3_000, height: 120, channels: 3, background: "#2563eb" },
+    }).png().toBuffer();
+    fs.writeFileSync(path.join(contentDir, "notes", "images", "wide.png"), image);
+    fs.writeFileSync(path.join(contentDir, "notes", "images", "same.png"), image);
+    fs.writeFileSync(
+      path.join(contentDir, "notes", "image-post.md"),
+      "---\ntitle: 图片压缩\npublished: true\n---\n![一](images/wide.png)\n![二](images/same.png)\n",
+    );
+
+    const result = await buildPublicContent({ contentDir, outputDir });
+    expect(result.assetCount).toBe(1);
+    const files = fs.readdirSync(path.join(outputDir, "assets"), { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile());
+    expect(files).toHaveLength(1);
+    const generated = path.join(files[0]!.parentPath, files[0]!.name);
+    // 从内存读取元数据，避免 libvips 在 Windows 上缓存文件句柄，导致 afterEach 无法删除临时目录。
+    const metadata = await sharp(fs.readFileSync(generated)).metadata();
+    expect(metadata.format).toBe("webp");
+    expect(metadata.width).toBe(2_400);
   });
 
   it("拒绝把产物写进 content，也拒绝文章通过相对路径读取 content 外文件", async () => {
@@ -104,6 +136,21 @@ describe("buildPublicContent", () => {
     await expect(buildPublicContent({ contentDir, outputDir: path.join(contentDir, "generated") }))
       .rejects.toThrow("必须与 content 完全分离");
     await expect(buildPublicContent({ contentDir, outputDir })).rejects.toThrow("引用越出 content");
+  });
+
+  it("拒绝经 content 内的 junction 读取外部资源", async () => {
+    const { contentDir, outputDir } = createFixture();
+    const outsideDir = path.join(path.dirname(contentDir), "outside-assets");
+    fs.mkdirSync(outsideDir);
+    fs.writeFileSync(path.join(outsideDir, "private.pdf"), "private");
+    const junction = path.join(contentDir, "notes", "linked-assets");
+    fs.symlinkSync(outsideDir, junction, process.platform === "win32" ? "junction" : "dir");
+    fs.writeFileSync(
+      path.join(contentDir, "notes", "junction.md"),
+      "---\ntitle: 符号链接越界\npublished: true\n---\n[秘密](linked-assets/private.pdf)\n",
+    );
+
+    await expect(buildPublicContent({ contentDir, outputDir })).rejects.toThrow("符号链接越出 content");
   });
 
   it("重新生成会清除已经取消发布的旧文章产物", async () => {
@@ -144,5 +191,25 @@ describe("buildPublicContent", () => {
     const index = JSON.parse(fs.readFileSync(path.join(outputDir, "index.json"), "utf8"));
     expect(index.gardens[0].homeContent).toBe("");
     expect(index.posts.map((post: { id: string }) => post.id)).toEqual(["notes/healthy"]);
+  });
+
+  it("验证器拒绝生成目录中的额外文件与字段漂移", async () => {
+    const { contentDir, outputDir } = createFixture();
+    fs.writeFileSync(
+      path.join(contentDir, "notes", "public.md"),
+      "---\ntitle: 公开文章\npublished: true\n---\n公开正文\n",
+    );
+    await buildPublicContent({ contentDir, outputDir });
+
+    fs.mkdirSync(path.join(outputDir, "config"));
+    fs.writeFileSync(path.join(outputDir, "config", "secret.json"), "{}", "utf8");
+    expect(() => verifyPublicContentProjection(contentDir, outputDir)).toThrow("未声明文件");
+
+    fs.rmSync(path.join(outputDir, "config"), { recursive: true, force: true });
+    const postPath = path.join(outputDir, "posts", "notes", "public.json");
+    const envelope = JSON.parse(fs.readFileSync(postPath, "utf8"));
+    envelope.post.localPath = "D:/private/content/public.md";
+    fs.writeFileSync(postPath, JSON.stringify(envelope), "utf8");
+    expect(() => verifyPublicContentProjection(contentDir, outputDir)).toThrow("公开白名单");
   });
 });
