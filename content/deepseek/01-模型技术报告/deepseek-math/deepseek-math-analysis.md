@@ -37,7 +37,7 @@ DeepSeekMath 常被记成「GRPO 的出处」, 但按投入和收益看, 这篇�
 
 两个细节比最终分数更有说服力. 一是 Figure 3 的学习曲线: 训到约 50B token, 也就是 Proof-Pile-2 刚好过一轮时, DeepSeekMath Corpus 的曲线已经在上方, 说明优势来自平均质量, 不全是规模(读图). 规模也有作用: 小语料很快多轮重复, 曲线走平, 120B 级语料的曲线更陡, 涨得更久. 二是中文: 已有数学语料以英文为主, 在中文基准上提升有限甚至倒退; DeepSeekMath Corpus 中英都有, 两边一起涨. 这和 DeepSeek LLM 的双语路线一脉相承, 也解释了后面 CMATH, 高考题上的大幅领先. 需要注意, 1.3B 实验只用来比较语料排序, 绝对分数不能外推到 7B.
 
-Table 1 还有一行容易被忽略的基线: 不做数学训练的 1.3B, GSM8K 2.9%, CMATH 12.3%, 高考选择 17.9%. MathPile 训完, CMATH 掉到 1.2%, 高考选择掉到 2.8%, 比不训还差, 这就是正文说的「已有语料可能伤害中文数学」. 这组对照还混着一个变量: 每份语料都训 150B token, MathPile 8.9B 要重复约 17 轮, OpenWebMath 约 11 轮, Proof-Pile-2 约 3 轮, DeepSeekMath Corpus 约 1.25 轮. 小语料的分数一部分输在反复重复上, 报告用 Figure 3 在 50B token 处的对比部分回应了这一点, 那时 Proof-Pile-2 刚好一轮, 但 MathPile 和 OpenWebMath 已经重复多轮, 严格的等轮次对照本页没有.
+Table 1 还有一行容易被忽略的基线: 不做数学训练的 1.3B, GSM8K 2.9%, CMATH 12.3%, 高考选择 17.9%. MathPile 训完, CMATH 掉到 1.2%, 高考选择掉到 2.8%, 比不训还差, 这就是正文说的「已有语料可能伤害中文数学」. 这组对照还混着一个变量: 每份语料都训 150B token, MathPile 8.9B 要重复约 17 轮, OpenWebMath 约 11 轮, Proof-Pile-2 约 3 轮, DeepSeekMath Corpus 约 1.25 轮. 小语料的分数一部分输在反复重复上. Figure 3 比较了训练到 50B token 时的结果, 此时 Proof-Pile-2 刚好一轮, 但 MathPile 和 OpenWebMath 已经重复多轮, 仍然不是严格的等轮次对照.
 
 ### 1.4. 为什么从代码模型出发, 以及 arXiv 为什么不灵
 
@@ -111,7 +111,7 @@ $$
 
 期望落在某个数据源采样的 $(q,o)$ 上, 每个 token 的对数概率梯度乘一个梯度系数. 三个变量是数据源, 奖励函数, 算法. SFT 的系数恒为 1, RFT 用对错指示, DPO 用成对偏好的 $\sigma$ 项, PPO 和 GRPO 用奖励算出的优势. 离线方法(RFT, DPO)从冻结的 SFT 模型采样, 在线方法(Online RFT, GRPO)从实时策略采样. 在 Instruct 1.3B 上(Figure 5), Online RFT 前期接近 RFT, 后期拉开; GRPO 又超过 Online RFT, 差别在于它能按奖励分值区分强化力度, 而不是对所有答对的样本一视同仁; GRPO 加过程监督又好于结果监督. 迭代两轮继续涨(Figure 6), 第一轮最明显.
 
-这几张图的规模不一样, 读的时候要分开. Figure 5 的方法对比和 PS 对 OS 的比较都在 Instruct 1.3B 上做, Figure 6 的迭代 RL 在 Instruct 7B 上做. 而 §4.2 描述 DeepSeekMath-RL 7B 的训练时, 只写了奖励模型怎么构造和 GRPO 的超参, 没有写最终发布的模型用的是结果监督还是过程监督, 也没有写是否用了迭代版. 所以「过程监督更好」和「迭代更好」这两条结论, 和 Table 5 里 51.7% 那个模型之间的对应关系, 本页没有给出. Online RFT 前期贴着 RFT, 后期才拉开, 报告的解释也很直接: 刚开始策略和 SFT 模型几乎一样, 在线采样和离线采样差别不大, 训练越久差别越大, 在线的好处才显出来.
+Figure 5 的方法对比和 PS 对 OS 的比较使用 Instruct 1.3B, Figure 6 的迭代 RL 使用 Instruct 7B. §4.2 描述 DeepSeekMath-RL 7B 的训练时, 只给出奖励模型的构造方式和 GRPO 超参, 没有说明最终发布模型采用结果监督还是过程监督, 也没有说明是否采用迭代训练. 因此「过程监督更好」「迭代更好」两项消融结论无法直接对应到 Table 5 中得分 51.7% 的模型. Online RFT 前期贴着 RFT, 后期才拉开; 报告的解释是初始策略与 SFT 模型接近, 在线和离线采样的差异会随训练逐渐扩大.
 
 ### 3.3. 奖励信号能信多少: 规则, 奖励模型, 以及噪声
 

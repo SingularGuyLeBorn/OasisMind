@@ -212,7 +212,7 @@ SFT 数据约 1.5M 条, 按领域用不同方法构造(§5.1). 推理类(数学,
 
 Table 6 的主要数字: MMLU 88.5, MMLU-Pro 75.9, GPQA-Diamond 59.1, DROP 91.6, MATH-500 90.2, AIME 2024 39.2, CNMO 2024 43.2, LiveCodeBench-CoT 40.5, Codeforces 百分位 51.6, C-SimpleQA 64.8. AIME 只有 30 道题, 39.2% 相当于平均答对约 11.8 道, 16 次平均能降低方差, 但单次差一两道题就是几个百分点. 数学三项比第二名 Qwen2.5 72B 高约 10 个百分点, 报告归功于 R1 蒸馏, 这与第 4.1 节的消融一致. 落后的项目也写在表里: SWE Verified 42.0 低于 Claude 的 50.8, GPQA 59.1 低于 Claude 的 65.0, SimpleQA 24.9 低于 GPT-4o 的 38.2, FRAMES 低于 GPT-4o. SimpleQA 的落后报告归因于把更多训练 token 用在中文知识上, C-SimpleQA 比 Qwen2.5 高 16.4 分, 两者对得上.
 
-开放式评测(Table 7)用 GPT-4-Turbo-1106 当裁判: Arena-Hard 85.5, AlpacaEval 2.0 长度控制胜率 70.0, 比 V2.5 的 50.5 高 19.5, Claude-3.5-Sonnet 是 85.2 和 52.0. AlpacaEval 用了长度控制, 但 70.0 与其他模型 50 上下的差距仍然大得不寻常, 裁判模型对某种写作风格的偏好可能是原因之一. 数据污染方面, LiveCodeBench 的题目时间窗是 2024 年 8 到 11 月, 报告没有给预训练数据的截止日期, 本页无法判断这些题是否已在训练语料里. LongBench v2 是在 V3 发布前几周才公开的, 这一项的污染风险较低.
+开放式评测(Table 7)用 GPT-4-Turbo-1106 当裁判: Arena-Hard 85.5, AlpacaEval 2.0 长度控制胜率 70.0, 比 V2.5 的 50.5 高 19.5, Claude-3.5-Sonnet 是 85.2 和 52.0. AlpacaEval 用了长度控制, 但 70.0 与其他模型 50 上下的差距仍然很大, 裁判模型对写作风格的偏好可能影响结果. LiveCodeBench 的题目来自 2024 年 8 到 11 月, 报告却没有给出预训练数据截止日期, 因而无法判断这些题是否进入训练语料. LongBench v2 在 V3 发布前几周才公开, 污染风险相对较低.
 
 ## 5. 部署, 成本与谱系
 
