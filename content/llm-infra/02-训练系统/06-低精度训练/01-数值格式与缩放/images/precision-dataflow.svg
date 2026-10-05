@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <rect width="1200" height="720" fill="#0b1220"/>
+  <style>
+    .box{fill:#14213d;stroke:#60a5fa;stroke-width:2;rx:14}.state{fill:#2a183b;stroke:#c084fc;stroke-width:2;rx:14}.compute{fill:#12312b;stroke:#34d399;stroke-width:2;rx:14}.warn{fill:#3a2513;stroke:#f59e0b;stroke-width:2;rx:14}.t{fill:#f8fafc;font:600 22px sans-serif}.s{fill:#cbd5e1;font:16px sans-serif}.a{stroke:#94a3b8;stroke-width:3;fill:none;marker-end:url(#m)}
+  </style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+  <text x="52" y="55" class="t">低精度训练：真值、缩放、计算与更新</text>
+  <rect x="50" y="105" width="250" height="120" class="state"/><text x="75" y="145" class="t">FP32 训练状态</text><text x="75" y="180" class="s">master weight · Adam m/v</text><text x="75" y="205" class="s">checkpoint 的恢复真值</text>
+  <rect x="405" y="105" width="285" height="120" class="box"/><text x="430" y="145" class="t">生成计算副本</text><text x="430" y="180" class="s">BF16 / FP16 或 scaled cast</text><text x="430" y="205" class="s">FP8 / FP4 + scale metadata</text>
+  <rect x="805" y="105" width="340" height="120" class="compute"/><text x="830" y="145" class="t">GEMM 与通信</text><text x="830" y="180" class="s">低精度输入 · 高精度累加</text><text x="830" y="205" class="s">collective 携带匹配 scale</text>
+  <path d="M300 165 H405" class="a"/><path d="M690 165 H805" class="a"/>
+  <rect x="805" y="320" width="340" height="120" class="box"/><text x="830" y="360" class="t">Backward 梯度</text><text x="830" y="395" class="s">loss scaling · unscale · clip</text><text x="830" y="420" class="s">DP ranks 形成同一更新决定</text>
+  <path d="M975 225 V320" class="a"/>
+  <rect x="405" y="320" width="285" height="120" class="warn"/><text x="430" y="360" class="t">数值控制状态</text><text x="430" y="395" class="s">amax history · scale · margin</text><text x="430" y="420" class="s">Inf/NaN · saturation · zero rate</text>
+  <path d="M805 380 H690" class="a"/>
+  <rect x="50" y="320" width="250" height="120" class="state"/><text x="75" y="360" class="t">Optimizer 更新</text><text x="75" y="395" class="s">跳步或更新 FP32 master</text><text x="75" y="420" class="s">再刷新下一步计算副本</text>
+  <path d="M405 380 H300" class="a"/><path d="M175 320 V225" class="a"/>
+  <rect x="50" y="525" width="1095" height="130" fill="#111827" stroke="#475569" stroke-width="2" rx="14"/>
+  <text x="78" y="565" class="t">必须一起保存与验证</text>
+  <text x="78" y="605" class="s">参数与 optimizer state　·　loss scale 与跳步计数　·　FP8/FP4 recipe、scale、amax history</text>
+  <text x="78" y="635" class="s">恢复后固定 batch 的 forward、梯度、overflow 决定、更新结果和下一组 scale 应保持一致</text>
+</svg>
