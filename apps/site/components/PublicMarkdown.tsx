@@ -7,6 +7,7 @@
 import { useEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import { MarkdownRendererCore } from "@oasismind/markdown";
 import { annotate } from "rough-notation";
+import { withSiteBasePath } from "@/siteConfig";
 
 type PublicRoughAnnotationType =
   | "underline"
@@ -64,7 +65,7 @@ export function PublicMarkdown({ content }: { content: string }) {
         a: ({ href, children, ...props }) => (
           <a
             {...props}
-            href={href}
+            href={href ? withSiteBasePath(href) : href}
             target={href?.startsWith("http") ? "_blank" : undefined}
             rel={href?.startsWith("http") ? "noreferrer" : undefined}
           >
@@ -74,7 +75,12 @@ export function PublicMarkdown({ content }: { content: string }) {
         img: ({ alt, ...props }) => (
           // 公开资源已经过生成器白名单与压缩；保留原宽高比，不由 Next 再次处理。
           // eslint-disable-next-line @next/next/no-img-element
-          <img {...props} alt={alt ?? "文章配图"} loading="lazy" />
+          <img
+            {...props}
+            src={typeof props.src === "string" ? withSiteBasePath(props.src) : props.src}
+            alt={alt ?? "文章配图"}
+            loading="lazy"
+          />
         ),
       }}
     />

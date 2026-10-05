@@ -45,6 +45,11 @@ const IMAGE_BUILD_CONCURRENCY = 4;
 export interface PublicContentBuildOptions {
   contentDir: string;
   outputDir: string;
+  /**
+   * 公开站挂载路径。GitHub Pages 项目站通常是 `/仓库名`，自定义域名则为空。
+   * 该值会写入公开 JSON 和 Markdown 资源链接，让浏览器与外部 Agent 读取同一套可用地址。
+   */
+  publicBasePath?: string;
 }
 
 export interface PublicContentBuildResult {
@@ -93,6 +98,26 @@ function encodePublicPath(relativePath: string): string {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+}
+
+/** 公开路径只接受单个绝对 URL 路径段前缀，拒绝域名、查询串和末尾斜杠。 */
+function normalizePublicBasePath(value: string | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed === "/") return "";
+  if (
+    !trimmed.startsWith("/")
+    || trimmed.endsWith("/")
+    || trimmed.includes("//")
+    || /[?#\\]/.test(trimmed)
+    || !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]+$/.test(trimmed)
+  ) {
+    throw new Error(`公开站挂载路径无效：${value ?? ""}`);
+  }
+  return trimmed;
+}
+
+function publicPath(basePath: string, pathname: string): string {
+  return `${basePath}${pathname}`;
 }
 
 function readString(value: unknown): string | null {
@@ -192,6 +217,7 @@ function resolveLocalAsset(
   reference: string,
   articlePath: string,
   contentDir: string,
+  publicBasePath: string,
 ): ResolvedAsset | null {
   const unwrapped = reference.trim().replace(/^<|>$/g, "");
   if (!unwrapped || unwrapped.startsWith("#") || /^(?:[a-z]+:|\/\/)/i.test(unwrapped)) return null;
@@ -237,7 +263,10 @@ function resolveLocalAsset(
     contentRelativePath,
     outputRelativePath,
     optimizeAsWebp,
-    publicUrl: `/api/v1/assets/${encodePublicPath(outputRelativePath)}${suffix}`,
+    publicUrl: publicPath(
+      publicBasePath,
+      `/api/v1/assets/${encodePublicPath(outputRelativePath)}${suffix}`,
+    ),
   };
 }
 
@@ -249,12 +278,13 @@ function rewriteAssetReferences(
   content: string,
   articlePath: string,
   contentDir: string,
+  publicBasePath: string,
   assets: Map<string, ResolvedAsset>,
   warnings: string[],
 ): string {
   const rewrite = (reference: string): string => {
     try {
-      const resolved = resolveLocalAsset(reference, articlePath, contentDir);
+      const resolved = resolveLocalAsset(reference, articlePath, contentDir, publicBasePath);
       if (!resolved) {
         const { pathname: candidate } = splitReferenceSuffix(reference.trim().replace(/^<|>$/g, ""));
         if (candidate && !candidate.startsWith("#") && !/^(?:[a-z]+:|\/\/|\/)/i.test(candidate)) {
@@ -330,6 +360,7 @@ async function buildAssets(temporaryDir: string, assets: Iterable<ResolvedAsset>
 export async function buildPublicContent(options: PublicContentBuildOptions): Promise<PublicContentBuildResult> {
   const contentDir = path.resolve(options.contentDir);
   const outputDir = path.resolve(options.outputDir);
+  const publicBasePath = normalizePublicBasePath(options.publicBasePath);
   if (!fs.existsSync(contentDir) || !fs.statSync(contentDir).isDirectory()) {
     throw new Error(`content 目录不存在：${contentDir}`);
   }
@@ -368,12 +399,13 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
           parsed.content.replace(/^\uFEFF/, ""),
           articlePath,
           contentDir,
+          publicBasePath,
           assets,
           warnings,
         );
         const id = `${garden.id}/${slug}`;
-        const apiPath = `/api/v1/posts/${encodePublicPath(id)}.json`;
-        const markdownPath = `/api/v1/posts/${encodePublicPath(id)}.md`;
+        const apiPath = publicPath(publicBasePath, `/api/v1/posts/${encodePublicPath(id)}.json`);
+        const markdownPath = publicPath(publicBasePath, `/api/v1/posts/${encodePublicPath(id)}.md`);
         const post: PublicPost = {
           id,
           garden: garden.id,
@@ -398,7 +430,7 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
           description: garden.description,
           homeContent: garden.homeContent,
           postCount: gardenPosts.length,
-          apiPath: `/api/v1/gardens/${encodeURIComponent(garden.id)}.json`,
+          apiPath: publicPath(publicBasePath, `/api/v1/gardens/${encodeURIComponent(garden.id)}.json`),
         });
       }
     }

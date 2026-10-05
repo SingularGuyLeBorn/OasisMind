@@ -1,0 +1,76 @@
+name: Deploy public site
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/deploy-public-site.yml"
+      - "apps/site/**"
+      - "apps/server/src/infra/publicContentBuilder.ts"
+      - "apps/server/src/infra/publicContentVerifier.ts"
+      - "apps/server/src/scripts/build-public-content.ts"
+      - "content/**"
+      - "packages/brand/**"
+      - "packages/markdown/**"
+      - "packages/shared/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+  workflow_dispatch:
+
+# [OM-FREEPLAY] 用户要求独立公开站但尚未指定云厂商；先复用公开 GitHub 仓库的 Pages，
+# 后续绑定自定义域名时 configure-pages 会自动把 base_path 切换为空，无需维护第二套构建。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build strict public projection and static site
+        run: pnpm build:site
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.base_url }}
+          NEXT_PUBLIC_SITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+      - name: Prepare and audit Pages artifact
+        run: |
+          touch apps/site/out/.nojekyll
+          pnpm --filter @oasismind/site verify:pages
+      - name: Upload public site only
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: apps/site/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

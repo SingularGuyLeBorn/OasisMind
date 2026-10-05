@@ -7,7 +7,8 @@
     "lint": "eslint . && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "build": "next build",
-    "verify:export": "node scripts/verify-export.mjs"
+    "verify:export": "node scripts/verify-export.mjs",
+    "verify:pages": "node scripts/verify-pages-artifact.mjs"
   },
   "dependencies": {
     "@oasismind/brand": "workspace:*",

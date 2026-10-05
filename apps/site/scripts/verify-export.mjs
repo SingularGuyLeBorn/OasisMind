@@ -13,9 +13,29 @@ import { fileURLToPath } from "node:url";
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = path.join(siteRoot, "out");
 const readOnlyMethods = new Set(["GET", "HEAD", "OPTIONS"]);
+const publicBasePath = normalizeBasePath(process.env.NEXT_PUBLIC_SITE_BASE_PATH);
 
 function fail(message) {
   throw new Error(`公开站导出验收失败：${message}`);
+}
+
+function normalizeBasePath(value) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed === "/") return "";
+  if (
+    !trimmed.startsWith("/")
+    || trimmed.endsWith("/")
+    || trimmed.includes("//")
+    || /[?#\\]/.test(trimmed)
+    || !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]+$/.test(trimmed)
+  ) {
+    fail(`NEXT_PUBLIC_SITE_BASE_PATH 无效：${value ?? ""}`);
+  }
+  return trimmed;
+}
+
+function mounted(pathname) {
+  return `${publicBasePath}${pathname}`;
 }
 
 function requireFile(relativePath) {
@@ -44,6 +64,12 @@ if (!Number.isInteger(manifest.schemaVersion) || !Array.isArray(manifest.posts) 
   fail("index.json 没有稳定 schemaVersion 或公开文章");
 }
 const sample = manifest.posts[0];
+if (!sample.apiPath.startsWith(`${publicBasePath}/api/v1/`)) {
+  fail(`文章 apiPath 未使用部署前缀：${sample.apiPath}`);
+}
+if (!sample.markdownPath.startsWith(`${publicBasePath}/api/v1/`)) {
+  fail(`文章 markdownPath 未使用部署前缀：${sample.markdownPath}`);
+}
 requireFile(`api/v1/posts/${sample.garden}/${sample.slug}.json`);
 requireFile(`api/v1/posts/${sample.garden}/${sample.slug}.md`);
 const articlePath = `/articles/${encodeURIComponent(sample.garden)}/${sample.slug
@@ -82,8 +108,14 @@ const server = http.createServer((request, response) => {
   }
 
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
-  const decoded = decodeURIComponent(pathname).replace(/^\/+/, "");
-  const candidates = pathname === "/"
+  if (publicBasePath && pathname !== publicBasePath && !pathname.startsWith(`${publicBasePath}/`)) {
+    response.statusCode = 404;
+    response.end(method === "HEAD" ? undefined : fs.readFileSync(path.join(outDir, "404.html")));
+    return;
+  }
+  const unmountedPathname = publicBasePath ? pathname.slice(publicBasePath.length) || "/" : pathname;
+  const decoded = decodeURIComponent(unmountedPathname).replace(/^\/+/, "");
+  const candidates = unmountedPathname === "/"
     ? ["index.html"]
     : [decoded, `${decoded}.html`, path.join(decoded, "index.html")];
   const relative = candidates.find((candidate) => {
@@ -111,19 +143,20 @@ try {
   if (!address || typeof address === "string") fail("无法取得本机验收端口");
   const base = `http://127.0.0.1:${address.port}`;
   const cases = [
-    ["GET", "/", 200],
-    ["HEAD", "/api/v1/index.json", 200],
-    ["OPTIONS", "/api/v1/index.json", 204],
-    ["GET", "/api/v1/search.json", 200],
+    ["GET", mounted("/"), 200],
+    ["HEAD", mounted("/api/v1/index.json"), 200],
+    ["OPTIONS", mounted("/api/v1/index.json"), 204],
+    ["GET", mounted("/api/v1/search.json"), 200],
     ["GET", sample.apiPath, 200],
     ["GET", sample.markdownPath, 200],
-    ["GET", articlePath, 200],
-    ["GET", "/api/v1/posts/not-found.json", 404],
+    ["GET", mounted(articlePath), 200],
+    ["GET", mounted("/api/v1/posts/not-found.json"), 404],
     ["POST", sample.apiPath, 405],
     ["PUT", sample.apiPath, 405],
     ["PATCH", sample.apiPath, 405],
     ["DELETE", sample.apiPath, 405],
   ];
+  if (publicBasePath) cases.push(["GET", "/api/v1/index.json", 404]);
   for (const [method, pathname, expectedStatus] of cases) {
     const response = await fetch(`${base}${pathname}`, { method });
     if (response.status !== expectedStatus) fail(`${method} ${pathname} 返回 ${response.status}，期望 ${expectedStatus}`);

@@ -3,9 +3,11 @@
  * output=export 让运行时没有写权限；不支持的动态行为会在构建阶段直接失败。
  */
 import type { NextConfig } from "next";
+import { SITE_BASE_PATH } from "./siteConfig";
 
 const nextConfig: NextConfig = {
   output: "export",
+  basePath: SITE_BASE_PATH,
   transpilePackages: ["@oasismind/brand", "@oasismind/shared", "@oasismind/markdown"],
   images: { unoptimized: true },
   trailingSlash: false,

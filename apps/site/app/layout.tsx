@@ -7,12 +7,10 @@ import "@oasismind/markdown/styles.css";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-
-// [OM-FREEPLAY] 用户尚未提供最终域名；环境变量优先，localhost 仅用于本地 metadata 生成。
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { getSiteUrl, withSiteBasePath } from "@/siteConfig";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(getSiteUrl()),
   title: { default: "见微 · OasisMind", template: "%s · 见微" },
   description: "见微知著：关于 AI、学习、工程与长期思考的个人知识花园。",
   openGraph: {
@@ -21,10 +19,10 @@ export const metadata: Metadata = {
     title: "见微 · OasisMind",
     description: "把值得留下的思考，整理成可以再次抵达的知识。",
   },
-  alternates: { types: { "application/rss+xml": "/feed.xml" } },
+  alternates: { types: { "application/rss+xml": withSiteBasePath("/feed.xml") } },
   icons: {
-    icon: [{ url: "/icons/oasismind.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icons/oasismind.svg", type: "image/svg+xml" }],
+    icon: [{ url: withSiteBasePath("/icons/oasismind.svg"), type: "image/svg+xml" }],
+    apple: [{ url: withSiteBasePath("/icons/oasismind.svg"), type: "image/svg+xml" }],
   },
 };
 

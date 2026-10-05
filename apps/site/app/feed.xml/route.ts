@@ -3,6 +3,7 @@
  * 只实现 GET；公开投影不可读时让静态构建失败，避免输出残缺或越权 Feed。
  */
 import { getManifest, articleHref } from "@/lib/publicContent";
+import { getSiteUrl } from "@/siteConfig";
 
 export const dynamic = "force-static";
 
@@ -11,8 +12,7 @@ function escapeXml(value: string): string {
 }
 
 export function GET(): Response {
-  // [OM-FREEPLAY] 最终域名尚未给出，部署时由环境变量覆盖。
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const baseUrl = getSiteUrl();
   const items = getManifest().posts.slice(0, 50).map((post) => `
     <item>
       <title>${escapeXml(post.title)}</title>

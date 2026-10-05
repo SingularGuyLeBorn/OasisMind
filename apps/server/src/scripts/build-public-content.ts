@@ -12,7 +12,11 @@ const outputDir = process.env.OM_PUBLIC_CONTENT_DIR
   ? path.resolve(process.env.OM_PUBLIC_CONTENT_DIR)
   : path.join(projectRoot, "apps", "site", "public", "api", "v1");
 
-const result = await buildPublicContent({ contentDir, outputDir });
+const result = await buildPublicContent({
+  contentDir,
+  outputDir,
+  publicBasePath: process.env.NEXT_PUBLIC_SITE_BASE_PATH,
+});
 const verification = verifyPublicContentProjection(contentDir, outputDir);
 console.log(
   `公开内容生成完成：${result.gardenCount} 个花园，${result.postCount} 篇文章，${result.assetCount} 个本地资源。`,

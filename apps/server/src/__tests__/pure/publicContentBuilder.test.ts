@@ -101,6 +101,38 @@ describe("buildPublicContent", () => {
     expect(verifyPublicContentProjection(contentDir, outputDir).assetCount).toBe(1);
   });
 
+  it("项目站挂载路径会统一写入文章、花园、Markdown 和资源地址", async () => {
+    const { contentDir, outputDir } = createFixture();
+    const onePixelPng = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "base64",
+    );
+    fs.writeFileSync(path.join(contentDir, "notes", "images", "used.png"), onePixelPng);
+    fs.writeFileSync(
+      path.join(contentDir, "notes", "public.md"),
+      "---\ntitle: 项目站文章\npublished: true\n---\n![图](images/used.png)\n",
+    );
+
+    await buildPublicContent({ contentDir, outputDir, publicBasePath: "/OasisMind" });
+
+    const index = JSON.parse(fs.readFileSync(path.join(outputDir, "index.json"), "utf8"));
+    expect(index.posts[0]).toMatchObject({
+      apiPath: "/OasisMind/api/v1/posts/notes/public.json",
+      markdownPath: "/OasisMind/api/v1/posts/notes/public.md",
+    });
+    expect(index.gardens[0].apiPath).toBe("/OasisMind/api/v1/gardens/notes.json");
+    const post = JSON.parse(fs.readFileSync(path.join(outputDir, "posts", "notes", "public.json"), "utf8"));
+    expect(post.post.content).toMatch(/\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.webp/);
+  });
+
+  it("拒绝把域名、查询串或末尾斜杠当作项目站挂载路径", async () => {
+    const { contentDir, outputDir } = createFixture();
+    for (const publicBasePath of ["OasisMind", "/OasisMind/", "//example.com", "/OasisMind?draft=1", "/Oasis Mind"]) {
+      await expect(buildPublicContent({ contentDir, outputDir, publicBasePath }))
+        .rejects.toThrow("公开站挂载路径无效");
+    }
+  });
+
   it("压缩超宽图片并按原始内容哈希去重", async () => {
     const { contentDir, outputDir } = createFixture();
     const image = await sharp({

@@ -32,6 +32,22 @@ pnpm build:site
 
 ## 部署变量
 
-- `NEXT_PUBLIC_SITE_URL`：最终域名，用于 OpenGraph、sitemap 和 RSS；构建时必须设置。
+- `NEXT_PUBLIC_SITE_URL`：含部署路径的完整公开地址，用于 OpenGraph、sitemap 和 RSS。
+- `NEXT_PUBLIC_SITE_BASE_PATH`：可选挂载路径。GitHub Pages 项目站为 `/OasisMind`，自定义域名通常为空。
 
-部署平台需应用 `public/_headers` 中的 CORS、安全头和缓存策略。若平台不识别该文件，应把相同规则写入该平台的静态托管配置。
+仓库的 `deploy-public-site.yml` 会从 GitHub Pages 自动取得这两个值，生成严格公开投影，
+审计最终 `out/`，并且只上传 `apps/site/out`。推送到 `master` 的公开站相关改动会触发部署，
+也可以在 Actions 页面手动运行。首次使用前，仓库所有者需要在 Settings → Pages 中把发布源设为
+GitHub Actions；工作流不会替用户开启仓库设置或修改 DNS。
+
+在本机模拟默认项目站地址：
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://singularguyleborn.github.io/OasisMind \
+NEXT_PUBLIC_SITE_BASE_PATH=/OasisMind \
+pnpm build:site
+pnpm --filter @oasismind/site verify:pages
+```
+
+`public/_headers` 供支持该格式的静态托管平台使用。GitHub Pages 不读取该文件；它自己的响应头、
+HTTPS 和缓存行为必须在首次公网部署后实测，不能用本机构建结果代替。

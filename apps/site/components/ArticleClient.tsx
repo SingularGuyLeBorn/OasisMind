@@ -10,6 +10,7 @@ import type { PublicPost } from "@oasismind/shared";
 import { PublicMarkdown } from "@/components/PublicMarkdown";
 import { extractArticleHeadings } from "@/lib/headings";
 import { usePublicJson } from "@/lib/usePublicJson";
+import { withSiteBasePath } from "@/siteConfig";
 
 export function ArticleClient({ garden, slug }: { garden: string; slug: string }) {
   const apiPath = `/api/v1/posts/${garden.split("/").map(encodeURIComponent).join("/")}/${slug.split("/").map(encodeURIComponent).join("/")}.json`;
@@ -33,7 +34,8 @@ export function ArticleClient({ garden, slug }: { garden: string; slug: string }
         <footer className="article-api-note">
           <Braces size={18} />
           <div><strong>给 Agent 的只读入口</strong><p>这篇文章同时提供稳定的 JSON 和 Markdown。</p></div>
-          <a href={post.apiPath}>JSON</a><a href={post.markdownPath}>Markdown</a>
+          <a href={withSiteBasePath(post.apiPath)}>JSON</a>
+          <a href={withSiteBasePath(post.markdownPath)}>Markdown</a>
         </footer>
       </article>
       {headings.length > 0 && (

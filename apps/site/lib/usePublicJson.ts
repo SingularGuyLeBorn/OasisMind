@@ -5,6 +5,7 @@
  * 它不携带业主凭据、不调用写接口；取消请求不报错，HTTP/解析失败则进入显式 error 状态。
  */
 import { useEffect, useState } from "react";
+import { withSiteBasePath } from "@/siteConfig";
 
 interface PublicJsonState<T> {
   data: T | null;
@@ -19,7 +20,7 @@ export function usePublicJson<T>(url: string): PublicJsonState<T> {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    fetch(url, { signal: controller.signal, headers: { accept: "application/json" } })
+    fetch(withSiteBasePath(url), { signal: controller.signal, headers: { accept: "application/json" } })
       .then(async (response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return await response.json() as T;
