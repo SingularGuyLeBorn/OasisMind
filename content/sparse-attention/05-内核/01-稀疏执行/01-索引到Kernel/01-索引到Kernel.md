@@ -5,7 +5,7 @@ published: true
 ---
 # 从索引到 Kernel
 
-动态稀疏 attention 的最后一步，经常被画成 `gather → attention`。真正执行时，这个箭头里面塞着一条小型编译流水线：候选索引先合并、去重与排序，逻辑位置再映射到物理页，调度器按行长生成任务，kernel 逐 tile 装载 K/V 并维护 online softmax，必要时还要归并 split-KV 的部分输出。任何一段失去规则性，理论省下的乘加都会在访存或调度里还回去。
+动态稀疏 attention 经常被画成 `gather → attention`。实际执行包含一条小型编译流水线：候选索引经过合并、去重与排序，逻辑位置映射到物理页，调度器按行长生成任务，kernel 逐 tile 装载 K/V 并维护 online softmax，必要时归并 split-KV 的部分输出。任一环节失去规则性，理论省下的乘加都会在访存或调度里还回去。
 
 ![候选索引进入稀疏 attention kernel 的数据流](./images/index-to-kernel-flow.svg)
 

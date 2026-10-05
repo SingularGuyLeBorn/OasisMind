@@ -144,7 +144,7 @@ Quest 不会因某一步未选择某页而删除物理 KV。下一步 query 改�
 
 prefix sharing 也需要区分物理页和逻辑页。多个请求可以引用同一前缀物理页，min/max 摘要随物理页共享；每条请求的 query 和候选 Top-K 不共享。页的引用计数决定何时释放，某条请求未选中该页不改变其他请求对它的所有权。
 
-beam search 或 speculative decoding 会产生更多分支。多个 beam 在分叉前共享相同页与摘要，分叉后各自追加尾页；候选排序使用各 beam 的 query。speculative draft 一次提出多个 token 时，后续 query 依赖前面草稿 token，不能用第一个 query 的页集合替代整个验证块，除非验证 kernel 明确定义了逐位置候选。这里的状态共享属于 cache 管理，候选共享属于近似策略，两者不应混在一起。
+beam search 或 speculative decoding 会产生更多分支。多个 beam 在分叉前共享相同页与摘要，分叉后各自追加尾页；候选排序使用各 beam 的 query。speculative draft 一次提出多个 token 时，后续 query 依赖前面草稿 token，不能用第一个 query 的页集合替代整个验证块，除非验证 kernel 明确定义了逐位置候选。状态共享由 cache 管理，候选共享会改变 attention 近似，二者需要独立配置和验收。
 
 ## 4. HBM 流量与 block size
 
@@ -176,7 +176,7 @@ $$
 =\frac{1}{S}+\frac{K}{P}. \tag{12}
 $$
 
-取 $L=65536$、$S=16$，token budget 为 4096，所以 $K=4096/16=256$ 页。式 (12) 得到 $1/16+4096/65536=1/8$，理想 KV 读取降低 8 倍。这里的 4096 是 token budget，不是 4096 个页；若真选 4096 页，就等于读完整 64K cache。
+取 $L=65536$、$S=16$，token budget 为 4096，所以 $K=4096/16=256$ 页。式 (12) 得到 $1/16+4096/65536=1/8$，理想 KV 读取降低 8 倍。4096 表示 token budget，对应 256 页；选择 4096 页会读完整个 64K cache。
 
 再落到字节。若单个 head 的 $d_h=128$ 且 KV 为 FP16，则一个 key 或 value 向量占 $M=256$ bytes。单层单个 KV head 的完整 64K K/V 读取是 $2\times256\times65536=32$ MiB；摘要读取是 2 MiB，256 个候选页再读 2 MiB，合计 4 MiB。层数和 head 数会同时放大两条路径，比例仍为 $1/8$。索引、页号和输出写回没有计入这 4 MiB，所以硬件计数应略高于公式值。
 
