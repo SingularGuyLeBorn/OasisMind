@@ -55,7 +55,7 @@ $$
 
 ### 2.2. 为什么 Decode kernel 不能照搬 Prefill
 
-Prefill 有二维 Q tile，可让 K/V tile 被许多 query 复用；decode 每序列只有一个 query，并行度来自 batch、head 和沿 KV 的切分。上下文长而 batch 小时，单个 head 可沿 KV 分给多个 block，分别维护局部 softmax 状态，最后合并。拆分太多会增加中间写回与归约，所以阈值随长度和 batch 变化。
+Prefill 有二维 Q tile，可让 K/V tile 被许多 query 复用；decode 每序列只有一个 query，并行度来自 batch、head 和沿 KV 的切分。上下文长而 batch 小时，单个 head 可沿 KV 分给多个 block，分别维护局部 softmax 状态，再合并这些局部量。拆分太多会增加中间写回与归约，所以阈值随长度和 batch 变化。
 
 线性层同样需要针对窄 $M$。训练/Prefill 常用的 GEMM tile 在 $M=1$ 时大量空闲。持续 batching 把多个序列合成矩阵可改善，但请求数不足时，专用 GEMV、小矩阵 kernel 与权重量化更重要。
 
@@ -99,7 +99,7 @@ Prefill 吞吐用 input token/s，Decode 用 output token/s；若给总 token/s�
 
 ### 4.2. 选择优化的顺序
 
-先决定业务目标：TTFT、TPOT、吞吐和成本的约束。然后用真实负载建立长度与到达分布，测出 prefill/decode 各自占比。第三步检查 KV 是否限制并发，确定分页、GQA/量化或换出需求。最后才在 kernel、调度和集群拓扑之间选择改动。
+优化目标由 TTFT、TPOT、吞吐和成本约束共同定义。真实负载的长度与到达分布给出 prefill/decode 占比，KV 容量则限定可维持的并发，由此判断分页、GQA、量化或换出的需求。Kernel、调度和集群拓扑的改动都应对应其中一项已测出的约束。
 
 常见误区是把所有问题归给 attention。小 batch decode 可能主要读 MLP 权重；短 prompt prefill 可能由投影主导；高并发服务可能卡在队列和 KV 容量。一个优化改变 attention 2 倍，若它只占端到端 20%，总收益上限也有限。
 
@@ -119,7 +119,7 @@ $$
 
 当 $T$ 增至 32768，线性项乘 8，attention 二次项乘 64，attention 占比显著上升。交叉点可从 $4T^2H$ 与线性层系数比较。不同 $H,H_f,GQA$ 配置交叉点不同，所以「长上下文一定 attention 主导」需要具体数字。
 
-把各项写成带单位的时间下界，还要加入数据移动。设 BF16 元素宽度 $w=2$ byte，单层输入与输出至少各有 $BTHw$ byte；Q、K、V 是否写回 HBM 由融合边界决定。若投影与 attention 分开，Q 的写入和读取约为 $2BTHw$，K/V 合计约为 $4BTH_{kv}w$，完整 score 若被物化还会增加 $2BAT^2w$ 的写读。最后一项在 $B=1,A=32,T=4096$ 时已经达到 2 GiB，且还没有计算 probability 的副本。FlashAttention 避免这类二次 HBM 流量，但 QKV、输出和层间 activation 仍会穿过相应存储层级。
+把各项写成带单位的时间下界，还要加入数据移动。设 BF16 元素宽度 $w=2$ byte，单层输入与输出至少各有 $BTHw$ byte；Q、K、V 是否写回 HBM 由融合边界决定。若投影与 attention 分开，Q 的写入和读取约为 $2BTHw$，K/V 合计约为 $4BTH_{kv}w$，完整 score 若被物化还会增加 $2BAT^2w$ 的写读。Score 写读项在 $B=1,A=32,T=4096$ 时已经达到 2 GiB，且还没有计算 probability 的副本。FlashAttention 避免这类二次 HBM 流量，但 QKV、输出和层间 activation 仍会穿过相应存储层级。
 
 以前述 4096 token 算例为例，32 层主体约 55.3 TFLOP。若目标 GPU 在这些矩阵 shape 下实测可持续 120 TFLOP/s，纯计算下界约 461 ms；若实际 prefill 设备时间为 620 ms，不能直接把 159 ms 全部称作 kernel 效率损失。逐层时间线可能包含 RMSNorm、RoPE、残差、词表投影、TP collective 与 kernel 间空档。先把这些区间分开，再比较矩阵主体的 $F/P_{shape}$，才能判断应优化 attention I/O、MLP GEMM，还是减少调度空档。
 
@@ -235,7 +235,7 @@ Top-k 可用局部选择而非完整排序，top-p 需要累积概率到阈值�
 
 Chunked prefill 遇到不支持的 mask/layout 时，回退整段或通用 ragged kernel；调度器据新预测缩小并发，不能沿用快路径预算。量化 decode 不支持某 head dimension 时回退高精度，提前确认额外 KV/权重容量可用。
 
-PD 交接超时保留源端所有权，目标丢弃未提交 KV；源已释放而目标未确认是协议禁止状态。TP/PP 某 rank 失败，整个模型副本从路由移除，等待请求重派；已流式输出请求从最后确认 token 重算，避免重复发送。
+PD 交接超时保留源端所有权，目标丢弃未提交 KV；源已释放而目标未确认是协议禁止状态。TP/PP 某 rank 失败，整个模型副本从路由移除，等待请求重派；已流式输出请求从最近确认的 token 重算，避免重复发送。
 
 性能退化也需要自动回退。若 chunk 预测误差持续使 TPOT 超标，暂时收紧 prefill budget；若投机/量化让确认 token/s 下降，关闭该路径。回退条件带滞回和版本标记，避免每轮抖动。
 
@@ -255,7 +255,7 @@ PD 交接超时保留源端所有权，目标丢弃未提交 KV；源已释放�
 
 上线后若 TTFT 因吞吐提高降到 650 ms、TPOT p99 39 ms，收益符合预测；若 TPOT 仍 45 ms，按新时间线查量化反解码或 batch 变化，而不是宣称 kernel 微基准成功就结束。
 
-将这个例子再展开一轮，可以看清容量、吞吐和延迟之间的约束。假设单副本由 8 张 80 GiB GPU 组成，权重与运行时常驻每卡 28 GiB，预留 8 GiB 给临时 workspace、通信和波动，KV 可用空间约 44 GiB。若每个 4096 token 请求的 KV 在张量并行切分后每卡占 64 MiB，忽略碎片时可容纳约 704 个等长请求；采用 16-token block，平均最后一块浪费 7.5 token，只会带来较小修正。但线上有 10% 请求达到 32K，上述请求数就失去意义。容量应直接按当前各请求已提交 token 求和，再乘每 token、每卡的 KV 字节，并加入预留但尚未写满的 block。
+容量、吞吐和延迟可以落到同一组数字上。假设单副本由 8 张 80 GiB GPU 组成，权重与运行时常驻每卡 28 GiB，预留 8 GiB 给临时 workspace、通信和波动，KV 可用空间约 44 GiB。若每个 4096 token 请求的 KV 在张量并行切分后每卡占 64 MiB，忽略碎片时可容纳约 704 个等长请求；采用 16-token block，平均尾块浪费 7.5 token，只会带来较小修正。但线上有 10% 请求达到 32K，上述请求数就失去意义。容量应直接按当前各请求已提交 token 求和，再乘每 token、每卡的 KV 字节，并加入预留但尚未写满的 block。
 
 设目标到达率为 40 请求/s，平均输入 2048 token、输出 512 token，则整个服务每秒需要处理约 81,920 个 input token 和 20,480 个 output token。若单个 prefill 副本在满足 TTFT 的 batch 下稳定提供 30K input token/s，至少需要三个副本，利用率约 91%；这个余量很难吸收长 prompt 突发或副本维护。配置四个副本后名义利用率约 68%，排队尾部更安全。Decode 副本若各自只能在 TPOT 目标内提供 6K output token/s，同样需要四个副本。这里的副本数来自满足 SLO 的 goodput，不能用不受延迟约束的离线峰值替换。
 
