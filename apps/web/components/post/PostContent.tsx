@@ -1,13 +1,8 @@
 "use client";
 
 import { memo, useMemo, useState, useId, useRef, useEffect, isValidElement, type ReactNode, type ReactElement, type ComponentPropsWithoutRef } from "react";
-import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import rehypeHighlight from "rehype-highlight";
-import rehypeRaw from "rehype-raw";
-import rehypeSanitize from "rehype-sanitize";
 import { Check, Copy, Eye, Code2, Maximize2, Minimize2, WrapText, ListOrdered } from "lucide-react";
 import { cn } from "@/lib/utils";
 // KaTeX CSS 只在根布局 layout.tsx 导入一次，避免 client chunk 延迟加载导致公式初始闪烁
@@ -15,10 +10,7 @@ import { transformWikiLinks } from "./WikiLink";
 import { PostMarkdownLink } from "./PostMarkdownLink";
 import { RoughAnnotation, type RoughAnnotationProps } from "./RoughAnnotation";
 import { memoizeMarkdownTransform } from "@oasismind/shared";
-import {
-  markdownSanitizeSchema as sanitizeSchema,
-  safeMarkdownUrlTransform as urlTransform,
-} from "@oasismind/markdown";
+import { MarkdownRendererCore } from "@oasismind/markdown";
 import { resolvePostAssetUrl } from "@/lib/postAssetUrl";
 import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
 import { MarkdownTable } from "@/components/post/MarkdownTable";
@@ -546,18 +538,10 @@ export const PostContent = memo(function PostContent({
   );
 
   const tocItems = useMemo(() => buildTocItems(content), [content]);
-  // 公式必须先于 GFM 表格，否则表内 `\|` 会切断 `$...$` 把后文吞成红字
-  const remarkPlugins = useMemo(() => [remarkMath, remarkGfm], []);
-  const rehypePlugins = useMemo(
-    () =>
-      [
-        rehypeRaw,
-        rehypeNormalizeCustomTags,
-        // rehype-sanitize 在 rehypeRaw 之后、高亮/KaTeX 之前；iframe/object/embed/script 由 sanitize 统一剥离
-        [rehypeSanitize, sanitizeSchema],
-        rehypeHeadingIds(tocItems),
-        rehypeHighlight,
-      ] as NonNullable<React.ComponentProps<typeof ReactMarkdown>["rehypePlugins"]>,
+  const rehypePluginsBeforeSanitize = useMemo(() => [rehypeNormalizeCustomTags], []);
+  const rehypePluginsAfterSanitize = useMemo(
+    // 本地页用自定义 KaTeX 组件，因此只在共享 sanitize 之后追加标题 id 与代码高亮。
+    () => [rehypeHeadingIds(tocItems), rehypeHighlight],
     [tocItems],
   );
 
@@ -732,19 +716,14 @@ export const PostContent = memo(function PostContent({
   );
 
   return (
-    <div
+    <MarkdownRendererCore
+      content={processedContent}
       className={cn("prose prose-stone dark:prose-invert max-w-none om-post-content", className)}
       spellCheck={false}
-    >
-      <ReactMarkdown
-        remarkPlugins={remarkPlugins}
-        rehypePlugins={rehypePlugins}
-        remarkRehypeOptions={{ allowDangerousHtml: true }}
-        urlTransform={urlTransform}
-        components={components}
-      >
-        {processedContent}
-      </ReactMarkdown>
-    </div>
+      rehypePluginsBeforeSanitize={rehypePluginsBeforeSanitize}
+      rehypePluginsAfterSanitize={rehypePluginsAfterSanitize}
+      remarkRehypeOptions={{ allowDangerousHtml: true }}
+      components={components}
+    />
   );
 });
