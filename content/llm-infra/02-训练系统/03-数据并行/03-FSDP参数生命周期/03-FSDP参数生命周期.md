@@ -193,6 +193,96 @@ Activation checkpoint 在 backward 重算 forward。它与 FSDP 单元边界不�
 | 分布式保存 | Distributed Checkpoint 文档 | 分片 state dict 与跨规模加载 |
 | 二维并行 | DeviceMesh/DTensor 文档 | FSDP 与 TP 通信组 |
 
+## 18. `limit_all_gathers` 限制的是 CPU 发起速度
+
+参数预取由 CPU hook 发起异步 all-gather。若 CPU 很快把多个聚合排进 CUDA stream，而 GPU 计算和释放跟不上，就会同时出现多个完整参数组，显存峰值超过「当前组 + 下一组」的估算。FSDP1 的 rate limiter 在继续发起前等待前序分配进入可控窗口，使在途 all-gather 数量受限。
+
+Profiler 中可能看到 CPU 线程在 pre-forward 前短暂停顿，这不必然是性能缺陷。若没有限制，CPU 时间线更紧凑，GPU 却可能因为 OOM 或 allocator 压力失败。判断 limiter 是否造成暴露等待，要看 GPU 计算流是否同时空闲；CPU 等待期间 GPU 仍在计算上一组时，停顿没有进入关键路径。
+
+假设每个组完整参数 1.2 GiB，当前计算 10 ms，all-gather 8 ms。允许一个预取组时，峰值约增加 2.4 GiB，并可遮住通信；允许四个在途会增加约 6 GiB，通信仍在同一链路排队，不会得到四倍吞吐。只有 CPU 调度或不规则计算导致下一组经常来不及发起时，扩大窗口才可能改善。
+
+### 18.1. 分配与释放的事件关系
+
+参数 post-forward hook 触发 reshard，并不代表显存当场归还。当前模块 kernel、通信或 backward 保存的 view 仍可能引用完整 buffer；allocator 要等相关 stream event 完成后才能复用。显存曲线中 allocated 晚于 hook 下降，应先检查设备事件，而非认定 reshard 失效。
+
+跨 stream 使用参数时必须记录 stream。自定义 kernel 在另一个 stream 读取完整权重，却没有建立依赖，FSDP 可能认为主计算已结束并复用 buffer。错误输出未必立刻 crash，因为被覆盖的地址仍有效。调试版在 buffer 加 generation id，并在自定义 stream 完成后验证，能够发现生命周期越界。
+
+## 19. HYBRID_SHARD 把副本与分片分成两维
+
+当单个 FSDP group 跨越所有节点时，频繁 all-gather/reduce-scatter 会走慢速跨节点网络。HYBRID_SHARD 常在节点内或高速域内分片，再在不同域之间复制。设 shard group 大小为 $S$，replica group 大小为 $R$，总 DP 规模 $D=SR$。参数状态在 shard group 内占约 $1/S$，不同 replica group 各有一份。
+
+梯度先在 shard group 内 reduce-scatter，再让相同 shard 的 replica rank 做 all-reduce，得到跨副本的全局梯度。高频大张量的分片通信可留在 NVLink/NVSwitch，跨节点网络只处理每 rank 的 shard。与全局 $D$ 路分片相比，常驻状态从 $1/D$ 增到 $1/S$，换取更适合拓扑的通信。
+
+取 4 个节点、每节点 8 卡，$S=8,R=4$。一个 8 GiB 参数组在每卡常驻 1 GiB shard；若全 32 卡分片则为 256 MiB。节点内 gather 恢复 8 GiB 逻辑组，跨节点 replica 规约处理每卡对应 1 GiB 梯度 shard。容量多出 768 MiB/rank，但避免每层参数 gather 跨四节点。
+
+Replica group 与 shard group 必须正交。一个 rank 的坐标写成 $(r,s)$，shard collective 固定 $r$ 变化 $s$，replica collective 固定 $s$ 变化 $r$。进程映射或 DeviceMesh 维度颠倒，会把跨节点通信放回高频路径。Profile 给每个 collective 标 group 与 mesh dimension，才能验证拓扑意图。
+
+## 20. `use_orig_params` 改变暴露给上层的参数视图
+
+FSDP1 内部可把多个原参数展平成 FlatParameter。`use_orig_params=True` 让用户仍通过原始参数对象与 FQN 访问视图，便于按参数分组的 optimizer、冻结和 `torch.compile`。这些对象的数据视图会在 shard 与完整参数之间切换，shape 甚至可能在本 rank 没有对应数据时表现为空；持有 `.data` 指针跨生命周期使用是不安全的。
+
+按参数设置不同 weight decay 或学习率时，应在包装后的最终参数对象上创建 optimizer，并确认分组仍覆盖预期 FQN。冻结一部分原参数而同一 flat group 混有可训练参数，会受到实现限制或产生额外处理；wrap policy 按冻结边界分组更容易保持清晰所有权。
+
+外部模块若在 forward 外直接读取权重，例如自定义正则、EMA 或参数统计，需要进入完整参数上下文，或在 shard 上实现等价分布式计算。直接遍历当前 local view 得到的只是局部区间。计算全局 $L_2$ 正则可以各 rank 对 shard 求平方和再规约标量，无需 gather；导出完整权重才需要聚合。
+
+### 20.1. EMA 的容量与所有权
+
+指数滑动平均满足 $e_t=\beta e_{t-1}+(1-\beta)\theta_t$。若每 rank 保留完整 EMA，Stage 3 会额外占一份完整参数，抵消大量分片收益。更自然的实现让 EMA 与参数 shard 采用相同所有权，每个 owner 只更新本地区间；评估或导出时再按 state-dict 方式 gather。
+
+70B BF16 EMA 完整副本约 140 GB，单卡放不下；FP32 EMA 达 280 GB。64 卡分片后每 rank 分别约 2.19 GiB 或 4.38 GiB。Checkpoint manifest 还需标识 EMA dtype、全局区间和 step；漏存 EMA 会让恢复后的评估曲线突变。
+
+## 21. No-Shard、Grad-Shard 与 Full-Shard 的切换成本
+
+同一模型可先用 NO_SHARD 建立数值基线，再切 SHARD_GRAD_OP 与 FULL_SHARD 比较。NO_SHARD 类似 DDP，每 rank 常驻完整参数，通信集中在梯度；SHARD_GRAD_OP 常在 forward 后保留完整参数到 backward，减少一次 gather，容量高于 FULL_SHARD；FULL_SHARD forward 后释放，backward 前重新 gather。
+
+设某组参数 2 GiB，forward 与 backward 间隔 30 ms，gather 耗 12 ms。FULL_SHARD 释放后省 2 GiB 的间隔驻留，backward 需一次 12 ms gather；若能在前一组 backward 计算中预取并完全遮住，时间代价接近零。SHARD_GRAD_OP 保留这 2 GiB，避免 gather，对显存宽松或链路慢的配置更合适。
+
+策略可按模型组混用时，首尾大 embedding、重复使用的共享参数与普通 block 具有不同最佳点。但混用增加状态机和 checkpoint 测试范围。先用统一策略得到正确基线，再对 profiler 中 gather 暴露严重且容量可承受的少数组调整。
+
+## 22. 一次完整的内存时间线复算
+
+假设常驻参数/梯度/optimizer shard 为 18 GiB，activation 在 forward 末尾达到 26 GiB，runtime 与 workspace 常驻 5 GiB。每个 FSDP block 完整参数 1.5 GiB，预取一个下一 block；forward 峰值约
+
+$$
+18+26+5+1.5+1.5=52\ \text{GiB}.
+$$
+
+Backward 开始时 activation 尚有 26 GiB，当前/预取参数仍为 3 GiB，并出现 2 GiB gradient bucket，峰值升到 54 GiB。若 reduce-scatter 与下一 gather 双缓冲再需要 1.5 GiB workspace，可到 55.5 GiB。80 GiB 卡看似余量充分，但编译图池、checkpoint 保存与最长序列还要另算。
+
+把 wrap 改成四层一组，完整参数变为 6 GiB。Collective 次数降为四分之一，当前与预取却需 12 GiB，forward 估算升到 61 GiB，backward 接近 64.5 GiB。通信启动减少是否值得，要比较 9 GiB 额外峰值与实际时间节省；若因此被迫减 micro-batch，整体 token/s 可能下降。
+
+开启 activation checkpoint 后 activation 从 26 降到 12 GiB，重算窗口临时恢复 5 GiB，backward 峰值近似 $18+12+5+3+2+1.5+5=46.5$ GiB。公式中的最后 5 GiB 是重算 activation；它与常驻 activation 同时存在，不能只拿 26-12 得到净节省。
+
+### 22.1. 怎样核对估算
+
+在 profiler 中为每个 FSDP group 记录完整参数字节，并从 allocator snapshot 标注 storage。某时刻若出现三个完整组，而配置预期当前加一个预取，应检查 limiter、共享参数或重算嵌套。Gradient bucket 与参数 gather buffer 若共享 allocator segment，reserved 不能直接拆分，allocated storage 仍可按地址归类。
+
+用三种 micro-batch 测峰值，activation 应近似随 token 数增长，参数窗口保持稳定。峰值随 batch 增长的截距可近似参数、runtime 与 workspace，斜率近似 activation；出现台阶则检查 kernel workspace 或 graph bucket 切换。这比只跑一个点更容易发现模型遗漏项。
+
+## 23. 故障恢复必须回到一致参数版本
+
+FSDP step 内，某些组可能已经 reduce-scatter，另一些仍在 backward；optimizer step 后，各 shard又可能依次更新。任意时刻抓取各 rank 内存，不能保证拼成同一全局版本。Checkpoint 只在所有梯度处理和 optimizer update 完成、全组确认 step id 后提交。
+
+异步 checkpoint 可在一致边界建立只读 snapshot，再让训练继续。Snapshot 若采用 copy-on-write，后续更新触发的复制容量要进入峰值；若把 shard 拷到 CPU staging，PCIe 与 optimizer offload可能争用。Manifest 在所有 shard 写完、校验成功后原子发布，失败目录不会被自动选择。
+
+恢复后先比较每个 shard 的版本与 checksum，再运行一次完整 forward/backward/update。只验证 loss 能算出来，会漏掉 optimizer state 错位；只验证参数 checksum，又会漏掉数据 sampler、loss scaler和 scheduler。FSDP 的正确边界从参数生命周期一直延伸到训练状态提交。
+
+## 24. Optimizer 创建顺序与参数分组
+
+FSDP1 在包装时可能用 FlatParameter 替换原始参数，FSDP2 则把参数转换为 DTensor。Optimizer 应在最终分片形态建立后创建，使 param group 引用真正参与训练的对象。先创建 optimizer、后包装模型，旧引用可能不再对应运行时参数；即使训练未立即报错，state dict 的键与所有权也会混乱。
+
+分组规则通常依赖原始 FQN，例如 bias 与 norm 不做 weight decay。包装后遍历参数，核对每个 FQN 恰好进入一个组、所有可训练参数都被覆盖、冻结参数不在 optimizer 中。统计各组 numel 与 shard numel；全局 numel 应与未分片模型一致，各 rank shard 的和应覆盖全局区间及可解释 padding。
+
+训练中途解冻参数会改变 optimizer state 与通信集合。已经冻结的参数可能仍由 FSDP 分片管理，却没有梯度和 optimizer 条目；解冻时需要为其建立 $m,v$、更新 reducer 预期并保证所有 rank 同一步切换。更稳妥的流程在阶段边界保存 checkpoint，以新训练配置重建模型、FSDP 与 optimizer，再加载已有状态并初始化新增状态。
+
+参数组超参数也属于 checkpoint。若恢复时仅加载 $m,v$，却按新代码默认值重建 learning rate、betas 或 weight decay，下一步就与不中断基线不同。恢复测试比较 optimizer param group、scheduler step 与一次实际更新，而不止检查 state tensor 数量。
+
+混合精度 master parameter 的归属也要核对。有的 optimizer 由 FSDP shard直接维护 FP32 状态，有的混合精度包装器另建副本。内存清单按 storage 地址统计；若同一 shard 同时出现两份 FP32 master，先确认是否为更新临时量，再检查 optimizer 与框架是否重复承担精度管理。
+
+这项检查在更换 optimizer 或混合精度库后重新执行，并保存状态字节明细。
+
+记录已随实验配置归档。
+
 ## 参考资料
 
 - [PyTorch FSDP2 `fully_shard` 官方文档](https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html)
