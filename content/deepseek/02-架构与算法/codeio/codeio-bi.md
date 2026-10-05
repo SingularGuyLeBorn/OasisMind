@@ -53,7 +53,7 @@ We validate the effectiveness of CODEI/O and CODEI/O++ across four base models w
 
 all benchmarks, demonstrating balanced and generalizable reasoning abilities.
 
-我们在 7B 到 30B 参数的四个基座模型上验证 CODEI/O 和 CODEI/O++ 的效果. 在 14 个不同基准上的评测显示, 用它们训练能提升多种推理任务的表现, 不只局限于代码相关任务, 也包括逻辑, 符号, 数学与数值, 科学, 常识等更通用的任务. 与几种强数据基线相比, 包括 OpenMathInstruct2 (Toshniwal et al., 2024), OpenCoder-SFT-Stage1 (Huang et al., 2024), WebInstruct (Yue et al., 2024) 以及高质量原始代码 (Ben Allal et al., 2024), CODEI/O 在全部四个基座上不仅平均分更高, 表现也更均衡: 它不是只在少数基准上拉高分数, 同时在其他基准上造成下降, 而是在几乎所有基准上都带来一致的提升, 显示出均衡且可泛化的推理能力.
+我们在 7B 到 30B 参数的四个基座模型上验证 CODEI/O 和 CODEI/O++ 的效果. 14 个基准覆盖代码、逻辑、符号、数学与数值、科学和常识任务, 训练后的提升也分布在这些不同领域. 相比 OpenMathInstruct2 (Toshniwal et al., 2024)、OpenCoder-SFT-Stage1 (Huang et al., 2024)、WebInstruct (Yue et al., 2024) 和高质量原始代码 (Ben Allal et al., 2024), CODEI/O 在四个基座上的平均分更高, 且几乎所有基准都取得提升, 没有依靠少数任务涨分来抵消其他任务下降.
 
 ## 2. CODEI/O · CODEI/O 的数据构造
 

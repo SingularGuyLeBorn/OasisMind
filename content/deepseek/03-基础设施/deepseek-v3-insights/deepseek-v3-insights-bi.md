@@ -348,7 +348,7 @@ Moreover, by predicting multiple tokens per step, MTP increases the inference ba
 
 For these reasoning models, high token output speed is of paramount importance. In reinforcement learning (RL) workflows—such as PPO [67], DPO [64] and GRPO [69]—the necessity to rapidly generate large numbers of samples makes inference throughput a critical bottleneck. Likewise, prolonged reasoning sequences can increase user wait times, reducing the practical usability of such models. As a result, optimizing inference speed through synergistic hardware and software innovations is indispensable for advancing the efficiency of reasoning models. However, effective strategies for accelerating inference and expediting RL training remain active areas of investigation, as discussed in Section 2.1.3. We encourage the broader community to collaboratively explore and develop novel solutions to these ongoing challenges.
 
-对这些推理模型, token 输出速度至关重要. 在强化学习 (RL) 流程中 (如 PPO [67], DPO [64], GRPO [69]), 需要快速生成大量样本, 推理吞吐因此成为关键瓶颈. 同样, 推理序列变长会增加用户等待时间, 降低这类模型的实用性. 所以, 用软硬件协同创新来优化推理速度, 对提高推理模型的效率必不可少. 但如 2.1.3 节所述, 加速推理与 RL 训练的有效策略仍在研究之中. 我们鼓励更广泛的社区共同探索, 为这些问题开发新方案.
+推理模型的 token 输出速度同时影响训练和服务. PPO [67]、DPO [64]、GRPO [69] 等强化学习流程需要快速生成大量样本, 推理吞吐会直接限制训练速度; 推理序列变长也会增加用户等待时间. 因此需要从软件与硬件两侧共同优化输出速度. 如 2.1.3 节所述, 加速推理与 RL 训练的有效策略仍在研究之中, 还需要社区继续探索.
 
 <!-- page 6 of 15 -->
 

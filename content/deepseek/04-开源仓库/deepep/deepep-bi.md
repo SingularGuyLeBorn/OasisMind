@@ -64,7 +64,7 @@ V2 发布: 对专家并行的完整重构, 支持更大的 scale-up 与 scale-ou
 注意事项: EP 的 dispatch 与 combine 需要占用 GPU SM, 不支持零 SM 的 RDMA EP; Bucket, Engram 与 PP 是实验特性; Engram 需要提供 `ncclGinOptFlagsWarpGet` 的 NCCL 构建.
 
 > **核对:** V1 文档说 hook 式重叠「不占用任何 SM 资源」, 这里却写「不支持零 SM 的 RDMA EP」, 两处矛盾吗?
-> 答: 不矛盾, 两句话说的是不同阶段. V1 的 low-latency kernel 在 [`csrc/deep_ep.cpp`](https://github.com/deepseek-ai/DeepEP/blob/567632d/csrc/deep_ep.cpp) 里拆成两次 launch: `return_recv_hook=true` 时只跑 `LOW_LATENCY_SEND_PHASE`, 接收阶段包成 `recv_hook` 留给调用方. 发送阶段要用 SM 做 FP8 转换并提交 IBGDA 请求, 这几微秒占满 SM; 提交之后数据在网卡上传输, 这段时间不占 SM, 「不占 SM」指的是这一段. V2.5 讲的是 dispatch 与 combine 整体: [`deep_ep/buffers/ep.py`](https://github.com/deepseek-ai/DeepEP/blob/main/deep_ep/buffers/ep.py) 的 `get_theoretical_num_sms` 把下限钉在 4 个 SM, 没有返回 0 的分支. 作者在 [issue 179](https://github.com/deepseek-ai/DeepEP/issues/179) 里也是这样回答的.
+> 答: 两句话分别描述不同阶段. V1 的 low-latency kernel 在 [`csrc/deep_ep.cpp`](https://github.com/deepseek-ai/DeepEP/blob/567632d/csrc/deep_ep.cpp) 里拆成两次 launch: `return_recv_hook=true` 时只跑 `LOW_LATENCY_SEND_PHASE`, 接收阶段包成 `recv_hook` 留给调用方. 发送阶段要用 SM 做 FP8 转换并提交 IBGDA 请求, 这几微秒占满 SM; 提交后数据在网卡上传输, 这段时间不占 SM, 「不占 SM」指的就是网卡传输阶段. V2.5 讨论 dispatch 与 combine 整体: [`deep_ep/buffers/ep.py`](https://github.com/deepseek-ai/DeepEP/blob/main/deep_ep/buffers/ep.py) 的 `get_theoretical_num_sms` 将下限设为 4 个 SM, 没有返回 0 的分支. [issue 179](https://github.com/deepseek-ai/DeepEP/issues/179) 也给出了相同解释.
 
 ### Quick start
 

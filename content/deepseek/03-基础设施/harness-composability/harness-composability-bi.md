@@ -787,7 +787,7 @@ where 𝑒(𝛾) yields a triple (𝛿, 𝑔, 𝑜) representing:
 
 因此，只有在 𝛾 处得到 witness 的 inverse 能在每个状态撤销 𝑓 时，下三角才闭合；effectΓ 并不会一般地把 𝔈∗Γ 映入 𝔈∗∂Γ。始终成立的是它们在 𝛾 处的一致：撤销不会改变恢复目标。
 
-组件加载时执行的不是一个 effect，而是一串 effect；卸载时撤销的是整串 effect。只要按照应用的逆序撤销，就无需额外条件，因为每个 inverse 都会遇到它自己的应用所产生的状态。
+组件加载时会依次执行一串 effect, 卸载时则按相反顺序撤销整串 effect. 这样每个 inverse 都会遇到对应 effect 刚执行完时留下的状态, 无须增加额外条件.
 
 定理 16 表明，若一组有 witness 的 effect 从初始状态依次应用并逆序撤销，那么每次撤销都会恢复该 effect 应用前的 context state，而且每个中间状态都满足健全性不变量。
 

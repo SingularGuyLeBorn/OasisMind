@@ -137,7 +137,7 @@ Modern AI data centers are purpose-built logical supercomputers engineered to ha
 
 A fundamental principle of this architecture is that the compute network and the storage network are isolated from each other [55]. This separation is essential to maximize both storage and application performance. By isolating highintensity east-west compute traffic between GPUs from storage traffic, the architecture prevents interference between them, and drastically reduces compute communication latency. This design also ensures that the inter-GPU communication remains highly reliable and predictable even when performing data-intensive tasks such as reading large datasets or writing multi-terabyte model checkpoints.
 
-这种架构的一条基本原则是计算网络和存储网络相互隔离 [55]. 这种分离对同时发挥存储性能和应用性能至关重要: 把 GPU 之间高强度的东西向计算流量与存储流量隔开, 两者就不会相互干扰, 计算通信延迟也大幅降低. 这一设计还保证即便在读取大型数据集, 写入数 TB 模型 checkpoint 这类数据密集任务进行时, GPU 间通信依然高度可靠, 可预测.
+这种架构的一条基本原则是计算网络和存储网络相互隔离 [55]. GPU 之间高强度的东西向计算流量与存储流量分开后, 两者不再争用同一网络, 计算通信延迟随之降低. 即使系统正在读取大型数据集或写入数 TB 模型 checkpoint, GPU 间通信也能保持较稳定、可预测的表现.
 
 ## 3 BOTTLENECK & MOTIVATION · 瓶颈与动机
 
@@ -354,7 +354,7 @@ The dual-path architecture fundamentally reorients data movement: KV-Cache can b
 
 **Traffic isolation (§5).** The complex data path in DualPath introduces additional KV-Cache transfer traffic on both the compute network and PCIe links. A primary concern is that this traffic may interfere with existing latency-sensitive collective communication operations essential for model execution — such as AllToAll in expert parallel [56] and ReduceScatter/AllGather in tensor/context parallel. Since these collective communications are critical to end-to-end inference latency, a key challenge lies in exploiting spare I/O bandwidth without degrading model inference performance.
 
-**流量隔离 (§5).** DualPath 复杂的数据通路在计算网络和 PCIe 链路上都增加了 KV-Cache 传输流量. 首要担心是这些流量可能干扰模型执行所必需的, 对延迟敏感的集合通信, 例如专家并行里的 AllToAll [56], 张量并行或上下文并行里的 ReduceScatter/AllGather. 这些集合通信对端到端推理延迟至关重要, 所以关键挑战是在不拖累模型推理性能的前提下利用空闲 I/O 带宽.
+**流量隔离 (§5).** DualPath 的数据通路在计算网络和 PCIe 链路上增加了 KV-Cache 传输流量. 这些流量可能干扰对延迟敏感的模型集合通信, 包括专家并行的 AllToAll [56]、张量并行或上下文并行的 ReduceScatter/AllGather, 进而拉长端到端推理时间. 因此系统需要利用空闲 I/O 带宽, 同时避免影响模型通信.
 
 **Dynamic load balancing (§6).** As we are adopting two different paths for KV-cache loading, the system must promptly decide which path to use for each request. A naive policy could overload one path, recreating the original bottleneck. The traffic scheduler must balance multiple factors in realtime: storage NIC queue lengths, computational load on GPUs, and request workload characteristics.
 

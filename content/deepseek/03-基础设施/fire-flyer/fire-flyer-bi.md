@@ -171,7 +171,7 @@ There are additional strategies and algorithms to accelerate training or reduce 
 
 2) Stability: The second challenge is achieving high-stability training at scale, i.e., maintaining efficient training throughout the process. Stability is vital from a production standpoint as training a big model with a trillion tokens may span several weeks. In DL training, stragglers and hardware failures are common occurrences rather than outliers. Stragglers can decelerate tasks involving hundreds of GPUs, emphasizing the importance of stability and task recovery time.
 
-2) 稳定性: 第二个挑战是在大规模下保持高稳定性, 即整个训练过程都保持高效. 从生产角度看稳定性至关重要, 用万亿 token 训练一个大模型可能要持续数周. 深度学习训练中, 掉队节点 (straggler) 和硬件故障是常态. 一个掉队节点就能拖慢涉及数百张 GPU 的任务, 所以稳定性和任务恢复时间都很重要.
+2) 稳定性: 第二个挑战是在大规模下保持整个训练过程高效. 万亿 token 的大模型训练可能持续数周, 期间掉队节点 (straggler) 和硬件故障都会发生. 一个掉队节点就能拖慢涉及数百张 GPU 的任务, 因此系统需要控制性能波动并缩短故障恢复时间.
 
 ## C. HPC and AI Clusters of This Era · 当下的 HPC 与 AI 集群
 
@@ -808,7 +808,7 @@ A recent paper [96] reportsthat NVLink-related failures account for approximatel
 
 Our next-generation PCIe architecture is designed for MoE (Mixture of Experts) LLM training, where all-to-all performance is crucial. Therefore, the next-gen nodes feature a 1:1 GPU to NIC ratio, comparable to DGX-H100/B100 systems, as illustrated in Figure 12.
 
-我们的下一代 PCIe 架构面向 MoE LLM 训练, 其中 all-to-all 性能至关重要. 因此下一代节点采用 1:1 的 GPU 与网卡配比, 与 DGX-H100/B100 系统相当, 见 Figure 12.
+我们的下一代 PCIe 架构面向 MoE LLM 训练. MoE 的 all-to-all 通信需要更高网络带宽, 因此下一代节点采用 1:1 的 GPU 与网卡配比, 与 DGX-H100/B100 系统相当, 见 Figure 12.
 
 We are considering implementing a multi-plane network to reduce costs while maintaining performance. Additionally, we are exploring the use of RoCE switches instead of IB switches, which can significantly lower network expenses. With a 128-port 400 Gbps RoCE switch, a 4-Plane Two-Layer Fat-Trees network can support up to 32,768 GPUs.
 

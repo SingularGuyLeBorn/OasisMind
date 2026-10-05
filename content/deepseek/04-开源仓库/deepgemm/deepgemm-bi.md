@@ -1051,7 +1051,7 @@ CUDA 缓存摘要按顺序由以下部分构成: `Config::extra_signature`; 完�
 
 Each component is prefixed by its fixed-width byte length before it is added to the two-state FNV-1a hash, so boundaries remain unambiguous even for binary strings containing zero bytes. The final digest is a 32-character hexadecimal string. This is a fast cache checksum, not a cryptographic hash. A disk entry is stored as `<cache-root>/cache/<tag>.<digest>/`; the compile tag is not part of the digest. A directory carrying a `.committed` marker is treated as a completed artifact and its CUBIN may be loaded directly.
 
-每个部分在加入双状态 FNV-1a 哈希前都带一个固定宽度的字节长度前缀, 所以即便二进制串含零字节边界也不含糊. 最终摘要是 32 字符的十六进制串, 这是快速的缓存校验和, 不是密码学哈希. 磁盘条目存为 `<cache-root>/cache/<tag>.<digest>/`, 编译 tag 不是摘要的一部分. 带 `.committed` 标记的目录被视为完成的产物, 其 CUBIN 可直接加载.
+每个部分在加入双状态 FNV-1a 哈希前都带固定宽度的字节长度前缀, 因而二进制串即使含有零字节, 各段边界仍然明确. 最终摘要是 32 字符的十六进制快速校验和, 不具备密码学哈希的安全性质. 磁盘条目存为 `<cache-root>/cache/<tag>.<digest>/`, 编译 tag 独立于摘要. 带 `.committed` 标记的目录被视为完成的产物, 其 CUBIN 可直接加载.
 
 #### Include parser
 
