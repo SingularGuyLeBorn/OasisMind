@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="440" viewBox="0 0 1040 440" role="img" aria-labelledby="title desc">
+  <title id="title">训练、Prefill 与 Decode 的成本轴</title>
+  <desc id="desc">对比三个阶段的查询数量、历史读取、反向状态和主要瓶颈。</desc>
+  <rect width="1040" height="440" fill="#f8fafc"/>
+  <style>
+    text{font-family:"Microsoft YaHei",Arial,sans-serif;fill:#172033} .h{font-size:24px;font-weight:700}.t{font-size:18px}.s{font-size:15px;fill:#475569}.box{fill:#fff;stroke:#94a3b8;stroke-width:2}.q{fill:#dbeafe;stroke:#2563eb}.kv{fill:#dcfce7;stroke:#16a34a}.act{fill:#fee2e2;stroke:#dc2626}.arrow{stroke:#64748b;stroke-width:2;marker-end:url(#a)}
+  </style>
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#64748b"/></marker></defs>
+  <text x="40" y="46" class="h">同一个注意力层, 三个阶段的成本并不相同</text>
+  <g transform="translate(40 80)"><rect class="box" width="300" height="310" rx="14"/><text x="24" y="42" class="h">训练</text><rect x="24" y="70" width="252" height="48" rx="8" class="q"/><text x="45" y="101" class="t">整段 Q × 整段 K</text><rect x="24" y="142" width="252" height="48" rx="8" class="act"/><text x="42" y="173" class="t">保存/重算反向状态</text><path d="M150 120 V140" class="arrow"/><text x="24" y="230" class="s">主导项随序列增长:</text><text x="24" y="258" class="t">配对 + 激活 + 反向</text><text x="24" y="288" class="s">窗口只缩小注意力部分</text></g>
+  <g transform="translate(370 80)"><rect class="box" width="300" height="310" rx="14"/><text x="24" y="42" class="h">Prefill</text><rect x="24" y="70" width="252" height="48" rx="8" class="q"/><text x="45" y="101" class="t">Prompt Q × Prompt K</text><rect x="24" y="142" width="252" height="48" rx="8" class="kv"/><text x="52" y="173" class="t">建立逐层 KV cache</text><path d="M150 120 V140" class="arrow"/><text x="24" y="230" class="s">主导项随请求形状变化:</text><text x="24" y="258" class="t">配对 + 临时工作区</text><text x="24" y="288" class="s">没有反向, 仍可能算力受限</text></g>
+  <g transform="translate(700 80)"><rect class="box" width="300" height="310" rx="14"/><text x="24" y="42" class="h">Decode</text><rect x="24" y="70" width="252" height="48" rx="8" class="q"/><text x="54" y="101" class="t">单个 Q × 历史 K</text><rect x="24" y="142" width="252" height="48" rx="8" class="kv"/><text x="46" y="173" class="t">逐步读取并追加 KV</text><path d="M150 120 V140" class="arrow"/><text x="24" y="230" class="s">主导项常落在:</text><text x="24" y="258" class="t">KV 容量 + HBM 带宽</text><text x="24" y="288" class="s">每步计算小, 读取重复</text></g>
+</svg>
