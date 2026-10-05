@@ -91,9 +91,6 @@ We generally select hyperparameters by optimizing for training throughput on our
 
 2. **非参数 layer norm.** 采用无仿射变换的 LN 形式 (Ba et al., 2016), 即无 「adaptive gain」 (或 bias). 相对我们考虑的 parametric LN 与 RMSNorm (Zhang and Sennrich, 2019), 作者认为这最安全, 也最快.
 
-> **核对:** 为什么选 non-parametric layer norm 而不是 RMSNorm?
-> Section 2.1 第 2 条: 作者认为无 affine 的 LN 更安全, 且相对 parametric LN 与 RMSNorm 更快. Table 5 对照行写 OLMo 为 non-parametric, LLaMA2 为 RMSNorm. 本文选它的动机就是这两点: 稳定性上最保守, 吞吐上最快.
-
 3. **SwiGLU activation function.** Like LLaMA, PaLM, and others we use the SwiGLU activation function (Shazeer, 2020) instead of ReLU, and following LLaMA the activation hidden size is approximately ${ \frac { 8 } { 3 } } d ,$ but increased to the closest multiple of 128 (e.g. 11,008 for our 7B model) to improve throughput.
 
 3. **SwiGLU 激活.** 与 LLaMA, PaLM 等一样用 SwiGLU (Shazeer, 2020) 替代 ReLU; 跟随 LLaMA, 激活隐宽约 $(8/3)d$, 再增到最近的 128 倍数 (例如 7B 为 11,008) 以抬吞吐.
@@ -116,8 +113,7 @@ Table 1: OLMo model sizes, number of training tokens, and optimizer settings. In
 
 表 1: OLMo 模型规模, 训练 token 数与优化器设定. 所有 run 使用 AdamW, betas 为 0.9 与 0.95, epsilon 为 1.0E-5. L 为层数, D 为隐维, H 为注意力头数, WD 为 weight decay.
 
-> **想:** Table 1 里 7B 的 D 写 4086, Table 5 Dimension 却是 4096, 读配置应以哪张表为准?
-> 两处都在源文里: Table 1 写 D=4086, 附录 Table 5 对照行写 Dimension=4096. 不能自行改数或合并; 引用时标明表号, 并意识到主文超参表与附录对照表存在不一致.
+> **译注:** Table 1 写 D=4086, 附录 Table 5 写 Dimension=4096, 两处源文数字不一致. 本文保留原值并标明表号.
 
 > **问:** Table 1 为何 1B 开 weight tying 而 7B 关闭?
 > Table 1 明确 Weight Tying: 1B=yes, 7B=no. 正文把它与 L/D/H, peak LR, warmup 一并列为分档设定; 附录 Table 5 也写 OLMo-7B weight tying=no. 机制名可搜 embedding-output weight tying, 但答案必须回到这两张表的分档差异.
@@ -238,8 +234,7 @@ We use the AdamW optimizer (Loshchilov and Hutter, 2019) with the hyperparameter
 
 我们使用 AdamW 优化器 (Loshchilov and Hutter, 2019), 超参见 Table 1. 所有模型尺度都在 5000 step (约 21B token) 内 warmup 学习率, 随后在剩余训练中从峰值线性衰减到峰值的十分之一. warmup 之后做梯度裁剪, 使参数梯度的总 l-范数不超过 1.0. Table 5 给出 7B 尺度上我们与其他近期同样使用 AdamW 的 LM 的优化器设定对照.
 
-> **再看:** 学习率日程是 cosine 还是 linear, 终点落在哪里?
-> Section 3.2: warmup 后 linear 从峰值降到峰值的 1/10. Table 5: OLMo LR schedule=linear, Minimum LR=3.0E-05 (对 peak 3.0E-04 恰为 1/10); LLaMA2 对照为 cosine. 另, Results 开头还说在 2.46T 后再 1000 step 把 LR linear 收到 0.
+> **译注:** Section 3.2 的主日程在 warmup 后从峰值线性降到峰值的 1/10; Table 5 所列 Minimum LR 3.0E-05 正好对应峰值 3.0E-04 的十分之一. Results 开头另有 1000 step 将学习率线性降到 0, 两段日程应分开理解.
 
 ### 3.3 Data 数据
 
@@ -330,8 +325,7 @@ In all cases, we perform zero-shot evaluation using the rank classification appr
 
 **结果** Table 3 汇总 OLMo 的 zero-shot 评测, 并与其他同尺度公开模型对照. 我们报告第 2.4 节所述评测套件中 8 个核心任务. 总体看, OLMo-7B 对所有可比模型都具竞争力. 我们也列入与 StableLM 1.6B 的对照, 但注明其显著更大, 且训练数据未知.
 
-> **想:** Table 3 上 OLMo-7B 均值 69.3, 为何仍称 competitive?
-> Table 3: OLMo-7B avg 69.3, Llama 2 7B 为 70.5, Falcon 70.3, MPT 69.8, LLaMA 7B 69.6. 正文 Section 4.1 写 aggregate 上 competitive; 单任务上 arc easy (65.4) 低于多数对照, piqa (78.4) 等则更强. 「competitive」 指同表总量级贴近, 不是每一格全赢.
+> **译注:** Table 3 中 OLMo-7B 平均分为 69.3, Llama 2 7B 为 70.5, Falcon 为 70.3, MPT 为 69.8, LLaMA 7B 为 69.6. Section 4.1 的 「competitive」 指总体分数处于相近量级, 不表示每项任务都领先.
 
 In Figure 1 we plot the accuracy score progression of 8 core end-tasks. All tasks, except OBQA, show an upward trend in accuracy numbers as
 
@@ -389,8 +383,7 @@ Figure 2: Bits per byte on 11 evaluation data sources from Paloma and their comb
 
 图 2: Paloma 11 个评测数据源及其组合上的 bits per byte (Magnusson et al., 2023), 已相对 OLMo 预训练数据去污染. 模型大体遵循数据 Scaling 趋势, 但样本效率在分布内数据上最有利. 例如 OLMo-7B 在 C4 上超过所有其他模型, 或因预训练中 Common Crawl 占 88.8%.
 
-> **核对:** Figure 2 强调 decontamination 的科学含义是什么?
-> Section 2.4 与 4.2: 去掉与 Paloma 评测段落泄漏的预训练文档, 降低 「未去污染模型低估 perplexity」 的风险. Figure 2 题注写明 bits per byte 来自对 OLMo 预训练去污染后的 11 源. 可比的是更干净的 out-of-sample fit, 不是单纯刷更低 bpB.
+> **译注:** Section 2.4 与 4.2 说明, 预训练数据移除了与 Paloma 评测段落重叠的文档. Figure 2 的 bits per byte 因而更接近去污染后的 out-of-sample fit.
 
 | Model | MMLU 0-shot ↑ | AlpacaEval%win ↑ | ToxiGen% Toxic ↓ | TruthfulQA%Info+True ↑ |
 | --- | --- | --- | --- | --- |
@@ -853,8 +846,7 @@ Table 6: $\mathrm { C O _ { 2 } }$ emissions during pretraining. We estimate the
 
 \* LUMI runs entirely on hydroelectric power<sup>13</sup>and some estimates (Ubierna et al., 2022) measure the intensity factor of hydroelectric power to be 0.024, implying total emissions of 3.54 $\mathfrak { t } \mathbf { C O } _ { 2 } \mathbf { e q } .$
 
-> **再看:** Table 6 两行 OLMo-7B 排放如何并存, 文中 69.78 指什么?
-> Table 6: MI250X 行 Carbon Emissions 0* (LUMI 官方可再生口径); A100-40GB 行 70 tCO₂eq (强度 0.610). Appendix B 叙述总预训练排放约 69.78 tCO₂eq, 并解释若用水电强度 0.024 则 LUMI 侧约 3.54, 但计算仍跟官方 0 强度. 引用须带 GPU 行与假设.
+> **译注:** Table 6 按 LUMI 官方可再生能源口径把 MI250X 排放记为 0, A100-40GB 行约为 70 tCO₂eq. Appendix B 报告总预训练排放约 69.78 tCO₂eq, 并说明若采用水电强度 0.024, LUMI 一侧约为 3.54 tCO₂eq. 两组数字使用的电力强度假设不同.
 
 |  | headqa_en | logiqa | mrpc | qnli | wic | wnli | avg. |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -930,6 +922,8 @@ After instruction finetuning, we then use the following hyperparameters for DPO 
 
 ![Chart block](images/p19-models-falcon-7b-llama2-7b-mpt-7b-llama-7b-pythia-6-9b.png)
 
+> 图注: models falcon 7b llama2 7b mpt 7b llama 7b pythia 6 9b.
+
 Models Falcon-7B LLaMA2-7B MPT-7B LLaMA-7B Pythia-6.9B RPJ-INCITE-7B OLMo-7B
 
 Figure 3: Bits per byte for each of the 7 remaining Paloma data sources not aggregated in Figure 2.
@@ -968,7 +962,7 @@ We choose the models in Table 4 by choosing the ‘canonical’ best versions (t
 
 We provide a brief description of each model evaluated in Table 4 below. For all models, we use the provided chat template for prompt formatting when available.
 
-下面我们简要描述表 4 中评测的每个模型. 对所有模型, 只要有提供的 chat template, 我们就用它来做 prompt 格式化.
+表 4 中评测的各个模型简述如下. 对所有模型, 只要有提供的 chat template, 我们就用它来做 prompt 格式化.
 
 • MPT Chat: A version of MPT 7B finetuned on the ShareGPT-Vicuna (Chiang et al., 2023), HC3 (Guo et al., 2023), Alpaca (Taori et al., 2023), HH-RLHF (Bai et al., 2022), and Evol-Instruct (Xu et al., 2024) datasets. Retrieved from [https://huggingface.co/mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat).
 

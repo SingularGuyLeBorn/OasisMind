@@ -51,6 +51,8 @@ Olmo 3 was a team effort; authors sorted alphabetically. marks core contributors
 
 ![Image block](images/p01-we-introduce-olmo-3-a-family-of-state-of-the-art-fully.png)
 
+> 图注: we introduce olmo 3 a family of state of the art fully.
+
 We introduce Olmo 3, a family of state-of-the-art, fully-open language models at the 7B and 32B parameter scales. Olmo 3 model construction targets long-context reasoning, function calling, coding, instruction following, general chat, and knowledge recall. This release includes the entire model flow, i.e., the full lifecycle of the family of models, including every stage, checkpoint, data point, and dependency used to build it. Our flagship model, Olmo 3.1 Think 32B, is the strongest fully-open thinking model released to-date.
 
 我们推出 Olmo 3 —— 7B 与 32B 参数规模上最先进的全开放语言模型家族. Olmo 3 的模型构建面向长上下文推理, function calling, 代码, 指令遵循, 通用对话与知识召回. 本次发布涵盖整个模型流程, 即该模型家族的完整生命周期, 包括构建它所用的每一个阶段, checkpoint, 数据点与依赖. 我们的旗舰模型 Olmo 3.1 Think 32B 是迄今为止发布的最强全开放 thinking 模型.
@@ -159,7 +161,6 @@ Figure 1 The model flow encompasses training data, code and intermediate checkpo
 
 图 1｜model flow 覆盖各阶段的训练数据, 代码和中间检查点. fully-open 和 open-weight 都会放出最终检查点 (深青色). Marin, Apertus, Olmo 还会沿 model flow 放出数据, 便于看中间阶段 (米色). 图中是 Olmo 3 Think 32B 以及规模和架构相近的其他开放模型. Olmo 3 Think 与 Qwen 3 32B 接近, 而 Qwen 3 32B 没有公开 base. 其底层 Olmo 3 Base 32B 超过其他 fully-open base.
 
-> **想:** Fig. 1 为什么强调 Qwen 3 32B 没有公开 base?
 > 用来说明 Olmo 的 fully-open 优势: 可比最终 thinking, 也能回追 Base 与数据; 对方只给终点权重.
 
 In addition, we train Olmo 3 Instruct 7B and 32B models tuned to produce shorter, more direct responses. By avoiding intermediate “thinking” outputs, Olmo 3 Instruct effectively reduces response latency and is optimized for general chat and function calling. Olmo 3 Instruct 7B and 32B surpass other notable open-weight models of comparable size—Qwen 2.5 (Qwen et al., 2024), Gemma 3 (Gemma 3 Team, 2025), IBM Granite 3.3 (Soule and Bergmann, 2025), and Llama 3 (Grattafiori et al., 2024)—and additionally reduces the remaining performance gap to Qwen 3 (Yang et al., 2025a). Finally, we introduce Olmo 3 RL-Zero 7B, a variant of Olmo 3 trained using RL directly from Olmo 3 Base. Olmo 3 RL-Zero enables researchers to study how base model data affects RL performance.
@@ -267,7 +268,6 @@ We post-train Olmo 3 Base into three model variants:
 • Olmo 3 Instruct (Section §5) is trained to produce efficient and helpful responses to user queries without generating internal thinking traces. This model prioritizes typical user needs, such as avoiding excessive verbosity for easy user understanding and function-calling for user information seeking. In such settings, thinking traces are unnecessary, and inference-time efficiency matters more than inference-time scaling.
 • Olmo 3 Instruct (第 §5 节) 训练成高效, 有帮助, 且不生成内部 thinking traces 的回复模型. 它优先服务典型用户需求: 避免过长以便理解, 以及用 function-calling 满足信息查询. 在这类场景下, thinking traces 并不必要, 推理期效率比 TestingTime 式放大更重要.
 
-> **核对:** Instruct 为什么说 thinking traces 不必要?
 > §2.2 写明在通用聊天与 function calling 场景, 中间思考抬延迟, 收益不足以抵消交互成本.
 
 ◦ We introduce Dolci Instruct SFT, our new dataset enriched with data specifically created for function calling (Section §5.2.1). To directly optimize model interactivity on top of capabilities, we extend our Delta Learning preference pipeline in Dolci Instruct DPO, incorporating multi-turn preference data and targeted data length interventions that encourage concise responses (Section §5.3.1). Finally, we use reinforcement learning with verifiable rewards (Section §5.4) to further refine core capabilities, where preference tuning synergizes with RL to improve model performance while maintaining learned brevity.
@@ -610,7 +610,7 @@ Figure 6 Scaling analysis on the OlmoBaseEval Math suite. We use the OLMo 2 scal
 
 1963), which iteratively merges evaluation scores to minimize the variance of scores between benchmarks within a cluster. Figure 5 shows the result of the clustering procedure, where we manually select a threshold to balance the amount and granularity of clusters. Importantly, we do not use the exact result of the clustering procedure—we manually move a few tasks to ensure the format of the task is the same within each cluster (e.g., tasks requiring code execution all occur in the same cluster). The resulting task clusters are: MC<sub>STEM</sub>, MC<sub>Non-STEM</sub>, GenQA, Math, Code, and Code FIM.
 
-1963), 该方法反复合并评测分数, 使簇内各基准间分数的方差最小. 图 5 展示了聚类结果, 我们手动选择阈值, 在簇的数量与粒度之间取得平衡. 需要强调的是, 我们并没有照搬聚类的原始结果: 我们手动移动了少数任务, 确保每个簇内任务格式一致 (例如需要执行代码的任务都在同一个簇). 最终的任务簇为: MC<sub>STEM</sub>, MC<sub>Non-STEM</sub>, GenQA, Math, Code 和 Code FIM.
+1963), 该方法反复合并评测分数, 使簇内各基准间分数的方差最小. 图 5 展示了聚类结果. 我们手动选择阈值来平衡簇的数量与粒度, 并移动少数任务, 让同一簇内的任务格式一致, 例如把需要执行代码的任务归到同一簇. 最终得到 MC<sub>STEM</sub>, MC<sub>Non-STEM</sub>, GenQA, Math, Code 和 Code FIM 六个任务簇.
 
 #### 3.3.2 Scaling analysis (3.3.2 Scaling 分析)
 
@@ -755,7 +755,7 @@ To scale our deduplication strategy, we develop the Duplodocus tool, a native-ru
 
 We apply both the topic and quality classifiers to the full deduplicated corpus in order to partition the dataset. Documents are first partitioned by topic, then within each topic partition we compute quality score percentiles and subdivide documents into vigintile buckets (5-percentile intervals). This two-stage partitioning yields 480 disjoint subsets (24 topics × 20 quality tiers), enabling fine-grained control over the topic and quality distribution of our pretraining mixture.
 
-我们把主题分类器和质量分类器都应用到整个去重后的语料上, 以对数据集做划分. 文档先按主题划分, 然后在每个主题分区内计算质量分的百分位, 并把文档细分到 20 个分位桶 (每 5 个百分位一档). 这种两级划分得到 480 个互不相交的子集 (24 个主题 × 20 个质量档), 让我们能精细控制预训练混合的主题与质量分布.
+我们把主题分类器和质量分类器都应用到整个去重后的语料上, 以对数据集做划分. 文档先按主题划分, 然后在每个主题分区内计算质量分的百分位, 并把文档细分到 20 个分位桶 (每 5 个百分位一档). 这种两级划分得到 480 个互不相交的子集 (24 个主题 × 20 个质量档), 使我们能够精细控制预训练混合的主题与质量分布.
 
 **Final web data pool** The above steps results in an 8T-token pool of annotated data, partitioned into buckets according to topic and text quality. This pool serves as the foundation for our pretraining mixture, though additional processing is required to construct the final training data. Specifically, we apply quality-based filtering and topic reweighting to generate a balanced, high-quality mixture, as discussed in Section §3.4.4.
 
@@ -787,7 +787,7 @@ We curate a novel dataset of academic PDFs, replacing our previous use of peS2o 
 
 **PII filtering** Next we remove documents containing PII from the pool of PDFs. Our goal was to to remove documents that contained sensitive standalone PII, such as government IDs and login information, as well as documents that link biographical, medical, location, employment, or educational information to a specific individual. Through iteration, we determine that PII detection must be document type-aware to be effective. For example, a conference paper might contain name and place of employment of authors; however, as research articles are intended for publication, removal would not make sense. At the same time, a bank statement might contain the same name and employer information, and is clearly a document a language model should not be trained on. The rule we follow is: is this document type intended for public dissemination? We use manual annotators to iterate which documents types are not suitable for public dissemination, and what PII attributes we should consider. The resulting taxonomy is used as part of a multi-stage model-based PII filtering pipeline.
 
-**PII 过滤** 接下来我们从 PDF 数据池中移除含有 PII 的文档. 我们的目标是移除含有敏感独立 PII 的文档, 例如政府证件号和登录信息, 以及把个人履历, 医疗, 位置, 就业或教育信息与特定个人关联起来的文档. 经过反复迭代, 我们确定 PII 检测必须感知文档类型才会有效. 例如, 会议论文可能包含作者的姓名和工作单位, 但研究论文本来就是为了发表, 删除它们没有道理. 与此同时, 银行对账文件可能包含同样的姓名和雇主信息, 而这显然是语言模型不应该拿来训练的文档. 我们遵循的规则是: 这类文档是否本来就是为公开传播而写的? 我们请人工标注员反复迭代, 确定哪些文档类型不适合公开传播, 以及应当考虑哪些 PII 属性. 得到的分类体系被用作一条多阶段, 基于模型的 PII 过滤流水线的一部分.
+**PII 过滤** 随后, 我们从 PDF 数据池中移除含有 PII 的文档. 我们的目标是移除含有敏感独立 PII 的文档, 例如政府证件号和登录信息, 以及把个人履历, 医疗, 位置, 就业或教育信息与特定个人关联起来的文档. 经过反复迭代, 我们确定 PII 检测必须感知文档类型才会有效. 例如, 会议论文可能包含作者的姓名和工作单位, 但研究论文本来就是为了发表, 删除它们没有道理. 与此同时, 银行对账文件可能包含同样的姓名和雇主信息, 而这显然是语言模型不应该拿来训练的文档. 我们遵循的规则是: 这类文档是否本来就是为公开传播而写的? 我们请人工标注员反复迭代, 确定哪些文档类型不适合公开传播, 以及应当考虑哪些 PII 属性. 得到的分类体系被用作一条多阶段, 基于模型的 PII 过滤流水线的一部分.
 
 First we classify documents using a prompt to Gemma 3 12B (Gemma 3 Team, 2025) on the first page of each document to determine if they contain any sensitive standalone PII, or link sensitive information to an individual. Next, we use Gemma 3 4B on the first 5,000 characters of each document to arrive at a set of flags describing the type of document. From these classification results, we develop a set of rules to identify which types of documents containing PII should be publicly available and which should be filtered. Ultimately this removes 4.9% of the remaining pool and yields a pool of 148 million documents. See Poznanski et al. (2025a) for more a complete overview of the PII removal pipeline.
 
@@ -855,7 +855,7 @@ models, using these results to inform an optimal mix. Further, we apply a novel 
 
 **Constrained data mixing** We applied data mixing across all pretraining sources, as well as across the WebOrganizer topics within the web data and PDF sources, and the Stack-Edu programming languages. Our mixing procedure (Chen et al., 2026), consists of two components: a base procedure that constructs a high-quality mix over a fixed set of data domains, and a meta-procedure called conditional mixing that efficiently updates an existing mix when domains change. Together, these allow us to iteratively build an optimal mix and adapt to data refinements or additions without starting from scratch.
 
-**约束数据混合** 我们在所有预训练来源之间, Web 数据与 PDF 来源内部的 WebOrganizer 主题之间, 以及 Stack-Edu 的编程语言之间都做了数据混合. 我们的混合流程 (Chen et al., 2026) 由两部分组成: 一个基础流程, 在固定的数据域集合上构建高质量混合; 一个称为条件混合的元流程, 在数据域变化时高效更新已有混合. 两者结合, 让我们能迭代构建最优混合, 并在数据改进或新增时无需从头开始.
+**约束数据混合** 我们在所有预训练来源之间, Web 数据与 PDF 来源内部的 WebOrganizer 主题之间, 以及 Stack-Edu 的编程语言之间都做了数据混合. 我们的混合流程 (Chen et al., 2026) 由两部分组成: 一个基础流程, 在固定的数据域集合上构建高质量混合; 一个称为条件混合的元流程, 在数据域变化时高效更新已有混合. 两者结合, 从而能够迭代构建最优混合, 并在数据改进或新增时无需从头开始.
 
 The base procedure follows a swarm-based approach inspired by RegMix (Liu et al., 2024a), Data Mixing Laws (Ye et al., 2025), and CLIMB (Diao et al., 2025); it consists of three stages:
 
@@ -889,7 +889,7 @@ To construct the Dolma 3 Mix weights, we perform three rounds of our conditional
 
 Having frozen a mixture across WebOrganizer categories over web text, we turn our attention to mixtures of programming languages from Stack-Edu. Diverging slightly from the conditional mixing procedure, we fix the web text ratio to be 75% of the pool and force a 25% mixture of Stack-Edu data and only optimize over the composition of programming languages within this 25%. Finally, we perform one more round of conditional mixing to integrate the 24 WebOrganizer categories of the PDF data, conditioned on the DCLM, Stack-Edu, and source-level mixes. This incremental approach towards mixing is essential: for example, we complete PDF curation substantially later than other sources, and conditional mixing enable us to incorporate late-arriving data while reusing prior optimization results rather than restarting the expensive swarm-based base procedure.
 
-在冻结了 Web 文本上各 WebOrganizer 类别的混合之后, 我们转向 Stack-Edu 中编程语言的混合. 这里我们稍微偏离了条件混合流程: 把 Web 文本比例固定为数据池的 75%, 强制 Stack-Edu 数据占 25%, 只优化这 25% 内部的编程语言构成. 最后, 我们再做一轮条件混合, 以 DCLM, Stack-Edu 和来源层面的混合为条件, 纳入 PDF 数据的 24 个 WebOrganizer 类别. 这种增量式的混合方法至关重要: 例如, PDF 策展比其他来源完成得晚得多, 条件混合让我们能纳入后到的数据, 同时复用之前的优化结果, 而不必重新启动代价高昂的基于 swarm 的基础流程.
+在冻结了 Web 文本上各 WebOrganizer 类别的混合之后, 我们转向 Stack-Edu 中编程语言的混合. 这里我们稍微偏离了条件混合流程: 把 Web 文本比例固定为数据池的 75%, 强制 Stack-Edu 数据占 25%, 只优化这 25% 内部的编程语言构成. 最后, 我们再做一轮条件混合, 以 DCLM, Stack-Edu 和来源层面的混合为条件, 纳入 PDF 数据的 24 个 WebOrganizer 类别. 这种增量式的混合方法至关重要: 例如, PDF 策展比其他来源完成得晚得多, 条件混合可以纳入后到的数据, 同时复用之前的优化结果, 而不必重新启动代价高昂的基于 swarm 的基础流程.
 
 Figure 9 presents mixing outcomes and their performance results relative to the natural data distribution. For web text (top panels), the optimized mixture dramatically upweights STEM domains (e.g. “Science, Math, and Technology” and “Software Development”). On 1B-parameter models trains for 5x Chinchilla, this mixture obtains an average improvement of 0.056 and max of 0.209 (in BPB), while only 13 out of 54 tasks show degradations, none of which exceed 0.035. For rebalancing of programming languages in Stack-Edu (bottom panels), the optimized mix favors Python over Java and Markdown, yielding modest improvements in all but two coding benchmarks. Table 38 further demonstrates our method’s adaptability: swapping development suites to emphasize QA, math, or coding produces mixtures that preferentially optimize these respective capabilities.
 
@@ -966,18 +966,17 @@ The resulting midtraining data is a diverse mixture that combines novel syntheti
 
 **Targeted capability boosts** In the midtraining stage, we aim to make targeted improvements to capabilities spanning a wide range of domains: prioritizing significant gains in code and math, but also aiming for focused improvements in QA and general knowledge access capabilities, and to lay groundwork for instruction and thinking capabilities in post-training. This requires a lightweight, distributed framework for dataset testing, to allow us to investigate many domains of datasets efficiently and in parallel (Figure 11).
 
-**有针对性的能力提升** 在 midtraining 阶段, 我们希望有针对性地提升覆盖广泛领域的能力: 优先在代码和数学上取得显著进步, 同时也在 QA 和通用知识获取能力上做聚焦改进, 并为后训练中的指令与思考能力打基础. 这需要一个轻量的分布式数据集测试框架, 让我们能高效, 并行地考察多个领域的数据集 (图 11).
+**有针对性的能力提升** 在 midtraining 阶段, 我们希望有针对性地提升覆盖广泛领域的能力: 优先在代码和数学上取得显著进步, 同时也在 QA 和通用知识获取能力上做聚焦改进, 并为后训练中的指令与思考能力打基础. 这需要一个轻量的分布式数据集测试框架, 以便高效, 并行地考察多个领域的数据集 (图 11).
 
 For lightweight testing we use the microanneal methodology introduced with OLMo 2, which we further modify for more systematic baselining. For a standard microanneal we use the following setup: 1) select a target dataset, 2) sample 5B tokens, 3) match this with 5B web tokens, 4) anneal on the resulting 10B mix. We then compare the performance of the resulting checkpoint against that of a baseline microanneal on 10B web-only data, for a cheap and efficient assessment of the impact of the dataset on base model performance, over and above the impact of continued training on web data alone.<sup>13</sup>
 
 轻量测试使用 OLMo 2 中引入的 microanneal 方法, 我们对它做了进一步修改, 让基线对比更系统. 一次标准的 microanneal 设置如下: 1) 选定目标数据集, 2) 采样 5B token, 3) 配上 5B Web token, 4) 在得到的 10B 混合上退火. 然后把得到的 checkpoint 与一个仅在 10B Web 数据上做的基线 microanneal 比较, 以低成本, 高效率地评估该数据集对 base 模型表现的影响, 且这种影响是在仅用 Web 数据继续训练的效果之外的额外影响.<sup>13</sup>
 
-> **再看:** §3.5.1 标准 microanneal 为什么要配一个 10B 纯网页基线?
 > 5B 目标数据 + 5B Web 退火 10B, 再与 10B web-only 基线比, 衡量的是 「仅用 Web 继续训练」 之外的额外影响, 不是 100B 正式跑. 脚注 13 还列了变体: 只够 2.5B 的数据集用 5B microanneal, 以及省掉算力匹配基线, 直接看单次退火增益的旧式做法.
 
 This methodology allows us to make rapid, targeted assessments of the quality of datasets being considered for the midtraining mix, and to iterate on many data domains in parallel. Our workflow operates as follows: for each capability that we target for improvement (in categories of math, code, QA, instruction, and thinking), we generate or collect new datasets as candidates to boost performance for this capability; we assess each via microanneals—if the results are promising, new datasets can be incorporated into the larger integration tests described next.
 
-这套方法让我们能快速, 有针对性地评估候选 midtraining 数据集的质量, 并在多个数据领域上并行迭代. 我们的工作流如下: 对每项要提升的能力 (分为数学, 代码, QA, 指令和思考几类), 我们生成或收集新数据集作为提升该能力的候选; 用 microanneal 逐个评估, 结果有希望的新数据集就可以纳入下面要介绍的更大的集成测试.
+这套方法可以快速, 有针对性地评估候选 midtraining 数据集的质量, 并在多个数据领域上并行迭代. 我们的工作流如下: 对每项要提升的能力 (分为数学, 代码, QA, 指令和思考几类), 我们生成或收集新数据集作为提升该能力的候选; 用 microanneal 逐个评估, 结果有希望的新数据集就可以纳入下面要介绍的更大的集成测试.
 
 **Integration tests** In parallel with the microanneal process, we conduct integration tests involving full annealing runs on candidate mixes for the 100B-token midtraining mix. These integration tests evaluate how candidate data sources perform when combined together; further, we can assesss effect of longer 100B midtrain runs (as compared to shorted, 5–10B tokens used in microanneals).
 
@@ -1151,7 +1150,7 @@ We iteratively refine our decontamination protocol; For example, the first versi
 
 Our two-part methodological framework for evaluating midtraining enables us to track closely the quality of our candidate mixes and the behaviors of individual data sources in interaction with others. Here we detail some of the key findings from that process.
 
-我们评估 midtraining 的两部分方法框架, 让我们能密切跟踪候选混合的质量, 以及各数据来源与其他来源相互作用时的行为. 下面详述这一过程中的一些关键发现.
+我们评估 midtraining 的两部分方法框架, 借此可以密切跟踪候选混合的质量, 以及各数据来源与其他来源相互作用时的行为. 这一过程中的一些关键发现.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">21 <a href="https://github.com/allenai/decon"><sub>github</sub>.com/allenai/decon</a></span></small>
 
@@ -1173,7 +1172,7 @@ Table 7 Demonstration of tradeoffs in domain-skewed mixes using the OlmoBaseEval
 
 **Candidate mix quality improves over time** Our integration tests allows us to verify progressive improvements in our candidate midtraining mixes over time: Table 6 shows this improvement across a sample of three candidate mixes illustrating the development trajectory. (Since midtraining development operates in tandem with pretraining, we develop mixes on earlier pretrained checkpoints—thus the comparisons here are given to illustrate progress in data curation, and should not be confused with final midtraining numbers.)
 
-**候选混合的质量随时间提升** 集成测试让我们能验证候选 midtraining 混合随时间逐步改进: 表 6 用三个候选混合的样本展示了这一改进, 说明了开发轨迹. (由于 midtraining 开发与预训练同步进行, 我们是在较早的预训练 checkpoint 上开发混合的; 因此这里的比较只用于说明数据策展的进展, 不应与最终 midtraining 数字混淆.)
+**候选混合的质量随时间提升** 集成测试可以验证候选 midtraining 混合随时间逐步改进: 表 6 用三个候选混合的样本展示了这一改进, 说明了开发轨迹. (由于 midtraining 开发与预训练同步进行, 我们是在较早的预训练 checkpoint 上开发混合的; 因此这里的比较只用于说明数据策展的进展, 不应与最终 midtraining 数字混淆.)
 
 We see in Table 6 that across all base model metrics, as well as in evaluations of subsequent SFT training, newer candidate mixes consistently improve performance. Notably, between Round 3 and Round 5 we also introduce our decontamination process, which means that the gains of Round 5 relative to Round 1 and Round 3 are likely underestimated in this table, given that only Round 5 reflects decontaminated data.
 
@@ -1236,7 +1235,6 @@ Table 10 Effect of thinking traces and instruction data on OlmoBaseEval.“Full 
 
 表 10｜thinking traces 与指令数据对 OlmoBaseEval 的影响. 「Full mix」 即表 6 中的 「Round 3」. 纳入指令与思考数据的混合在各项 base 评测指标上都更好, 说明即便在后训练之前, 纳入这些数据类型也是有益的. (讨论见第 §3.5.4 节.)
 
-> **想:** Table 10 想证明 midtraining 里指令与 thinking 数据做什么?
 > 在控制总 token 的 100B 对照里, 含 instruction 与 thinking 的 mix 在各项 OlmoBaseEval 上全面更好.
 
 <table><tr><td rowspan="10">Midtraining Data Sources</td><td rowspan="10">Total contam</td><td colspan="4">Evaluated splits:</td><td colspan="9">Val/Test</td><td colspan="8">All</td><td></td></tr><tr><td>Perf Δ</td><td>1.7</td><td>2.0</td><td>-1.2</td><td>-1.6</td><td>13.9</td><td>0.4</td><td>-0.4</td><td>-2.4</td><td>0.6</td><td>-0.1</td><td>-0.7</td><td>-0.0</td><td>0.6</td><td>0.9</td><td>-1.4</td><td>0.0</td><td>1.4</td><td>-0.3</td><td>1.8</td><td>1.1</td><td></td></tr><tr><td>% contam</td><td>27%</td><td>50%</td><td>4%</td><td>100%</td><td>9%</td><td>2%</td><td>2%</td><td>2%</td><td>2%</td><td>0%</td><td>5%</td><td>1%</td><td>24%</td><td>3%</td><td>6%</td><td>3%</td><td>2%</td><td>13%</td><td>3%</td><td>2%</td><td></td></tr><tr><td>SQUAD</td><td>Minerva</td><td>MMLU (MC)</td><td>GSM8K</td><td>DROP</td><td>CoQA (MC)</td><td>HumEval (@16)</td><td>DROP (MC)</td><td>LAMBADA</td><td>MedMCOA (MC)</td><td>MedQA En (MC)</td><td>SQUAD (MC)</td><td>LeetCode (@16)</td><td>M-E-HumEval (@16)</td><td>Jeopardy</td><td>HellaSwag</td><td>CoQA</td><td>ARC (MC)</td><td>PIQA (MC)</td><td>CSQA (MC)</td><td>SciQ (MC)</td><td></td></tr><tr><td>Common Crawl (High Q.)</td><td>2e3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2e3</td><td>50</td><td>0</td><td>256</td><td>0</td><td>1</td><td>119</td></tr><tr><td>StackEdu (FIM)</td><td>876</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>792</td><td>0</td><td>0</td><td>24</td><td>0</td><td>1</td><td>58</td></tr><tr><td>Gemini Reasoning Traces</td><td>606</td><td>0</td><td>513</td><td>31</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>43</td><td>0</td><td>19</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>OLMOCR Science PDFs (High Q.)</td><td>554</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>97</td><td>4</td><td>1</td><td>390</td><td>0</td><td>19</td><td>33</td></tr><tr><td>Sponge</td><td>308</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>38</td><td>1</td><td>0</td><td>190</td><td>0</td><td>0</td><td>79</td></tr><tr><td>General Reasoning Mix</td><td>113</td><td>0</td><td>6</td><td>68</td><td>3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>5</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td><td>0</td><td>27</td><td>0</td></tr></table>
@@ -1314,7 +1312,6 @@ Table 11 Composition of Dolma 3 Longmino Mix. The 100B mix for Olmo 3 32B mainta
 
 **数据过滤** 我们用 gzip 可压缩性作为指标过滤这些数据. gzip 曾被用于文本分类 (Jiang et al., 2022), 也被用作细粒度 Scaling Laws 中的特征 (Pandey, 2024). 我们用 gzip 过滤数据时排除两端的极值: 去掉最易压缩的 20% 文本和最难压缩的 20% 文本.
 
-> **核对:** gzip 过滤在长上下文数据上砍的是哪两尾?
 > 最可压缩 20% 与最不可压缩 20% 都剔除 (§3.6.1).
 
 We also consider applying filters based on LongPpl (Fang et al., 2025b), which identifies tokens that rely moston long-range dependencies by measuring, for each token, the change in perplexity under an existing long-context model when additional preceding context is provided. We compute LongPpl over 10B tokens of Dolma 3 Longmino Mix using Gemma 3 4B (Gemma 3 Team, 2025) as the reference model, and comparing contextualization using 4K or 128K context windows. We use the same threshold as Fang et al. (2025b) for determining whether a token is a “key” token that requires long context dependencies.
@@ -2066,6 +2063,8 @@ Table 23 Effect of core infrastructure improvements to OlmoRL. We ablate the eff
 
 ![Chart block](images/p51-training-steps.png)
 
+> 图注: training steps.
+
 Training Steps
 
 ![Chart block](images/p51-figure-18-reward-curves-during-training-of-olmo-3-think.png)
@@ -2590,7 +2589,6 @@ prompt similar to Yu et al. (2025), shown in Figure 37. We furthermore “clean�
 
 **RL 算法** 除两点外全部跟随第 §4.4.1 节: (i) 训练响应长 16K, 以更好容纳数学与代码域的长 CoT 推理; (ii) 评测响应长 32K, 温度 1.0 以鼓励多样性, 因我们报告 pass@k. 超参见表 49.
 
-> **再看:** §6.1 RL-Zero 训练响应长 16K, 评测却放到 32K 且温度 1.0, 为什么?
 > 16K 用来容纳数学与代码域的长 CoT; 评测改 32K, 温度 1.0 是为鼓励多样性, 因为要报告 pass@k. 除这两点外全部跟随 §4.4.1, 超参见 Table 49.
 
 ### 6.2 Key Findings (6.2 关键发现)
@@ -3325,7 +3323,7 @@ The majority of our pretraining corpus comes from CommonCrawl (Common Crawl Foun
 
 Next we apply a pipeline of heuristic filtering steps to further prune down the dataset to a size amenable for pretraining. Our steps essentially follow those of DCLM (Li et al., 2024a), with a few small differences. We start with URL-based filtering, identifying and removing documents that have URLs containing banned words or subwords from the blacklists used by FineWeb (Penedo et al., 2024) and RefinedWeb (Penedo et al., 2023). This step removes roughly 1% of the data pool. Then we apply the DCLM collection of heuristic filters, roughly targeting and removing: i) very short documents, ii) very long documents, iii) documents with not enough alphanumeric characters, and iv) documents with large amounts of internal repetition. Next, we modify and remove any lines or paragraphs in each document that have i) too many numeric characters or ii) any boilerplate phrases such as "items in cart" or "read more...", and then we fully remove any documents that have been obliterated by these line-specific removals. We then apply a FastText English language filter, mirroring DCLM and using a threshold of 0.65 to identify documents as containing English text. Finally, we apply a subset of the rules for identifying questionable sentences from MADLAD-400 (Kudugunta et al., 2023). Ablation tests show that only rules 2 and 5 from MADLAD improve dataset quality, targeting sentences that have a large number of capitalized words or contain a "cursed regex". If the number of sentences in the document is less than 5 or if at least 20% of sentences are questionable, we remove the document from the corpus.
 
-接下来我们应用一串启发式过滤步骤, 把数据集进一步裁剪到适合预训练的规模. 我们的步骤基本沿用 DCLM (Li et al., 2024a), 仅有少数小的差异. 先做基于 URL 的过滤, 识别并移除 URL 含有 FineWeb (Penedo et al., 2024) 与 RefinedWeb (Penedo et al., 2023) 所用黑名单中的禁用词或子词的文档, 这一步约移除数据池的 1%. 然后应用 DCLM 的启发式过滤器集合, 大致定位并移除: i) 过短的文档, ii) 过长的文档, iii) 字母数字字符不足的文档, iv) 内部重复量大的文档. 接着修改或移除每份文档中行或段落里 i) 数字字符过多, 或 ii) 含有 "items in cart" "read more..." 这类样板短语的行; 若文档被这种行级删除整段毁掉, 则整个移除. 之后应用 FastText 英文语言过滤器, 对齐 DCLM, 以 0.65 为阈值判定文档是否含英文. 最后应用 MADLAD-400 (Kudugunta et al., 2023) 中识别可疑句子规则的一个子集. 消融测试表明, MADLAD 中只有规则 2 与规则 5 能提升数据集质量, 分别针对含大量大写单词的句子与命中 "cursed regex" 的句子. 若文档中句子数少于 5, 或至少 20% 的句子可疑, 就把该文档从语料中移除.
+随后, 我们应用一串启发式过滤步骤, 把数据集进一步裁剪到适合预训练的规模. 我们的步骤基本沿用 DCLM (Li et al., 2024a), 仅有少数小的差异. 先做基于 URL 的过滤, 识别并移除 URL 含有 FineWeb (Penedo et al., 2024) 与 RefinedWeb (Penedo et al., 2023) 所用黑名单中的禁用词或子词的文档, 这一步约移除数据池的 1%. 然后应用 DCLM 的启发式过滤器集合, 大致定位并移除: i) 过短的文档, ii) 过长的文档, iii) 字母数字字符不足的文档, iv) 内部重复量大的文档. 接着修改或移除每份文档中行或段落里 i) 数字字符过多, 或 ii) 含有 "items in cart" "read more..." 这类样板短语的行; 若文档被这种行级删除整段毁掉, 则整个移除. 之后应用 FastText 英文语言过滤器, 对齐 DCLM, 以 0.65 为阈值判定文档是否含英文. 最后应用 MADLAD-400 (Kudugunta et al., 2023) 中识别可疑句子规则的一个子集. 消融测试表明, MADLAD 中只有规则 2 与规则 5 能提升数据集质量, 分别针对含大量大写单词的句子与命中 "cursed regex" 的句子. 若文档中句子数少于 5, 或至少 20% 的句子可疑, 就把该文档从语料中移除.
 
 Overall, the heuristic steps remove 76% of the total pool, and the English filtering step removes an additional 2.5% of the pool. This leaves a pool of 38.7B documents, attaining a survival rate of 15.1%. While each of these described steps is incorporated into the DCLM processing pipeline, we note that these heuristic filters are commutative and that the English filtering is the slowest step, so efficiency gains can be attained by putting the language-filtering step at the end. We spent a total of 1030 i4i.32xlarge EC2 hours in this step, incurring a cost of approximately \$11,300. An exact breakdown of how much time was spent in each step is provided in Table 36.
 
@@ -3472,7 +3470,7 @@ We validate our quality upsampling curves and mixing methodology both individual
 
 **Quality-aware upsampling** Next, we demonstrate that quality-aware upsampling outperforms naive qualitybased filtering. To simulate a data-constrained 4.51T token training run, we compare different data selection strategies in Table 39. For the filtering baselines, we select the top percentiles from our vigintile quality buckets and match the resulting repetition factor that would occur when training on 100B tokens drawn from a theoretical 4.51T pool. For the upsampling approach, we apply the same methodology but set the target pool size to 100B tokens directly. Our results show that quality-aware upsampling consistently outperforms flat filtering across all repetition factors.
 
-**质量感知上采样** 接下来我们证明, 质量感知上采样优于朴素的质量过滤. 为模拟受数据限制的 4.51T token 训练, 我们在表 39 中比较不同的数据选择策略. 过滤基线: 从 20 分位的质量桶中选取最高的若干百分位, 并匹配 "从理论 4.51T 池中抽 100B token 训练" 时会出现的重复因子. 上采样做法: 沿用同一套方法, 但直接把目标池大小设为 100B token. 结果表明, 质量感知上采样在所有重复因子下都稳定优于一刀切过滤.
+**质量感知上采样** 随后的实验表明, 质量感知上采样优于朴素的质量过滤. 为模拟受数据限制的 4.51T token 训练, 我们在表 39 中比较不同的数据选择策略. 过滤基线: 从 20 分位的质量桶中选取最高的若干百分位, 并匹配 "从理论 4.51T 池中抽 100B token 训练" 时会出现的重复因子. 上采样做法: 沿用同一套方法, 但直接把目标池大小设为 100B token. 结果表明, 质量感知上采样在所有重复因子下都稳定优于一刀切过滤.
 
 **Reconciling upsampling and mixing** Finally, we evaluate how to best combine our mixing and upsampling methodologies, which address complementary aspects of data selection. Data mixing determines the distribution across topics, while quality upsampling determines the distribution within a single source. To conceptualize this, imagine the dataset as a two-dimensional matrix of buckets where rows represent WebOrganizer topics and columns represent the quality buckets. Then the mixing strategy can be thought of as imposing row-wise
 

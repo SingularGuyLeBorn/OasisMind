@@ -51,6 +51,8 @@ OLMo 2 was a team effort. marks core contributors. See full author contributions
 
 ![Image block](images/p01-we-present-olmo-2-the-next-generation-of-our-fully-open.png)
 
+> 图注: we present olmo 2 the next generation of our fully open.
+
 We present OLMo 2, the next generation of our fully open language models. OLMo 2 includes a family of dense autoregressive language models at 7B, 13B and 32B scales with fully released artifacts—model weights, full training data, training code and recipes, training logs and thousands of intermediate checkpoints. In this work, we describe our modified model architecture and training recipe, focusing on techniques for achieving better training stability and improved per-token efficiency. Our updated pretraining data mixture introduces a new, specialized data mix called Dolmino Mix 1124, which significantly improves model capabilities across many downstream task benchmarks when introduced via late-stage curriculum training (i.e. specialized data during the annealing phase of pretraining). Finally, we incorporate best practices from Tülu 3 to develop OLMo 2-Instruct, focusing on permissive data and extending our final-stage reinforcement learning with verifiable rewards (RLVR). Our OLMo 2 base models sit at the Pareto frontier of performance to training compute, often matching or outperforming open-weight only models like Llama 3.1, Qwen 2.5, and Gemma 2 while using fewer FLOPs and with fully transparent training data, code, and recipe. Our fully open OLMo 2-Instruct models are competitive with open-weight only models of comparable size and even some proprietary models like GPT-3.5 Turbo and GPT 4o Mini.
 
 我们推出 OLMo 2, 作为完全开放语言模型的下一代. 家族覆盖 7B, 13B 与 32B 的 dense 自回归模型, 并完整公开产物: 权重, 全量训练数据, 训练代码与配方, 训练日志, 以及数千个中间检查点. 本文说明修改后的架构与训练配方, 重点写训练稳定性与每 token 效率. 更新后的预训练混合引入专用集 Dolmino Mix 1124; 经后期课程 (预训练退火阶段的专用数据) 注入后, 多项下游基准显著抬升. 后训练侧吸收 Tulu 3 的做法得到 OLMo 2-Instruct, 强调宽松许可数据, 并把末段可验证奖励强化学习 (RLVR) 扩成多阶段. OLMo 2 基座落在性能对训练算力的 Pareto 前沿, 常以更少 FLOPs 追平或超过 Llama 3.1, Qwen 2.5, Gemma 2 等仅开放权重模型, 同时数据 / 代码 / 配方全透明. 完全开放的 OLMo 2-Instruct 与同档开源指令模型以及部分专有模型 (如 GPT-3.5 Turbo, GPT 4o Mini) 具有竞争力.
@@ -163,7 +165,7 @@ Modern language model development is an iterative process, whereby limitations o
 
 • **Pretraining Stability.** Language model training runs are often training instabilities and loss spikes, which are costly and known to be a detriment to final model performance. We discuss techniques we used to improve training stability, which was critical to ensuring performance of the final trained model (Section §3).
 
-- 预训练稳定性. 语言模型训练运行经常 训练不稳定性和 loss spikes, 这些代价高昂且已知会对最终模型性能产生不利影响. 我们讨论了我们用来提高训练稳定性的技术, 这对于确保最终训练模型的性能至关重要(第 3 节).
+- 预训练稳定性. 语言模型训练中会出现 loss spike, 既浪费算力, 也会损害最终性能. 第 3 节讨论初始化、归一化与优化器设置怎样降低尖峰频率.
 
 • **Mid-training Recipe.** OLMo-0424 (Ai2, 2024), DBRX (Databricks, 2024), and Llama 3 (Grattafiori et al., 2024) demonstrated the usefulness of data curricula for pretraining, as discussed by Blakeney et al. (2024). We discuss the advantages of splitting pretraining into two stages, with the latter mid-training stage being used to infuse new knowledge and patch deficiencies in capabilities. Further, we show how data sources for mid-training can be independently assessed to reduce experimentation cost through a technique we call micro-annealing (Section §4).
 
@@ -175,7 +177,7 @@ Modern language model development is an iterative process, whereby limitations o
 
 • **Infrastructure as a Research Catalyst.** High performance and reliable infrastructure is crucial for successful pretraining; yet, many pretraining papers do not discuss their training stack, or 略过crucial details. We discuss changes from OLMo-0424 that enable the improvements of OLMo 2, and how investing in solutions that let us monitor and orchestrate infrastructure helped us reduce failure rates and increase cluster utilization (Section §6).
 
-- 基础设施作为研究催化剂. 高性能和可靠的基础设施对成功预训练至关重要; 然而, 许多预训练论文不讨论它们的训练栈, 或 略过关键细节. 我们讨论了从 OLMo-0424 到 OLMo 2 的改进所依赖的变化, 以及投资让我们能够监控和编排基础设施的解决方案如何帮助我们降低故障率和提高集群利用率(第 6 节).
+- 基础设施作为研究催化剂. 第 6 节给出 OLMo-0424 到 OLMo 2 的训练栈变化, 包括监控、编排、故障率和集群利用率. 这些工程条件决定一次预训练能否稳定跑完, 也决定研究者能多快完成下一轮实验.
 
 Alongside these deep dives, we provide a description of the full model development procedure in Section §2: training data, pretraining, post-training, and evaluation. We highlight changes from OLMo 1 and OLMo-0424 when appropriate, and reference related projects, such as our scaling laws effort to efficiently estimate model downstream performance (Bhagia et al., 2024) and benchmark standardization through the OLMES evaluation framework (Gu et al., 2024).
 
@@ -224,7 +226,6 @@ Table 1 Summary of how OLMo family model architectures have evolved over time. L
 
 表 1｜OLMo 家族架构演变摘要. 最新 OLMo 2 改动由稳定性实验驱动. 详见 §2.1.
 
-> **想:** Table 1 里 Layer Norm Applied to 从 Inputs 改成 Outputs, 和式 (1)(2) 的重排是不是同一件事?
 > 是同一架构选择的两面. Table 1 写 Outputs; §2.1 式 (1)(2) 把 RMSNorm 放到 Attention / MLP 输出上. 文献里说的 reordered residual, 对应的就是这张表的 Outputs 行.
 
 
@@ -339,7 +340,6 @@ Table 3 OLMo 2 hyperparameters.
 
 表 3｜OLMo 2 hyperparameters.
 
-> **核对:** Table 3 里 32B 的 Attention Heads 写成 40/8 (GQA), 7B/13B 却是 MHA, 这是不是只改 32B?
 > 是. §2.3 写明为缩放 32B 才切到 GQA, 灵感来自同期 Qwen 3. 7B 与 13B 仍是 Q/KV 等头的 MHA. 7B/13B 仍是 MHA, 不要外推成全家标配.
 
 
@@ -586,7 +586,7 @@ Figure 4 shows the improvement to training stability from OLMo 2’s initializat
 
 We perform several analyses to study the impact of initialization, showing that OLMo 2’s initialization is superior to OLMo-0424 initialization. Our empirical analysis suggests it better preserves the scale of activations and gradients across layers, allowing deep models to be trained more stably, and it exhibits properties associated with hyperparameter transfer across models of different widths. These two properties together give us confidence that deep models will train stably and that the initialization hyperparameters of our smaller models could transfer to larger scales.
 
-我们进行了多项分析来研究初始化的影响, 结果表明 OLMo 2 的初始化优于 OLMo-0424 的初始化. 我们的实证分析表明, 它能更好地保持各层之间激活值和梯度的尺度, 使得深层模型的训练更加稳定; 并且它表现出了与跨不同宽度的模型的超参数迁移相关的特性. 这两个特性共同让我们确信深层模型将稳定训练, 且我们较小模型的初始化超参数可以迁移到更大的规模.
+我们进行了多项分析来研究初始化的影响, 结果表明 OLMo 2 的初始化优于 OLMo-0424 的初始化. 我们的实证分析表明, 它能更好地保持各层之间激活值和梯度的尺度, 使得深层模型的训练更加稳定; 并且它表现出了与跨不同宽度的模型的超参数迁移相关的特性. 这两个特性共同增强了我们的信心: 深层模型将稳定训练, 且我们较小模型的初始化超参数可以迁移到更大的规模.
 
 **Gradient and activation growth** A fundamental concern for training deep networks is ensuring that the activations and gradients do not blow up or vanish across layers, causing learning to become unstable or stagnate. Rather, we want the scale of the activations and gradients to remain roughly the same from layer to layer. Inspired by recent related work (Cowsik et al., 2024), we evaluate different candidate initializations in terms of how they affect the 2-norm of the activations and gradients across layers. Concretely, we randomly initialize a model, pass 50 random documents from The Pile (Gao et al., 2021) through it, and collect the activations and gradients (of loss with respect to the activations) at the initial and final layers (ignoring embeddings). We then average these tensors across documents and time steps to get vectors v at the initial layer and $v ^ { i }$ at the final layer, both of length $d _ { \mathrm { m o d e l } }$ . Finally, we compute the following measure of expansion or contraction across layers, which we call the growth exponent:
 
@@ -683,7 +683,6 @@ Figure 7 Applying layer norm after the attention and feedforward layers along wi
 
 图 7｜把 LayerNorm 放到 Attention / FFN 输出侧, 再加 QK-norm, 稳定性优于输入侧归一化基线.
 
-> **再看:** Figure 7 把 post-norm 与 QK-norm 画在一起, 正文有没有把两者拆开的单独曲线?
 > §3.3.2 与 Figure 7 的叙述是「输出侧 LayerNorm + QK-norm」一并改善稳定性. 主文没有再给「只改 post-norm / 只改 QK-norm」的两张独立主图; 机制名字应对齐 Dehghani et al. 的 QK-Norm 与 Liu et al. 的 reordered residual.
 
 
@@ -725,7 +724,6 @@ Figure 9 Setting AdamW’s ϵ to ${ 1 0 } ^ { - 8 }$ lowers and stabilizes the n
 
 图 9｜把 AdamW 的 ε 设为 $10^{-8}$ 可降低并稳住训练早期的梯度范数.
 
-> **想:** Figure 9 把 AdamW ε 从 10^{-5} 降到 10^{-8}, 早期 grad norm 更低更稳, 这是不是改了 β2?
 > 不是. §3.4.1 只动 ε; 10^{-8} 是 PyTorch AdamW 默认. 图表现的是早期梯度范数更低更稳. 不要把它说成换了整套 AdamW 超参表.
 
 
@@ -859,7 +857,6 @@ Table 9 Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraini
 
 表 9｜Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraining and mid-training stages (setup mirrors Table 6). Pretrain checkpoints have been trained on 4 trillion (1B
 
-> **核对:** Table 9 说 mid-training 对小模型增益更大, 文中给出的 1B 相对涨幅是多少?
 > 附录 B / 正文引用: Dolmino Mix 1124 对 1B 的收益约 +37.0%, 高于更大模型. Table 9 是各档 pretrain 终点 vs mid-train 终点的对照. 口径是同一 OLMES 设定下的相对抬升, 不是 FLOPs 归一化后的另一张表.
 
 
@@ -980,7 +977,7 @@ We describe both the data sources and their generation/filtration procedure in S
 
 **DolminoSynthMath** This is a collection of 28M synthetic math tokens designed specifically to improve performance on GSM8K as well as raw mathematical calculations. It is composed of three parts: first we generate 11M tokens of basic mathematical question and answer pairs such as $`` 77 \;  *  \; 14 = 1078  ''$ and pair each of these with a variety of prompts. We find that including such data dramatically mitigates the mistakes our model makes within individual CoT reasoning steps at inference time. Next we include a custom collection of 7,924 synthetic GSM8K examples, which are produced by consuming a GSM8K training example and replacing all of its numbers in both the provided question and answer, with the hope that this would provide signal to the model to extract the computation graph from a word problem and ignore irrelevant semantic features. Finally we include a MIND-rewriting (Akter et al., 2024) of each of the GSM8K training examples, where the synthetic data was generated using Qwen2.5-7B-Instruct (Qwen et al., 2024).
 
-这是一个包含 2800 万个合成数学 token 的集合, 专门设计用于提升 GSM8K 以及原始数学计算的性能. 它由三部分组成: 首先, 我们生成 1100 万个基本数学问答对 token, 例如「77 × 14 = 1078」, 并将每个问答对与多种提示配对. 我们发现, 包含此类数据极大地缓解了我们模型在推理时单个 CoT 推理步骤中犯的错误. 接下来, 我们包含一个自定义的 7,924 个合成 GSM8K 示例集合, 这些示例通过获取一个 GSM8K 训练示例并替换所提供问题和答案中的所有数字来生成, 希望这能为模型提供从文字问题中提取计算图并忽略不相关语义特征的信号. 最后, 我们包含每个 GSM8K 训练示例的 MIND 重写 (Akter et al., 2024), 其中合成数据使用 Qwen2.5-7B-Instruct (Qwen et al., 2024) 生成.
+这是一个包含 2800 万个合成数学 token 的集合, 专门设计用于提升 GSM8K 以及原始数学计算的性能. 它由三部分组成: 首先, 我们生成 1100 万个基本数学问答对 token, 例如「77 × 14 = 1078」, 并将每个问答对与多种提示配对. 我们发现, 包含此类数据极大地缓解了我们模型在推理时单个 CoT 推理步骤中犯的错误. 接下来, 我们包含一个自定义的 7,924 个合成 GSM8K 示例集合, 这些示例通过获取一个 GSM8K 训练示例并替换所提供问题和答案中的所有数字来生成, 目的是为模型提供从文字问题中提取计算图并忽略不相关语义特征的信号. 最后, 我们包含每个 GSM8K 训练示例的 MIND 重写 (Akter et al., 2024), 其中合成数据使用 Qwen2.5-7B-Instruct (Qwen et al., 2024) 生成.
 
 **TinyGSM-MIND** We generated approximately 6.5B tokens of synthetic math data from rewritten versions of Tiny-GSM (Liu et al., 2023a). Tiny-GSM is a collection of 11M synthetic GSM8K-like questions, where the answers are provided in the form of python code. We filter this set to only include answers that have code that is executable and only contains statements that are variable assignments. We then annotate each line of the code that is an assignment operator with the numerical value of the resulting variable. Then we pass all of these annotated examples to Qwen2.5-7B-Instruct to be rewritten in the style of MIND (Akter et al., 2024) using the ‘Two Students’ and ‘Problem Solving’ prompts.
 
@@ -1039,7 +1036,7 @@ This procedure facilitates evaluating the quality of individual data sources at 
 
 We illustrate how microanneals lead to our final math mix through three sets of experiments reported in Table 12. The primary evaluation metrics we use to evaluate the quality here is MMLU, and GSM\*, which
 
-我们通过表 12 中报告的三组实验来说明微退火如何引导我们得到最终的数学混合配方. 我们在此用于评估质量的主要评测指标是 MMLU 和 GSM*, 后者是我们从 GSM8K 评测集中抽取的 200 个示例子集. 请注意, 中期训练的一个目标是提升 GSM8K 性能, 但我们只允许自己在 1319 个 GSM8K 示例中的 200 个上检查性能, 以指导数据混合配方的决策.
+我们通过表 12 中报告的三组实验来说明微退火如何引导我们得到最终的数学混合配方. 我们在此用于评估质量的主要评测指标是 MMLU 和 GSM*, 后者是我们从 GSM8K 评测集中抽取的 200 个示例子集. 中期训练的一个目标是提升 GSM8K 性能, 但我们只允许自己在 1319 个 GSM8K 示例中的 200 个上检查性能, 以指导数据混合配方的决策.
 
 <!-- page 25 of 58 -->
 
@@ -1198,7 +1195,6 @@ Table 16 Comparison of performance for OLMo 2 Instruct after different training 
 
 表 16｜Comparison of performance for OLMo 2 Instruct after different training stages. The final Instruct model is from the RLVR stage. The following evaluation names are abbreviated: AVG 
 
-> **再看:** Table 16 把 SFT → DPO → RLVR 各阶段并排, RLVR 是不是替换了 DPO 而不是叠在后面?
 > §5 / Table 16: 最终 Instruct 来自在偏好调优之后继续做可验证奖励强化学习 (RLVR). 流水是叠加阶段, 不是「RLVR 替换 DPO」. 多阶段 RLVR 曲线见 Figure 13 / 14.
 
 
@@ -1236,6 +1232,8 @@ For the 1B and 32B model, we performed RLVR with Group Relative Policy Optimizat
 <!-- page 29 of 58 -->
 
 ![Chart block](images/p29-olmo-2-1124-13b-rlvr1-olmo-2-1124-13b-rlvr2-olmo-2-1124.png)
+
+> 图注: olmo 2 1124 13b rlvr1 olmo 2 1124 13b rlvr2 olmo 2 1124.
 
 OLMo-2-1124-13B-RLVR1 OLMo-2-1124-13B-RLVR2 OLMo-2-1124-13B-Instruct (Final RLVR)
 
@@ -1331,6 +1329,8 @@ RLVR on GSM8K, MATH, Prompts with Constraints
 
 ![Chart block](images/p31-episodes.png)
 
+> 图注: episodes.
+
 Episodes
 
 ![Chart block](images/p31-chart-2.png)
@@ -1340,6 +1340,8 @@ Episodes
 ![Chart block](images/p31-chart-4.png)
 
 ![Chart block](images/p31-olmo-2-1124-7b-instruct.png)
+
+> 图注: olmo 2 1124 7b instruct.
 
 OLMo-2-1124-7B-Instruct
 
@@ -1498,15 +1500,15 @@ Host-device syncs can be detected by calling torch.cuda.set\_sync\_debug\_mode("
 
 **Asynchronous bookkeeping with a separate backend** A typical training loop involves periodic “bookkeeping” operations like logging metrics and saving checkpoints. While these operations may be relatively fast, their aggregate cost over the course of a training run can be significant. These operations also usually involve host-device syncs. For example, a training metric like cross-entropy loss is the result of computations that occur on the GPU, and it is materialized first as a CUDA tensor; therefore, logging that metric to the console forces a synchronization point.
 
-典型的训练循环涉及周期性的「簿记」操作, 如记录指标和保存检查点. 虽然这些操作可能相对较快, 但在整个训练运行中的累积成本可能很大. 这些操作通常也涉及 host-device 同步. 例如, 交叉熵损失等训练指标是 GPU 上计算的结果, 它首先物化为 CUDA 张量; 因此, 将该指标记录到控制台会强制一个同步点.
+典型的训练循环会周期性记录指标并保存检查点. 单次操作耗时不长, 长时间训练中的累计成本却很可观, 而且常会触发 host-device 同步. 例如, 交叉熵损失先在 GPU 上成为 CUDA 张量, 将它写入控制台便会强制一次同步.
 
 Many of these operations are essential and cannot be avoided, but it is possible to minimize the time they spend blocking the training loop by performing most of this bookkeeping work asynchronously, in a separate thread. However, the PyTorch NCCL backend is not thread safe. To work around this problem, we set up a separate backend that does not rely on NCCL (like GLOO), and use it exclusively for bookkeeping operations. The bookkeeping workflows could then look like this:
 
-许多这些操作是必不可少的, 无法避免, 但可以通过在单独线程中异步执行大部分簿记工作来最小化它们阻塞训练循环的时间. 然而, PyTorch NCCL 后端不是线程安全的. 为了解决这个问题, 我们设置了一个不依赖 NCCL 的单独后端(如 GLOO), 并专门用于簿记操作.
+指标记录和检查点保存仍要执行, 因此系统把其中大部分放到单独线程异步处理, 缩短训练循环等待它们的时间. PyTorch NCCL 后端缺少线程安全保证, 这里另设一个不依赖 NCCL 的后端, 如 GLOO, 专门承载这些辅助操作.
 
 1. For metric collection and logging: Decide on the interval in which to log metrics. Since this involves a host-device sync, it should not be done on every training step. More commonly, metrics are logged every 10 or every 50 steps. During every step, metrics are computed and stored in a GPU tensor on their original devices. Only when it is time to log metrics do we copy them to the CPU (causing a host-device sync), and then pass them to the bookkeeping thread, which uses its own PyTorch backend to aggregate the metrics and log them.
 
-簿记工作流程可以如下:
+异步辅助流程如下:
 
 2. For checkpointing: A similar workflow can be used for checkpointing. When it is time to save a checkpoint, the trainer makes a copy of the model and optimizer state in CPU memory (causing a host-device sync). Then it passes the copy to the bookkeeping thread, which assembles the model from the model shards that are stored on each compute node, and saves it to disk, while the main thread can 30 continue training
 
@@ -1536,6 +1538,8 @@ Figure 16 The training throughput in tokens per second (TPS) per device over the
 图 16｜两台 OLMo-1B 在约 1000 step 上的每卡 token/s 吞吐 (显式 GC 相关).
 
 ![Chart block](images/p35-in-each-process-e-g-by-calling-gc-collect-1-3-2.png)
+
+> 图注: in each process e g by calling gc collect 1 3 2.
 
 in each process (e.g. by calling gc.collect $( 1 ) ^ { 3 2 } )$ .
 
@@ -2121,6 +2125,8 @@ Nevertheless, the OLMo 2-Instruct Preview learning curves can be found at Figure
 
 ![Chart block](images/p53-olmo-2-1124-13b-rlvr1.png)
 
+> 图注: olmo 2 1124 13b rlvr1.
+
 OLMo-2-1124-13B-RLVR1
 
 Figure 18 The top row shows the training curves of OLMo-2-1124-13B-RLVR1 showing verifiable rewards, KL divergence, and response lengths. The bottom row shows the corresponding downstream evaluations and the average scores across our evaluation suites.
@@ -2141,6 +2147,8 @@ Episodes
 
 ![Chart block](images/p53-olmo-2-1124-13b-rlvr2.png)
 
+> 图注: olmo 2 1124 13b rlvr2.
+
 OLMo-2-1124-13B-RLVR2
 
 ![Chart block](images/p53-figure-19-the-top-row-shows-the-training-curves-of-olmo.png)
@@ -2153,6 +2161,8 @@ Figure 19 The top row shows the training curves of OLMo-2-1124-13B-RLVR2 showing
 
 ![Chart block](images/p54-olmo-2-1124-13b-instruct.png)
 
+> 图注: olmo 2 1124 13b instruct.
+
 OLMo-2-1124-13B-Instruct
 
 Figure 20 The top row shows the training curves of OLMo-2-1124-13B-Instruct showing verifiable rewards, KL divergence, and response lengths. The solid lines in the bottom row show the corresponding downstream evaluation and the average scores across our evaluation suites.
@@ -2162,6 +2172,8 @@ Figure 20 The top row shows the training curves of OLMo-2-1124-13B-Instruct show
 ![Chart block](images/p54-chart.png)
 
 ![Chart block](images/p54-episodes.png)
+
+> 图注: episodes.
 
 Episodes
 
@@ -2175,6 +2187,8 @@ Episodes
 
 ![Chart block](images/p54-olmo-2-1124-13b-instruct-preview.png)
 
+> 图注: olmo 2 1124 13b instruct preview.
+
 OLMo-2-1124-13B-Instruct-Preview
 
 Figure 21 The OLMo-2-1124-13B-Instruct-Preview results. The top row shows the training curves of OLMo-2-1124-7B-Instruct on verifiable rewards, KL divergence, and response lengths. In the bottom row, the y-axes show the average scores across our evaluation suites and GSM8K scores. Overall, RLVR increases both training rewards and evaluation scores.
@@ -2187,6 +2201,8 @@ Figure 21 The OLMo-2-1124-13B-Instruct-Preview results. The top row shows the tr
 
 ![Chart block](images/p55-episodes.png)
 
+> 图注: episodes.
+
 Episodes
 
 ![Chart block](images/p55-chart-2.png)
@@ -2194,6 +2210,8 @@ Episodes
 ![Chart block](images/p55-chart-3.png)
 
 ![Chart block](images/p55-olmo-2-1124-7b-instruct-preview.png)
+
+> 图注: olmo 2 1124 7b instruct preview.
 
 OLMo-2-1124-7B-Instruct-Preview
 
@@ -2290,6 +2308,8 @@ RLVR on GSM8K, MATH, Prompts with Constraints
 
 ![Chart block](images/p57-episodes.png)
 
+> 图注: episodes.
+
 Episodes
 
 ![Chart block](images/p57-chart-3.png)
@@ -2297,6 +2317,8 @@ Episodes
 ![Chart block](images/p57-chart-4.png)
 
 ![Chart block](images/p57-olmo-2-7b-instruct-preview-alternative.png)
+
+> 图注: olmo 2 7b instruct preview alternative.
 
 OLMo 2 7B Instruct Preview (alternative)
 
@@ -2325,5 +2347,4 @@ Figure 25 Prompt used to generate solutions for hard math word problems.
 <!-- residual QA anchors -->
 
 > **确认:** Table 12 的 microanneal 用来决定数学混合比例, 它和最终 100B/300B 退火是同一预算吗?
-> 不是. §4.4.2 把 microanneal 写成低成本探针: 短预算上先比 math/not-math 比例与源. 最终 Dolmino 采样是 50B / 100B / 300B (§2.3 / Table 5). microanneal 负责选料, 不是替换正式 soup 跑次.
-
+> §4.4.2 把 microanneal 用作低成本探针, 先在短预算上比较数学数据比例与来源. 最终 Dolmino 仍按 50B、100B 和 300B 三档采样 (§2.3 / Table 5), 正式训练使用据此选出的数据配方.

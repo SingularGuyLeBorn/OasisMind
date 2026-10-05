@@ -3,14 +3,14 @@ title: "FlexOlmo: 数据拥有者各训各的专家, 推理时按许可拼装"
 category: "模型技术报告"
 tags: ["OLMo", "技术解析", "MoE", "模型融合", "数据隐私"]
 published: true
-excerpt: "FlexOlmo 让每个数据拥有者以冻结的公共模型为锚训练一个 FFN 专家, 用域嵌入拼出路由器, 推理时增删专家即可加入或退出数据; 本文按论文, 代码和 HF 配置逐项复算它的训练口径, 基线对比与提取风险."
+excerpt: "FlexOlmo 让每个数据拥有者以冻结的公共模型为锚训练一个 FFN 专家, 用域嵌入拼出路由器, 推理时增删专家即可加入或退出数据；论文, 代码和 HF 配置共同限定其训练口径, 基线对比与提取风险."
 ---
 
 # FlexOlmo: 数据拥有者各训各的专家, 推理时按许可拼装
 
 论文: Weijia Shi, Akshita Bhagia, Kevin Farhat, Sewon Min 等, 「FlexOlmo: Open Language Models for Flexible Data Use」, arXiv 2507.07024v4 (2025-08-23), NeurIPS 2025. 作者来自 Ai2, 华盛顿大学, UC Berkeley, 斯坦福和 MIT. 代码: [github.com/allenai/FlexOlmo](https://github.com/allenai/FlexOlmo); 权重: [allenai/FlexOlmo-7x7B-1T](https://huggingface.co/allenai/FlexOlmo-7x7B-1T) 与 `-RT` 版; 公共模型 `allenai/Flex-public-7B-1T`. 文中的代码行为均以仓库 `main` 分支的训练脚本和 HF `config.json` 为准.
 
-FlexOlmo 要解决的场景是: 若干机构各自持有不能外传的数据, 想合作训练一个语言模型, 而且每份数据在推理时能单独开关. 做法是把 MoE 的专家当作数据的载体, 一份数据只训练一个 FFN 专家和一行路由向量, 其余参数全部来自一个只见过公开数据的 dense 模型. 下面依次讨论架构与参数量, 协调训练和路由初始化, 实验口径和基线, 推理时增删专家, 以及数据提取风险. 公共模型的架构沿用 [OLMo 2](../olmo-2/olmo-2-analysis.md), MoE 的一般训练方式可对照 [OLMoE](../olmoe/olmoe-analysis.md) 和 [MoE 路由与 Top-K 可导性](../../../../llm-guide/2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).
+FlexOlmo 要解决的场景是: 若干机构各自持有不能外传的数据, 想合作训练一个语言模型, 而且每份数据在推理时能单独开关. 做法是把 MoE 的专家当作数据的载体, 一份数据只训练一个 FFN 专家和一行路由向量, 其余参数全部来自一个只见过公开数据的 dense 模型. 架构与参数量, 协调训练, 路由初始化, 推理时增删专家和数据提取风险由同一套模块边界串联起来. 公共模型的架构沿用 [OLMo 2](../olmo-2/olmo-2-analysis.md), MoE 的一般训练方式可对照 [OLMoE](../olmoe/olmoe-analysis.md) 和 [MoE 路由与 Top-K 可导性](../../../../llm-guide/2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).
 
 ## 1. 问题设定与模型结构
 
@@ -46,7 +46,7 @@ HF 发布的 `allenai/FlexOlmo-7x7B-1T` 与论文的最终模型不同. 它的 `
 
 一般的 MoE 让路由器和全部专家在全部数据上联合训练, 路由器学到的是专家之间的相对偏好. FlexOlmo 不允许任何联合步骤, 每个数据拥有者只能看到公共模型和自己的数据, 于是要回答两个问题: 各方独立训练出的 FFN 合在一起为什么还能协作; 路由器的各行分头学出来, 拼在一起为什么还能比较.
 
-论文给出三件工具: 以冻结公共模型为锚的两专家训练, 用域嵌入初始化路由行, 给封闭专家加负偏置. 外加一个可选的 RT 步骤. 下面逐一对照论文和代码.
+论文给出三件工具: 以冻结公共模型为锚的两专家训练, 用域嵌入初始化路由行, 给封闭专家加负偏置, 另有一个可选的 RT 步骤. 论文描述与代码实现共同确定它们的作用范围.
 
 ### 2.1. 以冻结公共模型为锚的两专家训练
 

@@ -181,8 +181,7 @@ where $r$, called the router, is a learned linear layer mapping from the input l
 
 其中 $r$ 称为路由器, 是一个学习得到的线性层, 把输入映射为对各专家的打分, 再从中选出 $k$ 个专家. 对路由器输出做 softmax, 得到全部 $N_E$ 个专家的路由概率. 每个被选中的专家 $E_i$ 处理输入 $x$, 其输出乘以对应的路由概率. 再把所有被选中的 Top-$k$ 专家的结果相加, 得到模型 $N_L$ 层中某一层 MoE 模块的输出. 设计 MoE 的关键决定包括: 激活参数与总参数各定多少, 专家的设计 (如粒度, 是否加共享专家), 以及路由算法的选择. 此外, 训练 MoE 还可能涉及从 dense 模型初始化 (稀疏上循环), 以及修改训练目标, 比如加入辅助的负载均衡损失与 router z-loss. 与这些设计选择相关的实验见 §4.1, 最终决定见 Table 1.
 
-> **想:** 式 (1) 的 softmax 是在 Top-$k$ 之前对全部 $N_E=64$ 个专家归一化的, 那么 8 个被选中专家的权重之和还是 1 吗?
-> 答: 不是 1. 式 (1) 先对 64 个 logit 做 softmax, 再取 Top-8 的概率作权重, 没有在 8 个之间重新归一化. HF 的 `config.json` 里 `norm_topk_prob` 为 `false`, `OlmoeSparseMoeBlock` 也是先 `softmax` 再 `topk`, 只在该开关为真时才除以 8 个权重之和. 所以每层 MoE 输出的权重和小于 1, 具体多少取决于路由分布有多尖.
+> **译注:** 式 (1) 先对 64 个 logit 做 softmax, 再取 Top-8 概率, 没有在选中的 8 个专家之间重新归一化. HF 配置的 `norm_topk_prob` 为 `false`, 代码也采用先 `softmax` 再 `topk` 的顺序, 因此选中专家的权重和通常小于 1.
 
 In summary, we use 1.3B active parameters out of a total of 6.9B, with 8 activated experts out of 64 per layer. We use dropless token choice routing [58]: For each input token, the learned router network determines 8 experts to process it. We train OLMoE-1B-7B from scratch with two auxiliary losses: load balancing loss ($\mathcal{L}_{LB}$) [154] and router z-loss ($\mathcal{L}_{RZ}$) [221], which we define and experiment with in §4.1.6 and §4.1.7, respectively. We multiply them with respective loss weights, $\alpha$ and $\beta$, and sum them linearly with the cross entropy loss ($\mathcal{L}_{\text{CE}}$) to arrive at our final training loss:
 
@@ -381,8 +380,7 @@ combinations. This likely acts as a counterforce to the potential benefits of is
 
 在 Figure 6 中, 我们比较「一个共享专家加一个路由专家」与「两个路由专家」. 两种设置表现接近, 但共享专家略差. 共享专家削弱了模型的灵活性, 与 §4.1.2 的发现相悖: 那里表明允许更多专家组合能提升表现. 具体来说, Figure 6 中两个模型每层的可能组合分别为 $\binom{32}{4}=35,960$ 与 $\binom{31}{3}=4,495$. 也就是说, 拿出一个路由专家改作共享专家, 去掉了近 90% 的可能组合. 这可能抵消了在共享专家中隔离公共知识的潜在好处. 基于这些结果, **OLMoE-1B-7B 不使用共享专家**. 不过我们认为, 让某些专家更常被激活甚至始终激活, 这个想法有其价值. 只是与其用共享专家强行规定这种行为, 我们认为应当让模型自己学出来. 在当前设置下这很难做到, 因为必须使用负载均衡损失 (§4.1.6), 只要 token 在专家间分配不均, 模型就会受罚. 未来可以尝试去掉负载均衡损失, 让专家的使用更灵活.
 
-> **核对:** 正文说比较的是「一个共享加一个路由专家」对「两个路由专家」, 这与 Figure 6 题注和组合数一致吗?
-> 答: 不一致. 题注写的是 32 个路由专家激活 4 个, 对 31 个路由专家激活 3 个加 1 个共享专家; 正文紧接着的组合数 $\binom{32}{4}=35{,}960$ 与 $\binom{31}{3}=4{,}495$ 也按题注设定计算. 官方仓库的消融配置 `olmoe-8x1b-newhp-newds-cx5-fine-shared.yml` 写的是 `moe_num_experts: 32`, `moe_top_k: 3`, `moe_shared_expert: true`, 同样对应题注. 「single shared and single routed」一句与实际实验对不上. 另外 $4495/35960=12.5\%$, 去掉的是 87.5% 的组合.
+> **译注:** Figure 6 题注与组合数对应 32 个路由专家激活 4 个, 对照组则是 31 个路由专家激活 3 个再加 1 个共享专家. 官方消融配置也采用 `moe_num_experts: 32`, `moe_top_k: 3`, `moe_shared_expert: true`. 正文的 「single shared and single routed」 与题注, 组合数和代码配置不一致. $4495/35960=12.5\%$, 因而减少的是 87.5% 的组合.
 
 #### 4.1.4 Expert Choice vs. Token Choice · Expert Choice 与 Token Choice
 
@@ -753,8 +751,7 @@ In Figure 21, we find that there is no strong co-activation among experts in one
 
 在 Figure 21 中我们发现, 同一层内的专家之间没有强共激活, 只有少数例外. 这可能说明不同专家之间冗余很少. 总体上, layer 7 与 layer 15 的共激活模式相似, 有几组 3 个或 2 个专家倾向于一起被激活. 我们在 §5.4 中考察激活这些专家的 token. 此外在 §G (Figure 35) 中, 我们考察跨层而非同层的专家是否倾向于一起处理 token.
 
-> **再看:** Figure 21 题注说展示「共激活最高的 32 个专家」, 图上数出来是多少? 式 (6) 是对称的吗?
-> 答: 每张热力图的坐标轴列出 16 个专家 ID, 例如 layer 7 是 23, 48, 56, 5, 46, 52, 19, 49, 31, 41, 26, 45, 39, 42, 59, 18, 与题注的 32 对不上. 式 (6) 的分母是 $N_{E_i}$, 所以 $(E_i,E_j)$ 与 $(E_j,E_i)$ 的值一般不同, layer 7 图中 (5, 46) 与 (46, 5) 两格深浅就不一样. §5.4 说专家 48 与 23 的共激活为 60%, 读的是其中一个方向.
+> **译注:** Figure 21 每张热力图的坐标轴列出 16 个专家 ID, 与题注所说的 32 个不一致. 式 (6) 以 $N_{E_i}$ 为分母, 因而 $(E_i,E_j)$ 与 $(E_j,E_i)$ 一般不对称; layer 7 的 (5, 46) 与 (46, 5) 两格也呈现不同深浅.
 
 ### 5.3 Domain Specialization · 领域特化
 
@@ -2054,7 +2051,7 @@ following. We find that after 700 billion tokens, the no noise variant still per
 
 even maintaining a small advantage on validation loss and HellaSwag. One possible advantage of layer-shared MoEs is that they can allow for better load balancing at inference. If prompts come in continuously, then newly incoming prompts can be batched with previous prompts that have already passed through several layers and sent through the MoE module together, as the MoE module is the same regardless of whether it is the first or last layer. Sharing also reduces throughput by around 20% during training, which further motivates our decision not to use it for OLMoE-1B-7B.
 
-**共享层** 有工作在 Universal Transformer 的背景下研究过跨层共享权重的 MoE [37, 45, 171]. 在 Figure 29 中, 我们测试跨层共享的 MoE 能否胜过不共享的 dense 模型. 跨层共享的 MoE 在模型层面而非层的层面施加负载均衡损失. 这给了模型更多灵活性: 它可以在某些层完全停用某些专家, 甚至通过每层始终激活一个不同的专家来模拟 dense 模型. 因此它是 dense 模型的推广, 这让我们推测它可能比 dense 模型更好. 但实际上两者表现接近, 常规 dense 模型在验证 loss 与 HellaSwag 上甚至还略占优势. 跨层共享 MoE 的一个可能优势是推理时负载均衡更好. 如果提示持续到来, 新到的提示可以与已经过了若干层的旧提示拼成一批, 一起送进 MoE 模块, 因为无论是第一层还是最后一层, MoE 模块都是同一个. 共享还会让训练吞吐下降约 20%, 这进一步支持了 OLMoE-1B-7B 不采用它的决定.
+**共享层** 有工作在 Universal Transformer 的背景下研究过跨层共享权重的 MoE [37, 45, 171]. 在 Figure 29 中, 我们测试跨层共享的 MoE 能否胜过不共享的 dense 模型. 跨层共享的 MoE 在模型层面而非层的层面施加负载均衡损失. 这给了模型更多灵活性: 它可以在某些层完全停用某些专家, 甚至通过每层始终激活一个不同的专家来模拟 dense 模型. 因此它是 dense 模型的推广, 据此可以推测它可能比 dense 模型更好. 但实际上两者表现接近, 常规 dense 模型在验证 loss 与 HellaSwag 上甚至还略占优势. 跨层共享 MoE 的一个可能优势是推理时负载均衡更好. 如果提示持续到来, 新到的提示可以与已经过了若干层的旧提示拼成一批, 一起送进 MoE 模块, 因为无论是第一层还是最后一层, MoE 模块都是同一个. 共享还会让训练吞吐下降约 20%, 这进一步支持了 OLMoE-1B-7B 不采用它的决定.
 
 **KTO experiments** In Table 14 we experiment with the number of steps (5,000 vs. 10,000) and the optimizer (Adam [83] vs. RMS) used for KTO [54]. Based on these experiments we use the RMS optimizer and the checkpoint at 5,000 steps in §4.3.
 

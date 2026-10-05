@@ -182,7 +182,7 @@ $$
 
 Table 20 取两个窗口的中位数: 高系数一支 CE 从 2.473 升到 2.523 (+2.0%), LBL 从 46.864 降到 41.278 (−11.9%), 最差不均衡度从 2.748 升到 6.317 (+129.9%); 低系数分支 CE 从 2.469 降到 2.358 (−4.5%), 不均衡度从 2.655 降到 2.544 (−4.2%). 加权后的 LBL 贡献从 2.343 降到 2.064, 足以让重建的总目标从 4.820 降到 4.591 (−4.8%), 尽管 CE 在变差. 附录 B.7 交代了条件: 这组运行用的是生产预训练栈的 HSDP 和 BF16, 不走本报告的 EP 路径; 学习率 $3\times10^{-5}$; 只有一对分支. 存档指标里没有同一范围的 $f$ 和 $P$ 向量, 所以无法直接验证 eq. 41 中的反向内积.
 
-均衡范围 (Table 19) 也是训练目标的一部分. 报告列了五种: instance (每条序列) 和 `local_batch` (本 rank 当前 microbatch) 已实现; 同步当前 microbatch, 跨梯度累积的在线全局, 以及精确的优化器批次版本只是设计或未实现. 不过 GitHub main 上的 `router.py` 已经有 `global_load_balancing` 开关 (默认关), 每层每个 microbatch 对计数做一次 all-reduce, 代码注释里的 TODO 也写明这是一次小而同步的集合通信. 另一类均衡手段是 DeepSeek 式的无辅助损失 bias: 选专家用 $a_{t,i}+b_i$, 混合权重仍用不带 bias 的亲和度 (eq. 35), 每个训练批次结束后按 $b_i\leftarrow b_i+\gamma\,\mathrm{sign}(\bar C-C_i)$ (eq. 37) 更新, $\bar C$ 是平均请求计数, 实现是 `router.py` 里的 `post_batch`. 计数归约默认用 WORLD 进程组, PP 下会把不同层的计数混在一起, 必须显式配置 stage 内的均衡组. 报告对这个控制器的模型质量不做任何结论.
+均衡范围 (Table 19) 也是训练目标的一部分. 报告列了五种: instance (每条序列) 和 `local_batch` (本 rank 当前 microbatch) 已实现; 同步当前 microbatch, 跨梯度累积的在线全局, 以及精确的优化器批次版本只是设计或未实现. 不过 GitHub main 上的 `router.py` 已经有 `global_load_balancing` 开关 (默认关), 每层每个 microbatch 对计数做一次 all-reduce, 代码注释里的 代码注释写明这是一次小而同步的集合通信. 另一类均衡手段是 DeepSeek 式的无辅助损失 bias: 选专家用 $a_{t,i}+b_i$, 混合权重仍用不带 bias 的亲和度 (eq. 35), 每个训练批次结束后按 $b_i\leftarrow b_i+\gamma\,\mathrm{sign}(\bar C-C_i)$ (eq. 37) 更新, $\bar C$ 是平均请求计数, 实现是 `router.py` 里的 `post_batch`. 计数归约默认用 WORLD 进程组, PP 下会把不同层的计数混在一起, 必须显式配置 stage 内的均衡组. 报告对这个控制器的模型质量不做任何结论.
 
 ## 5. 精度, 显存和实测工作点
 
@@ -298,4 +298,3 @@ Adam 下没有统一的指数. 报告把学习率写成 $\eta(B)=\eta_\infty/(1+
 - Merrill et al. *Critical Batch Size Revisited: A Simple Empirical Approach to Large-Batch Language Model Training*. 2025. <https://arxiv.org/abs/2505.23971>
 - Muennighoff et al. *OLMoE: Open Mixture-of-Experts Language Models*. 2024. <https://arxiv.org/abs/2409.02060>
 - Komatsuzaki et al. *Sparse Upcycling: Training Mixture-of-Experts from Dense Checkpoints*. 2022. <https://arxiv.org/abs/2212.05055>
-
