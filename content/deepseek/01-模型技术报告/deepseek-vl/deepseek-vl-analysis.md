@@ -34,7 +34,7 @@ CLIP 系编码器 (SigLIP 也在其中) 用图文对比目标训练, 表征偏�
 
 ### 1.2. 数据流与形状
 
-图像进入模型前先经过 `image_processing_vlm.py`: 长边缩放到 $1024$, 再用 ImageNet 均值色把短边补齐成正方形 (`expand2square`). 低分辨率支路的输入不是重新读图, 而是在 `HybridVisionTower` 里把这张 $1024$ 方图 `Resize(384)` 得到的. 两条支路此后各走各的, 形状如下表.
+图像进入模型前先经过 `image_processing_vlm.py`: 长边缩放到 $1024$, 再用 ImageNet 均值色把短边补齐成正方形 (`expand2square`). `HybridVisionTower` 对这张 $1024$ 方图执行 `Resize(384)`, 得到低分辨率支路的输入, 两条支路的张量形状如下表.
 
 | 步骤 | 低分辨率支路 SigLIP-L | 高分辨率支路 SAM-B |
 | --- | --- | --- |

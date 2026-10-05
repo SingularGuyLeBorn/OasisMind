@@ -41,7 +41,7 @@ Cordis 让组件以 coeffect specification 声明所需 key. 上下文中的 bin
 
 论文从上下文 $\Gamma$ 出发, 定义 effect context $\partial\Gamma=\Gamma\times(\Gamma\rightarrow\Gamma)$. 第一项是当前上下文状态 $\gamma$, 第二项 $\varphi$ 是至今所有 inverse 的复合. 初始状态为 $(\gamma_0,id_\Gamma)$. 当正向变换 $f$ 与 inverse $g$ 执行时, `track` 将状态改为 $f(\gamma)$, accumulator 改为 $\varphi\circ g$.
 
-逆序不是实现习惯, 而是组合正确性的条件. 如果先做 $f_1$ 再做 $f_2$, 恢复必须先执行 $g_2$ 再执行 $g_1$. 论文用 twisted composition monoid 表达正向函数和 inverse 的相反组合顺序. `recover` 应用 accumulator 后将其重置, 从而让恢复操作自身可以继续参与更高一层 effect context.
+逆序是组合正确性的条件. 如果先做 $f_1$ 再做 $f_2$, 恢复必须先执行 $g_2$ 再执行 $g_1$. 论文用 twisted composition monoid 表达正向函数和 inverse 的相反组合顺序. `recover` 应用 accumulator 后将其重置, 从而让恢复操作自身可以继续参与更高一层 effect context.
 
 ### 2.2. Effect function 在应用点生成 inverse
 
@@ -65,7 +65,7 @@ Cordis 不让 key 直接指向 value. `@@isolate` 保存 key 到 realm symbol �
 
 ### 3.2. Provider 身份比 value 相等更重要
 
-Fiber 的 target 不是依赖值元组, 而是每个 key 对应 provider fiber 的 uid 元组. uid 新鲜且不复用. 即使新 provider 给出与旧 provider 深度相等的值, target 仍然变化, dependent 会重载. 这是必要的, 因为相同值不代表相同生命周期, 连接句柄和服务对象背后可能已经更换资源.
+Fiber 的 target 保存每个 key 对应的 provider fiber uid 元组, 并不直接保存依赖值. uid 新鲜且不复用. 即使新 provider 给出与旧 provider 深度相等的值, target 仍然变化, dependent 会重载. 相同值可能属于不同生命周期, 连接句柄和服务对象背后的资源也可能已经更换.
 
 相反, 同一 provider 原地覆写 binding 不会触发 provider 身份变化. 需要传播替换语义的组件应撤回旧 binding 再安装新 binding. 该边界避免普通内部状态更新导致整个依赖图重载, 同时把“服务替换”表达成明确生命周期事件.
 

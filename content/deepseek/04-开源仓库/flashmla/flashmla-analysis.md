@@ -82,7 +82,7 @@ seesaw 的 12 步 (编号 0 到 11) 可以这样读: warpgroup 0 维护 $\vec o_
 
 交叉补账的那三步 (9 到 11) 是整套调度最容易看错的地方, 值得单独讲明白它为什么必须存在. $\vec o_L$ 本该收 $\vec p_0 V_{0L}$ 和 $\vec p_1 V_{1L}$, $\vec o_R$ 本该收 $\vec p_0 V_{0R}$ 和 $\vec p_1 V_{1R}$. 按 warpgroup 的分工, warpgroup 0 先把本块的 $\vec p_0 V_{0L}$ 加进 $\vec o_L$、warpgroup 1 先把 $\vec p_1 V_{1R}$ 加进 $\vec o_R$, 这是两个 warpgroup 各自手里的数据, 不用等对方. 但 $\vec p_0 V_{0R}$ 和 $\vec p_1 V_{1L}$ 是交叉项: $\vec o_R$ 要用到 warpgroup 0 算出的 $\vec p_0$, $\vec o_L$ 要用到 warpgroup 1 算出的 $\vec p_1$. 这两项只能等对方的 softmax 结果就绪后再补, 补的时候还要带上这期间 $m$ 更新引入的 $scale_1$ 修正. 这就是步骤 9 到 11 的来历, 也是 seesaw 比直白的双缓冲多出来的那点数学代价 — 换来的是只用一份输出矩阵的寄存器就能跑两路流水.
 
-光有调度还不够, 受计算限制不代表能无视访存延迟: 数据没就绪照样得等. seesaw 配了两招压延迟. 一是细粒度 TMA 拷贝与 GEMM 流水: 对一个 $64\times576$ 的 K 块, 不是一次性搬完, 而是发 9 次 TMA 拷贝 (每次搬 $64\times64$), 第一次拷贝一完成就能开始第一个 GEMM, 后面边搬边算, 把访存延迟藏进计算里. 二是缓存提示: TMA 拷贝用 `cute::TMA::CacheHintSm90::EVICT_FIRST`, 实验显示能提升 L2 命中率. 这两招加上 seesaw, 在 H800 SXM5 上拿到最高 80% 的 Tensor Core 利用率 (相对降频后的理论峰值) 和 3 TB/s 带宽, 代价是访存受限场景比旧的 ping-pong 缓冲版慢约 2%, 这个取舍官方认为可以接受, 因为线上解码本来就压在计算受限这一侧.
+seesaw 调度仍要处理访存延迟, 数据没有就绪时 Tensor Core 只能等待. 实现采用两项优化. 第一项是细粒度 TMA 拷贝与 GEMM 流水: 一个 $64\times576$ 的 K 块拆成 9 次 TMA 拷贝, 每次搬运 $64\times64$; 第一块到达后立即启动 GEMM, 后续搬运与计算并行. 第二项是缓存提示: TMA 拷贝使用 `cute::TMA::CacheHintSm90::EVICT_FIRST`, 实验显示可以提高 L2 命中率. 两项优化配合 seesaw, 在 H800 SXM5 上达到最高 80% 的 Tensor Core 利用率(相对降频后的理论峰值)和 3 TB/s 带宽. 访存受限场景比旧的 ping-pong 缓冲版慢约 2%, 官方认为线上解码主要受计算限制, 因而接受这项取舍.
 
 ## 4. FP8 / FP4 KV 量化与反量化瓶颈
 

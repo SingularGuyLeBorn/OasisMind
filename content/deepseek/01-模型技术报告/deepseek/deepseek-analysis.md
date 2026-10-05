@@ -103,7 +103,7 @@ $y_w$, $y_l$ 是同一 prompt $x$ 下被偏好和不被偏好的回答. 两个�
 
 评测套件按能力分成十类: 多学科选择题(MMLU, C-Eval, CMMLU), 语言理解与推理(HellaSwag, PIQA, ARC, OpenBookQA, BBH), 闭卷问答(TriviaQA, NaturalQuestions), 阅读理解(RACE, DROP, C3), 指代消解(WinoGrande, CLUEWSC), 语言建模(Pile), 中文文化(CHID, CCPM), 数学(GSM8K, MATH, CMath), 代码(HumanEval, MBPP), 标准化考试(AGIEval). 同一类里协议可能不同: WinoGrande 走困惑度, CLUEWSC 走生成; CHID, CCPM 走困惑度. 所有对比模型都在内部框架里重跑, Table 5 里的 LLaMA2 分数不是 Meta 官方报的数, 表注还说 few-shot 数是上限, 上下文不够时会减少. 跨报告拿这些数字比较时, 协议差异带来的偏差可能比模型差异还大.
 
-Chat 对 Base(Table 6)变化最大的是数学和代码: 67B 的 GSM8K 63.4 到 84.1, MATH 18.7 到 32.6, HumanEval 42.7 到 73.8. 这和 SFT 里 46.6% 的数学数据, 22.2% 的代码数据一一对应. 报告自己的判断很克制: Base 在这些任务上欠拟合, SFT 补上了一部分知识, 但能力可能集中在代码补全和代数题, 真要全面提升得在预训练阶段加数据, 这正是后来 Coder 和 Math 两条线的出发点. 知识类基准的小幅波动, 报告认为不是 SFT 增减了知识, 而是学会了在 0-shot 对话里接近 Base few-shot 的分数. HellaSwag 这类完形续写任务微调后稳定下降, 更适合纯语言模型. 中文的 CLUEWSC 和 CHID 在 67B Chat 上也掉得明显(81.0 到 60.0, 92.1 到 72.6), 报告没有单独解释. CHID 是成语完形, 走困惑度评测, 和 HellaSwag 同属报告说的「完形续写类任务微调后下降」, 可以用同一个原因解释; CLUEWSC 走生成评测, 下降更可能和 Chat 模型的回答格式有关, 解析器没接住.
+Chat 相比 Base 变化最大的是数学和代码(Table 6): 67B 的 GSM8K 从 63.4 升到 84.1, MATH 从 18.7 升到 32.6, HumanEval 从 42.7 升到 73.8. 这和 SFT 中 46.6% 的数学数据、22.2% 的代码数据一一对应. 报告认为 Base 在这些任务上欠拟合, SFT 补上了一部分知识, 但能力可能集中在代码补全和代数题; 更全面的提升仍要依靠预训练数据, 后来的 Coder 和 Math 两条路线也由此展开. 对知识类基准的小幅波动, 报告解释为 Chat 模型学会在 0-shot 对话中接近 Base few-shot 的分数. HellaSwag 这类完形续写任务在微调后稳定下降, 更适合用纯语言模型评测. 中文的 CLUEWSC 和 CHID 在 67B Chat 上也明显下降(81.0 到 60.0, 92.1 到 72.6), 报告没有单独解释. CHID 是成语完形并使用困惑度评测, 可以归入报告所说的完形续写退化; CLUEWSC 使用生成评测, 下降还可能受到回答格式与解析器匹配方式的影响.
 
 读 Table 6 时要记住两边的设定不同: Chat 在 MMLU, GSM8K, MATH, C-Eval, CMMLU 上用 0-shot, Base 仍用 few-shot, 最大序列长度按任务取 2048 或 4096. 所以「Chat 比 Base 高多少」混着两种变化, 一种是能力, 一种是提示方式. 数学和代码涨 20 分以上, 远超提示方式能解释的范围; 知识类上下一两分的波动, 则基本落在提示方式差异里. 这也是报告不把知识类波动解读为「学到或忘掉知识」的原因.
 
