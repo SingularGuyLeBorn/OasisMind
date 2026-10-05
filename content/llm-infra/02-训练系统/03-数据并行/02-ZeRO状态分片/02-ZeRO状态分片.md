@@ -229,6 +229,119 @@ $$
 
 术语相同不代表默认行为相同。框架版本可能改变 bucket 默认值、是否保留原始参数、checkpoint 格式与预取方向。落地时应把实际配置、框架版本和 profiler 事件写进实验记录，再用前述公式复算数量级；公式负责暴露不可能的结果，运行时记录负责解释剩余差异。
 
+## 18. 分区并非恰好整除
+
+Flat buffer 的元素数往往不能被数据并行规模整除。实现会补齐 padding，使每个 rank 获得等长 shard。设扁平参数有 $N$ 个元素，DP 规模为 $D$，则每 rank 分区长度常取
+
+$$
+n_s=\left\lceil\frac ND\right\rceil,
+\qquad N_{pad}=Dn_s-N.
+$$
+
+例如 $N=1003,D=8$，每 shard 为 126 个元素，总槽位 1008，padding 为 5。单个 buffer 的浪费很小；若每个小参数各自补齐，padding 和 collective 数都会增大，因此框架通常先按 dtype 将许多参数展平。展平顺序也进入 checkpoint 元数据，加载时必须按全局区间还原各参数 view。
+
+参数、梯度和 optimizer 状态应共享可解释的分区映射。参数全局区间 `[a,b)` 的 owner shard、梯度 reduce-scatter 输出和 $m,v$ 更新范围必须一致。若升级版本改变 flat order，只恢复参数而沿用旧 optimizer shard，会把一阶、二阶动量配到错误参数；数值 shape 仍合法，训练却会异常。
+
+### 18.1. 跨边界参数怎样切
+
+假设一个参数覆盖 flat buffer 的 `[900,1100)`，每 shard 长 1000。它横跨 rank 0 与 rank 1：前 100 个元素由 rank 0 保存，后 100 个由 rank 1 保存。Stage 3 聚合该参数时，两边分片共同形成完整 200 元素视图；optimizer update 则各自只更新所属区间。
+
+参数边界不与 shard 对齐是常态。Checkpoint 若按参数逐个保存，可以把两个区间重新拼成一项；按 flat shard 保存则保留切分。两种格式转换时用全局 offset，而不能假设一个参数只有一个 owner。大 embedding 经常横跨许多 shard，更能暴露这种错误。
+
+## 19. 参数 Coordinator 管理 gather、使用与释放
+
+Stage 3 需要知道某模块即将使用哪些参数、哪些参数还有后续消费者，以及何时允许 reshard。可以把参数状态简化为 `sharded → gathering → available → releasing → sharded`。模块 pre-forward hook 触发 gather，计算 stream 等待聚合完成；post-forward 根据后续使用和 `reshard_after_forward` 决定释放。Backward 又经历一次相似周期。
+
+共享参数让生命周期更复杂。Embedding 与输出头 tied 时，同一 storage 在网络开头和末尾被两处模块引用。若第一个模块结束就按局部模块视角释放，末尾还要重新 gather；这是合法但增加通信。若 coordinator 发现后续使用而保持完整参数，则节省一次 gather，却让它跨越几乎整个 forward 常驻。选择取决于参数大小、两次使用间隔和显存余量。
+
+Reentrant checkpoint 会在 backward 中重新执行 forward。Coordinator 必须区分原 forward、重算 forward 与真正 backward 的引用，避免第一次 post-forward 把重算仍需要的 buffer 回收，也避免引用计数永不归零。动态图或模块在循环中多次调用时，静态模块顺序不足以描述生命周期，需要以实际调用实例计数。
+
+### 19.1. Prefetch 窗口怎样计算
+
+设模块 $i$ 的参数聚合时间为 $C_i$，前一模块可用于遮蔽的计算时间为 $F_{i-1}$。若 $C_i\le F_{i-1}$，预取一个模块理论上足够；若 $C_i>F_{i-1}$，仍暴露 $C_i-F_{i-1}$。继续提前到模块 $i-2$，可获得 $F_{i-2}+F_{i-1}$ 的窗口，同时让模块 $i$ 的完整参数多存活 $F_{i-2}$。
+
+取三个模块计算各 12 ms，下一模块 gather 为 18 ms。只提前一层会暴露约 6 ms；提前两层可完全遮蔽，却让其 1.5 GiB 完整参数多驻留一个模块周期。若显存安全区只有 1 GiB，这个方案不可行。可以减小通信量、提高带宽或把模块拆为能够分段消费的单元，而非直接增加预取深度。
+
+Backward 顺序与 forward 相反，预取方向也反向。Forward profile 得出的最佳距离不能直接套到 backward；权重梯度 GEMM、activation 重算和 reduce-scatter 会改变可用窗口及链路竞争。分别记录 forward gather、backward gather 和 gradient reduce-scatter。
+
+## 20. 梯度累积会改变 Stage 2/3 的峰值
+
+数据并行梯度通常在每次 backward 后 reduce-scatter。使用梯度累积时，可以每个 micro-batch 都规约 shard 并在 owner 上累加，也可以前几轮暂不通信、保留本地梯度，最后一轮统一规约。前者通信次数乘累积数，显存保持分片；后者减少通信频率，却可能让完整梯度长期驻留。
+
+设 TP 后本 rank 逻辑参数梯度为 14 GiB，DP=8，最终 shard 为 1.75 GiB。每轮立即 reduce-scatter，四次累积需处理四遍 14 GiB 输入，输出可原地累加到 1.75 GiB shard；延迟到最后则需要某种方式保存 14 GiB 本地累计梯度。若设备只剩 8 GiB 余量，后一方案在通信发生前就会 OOM。
+
+另一种做法按 bucket 本地累积并在最终 micro-batch 边生成边规约，完整梯度不必一次全部出现。实现细节决定峰值，因此配置里的 `no_sync` 或 accumulation 标志不能直接推出字节。用 profiler 查看第一、第二和最终 micro-batch 后的梯度 storage，确认它是完整 buffer、分片 buffer还是两者短暂并存。
+
+### 20.1. 梯度范数与裁剪
+
+Stage 2/3 每个 rank 只持有全局梯度的一段。全局 $L_2$ 范数满足
+
+$$
+\lVert g\rVert_2=\sqrt{\sum_{r=1}^D\lVert g^{(r)}\rVert_2^2}.
+$$
+
+各 rank 计算本地平方和，再 all-reduce 一个标量；由相同全局范数决定缩放。若每 rank 按本地范数独立裁剪，各 shard 会乘不同系数，拼接后的向量不再沿原全局梯度方向。Inf/NaN 检查也要全局 OR，保证所有 owner 同时执行或跳过更新。
+
+梯度累积时，裁剪应发生在所有 micro-batch 累加并完成全局规约后。每个 micro-batch 单独裁剪再相加，与先相加再裁剪不同。Loss scaling 的 unscale 时机同样需与 overflow 检查和 reduce-scatter 一致。
+
+## 21. Offload 的 NUMA 与页锁定边界
+
+GPU 通过 PCIe 访问 CPU pinned memory，buffer 位于哪个 NUMA node 会影响有效带宽。GPU 接在 socket 0，却由 socket 1 分配并由远端 CPU 线程更新 optimizer state，数据会跨 socket interconnect；同时 NIC 或 NVMe 也可能共享该路径。初始化时按 GPU/NIC 拓扑绑定进程、CPU 核和主机内存，独立测 H2D、D2H 与双向并发。
+
+Pinned memory 不能无限增加。它不能被操作系统换出，过量会挤压文件缓存和其他进程，甚至让分配失败。假设每个 rank 准备 4 个 1 GiB 参数预取 buffer、4 个 1 GiB 梯度写回 buffer，单节点 8 rank 就需 64 GiB pinned memory，还未算数据加载器。需要把节点级总量列出来，而非只看单 rank。
+
+CPU Adam 的吞吐取决于内存带宽和向量化。三份 FP32 状态加梯度与写回造成大量读写；即使 PCIe 传输被遮住，CPU 更新也可能成为节拍。测量每 tile 的 CPU 更新时间与主机内存带宽，线程过多会跨 NUMA 争用，线程过少则无法饱和本地内存。
+
+### 21.1. 一次 Offload 节拍复算
+
+每 rank 每 step 更新 3.5 GiB 参数分片，CPU 端读取 master、$m$、$v$ 与梯度并写回三份状态和低精度参数。粗略主机内存流量可超过参数分片的数倍。若总流量按 28 GiB、可持续带宽 140 GiB/s，CPU update 下界约 200 ms。PCIe 双向总计 7 GiB、有效双向吞吐 45 GiB/s，下界约 156 ms；流水稳定后的节拍至少接近 200 ms。
+
+把 PCIe 提升到 60 GiB/s 只能把传输降到约 117 ms，整体仍受 CPU 内存控制。改用更低位 optimizer state、增加本地内存通道或缩小每 rank owner 分片才触及瓶颈。反过来，CPU update 只有 80 ms 而 PCIe 156 ms 时，优化 CPU kernel不会改善 step。
+
+## 22. 运行时验证所有权不变量
+
+每个 optimizer step 可抽样若干参数，记录全局区间、owner、版本、shard checksum 与聚合后的 checksum。更新前各 rank 对同一完整视图应一致；更新后 owner shard 的版本递增一次；下一次 gather 应只包含同一版本。版本混杂时立即停止，避免错误参数继续训练多个 step。
+
+内存不变量包括：非 persistent 参数在释放窗口后只剩本地 shard；gather buffer 的引用归零后才能复用；reduce-scatter 输出区间与 owner 映射一致；offload buffer 在 DMA event 完成前不能交给下一 tile。调试模式用 generation id 检查复用，常态保留计数与少量采样。
+
+通信不变量包括：同一 DP group 的 collective sequence、payload 元素数与 dtype 一致；所有 rank 对 overflow、skip step 和 scheduler step 作出相同决定；并行布局变化后 group 与 checkpoint 分区元数据共同更新。Timeout 发生时保留第一个未完成 sequence 及各 rank 参数窗口，比只留下「NCCL 超时」更容易恢复现场。
+
+ZeRO 的容量收益来自明确的状态所有权，性能取决于所有权转移是否进入合适窗口。稳定运行需要让参数区间、版本、collective 与 checkpoint 使用同一映射；只核对训练能启动，无法覆盖保存、换并行度恢复、动态图和故障路径。
+
+## 23. 改变 World Size 时怎样 Reshard
+
+分片 checkpoint 描述的是全局参数区间，而非某张旧 GPU 的私有文件。旧 DP 规模为 $D_o$、新规模为 $D_n$，全局 flat buffer 长度为 $N$。旧 rank $r$ 保存区间
+
+$$
+I_r^{old}=[r\lceil N/D_o\rceil,(r+1)\lceil N/D_o\rceil),
+$$
+
+新 rank $q$ 需要区间 $I_q^{new}$。加载计划由所有非空交集 $I_r^{old}\cap I_q^{new}$ 构成。每段按全局 offset 拷贝到新 shard，不依赖旧文件名中的 rank 顺序；末尾 padding 不写入逻辑参数。
+
+取 $N=1000,D_o=4,D_n=5$。旧 shard 各 250 元素，新 shard 各 200。新 rank 1 需要 `[200,400)`，其中 `[200,250)` 来自旧 rank 0 文件，`[250,400)` 来自旧 rank 1。新 rank 4 需要 `[800,1000)`，来自旧 rank 3。这个区间算法同样用于 master 参数、$m$、$v$ 与残差状态。
+
+若 checkpoint 以参数名分别存储，可先建立参数到全局 flat offset 的映射再切；若新版本改变参数顺序，按名字和 shape 匹配后重新 flatten。仅按旧 flat offset 加载会把状态配错。参数新增、删除或 shape 变化属于模型迁移，需要显式初始化规则，不能伪装成普通 reshard。
+
+### 23.1. Reshard 的 I/O 方案
+
+让每个新 rank 直接读取所有与自己相交的旧文件，代码简单，却可能让共享文件系统承受 $D_n$ 倍并发和大量小范围读取。另一方案由较少 reader 顺序读取大块，再通过 all-to-all 分发；它减少存储请求，增加网络和 staging memory。选择依据是文件系统范围读吞吐、网络余量与节点内存。
+
+例如 1 TiB checkpoint 从 64 shard 恢复到 256 rank。每个新 rank 平均只需 4 GiB，但若它打开多个旧文件并读取碎片，元数据服务器可能先饱和。每节点安排一个 reader，按 1 GiB 连续块读取并在节点内 scatter，通常更接近顺序吞吐；reader 必须限制在途块，否则主机内存峰值随队列增长。
+
+恢复验收先对每个全局区间做 checksum，再执行一次 gather 后的模型 checksum；optimizer state 也做相同检查。随后运行一个确定性 step，与原 world size 下相同 global batch 的结果比较。通信规约顺序改变会带来浮点微差，参数身份、更新次数和尺度仍应一致。
+
+### 23.2. Elastic 重启的边界
+
+训练中途少一个 rank 不能靠其余 rank 直接继续，因为 DP group、owner 映射和所有 collective 都已改变。安全路径停在一致 checkpoint 边界，以新的 world size 重建进程组、分区与数据 sampler，再加载 reshard 后的状态。若系统支持内存态 elastic reshard，也必须先冻结 optimizer step，并证明每个 shard 只有一个确定版本。
+
+数据进度要随 global batch 语义恢复。DP 从 8 改为 16 后，保持每 rank batch 不变会让 global batch 翻倍；若希望优化语义连续，需要调整 micro-batch或累积次数，并按已消费样本/token 更新 scheduler。模型状态恢复正确而数据位置重复，仍会改变训练轨迹。
+
+故障发生在参数 gather 或 optimizer update 中途时，内存里的 rank 可能处在不同版本。不能把这些 shard直接拼成 checkpoint；回到上一个已提交的全局 step。Checkpoint manifest 在所有 shard、元数据和校验完成后原子发布，未完成目录不进入候选恢复点。
+
+恢复日志保存旧、新并行布局、每段来源和校验结果。这样出现单层异常时，可以直接追到对应旧 shard 与读取区间，区分文件损坏、映射错误和新模型结构变化。
+
+该记录也用于恢复演练复盘。
+
 ## 参考资料
 
 - [ZeRO: Memory Optimizations Toward Training Trillion Parameter Models](https://arxiv.org/abs/1910.02054)
