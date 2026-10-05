@@ -107,24 +107,24 @@ KV cache 压缩与 Sparse Attention 有交集，但两者不相同。淘汰方�
 
 同样，稠密注意力也不意味着必然低效。FlashAttention 一类精确 kernel 在中等长度上可能比不规则稀疏实现更快；GQA、量化和分页 KV cache 可以降低 decode 的缓存压力，却不改变注意力图。工程选择应比较端到端延迟、吞吐、质量和实现复杂度，而不只比较渐近符号。
 
-### 4.2. 证据怎样落地
+### 4.2. 从结构名称还原真实计算
 
-方法论文、作者项目与实现文档构成主要证据来源。复杂度结论保留原始假设，实验数字同时保留任务、模型规模和上下文长度；单个 benchmark 的提升不能外推为普遍优势。硬件吞吐需连同 kernel、精度、batch 和设备说明。
+复杂度离不开原始假设, 实验数字也离不开任务、模型规模和上下文长度。硬件吞吐还会随 kernel、精度、batch 和设备改变。脱离这些条件, 单个 benchmark 的提升无法回答另一种负载是否也会受益。
 
 「某模型使用 Sparse Attention」至少包含一组可检验问题：哪几层稀疏，mask 是静态还是动态，每个 query 访问多少块，训练与 decode 是否采用同一拓扑，KV 是否保留，路由错误能否恢复，实际 kernel 是否跳过了无效工作。**邻接关系、状态生命周期和执行路径共同决定这个标签对应的真实设计。**
 
 逻辑 mask 而没有对应 kernel，只能证明模型结构成立；kernel 吞吐而没有长依赖质量，只能证明执行效率。模型证据与系统证据同时成立，才足以判断方法能否用于真实长上下文负载。
 
-## 5. 证据分层
+## 5. 几类容易混淆的结论
 
-### 5.1. 论文结论与工程实现
+### 5.1. 图结构、实现限制与实测结果
 
-方法性质以原论文和作者代码为第一层证据。[Sparse Transformer](https://arxiv.org/abs/1904.10509)明确给出特定分解下的 $O(n\sqrt n)$ 复杂度；[Longformer](https://arxiv.org/abs/2004.05150)与[作者实现](https://github.com/allenai/longformer)给出局部、dilation 和任务全局注意力；[BigBird](https://arxiv.org/abs/2007.14062)及其[作者代码](https://github.com/google-research/bigbird)给出局部、随机、全局块的组合。论文中的理论和实验是「论文结论」，代码里的块大小、静态 shape 与 kernel 限制是「工程事实」，本库的算例则是基于这些定义重新推导的结果。
+不同资料回答的问题并不相同。[Sparse Transformer](https://arxiv.org/abs/1904.10509)给出特定分解下的 $O(n\sqrt n)$ 复杂度；[Longformer](https://arxiv.org/abs/2004.05150)与[作者实现](https://github.com/allenai/longformer)展示局部、dilation 和任务全局注意力；[BigBird](https://arxiv.org/abs/2007.14062)及其[作者代码](https://github.com/google-research/bigbird)组合了局部、随机和全局块。理论复杂度描述边数如何增长, 代码中的块大小、静态 shape 与 kernel 限制决定这些边怎样落到机器上, 实验结果则只覆盖其给定设置。
 
-[FlashAttention](https://arxiv.org/abs/2205.14135)与[官方实现](https://github.com/Dao-AILab/flash-attention)支持的是精确、IO-aware 注意力，不能当成稀疏算法的实验证据。[Mistral 7B](https://arxiv.org/abs/2310.06825)给出 GQA、SWA 与 rolling buffer 实例；[StreamingLLM](https://arxiv.org/abs/2309.17453)和[项目页](https://hanlab.mit.edu/projects/streamingllm)给出 attention sink 的观测和流式评测。跨方法的统一成本口径属于本库分析，不冒充论文原结论。
+[FlashAttention](https://arxiv.org/abs/2205.14135)与[官方实现](https://github.com/Dao-AILab/flash-attention)计算精确 attention, 重点是减少 HBM 访问, 并没有删除合法边。[Mistral 7B](https://arxiv.org/abs/2310.06825)把 GQA、SWA 与 rolling buffer 放进生成模型；[StreamingLLM](https://arxiv.org/abs/2309.17453)和[项目页](https://hanlab.mit.edu/projects/streamingllm)研究 attention sink 与流式推理。把它们放进同一张成本表时, 必须分别填写边数、KV 容量、读写量和 kernel 效率, 不能用其中一个数字替代其余三项。
 
-### 5.2. 推导与外推的边界
+### 5.2. 同一套公式能算什么
 
-从 softmax 到结构化 mask 的统一公式是分析框架，不是某一篇论文的原句。把不同方法放进同一个邻接集合 $N(i)$ 后，可以复算边数、路径和状态容量；若进一步判断质量、加速或硬件交叉点，就必须回到相应实验与实现。
+把不同方法写成邻接集合 $N(i)$, 可以直接复算边数、路径长度和状态容量。这些量由结构定义决定, 因而适合跨方法比较。质量、加速和硬件交叉点还受到训练数据、模型规模、kernel 与设备影响, 需要在对应设置中测量。
 
-正文会明确区分「原文报告」「按定义推导」和「部署时需要实测」。无法由论文、官方报告或代码确认的实现细节不作为事实写入，单个模型上的结果也不外推成所有 Sparse Attention 的性质。
+例如, $|N(i)|$ 可以由 mask 精确算出, 端到端时延却不能只由 $|N(i)|$ 推出；图上存在一条远距路径, 也不等于模型已经学会沿这条路径搬运信息。结构计算负责给出可核对的数量, 任务评测与 profiler 再回答质量和速度。
