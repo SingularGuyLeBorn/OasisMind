@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/chat",
     display: "standalone",
     orientation: "any",
-    background_color: "#f8f6f3",
-    theme_color: "#6e5c4a",
+    background_color: "#f4f9fd",
+    theme_color: "#0087eb",
     lang: "zh-CN",
     categories: ["productivity", "utilities"],
     icons: [

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import { OasisMindLogo } from "@oasismind/brand";
 import Link from "next/link";
 import {
   Activity,
@@ -26,7 +27,6 @@ import {
   Wand2,
 } from "lucide-react";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
-import { OasisMindLogo } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const Particles = dynamic(

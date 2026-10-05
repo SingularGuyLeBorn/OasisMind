@@ -10,6 +10,7 @@
     "verify:export": "node scripts/verify-export.mjs"
   },
   "dependencies": {
+    "@oasismind/brand": "workspace:*",
     "@oasismind/markdown": "workspace:*",
     "@oasismind/shared": "workspace:*",
     "lucide-react": "0.475.0",

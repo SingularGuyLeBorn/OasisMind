@@ -22,6 +22,10 @@ export const metadata: Metadata = {
     description: "把值得留下的思考，整理成可以再次抵达的知识。",
   },
   alternates: { types: { "application/rss+xml": "/feed.xml" } },
+  icons: {
+    icon: [{ url: "/icons/oasismind.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icons/oasismind.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

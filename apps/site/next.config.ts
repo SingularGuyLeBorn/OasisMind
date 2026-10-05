@@ -6,7 +6,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "export",
-  transpilePackages: ["@oasismind/shared", "@oasismind/markdown"],
+  transpilePackages: ["@oasismind/brand", "@oasismind/shared", "@oasismind/markdown"],
   images: { unoptimized: true },
   trailingSlash: false,
 };

@@ -15,8 +15,8 @@ import {
   Wrench,
 } from "lucide-react";
 import type { AboutProfile } from "@oasismind/shared";
+import { OasisMindLogo } from "@oasismind/brand";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
-import { OasisMindLogo } from "@/lib/icons";
 
 const Particles = dynamic(
   () => import("@/components/magicui/particles").then((m) => m.Particles),

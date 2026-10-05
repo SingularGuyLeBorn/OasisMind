@@ -4,13 +4,14 @@
  */
 import Link from "next/link";
 import { BookOpen, Search } from "lucide-react";
+import { OasisMindLogo } from "@oasismind/brand";
 
 export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-shell header-inner">
         <Link href="/" className="brand" aria-label="见微首页">
-          <span className="brand-mark">见</span>
+          <OasisMindLogo size={38} className="brand-mark" />
           <span>
             <strong>见微</strong>
             <small>OasisMind</small>

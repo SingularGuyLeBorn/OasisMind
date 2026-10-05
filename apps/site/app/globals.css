@@ -29,7 +29,7 @@ button, input, select { font: inherit; }
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgb(255 255 255 / .75); background: rgb(250 253 255 / .78); backdrop-filter: blur(18px); }
 .header-inner { min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
-.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; color: white; background: linear-gradient(145deg, #24a4ff, #006fc0); box-shadow: 0 8px 20px rgb(0 135 235 / .22); font-family: serif; font-weight: 700; }
+.brand-mark { flex: none; filter: drop-shadow(0 8px 10px rgb(0 135 235 / .14)); }
 .brand strong, .brand small { display: block; }
 .brand strong { font-size: 16px; letter-spacing: .08em; }
 .brand small { margin-top: 1px; color: var(--om-text-3); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; }

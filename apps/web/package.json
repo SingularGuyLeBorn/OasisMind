@@ -36,6 +36,7 @@
     "@milkdown/react": "7.5.9",
     "@milkdown/transformer": "7.5.9",
     "@milkdown/utils": "7.5.9",
+    "@oasismind/brand": "workspace:*",
     "@oasismind/algo-viz": "workspace:*",
     "@oasismind/markdown": "workspace:*",
     "@oasismind/server": "workspace:*",

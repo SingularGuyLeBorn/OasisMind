@@ -15,5 +15,19 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#f4f9fd",
     theme_color: "#0087eb",
+    icons: [
+      {
+        src: "/icons/oasismind.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/icons/oasismind.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "maskable",
+      },
+    ],
   };
 }
