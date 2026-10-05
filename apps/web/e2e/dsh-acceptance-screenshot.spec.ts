@@ -27,6 +27,8 @@ function startHangServer(): Promise<{ url: string; close: () => Promise<void> }>
 }
 
 test.describe("DSH §7 E2E-4 真截图超时", () => {
+  test.skip(!process.env.DEEPSEEK_API_KEY, "缺少 DEEPSEEK_API_KEY，跳过真实 LLM 截图套件");
+
   test("DSH-E2E-4 — browser_screenshot 超时：TIMEOUT 脸 + 无残留 context", async ({ page, request }) => {
     test.setTimeout(180_000);
     await expect.poll(async () => (await request.get(`${SERVER_URL}/health`)).ok()).toBe(true);
