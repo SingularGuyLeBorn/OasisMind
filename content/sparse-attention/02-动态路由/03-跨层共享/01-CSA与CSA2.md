@@ -6,11 +6,11 @@ published: true
 
 # CSA、HCA 与 CSA2: 压缩序列上的稀疏检索和跨层复用
 
-DeepSeek V4 将长上下文 attention 的两个成本同时改写: 先沿 token 轴压缩 KV, 再让部分层只访问压缩序列中的少量位置. 官方名称 **Compressed Sparse Attention(CSA)** 指「压缩后再稀疏选择」, **Heavily Compressed Attention(HCA)** 指「更强压缩后对全部压缩项做 attention」. 本文的 CSA 不是同名的 Calibrated 或 Consensus Sparse Attention; 讨论对象只限 DeepSeek V4 技术报告中的 Compressed Sparse Attention.
+DeepSeek V4 将长上下文 attention 的两个成本同时改写：先沿 token 轴压缩 KV，再让部分层只访问压缩序列中的少量位置。官方名称 **Compressed Sparse Attention（CSA）** 指「压缩后再稀疏选择」，**Heavily Compressed Attention（HCA）** 指「更强压缩后对全部压缩项做 attention」。下文中的 CSA 均指 DeepSeek V4 技术报告里的 Compressed Sparse Attention，与 Calibrated Sparse Attention、Consensus Sparse Attention 等同名缩写无关。
 
 V4.1 Flash 进一步引入 **CSA2**. 每个 attention layer 静态标为 Full、Reindex 或 Reuse, 在层间共享 main KV、indexer K 与 top-k indices. decoder 中的 Hierarchical Sparse Indexer 还把后续索引限制在首个 Full layer 产生的候选池内. 这使「稀疏」从单层 selector 问题变成层组状态机: 哪一层产生完整缓存, 哪一层刷新索引, 哪一层只复用已有选择, 都由层类型决定.
 
-公开材料给出了模式、压缩率、缓存口径与模型卡描述; 生产 kernel 的全部调度细节没有完整开放. 因此本文只在报告和官方代码能支持的层面描述张量与执行, 对未公开的 tile、流水和集群策略不作推断.
+公开技术报告、模型卡与代码给出了层模式、压缩率、缓存格式和张量 shape。生产 kernel 的 tile、流水线与集群调度尚无完整实现数据，相关性能只采用官方已经披露的测量结果。
 
 ## 1. V4 为什么先压缩 token 轴
 
@@ -62,7 +62,7 @@ Decode每步产生一个新 hidden state. 压缩 entry通常在积累足够 toke
 
 压缩引入更新延迟. 最近不足 $m$ 或 $m'$ 个 token若尚未形成稳定entry, 需要局部分支、未压缩tail或可更新entry保留. 公开报告中的实际机制应以官方实现为准; 如果模型卡未说明尾块处理, 不能自行假定均值池化或延后一整个块.
 
-Decode带宽账包含 main compressed KV、indexer K、整数top-k和最近状态. CSA 的 indexer仍可能比 sparse main attention读更多entries. CSA2正是继续减少跨层重复索引与缓存.
+Decode 带宽构成包含 main compressed KV、indexer K、整数 top-k 和最近状态。CSA 的 indexer 仍可能比 sparse main attention 读取更多 entries；CSA2 继续压缩跨层重复索引与缓存。
 
 ## 3. CSA2 的 Full、Reindex 与 Reuse
 
@@ -70,7 +70,7 @@ Decode带宽账包含 main compressed KV、indexer K、整数top-k和最近状�
 
 V4.1 Flash 官方模型卡说明, CSA2为每个 attention layer指定三种静态模式之一. **Full Mode** 建立层组的权威状态, 计算并缓存 main KV与indexer K, 同时生成top-k候选池或索引. **Reindex Mode** 复用共享的main KV与indexer K, 但用当前层query重新计算或刷新top-k. **Reuse Mode** 同时复用共享KV和已有top-k indices, 省掉本层indexer.
 
-三种模式的输出仍回到各自层的residual stream, 层参数和query不是同一个. 共享的是历史表示和选择结果, 不是整层attention输出. Reindex允许当前层query改变候选, Reuse假设层间重要位置足够稳定.
+三种模式的输出仍回到各自层的 residual stream。层参数与 query 保持独立，跨层传递的状态包括历史表示和选择结果。Reindex 允许当前层 query 改变候选，Reuse 则依赖层间重要位置的稳定性。
 
 可以把一个层组写成状态 $(K^{main},K^{idx},S)$. Full更新三者; Reindex保留前两者并更新 $S$; Reuse全部只读. 这种明确状态比模糊的「跨层KV共享」更容易核算: Full付投影、cache和索引, Reindex付索引, Reuse只付Sparse Attention.
 
@@ -134,9 +134,9 @@ Prefill分别测压缩、Full index、Reindex、Reuse attention、HCA attention�
 
 DeepSeek V4、V4 Flash、V4.1 Flash结构不同. V4.1官方模型卡明确使用CSA2和三类层模式, 旧模型名在API中可能路由到新模型, 不能据API别名判断本地权重架构. 复现时固定具体checkpoint、config和报告版本.
 
-公开模型代码与Transformers实现能核对配置字段和shape, 官方技术报告给出设计与训练口径. 未开放的生产kernel、集群cache分层和服务调度只能作为未知项记录. **跨层共享的可验证事实是共享了什么状态、哪些层刷新、缓存口径是多少; 未公开的执行细节不应由热图补写.**
+公开模型代码与 Transformers 实现给出配置字段和 shape，官方技术报告给出设计与训练口径。生产 kernel、集群 cache 分层和服务调度没有公开实现数据，相应性能不进入结构结论。跨层共享的复现记录聚焦共享状态、刷新层和缓存口径。
 
-### 5.4. 一个层组的数值账
+### 5.4. 一个层组的成本明细
 
 取原长度 $n=131072$, CSA压缩率 $m=4$, 得到 $n_c=32768$. 假设Full层建立候选池 $c=4096$, Reindex最终取 $k=1024$. 平坦indexer每个query比较32768个entries; 层次Reindex只比较4096个, 打分数量降为八分之一. Sparse Attention读取1024个compressed entries, 相当于原序列位置数的 $0.78125\%$, 但每个entry包含四token聚合信息.
 
@@ -178,7 +178,7 @@ CSA2将单层CSA变成层组协议. Reuse不运行selector, Reindex只在Full候
 
 prefix cache也受益于较小层组状态, 但cache key必须编码checkpoint、层模式和量化格式. API中的旧模型名可能路由新模型, 不能把服务别名当成缓存兼容依据.
 
-### 5.9. Prefill与Decode的逐项账本
+### 5.9. Prefill 与 Decode 的逐项成本
 
 Prefill中, 压缩器先把一段原始token映射成较短entries. 这一步通常是规则批量计算, 可以与投影融合, 但仍需读入整段hidden states. Full层随后在完整压缩序列上建立候选池; Reindex层只在候选池内用当前query重排; Reuse层直接读取既有positions. 主attention每层仍要执行, 因为query、输出和残差属于当前层. 所以Reuse省掉的是选择器, 不是整层attention.
 
@@ -192,7 +192,7 @@ $$
 
 主attention读取量近似 $(L_F+L_R+L_U)k$. 如果Full层本身采用不同attention路径, 还要单列其主计算, 不能把索引比较量当作完整attention FLOPs. 这组公式适合检查量级, 不替代模型报告中的实际层模式.
 
-批处理会进一步改变账本. 不同请求的历史长度不同, Full索引与Reuse gather形成不同shape; 为追求kernel利用率而padding到最长请求会吞掉部分稀疏收益. continuous batching应按模式和长度分桶, 同时避免把共享组拆成过多小kernel. 因此单请求microbenchmark与在线吞吐都需要报告.
+批处理会进一步改变成本分布。不同请求的历史长度不同，Full 索引与 Reuse gather 形成不同 shape；padding 到最长请求会提高 kernel 规则性，也会吞掉部分稀疏收益。continuous batching 可按模式和长度分桶，同时避免把共享组拆成过多小 kernel。单请求 microbenchmark 与在线吞吐都需要报告。
 
 ### 5.10. 训练迁移的分阶段方法
 
@@ -211,6 +211,115 @@ $$
 异常回退也要保持语义完整. 若层次化索引器失败, 可以扩大候选池或切换平坦索引; 若共享页校验失败, 应重建整个层组状态, 而不是只重算当前层. 回退到更密集路径会增加显存和时延, 调度器必须预留容量并限制同时回退的请求数.
 
 发布前还应做跨长度与跨batch回归. 在压缩边界前后分别选择序列长度, 覆盖空候选、候选不足、完整压缩组和未完成尾组; 再让不同长度请求共享一个batch, 检查padding位置不会进入top-k. 对每个案例保存Full、Reindex与Reuse的来源映射, 升级kernel或量化格式后逐项比较. 这些测试虽不直接提高基准分数, 却决定层组状态在长期服务中是否可靠.
+
+## 6. CED 与 CSA2 如何拼成一张计算图
+
+![CED 与 CSA2 的层组状态流](./images/ced-csa2-state-flow.svg)
+
+*图 1：Causal Encoder-Decoder 决定全局 KV 从哪里产生，CSA2 决定同一层组内何时建立、重索引和复用候选。两者共享状态，却解决不同维度的重复。*
+
+### 6.1. CED 的生产者与消费者
+
+DeepSeek-V4.1-Flash 于 2026 年 9 月 10 日正式发布。官方技术报告中的 **CED** 展开为 **Causal Encoder-Decoder**：40 层主干分成 20 层因果编码器与 20 层解码器。编码器先处理输入历史，解码器的全局 KV 由编码器 hidden states 经过层专属投影构造。这里的 encoder 仍是因果网络，不会让位置 $t$ 偷看未来 token。
+
+设编码器输出为 $H^E$，解码器第 $l$ 层用于全局 attention 的状态写成
+
+$$
+K_l^D=H^E W_{K,l}^{bridge},\qquad
+V_l^D=H^E W_{V,l}^{bridge}. \tag{21}
+$$
+
+共享的是源序列 $H^E$，投影 $W_{K,l}^{bridge},W_{V,l}^{bridge}$ 仍然随层变化。这样能让不同 decoder layers 读取同一历史来源，同时保留层特异的 K/V 空间。YOCO 早先已经提出 self-decoder 与 cross-decoder 的两段式结构；CED 沿着相同的「前段生产、后段消费」方向，把它与压缩稀疏 attention、层组复用和低比特 KV 放到一起。
+
+CED 改变的是跨 decoder 段的数据依赖，CSA2 改变的是段内 attention 层怎样共享。把 CSA2 直接解释成 CED 会遗漏层组状态机；把 CED 说成一种 top-k 方案，也解释不了 prefill 为什么可以缩短执行路径。
+
+### 6.2. Full、Reindex、Reuse 的状态机
+
+一个 CSA2 层组可以把状态写成
+
+$$
+\mathcal S_g=(K_g^{main},V_g^{main},K_g^{idx},P_g,I_g), \tag{22}
+$$
+
+$P_g$ 是全域粗筛得到的候选池，$I_g$ 是最终 top-k indices。Full 层更新整组状态；Reindex 层保留 main KV、indexer K 与候选池 $P_g$，使用当前层 query 在池内生成新的 $I_l$；Reuse 层连 $I_l$ 也沿用已有结果。
+
+这三种模式的差别可以落到读写集合：
+
+| 模式 | main KV | indexer K | 候选池 | 最终 indices | 当前 query 重新打分 |
+|---|---|---|---|---|---|
+| Full | 新建 | 新建 | 新建 | 新建 | 全域 |
+| Reindex | 复用 | 复用 | 复用 | 更新 | 池内 |
+| Reuse | 复用 | 复用 | 复用 | 复用 | 无 |
+
+层类型是模型配置的一部分，运行时不能依据当前负载随意把 Reindex 改成 Reuse。当前层 query 已变化，跳过重索引等于改变邻接图；反过来，把 Reuse 临时升级为 Reindex 会增加计算，也未必符合训练时数据流。
+
+### 6.3. 层次化索引为何能摆脱全历史扫描
+
+若 compressed sequence 有 $n_c$ 个 entries，普通 indexer 每个 Reindex 层都扫描 $n_c$。层次化索引先由组首 Full 层建立大小为 $r$ 的候选池，后续 Reindex 只在 $r$ 中选 $k$：
+
+$$
+C_{group}\approx n_c d_I+(L_R+1)r d_I+L_Akd_A, \tag{23}
+$$
+
+$L_R$ 是 Reindex 层数，$L_A$ 是组内执行 sparse attention 的层数。第一项只在组首承担，第二项随组内刷新次数增长，第三项是真正读取 selected KV 的主 attention。
+
+取 $n_c=32768,r=4096,k=512$，一组含 1 Full、2 Reindex、5 Reuse。全域打分次数从 $8\times32768=262144$ 降到 $32768+2\times4096=40960$，为原来的 15.625%。主 attention 仍执行 8 次、每次读取 512 个 entries，因此 selector 的 6.4 倍缩减不会原样成为整组 6.4 倍加速。
+
+候选池也引入两级召回。Full 粗筛若漏掉目标 entry，后续 Reindex 再准确也无法恢复；池内 recall 很高，只能证明精排没有继续丢失。评测同时保存 pool recall@$r$、final recall@$k$ 与组尾输出差，才能区分粗筛和复用误差。
+
+### 6.4. CSA、HCA、CSA2 与 CED 的继承关系
+
+V4 的 CSA 先以 $m=4$ 左右的压缩粒度形成较细 entries，再在这些 entries 上动态 top-k。HCA 采用约 $m'=128$ 的强压缩，对全部 entries 做 attention，没有 top-k 漏选。两者交错时，HCA 提供粗粒度全覆盖，CSA 恢复可查询的细节。
+
+CSA2 继承了压缩序列与稀疏检索的基本思路，新增 main KV、indexer K 与 indices 的跨层复用，并让 Full/Reindex/Reuse 静态排布。CED 再把 decoder 全局 KV 的来源上移到 causal encoder hidden states。四个名称对应四个层次：CSA 是细压缩加稀疏选择，HCA 是重压缩全覆盖，CSA2 是跨层状态协议，CED 是前后段计算图。
+
+从 V4 到 V4.1-Flash 的变化不能压成「top-k 更小」或「KV 量化更低」。序列压缩、候选层次化、跨层复用、encoder-decoder 桥接和 MXFP4 共同作用，任一单项的消融都不能代表完整系统。
+
+### 6.5. Prefill、Decode 与持久状态
+
+Prefill 时，causal encoder 为整段 prompt 产生 $H^E$ 和可桥接状态；CSA2 的 Full 层建立组状态，Reindex 在候选池内刷新，Reuse 直接消费。Decode 时每个新 token 仍穿过完整生成路径，新增 encoder/decoder 状态按配置追加，因而「prefill 路径缩短」不等于每个 decode step 只运行半个模型。
+
+持久 cache 至少包含 main compressed KV、indexer K、量化 scale、候选池、final indices 与未完成压缩组。SWA 若采用 bounded replay 或另一存储层，还要单独管理 recent state。恢复会话时只加载 main KV 而遗漏候选版本，Reuse 层会拿旧 indices 访问新 cache；状态必须用统一的 prefix hash、模型版本与层组 generation 标记。
+
+### 6.6. 一套跨层验收
+
+正确性从单组开始：Full 生成 $\mathcal S_g$，Reindex 与逐层独立 indexer 比较候选，Reuse 与固定 indices 参考比较输出。随后跨 CED 边界，检查 bridge projection 的层号、RoPE 位置、量化 scale 与 causal mask。序列长度取压缩步长和 page size 的前后一项，覆盖未满组。
+
+质量按组首、Reindex 后和组尾测 dense mass、候选 Jaccard 与 hidden-state 差异。组尾下降、组首正常，说明陈旧 indices 或共享 KV 逐层累积；候选一致而输出漂移，继续检查 FP4 重构、bridge projection 和 online softmax。
+
+系统指标拆成 encoder prefill、bridge projection、Full index、Reindex、Reuse attention、HCA/CSA attention、SSD/HBM 搬运。模型卡给出的 890 bytes/token 是特定格式和结构的总口径，复现应从配置逐项重算，不能用单个数字替代自己的 cache layout。
+
+### 6.7. 一个 1M 上下文的状态量
+
+取原序列 $n=1{,}048{,}576$，CSA 压缩率 $m=4$，compressed sequence 为 262144 entries；HCA 压缩率 $m'=128$，只有 8192 entries。若 CSA 最终 top-k 为 512，它读取 compressed sequence 的 0.195%；HCA 全读 8192 entries，为原 token 数的 0.781%。两个百分比不能直接比较质量，因为一个 CSA entry 汇总 4 token，一个 HCA entry 汇总 128 token。
+
+假设一个 CSA2 group 有 1 Full、2 Reindex、5 Reuse，Full 建 16384-entry pool，Reindex 在池内选 512。Full 的 indexer 全扫 262144 entries；两个 Reindex 共比较 32768 entries；五个 Reuse 不再打分。平坦的逐层索引需要 $8\times262144=2{,}097{,}152$ 次 entry 比较，CSA2 为 294912 次，比较量约降到 14.06%。
+
+主 attention 仍要为 8 层各读 512 个 main KV entries，共 4096 次 entry 读取。若 main KV 每 entry 的压缩表示为 $b$ 字节，理想主读取为 $4096b$；indexer K 的全扫与池内扫另按维度 $b_I$ 计为 $294912b_I$。当 $b_I$ 很小，主 KV 可能主导；当 top-k kernel 或 pool 访问分散，selector 仍可能成为关键路径。
+
+再加入 CED 后，prompt history 的 decoder global KV 由 encoder hidden states 经过层专属 bridge 得到。一次性批量投影会增加 prefill 尾部计算和写入；按需生成能降低初始 TTFT 的 cache 写入，却把工作推到首轮 decode。两种部署的总 FLOPs可能接近，TTFT 与首 token TPOT 分布不同，基准要标明 materialization 时点。
+
+### 6.8. Reindex 的价值怎样单独测
+
+将一个训练好的 Reindex layer 分别替换成 Reuse 和 Full-domain reindex。Reuse 给出完全省掉打分后的质量下界，full-domain 给出候选池没有粗筛瓶颈时的质量上界，原 Reindex 位于两者之间。记录三者 final top-k Jaccard、dense mass、输出差和耗时。
+
+若 pool Reindex 与 full-domain 的差异集中在少数远程证据，增大 pool $r$ 或改变 Full 粗筛训练更有效；若两者候选近似、Reuse 明显退化，当前层 query 的重打分不可省。若三者质量接近，层组可能允许更多 Reuse，但修改静态模式后仍需继续训练验证，推理时临时切换会偏离训练图。
+
+量化消融把 indexer K、main KV 分开恢复到 BF16。候选集合变化说明 indexer 量化影响排序；候选不变而输出改善说明 main KV 重构误差主导。Reuse 会重复使用一次量化后的 indices，Full/Reindex 会产生新的边界翻转，误差统计也应按模式分桶。
+
+### 6.9. 与 HySparse2 的同坐标比较
+
+CSA2 由学习型 indexer 产生候选，Full 建全域 pool，Reindex 用当前 query 刷新，Reuse 沿用已有 indices。HySparse2 的内层候选来自 full attention oracle，随后由 sparse layers 复用。前者用低维代理换掉周期性原序列 full scan，后者用 full layer 的真实 attention 换掉代理误差。
+
+两者都采用前后段结构降低 prompt 重复工作。CED 的 decoder global KV 来自 causal encoder hidden states，并与 CSA2 层组协议结合；HySparse2 的 KV Bridging 只围绕 full layers，cross-decoder 内继续使用 oracle 与 KV Reuse。比较 TTFT 时要同时列出前段层数、bridge 投影、full 层比例和 selector 成本。
+
+候选粒度也不同。CSA/HCA 工作在压缩 entries 上，一个 entry 已汇总多个原 token；HySparse2 强调 token-level selection，并把 recent window 合入同一集合。相同的 $k=512$ 或 $1024$ 对应的信息容量、物理 pages 和质量边界完全不同。统一比较时换算原 token 覆盖、entry 字节与实际 HBM 事务。
+
+最终可用一张三轴表定位：选择信号是 proxy 还是 oracle，共享范围是层组还是 decoder 段，主 attention 读取压缩 entry、block 还是 token。方法名放在三轴交点之后，结构差异才不会被「跨层 KV 复用」这个总称抹平。
+
+这三轴也直接对应评测字段：候选召回、共享状态字节，以及每层实际读取的物理条目数。
+
+层组刷新间隔与候选池容量也需要一并记录。
 
 ## 参考资料
 

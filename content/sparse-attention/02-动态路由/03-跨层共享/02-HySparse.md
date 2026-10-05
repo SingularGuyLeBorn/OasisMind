@@ -46,7 +46,7 @@ $$
 o_t^{sp,l}=\operatorname{Attn}(q_t^l,\tilde K,\tilde V). \tag{3}
 $$
 
-$q_t^l$ 来自当前层, 被读KV来自前面的full layer. 共享的不是query, 也不是attention output. 当前层query对同一候选重新算精确权重, 允许层间改变候选内排序, 无法访问候选外位置.
+$q_t^l$ 来自当前层，被读 KV 来自前面的 full layer。各层保留自己的 query 与 attention output，只共享候选和历史 KV。当前层 query 会在候选内重新计算精确权重，因此可以改变候选内部排序，但无法访问集合外位置。
 
 ## 2. 内层 KV Reuse 与局部分支
 
@@ -206,7 +206,7 @@ $\epsilon_{l,t}$比单纯位置recall更接近输出误差: 漏掉一个低权�
 
 从block变成token后, 算术预算可以保持1024个候选, 但内存事务通常不会保持不变. 64-token block选择最多访问16段连续KV; 1024个离散token最坏可触及1024个page或cache line. 实际成本取决于候选是否排序、KV page大小、head布局、量化分组以及多个query能否复用同一批位置. 因此token-level sparsity的正确比较单位不只是selected tokens, 还包括unique pages、有效载荷字节与实际读取字节之比.
 
-一种实现路径是先对token indices排序, 按page聚合后加载, attention输出再按逻辑位置应用因果掩码. 排序与重排本身有成本, Decode每步只有少量query时尤其敏感. 另一种路径是在候选生成阶段鼓励局部聚集, 以少量召回损失换更低事务数. 这已超出公开摘要明确说明的范围, 只能作为实现选项测量, 不能归因于HySparse2官方系统.
+一种实现路径是先对 token indices 排序，按 page 聚合后加载，attention 输出再按逻辑位置应用因果掩码。排序与重排本身有成本，Decode 每步只有少量 query 时尤其敏感。另一种路径是在候选生成阶段鼓励局部聚集，以少量召回损失换更低事务数。两种实现分别测量 pages/query、DRAM bytes 和 TPOT；HySparse2 论文没有把其中一种规定为统一 kernel 路径。
 
 量化还会改变成本核算. 若KV按固定通道组共享scale, 读取一个token可能必须一并加载相邻scale元数据; 若按page量化, 随机token会反复访问page header. 报告「KV元素字节」时应同时列出scale、zero point、索引和padding. 否则算法层的cache缩减比例无法对应设备侧显存占用.
 
@@ -241,6 +241,125 @@ HySparse2多出self/cross边界. 请求迁移到另一设备时, 不能仅传传
 回归集合还要覆盖block边界与recent window边界. 序列长度取63、64、65等邻近值, 能暴露末块padding和因果掩码错误; window刚好与global block相交时, 可验证HySparse双分支是否保持独立语义, HySparse2并集是否正确去重. 多个GQA query heads共享一组KV heads时, 还需确认block importance的组间归约与候选广播一致. 这些边界错误往往只影响少数位置, 但会在长生成中逐步放大.
 
 长序列压力测试应逐级提高并发, 观察共享cache是否真正降低每请求驻留量, 同时核对候选页数量没有随碎片化异常增长. 质量、显存和时延三者必须来自同一个checkpoint与同一组请求, 避免把不同配置的最佳数字拼接成不可复现的结论.
+
+## 6. 从 YOCO 到 HySparse2 的两级共享
+
+![HySparse2 的外层 KV Bridging 与内层 KV Reuse](./images/hysparse2-two-level-sharing.svg)
+
+*图 1：self-decoder 的 full layers 产生桥接来源，cross-decoder 的 full layers 接收层专属 KV；每个 full layer 再为后续 sparse layers 提供共享 KV 与 token indices。*
+
+### 6.1. YOCO 提供了哪一块积木
+
+YOCO 在 2024 年提出 self-decoder 与 cross-decoder：前段通过高效 self-attention 形成全局 KV，后段用 cross-attention 反复读取，因此历史 cache 不随后段层数重复增长。它还指出 prefill 可以在 self-decoder 后结束，因为 cross-decoder 不需要为 prompt 的每个位置继续生成会被缓存的独立 self-attention KV。
+
+HySparse2 沿用生产者—消费者的两段式依赖，但外层 **KV Bridging 只桥接 full-attention layers**。self-decoder 采用 hybrid SWA，cross-decoder 采用 hybrid sparse attention；cross-decoder 的 full-layer KV 由 self-decoder 对应 full-layer hidden states 构造。桥接关系可以写成
+
+$$
+(K_j^{cross},V_j^{cross})=\Phi_j(H_{b(j)}^{self}), \tag{25}
+$$
+
+$b(j)$ 指定 cross full layer 对应的 self full layer，$\Phi_j$ 是层专属投影。一个 self full layer 可以服务多个 cross full layers，数据来源共享，消费者仍保留自己的投影空间。
+
+YOCO、CED 与 HySparse2 都使用两段式状态复用，具体边界并不相同。YOCO 给出通用 decoder-decoder 结构；DeepSeek-V4.1-Flash 的 CED 与 CSA2、压缩 KV 和 Reindex/Reuse 配合；HySparse2 在外层桥接 full layers，内层继续使用 full-attention oracle 与 KV Reuse。
+
+### 6.2. 外层桥接与内层复用各省什么
+
+外层 KV Bridging 减少 cross-decoder 为长 prompt 重复执行和缓存的工作。内层 KV Reuse 则发生在一个 full+sparse 层组：full layer 产生真实 attention saliency、global KV 和 indices，后续 sparse layers 直接使用。两级状态写成
+
+$$
+\mathcal B=(H^{self}_{full},K^{bridge},V^{bridge}),\qquad
+\mathcal R_g=(K_g^{full},V_g^{full},I_g). \tag{26}
+$$
+
+$\mathcal B$ 的生命周期跨越 self/cross 边界，$\mathcal R_g$ 只服务某个 hybrid group。更新、迁移和回滚必须分别知道两级版本，再由同一 prefix hash 把它们绑定起来。
+
+内层共享本身无法让 prefill 跳过 cross-decoder，因为普通 HySparse 的 sparse layer 输出仍是下一层输入。外层桥接重写了依赖：cross full KV 由 self hidden states 直接构造，prompt 历史不必先穿过整个 cross-decoder 才拥有可供 decode 使用的 cache。prefill 节点与 decode 节点可以据此分工。
+
+### 6.3. HySparse 到 HySparse2 的三处结构变化
+
+第一处是 block 到 token。HySparse 选择 16 个 64-token blocks，共 1024 token 槽位；关键 token 会带入整块邻居。HySparse2 使用 token-level sparsity，将槽位分配给分散证据。算法预算更精准，物理执行则需要处理排序、page 聚合和随机 gather。
+
+第二处是局部通路。HySparse 的 sparse layer 同时拥有 global sparse branch 与独立 SWA branch，两条分支各自 softmax，再由 gate 融合；SWA KV 每层独立保存。HySparse2 取消独立 SWA branch，把 recent window 强制加入统一 sparse candidate set：
+
+$$
+S_t=\operatorname{unique}(S_t^{oracle}\cup\{t-w+1,\ldots,t\}). \tag{27}
+$$
+
+合并后只进行一次 attention，recent token 与远程 token 共享分母。它减少独立 local KV 与级联依赖，也改变了数学语义，因此不能把一代 checkpoint 的 SWA branch 直接删除后称为二代结构。
+
+第三处是 self/cross decoder。HySparse 在单一 decoder 内周期性插入 full layers，所有层参与 prompt prefill；HySparse2 增加外层 bridge，使 cross-decoder 的历史 KV 从 self-decoder hidden states 获得。三处变化分别作用于候选粒度、局部缓存和计算图。
+
+### 6.4. MiMo-V3 与发布时间边界
+
+HySparse 论文于 2026 年 2 月 3 日公开；HySparse2 于 2026 年 9 月 22 日公开。MiMo 官方论文目录提供 HySparse 系列材料，HySparse2 的公开叙述面向长程、多轮 agent 负载，并以 80B-A3B MoE 研究模型验证两级共享。关于 MiMo-V3 采用 HySparse2 的表述，应绑定官方模型发布或技术报告；论文团队与架构方向一致，可以确认技术来源，未发布模型的最终层数、训练配置和服务实现不能从研究论文自动推出。
+
+时点也解释了两条路线为何看起来相似。DeepSeek-V4.1-Flash 于 2026 年 9 月 10 日发布，HySparse2 论文在 9 月 22 日公开；两者都吸收 YOCO 式前后段复用，并分别发展出 CSA2/CED 与 KV Bridging/KV Reuse。相近公开时间只能说明研究趋势汇合，不能据此推断一方复制另一方。
+
+### 6.5. 两级 cache 的字节统计
+
+假设模型共 49 层，self-decoder 25 层、cross-decoder 24 层，全模型有 5 个 full layers。普通逐层 GQA 每 token cache 单位记为 49。HySparse 只让 5 个 full layers 保存 global KV，另有 44 个 sparse layers 的短 SWA cache；忽略窗口长度差异时，全局项约降到 $5/49$。
+
+HySparse2 的 outer bridge 让 cross full caches 从 self hidden states 构造，inner reuse 让 sparse layers 不新增 global KV，独立 SWA branch 又被取消。缓存统计应包含 self-decoder 状态、bridge full KV、token indices、recent candidates、量化 scale 和 page padding，不能只数 5 份 global KV。
+
+取上下文 $n=1{,}048{,}576$、recent window $w=128$、token budget $k=1024$。每个 sparse layer 的主 attention 最多读取去重后的 $k+w=1152$ 个位置，约为全历史的 0.1099%。若 recent tokens 已有 64 个落在 oracle top-k，实际唯一位置为 1088。物理页大小 16 时，最坏触及 1088 个页，最好只触及 68 页；token 数相同，HBM 事务差异可达一个数量级。
+
+### 6.6. Prefill 早退与 decode 补算
+
+Prefill 早退并没有删除 cross-decoder 参数，也没有让生成只使用 self-decoder。prompt 历史在 self-decoder 形成可桥接状态；decode 新 token 仍要经过 cross-decoder，query 从 cross hidden states 产生，并读取桥接的历史 KV。部署应分别报告 TTFT 与 TPOT，前者受 early exit 影响更大。
+
+若 cross full KV 采用按需投影，首次 decode 可能承担 bridge materialization；若在 prefill 末尾批量投影，则 TTFT 包含这部分成本但首 token 更稳定。论文级 FLOPs、服务端计时边界和 cache 落盘策略要使用同一选择，否则「prefill 少一半」与实测 TTFT 对不上。
+
+### 6.7. 失败模式与对照实验
+
+外层失败表现为 bridge hidden states 缺少某类远程细节，所有消费它的 cross layers同时受影响。内层失败表现为 full oracle 在层组开头合理，随后 query 语义变化使 indices 陈旧。token gather 失败则质量正常、物理页数和 TPOT 异常。三者分别用 bridge oracle、组尾 recall 与 pages-per-query 定位。
+
+对照实验包含：完整 HySparse2；关闭 outer bridge、让 cross-decoder完整 prefill；保留 bridge但每层独立 global KV；token selection 改回 64-token block；forced recent 改成独立 SWA branch。每项同时记录质量、prefill FLOPs、TTFT、KV bytes、TPOT 与物理 pages，才能知道收益来自计算图、cache 还是候选粒度。
+
+正确性测试覆盖 bridge 层映射、一个 self full layer服务多个 cross full layers、recent/oracle 重叠去重、尾页、GQA/MQA 候选共享和跨设备迁移。恢复会话时，self state、bridge projections、inner indices 与 recent window 任一版本不一致，都应触发重新 prefill，而非拼接继续生成。
+
+### 6.8. 一次两级版本更新
+
+设 self-decoder 的第一个 full layer 产生状态版本 $B_7$，三个 cross full layers 分别通过 $\Phi_1,\Phi_2,\Phi_3$ 构造 KV。内层第一个 cross full layer又产生 oracle indices $I_{7,1}$，供随后 5 个 sparse layers 使用。服务端保存的依赖可写成
+
+$$
+B_7\rightarrow\{K_1^c,K_2^c,K_3^c\},\qquad
+(K_1^c,I_{7,1})\rightarrow\{L_2^s,\ldots,L_6^s\}. \tag{28}
+$$
+
+模型热更新后，bridge projection 从 $\Phi_1^{v1}$ 变为 $\Phi_1^{v2}$，旧 $K_1^c$ 已失效；由它产生的 indices 也不能继续复用。只比较 prefix token hash 会错误命中旧 cache，因此 cache key 还需包含模型权重版本、bridge 版本、候选规则与量化格式。
+
+多轮 agent 会在旧 prefix 后追加 observation。self-decoder 先增量更新自己的状态；bridge full KV 是否能只追加新位置，取决于 $\Phi_j$ 是否逐 token 投影且不依赖未来窗口。inner oracle 则在新的 full query 到来时刷新，recent window 随位置滑动。append、fork 和 rollback 都要同时作用于 outer 与 inner 两层状态。
+
+### 6.9. Prefill 计算量的拆分例子
+
+假设 49 层模型按 25 层 self-decoder、24 层 cross-decoder 划分。普通全路径 prefill 每个 prompt token 经过 49 层；HySparse2 early exit 让 prompt 主干只经过前 25 层，层数项约为 $25/49=51.0\%$。这不是端到端 TTFT 恰好减半，因为 self/cross 层算力不同，bridge projection、MoE、通信和 cache 写入仍然存在。
+
+将总 prefill 时间写成
+
+$$
+T_{pre}=T_{self}+T_{bridge}+T_{cache}+T_{comm}+T_{fixed}. \tag{29}
+$$
+
+HySparse 的对照则包含 $T_{self}+T_{cross}$，但内层 KV Reuse 已减少某些 attention 成本。对比时按算子记录，而非仅按层数乘平均值。长 prompt 下 attention 与 KV 写入占比上升，early exit 收益更明显；短 prompt 下固定调度与 MoE 可能主导。
+
+### 6.10. token 级选择的质量—物理成本曲线
+
+保持总预算 1024 token，构造三种候选：完全聚集在 16 个连续 64-token blocks；均匀分布在 64 个 pages；分散到 1024 个 pages。算法读取 token 数相同，物理事务、页表项和 top-k indices 长度差异很大。记录证据 recall、pages/query、L2 hit 与 TPOT，得到质量—分散度曲线。
+
+block 版本再以 16 个 64-token blocks 作为对照。若 token selector 的质量只提升少量，却让 pages/query 增长数十倍，目标硬件可能无法兑现算术收益；若 agent 证据本来就碎片化，block 带入大量无关 token，token 路线的召回与字节都可能占优。结论依赖数据分布，平均 top-k 数不能代替候选空间结构。
+
+forced recent window 也参与去重。若 1024 个 oracle tokens 中已有 96 个落在最近 128 token，合并后唯一候选为 1056，而非 1152。性能测量使用唯一 token 与物理 pages；训练统计还要记录 oracle 对局部位置的偏好，避免强制 window 长期重复浪费 selector 容量。
+
+### 6.11. 一张继承关系表
+
+| 结构 | 历史生产者 | 选择信号 | 跨层共享 | 局部通路 | Prefill 路径 |
+|---|---|---|---|---|---|
+| YOCO | self-decoder | 结构决定 | 全局 KV 供 cross-decoder | self-decoder 高效 attention | self 后可结束 |
+| HySparse | 周期性 full layer | full attention oracle | 组内 KV 与 block indices | 独立 SWA branch | 全部层执行 |
+| HySparse2 | self full layers | full attention oracle | Bridging + 组内 Reuse | forced recent tokens | self 后可结束 |
+| CSA2 + CED | causal encoder / Full mode | 层次化 indexer | main KV、indexer K、indices | 独立配置的局部状态 | encoder 后桥接 |
+
+这张表揭示了 HySparse2 对两条前序路线的组合：它接收 YOCO 的两段生产—消费关系，也保留 HySparse 的 full oracle 与组内复用；token 级候选和 forced recent 又修改了一代的 block+SWA 数据流。MiMo-V3 若由官方报告确认采用该结构，具体模型配置仍应落回层数、head、预算与 bridge mapping，研究架构名称本身不足以补齐部署参数。
 
 ## 参考资料
 
