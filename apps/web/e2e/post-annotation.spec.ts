@@ -24,6 +24,12 @@ test.beforeAll(async () => {
 });
 
 test("划线批注可永久保存、改样式、报告失配并删除", async ({ page }) => {
+  // 把浏览器原生滚动转成可观察标记，验证侧栏“定位到原文”确实命中锚点，不靠视觉猜测。
+  await page.addInitScript(() => {
+    Element.prototype.scrollIntoView = function scrollIntoView() {
+      this.setAttribute("data-e2e-annotation-scrolled", "true");
+    };
+  });
   await page.goto(`/posts/${SLUG}`);
   await expect(page.locator("article").getByRole("heading", { name: "私人批注验收", exact: true, level: 1 })).toBeVisible({
     timeout: 30_000,
@@ -56,6 +62,8 @@ test("划线批注可永久保存、改样式、报告失配并删除", async ({
   await expect(page.getByRole("button", { name: "批注 1", exact: true })).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "批注 1", exact: true }).click();
   await expect(page.getByText("第一条永久私人笔记", { exact: true })).toBeVisible();
+  await page.locator('[title="定位到原文"]').click();
+  await expect(page.locator('[data-e2e-annotation-scrolled="true"]')).toContainText("OasisMind");
 
   await page.locator('[title="修改批注"]').click();
   await page.getByRole("button", { name: "波浪线", exact: true }).click();

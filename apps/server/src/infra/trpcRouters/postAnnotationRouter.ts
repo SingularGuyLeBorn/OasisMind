@@ -1,4 +1,10 @@
-/** 业主私人批注路由：全部走鉴权 procedure，公开站没有对应写接口。 */
+/**
+ * 业主私人批注路由。
+ *
+ * 仓库中的 `publicProcedure` 是历史命名，实际在 AUTH_MODE=password 时挂载 authGuard；
+ * 真正允许访客匿名调用的是 `anonymousProcedure`。这里四个入口统一使用前者，且独立公开站
+ * 不打包本路由，因此访客既拿不到私人数据，也没有可猜测的批注写端点。
+ */
 import {
   createPostAnnotationSchema,
   deletePostAnnotationSchema,
