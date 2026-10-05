@@ -293,6 +293,8 @@ $$
 | `static_graph` 要求 used/unused 集合稳定 | PyTorch DDP API | 静态图声明边界 |
 | Megatron DDP 使用连续 grad buffer 与 bucket overlap | Megatron Core Distributed API | 生产实现对照 |
 
+同一份验收记录还应保留 rank 映射与拓扑，避免换机后误用旧的通信结论。
+
 ## 参考资料
 
 - [PyTorch DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
