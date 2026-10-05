@@ -48,7 +48,7 @@ $$
 
 第二处改动带来一个代价: decoder 的 SWA KV 依赖 decoder 自己的隐状态, 要精确得到它, prefill 时 decoder 仍要多处理 $n_{\text{win}} \times L/2$ 个 token. 多轮对话里每轮 prompt 很短时, 这笔开销不可忽略. 报告引用 PowerAttention 的观察, SWA 实际的有效感受野远小于理论值 $n_{\text{win}} \times L/2$, 于是引入 Decoder SWA Bounded Replay, 只对 prompt 末尾 $n_{\text{win}}$ 个 token 做 decoder 的 SWA 计算, 细节在第 3.2.2 节. 整体上, $N \gg n_{\text{win}}$ 时 prefill 复杂度从 $O(NL)$ 降到 $O(NL/2 + n_{\text{win}} \times L/2) \approx O(NL/2)$. 按配置 $n_{\text{win}}=128$, $L/2=20$, 精确重建要 2560 个 token 的 decoder 前向, 有界回放只要 128 个, 少 20 倍(推导). CSA2 与 CED 结合时, decoder 里的 Full 层从 $H_{L/2}$ 算自己的 global KV, Reindex 和 Reuse 不变; 由于 decoder 只有一个 Full 层, CED 加 CSA2 的 decoder 在 global KV 上也只存一份, 结果和 YOCO 的「只 cache 一次」相同, 区别在于 V4.1 每层仍保留自己的 SWA.
 
-按四件事收一下 CED. 谁算: encoder 的 20 层照常前向; decoder 的 global KV 由第一个 Full 层用自己的投影 $W_l^{KV}$ 从 encoder 末层输出 $H_{L/2}$ 算出. 和谁算: decoder 各层的查询来自 decoder 自己的隐状态, 和这份由 encoder 输出投影来的 global KV 做稀疏注意力, 再和本层 SWA KV 做局部注意力. 状态怎么变: prefill 时只需跑完 encoder 就能写好全部 global KV, decoder 只为 prompt 末尾 128 个 token 补算 SWA KV; decode 时每个新 token 仍走全部 40 层. 丢了什么: decoder 看到的远程信息只来自第 20 层的表示, 深层隐状态不再写进 global KV; 报告没有给 CED 相对标准 decoder-only 的质量消融.
+CED 的计算和状态变化如下. encoder 的 20 层照常前向; decoder 的 global KV 由第一个 Full 层用自己的投影 $W_l^{KV}$ 从 encoder 末层输出 $H_{L/2}$ 算出. decoder 各层的查询来自本层隐状态, 与 encoder 输出投影得到的 global KV 做稀疏注意力, 再与本层 SWA KV 做局部注意力. prefill 跑完 encoder 后即可写好全部 global KV, decoder 只为 prompt 末尾 128 个 token 补算 SWA KV; decode 时每个新 token 仍走全部 40 层. 代价是 decoder 看到的远程信息只来自第 20 层表示, 深层隐状态不再写入 global KV. 报告没有给出 CED 相对标准 decoder-only 的质量消融.
 
 ### 2.2. CSA2 的三种模式和层排布
 
@@ -163,9 +163,9 @@ CSA2 的跨层共享给流水线并行带来新问题: 共享注意力组件的�
 
 SWA 的依赖逐层累积, 精确重建 L 层的 SWA KV 需要回放 $L \times n_{\text{win}}$ 个 token. **SWA Bounded Replay** 只回放最近 $n_{\text{win}}$ 个 token, 并把 SWA 截断在回放段内: 回放从位置 s 开始时, 位置 i 的查询只看 $[\max(s, i-W+1), i]$ 内的 SWA key. 得到的状态是近似的. Encoder 侧, 命中 global KV 但缺 SWA KV 时, 回放已缓存前缀的最后 $n_{\text{win}}$ 个 token, 与未缓存的后缀一起处理; 回放 token 只重新生成 SWA KV, 复用已缓存的 global KV, 不重算也不覆盖; 后缀则同时生成 global KV 和 SWA KV. 按配置, 精确恢复要 40 × 128 = 5120 个 token 的前向, 有界回放只要 128 个, 少 40 倍(推导). 报告称这一设计把灾难性的 miss 变成代价很小的降级, 这是把 SWA KV 移出持久化缓存的前提.
 
-近似的代价要讲清楚. 由于回放状态是近似的, 未缓存后缀算出的 global KV 和 SWA KV 取决于命中位置, 不同命中位置得到的结果在数学上并不相同. 也就是说, 同一段对话, 缓存命中与否会让模型看到略有差别的状态. Decoder 侧的有界回放是第 2.1 节说的那一路: 每次 prefill 回放 prompt 最后 $n_{\text{win}}$ 个 token, 把它们的 encoder 输出送过 decoder 各层, 得到的 decoder SWA KV 只用于 decode, 不进前缀缓存. 报告说两者对回答质量的影响可以忽略, 并在后训练中模拟同样的回放做适配; 但报告没有给量化的质量对比, 第 6 节也把 SWA 状态重建列为尚未完全刻画的风险.
+回放状态是近似的, 因此未缓存后缀算出的 global KV 和 SWA KV 取决于命中位置, 不同命中位置得到的结果在数学上并不相同. 同一段对话是否命中缓存, 会让模型看到略有差别的状态. Decoder 侧每次 prefill 回放 prompt 最后 $n_{\text{win}}$ 个 token, 把它们的 encoder 输出送过 decoder 各层, 得到的 decoder SWA KV 只用于 decode, 不写入前缀缓存. 报告称两者对回答质量的影响可以忽略, 并在后训练中模拟同样的回放做适配; 但没有给出量化的质量对比, 第 6 节也把 SWA 状态重建列为尚未完全刻画的风险.
 
-按四件事收一下 SWA Bounded Replay. 谁算: 缓存命中但 SWA KV 已过期时, 由 prefill 节点对已缓存前缀的最后 128 个 token 重跑前向. 和谁算: 回放 token 的 SWA 只看回放段内部, global 注意力照常读已缓存的 global KV. 状态怎么变: 持久化缓存里只剩 global KV, SWA KV 放在 TTL 几分钟的 DRAM 池里, 过期就回收. 丢了什么: 回放出的 SWA 状态是截断后的近似值, 同一段对话命中位置不同, 后续算出的 KV 就略有不同, 推理不再与无缓存的完整前向逐位一致.
+缓存命中但 SWA KV 已过期时, prefill 节点会对已缓存前缀的最后 128 个 token 重跑前向. 回放 token 的 SWA 只访问回放段内部, global 注意力仍读取已缓存的 global KV. 持久化缓存只保存 global KV; SWA KV 留在 TTL 为数分钟的 DRAM 池中, 到期便回收. 重新得到的 SWA 状态截断了更早的局部依赖, 因此同一段对话在不同命中位置上可能生成略有差异的后续 KV, 无法与无缓存的完整前向逐位一致.
 
 ## 5. 预训练
 
