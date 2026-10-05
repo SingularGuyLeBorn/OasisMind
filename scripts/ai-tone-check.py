@@ -112,6 +112,10 @@ def scan_file(path: Path) -> list[Finding]:
         if in_fence or line.lstrip().startswith(("http://", "https://")):
             continue
         for category, pattern in HARD_PATTERNS.items():
+            # 双语稿忠实保留论文作者的第一人称；“我们提出/观察到”在这里是
+            # 原文叙述，不是站点作者与读者套近乎。其他硬规则仍照常执行。
+            if path.name.endswith("-bi.md") and category == "协作口吻":
+                continue
             if pattern.search(line):
                 findings.append(Finding("HARD", category, path, line_no, line.strip()))
         for category, pattern in SOFT_PATTERNS.items():
