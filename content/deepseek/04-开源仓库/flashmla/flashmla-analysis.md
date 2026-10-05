@@ -16,11 +16,11 @@ FlashMLA 对外只做一件事: 注意力核那一截 $\mathrm{softmax}(QK^\top)
 
 把 FlashMLA 和普通的 FlashAttention 分开看, 关键在一个反直觉的事实: 自回归解码阶段, 注意力一般受访存带宽限制, 而 MLA 的解码 kernel 却落在计算受限区间. 这个差别决定了整套优化的方向, 也决定了 kernel 的形状. 要讲明白, 得先看矩阵吸收把 MLA 变成了什么.
 
-为什么强调这条区别. 受访存限制的 kernel, 提速的办法是省读写、提升带宽利用, 典型手段是把 KV 搬得更快、缓存命中更高; 受计算限制的 kernel, 瓶颈在 Tensor Core 的矩阵乘吞吐, 提速要靠让标量运算与矩阵乘重叠、别让 Tensor Core 停下来等. 两条路线的工程手段几乎不重合. FlashMLA 之所以要专门写一套 kernel 而不是直接用 FlashAttention, 正是因为 MLA 解码落在后一条路线上, 而当时主流的解码注意力 kernel 都是按前一条路线 (省带宽) 调优的. 下面先定位形状和瓶颈, 再逐节看它怎么把 Tensor Core 喂满.
+两类瓶颈需要不同的优化手段. 受访存限制的 kernel 要减少读写并提高带宽利用率, 例如加快 KV 搬运、提高缓存命中; 受计算限制的 kernel 卡在 Tensor Core 的矩阵乘吞吐, 要让标量运算与矩阵乘重叠, 尽量缩短 Tensor Core 的空闲时间. MLA 解码属于后者, 当时主流解码注意力 kernel 则主要围绕省带宽调优, 因此 FlashMLA 采用了独立实现.
 
 ### 1.1. 矩阵吸收后 MLA 退化成 MQA, 以及 576/512 的形状从哪来
 
-MLA 的低秩潜变量与解耦 RoPE 本身的推导见 llm-guide 的 [03-MLA-低秩潜变量与解耦RoPE](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md), 矩阵吸收的工程实现见 [04-MLA-矩阵吸收与工程实现](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/04-MLA-矩阵吸收与工程实现/04-MLA-矩阵吸收与工程实现.md), 这里不重复推导, 只落到 FlashMLA 吃到的形状. MLA 把每个 token 的 KV 压成一个低秩潜变量 $\mathbf c^{KV}_t$ (维度 $d_c=512$), 再加一段解耦 RoPE 的 key $\mathbf k^R_t$ (维度 $d^R_h=64$). 推理时, 原本要为每个 head 还原出 $\mathbf k, \mathbf v$ 的上投影 $W_{UK}, W_{UV}$ 可以被「吸收」进 query 侧和输出侧的矩阵: $W_{UK}$ 并进 $W_{UQ}$, $W_{UV}$ 并进 $W_O$. 吸收后, 注意力分数的计算不再需要把潜变量展开成每 head 的 key, 而是让 query 直接和潜变量做内积.
+MLA 的低秩潜变量与解耦 RoPE 推导见 llm-guide 的 [03-MLA-低秩潜变量与解耦RoPE](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md), 矩阵吸收的工程实现见 [04-MLA-矩阵吸收与工程实现](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/04-MLA-矩阵吸收与工程实现/04-MLA-矩阵吸收与工程实现.md). FlashMLA 接收的形状由这两项设计直接决定: MLA 把每个 token 的 KV 压成一个低秩潜变量 $\mathbf c^{KV}_t$ (维度 $d_c=512$), 再加一段解耦 RoPE 的 key $\mathbf k^R_t$ (维度 $d^R_h=64$). 推理时, 原本要为每个 head 还原出 $\mathbf k, \mathbf v$ 的上投影 $W_{UK}, W_{UV}$ 可以被「吸收」进 query 侧和输出侧的矩阵: $W_{UK}$ 并进 $W_{UQ}$, $W_{UV}$ 并进 $W_O$. 吸收后, 注意力分数可以由 query 直接与潜变量做内积, 无须先展开成每个 head 的 key.
 
 吸收的结果是形状塌缩. 社区里 [杨文博的分析](https://yangwenbo.com/articles/understand-flashmla-in-deepseek-mla-formulas.html) 把这步讲得很直接: q 的形状从 $128\times192$ 变成 $128\times576$, k 从每 head 一份变成一份共享的 $576$ 维, v 变成 $512$ 维, 而且 v 就是 k 的前 $512$ 维, 第二份 KV 不再单独存在. 这里的 $576 = 512 + 64$ 是潜变量 $d_c$ 加 RoPE 的 $d^R_h$, $512$ 是潜变量本身. 一旦所有 query head 共享同一份 $576$ 维的 key、同一份 $512$ 维的 value, 这就退化成了 Multi-Query Attention. FlashMLA 的接口如实反映了这点: `flash_mla_with_kvcache` 的 docstring 写明 `head_dim` 必须 512、`num_heads_k` 必须 1 (只支持 MQA), 见 [`flash_mla_interface.py`](https://github.com/deepseek-ai/FlashMLA/blob/main/flash_mla/flash_mla_interface.py).
 
@@ -88,7 +88,7 @@ seesaw 的 12 步 (编号 0 到 11) 可以这样读: warpgroup 0 维护 $\vec o_
 
 V3.2 把上下文从 64K 翻到 128K, 显存压力立刻顶上来: 单个 128K token 的请求, MLA KVCache 约 $576\times2\times62\times128\times1024 = 8.72$ GiB (出自 [20250929 Hopper FP8 deep-dive](https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250929-hopper-fp8-sparse-deep-dive.md)). 这会直接 OOM, 或者逼小 batch 导致 GPU 吃不满. FP8 KV 缓存是应对这个的直接手段, 但它带来一个新瓶颈: 反量化要占 CUDA Core, 把本来计算受限的 kernel 变成反量化受限. 这一节讲量化格式怎么演进、反量化瓶颈怎么绕过去.
 
-两件事要分开: 一是 KV 在显存里怎么存 (量化格式, 决定省多少字节), 二是 kernel 里怎么把 FP8 还原成能算的 bfloat16 (反量化, 决定吃多少 CUDA Core 周期). 第一件直接关系显存和带宽, 第二件直接关系算力能不能喂满 Tensor Core. 下面先看格式三轮的演进, 再看反量化为什么会成瓶颈、Hopper 上怎么用 crossover 把它摊掉.
+KV 量化同时影响存储格式和计算路径. 显存中的量化格式决定每个 token 占多少字节; kernel 内的反量化则决定要消耗多少 CUDA Core 周期, 以及 Tensor Core 能否持续获得输入. FlashMLA 的三代格式变化与 Hopper 上的 crossover 优化都围绕这两个约束展开.
 
 ### 4.1. 量化格式: 从 656 到 528 / 288 字节
 
@@ -112,7 +112,7 @@ crossover 利用了 MQA 的一个事实: 同一个 query token 内的每个 quer
 
 FlashMLA 的稀疏 kernel 支撑 DeepSeek Sparse Attention (DSA). 要讲清它和 DSA 怎么配合, 得先分清职责: 挑哪些 token (打分、取 top-k) 不在 FlashMLA 里, FlashMLA 只吃已经挑好的 `indices`. 这条边界决定了 kernel 的接口形状, 也决定了它能把复杂度从平方降到近线性的原因.
 
-把这条边界说在前面, 是因为它常被误解成 FlashMLA 自己会选 token. 实际分工是: 模型侧的 lightning indexer 算分、取 top-k, 产出一张下标表; FlashMLA 吃这张表, 只在表里点名的位置上做完整注意力. 这样 kernel 不必背负打分逻辑, 接口里也就只有 `indices` 而没有任何 indexer 的参数. 下面先看 indices 的契约和它为什么必须是 MQA 共享, 再看 prefill、decode、fused 三条路径和两个可选项怎么把不同 query 看不同 token 这件事做进 kernel.
+模型侧的 lightning indexer 负责算分并取 top-k, 产出一张下标表; FlashMLA 根据这张表, 只在指定位置上计算完整注意力. token 选择不进入注意力 kernel, 所以接口只接收 `indices`, 没有 indexer 参数. `indices` 的共享约束以及 prefill、decode、fused 三条路径, 共同决定不同 query 如何访问各自选中的 token.
 
 ### 5.1. indices 契约与 MQA 共享
 
@@ -134,7 +134,7 @@ fused kernel (2026-09, V4.1) 是第三条路径, 把 Q-norm (只在 V4 用, V4.1
 
 FlashMLA 从 2025-02 首发到 2026-09 换了几轮形态, 性能数字也跟着跳. 把这些数字放一起看, 要先对齐口径: 哪张硬件、什么形状、对谁作基线、出自哪个版本. 不对齐口径, 660、640、410、1024、1460 这些 TFlops 会互相打架. 这一节按时间线把演进和数字理一遍, 再讲清适用边界.
 
-对齐口径不是形式. 同一个「稀疏解码」的名字, 在 Hopper 上是 410、在 B200 上是 1024, 差的是硬件代际, 不是算法又快了一倍半; 同一张 B200 上, 稀疏 prefill 是 1350、fused prefill 是 1460, 差的是算进去多少融合算子, 不是 fused 的注意力核更快. 不把硬件、形状、基线、版本四个维度钉住, 这些数字就只是一串没法比较的大数. 下面先按三轮演进把数字归位, 再单列一张对齐口径的表, 最后讲边界.
+性能数字必须同时标明硬件、形状、基线和版本. 「稀疏解码」在 Hopper 上为 410、在 B200 上为 1024, 差异首先来自硬件代际; 同一张 B200 上, 稀疏 prefill 为 1350、fused prefill 为 1460, 后者还计入了额外融合算子. 缺少这些条件时, 数字之间没有可比性.
 
 ### 6.1. 从 2025-02 到 2026-09 的演进与性能表
 

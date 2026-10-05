@@ -29,7 +29,7 @@ DeepSeek-Prover-V2 先提示 DeepSeek-V3 用自然语言分析题目, 再把证�
 
 大模型拆一次结构后, 大量局部搜索交给 7B 模型. 子目标比原 theorem 短, 环境与目标更局部, 小模型能够用较低成本采样更多 proof. 只有原题端到端未被 7B 解决, 而拆分后的全部子目标可以解决时, 该样本才最能体现分解价值. 合并后的形式证明附在 DeepSeek-V3 chain-of-thought 后, 得到数百条冷启动数据.
 
-这种数据不是人工逐句书写, 也不是从形式 proof 反向补解释. Kimina-Prover 从完整形式证明与非形式对应物出发, 回溯合成中间 reasoning block; DeepSeek-Prover-V2 从自然语言路线向前生成结构化形式草图, 再填补细节. 两条路线都依赖 Lean 验证最终 proof, 对中间自然语言是否忠实的约束不同.
+这类数据由模型合成. Kimina-Prover 从完整形式证明与非形式对应物出发, 回溯生成中间 reasoning block; DeepSeek-Prover-V2 从自然语言路线向前生成结构化形式草图, 再填补细节. 两条路线都依赖 Lean 验证最终 proof, 但对中间自然语言是否忠实采用了不同约束.
 
 ## 2. 子目标 curriculum 与强化学习各自处理什么
 
@@ -157,4 +157,4 @@ whole-proof generation 与 tree search 的 sample budget 也不应直接按数�
 
 最终结果展示了一个清楚的能力分层: 通用 LLM 能给出数学路线并写形式草图, 小 prover 能解决局部 Lean obligation, curriculum 把局部成功转成训练信号, 大模型 RL 再把规划与形式化合并. 每层都由 Lean 检查输出, 但 statement 忠实性和 evaluator 实现仍需人工与工具审计. 这组边界决定了该系统更接近高性能证明搜索器, 而不是无需监督的数学正确性来源.
 
-对使用者而言, 最可靠的输出不是模型附带的自然语言信心, 而是锁定依赖后能够由 Lean kernel 重新编译的 proof term. 即使编译通过, 仍要核对 theorem statement 与原题是否一致, 并检查环境是否引入不可信 axiom. 形式验证把错误范围显著缩小, 没有替代问题建模和工具链审计.
+对使用者而言, 锁定依赖后能够由 Lean kernel 重新编译的 proof term 比模型的自然语言信心更可靠. 编译通过之后, 仍要核对 theorem statement 与原题是否一致, 并检查环境是否引入不可信 axiom. 形式验证显著缩小了错误范围, 问题建模和工具链审计依然不可省略.

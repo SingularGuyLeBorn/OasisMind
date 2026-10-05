@@ -36,7 +36,7 @@ DeepSeek-V3 把线性层的前向与反向大量放到 FP8 上算, 用的是细�
 
 README 一句话带过的「imprecise FP8 tensor core accumulation」, 官方在 issue [#50](https://github.com/deepseek-ai/DeepGEMM/issues/50) 里给了具体机制. Hopper 的 FP8 GEMM 在 tensor core 内部用的是定点累加: 把各个尾数乘积按最大指数右移对齐, 再相加. DeepSeek 的实验发现, 它在符号位填充右移之后只保留每个尾数乘积的最高 14 位, 超出的位直接截断. 也就是说, 沿 K 方向把很多 FP8 乘积加起来时, tensor core 给出的不是一个完整 FP32 精度的和, 而是一个精度被压到约 14 位尾数的中间值, issue 里把它记作 FP22. 对训练来说, 这种截断在长 K 上累积的误差足以影响收敛.
 
-关键在于, 这个精度损失不是来自 FP8 输入本身, 而是来自累加器. 如果能把累加切成若干段, 每段只在 tensor core 里累加较短的一截 K, 然后把这一段的结果取出来放进一个真正的 FP32 累加器再相加, 就能把截断的影响限制在每段内部. DeepGEMM 选的段长正好是 scale 的 K 粒度 $128$: 每 $128$ 个 K 元素做一次 tensor core 累加 (对应一个 scale), 取出结果乘 scale 后累加到 FP32. 这就把「恢复精度」和「反量化」两件事合并到了同一个点上, 这是下一节讲的二级累加.
+这里的额外精度损失来自累加器, 与 FP8 输入的量化误差是两件事. 把 K 轴切成较短的分段后, tensor core 只负责段内累加, 每段结果再进入 FP32 累加器, 截断误差便被限制在段内. DeepGEMM 取 scale 的 K 粒度 $128$ 作为段长: 每 $128$ 个 K 元素完成一次 tensor core 累加, 取出结果、乘 scale, 随后累加到 FP32. 反量化与二级累加因此落在同一个位置.
 
 ### 2.2 二级累加的实现: `accum` 与 `final_accum` 两个累加器
 
@@ -96,7 +96,7 @@ multicast 的边界处理藏在调度器里. [`scheduler/gemm.cuh`](https://gith
 
 ### 4.3 持久化调度 、 block swizzle 与非 2 次幂 block 尺寸
 
-调度器是整个库复用最高的一块, 一个 `Scheduler` 结构同时服务稠密和各种 grouped kernel. 它走持久化调度: 每个 CTA 常驻, 循环调用 `get_next_block`, 用 `(++ current_iter) * kNumSMs + blockIdx.x` 算出下一个要做的输出 tile 的一维任务号, 直到任务号越界返回 false. 这避免了「一个 tile 起一个 CTA」的启动开销, 也让寄存器和共享内存的分配在整个 kernel 生命期内只做一次. 任务号到 $(m, n)$ 的映射走 `get_swizzled_block_idx`, 它不是简单的行优先, 而是按一个 group 大小 (候选 $8$ 或 $16$, 由 `get_num_1d_blocks_per_group` 按访存量选) 把任务分块, 让一组 CTA 共享同一方向的 A 或 B tile, 这些 tile 留在 L2 里跨 CTA 复用. swizzle 的方向取非 multicast 的那一维.
+调度器是整个库复用最高的一块, 一个 `Scheduler` 结构同时服务稠密和各种 grouped kernel. 它走持久化调度: 每个 CTA 常驻, 循环调用 `get_next_block`, 用 `(++ current_iter) * kNumSMs + blockIdx.x` 算出下一个输出 tile 的一维任务号, 直到任务号越界返回 false. 这样可以省去「一个 tile 启动一个 CTA」的开销, 寄存器和共享内存也只在 kernel 生命周期开始时分配. 任务号到 $(m, n)$ 的映射走 `get_swizzled_block_idx`: 它按一个 group 大小分块, 候选值为 $8$ 或 $16$, 由 `get_num_1d_blocks_per_group` 根据访存量选择. 同组 CTA 可以复用同一方向的 A 或 B tile, 这些 tile 留在 L2 里跨 CTA 复用. swizzle 的方向取非 multicast 的那一维.
 
 非 $2$ 次幂的 block 尺寸是一个容易被忽略的优化. 初始版 README 举了个例子: $M=256, N=7168$ 时, 若用常规的 $\text{BLOCK\_M}=128, \text{BLOCK\_N}=128$, 只有 $(256/128)\times(7168/128)=112$ 个 block, 用不满 $132$ 个 SM; 改用 $\text{BLOCK\_N}=112$ 就有 $(256/128)\times(7168/112)=128$ 个 block, 让更多 SM 干活. 当前库把这类能力沉淀成工具函数 `set_block_size_multiple_of`, 约束 block 尺寸是某个值的倍数, 配合 JIT 把 block 尺寸当编译期常量来选. README 强调, 把这种不对齐的 block 尺寸和细粒度 scale 一起实现需要仔细优化, 但确实能换来性能, 第 2.3 节的 `num_former_iters` 谓词化就是为了在不规整 block 下仍能消掉分支.
 
@@ -104,7 +104,7 @@ multicast 的边界处理藏在调度器里. [`scheduler/gemm.cuh`](https://gith
 
 初始版 README 里有一条很有代表性的底层技巧, 虽然已经退役, 但值得记录它揭示的问题. DeepSeek 对比 NVCC 12.2 和 12.3 编出来的 CUTLASS FP8 kernel 的 SASS, 发现一串 FADD 指令里有一位被按交错模式翻转. 对照开源 CUDA 汇编器后, 他们判断这位控制 `yield` (让当前 warp 在该指令后让出, 使 warp scheduler 能调度别的 warp 掩盖延迟). 据此写了 `interleave_ffma.py`, 对编译出的二进制里的 FFMA 指令按对定位 $16$ 字节机器码, XOR `0x0800200000000000` 同时翻 `yield` 位和 `reuse` 位 (寄存器复用位, 因为 warp 一旦让出, 下一个执行的可能是别的 warp, 寄存器状态可能被改, 所以 yield 时必须清掉 reuse).
 
-这个后处理的作用是给 WGMMA 和第 2.2 节讲的 promotion FFMA 创造更多重叠窗口, README 自述在某些细粒度 scale 的 FP8 GEMM 上提速 $10\%$ 以上. 2025-07 的重构 (#112) 把它退役了, 原因写在 News 里: NVCC 12.9 会自动做 FFMA interleaving, 原先手工改 SASS 的后处理不再需要. 这条技巧的意义不在于今天还能用, 而在于它说明 DeepGEMM 当初为了榨干 Hopper 愿意下到 SASS 这一层, 以及编译器一旦跟上, 这类手工 trick 就会被回收, 这与 News 里「post optimizations will be no longer supported」的措辞一致.
+这个后处理给 WGMMA 和第 2.2 节的 promotion FFMA 创造更多重叠窗口, README 自述在某些细粒度 scale 的 FP8 GEMM 上提速 $10\%$ 以上. 2025-07 的重构 (#112) 将其退役: News 说明 NVCC 12.9 已能自动完成 FFMA interleaving, 无须继续修改 SASS. 这段历史反映了 DeepGEMM 的优化深度曾到达机器码层; 编译器补上相同能力后, 手工后处理也随之退出.
 
 ## 5. grouped GEMM 两种布局与 V3.2 的 MQA logits
 

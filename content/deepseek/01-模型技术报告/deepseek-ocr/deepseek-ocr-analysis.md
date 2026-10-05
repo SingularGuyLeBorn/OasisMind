@@ -7,7 +7,7 @@ excerpt: "DeepSeek-OCR 用串联的窗口注意力, 卷积压缩器与全局注�
 ---
 # DeepSeek-OCR: 用视觉 token 压缩文档上下文
 
-DeepSeek-AI 在 2025 年发布 DeepSeek-OCR 技术报告与代码. 模型由约 380M 参数的 DeepEncoder 和 DeepSeek-3B-MoE-A570M 解码器组成. 报告的研究问题不是一般文档识别能否继续涨分, 而是含有 $N$ 个文本 token 的页面至少需要多少视觉 token 才能恢复. OCR 在这里同时承担实际文档解析任务和压缩实验的解码器.
+DeepSeek-AI 在 2025 年发布 DeepSeek-OCR 技术报告与代码. 模型由约 380M 参数的 DeepEncoder 和 DeepSeek-3B-MoE-A570M 解码器组成. 报告以视觉文本压缩为核心问题: 含有 $N$ 个文本 token 的页面至少需要多少视觉 token 才能恢复. OCR 同时承担实际文档解析任务和压缩实验的解码器.
 
 报告给出两组核心结果. Fox 的 100 个英文文档页面上, 压缩比低于约 $10\times$ 时解码精度接近 97%, 到约 $20\times$ 时仍约为 60%. OmniDocBench 上, Small 模式只用 100 个视觉 token 就超过使用 256 token 的 GOT-OCR2.0; Gundam 模式少于 800 token, 综合结果优于平均使用约 6790 token 的 MinerU2.0. 两组实验分别回答信息容量边界与实际解析质量, 不能互相替代.
 
