@@ -10,7 +10,7 @@ excerpt: "从学生访问的状态分布出发, 系统整理 On-Policy Distillat
 
 为什么这一步会突然有用? RL 和 SFT 正好各缺一半. RL 让学生自己 rollout, 所以训练会碰到学生部署时真正遇到的错误前缀;但一条几千 token 的回答通常只有一个结果奖励, 模型只知道「整题错了」, 不知道错误从哪一步开始. SFT 或离线蒸馏能逐 token 训练, 监督很密;但前缀来自人工答案或教师答案, 学生一旦在生成时走偏, 后面全是训练时没见过的状态. OPD 把两件事接起来: 学生先生成, 教师再对学生已经走到的每个前缀计算下一 token 概率. 前缀来自学生, 信号来自教师, 每个 token 都有反馈.
 
-TML 的实现之所以传播得快, 还因为它离现有 RL 代码只差很少几步. rollout 仍由学生完成;训练器已经保存学生对已采 token 的 log-prob;再让冻结教师对同一条轨迹做一次并行 Prefill, 取教师 log-prob, 两者相减就是逐 token 的 reverse-KL 信号. TML 报告, 在它的同架构实验里, 蒸馏约用少 7–10 倍的梯度步数恢复 RL 教师水平, 累计训练计算量低约 50–100 倍. 这不是 OPD 在所有模型上的固定倍率, 却解释了 2025 年末的工程兴趣: 不必先训练独立 reward model, 不必只靠稀疏 0/1 奖励, 也不必物化教师的完整回答数据集;只要能访问教师 log-prob, 就能把教师当作逐 token 的稠密评分器.
+TML 的实现之所以传播得快, 还因为它离现有 RL 代码只差很少几步. rollout 仍由学生完成;训练器已经保存学生对已采 token 的 log-prob;再让冻结教师对同一条轨迹做一次并行 Prefill, 取教师 log-prob, 两者相减就是逐 token 的 reverse-KL 信号. TML 报告, 在它的同架构实验里, 蒸馏约用少 7–10 倍的梯度步数恢复 RL 教师水平, 累计训练计算量低约 50–100 倍. 这些倍率对应论文中的模型与训练配置. 工程上的吸引力来自现成接口: 学生 rollout 提供状态, 教师 log-prob 提供逐 token 稠密信号, 训练过程可以省去独立 reward model 和教师完整回答数据集.
 
 「On-Policy」限定受监督前缀由当前学生产生, 「Distillation」限定反馈来自教师行为分布. 教师预先生成答案再做 SFT, 属于 off-policy 蒸馏;学生自己采样但只拿环境的 0/1 奖励, 属于 on-policy RL;旧检查点或回放池产生前缀, 则变成 near-policy 或混合方法. 教师可以是外部大模型, 也可以是同一模型加参考解、反馈或额外上下文形成的条件化教师. 判断一种方法是不是 OPD, 要看谁生成受监督状态, 以及教师在同一状态上给了什么.
 
@@ -30,7 +30,7 @@ OPD 也没有把困难消掉. 每批新 rollout 都要追加教师前向;完整�
 
 状态变化也要明确. rollout 前, 系统持有提示集合、学生快照和教师服务. rollout 后新增学生 token、attention mask 与采样 log-prob. 教师评分后新增教师 logits、top-$k$ 概率或 sampled-token log-prob. 反向传播后只有学生参数变化, 教师参数保持冻结; 若是 EMA 自教师, 教师参数会按平滑规则另行更新. 为节省显存而只保存 top-$k$ 或已采 token 时, 丢掉的是教师在其余词表上的相对概率. 为减少方差而停止对采样过程求导时, 丢掉的是「当前 token 改变后续状态分布」的梯度项.
 
-## 方法边界与工程判断
+## 适用条件与工程判断
 
 ### 教师与学生是否兼容
 
@@ -62,7 +62,7 @@ OPD 也没有把困难消掉. 每批新 rollout 都要追加教师前向;完整�
 
 ### 论文
 
-本库以 [GKD 原论文](https://openreview.net/forum?id=3zKtaqxLhW)、[MiniLLM 原论文](https://arxiv.org/abs/2306.08543)、[DAgger 论文](https://proceedings.mlr.press/v15/ross11a.html) 和 [GKD 的 arXiv 页面](https://arxiv.org/abs/2306.13649) 为基础. 工程边界参照 [verl 的 OPD trainer 文档](https://github.com/verl-project/verl/blob/main/examples/on_policy_distillation_trainer/README.md), 但算法结论仍以论文为准.
+[GKD 原论文](https://openreview.net/forum?id=3zKtaqxLhW)与其 [arXiv 版本](https://arxiv.org/abs/2306.13649)给出混合轨迹和散度实验,[MiniLLM 原论文](https://arxiv.org/abs/2306.08543)推导序列 reverse KL,[DAgger](https://proceedings.mlr.press/v15/ross11a.html)提供状态分布偏移的模仿学习背景.[verl 的 OPD trainer 文档](https://github.com/verl-project/verl/blob/main/examples/on_policy_distillation_trainer/README.md)展示可运行系统中的组件划分.
 
 这些来源承担不同作用. DAgger 给出状态分布偏移的理论背景; GKD 提供现代自回归模型中的可组合目标; MiniLLM 展开序列 reverse KL 的梯度. 三者不应相互替代, 因为它们对数据聚合、采样梯度和教师反馈粒度的假设不同.
 

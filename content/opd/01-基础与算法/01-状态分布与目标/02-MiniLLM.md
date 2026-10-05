@@ -6,7 +6,7 @@ excerpt: "从序列级 reverse KL 推导 MiniLLM 的 reward-to-go, 并解释方�
 ---
 # MiniLLM: 序列 reverse KL 与策略梯度
 
-MiniLLM 从一个比 token 级蒸馏更强的目标出发: 直接最小化学生序列分布到教师序列分布的 reverse KL. 学生既是被优化的分布, 也是轨迹采样分布. 因此梯度不能只把学生生成的回答当作固定数据; 采样概率随参数变化这一项必须进入推导. 由此产生的 reward-to-go、方差和长度偏置, 构成 MiniLLM 与 GKD stop-gradient 训练器的主要区别.
+MiniLLM 直接最小化学生序列分布到教师序列分布的 reverse KL. 学生既是被优化的分布, 也是轨迹采样分布. 对完整序列目标求导时, 除了固定轨迹上的 token 损失, 还要计算采样概率随参数变化的项. 由此产生的 reward-to-go、方差和长度偏置, 构成 MiniLLM 与 GKD stop-gradient 训练器的主要区别.
 
 论文面向教师远大于学生的场景. forward KL 要求容量有限的学生覆盖教师的多种输出模式, 可能把概率摊到质量较差的区域;序列 reverse KL 允许学生集中到教师支持且自身能表达的模式. 但 reverse KL 并不免费: 对学生样本求期望后, 无偏梯度是 policy gradient, 长序列上的估计方差明显高于普通 teacher-forcing.
 
@@ -132,7 +132,7 @@ MiniLLM 使用 GPT-2、OPT 与 LLaMA 模型族, 教师大于学生. 指令数据
 
 论文使用累积误差指标分析自由生成与训练条件之间的差异, 报告 MiniLLM 在长生成下的暴露偏差低于 KD 与 SeqKD 基线. 这与学生主导的状态覆盖相符. 但混合 roll-in 意味着训练状态并非完全等于纯学生部署分布, 更准确的理解是: MiniLLM 显著增加了学生访问状态的训练比例.
 
-校准实验显示, MiniLLM 在论文设定下优于若干蒸馏基线. reverse KL 常被描述为 mode-seeking, mode-seeking 不自动意味着概率校准更好;这里的结果同时受 on-policy 状态、序列目标、教师规模和语言模型正则影响. 不能把该实验简化为「reverse KL 改善校准」的一般定律.
+校准实验显示, MiniLLM 在论文设定下优于若干蒸馏基线. reverse KL 的 mode-seeking 性质本身没有给出更好校准的保证;这里的结果同时受 on-policy 状态、序列目标、教师规模和语言模型正则影响. 更准确的结论是这套组合在相应实验中改善了校准.
 
 ### 4.3. 教师规模
 
@@ -208,7 +208,7 @@ mask 会让累计更复杂. batch 中较短样本的 padding 位置必须先置�
 
 ### 6.9. 通用语料损失如何影响判断
 
-MiniLLM 训练中加入通用语言模型损失, 这一项在原始文本前缀上做 next-token prediction. 它提供稳定梯度并帮助保持基础能力, 同时引入 off-policy 状态. 若移除该项后性能下降, 不能立即判断 reverse KL 无效;下降可能来自遗忘或优化稳定性变化.
+MiniLLM 训练中加入通用语言模型损失, 这一项在原始文本前缀上做 next-token prediction. 它提供稳定梯度并帮助保持基础能力, 同时引入 off-policy 状态. 移除该项后的性能下降混合了遗忘和优化稳定性变化, 需要配套消融才能判断 reverse KL 本身的贡献.
 
 混合两个数据流时, 应按有效 token 数分别归一化. 假设蒸馏 batch 有 $N_d$ 个 response token, 通用语料有 $N_l$ 个 token, 可先得到两个均值损失再乘系数. 直接把全部 token 拼接后平均, 实际权重会随回答长度和 batch padding 改变.
 
