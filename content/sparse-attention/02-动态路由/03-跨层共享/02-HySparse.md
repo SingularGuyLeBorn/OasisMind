@@ -361,6 +361,50 @@ forced recent window 也参与去重。若 1024 个 oracle tokens 中已有 96 �
 
 这张表揭示了 HySparse2 对两条前序路线的组合：它接收 YOCO 的两段生产—消费关系，也保留 HySparse 的 full oracle 与组内复用；token 级候选和 forced recent 又修改了一代的 block+SWA 数据流。MiMo-V3 若由官方报告确认采用该结构，具体模型配置仍应落回层数、head、预算与 bridge mapping，研究架构名称本身不足以补齐部署参数。
 
+## 7. Oracle 路线的工程含义
+
+### 7.1. Oracle 并不要求保存完整 attention 矩阵
+
+Full layer已经逐 tile计算 QK、softmax与 AV. 若只是为了给后续层生成 block或 token重要性, 可以在在线 softmax过程中同步维护摘要, 无需把 $n\times n$ 概率写回 HBM. Block oracle可对每个 query block、key block累计概率质量或最大值; token oracle则需要更细的逐位置候选, 控制数据明显更大.
+
+以块概率质量为例, 对 query行 $i$、key块 $b$ 定义:
+
+$$
+u_{i,b}=\sum_{j\in b}\alpha_{ij}. \tag{30}
+$$
+
+FlashAttention在 tile内已经得到局部指数与全局归一化统计, 可以把 tile贡献缩放到最终分母后累加 $u_{i,b}$. 若只取 top blocks, 局部累计后还要跨 tile合并. 这条辅助路径增加 reduce、候选缓冲和写入; 「来自 Full attention」表示它没有代理排序误差, 不表示提取索引零成本.
+
+Token oracle更接近对每行 attention概率做 top-k. 若把概率逐项写出再选择, 会失去 FlashAttention避免平方中间量的优势. 融合 top-k需要在 tile流过时保留候选, 大 $k$ 会产生寄存器与共享内存压力. 工程实现也可以先按块保留宽候选, 再在候选块里做 token精排; 这又成为两级选择, 需要分别测块召回和 token召回.
+
+### 7.2. Oracle 的语义随聚合方式变化
+
+一个 Full layer包含多个 query heads与许多 query位置. 后续 sparse layer若共享同一批历史 token, oracle必须把这些维度聚合. 对 head取最大值能保留专用 head峰值, 求和偏向多 head共同关注的位置; 对 query block求最大值照顾任意一个 query, 平均值偏向整块稳定热点. 不同聚合规则都来自真实 Full attention, 候选含义仍然不同.
+
+HySparse组内后续层的 query已经变化. Oracle描述的是 Full layer当时的注意力, 不是后续层的真实 top-k. 跨层共享误差由两部分组成: 聚合把 Full layer多维分布压成候选, 层间变化又让该候选逐渐陈旧. 评测可以先比较 Full层聚合候选对自身各 head的覆盖, 再比较对组内第 1、2、3个 sparse layer稠密教师的覆盖, 两步能区分聚合误差与时间漂移.
+
+### 7.3. Full 层比例影响吞吐波形
+
+周期性 Full layer让平均计算下降, 单层延迟并不均匀. 请求执行到 Full layer时要计算完整 attention、生成 oracle并刷新共享状态; 后续 sparse layers较轻. 多请求 continuous batching若恰好在同一层同步推进, Full开销会形成周期峰值. Pipeline parallel还可能让持有 Full层的 stage成为瓶颈.
+
+部署配置应按 stage累计 Full与sparse工作量, 而非只让每个 stage拥有相同层数. 调度器能把处于不同模型层的 microbatches交错时, 可平滑部分峰值; 常规逐层批处理则无法任意错开. 报告平均TPOT之外, 还要看层级 profiler和高分位, 否则周期峰值会被平均值隐藏.
+
+Full比例降低会减少oracle刷新和全局KV份数, 组尾候选也更陈旧. 增加比例提高质量并增加计算与cache. 因而层间隔应与组尾recall、KV bytes和stage时间共同扫描. 只比较两个总参数量相同的模型, 无法解释收益来自Full层数量还是其他训练差异.
+
+### 7.4. 多轮会话的 fork 与 rollback
+
+Agent服务经常从同一前缀分叉多个候选轨迹. Outer self状态、bridge KV和inner indices都可以在分叉点前共享, 分叉后必须各自追加. 若使用copy-on-write页, 候选索引里的逻辑位置保持不变, 物理页映射随分支变化; kernel必须在每个请求自己的block table下解释位置.
+
+回滚到较早turn时, recent window、未满压缩组和最新oracle一起截断. Oracle候选即使只引用回滚点前的位置, 也可能由回滚后query生成, 仍然失效. 安全规则是按oracle生成时的逻辑query长度设版本, 当前长度小于该版本就丢弃并等下一Full层重建.
+
+Prefix共享还要区分只读历史与可变会话状态. 多个分支可以引用同一bridge KV页, 不能共同修改量化scale或增量摘要. 页成为只读后再共享, 当前尾页各分支独占. 这与普通Paged KV原则相同, HySparse2多了oracle和两级bridge依赖, 元数据也要遵循相同引用计数.
+
+### 7.5. 逐层验收比最终生成对比更有效
+
+固定一个短序列, 让Full层显式输出oracle, 再分别运行稠密参考与组内稀疏路径. 每层保存候选集合、概率质量覆盖、hidden-state余弦和最大绝对误差. 若误差在第一个sparse layer突增, 检查聚合、recent合并与去重; 若逐层缓慢扩大, 检查indices陈旧和共享KV表达; 若跨bridge边界立即出现, 检查投影、位置与量化.
+
+最终生成token可能因argmax margin大而暂时一致, 也可能因很小的logit变化立即分叉. 它适合端到端回归, 不适合定位. 层级记录只在离线测试保存, 线上则聚合候选页数、oracle年龄、组尾覆盖抽样和各模式时间, 避免记录用户内容.
+
 ## 参考资料
 
 - [HySparse: A Hybrid Sparse Attention Architecture with Oracle Token Selection and KV Cache Sharing](https://arxiv.org/abs/2602.03560)
