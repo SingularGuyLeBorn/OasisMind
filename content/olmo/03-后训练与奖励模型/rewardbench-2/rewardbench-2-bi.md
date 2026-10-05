@@ -166,7 +166,7 @@ The ‘Ties’ subset score is a weighted score of accuracy (as measured by all 
 Ties 子集的分数是两项的加权和: 准确率项 (所有合法正确答案的得分都高于所有错误答案) 与间隔项 (正确与错误答案之间的奖励间隔超过得分最高与最低的正确回答之间的间隔). 对 Bradley-Terry 奖励模型, 该指标不仅奖励正确性, 还捕捉模型的置信度排序是否与真实质量差异一致——这是真实部署中的重要能力. 在 RLHF 中, 这保证「向正确性改进」的信号大于「在正确答案间减少多样性」的信号. 鉴于近期关于 RM 脆弱性的研究与「除准确率外还应看 RM 产出的分数分布」的论点, 本基准这个分布感知的组成部分让奖励模型评测更全面.
 
 > **核对:** Ties 的加权分数里两项各自的权重是多少, 正文与附录都没有写吗?
-> 答: 正文第 3 节只说「weighted score of accuracy ... and whether the reward margin ...」, LaTeX 源码同段也没有给出权重数值; 文中没有给出, 无法从现有数字反推, 需看官方评测代码确认实现.
+> 答: 正文第 3 节只说「weighted score of accuracy ... and whether the reward margin ...」, LaTeX 源码同段也没有给出权重数值；现有数字不足以反推出具体权重，实际实现需要查阅官方评测代码.
 
 ## 4 ANALYSIS OF PERFORMANCE ON REWARDBENCH 2 · 在 REWARDBENCH 2 上的表现分析
 

@@ -5394,7 +5394,7 @@ profiling 负载默认每个 rank 的 microbatch 为 3 条序列 (24,576 个 tok
 
 Section 8.1 describes two submission regimes: a host wait inside every routed block that holds the CPU and GPU in lock step, and a synchronization-free path in which the CPU runs ahead of the device. Figure 74 shows one captured Nsight Systems timeline for each regime, and Figure 75 magnifies their GPU kernel rows.
 
-Section 8.1 描述了两种提交模式: 一种是每个路由块里都有一次 host 等待, 让 CPU 和 GPU 步调锁死; 另一种是无同步路径, CPU 可以跑在设备前面. Figure 74 给出两种模式各一条采集到的 Nsight Systems 时间线, Figure 75 放大了它们的 GPU kernel 行.
+Section 8.1 描述了两种提交模式: 一种是每个路由块里都有一次 host 等待, CPU 必须等待 GPU 完成对应工作; 另一种是无同步路径, CPU 可以跑在设备前面. Figure 74 给出两种模式各一条采集到的 Nsight Systems 时间线, Figure 75 放大了它们的 GPU kernel 行.
 
 ## B.6 Verifying the Sync-Free Path · 验证无同步路径
 

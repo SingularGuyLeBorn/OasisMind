@@ -86,7 +86,7 @@ Mega MoE 的要求更严, 文档 6.3 节列得很清楚. 它的 recipe 固定为
 
 DeepGEMM 的 kernel 按 CUTLASS 的思路做 warp specialization: 把一个 block 里的 warp 分成生产者和消费者两类. 在 [`sm90_fp8_gemm_1d1d.cuh`](https://github.com/deepseek-ai/DeepGEMM/blob/main/deep_gemm/include/deep_gemm/impls/sm90_fp8_gemm_1d1d.cuh) 里, `warp_idx >= kNumMathThreads / 32` 的 warp 进 TMA 分支负责搬数据, 其余进 math 分支执行 WGMMA. 两类 warp 通过一组 full / empty barrier 配对: 生产者等 empty barrier 后发 TMA, 到达 full barrier; 消费者等 full barrier 后算 WGMMA, 算完到达 empty barrier 通知这一级共享内存可以覆盖. 这样数据搬运和矩阵乘在流水的不同级上重叠, 而不是串行等待.
 
-寄存器分配是这套设计能跑起来的关键. 生产者只需要很少的寄存器 (TMA 把数据直接搬进共享内存, 不过寄存器), 消费者 WGMMA 需要很多. 代码用 `warpgroup_reg_dealloc` 和 `warpgroup_reg_alloc` (底层是 `setmaxnreg.aligned` 指令) 做再分配: 当前实现里, 不展开流水时生产者分 $40$ 个 、 消费者分 $232$ 个寄存器, 全展开时分别是 $24$ 和 $240$. 社区按老代码算过一笔账: 一个 SM 共 $65536$ 个寄存器, $256 \times 232 + 128 \times 40 = 64512$, 加上每 block 保留的约 1K, 刚好塞下两个消费者 warp group 加一个生产者 warp group. 这解释了线程数的约束: 生产者要是 $128$ 的倍数, 消费者要是 WGMMA 的 warp group ($128$) 的倍数, `BLOCK_M` 为 $64$ 时 blockDim 常见是 $256$ 或 $384$. 没有 `setmaxnreg` 的话, 消费者最多只能有 $128$ 个线程.
+寄存器分配是这套设计能跑起来的关键. 生产者只需要很少的寄存器 (TMA 把数据直接搬进共享内存, 不过寄存器), 消费者 WGMMA 需要很多. 代码用 `warpgroup_reg_dealloc` 和 `warpgroup_reg_alloc` (底层是 `setmaxnreg.aligned` 指令) 做再分配: 当前实现里, 不展开流水时生产者分 $40$ 个 、 消费者分 $232$ 个寄存器, 全展开时分别是 $24$ 和 $240$. 按老版本代码计算，一个 SM 共 $65536$ 个寄存器，$256 \times 232 + 128 \times 40 = 64512$，再加上每个 block 保留的约 1K，恰好容纳两个消费者 warp group 和一个生产者 warp group. 这解释了线程数的约束: 生产者要是 $128$ 的倍数, 消费者要是 WGMMA 的 warp group ($128$) 的倍数, `BLOCK_M` 为 $64$ 时 blockDim 常见是 $256$ 或 $384$. 没有 `setmaxnreg` 的话, 消费者最多只能有 $128$ 个线程.
 
 ### 4.2 TMA 的几种用途与 multicast
 
