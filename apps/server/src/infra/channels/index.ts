@@ -11,9 +11,11 @@ import {
   startAllChannelAdapters,
   stopAllChannelAdapters,
 } from "../messageGateway.js";
-import { createQqOfficialBotAdapter, loadQqBotConfigFromEnv } from "./qqOfficialBot.js";
+import { createQqOfficialBotAdapter } from "./qqOfficialBot.js";
+import { loadQqBotConfigFromEnv } from "./qqBotConfig.js";
 import { createFeishuBotAdapter, loadFeishuBotConfigFromEnv } from "./feishuBot.js";
-import { createWeixinClawBotAdapter, loadWeixinClawBotConfigFromEnv } from "./weixinClawBot.js";
+import { createWeixinClawBotAdapter } from "./weixinClawBot.js";
+import { loadWeixinClawBotConfigFromEnv } from "./weixinSession.js";
 
 export async function bootstrapMessageChannels(opts: {
   prisma: PrismaClient;

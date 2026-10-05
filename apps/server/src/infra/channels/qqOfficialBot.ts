@@ -38,14 +38,18 @@ import {
   takeQqGroupHistory,
 } from "./qqGroupContext.js";
 import {
-  CHANNEL_ATTACHMENT_MAX_BYTES,
   createTextChannelAttachment,
   materializeReplyChannelReference,
 } from "./channelAttachment.js";
+import { createMultimodalChannelCapabilities } from "./channelCapabilities.js";
 import {
   deriveChannelIdempotencyKey,
   sendChannelAttachment,
 } from "./channelTransfer.js";
+import {
+  resolveQqNumberForOpenId,
+  type QqBotConfig,
+} from "./qqBotConfig.js";
 
 const API_BASE = "https://api.sgroup.qq.com";
 
@@ -55,21 +59,6 @@ const API_BASE = "https://api.sgroup.qq.com";
  * - GROUP_MESSAGE_CREATE（需手机 QQ 群设置「机器人可获取的群聊消息范围」= 获取群内全部消息）
  */
 export const QQ_GROUP_AND_C2C_INTENT = 1 << 25;
-
-export type QqBotConfig = {
-  appId: string;
-  secret: string;
-  enabled: boolean;
-  /** 用户 openid 白名单；空=拒所有人；*=全开 */
-  allowedOpenIds: string[];
-  /**
-   * 群 openid 白名单（仅群聊生效）。
-   * 空=拒绝一切群消息；*=任意群；列表=仅这些群。
-   * @ 触发仍须发送者在 allowedOpenIds；未 @ 的 GROUP_MESSAGE_CREATE 只按群白名单累计上下文。
-   */
-  allowedGroups: string[];
-  useWs: boolean;
-};
 
 /** 纯函数：单聊/群聊入站是否放行（供单测） */
 export function isQqInboundAllowed(
@@ -97,59 +86,6 @@ export function isQqInboundAllowed(
   return { ok: true };
 }
 
-function parseCsvEnv(raw: string | undefined): string[] {
-  return (raw || "")
-    .split("#")[0]!
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-/** 同一 QQ 号可对应多串 openid（私聊 user_openid 与群 member_openid 常不同） */
-export function splitMappedOpenIds(mapped: string | undefined): string[] {
-  if (!mapped) return [];
-  return [...new Set(mapped.split("|").map((s) => s.trim()).filter(Boolean))];
-}
-
-/**
- * 数字号 → 平台 openid 映射（官方事件只有 openid）。
- * 用户：`2251061018=14A17D73...`；群：`1098299609=2FE7E775...`
- * 同一号多 openid：`2251061018=私聊openid|群openid`，或重复写两遍 `号=A,号=B`。
- * 多项用逗号或分号分隔。
- */
-export function parseQqIdOpenIdMap(raw: string | undefined): Map<string, string> {
-  const map = new Map<string, string>();
-  const body = (raw || "").split("#")[0] || "";
-  for (const part of body.split(/[,;]/)) {
-    const s = part.trim();
-    if (!s) continue;
-    const eq = s.indexOf("=");
-    if (eq <= 0) continue;
-    const id = s.slice(0, eq).trim();
-    const openid = s.slice(eq + 1).trim();
-    if (!/^\d{5,12}$/.test(id) || !openid) continue;
-    const prev = map.get(id);
-    map.set(id, splitMappedOpenIds(prev ? `${prev}|${openid}` : openid).join("|"));
-  }
-  return map;
-}
-
-/** @deprecated 用 parseQqIdOpenIdMap */
-export const parseQqOpenIdMap = parseQqIdOpenIdMap;
-
-/** openid → 数字 QQ 号（依赖 QQ_BOT_QQ_OPENID_MAP 反查；官方事件本身不给 QQ 号） */
-export function resolveQqNumberForOpenId(
-  openid: string,
-  idToOpenId: Map<string, string> = parseQqIdOpenIdMap(process.env.QQ_BOT_QQ_OPENID_MAP),
-): string | undefined {
-  const oid = openid.trim();
-  if (!oid) return undefined;
-  for (const [qq, mapped] of idToOpenId) {
-    if (mapped === oid || splitMappedOpenIds(mapped).includes(oid)) return qq;
-  }
-  return undefined;
-}
-
 /** 是否应起 Agent（未 @ 的全量群消息只累计） */
 export function shouldDispatchQqInbound(parsed: {
   groupOpenid?: string;
@@ -170,54 +106,6 @@ function detectMentionsBot(d: Record<string, unknown>): boolean {
     const o = m as Record<string, unknown>;
     return o.bot === true || o.bot === 1;
   });
-}
-
-/**
- * 把白名单里的数字 QQ/群号展开为 openid；已是 openid / * 的原样保留。
- * 未映射的纯数字项会 warn 并丢弃（避免误以为数字号能直接匹配事件）。
- */
-export function expandAllowedIds(
-  entries: string[],
-  idToOpenId: Map<string, string>,
-  label: string,
-): string[] {
-  const out = new Set<string>();
-  for (const e of entries) {
-    if (e === "*") {
-      out.add("*");
-      continue;
-    }
-    if (/^\d{5,12}$/.test(e)) {
-      const mapped = idToOpenId.get(e);
-      const oids = splitMappedOpenIds(mapped);
-      if (oids.length > 0) {
-        for (const oid of oids) out.add(oid);
-        out.add(e); // 若平台偶发带数字 group_id 也放行
-      } else {
-        console.warn(
-          `[qq] ${label} 含数字号 ${e}，但无对应 OPENID_MAP（官方事件多为 openid）`,
-        );
-        out.add(e); // 仍保留：平台若直接推数字 id 可命中
-      }
-      continue;
-    }
-    out.add(e);
-  }
-  for (const [id, openid] of idToOpenId) {
-    const oids = splitMappedOpenIds(openid);
-    if (entries.includes(id) || oids.some((o) => entries.includes(o)) || entries.includes("*")) {
-      for (const oid of oids) out.add(oid);
-      out.add(id);
-    }
-  }
-  return [...out];
-}
-
-export function expandAllowedOpenIds(
-  entries: string[],
-  qqToOpenId: Map<string, string>,
-): string[] {
-  return expandAllowedIds(entries, qqToOpenId, "QQ_BOT_ALLOWED_OPENIDS");
 }
 
 type TokenState = { accessToken: string; expiresAt: number };
@@ -786,13 +674,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
     channel: "qq",
     name: "QQ 官方机器人",
     enabled: cfg.enabled,
-    capabilities: {
-      inbound: ["text", "image", "video", "audio", "file"],
-      outbound: ["text", "image", "video", "audio", "file"],
-      maxBytes: CHANNEL_ATTACHMENT_MAX_BYTES,
-      supportsCaption: true,
-      supportsQuote: true,
-    },
+    capabilities: createMultimodalChannelCapabilities({ supportsQuote: true }),
     getStatus: () => ({
       state: cfg.enabled ? state : "disconnected",
       detail: statusDetail(),
@@ -987,24 +869,6 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
   };
 
   return adapter;
-}
-
-export function loadQqBotConfigFromEnv(): QqBotConfig {
-  const appId = (process.env.QQ_BOT_APP_ID || "").trim();
-  const secret = (process.env.QQ_BOT_SECRET || "").trim();
-  const yamlOff = process.env.QQ_BOT_ENABLED === "false";
-  const qqMap = parseQqIdOpenIdMap(process.env.QQ_BOT_QQ_OPENID_MAP);
-  const groupMap = parseQqIdOpenIdMap(process.env.QQ_BOT_GROUP_OPENID_MAP);
-  const allowedUsers = parseCsvEnv(process.env.QQ_BOT_ALLOWED_OPENIDS);
-  const allowedGroups = parseCsvEnv(process.env.QQ_BOT_ALLOWED_GROUPS);
-  return {
-    appId,
-    secret,
-    enabled: Boolean(appId && secret) && !yamlOff,
-    allowedOpenIds: expandAllowedIds(allowedUsers, qqMap, "QQ_BOT_ALLOWED_OPENIDS"),
-    allowedGroups: expandAllowedIds(allowedGroups, groupMap, "QQ_BOT_ALLOWED_GROUPS"),
-    useWs: process.env.QQ_BOT_WS === "1" || process.env.QQ_BOT_WS === "true",
-  };
 }
 
 export function getQqAdapterIngest(

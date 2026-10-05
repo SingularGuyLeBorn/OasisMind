@@ -33,6 +33,7 @@
     "integration:smoke:platform:quick": "tsx src/scripts/integration-smoke.ts --quick-platform",
     "integration:smoke:platform:medium": "tsx src/scripts/integration-smoke.ts --medium-platform",
     "integration:smoke:platform:extended": "tsx src/scripts/integration-smoke.ts --extended-platform",
+    "channel:probe": "tsx src/scripts/channel-probe.ts",
     "read-article:spot": "tsx src/scripts/read-article-spot.ts",
     "zhihu": "tsx src/scripts/zhihuCli.ts",
     "ocr:check": "tsx src/scripts/ocr-check.ts",

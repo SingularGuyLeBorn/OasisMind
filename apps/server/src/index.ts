@@ -260,9 +260,8 @@ app.post(
 app.post("/api/webhooks/qq", async (req, res) => {
   try {
     const { getChannelAdapter } = await import("./infra/messageGateway.js");
-    const { getQqAdapterIngest, loadQqBotConfigFromEnv } = await import(
-      "./infra/channels/qqOfficialBot.js"
-    );
+    const { getQqAdapterIngest } = await import("./infra/channels/qqOfficialBot.js");
+    const { loadQqBotConfigFromEnv } = await import("./infra/channels/qqBotConfig.js");
     const { gateQqWebhook } = await import("./infra/channels/webhookVerify.js");
     const adapter = getChannelAdapter("qq");
     if (!adapter?.enabled) {
@@ -936,4 +935,3 @@ process.on("SIGTERM", handleShutdown);
 
 export type { AppRouter } from "./router.js";
 export type { AsyncQueueStats } from "./infra/asyncJobs/index.js";
-

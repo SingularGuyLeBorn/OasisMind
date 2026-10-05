@@ -7,20 +7,30 @@ import {
   QQ_GROUP_AND_C2C_INTENT,
   buildQqIdentifyPayload,
   createQqOfficialBotAdapter,
-  expandAllowedIds,
   isQqInboundAllowed,
-  parseQqIdOpenIdMap,
   parseQqInboundPayload,
   qqReplyPlainText,
-  resolveQqNumberForOpenId,
   shouldDispatchQqInbound,
 } from "../infra/channels/qqOfficialBot.js";
+import {
+  expandAllowedIds,
+  parseQqIdOpenIdMap,
+  resolveQqNumberForOpenId,
+  type QqBotConfig,
+} from "../infra/channels/qqBotConfig.js";
 import {
   __resetQqGroupHistoryForTests,
   peekQqGroupHistory,
 } from "../infra/channels/qqGroupContext.js";
-import type { UnifiedMessage } from "../infra/messageGateway.js";
+import { registerChannelAdapter, type UnifiedMessage } from "../infra/messageGateway.js";
 import * as messageGateway from "../infra/messageGateway.js";
+
+/** reply 走统一出站台账，因此测试中的适配器也必须像生产启动流程一样完成注册。 */
+function createRegisteredQqAdapter(config: QqBotConfig) {
+  const adapter = createQqOfficialBotAdapter(config);
+  registerChannelAdapter(adapter);
+  return adapter;
+}
 
 describe("qqOfficialBot helpers", () => {
   it("GROUP_AND_C2C intent 为 1<<25", () => {
@@ -252,7 +262,7 @@ describe("qqOfficialBot adapter", () => {
       .spyOn(messageGateway, "handleIncomingMessage")
       .mockResolvedValue({ ok: true, sessionId: "s1" });
 
-    const denied = createQqOfficialBotAdapter({
+    const denied = createRegisteredQqAdapter({
       appId: "app",
       secret: "sec",
       enabled: true,
@@ -270,7 +280,7 @@ describe("qqOfficialBot adapter", () => {
     });
     expect(spy).not.toHaveBeenCalled();
 
-    const allowed = createQqOfficialBotAdapter({
+    const allowed = createRegisteredQqAdapter({
       appId: "app",
       secret: "sec",
       enabled: true,
@@ -297,7 +307,7 @@ describe("qqOfficialBot adapter", () => {
       .spyOn(messageGateway, "handleIncomingMessage")
       .mockResolvedValue({ ok: true, sessionId: "s1" });
 
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "app",
       secret: "sec",
       enabled: true,
@@ -360,7 +370,7 @@ describe("qqOfficialBot adapter", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "appid",
       secret: "secret",
       enabled: true,
@@ -419,7 +429,7 @@ describe("qqOfficialBot adapter", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "appid",
       secret: "secret",
       enabled: true,
@@ -482,7 +492,7 @@ describe("qqOfficialBot adapter", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "appid",
       secret: "secret",
       enabled: true,
@@ -545,7 +555,7 @@ describe("qqOfficialBot adapter", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "appid",
       secret: "secret",
       enabled: true,
@@ -597,7 +607,7 @@ describe("qqOfficialBot adapter", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "appid",
       secret: "secret",
       enabled: true,
@@ -640,11 +650,19 @@ describe("qqOfficialBot adapter", () => {
 
   it("reply：终稿 Markdown 配图会走 /files 上传", async () => {
     const fs = await import("node:fs");
-    const os = await import("node:os");
     const path = await import("node:path");
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "qq-reply-img-"));
+    const { getAppConfig } = await import("../infra/config.js");
+    const dir = fs.mkdtempSync(
+      path.join(getAppConfig().contentPaths.uploads, "qq-reply-img-"),
+    );
     const img = path.join(dir, "shot.png");
-    fs.writeFileSync(img, Buffer.from([9, 8, 7]));
+    fs.writeFileSync(
+      img,
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    );
 
     const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
       const u = String(url);
@@ -658,7 +676,7 @@ describe("qqOfficialBot adapter", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "appid",
       secret: "secret",
       enabled: true,
@@ -690,7 +708,7 @@ describe("qqOfficialBot adapter", () => {
   });
 
   it("getStatus 在 webhook 模式可读", () => {
-    const adapter = createQqOfficialBotAdapter({
+    const adapter = createRegisteredQqAdapter({
       appId: "abcdef123",
       secret: "s",
       enabled: true,

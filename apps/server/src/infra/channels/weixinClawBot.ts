@@ -5,8 +5,6 @@
  * 官方 openclaw-weixin-cli 只装 OpenClaw，这里直连 iLink。
  */
 
-import fs from "node:fs";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { ChannelAttachment } from "@oasismind/shared";
 import { bootDetail } from "../bootLog.js";
@@ -20,8 +18,6 @@ import type {
 import { handleIncomingMessage } from "../messageGateway.js";
 import { planImReply } from "./imReplyText.js";
 import {
-  WEIXIN_ILINK_DEFAULT_BASE,
-  type WeixinIlinkSession,
   type WeixinMediaKind,
   extractWeixinText,
   fetchWeixinQr,
@@ -38,10 +34,10 @@ import {
   splitWeixinText,
 } from "./weixinIlink.js";
 import {
-  CHANNEL_ATTACHMENT_MAX_BYTES,
   createTextChannelAttachment,
   materializeReplyChannelReference,
 } from "./channelAttachment.js";
+import { createMultimodalChannelCapabilities } from "./channelCapabilities.js";
 import {
   deriveChannelIdempotencyKey,
   sendChannelAttachment,
@@ -53,13 +49,12 @@ import {
   materializeWeixinInboundMedia,
   sendWeixinLocalMedia,
 } from "./weixinMedia.js";
-
-export type WeixinClawBotConfig = {
-  enabled: boolean;
-  allowedUserIds: string[];
-  baseUrl: string;
-  sessionDir: string;
-};
+import {
+  deleteWeixinClawBotSession,
+  readWeixinClawBotSession,
+  writeWeixinClawBotSession,
+  type WeixinClawBotConfig,
+} from "./weixinSession.js";
 
 type ReplyCtx = {
   toUserId: string;
@@ -89,48 +84,6 @@ export function __resetWeixinClawBotControllerForTests(): void {
   controller = null;
 }
 
-export function loadWeixinClawBotConfigFromEnv(dataDir?: string): WeixinClawBotConfig {
-  const yamlOff = process.env.WEIXIN_CLAWBOT_ENABLED === "false";
-  const allowed = (process.env.WEIXIN_CLAWBOT_ALLOWED_USER_IDS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const baseUrl = (process.env.WEIXIN_CLAWBOT_API_BASE || WEIXIN_ILINK_DEFAULT_BASE).trim();
-  const root = dataDir || process.env.OM_DATA_DIR || path.join(process.cwd(), "data");
-  return {
-    enabled: !yamlOff,
-    allowedUserIds: allowed,
-    baseUrl,
-    sessionDir: path.join(root, "weixin-clawbot"),
-  };
-}
-
-function sessionFile(dir: string): string {
-  return path.join(dir, "session.json");
-}
-
-function readSession(dir: string): WeixinIlinkSession | null {
-  try {
-    const raw = fs.readFileSync(sessionFile(dir), "utf8");
-    const parsed = JSON.parse(raw) as Partial<WeixinIlinkSession>;
-    if (!parsed.botToken) return null;
-    return {
-      botToken: String(parsed.botToken),
-      baseUrl: String(parsed.baseUrl || WEIXIN_ILINK_DEFAULT_BASE),
-      getUpdatesBuf: String(parsed.getUpdatesBuf || ""),
-      boundUserId: String(parsed.boundUserId || ""),
-      accountId: String(parsed.accountId || ""),
-      lastContextToken: String(parsed.lastContextToken || ""),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(dir: string, session: WeixinIlinkSession): void {
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(sessionFile(dir), JSON.stringify(session), { encoding: "utf8", mode: 0o600 });
-}
 
 export const WEIXIN_POLL_GAP_MS = 400;
 export const WEIXIN_POLL_GAP_MAX_MS = 8000;
@@ -139,14 +92,6 @@ export const WEIXIN_POLL_GAP_MAX_MS = 8000;
 export function nextWeixinPollGap(ok: boolean, prevMs: number): number {
   if (ok) return WEIXIN_POLL_GAP_MS;
   return Math.min(WEIXIN_POLL_GAP_MAX_MS, Math.max(prevMs, WEIXIN_POLL_GAP_MS) * 2);
-}
-
-function deleteSession(dir: string): void {
-  try {
-    fs.unlinkSync(sessionFile(dir));
-  } catch {
-    /* ignore */
-  }
 }
 
 async function toImageDataUrl(payload: string): Promise<string> {
@@ -171,7 +116,7 @@ export function createWeixinClawBotAdapter(
   let running = false;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let qrPollTimer: ReturnType<typeof setTimeout> | null = null;
-  let session = readSession(cfg.sessionDir);
+  let session = readWeixinClawBotSession(cfg.sessionDir);
   const replyCtx = new Map<string, ReplyCtx>();
   const lastContextByUser = new Map<string, string>();
   let lastPersisted = session ? JSON.stringify(session) : "";
@@ -182,7 +127,7 @@ export function createWeixinClawBotAdapter(
     const json = JSON.stringify(session);
     if (json === lastPersisted) return;
     lastPersisted = json;
-    writeSession(cfg.sessionDir, session);
+    writeWeixinClawBotSession(cfg.sessionDir, session);
   };
 
   const stopTimers = () => {
@@ -341,7 +286,7 @@ export function createWeixinClawBotAdapter(
     running = false;
     stopTimers();
     session = null;
-    deleteSession(cfg.sessionDir);
+    deleteWeixinClawBotSession(cfg.sessionDir);
     replyCtx.clear();
     loginPhase = "idle";
     state = "disconnected";
@@ -403,13 +348,7 @@ export function createWeixinClawBotAdapter(
     channel: "weixin",
     name: "微信 ClawBot",
     enabled: cfg.enabled,
-    capabilities: {
-      inbound: ["text", "image", "video", "audio", "file"],
-      outbound: ["text", "image", "video", "audio", "file"],
-      maxBytes: CHANNEL_ATTACHMENT_MAX_BYTES,
-      supportsCaption: true,
-      supportsQuote: false,
-    },
+    capabilities: createMultimodalChannelCapabilities({ supportsQuote: false }),
     getStatus: () => ({
       state: cfg.enabled ? state : "disconnected",
       detail: session?.boundUserId ? `user=${session.boundUserId}` : loginPhase,
@@ -421,7 +360,7 @@ export function createWeixinClawBotAdapter(
         state = "disconnected";
         return;
       }
-      session = readSession(cfg.sessionDir);
+      session = readWeixinClawBotSession(cfg.sessionDir);
       lastPersisted = session ? JSON.stringify(session) : "";
       if (session?.botToken) {
         startPolling();

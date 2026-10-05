@@ -49,6 +49,7 @@
     "integration:smoke:platform:quick": "pnpm --filter @oasismind/server integration:smoke:platform:quick",
     "integration:smoke:platform:medium": "pnpm --filter @oasismind/server integration:smoke:platform:medium",
     "integration:smoke:platform:extended": "pnpm --filter @oasismind/server integration:smoke:platform:extended",
+    "channel:probe": "pnpm --filter @oasismind/server channel:probe",
     "read-article:spot": "pnpm --filter @oasismind/server read-article:spot",
     "cleanup:smoke-artifacts": "pnpm --filter @oasismind/server cleanup:smoke-artifacts",
     "napcat": "node scripts/start-napcat.mjs",

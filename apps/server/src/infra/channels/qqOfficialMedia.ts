@@ -110,6 +110,9 @@ export function peekQqOfficialFreshPassiveMsgId(opts: {
 export async function ensureQqOfficialAccessToken(opts?: {
   appId?: string;
   secret?: string;
+  /** 通道体检和单测可注入严格 HTTP 客户端；业务路径省略即使用全局 fetch。 */
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
 }): Promise<string> {
   if (tokenCache && Date.now() < tokenCache.expiresAt - 60_000) {
     return tokenCache.accessToken;
@@ -117,10 +120,12 @@ export async function ensureQqOfficialAccessToken(opts?: {
   const appId = (opts?.appId || process.env.QQ_BOT_APP_ID || "").trim();
   const secret = (opts?.secret || process.env.QQ_BOT_SECRET || "").trim();
   if (!appId || !secret) throw new Error("QQ_BOT_APP_ID / QQ_BOT_SECRET 未配置");
-  const res = await fetch(TOKEN_URL, {
+  // [OM-FREEPLAY] 用户要求传输超时但未指定 token 接口时长；15 秒足以覆盖平台抖动且不会无限挂起。
+  const res = await (opts?.fetchImpl ?? fetch)(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ appId, clientSecret: secret }),
+    signal: AbortSignal.timeout(opts?.timeoutMs ?? 15_000),
   });
   if (!res.ok) throw new Error(`QQ token HTTP ${res.status}`);
   const json = (await res.json()) as {
