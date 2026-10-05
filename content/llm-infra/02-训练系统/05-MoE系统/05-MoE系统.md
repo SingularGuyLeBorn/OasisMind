@@ -1,0 +1,114 @@
+---
+title: MoE 系统
+description: 从稀疏路由、专家并行与负载均衡理解 MoE 的训练和推理数据流
+published: true
+---
+# MoE 系统
+
+MoE 用更大的参数容量换取稀疏激活：模型拥有许多专家，每个 token 只经过少数几个。总参数不再直接决定单 token FLOPs，却把训练系统变成动态数据流。Router 的选择决定 token 发往哪里，expert parallel 决定参数放在哪张卡，all-to-all 把两者连接起来；负载稍有偏斜，通信、GEMM 和显存都会出现长尾。
+
+Dense MLP 的每个 token 经过同一组权重，矩阵 shape在配置确定后稳定。MoE 层中，第 $e$ 个 expert 的 batch 是运行时计数 $c_e$。同一 global batch 可以产生完全不同的 peer matrix 和 grouped GEMM shapes。性能分析必须保留 expert histogram、节点间流量和 dropped-token rate，平均 token 数不足以解释 step time。
+
+## 1. 系统边界从 router 开始
+
+Router 接收 $[N,H]$ hidden，输出 $[N,E]$ score，再选择 top-k expert。此处同时决定模型语义和系统负载。Top-k id 控制 dispatch 目的地，概率控制 combine 权重；容量限制可能丢弃或改派 assignment；辅助损失或动态 bias 改变长期 expert 使用率。
+
+Assignment 数为 $NK$。Router 后的 permute 按 expert/owner 排列 token，all-to-all 发往远端，expert MLP 计算后再反向交换，unpermute 将结果放回原 token 顺序。两次通信中任何一个 split 或索引错误，都可能保持 Tensor shape 正常，因此必须用可识别 expert函数做端到端测试。
+
+## 2. 三类瓶颈同时存在
+
+通信瓶颈由 hidden size、top-k、远端比例、dtype 与 peer fan-out 决定。Grouped GEMM 瓶颈由每 expert token count、FFN width、tile 对齐和专家数决定。路由/重排瓶颈则由 $N\times E$ score、top-k、histogram、prefix sum 与 HBM copy 决定。网络不满并不代表 MoE 没有数据移动，permute 也可能先耗尽 HBM。
+
+负载偏斜会同时放大三项：热点 owner 接收更多 token，最大 GEMM 更长，buffer 峰值更高。全局 token count均匀还不够，节点级流量与 expert级 compute 都要均衡。共享 expert、冗余部署、group-limited routing和动态 bias分别改变不同层面的负载。
+
+## 3. Capacity 是语义与静态 shape 的交换
+
+固定 capacity 便于预分配通信 buffer、padding 到 grouped GEMM tile，并支持 CUDA Graph；超额 assignment 必须丢弃或改派。Capacity factor 增大会降低丢 token，却增加 padding、显存与最坏计算。动态无丢弃路径保持所有 assignment，但峰值按热点 step而非平均 step规划。
+
+训练报告应给出每层 overflow、drop policy和gate是否重归一化。推理则额外报告请求级尾延迟：某个热门 token把 expert queue拉长，会影响同批其他请求。训练吞吐和decode延迟使用不同的 dispatcher/buffer目标，不能共享一条笼统结论。
+
+## 4. 并行维度的组合
+
+EP 分专家，TP 分单个专家矩阵，DP 复制相同 expert shard，PP 分层。细粒度专家的 GEMM已经偏小，再增加 expert TP 可能进一步降低利用率，因此常取 ETP=1并扩大 EP。共享 attention 与 dense层仍可使用 TP。
+
+每个参数要有全局 layer、expert id、TP shard 与DP replica坐标。Checkpoint 改变 EP size时按 expert id迁移参数和optimizer state；router bias、负载统计与共享 expert状态也要保存。只按本地模块顺序恢复会把专家身份打乱。
+
+## 5. 拓扑与通信后端
+
+标准 NCCL all-to-all适用于通用 EP。DeepEP、HybridEP 等后端针对跨节点细粒度 MoE 融合 dispatch/combine、减少复制并利用 NVLink/RDMA。后端选择必须绑定硬件、dtype、token batch和并发通信；单项峰值带宽无法替代完整 MoE layer时间线。
+
+Normal kernel面向训练或prefill大吞吐，low-latency kernel面向decode小消息。低延迟路径通常用更多预留空间换固定执行，normal路径强调持续带宽和overlap。两者应分别以真实 workload测试。
+
+## 6. 路线入口
+
+[《专家并行数据流》](01-专家并行数据流/01-专家并行数据流.md)沿 router、top-k、permute、dispatch、grouped GEMM、combine 与 unpermute 逐项写出 shape、所有权和字节，并处理 capacity、负载均衡、EP×TP/DP、DeepEP 模式与故障诊断。
+
+后续文章将展开 router算法、共享/路由专家组合、MoE通信重叠、推理部署与动态专家放置。每项优化都以同一组指标验收：有效 token、expert histogram、peer matrix、padding/drop rate、通信裸露时间、GEMM长尾与数值一致性。
+
+## 7. 先用三个坐标缩小方案
+
+第一个坐标是参数容量。设每个 expert 参数量为 $W_e$，每 rank放 $E/P_e$ 个专家，专家参数下界约为 $EW_e/P_e$；共享 attention、router 和 shared expert 仍可能复制。若专家参数已经放得下，提高 EP 只为增加设备数，会扩大 all-to-all 域并缩小每个 expert 的 token batch。
+
+第二个坐标是每 expert 计算粒度。平均 assignment 为 $NK/E$。它远小于 grouped GEMM 的高效 tile 时，增加专家数或 EP rank 会制造更多小问题；此时可增大 token batch、合并 experts、使用 grouped kernel，或降低 expert tensor parallel。只看“每 token 激活参数少”无法推断 GPU 利用率。
+
+第三个坐标是跨节点流量。均匀路由下远端 assignment 比例约为 $1-1/P_e$，但物理代价由 expert placement 和 peer matrix 决定。EP 全放机内时主要使用 NVLink，跨八个节点后同样字节会落到 RDMA。Group-limited routing、节点级 expert group 和 DeepEP 分层转发都在调整这一坐标。
+
+三项共同给出候选范围：容量要求 EP 至少多大，GEMM 要求本地 token batch 不能太小，网络要求跨节点 fan-out 可控。候选配置再用真实 router 分布测试，而不是用均匀随机路由直接定案。
+
+## 8. Dense、稀疏与共享专家怎样比较
+
+Dense FFN 每 token执行全部参数，shape稳定；routed experts 将总参数扩展为 $E$ 份，单 token只执行 $K$ 份。Shared expert 对所有 token执行，提供稳定通路，也增加固定 FLOPs。总激活参数近似为 shared 部分加 $K$ 个 routed expert，不能只报 routed top-k。
+
+若 routed expert 很细，router、permute 与通信占比会上升；若 expert 很宽，单 expert放置和热点计算更难。专家粒度是模型与系统共同选择：相同总激活 FLOPs 下，64个大 expert top-2 与256个小 expert top-8的 assignment 数和 all-to-all 元数据不同。
+
+训练质量还与路由约束相连。强 auxiliary loss、严格 capacity 或节点限制都可能减少系统长尾，也会改变 token 可选的专家集合。系统报告应把 throughput 与主 loss、balance项、drop rate放在同一配置中。
+
+## 9. 从一层 profile 判断先优化哪里
+
+时间线先切成 router/top-k、permute、dispatch、expert compute、combine、unpermute。Router/top-k长，检查 $E$、score dtype与fusion；permute长，检查HBM copy和索引kernel；dispatch/combine长，检查peer matrix、dtype与拓扑；expert compute长且rank差异大，检查$c_e$、padding和grouped GEMM。
+
+通信与计算重叠后，单项时间之和大于层时长属于正常。真正要优化的是依赖边上的 exposed time。All-to-all显示高带宽却层仍慢，瓶颈可能是热点rank或通信结束后的unpermute；网络利用低且GPU空闲，才更像小消息、同步或metadata路径。
+
+## 10. 上线约束
+
+启动时保存expert id到rank/node的映射、EP/ETP/DP组、capacity、dispatcher与buffer上限。每层持续采样expert count和node-to-node流量，告警使用p95/p99而非平均值。配置变更要做checkpoint重分片与一步更新对照。
+
+推理还要区分prefill与decode。Prefill token多，可复用normal吞吐路径；decode每步token少，应单独评估low-latency dispatcher、固定buffer显存和请求p99。把两种阶段混成平均tokens/s会掩盖用户可见延迟。
+
+## 11. 用 dense 基线拆解 MoE 收益
+
+Dense FFN 参数约为两层矩阵的总和，MoE 将其复制为多个 experts。若每 token 激活 $K$ 个等宽 experts，专家计算约为同宽 dense FFN 的 $K$ 倍；实际架构常缩小单expert中间维，使激活FLOPs接近目标dense基线，同时扩大总参数。Shared expert再增加固定计算。
+
+比较模型时应同时报告总参数、激活参数、每token FLOPs和通信。671B总参数、37B激活参数表达的是稀疏激活规模，不能据此直接得到设备数或吞吐；expert placement、hidden通信和batch shape仍决定系统成本。
+
+Dense基线还提供数值与性能参照。把router固定到单expert、关闭all-to-all后，可测本地expert MLP上限；再逐项加入permute、dispatch与真实负载，差额对应MoE系统开销。该分解比拿完整MoE和另一种dense架构直接比较更可解释。
+
+## 12. 训练选型边界
+
+训练microbatch token多，normal all-to-all与grouped GEMM容易形成大消息/大矩阵。优先保证无drop或明确capacity语义，再优化FP8 dispatch、通信重叠和shared expert overlap。Router balance需要同时观察模型loss与系统长尾，不能只追求完全均匀。
+
+EP增大能分散专家参数，却减少每rank本地experts并扩大通信域。容量已经满足后，继续增加EP可能让跨节点比例、metadata和小GEMM变差。候选EP值以参数容量下界起步，用真实路由跑长时间p95。
+
+## 13. 推理选型边界
+
+Prefill拥有长prompt和较多tokens，形态接近小训练batch，可使用normal高吞吐dispatcher。Decode每请求每步一个token，expert assignment稀疏，低延迟kernel、固定capacity、CUDA Graph和expert redundancy更重要。两阶段可使用不同dispatch策略，却必须保持router与expert数值语义一致。
+
+请求batch动态变化时，buffer按上界预留，调度器还要避免热点expert队列拖慢所有请求。吞吐、首token延迟、每token延迟和p99分别报告；平均tokens/s无法替代交互延迟。
+
+## 14. 故障域与长期成本
+
+EP group任一rank退出会中断本层all-to-all。EP跨越节点越多，单节点故障影响的模型副本越大。Checkpoint保存专家分片便于并行写入，但改变EP或placement时要重分配参数与optimizer state。
+
+长期有效吞吐要扣除checkpoint、恢复和热点迁移。冗余expert可提高推理容错和负载，却增加显存与权重同步；训练中复制expert还需合并梯度。可靠性收益必须放入完整运行时间评估。
+
+## 15. 当前路线导航
+
+训练系统中的[数据并行](../03-数据并行/03-数据并行.md)解释参数和梯度所有权，[模型并行](../04-模型并行/04-模型并行.md)解释TP/PP/CP的数据布局。本路线聚焦动态token到expert的映射。组合配置同时记录参数坐标、token通信组、optimizer owner与checkpoint shard，避免不同并行维度共享含糊的rank编号。
+
+阅读专家数据流后，可继续扩展router算法、通信重叠和推理部署；所有后续机制都复用本页的assignment、peer matrix、capacity与expert owner坐标。
+
+## 参考资料
+
+- [Megatron-Core MoE](https://docs.nvidia.com/megatron-core/developer-guide/latest/user-guide/features/moe.html)
+- [DeepEP](https://github.com/deepseek-ai/DeepEP)
+- [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437)
