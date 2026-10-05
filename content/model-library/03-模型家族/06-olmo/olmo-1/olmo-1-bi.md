@@ -95,7 +95,6 @@ We generally select hyperparameters by optimizing for training throughput on our
 
 3. **SwiGLU 激活.** 与 LLaMA, PaLM 等一样用 SwiGLU (Shazeer, 2020) 替代 ReLU; 跟随 LLaMA, 激活隐宽约 $(8/3)d$, 再增到最近的 128 倍数 (例如 7B 为 11,008) 以抬吞吐.
 
-> **看表:** SwiGLU 隐宽如何从 (8/3)d 落到 11008, 又为何提到 22016?
 > Section 2.1 第 3 条: 跟随 LLaMA, 激活隐宽约 (8/3)d, 再增到最近的 128 倍数, 7B 例为 11008. 脚注说明 SwiGLU 为 gated, 输出是输入一半, 故输入维为 2×11008=22016. 数字全部来自正文与脚注, 不是外推.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>[https://allenai.org/olmo](https://allenai.org/olmo)</span></small>
@@ -113,9 +112,8 @@ Table 1: OLMo model sizes, number of training tokens, and optimizer settings. In
 
 表 1: OLMo 模型规模, 训练 token 数与优化器设定. 所有 run 使用 AdamW, betas 为 0.9 与 0.95, epsilon 为 1.0E-5. L 为层数, D 为隐维, H 为注意力头数, WD 为 weight decay.
 
-> **译注:** Table 1 写 D=4086, 附录 Table 5 写 Dimension=4096, 两处源文数字不一致. 本文保留原值并标明表号.
+Table 1 写 D=4086, 附录 Table 5 写 Dimension=4096, 两处源文数字不一致. 本文保留原值并标明表号.
 
-> **问:** Table 1 为何 1B 开 weight tying 而 7B 关闭?
 > Table 1 明确 Weight Tying: 1B=yes, 7B=no. 正文把它与 L/D/H, peak LR, warmup 一并列为分档设定; 附录 Table 5 也写 OLMo-7B weight tying=no. 机制名可搜 embedding-output weight tying, 但答案必须回到这两张表的分档差异.
 
 4. **Rotary positional embeddings (RoPE).** Like LLaMA, PaLM, and others we replace absolute positional embeddings with rotary positional embeddings (RoPE; Su et al., 2021).
@@ -126,7 +124,6 @@ Table 1: OLMo model sizes, number of training tokens, and optimizer settings. In
 
 5. **词表.** 使用改自 GPT-NeoX-20B (Black et al., 2022) 的 BPE 分词器, 并增加用于掩码个人可识别信息 (PII) 的 token. 最终词表大小 50,280. 为最大化训练吞吐, 把对应 embedding 矩阵扩到 50,304, 使其为 128 的倍数.
 
-> **拆开:** 词表 50280 与 embedding 50304 为什么拆开写?
 > Section 2.1 第 5 条: 改自 GPT-NeoX-20B BPE, 并加 PII mask token, 最终词表 50280; 为吞吐把 embedding 矩阵扩到 50304 (128 的倍数). 这是词表大小与矩阵对齐两件不同的事.
 
 ### 2.2 Pretraining Data: Dolma 预训练数据: Dolma
@@ -145,7 +142,6 @@ Table 2: Composition of Dolma. Tokens counts are based on the GPT-NeoX tokenizer
 
 表 2: Dolma 组成. Token 计数基于 GPT-NeoX 分词器.
 
-> **确认:** Table 2 中 Common Crawl 的 token 占比如何心算, 与后文 88.8% 是否同一口径?
 > Table 2: CC 2180B / Total 2668B ≈ 81.7% (按 Dolma 全库 token). Section 4.2 写 OLMo 预训练里 CC 占 88.8%, 口径是 「训练用 Dolma 子采样后的配方」, 不是直接把 Table 2 全库比例当成训练混合比. 两数都要保留, 并分清全库组成 vs 实际训练混合.
 
 report provides additional analyses and experimental results from training language models on intermediate states of Dolma to share what we learned about important data curation practices, including the role of content or quality filters, deduplication, and mixing data from multiple sources. We keep documents from each source separate, both during curation as well as in the final release. We open-sourced our high-performance data curation tools; this toolkit can be used to further experiment on Dolma, reproduce our work, and enable fast and easy curation of pretraining corpora. Finally, we also open-sourced our WIMBD tool (Elazar et al., 2024) to help with dataset analysis.
@@ -212,7 +208,6 @@ We train our models using the ZeRO optimizer strategy (Rajbhandari et al., 2019)
 
 我们通过 PyTorch 的 FSDP 框架 (Zhao et al., 2023) 使用 ZeRO 优化器策略 (Rajbhandari et al., 2019), 把模型权重及其对应优化器状态切分到各 GPU 上以降低显存. 在 7B 尺度上, 这使我们能在硬件上以每 GPU micro-batch 4096 token 训练 (见第 3.4 节). 对 OLMo-1B 与 -7B, 我们使用约 4M token 的恒定全局 batch (2048 条实例, 每条序列长 2048 token).
 
-> **回看:** 全局 batch ~4M token 是怎么来的?
 > Section 3.1: 2048 instances × 序列长度 2048 token ≈ 4M. Table 1 / Table 5 也写 batch size (tokens) ~4M; Table 5 进一步写 instances=2160 (与 ~4M 同量级). 回答应指回实例数 × 序列长, 而不是只背 「~4M」.
 
 To improve throughput, we employ mixedprecision training (Micikevicius et al., 2017) through FSDP’s built-in settings and PyTorch’s amp module. The latter ensures that certain operations
@@ -225,7 +220,6 @@ like the softmax always run in full precision to improve stability, while all ot
 
 如 softmax 始终以全精度运行以改善稳定性, 其余运算以 bfloat16 半精度运行. 在我们的具体设定下, 各 GPU 本地的分片模型权重与优化器状态保持全精度. 每个 transformer block 内的权重仅在前反向过程中于各 GPU 上物化完整参数时才 cast 为 bfloat16. 梯度跨 GPU 以全精度归约.
 
-> **停一下:** FSDP 场景下哪些量保持全精度, 哪些走 bfloat16?
 > Section 3.1: 分片模型权重与优化器状态在各 GPU 本地保持全精度; 每个 transformer block 前反向物化完整参数时 cast 为 bfloat16; 梯度跨 GPU 以全精度归约; softmax 等经 amp 强制全精度. 这是稳定性设计, 不是 「全程 fp16」.
 
 ### 3.2 Optimizer 优化器
@@ -234,7 +228,7 @@ We use the AdamW optimizer (Loshchilov and Hutter, 2019) with the hyperparameter
 
 我们使用 AdamW 优化器 (Loshchilov and Hutter, 2019), 超参见 Table 1. 所有模型尺度都在 5000 step (约 21B token) 内 warmup 学习率, 随后在剩余训练中从峰值线性衰减到峰值的十分之一. warmup 之后做梯度裁剪, 使参数梯度的总 l-范数不超过 1.0. Table 5 给出 7B 尺度上我们与其他近期同样使用 AdamW 的 LM 的优化器设定对照.
 
-> **译注:** Section 3.2 的主日程在 warmup 后从峰值线性降到峰值的 1/10; Table 5 所列 Minimum LR 3.0E-05 正好对应峰值 3.0E-04 的十分之一. Results 开头另有 1000 step 将学习率线性降到 0, 两段日程应分开理解.
+Section 3.2 的主日程在 warmup 后从峰值线性降到峰值的 1/10; Table 5 所列 Minimum LR 3.0E-05 正好对应峰值 3.0E-04 的十分之一. Results 开头另有 1000 step 将学习率线性降到 0, 两段日程应分开理解.
 
 ### 3.3 Data 数据
 
@@ -268,7 +262,6 @@ Despite minor differences in batch size to optimize for training throughput, bot
 
 尽管为优化训练吞吐而在 batch size 上有细微差异, 两套 run 到 2T token 时在我们的评测套件上表现几乎相同.
 
-> **停一下:** 双集群实验要证明的是精度还是可移植性?
 > Section 3.4: LUMI MI250X 与 MosaicML A100 两套 run, batch 略有不同以优吞吐, 但到 2T token 时评测套件几乎相同. 目标是验证代码在 NVIDIA 与 AMD 上均可训练且不掉点, 不是比较两家硬件绝对速度.
 
 ## 4 Results 结果
@@ -277,8 +270,7 @@ The checkpoint used for evaluating OLMo-7B is trained until 2.46T tokens on the 
 
 用于评测 OLMo-7B 的 checkpoint 在 Dolma (Soldaini et al., 2024) 上训到 2.46T token, 学习率按第 3.2 节所述线性衰减. 实验中发现, 将该 checkpoint 在 Dolma 上再调 1000 step, 学习率线性收到 0, 能提升第 2.4 节所述困惑度与端任务评测套件上的表现. 我们与公开模型对照, 包括 LLaMA-7B (Touvron et al., 2023a), Llama-2-7B (Touvron et al., 2023b), MPT-7B (MosaicML NLP Team, 2023), Pythia-6.9B (Biderman et al., 2023), Falcon-7B (Almazrouei et al., 2023) 与 RPJ-INCITE-7B (Together Computer, 2023).
 
-> **对一下:** 最终 1000 step LR→0 与主日程 「降到峰值 1/10」 能否说成同一次退火?
-> 不能. Section 3.2 主日程终点是峰值的 1/10; Section 4 开头与 Figure 1 题注另做 1000 step, 把 LR linear 收到 0, 并观察端任务跳升. Table 5 Minimum LR=3.0E-05 对应主日程, 不是 0. 两段操作在文中是衔接但分开写的.
+不能. Section 3.2 主日程终点是峰值的 1/10; Section 4 开头与 Figure 1 题注另做 1000 step, 把 LR linear 收到 0, 并观察端任务跳升. Table 5 Minimum LR=3.0E-05 对应主日程, 不是 0. 两段操作在文中是衔接但分开写的.
 
 ### 4.1 Downstream evaluation 下游评测
 
@@ -318,14 +310,13 @@ In all cases, we perform zero-shot evaluation using the rank classification appr
 
 所有情形下, 我们采用 Brown et al. (2020) 推广的排序分类做法做 zero-shot 评测. 候选文本补全 (例如不同选择题选项) 按似然排序 (通常再除以某种归一化因子), 并报告预测准确率. Catwalk 实现了多种常见似然归一化策略, 包括按 token 数归一化 (per-token; Brown et al., 2020; Liang et al., 2022), 按字符数归一化 (per-character; Gao et al., 2023), 以及引入答案的无条件似然 (Brown et al., 2020); 我们为每个数据集分别选择归一化策略. 具体地, arc 与 openbookqa 用 unconditional normalization, hellaswag, piqa 与 winogrande 用 per-token normalization, boolq 与 sciq 不归一化 (即建成单 token 预测任务的那些).
 
-> **问:** 下游 rank classification 的归一化为何不能一套打天下?
 > Section 4.1: 作者按数据集分别选策略 — arc/openbookqa 用 unconditional, hellaswag/piqa/winogrande 用 per-token, boolq/sciq 不归一化. Catwalk 虽实现多种归一化, 但信号来自分任务选择, 这也解释了为何不能拿单一归一化重跑后直接对比文献数字.
 
 **Results** Table 3 summarizes the result of zeroshot evaluation of OLMo and compares against other publicly available models of comparable size. We report results on 8 core tasks from our evaluation suite described in Section 2.4. On aggregate, OLMo-7B is competitive against all the comparable models. We include the comparison to StableLM 1.6B , but note that it is significantly larger, and was trained on unknown data.
 
 **结果** Table 3 汇总 OLMo 的 zero-shot 评测, 并与其他同尺度公开模型对照. 我们报告第 2.4 节所述评测套件中 8 个核心任务. 总体看, OLMo-7B 对所有可比模型都具竞争力. 我们也列入与 StableLM 1.6B 的对照, 但注明其显著更大, 且训练数据未知.
 
-> **译注:** Table 3 中 OLMo-7B 平均分为 69.3, Llama 2 7B 为 70.5, Falcon 为 70.3, MPT 为 69.8, LLaMA 7B 为 69.6. Section 4.1 的 「competitive」 指总体分数处于相近量级, 不表示每项任务都领先.
+Table 3 中 OLMo-7B 平均分为 69.3, Llama 2 7B 为 70.5, Falcon 为 70.3, MPT 为 69.8, LLaMA 7B 为 69.6. Section 4.1 的 「competitive」 指总体分数处于相近量级, 不表示每项任务都领先.
 
 In Figure 1 we plot the accuracy score progression of 8 core end-tasks. All tasks, except OBQA, show an upward trend in accuracy numbers as
 
@@ -349,7 +340,6 @@ Figure 1: Accuracy score progression of OLMo-7B on 8 core end-tasks score from C
 
 图 1: OLMo-7B 在第 2.4 节 Catwalk 评测套件 8 个核心端任务上的准确率进展. 多数任务可见最后 1000 训练 step 将 LR 收到 0 的收益.
 
-> **对一下:** Figure 1 末段跳升被作者归因于什么操作?
 > Figure 1 题注与 Section 4.1: 多数任务在最后 1000 step 把 LR 收到 0 后准确率明显上跳. 这与主训练阶段 「降到峰值 1/10」 是两段不同的日程, 读图时不要混成一次 decay.
 
 **Results** In the Sources Combined subplot of Fig ure 2, we show the performance of OLMo-7B against 6 comparably-sized language models on the combination of 11 data sources from Paloma. Overall we find OLMo to have a competitive fit, especially given its training data was explicitly decontaminated against Paloma. As seen through the comparison of final models (see shapes) as well intermediate checkpoints (see dashed lines), the OLMo results follow similar scaling trends of other models. Note that the performance of intermediate checkpoints is influenced by where that checkpoint occurs in the learning rate schedule. So models trained for fewer steps will tend to have steeper training curves without necessarily being more sample efficient if training duration were fixed across all models. MPT-7B, nevertheless, stands out as improving ahead of the other models in this subplot. This could be due to a number of factors, including pretraining data composition and its match to the domains in Paloma (e.g., MPT trains on 27% non-Common Crawl data rather than 18% for LLaMA, 12.2% for RedPajama, and 11.2% for OLMo) as well as various data preprocessing decisions (e.g., MPT’s use of semantic deduplication by Abbas et al., 2023, on C4).
@@ -364,7 +354,6 @@ largely driven by the similarity of training and evaluation distributions. Notab
 
 很大程度上由训练与评测分布的相似性驱动. 值得注意的是, OLMo-7B 在以 Common Crawl 为主的评测上表现好, 例如 C4; 不过对 Common Crawl 的不同后处理方式, 仍是用该特定数据训练的模型拟合最好, 例如 Falcon-7B 在 Falcon RefinedWeb 上. 同时, 在与抓取网页文本关系较弱的源上, 如 WikiText-103, M2D2 S2ORC 与 M2D2 Wikipedia, OLMo-7B 相对其他模型样本效率更低. RedPajama 评测呈现类似模式, 或许因其 7 个域中仅 2 个来自 Common Crawl, 且 Paloma 在每个源内部对域等权. 由于维基百科与 ArXiv 论文等策展异质数据比抓取网页更稀缺, 随着预训练语料扩大, 维持对这些语言分布的样本效率拟合将更具挑战.
 
-> **看表:** 为何 OLMo 在 C4 上能 overtakes, 在 WikiText-103 上却更弱?
 > Section 4.2: 样本效率主要由训评分布接近程度驱动; OLMo 在 CC 主导评测 (如 C4) 更强, 题注甚至写在 C4 上 overtakes all other models; 对 WikiText-103, M2D2 S2ORC/Wikipedia 等非 scraped web 分布更弱. 同时写明 CC 占预训练 88.8%, 与现象一致.
 
 ### 4.3 Adaptation Evaluation 适配评测
@@ -383,7 +372,7 @@ Figure 2: Bits per byte on 11 evaluation data sources from Paloma and their comb
 
 图 2: Paloma 11 个评测数据源及其组合上的 bits per byte (Magnusson et al., 2023), 已相对 OLMo 预训练数据去污染. 模型大体遵循数据 Scaling 趋势, 但样本效率在分布内数据上最有利. 例如 OLMo-7B 在 C4 上超过所有其他模型, 或因预训练中 Common Crawl 占 88.8%.
 
-> **译注:** Section 2.4 与 4.2 说明, 预训练数据移除了与 Paloma 评测段落重叠的文档. Figure 2 的 bits per byte 因而更接近去污染后的 out-of-sample fit.
+Section 2.4 与 4.2 说明, 预训练数据移除了与 Paloma 评测段落重叠的文档. Figure 2 的 bits per byte 因而更接近去污染后的 out-of-sample fit.
 
 | Model | MMLU 0-shot ↑ | AlpacaEval%win ↑ | ToxiGen% Toxic ↓ | TruthfulQA%Info+True ↑ |
 | --- | --- | --- | --- | --- |
@@ -401,7 +390,6 @@ Table 4: Evaluation of various instruction-tuned 7B models, including OLMo-7B an
 
 表 4: 多种指令微调 7B 模型评测, 含 OLMo-7B 适配训练前后. ToxiGen 越低越好, 其余指标越高越好. 模型与指标详述见附录 E.
 
-> **拆开:** Table 4 里 ToxiGen 从 81.4 到 1.7, 主要是 SFT 还是 DPO 贡献?
 > Table 4: base 81.4 → +SFT 14.4 → +SFT+DPO 1.7. SFT 已大幅下降, DPO 再压到 1.7; TruthfulQA 则 31.6 → 41.2 → 52.0, DPO 段增益更明显. 正文 Section 4.3 也写 DPO 后 safety/truth 改善尤其明显.
 
 **Results** We find that instruction tuning considerably improves the performance and safety of OLMo-7B, increasing MMLU performance by a wide margin and improving ToxiGen and TruthfulQA scores - especially after DPO training. Additionally, we find that OLMo-7B outperforms most other chat variants after both initial instruction tuning (OLMo+SFT) and additional preference alignment (OLMo+SFT+DPO), highlighting both the strength of OLMo-7B as a base model and the
@@ -808,7 +796,6 @@ One notable result here is that OLMo-7B is much farther ahead of the other model
 
 Table 5: LM architecture and optimizer comparison at the 7–8B scale. In the “layer norm type" row, “parametric" and “non-parametric" refer to the usual layer norm implementation with and without adaptive gain and bias, respectively. All models are trained using AdamW.
 
-> **回看:** Table 5 里 OLMo 注意力写成 full, 和 Llama2 的 GQA 对比意味着什么?
 > Table 5 Attention variant: OLMo-7B=full, LLaMA2-7B=GQA, Falcon=MQA, PaLM-8B=MQA. 本文 7B 仍走每头全量 KV 的 Dense 注意力, 没有在报告里用 GQA 省 KV. 机制名可搜 GQA, 但本文落点是 full attention + 序列 2048.
 
 same time other models that are trained on code data from GitHub such as RPJ-INCITE-7B, that are just as likely to have contamination, fair much worse. Another factor then is that OLMo-7B trains on code data with exactly the same post-processing as that in 100 PLs while the code data in other models will have been processed differently. Similarly, Pile evaluation demonstrates these in-distribution and potential contamination effects as Pythia-6.9B achieves top performance despite being trained on almost an order of magnitude fewer tokens than OLMo-7B.
@@ -846,7 +833,7 @@ Table 6: $\mathrm { C O _ { 2 } }$ emissions during pretraining. We estimate the
 
 \* LUMI runs entirely on hydroelectric power<sup>13</sup>and some estimates (Ubierna et al., 2022) measure the intensity factor of hydroelectric power to be 0.024, implying total emissions of 3.54 $\mathfrak { t } \mathbf { C O } _ { 2 } \mathbf { e q } .$
 
-> **译注:** Table 6 按 LUMI 官方可再生能源口径把 MI250X 排放记为 0, A100-40GB 行约为 70 tCO₂eq. Appendix B 报告总预训练排放约 69.78 tCO₂eq, 并说明若采用水电强度 0.024, LUMI 一侧约为 3.54 tCO₂eq. 两组数字使用的电力强度假设不同.
+Table 6 按 LUMI 官方可再生能源口径把 MI250X 排放记为 0, A100-40GB 行约为 70 tCO₂eq. Appendix B 报告总预训练排放约 69.78 tCO₂eq, 并说明若采用水电强度 0.024, LUMI 一侧约为 3.54 tCO₂eq. 两组数字使用的电力强度假设不同.
 
 |  | headqa_en | logiqa | mrpc | qnli | wic | wnli | avg. |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -1026,7 +1013,6 @@ We additionally provide a brief description of each evaluation setting from Tabl
 
 Table 8: Evaluation of OLMo-7B models before and after instruction finetuning and DPO training on the full TÜLU evaluation suite. Lower is better for ToxiGen and higher is better for other metrics.
 
-> **确认:** Table 8 为何能说明 preference 对齐不是免费午餐?
 > Table 8: +SFT+DPO 相对 +SFT, AlpacaEval 57.0→69.3, ToxiGen 14.4→1.7, TruthfulQA 41.2→52.0, 但 GSM8k 15.5→11.0, BBH 36.9→35.8, TydiQA 35.2→21.7, MMLU 47.3→46.1. 同源数字显示聊天/安全升, 部分推理与问答降.
 
 examples. We follow the official script in their official implemention to do greedy decoding and answer postprocessing. We train two LLaMA 2- based classifiers for judging the truthfulness and informativeness of the model response, due to the deprecation of GPT-3 making exact replication of the original TruthfulQA evaluation infeasible. We find that the LLaMA 2 judges are generally able to match the performance of the original GPT-3-based judges used by Lin et al. (2022). We report the rate of the responses being truthful and informative (% Informative and Truthful) following Touvron et al. (2023b). We only report the % Informative and Truthful as our primary metric.

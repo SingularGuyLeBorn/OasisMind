@@ -335,8 +335,7 @@ where $\lambda_\mathcal{B}, \lambda_\mathcal{E}, \lambda_{\mathcal{D},\text{Dist
 
 其中 $\lambda_\mathcal{B}, \lambda_\mathcal{E}, \lambda_{\mathcal{D},\text{Distill}}, \lambda_{\mathcal{D},\text{CE}} \in \mathbb{R}$ 是损失权重, 取 $\lambda_\mathcal{B} = 4$, $\lambda_\mathcal{E} = 1$, $\lambda_{\mathcal{D},\text{Distill}} = 1$, $\lambda_{\mathcal{D},\text{CE}} = 1$. 阶段 1 总共需要全局模型所有层的一次前向, 前 $n$ 层的一次反向, 加上局部编码器, 局部解码器, 边界预测器和 LM head 的前向与反向. 这让阶段 1 比训练整个模型高效得多. 从第 $(n+1)$ 层起的全局模型层不需要反向传播, 还可以对它们做量化或其他推理专用优化来进一步提速. 6.2 节分析插入阶段 1 与直接端到端训练整个模型 (全局模型以外的参数随机初始化) 的差别. 除了提升性能, 阶段 1 还是快速实验的手段: 用阶段 1 训练可以很快检查某种局部编码器和解码器架构是否有足够容量分别模仿输入和输出嵌入矩阵. 我们用它指导 Bolmo 的架构搜索, 依据的假设是: 阶段 1 之后仍无法模仿子词模型的字节级架构, 继续做阶段 2 训练也不会合格.
 
-> **核对:** 正文给 $\lambda_\mathcal{E} = 1$, 训练脚本里的实际权重是多少? 蒸馏目标真的「精确」吗?
-> 答: `bolmo_scripts/launch_stage1_7b.sh` 里 `loss_weights=[1,1,1,4]` 对应 (编码器, CE, 蒸馏, 边界), 与正文一致. 但编码器损失内部另有 `encoder_loss_no_lookahead_weight=0.0` 和 `encoder_loss_lookahead_weights=[0.0,0.0,0.0,4.0]`, 即 $n=0$ 那一项权重为 0, 只用第 4 层输出, 且再乘 4, 第 4 层表示损失的有效权重是 4. 蒸馏项用 `div_fn=kl` 与 `binarization_temp=5.0`, 二元 KL 与上面的温度二元交叉熵只差教师侧的熵 (对学生是常数), 梯度相同. 脚本还开了 `do_alm_debiasing=true`, 给教师与学生两侧 patch 的对数概率各加一项「下一个符号属于空格类」的 logsumexp, 这一项在 $\mathcal{L}_{\mathcal{D},\text{Distill}}$ 的式子里没有出现.
+`bolmo_scripts/launch_stage1_7b.sh` 里 `loss_weights=[1,1,1,4]` 对应 (编码器, CE, 蒸馏, 边界), 与正文一致. 但编码器损失内部另有 `encoder_loss_no_lookahead_weight=0.0` 和 `encoder_loss_lookahead_weights=[0.0,0.0,0.0,4.0]`, 即 $n=0$ 那一项权重为 0, 只用第 4 层输出, 且再乘 4, 第 4 层表示损失的有效权重是 4. 蒸馏项用 `div_fn=kl` 与 `binarization_temp=5.0`, 二元 KL 与上面的温度二元交叉熵只差教师侧的熵 (对学生是常数), 梯度相同. 脚本还开了 `do_alm_debiasing=true`, 给教师与学生两侧 patch 的对数概率各加一项「下一个符号属于空格类」的 logsumexp, 这一项在 $\mathcal{L}_{\mathcal{D},\text{Distill}}$ 的式子里没有出现.
 
 #### 3.2.2 Stage 2: End-to-End Training · 阶段 2: 端到端训练
 
@@ -453,8 +452,7 @@ Bolmo 7B is fully open; EvaByte 6.5B, TFree-Hat 7B and BLT 7B are open-weight by
 | SQuAD | <u>91.6</u> | 35.9 | 88.6 | 85.2 | **93.5** |
 | CoQA | 70.5 | 16.7 | <u>71.1</u> | 68.6 | **72.7** |
 
-> **看表:** 「Code 40.7 对 39.5, Bolmo 胜」这个类目均值是怎么算的?
-> 答: 用 Code 下 6 行的 11 个数直接平均可以复现: Bolmo 为 $(40.6+74.7+2.3+7.6+14.9+42.8+68.0+26.8+62.5+38.0+69.2)/11 = 447.4/11 \approx 40.7$, Olmo 3 为 $434.3/11 \approx 39.5$. 也就是把 pass@1 和 pass@16 放在一起平均. 只取 6 个 pass@1, Bolmo 是 $165.4/6 \approx 27.6$, Olmo 3 是 $186.2/6 \approx 31.0$, 方向反过来. 正文说「pass@1 总体略低」, 其中 HumanEval 低 8.4, MultiPL HumanEval 低 6.8, DS 1000 低 5.2, 「略」字偏轻.
+用 Code 下 6 行的 11 个数直接平均可以复现: Bolmo 为 $(40.6+74.7+2.3+7.6+14.9+42.8+68.0+26.8+62.5+38.0+69.2)/11 = 447.4/11 \approx 40.7$, Olmo 3 为 $434.3/11 \approx 39.5$. 也就是把 pass@1 和 pass@16 放在一起平均. 只取 6 个 pass@1, Bolmo 是 $165.4/6 \approx 27.6$, Olmo 3 是 $186.2/6 \approx 31.0$, 方向反过来. 正文说「pass@1 总体略低」, 其中 HumanEval 低 8.4, MultiPL HumanEval 低 6.8, DS 1000 低 5.2, 「略」字偏轻.
 
 encouraging character understanding (Appendix C), which speeds up the acquisition of this skill. Bolmo 7B still outperforms Olmo 3 in a comparison where Olmo 3 had continued training on the Bolmo data mix for the same total amount of tokens (Appendix A), further suggesting that while character understanding is driven by scale, it emerges sooner in byte-level models.
 
@@ -501,8 +499,7 @@ Like Bolmo 7B, Bolmo 1B exhibits performance degradation compared to the source 
 
 与 Bolmo 7B 一样, Bolmo 1B 在部分任务上不如源子词模型, 例如 MMLU 低 3.2%. 但在另一些任务上超过 OLMo2 1B, 例如 Lambada 高 5.1%, CoQA 高 3.3%, CUTE 高 32.5%.
 
-> **对一下:** 这几个差值和表 2 对得上吗?
-> 答: MMLU $37.2-40.4=-3.2$, Lambada $65.2-60.1=5.1$, CUTE $60.0-27.5=32.5$, 都对. CoQA 是 $81.7-77.4=4.3$, 正文写成 3.3, 差了 1 个点 (v1 也是 3.3). 另外表 2 的套件均值 Bolmo 1B 58.2, OLMo 2 1B 58.3, 源模型仍略高 0.1.
+MMLU $37.2-40.4=-3.2$, Lambada $65.2-60.1=5.1$, CUTE $60.0-27.5=32.5$, 都对. CoQA 是 $81.7-77.4=4.3$, 正文写成 3.3, 差了 1 个点 (v1 也是 3.3). 另外表 2 的套件均值 Bolmo 1B 58.2, OLMo 2 1B 58.3, 源模型仍略高 0.1.
 
 ### 5.1 Training at Higher Compression Factors · 以更高压缩率训练
 
@@ -624,8 +621,7 @@ and LM head randomly, and the parameters of the global model from the subword-le
 
 和 LM head 随机初始化, 全局模型参数取自子词 LLM, 即直接从阶段 2 开始. 公平比较「只做阶段 2」与「阶段 1 + 阶段 2」并不容易: 阶段 1 只在全局模型的一小部分上反向传播 (见 3.2.1 节), FLOPs 更少; 又因为不训练全局模型, 只需存一小部分优化器状态, 更省显存. 我们近似对齐 FLOPs 来处理这一差异, 忽略显存的不对等: 阶段 1 约需 $2 \times \text{FLOPs}_\mathcal{M}$, 阶段 2 约需 $3 \times \text{FLOPs}_\mathcal{M}$ (全局模型前向 1 份, 反向 2 份). 因此省略阶段 1 时, 给阶段 2 加 9.8B × 2/3 = 6.5B token (阶段 2 长度增加 17%). 实际上我们认为 2/3 这个系数可能略偏向只做阶段 2 的那一组, 因为阶段 1 显存需求更低 (能用更大的 batch), 而且阶段 1 中子词 LLM 的前向可以用推理专用优化加速.
 
-> **拆开:** 阶段 1 的「约 $2 \times \text{FLOPs}_\mathcal{M}$」是怎么来的?
-> 答: 文中没有给出推导. 按 3.2.1 节的描述拆成三份: 子词嵌入走完全部 $L$ 层 (给解码器蒸馏提供 $z_\text{subword}$), 记 1 份; 池化表示走前 $n$ 层前向, 记 $n/L$ 份; 这前 $n$ 层的反向记 $2n/L$ 份. 合计 $1 + 3n/L$. 取 $n=4$: 7B 的 $L=32$, 得 $1.375$; 1B 的 $L=16$, 得 $1.75$. 两者都小于 2, 所以按 2/3 给只做阶段 2 的一组补 token, 补的算力多于阶段 1 实际消耗. 这与正文「2/3 可能略偏向只做阶段 2」方向一致, 7B 上偏得更多.
+文中没有给出推导. 按 3.2.1 节的描述拆成三份: 子词嵌入走完全部 $L$ 层 (给解码器蒸馏提供 $z_\text{subword}$), 记 1 份; 池化表示走前 $n$ 层前向, 记 $n/L$ 份; 这前 $n$ 层的反向记 $2n/L$ 份. 合计 $1 + 3n/L$. 取 $n=4$: 7B 的 $L=32$, 得 $1.375$; 1B 的 $L=16$, 得 $1.75$. 两者都小于 2, 所以按 2/3 给只做阶段 2 的一组补 token, 补的算力多于阶段 1 实际消耗. 这与正文「2/3 可能略偏向只做阶段 2」方向一致, 7B 上偏得更多.
 
 Figure 6 compares the training trajectory of runs with vs. without Stage 1 training. There are two main takeaways: (i) the 1B model benefits more from Stage 1 training than 7B, indicating that larger models may be more robust to catastrophic forgetting through large gradients at the start of training when starting directly with Stage 2, and (ii) the bits-per-byte gap narrows throughout the training trajectory but remains in favor of adding Stage 1; it is not clear how this behavior is influenced by the learning rate scheduling so we cannot easily extrapolate to higher token budgets. Since the absence of Stage 1 does not cause catastrophic degradation, we believe it is a reasonable hypothesis that Stage 1 training becomes less important with larger token budgets; however, this might be influenced in nontrivial ways by factors such as the choice of data mix.
 
@@ -655,8 +651,7 @@ The chosen Bolmo architecture using mLSTM (Beck et al., 2025a) achieves competit
 
 所选的 mLSTM 版 Bolmo 架构速度有竞争力: 同压缩率下解码约 125 bytes/s, 子词模型约 150 bytes/s; prefill 72K 字节约 1s, 子词模型 prefill 等量字节对应的 token 约 0.8s. 此外, Bolmo 可以用任意更高的压缩率训练来提速 (子词 LLM 做不到, 见 5.1 节), 在每 patch 约 6.6 字节时推理效率开始超过子词模型. 如图 7 (右) 所示, 在相同 FLOPs/byte 下, 用 Tiled Flash Linear Attention (TFLA) 实现的 mLSTM 解码实际吞吐明显高于 Mamba2 和 Gated DeltaNet. 两者相关性不稳定 (我们的实验中 $R^2 \approx 0.63$ 到 $0.66$), 只靠 FLOPs 指导架构选择可能导致推理速度欠佳.
 
-> **再看:** 「约 125 bytes/s」与图 7 左图对得上吗?
-> 答: 图 7 左图中 Bolmo (c=4.4) 的解码吞吐曲线在 4.5K 到 72K prefill 字节之间约为 113 到 117 bytes/s, 右图「Selected by Bolmo」的星标也在约 115. 子词模型约 150 与图一致, prefill 72K 字节 Bolmo 约 1.03s, Olmo 约 0.8s 也一致. 只有 125 这个数在图上找不到对应, 按图读, 同压缩率下 Bolmo 的解码速度约为子词模型的 77%, 而不是 83%.
+图 7 左图中 Bolmo (c=4.4) 的解码吞吐曲线在 4.5K 到 72K prefill 字节之间约为 113 到 117 bytes/s, 右图「Selected by Bolmo」的星标也在约 115. 子词模型约 150 与图一致, prefill 72K 字节 Bolmo 约 1.03s, Olmo 约 0.8s 也一致. 只有 125 这个数在图上找不到对应, 按图读, 同压缩率下 Bolmo 的解码速度约为子词模型的 77%, 而不是 83%.
 
 FLOP-matching is further complicated by having to make decisions as to how to count FLOPs, which is not trivial in practice. For example, the popular FLOP formulas from Hoffmann et al. (2022) assume a matrix multiplication of the input embeddings with the one-hot encoded input tokens. This is arguably not in line with hardware realities since the input embeddings can be computed via an extremely fast lookup operation, so counting the associated FLOPs can cause systematic biases.<sup>18</sup> Additionally, the chunk size used to partially parallelize linear RNN training inherently provides a way to use more FLOPs to achieve faster training (via higher parallelization; as in Dao and Gu, 2024; Yang et al., 2025), which further muddies the relationship between FLOPs and wallclock times.
 
@@ -1021,8 +1016,7 @@ Table 3 Comparison of various boundary prediction settings after Stage 1 trainin
 
 **分析边界预测器的选择.** 表 3 比较了边界预测器的多种选择, 证实融合式非因果 patch 终点预测最适合字节化. 此外, 在原始子词 (「oracle」) 边界下分析性能可以看出, 阶段 1 之后与源模型剩下的差距大多可以用边界预测器残留的小比例错误来解释.
 
-> **回看:** 表 3 真的说明 NC(F) 最好吗?
-> 答: 只看任务均值, 不是. oracle 边界下 NC(S) 的 Avg. 是 58.2, NC(F) 是 57.9; 学到的边界下 NC(S) 是 55.7 (加粗), NC(F) 是 55.6. 两种设置下都是单独 `<b>` 符号的 NC(S) 略高. NC(F) 的优势在成本: $L/G$ 从 9.8 降到 8.8, 局部模型每次全局调用少跑一个位置. 8.8 与 9.8 的来历: 平均每 patch 约 4.4 字节, 编码器与解码器各跑 4.4 个位置, 合计 8.8; 单独 `<b>` 让解码器每个 patch 多一个位置, 变成 9.8. 所以「最好」应理解为在性能几乎持平时成本最低. 另外 oracle 行与学到的行之差 (NC(F) 从 57.9 到 55.6) 才是边界错误的代价, 而 oracle 的 57.9 与 OLMo2 1B 的 59.3 之间的 1.4 分并不来自边界错误.
+只看任务均值, 不是. oracle 边界下 NC(S) 的 Avg. 是 58.2, NC(F) 是 57.9; 学到的边界下 NC(S) 是 55.7 (加粗), NC(F) 是 55.6. 两种设置下都是单独 `<b>` 符号的 NC(S) 略高. NC(F) 的优势在成本: $L/G$ 从 9.8 降到 8.8, 局部模型每次全局调用少跑一个位置. 8.8 与 9.8 的来历: 平均每 patch 约 4.4 字节, 编码器与解码器各跑 4.4 个位置, 合计 8.8; 单独 `<b>` 让解码器每个 patch 多一个位置, 变成 9.8. 所以「最好」应理解为在性能几乎持平时成本最低. 另外 oracle 行与学到的行之差 (NC(F) 从 57.9 到 55.6) 才是边界错误的代价, 而 oracle 的 57.9 与 OLMo2 1B 的 59.3 之间的 1.4 分并不来自边界错误.
 
 **Comparing byteification to standard continued training.** Table 4 compares Bolmo to an Olmo 3 model with continued training on the same data under the same training settings (same batch size, optimizer, etc., see Table 8). Continued training without byteification generally degrades performance, potentially forgetting due to a narrower data mix and suboptimal training procedure. A notable exception is character understanding, where the model improves due to the training data targeting this skill (Appendix C), but remains worse than Bolmo. While some gap between the byteified model and the model with continued training persists, we believe a promising direction to improve bytefying is thus to apply techniques which generally make training less prone to forgetting, such as applying PEFT methods (e.g. Hu et al., 2022; Pfeiffer et al., 2023).
 
@@ -1290,5 +1284,4 @@ Table 8 Bolmo training details. Throughput estimates are in tokens per second (T
 | Throughput (TPS) | 6.3K | 27.7K |
 | Throughput (BPS) | 37.8K | 166.2K |
 
-> **问:** 表 8 的 BPS 与 TPS 是什么关系? 和「Total Training Bytes」用的是同一个换算吗?
-> 答: 四组吞吐都满足 BPS = 6 × TPS: $59.4/9.9 = 37.8/6.3 = 207/34.5 = 166.2/27.7 = 6.0$. 6 正好是 Max. Length 的比值 $24576/4096$, 训练脚本也按字节设 `global_batch_size` (阶段 1 为 $786432 = 32 \times 24576$). 而同表的 Total Training Bytes 按每 token 约 4.4 字节换算: $43.1/9.8 \approx 4.4$, $172.9/39.3 \approx 4.4$. 两处换算不一致. 若 TPS 是真实 token 吞吐, BPS 就是按每序列 24576 个字节槽位 (含填充) 换算的容量. 按每 token 4.4 字节算, 有效字节吞吐约为表中 BPS 的 $4.4/6 \approx 73\%$, 例如 7B 阶段 2 约 27.7K bytes/s, 而不是 37.8K.
+四组吞吐都满足 BPS = 6 × TPS: $59.4/9.9 = 37.8/6.3 = 207/34.5 = 166.2/27.7 = 6.0$. 6 正好是 Max. Length 的比值 $24576/4096$, 训练脚本也按字节设 `global_batch_size` (阶段 1 为 $786432 = 32 \times 24576$). 而同表的 Total Training Bytes 按每 token 约 4.4 字节换算: $43.1/9.8 \approx 4.4$, $172.9/39.3 \approx 4.4$. 两处换算不一致. 若 TPS 是真实 token 吞吐, BPS 就是按每序列 24576 个字节槽位 (含填充) 换算的容量. 按每 token 4.4 字节算, 有效字节吞吐约为表中 BPS 的 $4.4/6 \approx 73\%$, 例如 7B 阶段 2 约 27.7K bytes/s, 而不是 37.8K.

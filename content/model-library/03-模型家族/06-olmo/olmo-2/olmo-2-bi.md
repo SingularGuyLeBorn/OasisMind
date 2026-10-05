@@ -226,7 +226,7 @@ Table 1 Summary of how OLMo family model architectures have evolved over time. L
 
 表 1｜OLMo 家族架构演变摘要. 最新 OLMo 2 改动由稳定性实验驱动. 详见 §2.1.
 
-> 是同一架构选择的两面. Table 1 写 Outputs; §2.1 式 (1)(2) 把 RMSNorm 放到 Attention / MLP 输出上. 文献里说的 reordered residual, 对应的就是这张表的 Outputs 行.
+是同一架构选择的两面. Table 1 写 Outputs; §2.1 式 (1)(2) 把 RMSNorm 放到 Attention / MLP 输出上. 文献里说的 reordered residual, 对应的就是这张表的 Outputs 行.
 
 
 model) to improve throughput.
@@ -309,8 +309,7 @@ Table 2 Comparison of OLMo 1 and OLMo 2 tokenizers on a 1B model pretrained for 
 
 表 2｜Comparison of OLMo 1 and OLMo 2 tokenizers on a 1B model pretrained for 100B tokens from DCLM baseline. Following Gu et al. (2024), OLMES and MMLU use CF format, which is more info
 
-> **看表:** Table 2 在 1B / 100B token 上 OLMES (CF) 59.8→60.6, 作者为何说大词表此刻还略吃亏?
-> 正文引 Tao et al. (2024): 在该模型规模与算力预算下, 更大词表略吃亏; 他们预期更大模型与更多 token 时收益更明显. 表内增益是可测的, 但作者没把小档增益说成词表已充分兑现.
+正文引 Tao et al. (2024): 在该模型规模与算力预算下, 更大词表略吃亏; 他们预期更大模型与更多 token 时收益更明显. 表内增益是可测的, 但作者没把小档增益说成词表已充分兑现.
 
 
 We compare the two tokenizers at a smaller scale in Table 2. We see measurable gains when switching to the new tokenizer, particularly in OLMES tasks. Per Tao et al. (2024), at this model size and compute budget, the larger OLMo 2 tokenizer is at a slight disadvantage; we expect improvement coming from larger vocabulary to be more decisive at larger scales and for models trained on more tokens.
@@ -340,7 +339,7 @@ Table 3 OLMo 2 hyperparameters.
 
 表 3｜OLMo 2 hyperparameters.
 
-> 是. §2.3 写明为缩放 32B 才切到 GQA, 灵感来自同期 Qwen 3. 7B 与 13B 仍是 Q/KV 等头的 MHA. 7B/13B 仍是 MHA, 不要外推成全家标配.
+是. §2.3 写明为缩放 32B 才切到 GQA, 灵感来自同期 Qwen 3. 7B 与 13B 仍是 Q/KV 等头的 MHA. 7B/13B 仍是 MHA, 不要外推成全家标配.
 
 
 **Stage 1: Pretraining** The first stage—pretraining—is the longest (90–95% of training FLOPs). We report key architecture and training details in Table 3. Key details include our switch from multi-head attention (MHA) to grouped query attention (GQA) (Ainslie et al., 2023) to scale the 32B model, inspired by its use in concurrent work Qwen 3 (Yang et al., 2025). OLMo 2 training used random initialization from a truncated normal distribution with a mean of 0 and a standard deviation of 0.02 and a learning rate schedule that warms up the learning rate from 0 to the peak learning rate over 2000 steps, followed by a cosine decay calibrated to reach 10% of the peak learning rate after a specified max tokens.
@@ -365,7 +364,6 @@ We curated a smaller, focused mixture—**Dolmino Mix 1124**—to imbue the mode
 
 **模型合并 (Model Merging) 或「汤化 (Souping)」**
 
-> **回看:** 7B 三次 50B 再平均, 13B/32B 三次 100B 加一次 300B 再平均, soup 的权重是均匀平均吗?
 > §2.3: 最终模型是这些独立退火检查点的平均 (souping). 正文描述为 average / average of all four models, 没有另给非均匀权重表. 随机数据顺序不同, 但合并写法是均匀平均.
 
 
@@ -387,8 +385,7 @@ Table 4 Composition of the pretraining data for OLMo 2. The OLMo 2 1124 Mix is c
 
 表 4｜Composition of the pretraining data for OLMo 2. The OLMo 2 1124 Mix is composed of StarCoder (Li et al., 2023b; Kocetkov et al., 2022), peS2o (Soldaini and Lo, 2023), web text from
 
-> **问:** Table 4 总计 3.90T token, 其中 DCLM-Baseline 3.71T, 是不是 mid-training 也算进这 3.90T?
-> 不算. Table 4 是 Stage 1 的 OLMo 2 Mix 1124. Mid-training 另见 Table 5 的 Dolmino. §2.3 还写 7B 预训练阶段约 3.90T, 全流程 4.05T.
+不算. Table 4 是 Stage 1 的 OLMo 2 Mix 1124. Mid-training 另见 Table 5 的 Dolmino. §2.3 还写 7B 预训练阶段约 3.90T, 全流程 4.05T.
 
 
 The mix used for this stage is shown in Table 4. It consists of approximately 3.9 trillion tokens, with over 95% derived from web data. We refer to this set as OLMo 2 Mix 1124. This is the same pretraining data used in OLMoE (Muennighoff et al., 2024): We combine data from DCLM (Li et al., 2024) and Dolma 1.7 (Soldaini et al., 2024). From DCLM, we use the “baseline 1.0 ” mix. From Dolma, we use the arXiv (Together AI, 2023), OpenWebMath (Paster et al., 2023), Algebraic Stack, peS2o (Soldaini and Lo, 2023), and Wikipedia subsets. arXiv, OpenWebMath, and Algebraic Stack were originally part of ProofPile II (Azerbayev et al., 2023). Finally, we include code from StarCoder (Li et al., 2023b), which is derived from permissively-licensed repositories from GitHub (Kocetkov et al., 2022). In an attempt to include higher quality code, we remove any document from a repository with fewer than 2 stars on GitHub. Further, through manual inspection of this source, we found it to contain documents encoded in binary format or containing mostly numerical
@@ -429,7 +426,6 @@ Table 6 Evaluations comparing OLMo 2 to other base models on a subset of the OLM
 
 表 6｜Evaluations comparing OLMo 2 to other base models on a subset of the OLMES suite (full suite details and results in Appendix $\mathrm { A . 1 ) }$ . Training FLOPs are computed usi
 
-> **对一下:** Table 6 中 OLMo 2 7B Avg 62.9, FLOP×10^23=1.8, 相对 Llama 3.1 8B 的 7.2, 作者的 Pareto 主张靠哪张图?
 > Figure 1 把性能对预训练 FLOPs 画成 Pareto 前沿; Table 6 给分项. 主张是同性能档用更少 FLOPs, 且数据/代码全开, 不是宣称每一格都绝对第一.
 
 
@@ -514,7 +510,6 @@ Figure 2 Training loss and gradient norm curves (over training steps) for OLMo-0
 
 图 2｜OLMo-0424 与 OLMo 2 的训练 loss 与梯度范数曲线 (横轴为 step). 稳定性干预后尖峰明显减少.
 
-> **回看:** Figure 2 对比 OLMo-0424 与 OLMo 2 的 loss / grad norm, §3 把尖峰归因于哪几类干预?
 > §3 列: 重复 n-gram 过滤 (§3.1), 初始化改 std=0.02 (§3.2), RMSNorm + 重排 norm + QK-norm (§3.3), AdamW ε→1e-8 与 embedding 不去 weight decay (§3.4). Figure 2 是组合干预后的曲线, 不是单因子消融.
 
 
@@ -570,7 +565,6 @@ Figure 3 Comparison of the gradient norm for two runs, one without n-gram filter
 
 图 3｜有 / 无重复 n-gram 过滤的两趟跑的梯度范数对照.
 
-> **拆开:** Figure 3 说去掉长重复 n-gram 后 grad norm 尖峰变少, 过滤阈值在正文哪里?
 > §2.4.1 / §3.1: 去掉重复长度 ≥32 的 n-gram 文档. Figure 3 是有/无该过滤的 grad norm 对照. 作者还说「广泛移除」会降低尖峰频率, 但并不保证单独这一刀就能彻底消掉发散.
 
 
@@ -609,7 +603,6 @@ Figure 4 In our test setting, the OLMo-0424 initialization scheme shows instabil
 
 图 4｜测试设定下 OLMo-0424 初始化很快不稳, OLMo 2 初始化保持稳定.
 
-> **确认:** Figure 4 / Figure 5 的 growth exponent α 接近 0 意味着什么, 和 OLMo-0424 初始化差在哪?
 > §3.2: α 近 0 表示激活与梯度随深度的增长被压住. OLMo 2 全参数 N(0,0.02^2) 截断正态; OLMo-0424 用 scaled init, 测试设定下更快不稳. Figure 5 跨 width 显示 OLMo 2 的 α 更靠近 0.
 
 
@@ -702,7 +695,6 @@ Figure 8 Flash Attention’s implementation of z-loss does not match a manual im
 
 图 8｜Flash Attention 库的 z-loss 实现与手工 PyTorch 不一致 (反向尤甚).
 
-> **停一下:** Figure 8 显示 Flash Attention 的 z-loss 实现与手工 PyTorch 不一致, 作者最终用哪边?
 > §3.3.3: 前向可能接近, 但反向不匹配. 他们采用与手工实现一致的 z-loss (权重 10^{-5}, 见表 1), 并指出流行库实现不能直接当正确公式用. 问的是数值一致性, 不是「要不要 z-loss」本身.
 
 
@@ -724,7 +716,7 @@ Figure 9 Setting AdamW’s ϵ to ${ 1 0 } ^ { - 8 }$ lowers and stabilizes the n
 
 图 9｜把 AdamW 的 ε 设为 $10^{-8}$ 可降低并稳住训练早期的梯度范数.
 
-> 不是. §3.4.1 只动 ε; 10^{-8} 是 PyTorch AdamW 默认. 图表现的是早期梯度范数更低更稳. 不要把它说成换了整套 AdamW 超参表.
+不是. §3.4.1 只动 ε; 10^{-8} 是 PyTorch AdamW 默认. 图表现的是早期梯度范数更低更稳. 不要把它说成换了整套 AdamW 超参表.
 
 
 #### 3.4.2 Weight decay on embeddings 3.4.2 Embedding 的 weight decay
@@ -741,7 +733,6 @@ Figure 10 Weight decay applied to token embeddings leads to a gradual decrease i
 
 图 10｜对 token embedding 施加 weight decay 会使 embedding 范数逐渐下降并改变训练动态.
 
-> **问:** Figure 10 显示对 token embedding 做 weight decay 会让 embedding norm 渐降, OLMo 2 最终怎么做?
 > Table 1 / §3.4.2: Weight Decay on Embeddings = No. 图说明若继续衰减, embedding norm 下降并连带改变训练动态; 因此 OLMo 2 取消对 embedding 的 weight decay.
 
 
@@ -775,7 +766,6 @@ Figure 11 Higher learning rates perform better at first but are eventually overt
 
 图 11｜更高学习率起初更好, 随后被更低学习率反超; 线性退火到 0 改变终局.
 
-> **看表:** Figure 11 与 Table 8: 更高峰值学习率起初更好但后来被更低学习率反超, 线性退火到 0 扮演什么角色?
 > §4.1: 余弦日程末段再线性把学习率接到 0 (anneal). Figure 11 显示高 LR 先领先后被赶超; 退火改变终局. Table 8 在更长跑上也给出一致趋势. Mid-training 的 LR 线性降到 0 是 Stage 2 的定义动作.
 
 
@@ -857,7 +847,7 @@ Table 9 Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraini
 
 表 9｜Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraining and mid-training stages (setup mirrors Table 6). Pretrain checkpoints have been trained on 4 trillion (1B
 
-> 附录 B / 正文引用: Dolmino Mix 1124 对 1B 的收益约 +37.0%, 高于更大模型. Table 9 是各档 pretrain 终点 vs mid-train 终点的对照. 口径是同一 OLMES 设定下的相对抬升, 不是 FLOPs 归一化后的另一张表.
+附录 B / 正文引用: Dolmino Mix 1124 对 1B 的收益约 +37.0%, 高于更大模型. Table 9 是各档 pretrain 终点 vs mid-train 终点的对照. 口径是同一 OLMES 设定下的相对抬升, 不是 FLOPs 归一化后的另一张表.
 
 
 Table 9 summarizes the dramatic impact of this mid-training phase on both development and held-out evals. OLMo 2 7B model improves, on average by 10.6 points, surpassing the larger 13B model after the pretraining stage. For its part, OLMo 2 13B benefits equally from mid-training, improving its average performance by 10.3 points. Both models see improvements in knowledge-intensive, multiple-choice (Arc challenge: 72.6 → 79.8 for 7B, 80.2 → 83.5 for 13B; MMLU: 59.8 → 63.7 for 7B, 63.4 → 67.5 for 13B; AGIEval: 44.6 → 50.4 for 7B, 48.2 → 54.2 for 13B), reading comprehension (Natural Questions: 29.0 → 36.9 for 7B, 34.6 → 46.7 for 13B; DROP: 40.7 → 60.8 for 7B, 49.6 → 70.7 for 13B), and math skills (GSM8K: 24.1 → 67.5 for 7B, 37.3 → 75.1 for 13B) benchmarks.
@@ -943,7 +933,6 @@ Table 11 Comparison of mid-training mixes introduced in Table 10. Each row corre
 
 表 11｜Comparison of mid-training mixes introduced in Table 10. Each row corresponds to a 50 billion token training run following learning rate schedule described in Section §4.1 (except 
 
-> **拆开:** Table 11 每行都是 50B token 的 mid-training, PT Mix 单独退火为什么也有提升?
 > §4.3: 仅学习率退火 (PT Mix) 就在平均指标上带来可观改进; 再叠加高质量 web / 非 web / 数学源继续涨. 也就是说 Stage 2 的收益不全是「换数据」, 也包含退火日程本身.
 
 
@@ -1311,7 +1300,6 @@ Table 18 The hyperparameters of PPO used for optimizing against the verifiable r
 
 表 18｜The hyperparameters of PPO used for optimizing against the verifiable reward function with RLVR. Hyparameters with different settings for the 7B and 13B parameter models are highli
 
-> **对一下:** Table 18 写 PPO 优化可验证奖励, 与摘要里的 RLVR 是什么关系?
 > RLVR = reinforcement learning with verifiable rewards; 实现上用 PPO 去优化可验证奖励函数 (Table 18). 专名 RLVR 指奖励可自动核验的设定, PPO 是优化器. 不要把 RLVR 说成另一种与 PPO 并列的独立算法名.
 
 
@@ -1351,8 +1339,7 @@ Figure 15 The top row shows the training curves of OLMo-2-1124-7B-Instruct on ve
 
 图 15｜OLMo-2-1124-7B-Instruct 的可验证奖励, KL 与响应长度等训练曲线.
 
-> **停一下:** Figure 15 的 verifiable rewards / KL / response length 曲线, 能否单独证明 7B Instruct 已超过 GPT-4o Mini?
-> 不能. Figure 15 是 RLVR 训练动态. 与 GPT-3.5 Turbo / GPT 4o Mini 的对照在 Table 7 的下游指标. 训练曲线不替代 Table 7 的对外主张.
+不能. Figure 15 是 RLVR 训练动态. 与 GPT-3.5 Turbo / GPT 4o Mini 的对照在 Table 7 的下游指标. 训练曲线不替代 Table 7 的对外主张.
 
 
 investment in other processes and systems is required to make them perform at peak efficiency. Data centers need high-speed interconnect between compute nodes to make sure expensive GPUs never have to wait for data to arrive. Training jobs need access to large amounts of fast, reliable storage for access to training data. GPUs have higher failure rates than most other hardware, and a single training run might require thousands of them at the same time, making effective monitoring and replacement policies a necessity. This section provides details about our hardware and software investments to support OLMo 2 workloads.
@@ -2346,5 +2333,4 @@ Figure 25 Prompt used to generate solutions for hard math word problems.
 
 <!-- residual QA anchors -->
 
-> **确认:** Table 12 的 microanneal 用来决定数学混合比例, 它和最终 100B/300B 退火是同一预算吗?
 > §4.4.2 把 microanneal 用作低成本探针, 先在短预算上比较数学数据比例与来源. 最终 Dolmino 仍按 50B、100B 和 300B 三档采样 (§2.3 / Table 5), 正式训练使用据此选出的数据配方.
