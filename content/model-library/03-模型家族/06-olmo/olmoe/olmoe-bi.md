@@ -202,7 +202,7 @@ OLMoE-1B-7B 完整的预训练配置见 §B.
 
 **预训练数据** 我们混合 DCLM [90] 与 Dolma 1.7 [163] 的数据, 包括: (1) Common Crawl 经质量过滤的子集, 称为 DCLM-Baseline; (2) DCLM 与 Dolma 1.7 都使用的 StarCoder, Algebraic Stack 与 arXiv; (3) 来自 Dolma 1.7 的 peS2o 与 Wikipedia. 这个预训练数据集记为 OLMoE-Mix.
 
-To all sources above, we apply a filter that removes all documents with a sequence of 32 or more repeated n-grams, where an n-gram is any span of 1 to 13 tokens. 
+To all sources above, we apply a filter that removes all documents with a sequence of 32 or more repeated n-grams, where an n-gram is any span of 1 to 13 tokens.
 For the StarCoder subset, we also remove any document from a repository with fewer than 2 stars on GitHub, whose most frequent word constitutes over 30% of the document, or whose top-2 most frequent words constitute over 50% of the document.
 
 对上述所有来源, 我们施加一个过滤器: 只要文档中出现 32 次及以上重复的 n-gram 序列就整篇删除, 这里 n-gram 指长度为 1 到 13 个 token 的任意片段. 对 StarCoder 子集, 我们还删除以下文档: 所在仓库 GitHub star 数少于 2 的, 最高频词占文档 30% 以上的, 前两个高频词合计占 50% 以上的.
@@ -2186,7 +2186,7 @@ Table 15: Dolmino composition and sampling distribution used for OLMoE-1B-7B-012
 
 表 15｜OLMoE-1B-7B-0125 退火所用 Dolmino 数据的构成与采样比例, 其中过滤后的 DCLM 占 50.2%, Dolmino Math 占 17.5%, 去污染的 FLAN 占 16.7%.
 
-For pretraining, OLMoE-1B-7B-0125 uses the same data mix for the first stage of training. Following OLMo 2 [127], we anneal this new model on a curated mix of high-quality sources. 
+For pretraining, OLMoE-1B-7B-0125 uses the same data mix for the first stage of training. Following OLMo 2 [127], we anneal this new model on a curated mix of high-quality sources.
 We sample this mix from the Dolmino dataset,<sup>19</sup> a collection of high-quality web pages, academic content, question answering pairs, instruction data, and math problems. We use the same 100B tokens sample of Dolmino used to anneal OLMo 2 13B; a summary of this dataset is in Table 15.
 
 预训练方面, OLMoE-1B-7B-0125 第一阶段使用相同的数据配比. 参照 OLMo 2 [127], 我们在一个精选的高质量数据混合上对新模型退火. 该混合采样自 Dolmino 数据集,<sup>19</sup> 包含高质量网页, 学术内容, 问答对, 指令数据与数学题. 我们使用退火 OLMo 2 13B 时所用的同一份 100B token Dolmino 样本, 概要见 Table 15.
