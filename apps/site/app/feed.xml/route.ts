@@ -1,3 +1,7 @@
+/**
+ * 从公开索引生成只读 Atom Feed，不读取草稿、批注或本地数据库。
+ * 只实现 GET；公开投影不可读时让静态构建失败，避免输出残缺或越权 Feed。
+ */
 import { getManifest, articleHref } from "@/lib/publicContent";
 
 export const dynamic = "force-static";

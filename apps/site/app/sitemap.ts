@@ -1,3 +1,7 @@
+/**
+ * 从公开索引生成 sitemap；草稿与私人路径无法进入 URL 集合。
+ * 本模块只读，公开投影损坏会阻断构建，不尝试从 content 或数据库补数据。
+ */
 import type { MetadataRoute } from "next";
 import { articleHref, getManifest, uniqueCategories, uniqueTags } from "@/lib/publicContent";
 

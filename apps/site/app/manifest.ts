@@ -1,3 +1,7 @@
+/**
+ * 公开站静态 Web Manifest。数据为固定品牌元信息，不读取任何用户或运行时状态；
+ * 这里只返回 GET 可序列化配置，类型或构建错误会直接阻断静态导出。
+ */
 import type { MetadataRoute } from "next";
 
 export const dynamic = "force-static";

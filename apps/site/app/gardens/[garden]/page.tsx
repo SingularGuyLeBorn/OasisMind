@@ -1,3 +1,7 @@
+/**
+ * 公开花园静态路由；花园元数据、首页和文章列表全部来自公开生成物。
+ * 路由只读，不连接本地服务；未知花园返回 404，投影错误由构建阶段暴露。
+ */
 import type { Metadata } from "next";
 import { GardenClient } from "@/components/GardenClient";
 import { getGarden, getManifest } from "@/lib/publicContent";

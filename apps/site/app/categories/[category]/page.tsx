@@ -1,3 +1,7 @@
+/**
+ * 公开分类归档路由；可生成参数的唯一事实源是公开索引。
+ * 页面只读且没有本地工作台依赖，不存在的分类返回 404，索引损坏时构建失败。
+ */
 import type { Metadata } from "next";
 import { ArchiveClient } from "@/components/ArchiveClient";
 import { getManifest, uniqueCategories } from "@/lib/publicContent";

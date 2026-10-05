@@ -1,3 +1,7 @@
+/**
+ * 独立公开站的根布局与元数据边界。它只组合公开导航和样式，不初始化本地 Agent、鉴权或 tRPC。
+ * 最终域名由环境变量提供；缺失时仅使用带标记的本地构建默认值。
+ */
 import type { Metadata } from "next";
 import "@oasismind/markdown/styles.css";
 import "./globals.css";

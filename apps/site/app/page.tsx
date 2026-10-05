@@ -1,3 +1,7 @@
+/**
+ * 公开首页服务端组件；精选文章与统计只取公开清单，保持现有亮色品牌视觉。
+ * 清单缺失或不合法时静态构建失败，禁止回退连接本地工作台或展示草稿。
+ */
 import Link from "next/link";
 import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
 import { PostCard } from "@/components/PostCard";

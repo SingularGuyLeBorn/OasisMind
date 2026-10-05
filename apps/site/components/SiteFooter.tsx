@@ -1,3 +1,4 @@
+/** 公开站静态页脚；无数据依赖、无交互权限，构建错误直接由 Next 暴露。 */
 export function SiteFooter() {
   return (
     <footer className="site-footer">

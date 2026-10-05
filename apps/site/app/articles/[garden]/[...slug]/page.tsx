@@ -1,3 +1,7 @@
+/**
+ * 公开文章静态路由。参数和正文只来自生成后的公开清单，不访问 content、SQLite 或 tRPC。
+ * 未进入公开投影的 slug 返回 404；投影损坏则让构建失败，不回退读取私人数据。
+ */
 import type { Metadata } from "next";
 import { ArticleClient } from "@/components/ArticleClient";
 import { getManifest, getPost } from "@/lib/publicContent";

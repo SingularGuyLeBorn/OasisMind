@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * 公开知识索引的本地搜索与筛选 UI；输入数据只来自已导出的 search.json。
+ * 搜索不会访问完整 content 或产生写请求，加载失败会保留可见错误态。
+ */
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import type { PublicSearchEntry } from "@oasismind/shared";

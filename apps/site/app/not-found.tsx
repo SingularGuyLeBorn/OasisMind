@@ -1,3 +1,7 @@
+/**
+ * 公开站统一 404。它不尝试查询本地完整知识库，以免用错误恢复路径泄露草稿是否存在。
+ * 访客只能返回公开首页，没有编辑、登录或写入入口。
+ */
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 

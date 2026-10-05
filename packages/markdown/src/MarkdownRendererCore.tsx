@@ -1,3 +1,7 @@
+/**
+ * 本地工作台与公开站共享的只读 Markdown 管线。正文由调用方提供，核心不访问网络、文件或编辑 API；
+ * raw HTML 必须先经过统一白名单清洗，非法协议/标签被移除，插件异常则由所属 React 边界显式暴露。
+ */
 import type { ComponentProps } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
@@ -22,10 +26,7 @@ export interface MarkdownRendererCoreProps {
   remarkRehypeOptions?: ComponentProps<typeof ReactMarkdown>["remarkRehypeOptions"];
 }
 
-/**
- * 无业务请求、无编辑能力的 Markdown 核心。
- * 插件顺序不可随意调整：raw HTML 先建树，sanitize 随即清洗，再做 KaTeX 与代码高亮。
- */
+/** 插件顺序不可随意调整：raw HTML 先建树，sanitize 随即清洗，再做 KaTeX 与代码高亮。 */
 export function MarkdownRendererCore({
   content,
   className,

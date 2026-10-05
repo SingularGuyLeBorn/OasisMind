@@ -1,3 +1,7 @@
+/**
+ * 公开文章目录的纯 Markdown 标题提取器。输入仅是已公开正文，无文件或网络权限；
+ * 不可识别的行会被忽略，重复标题通过稳定后缀消歧而不会覆盖前项。
+ */
 export interface ArticleHeading {
   depth: 2 | 3;
   text: string;

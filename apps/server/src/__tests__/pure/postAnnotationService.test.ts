@@ -1,3 +1,4 @@
+/** 私人批注文件 Service 测试：只使用临时 content 目录，覆盖持久化、隔离与损坏失败语义。 */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * 公开站统一 JSON 读取 Hook，仅允许浏览器对生成物发同源 GET。
+ * 它不携带业主凭据、不调用写接口；取消请求不报错，HTTP/解析失败则进入显式 error 状态。
+ */
 import { useEffect, useState } from "react";
 
 interface PublicJsonState<T> {

@@ -1,3 +1,4 @@
+/** 统一出站台账的离线状态机测试：以临时 data 目录为事实源，不调用真实 QQ/微信。 */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * 公开文章阅读壳：从版本化 JSON 取正文，组合目录、Markdown 与机器可读链接。
+ * 它没有编辑或批注写能力；文章不存在或请求失败时显示只读错误态。
+ */
 import Link from "next/link";
 import { ArrowLeft, Braces, FolderOpen } from "lucide-react";
 import type { PublicPost } from "@oasismind/shared";

@@ -3,6 +3,8 @@
  *
  * 批注是用户知识资产，不把 SQLite 当事实源。每条批注独立保存为
  * content/.private/annotations/{文章哈希}/{批注 id}.yaml：数据库重建不丢，公开生成器也不会扫描点目录。
+ * Service 只接受已鉴权路由传入的文章 id，并校验路径隔离；文章不存在、YAML 损坏或原子替换失败
+ * 都返回明确错误，不静默丢批注，也不把私人内容写入文章正文。
  */
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";

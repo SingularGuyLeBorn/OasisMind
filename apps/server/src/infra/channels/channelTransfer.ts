@@ -3,7 +3,8 @@
  *
  * Agent、自动回复和管理页重试都必须经过这里：先查持久化幂等台账，再把同一份
  * ChannelAttachment 交给渠道适配器。这样业务层不需要猜 QQ/微信各自的上传状态，
- * 也不会因工具重试绕过 sent/uncertain 闸门。
+ * 也不会因工具重试绕过 sent/uncertain 闸门。事实源是 data 下的传输台账；本模块只允许
+ * 已启用适配器发送 ready 附件，能力不符、超限或状态不确定时都显式失败。
  */
 
 import { createHash } from "node:crypto";

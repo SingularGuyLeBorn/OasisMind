@@ -1,3 +1,7 @@
+/**
+ * 公开文章摘要卡片；只渲染调用方传入的白名单摘要并生成公开路由。
+ * 组件无数据读取和写权限，字段缺失由 TypeScript/上游投影验证阶段拦截。
+ */
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { PublicPostSummary } from "@oasismind/shared";

@@ -1,3 +1,4 @@
+/** 公开目录纯函数测试：不读取文件，锁定重复标题和层级的稳定输出。 */
 import { describe, expect, it } from "vitest";
 import { extractArticleHeadings } from "../headings";
 

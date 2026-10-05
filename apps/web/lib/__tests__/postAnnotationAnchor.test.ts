@@ -1,3 +1,4 @@
+/** 批注锚点纯函数测试：不接触私人文件，覆盖正文漂移后的重定位与显式失配。 */
 import { describe, expect, it } from "vitest";
 import {
   createPostAnnotationAnchor,

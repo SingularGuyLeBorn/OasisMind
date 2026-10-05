@@ -1,3 +1,7 @@
+/**
+ * 公开站 About 静态页；内容写在组件内，不读取本地工作台数据。
+ * 页面没有鉴权或写入口，渲染失败由 Next 静态构建直接报错。
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";

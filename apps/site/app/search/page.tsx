@@ -1,3 +1,7 @@
+/**
+ * 面向访客与 Agent 的公开搜索页，只查询导出的 search.json。
+ * 页面没有全文库、编辑器或写权限；索引请求失败时显示失败态而不读取本地后端。
+ */
 import type { Metadata } from "next";
 import { KnowledgeBrowser } from "@/components/KnowledgeBrowser";
 

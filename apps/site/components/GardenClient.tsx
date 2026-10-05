@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * 公开花园详情客户端；事实源是生成器输出的花园 JSON 与文章摘要。
+ * 组件只发同源 GET，不触达本地工作台；缺失或损坏数据会显示明确错误。
+ */
 import type { PublicGarden, PublicPostSummary } from "@oasismind/shared";
 import { PostCard } from "@/components/PostCard";
 import { PublicMarkdown } from "@/components/PublicMarkdown";

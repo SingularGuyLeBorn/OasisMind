@@ -1,6 +1,7 @@
 /**
  * 公开站唯一数据入口。
  * 只读取生成器产出的 public/api/v1，禁止回退到 content、SQLite 或本地 server。
+ * 读取范围受固定目录约束；文件缺失、路径越界或 JSON 损坏会抛出构建错误，不猜测私人来源补齐。
  */
 import fs from "node:fs";
 import path from "node:path";

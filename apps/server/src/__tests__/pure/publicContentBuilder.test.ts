@@ -1,3 +1,4 @@
+/** 公开投影安全测试：临时知识库是事实源，任何草稿、越界资源或额外产物都必须被拒绝。 */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

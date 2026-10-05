@@ -1,4 +1,7 @@
-/** 公开内容 API 契约。这里只包含可部署字段，禁止加入本机路径、编辑状态或私人数据。 */
+/**
+ * 公开内容 API 的跨端类型事实源，只允许可部署白名单字段。
+ * 本模块不读写数据；本机路径、编辑状态或私人数据一旦加入，将由生成器反向验真失败拦截。
+ */
 export const PUBLIC_CONTENT_SCHEMA_VERSION = 1;
 
 export interface PublicGarden {

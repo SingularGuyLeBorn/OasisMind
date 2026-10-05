@@ -1,3 +1,4 @@
+/** 共享 Markdown 安全契约测试：危险标签/协议必须清除，受限手写属性必须保留。 */
 import { describe, expect, it } from "vitest";
 import { markdownSanitizeSchema, safeMarkdownUrlTransform } from "../index.js";
 

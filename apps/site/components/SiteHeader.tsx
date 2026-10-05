@@ -1,3 +1,7 @@
+/**
+ * 公开站主导航，只链接公开首页、知识库、搜索和 About。
+ * 不读取登录态，也不展示本地编辑/Agent 入口；路由错误交给对应静态 404 处理。
+ */
 import Link from "next/link";
 import { BookOpen, Search } from "lucide-react";
 

@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * 公开 Markdown 展示层。正文来自已验证的发布投影，安全规则由共享渲染核心负责；
+ * 手写标记只产生视觉效果，不绑定评论或写接口，非法标记会被 sanitize/解析逻辑忽略。
+ */
 import { useEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import { MarkdownRendererCore } from "@oasismind/markdown";
 import { annotate } from "rough-notation";

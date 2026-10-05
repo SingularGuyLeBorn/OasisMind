@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * 标签/分类归档的只读客户端筛选器；事实源是同源公开 search.json。
+ * 不调用本地 tRPC 或写接口，请求失败会在页面显示错误而不是静默空列表。
+ */
 import type { PublicSearchEntry } from "@oasismind/shared";
 import { PostCard } from "@/components/PostCard";
 import { usePublicJson } from "@/lib/usePublicJson";
