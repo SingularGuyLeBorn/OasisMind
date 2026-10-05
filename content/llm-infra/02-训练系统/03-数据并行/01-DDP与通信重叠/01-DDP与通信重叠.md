@@ -51,7 +51,7 @@ $$
 
 ## 4. 梯度累积与 `no_sync`
 
-设每 rank 的 micro-batch 为 $b$，累积次数为 $a$，数据并行规模为 $D$，则一次 optimizer step 的 global batch 为 $B=abD$。若 loss 在每个 micro-batch 上取平均，常见做法是再除以 $a$ 后 backward，使累积 buffer 最终对应本 rank 的 $ab$ 个样本；最后一次同步把各 rank 结果平均，得到 global batch 的平均梯度。
+设每 rank 的 micro-batch 为 $b$，累积次数为 $a$，数据并行规模为 $D$，则一次 optimizer step 的 global batch 为 $B=abD$。若 loss 在每个 micro-batch 上取平均，常见做法是再除以 $a$ 后 backward，使累积 buffer 对应本 rank 的 $ab$ 个样本；同步轮把各 rank 结果平均，得到 global batch 的平均梯度。
 
 默认 DDP 每次 backward 都会触发 bucket all-reduce。累积 $a=8$ 次却不使用 `no_sync()`，同一批参数会通信八次，总算法字节近似放大八倍。前七次 backward 放在 `with ddp.no_sync():` 内，只向本地 `.grad` 或 bucket view 累加；第八次离开上下文，hook 才按正常路径发起规约。`forward` 也必须位于 `no_sync` 上下文内部，因为 DDP 会在 forward 设置本轮 reducer 状态。
 
@@ -67,7 +67,7 @@ $$
 E_i=\max(0,r_i+c_i-T_b).
 $$
 
-多个 bucket 使用同一 NCCL stream 时还会排队，实际开始时刻为 $s_i=\max(r_i,s_{i-1}+c_{i-1})$，最后暴露量取 $\max_i(s_i+c_i-T_b,0)$。这说明把 bucket 切小只会让早期 bucket 更早 ready；链路若已被前序通信占满，继续切小会增加启动次数，却不会缩短最后完成时刻。
+多个 bucket 使用同一 NCCL stream 时还会排队，实际开始时刻为 $s_i=\max(r_i,s_{i-1}+c_{i-1})$，暴露量取 $\max_i(s_i+c_i-T_b,0)$。把 bucket 切小只会让早期 bucket 更早 ready；链路若已被前序通信占满，继续切小会增加启动次数，却不会提前整组通信的完成时刻。
 
 取四段反向计算各 3 ms，两个 bucket 通信各 5 ms。bucket A 在第 6 ms ready，bucket B 在第 12 ms ready。A 从 6 到 11 ms 传输，被后续 6 ms 计算完全遮蔽；B 从 12 到 17 ms 传输，反向已结束，因此 step 至少暴露 5 ms。若把 B 拆成两个 bucket，并分别在 9 ms、12 ms ready，第一块可在 11 到 16 ms 传输，第二块排到 16 到 21 ms；链路串行时反而暴露 9 ms。有效优化需要改变 ready 分布、总字节、带宽或通信与计算的资源冲突，单独减少 bucket 大小没有单调收益。
 
@@ -87,7 +87,7 @@ Straggler 还会跨 step 放大。同步 optimizer 必须等待最慢 rank，较
 
 再固定 bucket，测试累积次数 $a=1,2,4,8$。正确使用 `no_sync` 时，每个 optimizer step 的规约次数大体稳定，每 token 通信字节随累积增加而下降；未抑制同步时规约次数与 $a$ 同比增长。比较参数 checksum 和一次更新后的权重，可以同时发现漏同步与 loss 缩放错误。
 
-最后人为让一个 rank 在 backward 前延迟 5 ms。若所有 rank 的 collective completion 整体后移约 5 ms，而链路吞吐没有变化，就验证了迟到传播。撤掉延迟后仍持续变慢，则继续检查数据队列、CUDA stream 依赖或网络拥塞。这样的对照实验把“通信慢”拆成到达时间、传输时间和资源争用三个可证伪假设。
+再人为让一个 rank 在 backward 前延迟 5 ms。若所有 rank 的 collective completion 整体后移约 5 ms，而链路吞吐没有变化，就验证了迟到传播。撤掉延迟后仍持续变慢，则继续检查数据队列、CUDA stream 依赖或网络拥塞。这样的对照实验把“通信慢”拆成到达时间、传输时间和资源争用三个可证伪假设。
 
 ## 8. Reducer 维护哪些状态
 
@@ -133,15 +133,15 @@ DDP checkpoint 通常只需保存一份完整模型与 optimizer state，但还�
 
 ## 12. 生产时间线的判读
 
-某训练任务从 8 卡扩到 64 卡后，单卡计算从 120 ms 降到 24 ms，通信区间却达到 18 ms，step 为 39 ms。时间线显示前六个 bucket 与反向重叠，最后两个在反向结束后持续 15 ms。此时总通信 18 ms 不是首要线索，15 ms exposed tail 才是扩展损失主体。
+某训练任务从 8 卡扩到 64 卡后，单卡计算从 120 ms 降到 24 ms，通信区间却达到 18 ms，step 为 39 ms。时间线显示前六个 bucket 与反向重叠，尾部两个在反向结束后持续 15 ms。总通信 18 ms 只是累计量，15 ms exposed tail 才是扩展损失主体。
 
-进一步比较 rank ready 时间，若最后 bucket 在多数 rank 于 22 ms ready，某一 rank 到 31 ms 才 ready，网络优化最多只能处理 31 ms 之后的传输。检查慢 rank 发现对应数据 batch 含更长序列，局部 backward 多 9 ms。按 token 数平衡 batch 后，ready 偏差收敛，尾部随之缩短；链路和 NCCL 配置没有变化。
+进一步比较 rank ready 时间，若尾桶在多数 rank 于 22 ms ready，某一 rank 到 31 ms 才 ready，网络优化最多只能处理 31 ms 之后的传输。检查慢 rank 发现对应数据 batch 含更长序列，局部 backward 多 9 ms。按 token 数平衡 batch 后，ready 偏差收敛，尾部随之缩短；链路和 NCCL 配置没有变化。
 
-另一种情况是所有 rank 在 22 ms 左右 ready，collective completion 却分散到 37 ms，并伴随 NIC 重传或跨交换域流量。此时应核对 DP group 放置和网络基准。两种现象在汇总 profiler 中都可能显示“最后 bucket 通信 15 ms”，只有 per-rank ready 与传输事件能够区分计算迟到和链路慢。
+另一种情况是所有 rank 在 22 ms 左右 ready，collective completion 却分散到 37 ms，并伴随 NIC 重传或跨交换域流量。此时应核对 DP group 放置和网络基准。两种现象在汇总 profiler 中都可能显示「尾桶通信 15 ms」，只有 per-rank ready 与传输事件能够区分计算迟到和链路慢。
 
 ## 13. 从参数量算到一次完整 step
 
-考虑一个 7B 参数的稠密模型，BF16 梯度为 $2\times7\times10^9=14$ GB。数据并行规模 $D=8$，每节点 8 卡，DP group 完全位于一台 NVSwitch 机器内。若 Reducer 使用 256 MiB bucket，忽略最后一桶不满，共约 $14\text{ GB}/256\text{ MiB}\approx53$ 个 bucket。Ring all-reduce 每 rank 的算法流量为
+考虑一个 7B 参数的稠密模型，BF16 梯度为 $2\times7\times10^9=14$ GB。数据并行规模 $D=8$，每节点 8 卡，DP group 完全位于一台 NVSwitch 机器内。若 Reducer 使用 256 MiB bucket，忽略尾桶未满，共约 $14\text{ GB}/256\text{ MiB}\approx53$ 个 bucket。Ring all-reduce 每 rank 的算法流量为
 
 $$
 Q_{rank}=2\frac{D-1}{D}\times14\text{ GB}=24.5\text{ GB}.
@@ -149,11 +149,11 @@ $$
 
 目标拓扑对该消息分布的实测有效带宽为 180 GB/s，因此只计带宽的 collective 下界约 $24.5/180=136$ ms。53 次启动若每次端到端固定开销按 8 µs 估算，只增加约 0.42 ms；大 bucket 场景主要受持续带宽控制。这个 136 ms 是全部通信工作量的下界，不等于 step 必然增加 136 ms。
 
-把 backward 按层组分成十段，实测计算时间依次为 18、17、17、16、16、15、15、14、14、13 ms，总计 155 ms。梯度在每段结束时进入若干 bucket。前 45 个 bucket 在 130 ms 前 ready，NCCL stream 能持续工作；剩余 8 个集中在最后 25 ms 才 ready。原配置中最后一个 bucket 于 backward 结束时才发起，collective 在 183 ms 完成，因此相对 155 ms 无通信基线暴露 28 ms，step 的模型段约为 183 ms。
+把 backward 按层组分成十段，实测计算时间依次为 18、17、17、16、16、15、15、14、14、13 ms，总计 155 ms。梯度在每段结束时进入若干 bucket。前 45 个 bucket 在 130 ms 前 ready，NCCL stream 能持续工作；剩余 8 个集中在末段 25 ms 内 ready。原配置的尾桶直到 backward 结束才发起，collective 在 183 ms 完成，因此相对 155 ms 无通信基线暴露 28 ms，step 的模型段约为 183 ms。
 
-Profile 进一步显示最后一个 256 MiB bucket 混合了多个早期层参数与一个很晚 ready 的 embedding 梯度。将该 embedding 独立放进 64 MiB bucket，并按稳定 ready 顺序重建其余 bucket 后，倒数第二批通信提前 11 ms。总算法字节仍为约 24.5 GB，collective 累计区间也几乎不变，但最后完成时刻降到 174 ms，exposed tail 从 28 ms 降为 19 ms。
+Profile 进一步显示尾部 256 MiB bucket 混合了多个早期层参数与一个很晚 ready 的 embedding 梯度。将该 embedding 独立放进 64 MiB bucket，并按稳定 ready 顺序重建其余 bucket 后，倒数第二批通信提前 11 ms。总算法字节仍为约 24.5 GB，collective 累计区间也几乎不变，但整组完成时刻降到 174 ms，exposed tail 从 28 ms 降为 19 ms。
 
-继续把所有 bucket 都缩到 64 MiB 后，数量增至约 214。理论带宽项不变，实测却因更多 launch、调度和小消息效率下降，最后完成时刻回升到 179 ms。这个结果说明 bucket 调优改变的是 ready 粒度和排队形状；它不减少梯度字节，也不存在“越小越容易重叠”的单调关系。
+继续把所有 bucket 都缩到 64 MiB 后，数量增至约 214。理论带宽项不变，实测却因更多 launch、调度和小消息效率下降，整组完成时刻回升到 179 ms。这个结果说明 bucket 调优改变的是 ready 粒度和排队形状；它不减少梯度字节，也不存在「越小越容易重叠」的单调关系。
 
 若随后启用四次梯度累积和正确的 `no_sync`，每个 optimizer step 仍只规约一次 14 GB 梯度，每 token 通信成本降为原来的四分之一；step 本身多执行三轮本地 forward/backward。若四轮全部同步，总通信流量会变成约 98 GB/rank，链路下界也接近四倍。比较方案时应使用 token/s，而不是只看一个 step 的毫秒数。
 
@@ -183,7 +183,7 @@ Profile 进一步显示最后一个 256 MiB bucket 混合了多个早期层参�
 
 ### 14.4. 分层 All-Reduce 的流量怎么走
 
-跨节点 DDP 常把 GPU 分为节点内组与节点间组。每节点有 $G$ 张 GPU、节点数为 $N$ 时，一种分层实现先在节点内 reduce-scatter，让每张 GPU 得到梯度的一段；相同 local rank 再跨 $N$ 个节点规约对应分段；最后节点内 all-gather。大流量优先走 NVLink/NVSwitch，跨节点网络只承载每个 local rank 的分片。
+跨节点 DDP 常把 GPU 分为节点内组与节点间组。每节点有 $G$ 张 GPU、节点数为 $N$ 时，一种分层实现会在节点内 reduce-scatter，让每张 GPU 得到梯度的一段；相同 local rank 跨 $N$ 个节点规约对应分段；完成后在节点内 all-gather。大流量优先走 NVLink/NVSwitch，跨节点网络只承载每个 local rank 的分片。
 
 假设 bucket 为 256 MiB，单节点 8 卡、共 16 节点。节点内 reduce-scatter 后每卡保留 32 MiB；跨节点 ring 对这 32 MiB 的每 rank 算法流量约为 $2\times15/16\times32=60$ MiB；节点内还要完成 reduce-scatter 与 all-gather。若直接让 128 个 rank 在同一平面 ring 上处理 256 MiB，算法字节虽然仍接近两倍 payload，慢速跨节点边会承载更多分段并受拓扑映射影响。分层算法的收益来自让不同链路承担匹配其带宽的阶段。
 
@@ -197,7 +197,7 @@ Profile 进一步显示最后一个 256 MiB bucket 混合了多个早期层参�
 
 若将第一个 bucket 减半，使两部分在 25、40 ms ready，各耗 19 ms，队列变成 25–44、44–63、70–105、105–125 ms，尾部降为 15 ms；启动和小消息损失已体现在 19 ms 中。若实际半桶各耗 24 ms，完成序列变为 25–49、49–73、73–108、108–128 ms，尾部仍是 18 ms，收益很小。调 bucket 前只需把 profiler 的 ready 与持续时间代入一次，就能淘汰许多没有窗口的方案。
 
-多个通信 stream 不一定让最后两个 bucket 并行。它们使用相同 NIC/NVLink，底层协议可能共享通道；并发只把带宽分开，还会增加调度。独立 DP group、TP collective 与 checkpoint I/O 同时发生时，也要放进同一链路队列。单独 microbenchmark 的 200 GB/s 不等于训练中每条流都能获得 200 GB/s。
+多个通信 stream 不一定让尾部两个 bucket 并行。它们使用相同 NIC/NVLink，底层协议可能共享通道；并发只把带宽分开，还会增加调度。独立 DP group、TP collective 与 checkpoint I/O 同时发生时，也要放进同一链路队列。单独 microbenchmark 的 200 GB/s 不等于训练中每条流都能获得 200 GB/s。
 
 ### 14.6. 通信与计算为何互相拖慢
 
@@ -230,7 +230,7 @@ FP16 训练常配 loss scaling。Forward loss 乘缩放因子 $s$，反向得到
 
 ## 16. 从一次卡住定位到第一个不同事件
 
-Collective timeout 通常是最后表现，最早差异可能早很多。每个 rank 为 step、bucket 和 collective sequence 编号，记录参数 ready bitmap 的摘要。故障发生时先比较最后一个所有 rank 都完成的 sequence，再查看下一 sequence：某 rank 没有 enqueue，问题位于其反向图或数据路径；所有 rank 都 enqueue 但没有完成，才进入链路、进程与设备故障检查。
+Collective timeout 通常出现在故障链末端，rank 间的差异可能早已出现。每个 rank 为 step、bucket 和 collective sequence 编号，记录参数 ready bitmap 的摘要。故障发生时比较各 rank 共同完成的最大 sequence，再查看下一 sequence：某 rank 没有 enqueue，问题位于其反向图或数据路径；所有 rank 都 enqueue 但没有完成，才进入链路、进程与设备故障检查。
 
 控制流错位的典型迹象是 rank 0 的 sequence 27 对应 bucket A，rank 3 的 sequence 27 对应 bucket B。二者 payload 大小甚至可能相同，通信库无法知道语义不同，结果可能是挂起，也可能完成后把错误梯度混合。启动时的 bucket 映射 hash 只能发现静态差异，运行时动态分支还要比较每轮 ready 集合。
 
@@ -238,7 +238,7 @@ Collective timeout 通常是最后表现，最早差异可能早很多。每个 
 
 ### 16.1. DDP 健康面板的最小集合
 
-每 step 记录计算开始、首个 bucket ready、最后 bucket ready、最后 collective 完成和 optimizer 完成。由此直接得到 forward/backward、ready 展宽、暴露尾部和更新时间。按 rank 报 p50/p99 以及最慢 rank id，能发现稳定热点和偶发长尾。
+每 step 记录计算开始、首个与尾部 bucket ready、尾部 collective 完成和 optimizer 完成。由此直接得到 forward/backward、ready 展宽、暴露尾部和更新时间。按 rank 报 p50/p99 以及最慢 rank id，能发现稳定热点和偶发长尾。
 
 每 bucket 记录 payload、dtype、参数数量、ready spread、排队时间与传输时间。Ready spread 是最早与最晚 rank 的到达差；排队时间是本地 ready 到 kernel start；传输时间是 kernel start 到 complete。三者分别指向计算偏斜、链路队列和实际 collective。
 
@@ -256,7 +256,7 @@ Collective timeout 通常是最后表现，最早差异可能早很多。每个 
 
 第一步固定输入与拓扑，保存每个参数的 ready 时刻和现有 bucket 映射。把参数按中位 ready 排序，再看跨多轮的波动；中位接近且波动小的参数适合放在同一 bucket。某个参数 ready 方差很大，常见于条件分支或动态 shape，把它混入大 bucket 会让整个 bucket 的时间难以预测。
 
-第二步找 exposed tail 的第一个空档。若链路从 30 ms 到 backward 结束一直繁忙，早期 bucket 已经足够细，继续拆早期参数没有收益；应处理最后 ready 的 bucket、减少总字节或提高链路。若链路在 50–70 ms 空闲，而一批梯度在 55 ms 已 ready 却因同 bucket 的晚参数等到 80 ms，就有明确的重组空间。
+Exposed tail 中的首个链路空档能区分带宽饱和与 bucket 等待。若链路从 30 ms 到 backward 结束一直繁忙，早期 bucket 已经足够细，继续拆早期参数没有收益；应处理末批 ready 的 bucket、减少总字节或提高链路。若链路在 50–70 ms 空闲，而一批梯度在 55 ms 已 ready 却因同 bucket 的晚参数等到 80 ms，就有明确的重组空间。
 
 第三步只改一组边界，测至少几十个稳定 step。记录总字节、collective 数、暴露尾部、backward 干扰、峰值显存和 p99。Bucket 变小后尾部下降 4 ms、backward 增加 3 ms、启动增加 1 ms，净收益接近零；只看尾部会误判。结果与参数映射摘要一同保存，模型结构改变后重新测。
 
