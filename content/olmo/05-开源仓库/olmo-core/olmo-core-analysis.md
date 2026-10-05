@@ -8,7 +8,7 @@ excerpt: "基于固定提交 5f6f58a 的真实源码，解析 OLMo-core 的 Trai
 
 # OLMo-core 技术解析：把大模型训练拆成可组合、可恢复、可审计的系统
 
-本文分析的唯一代码基线是本地官方快照 `data/sources/OLMo-core/repo`，提交 `5f6f58a133e7ef577d596295f2c8db4651c27857`。主要证据来自 `src/olmo_core/train/trainer.py`、`train/train_module/`、`train/checkpoint.py`、`distributed/`、`data/`、`nn/transformer/`、`src/scripts/official/` 与 `docs/source/guides/`。这很重要：OLMo-core 是持续演进的训练库，讨论“它支持什么”若不绑定提交号，很容易把未来接口、外部仓库能力或 README 的愿景误写成当前实现。
+分析对应本地官方快照 `data/sources/OLMo-core/repo` 的提交 `5f6f58a133e7ef577d596295f2c8db4651c27857`. 证据来自 `src/olmo_core/train/trainer.py`, `train/train_module/`, `train/checkpoint.py`, `distributed/`, `data/`, `nn/transformer/`, `src/scripts/official/` 与 `docs/source/guides/`. OLMo-core 持续演进, 提交号把当前实现与未来接口, 外部仓库能力及 README 中尚未落地的规划分开.
 
 ![OLMo-core 训练控制、数学步骤与可恢复状态的分层图](images/olmo-core-training-stack.svg)
 > 图 1：Trainer 管理循环和生命周期，TrainModule 定义前向、损失与优化步骤；设备网格承载数据、张量、流水线和上下文并行，数据游标与分布式状态共同进入 checkpoint。
@@ -75,7 +75,7 @@ FSL 的最简单策略是 concatenate-and-chunk：把文档连接成 token 流�
 
 VSL 路径用 `NumpyVSLDataset` 实现按序列长度的课程。最小和最大长度必须是 2 的幂，同一 batch 内样本长度一致，总 token 数保持为全局 batch 大小。固定 token 预算使不同长度的 batch 在优化器尺度上更可比，但样本条数随长度改变，通信和 kernel 效率也会变化。`VSLCurriculum` 决定不同长度随 epoch 的采样概率，这属于训练配方的一部分，恢复时必须继续原来的课程位置。
 
-自定义 DataLoader 的契约尤其值得注意：`_iter_batches` 返回的只能是当前 rank 的局部 batch，而且 token 数必须等于 `rank_batch_size`；`state_dict()` 和 `load_state_dict()` 必须使其从 epoch 中断位置继续。这是数据可复现的最低要求。若 loader 只保存 batch 编号，却没有保存 shuffle seed、源文件游标、mixture 调度或 packing 状态，恢复后的数据顺序仍可能改变。公开接口给了实现正确恢复的机会，但不会自动证明第三方 loader 做对了。
+自定义 DataLoader 需要满足两项恢复契约: `_iter_batches` 返回当前 rank 的局部 batch, token 数等于 `rank_batch_size`; `state_dict()` 与 `load_state_dict()` 则从 epoch 中断位置继续. loader 若只保存 batch 编号, 没有保存 shuffle seed, 源文件游标, mixture 调度或 packing 状态, 恢复后的数据顺序仍会改变. 公开接口提供了保存这些状态的位置, 第三方 loader 仍需用中断恢复测试验证实现.
 
 ## 6. 模型、优化与 kernel 的边界
 
@@ -99,7 +99,7 @@ README 列出的 float8 依赖 `torchao`，注意力可选后端依赖 flash-att
 
 ## 8. 阅读源码的推荐路径
 
-验证一份 OLMo 训练配方，最好从对应的官方实验脚本入手。脚本位于 `src/scripts/official/`，先列出模型、TrainModule、Trainer、DataLoader 和 callback 的实际配置；再进入 `train/train_module/transformer/config.py` 确认并行和 activation checkpointing；随后读 `trainer.py` 与 callback，确定一步训练、日志和保存的时序；再检查具体 DataLoader 的采样与状态恢复；最后才沿模型模块和可选 kernel 追数值路径。
+训练配方的入口位于 `src/scripts/official/`. 实验脚本给出模型, TrainModule, Trainer, DataLoader 和 callback 的实际配置; `train/train_module/transformer/config.py` 定义并行与 activation checkpointing; `trainer.py` 和 callback 决定训练, 日志与保存的时序; 具体 DataLoader 负责采样与状态恢复. 模型模块和可选 kernel 则确定最终数值路径.
 
 这条路径也能防止“能力清单式”误读。仓库中存在一个类，不等于官方模型使用它；README 链接一个后端，不等于当前环境安装了它；配置允许某个并行维度，不等于任意拓扑都通过测试。应始终从官方脚本的实际实例化出发，再用库代码解释机制。
 

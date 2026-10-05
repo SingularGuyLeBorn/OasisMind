@@ -17,7 +17,7 @@ Olmo 3 7B 本身已经是一种混合注意力: 3/4 的层是窗口 4096 的 SWA
 
 它要回答的问题在 Introduction 里说得很直白. Mamba-2-Hybrid, Samba, Nemotron-H, Qwen3-Next, Kimi Linear, Qwen 3.5 等混合模型已经做到 9B 激活参数, 36T token 的规模, 但每一家的数据, 配方和评测都不同, 谁也说不清收益来自架构还是来自数据. Olmo Hybrid 的定位因此更接近一件实验器材: 架构之外尽量照抄 Olmo 3 7B, 让 「换层」 成为主要变量. 发布物包括权重, 与 Olmo 3 对照的训练日志, 以及 OLMo-core 里五个阶段的训练脚本.
 
-主结论有三组数字. Fig. 1: 达到 Olmo 3 7B 同样的 Common Crawl loss 少用 35% token, 达到同样的 MMLU 准确率少用 49% token, FLOPs 同比例节省. Tab. 2: midtraining 之后, OlmoBaseEval 的五个聚合域全部超过 Olmo 3. Tab. 3: 长上下文扩展后, RULER 64K 从 Olmo 3 的 70.9 升到 85.0. 副标题 「From Theory to Practice and Back」 交代了论证路线: 先证明混合模型的表达力严格大于纯注意力与纯 GDN, 再用受控 Scaling 实验与 7B 实跑检验, 最后回到理论解释表达力为什么会变成数据效率.
+三组数字概括了主要结果. Fig. 1 中, 达到 Olmo 3 7B 的 Common Crawl loss 少用 35% token, 达到相同 MMLU 准确率少用 49% token, FLOPs 同比例节省. Tab. 2 显示 midtraining 后 OlmoBaseEval 的五个聚合域全部超过 Olmo 3. Tab. 3 中, 长上下文扩展后的 RULER 64K 从 Olmo 3 的 70.9 升到 85.0. 论文把表达力证明, 受控 Scaling 实验和 7B 训练结果连成一条证据链, 再用理论模型解释数据效率差异.
 
 「只换一类层」 是近似成立. 附录 A.1 列了三处偏离: 学习率从 Olmo 3 7B 的分段日程改为余弦衰减到峰值的 10%; 数据换成 Olmo 3 32B 的改进配比, 作者称早期用 7B 配比时趋势相近; 训练用 512 张 GPU, 前半段是 H100, 约一半时迁到 B200. GDN 与 3:1 的比例是在 1B 参数, 100B token 的早期实验里定下的, §5.1 的消融是事后按受控口径复现. midtraining 又把 batch 翻倍, 依据是 Merrill et al. (2025) 对学习率与 batch 关系的新理解. 读对照结论时, 这些偏离都要一起带上.
 
@@ -41,7 +41,7 @@ GDN 头接进 Transformer 几乎不需要额外结构: 输入仍是标准的 q /
 
 GDN 的 value 更长, 计算 $\beta_t$ 还要少量额外参数, 同样超参下参数会变多. 作者在 128 张 H100 上逐个去头测参数与吞吐 (Tab. 9): Olmo 3 为 6.8B, 每卡 8.0K token/s; 混合模型 32 头时 7.7B / 7.7K, 31 头 7.4B / 7.7K, 30 头 ($d_{model}$ = 3840) 7.0B / 8.2K. 最终选 30 头, 参数多 0.2B, 吞吐略快, 两者在训练算力口径上基本持平.
 
-Tab. 1 在 fp16 下比较单层推理状态. 32K 序列, 32 个 KV 头, $d_h=128$ 的 MHA 占 512 MiB, 是 GDN 的 485×; 8 个 KV 头的 GQA 占 128 MiB (121×); 窗口 4096, 8 个 KV 头的 GQA-SWA 占 16.0 MiB (15.2×); Olmo Hybrid 的 GDN 层 (30 头, $d_k$=96, $d_v$=192) 只有约 0.55M 个元素, 1.05 MiB, 且与序列长度无关. 需要注意 Olmo 3 7B 本身用的是 MHA (§5.3 明说它 「没有 GQA」), 它真实的 SWA 层按 32 个 KV 头算约 64 MiB, 约为 GDN 的 61× (心算 $4096 \times 32 \times 128 \times 2 \times 2$ 字节). GQA 背景见 [03-GQA-在性能与缓存之间折中](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
+Tab. 1 在 fp16 下比较单层推理状态. 32K 序列, 32 个 KV 头, $d_h=128$ 的 MHA 占 512 MiB, 是 GDN 的 485×; 8 个 KV 头的 GQA 占 128 MiB (121×); 窗口 4096, 8 个 KV 头的 GQA-SWA 占 16.0 MiB (15.2×); Olmo Hybrid 的 GDN 层 (30 头, $d_k$=96, $d_v$=192) 只有约 0.55M 个元素, 1.05 MiB, 且与序列长度无关. Olmo 3 7B 实际使用 MHA, 其 SWA 层按 32 个 KV 头计算约占 64 MiB, 大约是 GDN 的 61 倍 ($4096 \times 32 \times 128 \times 2 \times 2$ 字节). GQA 背景见 [03-GQA-在性能与缓存之间折中](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
 
 放到整个模型上, 收益会被全局层稀释. 每四层里 Olmo 3 是一层全局加三层 SWA, Hybrid 是一层全局加三层 GDN; 全局层两者相同, 缓存都随序列线性增长. 按位置折算, 32K 时 Hybrid 的总推理状态约为 Olmo 3 7B 的 73%, 64K 时约 85% (心算: GDN 一层约合 67 个位置的 MHA 缓存). SWA 层的缓存本来就被窗口封顶, 换成 GDN 省下的是常数项, 长序列上占大头的仍是那 1/4 全局层. 报告没有给整模型显存的实测, 这组比例只按结构推算.
 

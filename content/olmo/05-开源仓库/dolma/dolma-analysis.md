@@ -8,7 +8,7 @@ excerpt: "基于固定提交 669f534 的源码与配置，解析 Dolma 的文档
 
 # Dolma Toolkit 技术解析：从文档流到可审计的训练语料
 
-本文固定到本地官方源码提交 `669f534823b08d266a8fff01f8a1c916a5a56576`，证据来自 `src/` 下 Rust 实现、Python 工具入口、`docs/data-format.md`、`taggers.md`、`deduplication.md`、`mixer.md` 与 `parallel-processor.md`。这里分析的是 Dolma Toolkit 的数据处理机制，不把 README 所述三万亿 token 数据集等同于仓库源码，也不推断未在快照中出现的数据配方。
+分析对应本地官方源码提交 `669f534823b08d266a8fff01f8a1c916a5a56576`, 证据包括 `src/` 下的 Rust 实现, Python 工具入口, `docs/data-format.md`, `taggers.md`, `deduplication.md`, `mixer.md` 与 `parallel-processor.md`. README 所述三万亿 token 数据集是工具的一项产物, 本节讨论的是该提交中能够复核的数据处理机制.
 
 ![Dolma 从原始文档到版本化训练语料的数据处理图](images/dolma-data-dag.svg)
 > 图 1：原始 JSONL 文档经过稳定标识、Tagger 属性计算、过滤与去重，随后由 Mixer 按版本化配方输出训练语料；统计和审计记录横跨整条链路。
@@ -45,7 +45,7 @@ Bloom filter 是有状态结构，处理顺序决定哪份副本被视为首见�
 
 `read_only` 可对已知 blocklist 或评测集做污染检查而不修改 filter。这个模式把“建立参照集合”和“查询候选数据”分开，适合去污染。但 n-gram 命中只表示文本重叠，不自动证明答案泄漏；反之，改写与翻译污染也可能不命中。应报告规则与命中分布，而不能把单一百分比当成无污染证明。
 
-去重阶段只生成属性，真正删除在 Mixer 中进行。这保留了可逆性：研究者可检查误报或改阈值。但如果只发布 mix 后语料而不发布去重属性、Bloom 参数和输入顺序，外界仍无法重建决定。所谓开放数据需要开放派生过程，而不只是最终压缩包。
+去重阶段只生成属性, 真正删除在 Mixer 中进行. 研究者因此可以检查误报或调整阈值. 重建删除决定还需要去重属性, Bloom 参数和输入顺序; 只发布混合后的语料会丢失这条派生链.
 
 ## 4. Mixer：把信号变成版本化的数据产品
 
@@ -91,7 +91,7 @@ README 区分 Dolma Dataset 与 Toolkit，也区分许可：工具代码许可�
 
 ## 8. 推荐的审计顺序
 
-先检查 documents：schema、稳定 ID、来源与 shard manifest。再在小样本上运行 tagger，验证 span offset、属性行对齐和分数分布；随后固定排序测试 dedupe，对 Bloom 误报做精确集合抽样；再用 Mixer dryrun 展开配置，以手工样本验证 include/exclude 与替换；最后才扩到多进程和远程存储，并比较单进程与多进程输出 ID 集。
+验证从 documents 的 schema, 稳定 ID, 来源和 shard manifest 开始. 小样本 tagger 用于核对 span offset, 属性行对齐和分数分布; 固定排序的 dedupe 测试用于抽样检查 Bloom 误报; Mixer dryrun 则展开配置, 用手工样本验证 include, exclude 与替换规则. 这些检查通过后再扩到多进程和远程存储, 并比较不同并发级别的输出 ID 集.
 
 每阶段都应写独立输出而非覆盖输入，成功后发布 manifest。故障恢复从已验证 shard 继续，不能仅凭目标文件存在就跳过；半成品 gzip 也可能存在。发布前重新读取全部输出，核对 JSON、行数、ID 唯一性、属性对应、压缩完整性与总统计。
 
@@ -135,7 +135,7 @@ Bloom filter 容量尤其需要提前规划。给定预计元素数和目标误�
 
 输出侧应完整解压读取，验证每行 schema、ID 唯一性、来源计数、字符/token 总量、最大文档与异常编码。把每个 shard 的字节数、行数、逻辑内容哈希和压缩字节哈希写入 manifest。随机抽样既要覆盖保留文档，也要覆盖被删除和被替换文档；只看最终好样本无法发现过度过滤。
 
-最后核对许可与归因：各来源是否允许再分发，是否需要 NOTICE，metadata 是否保留必要标识，删除联系渠道是否可用。发布 datasheet 应写明已知局限、分类器偏差、Bloom 误报与无法公开的来源。若某些步骤依赖私有模型或内部对象，必须明确其不可复现部分，而不是用“Dolma Toolkit 开源”笼统覆盖。
+许可与归因检查覆盖再分发条件, NOTICE, metadata 中的必要标识和删除联系渠道. datasheet 还要记录已知局限, 分类器偏差, Bloom 误报与无法公开的来源. 依赖私有模型或内部对象的步骤应单独标出, 使可复现范围与工具代码的开放范围保持一致.
 
 ## 14. 为什么失败语义也是数据质量
 
