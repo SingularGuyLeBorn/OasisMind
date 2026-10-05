@@ -266,9 +266,9 @@ Backward 顺序与 forward 相反，预取方向也反向。Forward profile 得�
 
 ## 20. 梯度累积会改变 Stage 2/3 的峰值
 
-数据并行梯度通常在每次 backward 后 reduce-scatter。使用梯度累积时，可以每个 micro-batch 都规约 shard 并在 owner 上累加，也可以前几轮暂不通信、保留本地梯度，最后一轮统一规约。前者通信次数乘累积数，显存保持分片；后者减少通信频率，却可能让完整梯度长期驻留。
+数据并行梯度通常在每次 backward 后 reduce-scatter。使用梯度累积时，可以每个 micro-batch 都规约 shard 并在 owner 上累加，也可以在累积阶段保留本地梯度、到同步轮统一规约。前者通信次数乘累积数，显存保持分片；后者减少通信频率，却可能让完整梯度长期驻留。
 
-设 TP 后本 rank 逻辑参数梯度为 14 GiB，DP=8，最终 shard 为 1.75 GiB。每轮立即 reduce-scatter，四次累积需处理四遍 14 GiB 输入，输出可原地累加到 1.75 GiB shard；延迟到最后则需要某种方式保存 14 GiB 本地累计梯度。若设备只剩 8 GiB 余量，后一方案在通信发生前就会 OOM。
+设 TP 后本 rank 逻辑参数梯度为 14 GiB，DP=8，归约后的 shard 为 1.75 GiB。每轮立即 reduce-scatter，四次累积需处理四遍 14 GiB 输入，输出可原地累加到 1.75 GiB shard；延迟到同步轮则需要某种方式保存 14 GiB 本地累计梯度。若设备只剩 8 GiB 余量，后一方案在通信发生前就会 OOM。
 
 另一种做法按 bucket 本地累积并在最终 micro-batch 边生成边规约，完整梯度不必一次全部出现。实现细节决定峰值，因此配置里的 `no_sync` 或 accumulation 标志不能直接推出字节。用 profiler 查看第一、第二和最终 micro-batch 后的梯度 storage，确认它是完整 buffer、分片 buffer还是两者短暂并存。
 
