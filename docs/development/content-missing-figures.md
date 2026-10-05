@@ -1106,7 +1106,7 @@
 - 原第 80 行 `./images/fig-opd-query-student-state.png`：Student samples prefix s; frozen teacher is queried only at s and returns a short continuation; student learns that continuation
   - 图注：图 2：学生自己 rollout 出前缀 $s$。冻结的教师只在这个 $s$ 上被查询，给出短续写。学生用交叉熵学续写。虚线是教师自己的轨迹，这条路径不进损失。
 
-## `content/rl/1.1-数学基础与经典强化学习/1.1.1-概率与mdp基础/1.1.1-概率与mdp基础.md`
+## `content/rl/01-基础/01.01-概率与mdp/01.01-概率与mdp.md`
 
 - 原第 138 行 `./images/redrawn-probability_space.png`：概率空间示意图
   - 图注：*图注: 蓝色大椭圆为样本空间 $\Omega$,绿色和橙色圆圈为事件 $A$ 和 $B$,交集为 $A \cap B$. $\omega_1, \omega_2, \omega_3$ 为具体的样本点. *
@@ -1114,7 +1114,7 @@
 - 原第 221 行 `./images/redrawn-random_variable-v2.png`：随机变量映射
   - 图注：*图注: 左边是样本空间 $\Omega$,包含4个样本点 $\omega_1, \omega_2, \omega_3, \omega_4$. 右边是实数轴 $\mathbb{R}$. 蓝色箭头表示随机变量 $X$ 将每个样本点映射到一个实数. 注意 $\omega_2$ 和 $\omega_3$ 都被映射到了同一个值1. *
 
-## `content/rl/1.1-数学基础与经典强化学习/1.1.2-贝尔曼方程/1.1.2-贝尔曼方程.md`
+## `content/rl/01-基础/01.02-贝尔曼方程/01.02-贝尔曼方程.md`
 
 - 原第 128 行 `./images/redrawn-mdp_loop.png`：智能体-环境交互循环
   - 图注：*图注: 智能体观察状态 $s_t$,选择动作 $a_t$,环境返回奖励 $r_{t+1}$ 和下一个状态 $s_{t+1}$. 绿色箭头表示状态和奖励从环境流向智能体,蓝色箭头表示动作从智能体流向环境. *
@@ -1122,7 +1122,7 @@
 - 原第 268 行 `./images/redrawn-bellman_backup.png`：贝尔曼备份图
   - 图注：*图注: 从状态 $s$(顶部白色圆圈)出发,根据策略 $\pi(a|s)$ 选择动作 $a_1, a_2, a_3$(黑色圆点). 每个动作根据转移概率 $P(s'|s,a)$ 转移到下一状态 $s'$(底部白色圆圈). 信息从底部($V(s')$ 或 $r$)向上"备份"到 $V(s)$. *
 
-## `content/rl/1.1-数学基础与经典强化学习/1.1.3-策略梯度/1.1.3-策略梯度.md`
+## `content/rl/01-基础/01.03-策略梯度/01.03-策略梯度.md`
 
 - 原第 238 行 `./images/redrawn-policy_gradient_flow.png`：策略梯度更新流程
   - 图注：*图注: 策略梯度算法的流程. (1) 策略网络 $\pi_\theta$ 输出动作概率; (2) 采样动作 $a$; (3) 与环境交互; (4) 获得奖励 $r$; (5) 计算梯度 $\nabla_\theta \log \pi_\theta(a|s) \cdot R$; (6) 更新参数 $\theta$. *
@@ -1130,7 +1130,7 @@
 - 原第 325 行 `./images/redrawn-advantage_baseline.png`：优势函数与基线
   - 图注：*图注: 横轴表示优势值 $A$. 基线 $b(s) = V(s)$ 位于0点. $A > 0$ 表示"好动作",应增大其概率(绿色向上箭头); $A < 0$ 表示"坏动作",应减小其概率(红色向下箭头). *
 
-## `content/rl/1.1-数学基础与经典强化学习/1.1.4-reinforce/1.1.4-reinforce.md`
+## `content/rl/01-基础/01.04-reinforce/01.04-reinforce.md`
 
 - 原第 125 行 `./images/redrawn-return-recursion.png`：REINFORCE回报递推
 - 原第 155 行 `./images/redrawn-episode-update.png`：REINFORCE算法流程
@@ -1138,7 +1138,7 @@
 - 原第 219 行 `./images/redrawn-discounted-return.png`：折扣回报与时间权重
 - 原第 316 行 `./images/redrawn-baseline-v2.png`：固定状态下 baseline 降低策略梯度估计方差
 
-## `content/rl/1.1-数学基础与经典强化学习/1.1.5-actor-critic/1.1.5-actor-critic.md`
+## `content/rl/01-基础/01.05-actor-critic/01.05-actor-critic.md`
 
 - 原第 31 行 `./images/redrawn-td-error-v2.png`：Actor-Critic TD 单步更新算例
 - 原第 80 行 `./images/redrawn-mc-td-tradeoff-v2.png`：n-step return 的偏差方差权衡
@@ -1146,7 +1146,7 @@
 - 原第 173 行 `./images/redrawn-a2c-a3c-v2.png`：A2C 与 A3C 架构
 - 原第 205 行 `./images/redrawn-joint-loss-v2.png`：Actor-Critic 联合损失
 
-## `content/rl/1.1-数学基础与经典强化学习/1.1.6-trpo/1.1.6-trpo.md`
+## `content/rl/01-基础/01.06-trpo/01.06-trpo.md`
 
 - 原第 56 行 `./images/redrawn-surrogate-objective-v3.png`：TRPO 代理目标的可计算近似与接受条件
 - 原第 75 行 `./images/redrawn-kl-trust-region-v3.png`：TRPO 的平均 KL 约束与候选步接受条件
@@ -1154,34 +1154,34 @@
 - 原第 126 行 `./images/redrawn-conjugate-gradient-v3.png`：TRPO 共轭梯度与 Fisher-vector product
 - 原第 140 行 `./images/redrawn-training-iteration-v3.png`：TRPO 完整一次迭代
 
-## `content/rl/1.1-数学基础与经典强化学习/1.1.7-ppo/1.1.7-ppo.md`
+## `content/rl/01-基础/01.07-ppo/01.07-ppo.md`
 
 - 原第 112 行 `./images/redrawn-importance-sampling-v2.png`：PPO重要性采样数据流
 - 原第 222 行 `./images/redrawn-training-iteration-v2.png`：PPO完整训练迭代
 - 原第 246 行 `./images/redrawn-transition-contribution-v3.png`：单个 Transition 的目标贡献（离散计算）
 - 原第 264 行 `./images/redrawn-clipped-objective-v2.png`：PPO裁剪目标函数（离散情形）
 
-## `content/rl/1.2-偏好优化与rlhf/1.2.2-dpo/1.2.2-dpo.md`
+## `content/rl/02-偏好优化/02.02-dpo/02.02-dpo.md`
 
 - 原第 66 行 `./images/redrawn-dpo-pipeline-v2.png`：DPO 从偏好数据到损失
 - 原第 271 行 `./images/redrawn-dpo-batch-v2.png`：DPO一个 Batch 的训练流程
 
-## `content/rl/1.2-偏好优化与rlhf/1.2.3-ipo/1.2.3-ipo.md`
+## `content/rl/02-偏好优化/02.03-ipo/02.03-ipo.md`
 
 - 原第 32 行 `./images/redrawn-ipo-computation-v3.png`：IPO偏好对的前向计算与平方损失
 - 原第 89 行 `./images/redrawn-ipo-identity-policy-v3.png`：Identity均匀参考下不同beta的解析策略
 - 原第 133 行 `./images/redrawn-ipo-finite-target-v3.png`：IPO有限目标的离散更新方向与DPO对比
 
-## `content/rl/1.2-偏好优化与rlhf/1.2.4-orpo/1.2.4-orpo.md`
+## `content/rl/02-偏好优化/02.04-orpo/02.04-orpo.md`
 
 - 原第 122 行 `./images/redrawn-odds-ratio-v2.png`：ORPO 从长度平均分数计算 odds 偏好损失，并与 chosen NLL 加权合成总目标
 
-## `content/rl/1.2-偏好优化与rlhf/1.2.5-simpo/1.2.5-simpo.md`
+## `content/rl/02-偏好优化/02.05-simpo/02.05-simpo.md`
 
 - 原第 76 行 `./images/redrawn-length-normalization-v2.png`：SimPO 长度归一化（离散数值卡）
 - 原第 90 行 `./images/redrawn-target-margin-v2.png`：SimPO Target Margin（离散数值卡）
 
-## `content/rl/1.2-偏好优化与rlhf/1.2.6-kto/1.2.6-kto.md`
+## `content/rl/02-偏好优化/02.06-kto/02.06-kto.md`
 
 - 原第 46 行 `./images/redrawn-kto-loss-flow-v2.png`：KTO 非成对反馈、参考点与双分支损失
   - 图注：图 1: 每条训练记录都是独立的 $(x,y,label)$.策略与参考模型先给出同一响应的序列 log-prob,形成 $r_\theta$;随后 $r_\theta$ 与停止梯度的 $z_0$ 共同生成 desirable / undesirable 两个方向相反的 margin,再按 label 选择对应损失.
@@ -1190,11 +1190,11 @@
 - 原第 83 行 `./images/redrawn-kto-kl-estimator-v2.png`：KTO 使用 microbatch 循环错配估计共享 KL 参考点
   - 图注：图 3: 对 microbatch 输出执行循环移位,$j=(i+1)\bmod m$,得到 $(x_1,y_2),\ldots,(x_m,y_1)$.Policy 与 Reference 在同一个错配对上计算 log-prob 差,求均值并 clamp 后停止梯度;本 microbatch 的全部 KTO 样本共享该参考点.
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.1-grpo/1.3.1-grpo.md`
+## `content/rl/03-推理强化/03.01.01-grpo/03.01.01-grpo.md`
 
 - 原第 140 行 `./images/group_sampling-v3.png`：GRPO 从单个 prompt 组采样、逐条评分到共享统计量广播并计算每路优势的数据流
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.11-rlvr与deepseek-r1/1.3.11-rlvr与deepseek-r1.md`
+## `content/rl/03-推理强化/03.04.01-rlvr/03.04.01-rlvr.md`
 
 - 原第 12 行 `./images/redrawn-rlvr-reward-flow.png`：RLVR 的生成、验证、reward contract 与策略更新流程
   - 图注：图 1：同一 prompt 的输出先经过解析与任务检查，得到 correctness、原始得分和 status，再按固定 reward contract 映射为数值奖励向量。训练器消费整组奖励与策略概率并更新参数；错误日志独立保留。
@@ -1205,7 +1205,7 @@
 - 原第 47 行 `./images/redrawn-r1zero-grpo-reward.png`：R1-Zero 的规则奖励、组优势与 GRPO 参数更新回路
   - 图注：图 4：此图按 DeepSeek-R1 报告 v2 的 R1-Zero 设置展示：accuracy 与 format 等权相加，组内 reward 计算 advantage，GRPO 最大化 clipped surrogate 减 KL 正则项。Base 只用于初始化；参数更新后的 policy 进入下一轮 rollout。
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.12-oreo/1.3.12-oreo.md`
+## `content/rl/03-推理强化/03.04.02-oreo/03.04.02-oreo.md`
 
 - 原第 36 行 `./images/redrawn-oreo-soft-bellman.png`：OREO token-level MDP,稀疏终局奖励与 soft Bellman telescoping
   - 图注：图 1: 离线轨迹把 prompt 加已生成前缀定义为 $s_t$,下一个 token 定义为 $a_t$.只有终局 $r_{T-1}=R$ 非零时,所有 $0\le t\le T-1$ 的 suffix return 都是 $R_t=R$,而 $R_T=0$.逐步 soft Bellman 等式沿 suffix 求和后,中间 value 项相消.
@@ -1214,23 +1214,23 @@
 - 原第 62 行 `./images/redrawn-oreo-value-search.png`：OREO learned value 引导 math beam search 与 embodied best-of-K
   - 图注：图 3: 数学 step-level beam search 每步保留 $B$ 个父轨迹,每个父轨迹生成 $B$ 个后继,对 $B^2$ 个候选调用 $V_\phi$ 并保留 Top-B;环境交互任务每步采样 $K$ 个 action,按 value 选择一个执行.两者都增加 test-time compute.
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.2-rloo/1.3.2-rloo.md`
+## `content/rl/03-推理强化/03.01.02-rloo/03.01.02-rloo.md`
 
 - 原第 106 行 `./images/redrawn-leave_one_out.png`：RLOO Leave-One-Out
 - 原第 117 行 `./images/redrawn-rloo-group-workflow.png`：RLOO 组采样与并行优势计算
 - 原第 125 行 `./images/redrawn-rloo-policy-kl.png`：RLOO Policy Objective 与 KL Regularization
 - 原第 127 行 `./images/redrawn-rloo-parallel-baseline.png`：RLOO 并行 baseline 与梯度聚合
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.3-dapo/1.3.3-dapo.md`
+## `content/rl/03-推理强化/03.02.01-dapo/03.02.01-dapo.md`
 
 - 原第 114 行 `./images/decoupled_clipping-v3.png`：PPO 与 DAPO Clip-Higher 的 advantage-signed surrogate 分段曲线
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.4-gspo/1.3.4-gspo.md`
+## `content/rl/03-推理强化/03.02.02-gspo/03.02.02-gspo.md`
 
 - 原第 83 行 `./images/sequence_vs_token-v3.png`：GRPO 逐 token surrogate 与 GSPO 单一序列比率的数据流对比
   - 图注：*图注：GRPO 对每个有效 token 的 ratio 分别裁剪后再做 masked 聚合；GSPO 先对有效 token 的 log-ratio 做 masked mean，指数化为每条回答唯一的 sequence ratio，再进行整回答裁剪。*
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.5-gmpo/1.3.5-gmpo.md`
+## `content/rl/03-推理强化/03.02.03-gmpo/03.02.03-gmpo.md`
 
 - 原第 34 行 `./images/redrawn-gmpo-token-aggregation-v2.png`：GMPO奖励组与所选rollout沿独立路径产生advantage及token比率后汇合聚合
   - 图注：图 1: 同一 prompt 的 rollout 奖励仍按 GRPO 计算标量 $\hat A_i$.变化发生在 rollout 内部:GRPO 对有效 token 的 $\rho_{i,t}\hat A_i$ 做算术平均;GMPO 对其绝对值做几何平均,再用 $\operatorname{sgn}(\hat A_i)$ 恢复方向.padding 不参与分母或聚合.
@@ -1239,7 +1239,7 @@
 - 原第 88 行 `./images/redrawn-gmpo-logspace-clipping-v2.png`：GMPO双输入min裁剪、正负advantage数值路径与masked聚合
   - 图注：图 3: Algorithm 1 先令 $d_t=\log\rho_t$,$s=\operatorname{sgn}(\hat A)$,在 $u_t=sd_t$ 空间执行相同的 `clamp` 与 `min`;再映射回 $d$ 空间,只对 mask=1 的 token 求均值并指数化,最后得到 $L_i=-\hat A\rho_{\mathrm{geo}}$.
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.6-gdpo/1.3.6-gdpo.md`
+## `content/rl/03-推理强化/03.02.04-gdpo/03.02.04-gdpo.md`
 
 - 原第 30 行 `./images/redrawn-gdpo-reward-collapse.png`：GDPO 数值例子:不同 reward 组合在 GRPO 中坍缩为同一 advantage
   - 图注：图 1: 两个 rollout,两个 binary reward 的论文例子.场景 A 的总奖励为 $[0,1]$,场景 B 为 $[0,2]$;GRPO 先求和再用样本标准差归一化,两者都得到 $[-0.7071,+0.7071]$.GDPO 逐列归一化后再相加,场景 B 保留第二个 reward 的额外贡献,得到 $[-1.4142,+1.4142]$.
@@ -1248,7 +1248,7 @@
 - 原第 96 行 `./images/redrawn-gdpo-priority-design.png`：GDPO 中 reward weight 与 conditioned reward 的优先级作用
   - 图注：图 3: reward weight 在 per-reward normalization 之后缩放贡献;conditioned reward 在归一化之前通过阈值决定辅助反馈是否可用.两者可以组合:先用条件机制编码粗粒度顺序,再用权重微调可用 reward 的相对强度.
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.7-ghpo/1.3.7-ghpo.md`
+## `content/rl/03-推理强化/03.03.01-ghpo/03.03.01-ghpo.md`
 
 - 原第 24 行 `./images/redrawn-ghpo-difficulty-routing.png`：GHPO 通过同一 prompt 的 group reward 动态检测当前策略难度
   - 图注：图 1: 当前/old policy 对同一 prompt $q$ 采样 $G$ 条 rollout,verifier 给出 binary reward.若 $S(q)=\sum_i r_i>0$,保留原始 prompt 做 on-policy group-relative RL;若 $S(q)=0$,组内 advantage 全零,该 prompt 被路由到 ground-truth hint refinement,而不是直接丢弃.
@@ -1257,7 +1257,7 @@
 - 原第 81 行 `./images/redrawn-ghpo-training-eval-boundary.png`：GHPO cold-start,hybrid training 与 no-hint evaluation 的隔离协议
   - 图注：图 3: 论文前 $N=20$ 个 optimization step 可选用原始 GRPO cold-start;随后 Phase 1 按 group reward 在原始 on-policy 路径和 training-only guided 路径之间动态分流.两条路径只在策略参数更新处汇合;Phase 2 的 validation/test 只接收原始 prompt,完全不读取 solution trace 或 hint stage.
 
-## `content/rl/1.3-推理强化学习与可验证奖励/1.3.8-justrl/1.3.8-justrl.md`
+## `content/rl/03-推理强化/03.03.02-justrl/03.03.02-justrl.md`
 
 - 原第 28 行 `./images/redrawn-justrl-fixed-recipe.png`：JustRL 单阶段固定超参数的 veRL GRPO 配方
   - 图注：图 1: 两个 1.5B backbone 共用同一条单阶段管线:DAPO-Math-17k,固定 prompt suffix,$N=8$ rollout,binary rule reward,veRL 默认 GRPO 与 $[0.8,1.28]$ clip-higher.学习率,上下文上限和 batch 配置从训练开始到结束保持不变.
