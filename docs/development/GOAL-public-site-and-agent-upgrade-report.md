@@ -175,6 +175,8 @@ CLI 的结构化结果统一包含：类型、id、标题/摘要、作者、问�
 2. 配置 QQ 官方机器人与微信 iLink/ClawBot 真实凭据，执行 `pnpm channel:probe --live --json`，并各完成一次真实入站附件、出站附件和截图回传。
 3. 配置知乎开放平台 Secret 并重新生成有效登录态，按前文清单完成只读组合查询烟测；不得执行关注、点赞、评论或发布。
 
+2026-10-05 的只读外部核对结果：GitHub 仓库 `SingularGuyLeBorn/OasisMind` 为公开仓库，但仓库元数据 `has_pages=false`、`homepage` 为空；候选 Pages 地址返回 404，本机 GitHub CLI 也未登录。因此当前没有可继续验收的线上部署，不能把本地 `out/` 产物算作已上线。
+
 ## 未触碰范围
 
 - 原工作区 `D:\ALL IN AI\OasisMind-full-clone` 没有被修改；
