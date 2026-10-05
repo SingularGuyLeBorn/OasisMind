@@ -267,6 +267,7 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 | `pnpm db:sync` | Markdown/YAML ↔ SQLite 同步 |
 | `pnpm db:backup` | 备份 `dev.db` |
 | `pnpm channel:probe` | 检查 QQ / 微信本地配置；加 `-- --live` 做无消息发送的真实平台探测 |
+| `pnpm zhihu -- --help` | 知乎只读 CLI；搜索、热榜、问题回答、关注过滤、正文、评论与本地保存 |
 | `pnpm build` | 构建前端 |
 | `pnpm lint` | 全仓库 lint |
 | `pnpm test` | 全仓库 Vitest |
@@ -286,5 +287,6 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 - 2026-08 Swarm 出处合同 + RSI 经验门 + 模块全景：`swarm-rsi-session-2026-08.md`。
 - 算法可视化（Remotion Code Motion Explainer）：`algo-viz.md`。
 - QQ / 微信多模态、截图回传与故障排查：`channel-operations.md`。
+- 知乎开放平台、登录态与完整 CLI：`zhihu-cli.md`。
 - 可执行规格（状态×事件表，按行写测）：`prd-chat-stop.md`、`prd-chat-queue.md`、`prd-inbox-distill.md`、`prd-approval.md`、`prd-cron.md`、`prd-runs.md`、`prd-chat-goal.md`、`prd-ask-user.md`。
 - 测试分层与满分标准：`testing.md`。施工 Goal：`prompts/test-suite-perfect-goal-prompt.md`。

@@ -37,8 +37,10 @@ export type ZhihuListItem = {
 };
 
 export type ZhihuListFilter = {
+  keyword?: string;
   contentTypes?: ZhihuContentType[];
   author?: string;
+  questionId?: string;
   tags?: string[];
   tagMode?: "all" | "any";
   from?: number;
@@ -157,7 +159,9 @@ function normalizeTags(source: Record<string, unknown>, question: Record<string,
 
 /** 把开放平台搜索、热榜和问题回答的不同字段归一为稳定 CLI 行。 */
 export function normalizeZhihuListItem(raw: unknown, rank: number): ZhihuListItem {
-  const source = record(raw);
+  const outer = record(raw);
+  // 热榜常把内容字段放进 Target；外层排名字段仍覆盖 Target，保持一个归一入口。
+  const source = { ...record(firstValue(outer, ["Target", "target"])), ...outer };
   const question = record(firstValue(source, ["Question", "question"]));
   const author = record(firstValue(source, ["Author", "author"]));
   const url = normalizeUrl(firstValue(source, ["Url", "URL", "url", "ContentUrl", "content_url"]));
@@ -244,11 +248,22 @@ function includesFolded(haystack: string, needle: string): boolean {
 }
 
 export function filterZhihuList(items: ZhihuListItem[], filter: ZhihuListFilter): ZhihuListItem[] {
+  const keyword = filter.keyword?.trim() ?? "";
   const author = filter.author?.trim() ?? "";
+  const questionId = filter.questionId?.trim().match(/\d+/)?.[0] ?? "";
   const tags = [...new Set((filter.tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
   return items.filter((item) => {
+    if (
+      keyword &&
+      ![item.title, item.summary, item.question.title ?? ""].some((value) => includesFolded(value, keyword))
+    ) {
+      return false;
+    }
     if (filter.contentTypes?.length && !filter.contentTypes.includes(item.contentType)) return false;
     if (author && !includesFolded(item.author.name, author) && !includesFolded(item.author.urlToken ?? "", author)) {
+      return false;
+    }
+    if (questionId && item.question.id !== questionId && !(item.contentType === "question" && item.id === questionId)) {
       return false;
     }
     if (filter.from !== undefined && (item.publishedTimestamp === null || item.publishedTimestamp < filter.from)) {
@@ -289,7 +304,10 @@ export function parseZhihuDate(raw: string, endOfDay = false): number {
     throw new Error(`日期必须使用 YYYY-MM-DD：${raw}`);
   }
   const timestamp = Date.parse(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}+08:00`);
-  if (!Number.isFinite(timestamp)) throw new Error(`无效日期：${raw}`);
+  const shanghaiDate = Number.isFinite(timestamp)
+    ? new Date(timestamp + 8 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    : "";
+  if (!Number.isFinite(timestamp) || shanghaiDate !== value) throw new Error(`无效日期：${raw}`);
   return timestamp;
 }
 

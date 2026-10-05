@@ -16,6 +16,11 @@ import { cookiesToHeader, loadCookies } from "./cookieJar.js";
 
 export const ZHIHU_WWW_ORIGIN = "https://www.zhihu.com";
 
+export type ZhihuWebRequestOptions = {
+  timeoutMs?: number;
+  fetchImpl?: typeof fetch;
+};
+
 const ZHIHU_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
@@ -89,13 +94,18 @@ function requireCookie(cookie: string | null): string {
 async function zhihuApiFetch(
   apiUrl: string,
   cookie: string,
-  opts?: { referer?: string; method?: "GET" | "POST" },
+  opts?: {
+    referer?: string;
+    method?: "GET" | "POST";
+    timeoutMs?: number;
+    fetchImpl?: typeof fetch;
+  },
 ): Promise<{ ok: boolean; status: number; json: unknown; text: string }> {
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 30_000);
+  const timer = setTimeout(() => ac.abort(), opts?.timeoutMs ?? 30_000);
   let res: Response;
   try {
-    res = await fetch(apiUrl, {
+    res = await (opts?.fetchImpl ?? fetch)(apiUrl, {
       method: opts?.method ?? "GET",
       headers: {
         Cookie: cookie,
@@ -105,6 +115,14 @@ async function zhihuApiFetch(
       },
       signal: ac.signal,
     });
+  } catch (error) {
+    if (ac.signal.aborted) {
+      throw new Error(`知乎站内接口请求超时（${opts?.timeoutMs ?? 30_000}ms）`, { cause: error });
+    }
+    throw new Error(
+      `知乎站内接口网络请求失败：${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
   } finally {
     clearTimeout(timer);
   }
@@ -128,9 +146,12 @@ function translateApiFailure(what: string, status: number, text: string): Error 
 
 // ─── 登录身份与关注关系 ───
 
-export async function fetchZhihuMe(cookie?: string | null): Promise<{ urlToken: string; name?: string }> {
+export async function fetchZhihuMe(
+  cookie?: string | null,
+  request?: ZhihuWebRequestOptions,
+): Promise<{ urlToken: string; name?: string }> {
   const header = requireCookie(resolveZhihuCookieHeader(cookie));
-  const res = await zhihuApiFetch(`${ZHIHU_WWW_ORIGIN}/api/v4/me`, header);
+  const res = await zhihuApiFetch(`${ZHIHU_WWW_ORIGIN}/api/v4/me`, header, request);
   if (!res.ok || !res.json || typeof res.json !== "object") {
     throw translateApiFailure("获取知乎当前用户", res.status, res.text);
   }
@@ -144,12 +165,13 @@ export async function isFollowingZhihuMember(
   authorUrlToken: string,
   meToken: string,
   cookie?: string | null,
+  request?: ZhihuWebRequestOptions,
 ): Promise<boolean> {
   const header = requireCookie(resolveZhihuCookieHeader(cookie));
   const res = await zhihuApiFetch(
     `${ZHIHU_WWW_ORIGIN}/api/v4/members/${encodeURIComponent(authorUrlToken)}/followers/${encodeURIComponent(meToken)}`,
     header,
-    { referer: `${ZHIHU_WWW_ORIGIN}/people/${encodeURIComponent(authorUrlToken)}` },
+    { referer: `${ZHIHU_WWW_ORIGIN}/people/${encodeURIComponent(authorUrlToken)}`, ...request },
   );
   if (res.status === 204) return true;
   if (res.status === 404) return false;
@@ -161,12 +183,13 @@ export async function isFollowingZhihuQuestion(
   questionId: string,
   meToken: string,
   cookie?: string | null,
+  request?: ZhihuWebRequestOptions,
 ): Promise<boolean> {
   const header = requireCookie(resolveZhihuCookieHeader(cookie));
   const res = await zhihuApiFetch(
     `${ZHIHU_WWW_ORIGIN}/api/v4/questions/${encodeURIComponent(questionId)}/followers/${encodeURIComponent(meToken)}`,
     header,
-    { referer: `${ZHIHU_WWW_ORIGIN}/question/${encodeURIComponent(questionId)}` },
+    { referer: `${ZHIHU_WWW_ORIGIN}/question/${encodeURIComponent(questionId)}`, ...request },
   );
   if (res.status === 204) return true;
   if (res.status === 404) return false;
@@ -210,6 +233,7 @@ function pickAuthor(raw: unknown): { name?: string; urlToken?: string } {
 export async function fetchZhihuContentStats(
   ref: ZhihuContentRef,
   cookie?: string | null,
+  request?: ZhihuWebRequestOptions,
 ): Promise<ZhihuContentStats> {
   const header = requireCookie(resolveZhihuCookieHeader(cookie));
   const url = canonicalZhihuContentUrl(ref);
@@ -221,7 +245,7 @@ export async function fetchZhihuContentStats(
   } else {
     apiUrl = `${ZHIHU_WWW_ORIGIN}/api/v4/questions/${ref.id}`;
   }
-  const res = await zhihuApiFetch(apiUrl, header, { referer: url });
+  const res = await zhihuApiFetch(apiUrl, header, { referer: url, ...request });
   if (!res.ok || !res.json || typeof res.json !== "object") {
     throw translateApiFailure("获取知乎内容详情", res.status, res.text);
   }
@@ -326,7 +350,13 @@ export const ZHIHU_MAX_COMMENTS_HARD_CAP = 1000;
  */
 export async function fetchZhihuComments(
   ref: ZhihuContentRef,
-  opts?: { order?: ZhihuCommentOrder; maxComments?: number; cookie?: string | null },
+  opts?: {
+    order?: ZhihuCommentOrder;
+    maxComments?: number;
+    cookie?: string | null;
+    timeoutMs?: number;
+    fetchImpl?: typeof fetch;
+  },
 ): Promise<ZhihuCommentsResult> {
   const kindPath = commentKindPath(ref);
   if (!kindPath) throw new Error("问题页没有统一评论区；请对具体回答 URL 拉评论。");
@@ -348,6 +378,8 @@ export async function fetchZhihuComments(
       `?order_by=${order}&limit=${COMMENT_PAGE_SIZE}&offset=${offset}`;
     const res = await zhihuApiFetch(apiUrl, header, {
       referer: canonicalZhihuContentUrl(ref),
+      timeoutMs: opts?.timeoutMs,
+      fetchImpl: opts?.fetchImpl,
     });
     if (!res.ok || !res.json || typeof res.json !== "object") {
       throw translateApiFailure("拉取评论", res.status, res.text);
@@ -379,6 +411,7 @@ export async function fetchZhihuComments(
           root.replyCount,
           header,
           canonicalZhihuContentUrl(ref),
+          { timeoutMs: opts?.timeoutMs, fetchImpl: opts?.fetchImpl },
         );
         const seen = new Set(root.children.map((c) => c.id));
         for (const child of fetched) {
@@ -406,6 +439,7 @@ async function fetchZhihuChildComments(
   replyCount: number,
   cookie: string,
   referer: string,
+  request?: ZhihuWebRequestOptions,
 ): Promise<ZhihuWebComment[]> {
   const out: ZhihuWebComment[] = [];
   let offset = 0;
@@ -415,7 +449,7 @@ async function fetchZhihuChildComments(
     const apiUrl =
       `${ZHIHU_WWW_ORIGIN}/api/v4/comment_v5/${kindPath}/${contentId}/child_comment` +
       `?root_id=${encodeURIComponent(rootId)}&limit=${COMMENT_PAGE_SIZE}&offset=${offset}`;
-    const res = await zhihuApiFetch(apiUrl, cookie, { referer });
+    const res = await zhihuApiFetch(apiUrl, cookie, { referer, ...request });
     if (!res.ok || !res.json || typeof res.json !== "object") break; // 子评论失败不拖垮整篇
     const body = res.json as { data?: unknown[]; paging?: { is_end?: boolean } };
     const rows = Array.isArray(body.data) ? body.data : [];

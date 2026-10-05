@@ -83,4 +83,9 @@ describe("zhihuQuery", () => {
     expect(table).toContain("Agent 工程实践");
     expect(table).toContain("https://zhuanlan.zhihu.com/p/1001");
   });
+
+  it("拒绝被 JavaScript 自动滚动到下个月的伪日期", () => {
+    expect(() => parseZhihuDate("2026-02-30")).toThrow(/无效日期/);
+    expect(() => parseZhihuDate("2026\/02\/28")).toThrow(/YYYY-MM-DD/);
+  });
 });

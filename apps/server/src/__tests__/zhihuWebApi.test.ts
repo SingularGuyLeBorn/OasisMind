@@ -245,4 +245,20 @@ describe("fetchZhihuComments", () => {
       fetchZhihuComments({ kind: "question", id: "12345" }, { cookie: "z_c0=x" }),
     ).rejects.toThrow(/回答/);
   });
+
+  it("调用方可注入请求超时，错误不泄露 Cookie", async () => {
+    const fetchImpl = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      await new Promise<never>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+      });
+      throw new Error("unreachable");
+    }) as unknown as typeof fetch;
+
+    await expect(
+      fetchZhihuComments(
+        { kind: "article", id: "1" },
+        { cookie: "z_c0=must-not-print", timeoutMs: 5, fetchImpl },
+      ),
+    ).rejects.toThrow("请求超时（5ms）");
+  });
 });

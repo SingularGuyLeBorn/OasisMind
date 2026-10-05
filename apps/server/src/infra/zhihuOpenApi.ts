@@ -275,9 +275,10 @@ export type ZhihuOpenApiFollowee = {
 
 /** 规范化问题 URL：开放平台只认 https://www.zhihu.com/question/{id} */
 export function normalizeZhihuQuestionUrl(url: string): string {
-  const m = url.match(/question\/(\d+)/);
-  if (!m?.[1]) throw new Error(`无法从 URL 解析问题 id（期望含 question/数字）: ${url}`);
-  return `https://www.zhihu.com/question/${m[1]}`;
+  const value = url.trim();
+  const id = /^\d+$/.test(value) ? value : value.match(/question\/(\d+)/)?.[1];
+  if (!id) throw new Error(`无法解析问题 id（支持纯数字或含 question/数字 的 URL）：${url}`);
+  return `https://www.zhihu.com/question/${id}`;
 }
 
 /** 指定问题下的回答摘要（分页 Offset/NextOffset），任意公开问题可用 */
