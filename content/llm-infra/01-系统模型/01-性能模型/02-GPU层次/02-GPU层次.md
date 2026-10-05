@@ -191,7 +191,7 @@ GEMM 后常接 bias、激活、门控或残差. 分离执行会把 $C$ 写入 HB
 
 ### 5.7. 在线 softmax 把大矩阵变成小状态
 
-朴素 attention 先形成 $S\times S$ score, 再写回、读取并做 softmax, 最后与 V 相乘. 对单头长度 $S=8192$ 的 BF16 score, 一张矩阵就是 128 MiB; 多头和 batch 会迅速放大. 分块算法让 Q tile 驻留片上, 依次流过 K/V tile, 同时维护每一行的当前最大值 $m$、归一化和 $l$ 与未归一化输出 $o$.
+朴素 attention 形成 $S\times S$ score, 写回并读取做 softmax, 随后与 V 相乘. 对单头长度 $S=8192$ 的 BF16 score, 一张矩阵就是 128 MiB; 多头和 batch 会迅速放大. 分块算法让 Q tile 驻留片上, 依次流过 K/V tile, 同时维护每一行的当前最大值 $m$、归一化和 $l$ 与未归一化输出 $o$.
 
 读到新的 score block $x$ 后, 在线更新可写成
 
@@ -208,7 +208,7 @@ $$
 
 ### 5.8. Prefill 与 decode 不是同一种 attention 内核
 
-prefill 同时有很多 query, K/V tile 被多个 query 复用, 适合围绕二维 Q×KV 分块. decode 每个序列通常只有一个新 query, 却要扫描长 KV; 并行度更多来自序列、head 与 KV 分块. 若直接复用 prefill kernel, 许多线程会没有有效工作. decode kernel 常把一个 head 的 KV 范围分给多个 warp 或 block, 最后再归约局部 softmax 状态.
+prefill 同时有很多 query, K/V tile 被多个 query 复用, 适合围绕二维 Q×KV 分块. decode 每个序列通常只有一个新 query, 却要扫描长 KV; 并行度更多来自序列、head 与 KV 分块. 若直接复用 prefill kernel, 许多线程会没有有效工作. decode kernel 常把一个 head 的 KV 范围分给多个 warp 或 block, 再归约各自的局部 softmax 状态.
 
 这种 split-KV 会增加并行度, 也产生额外中间状态和归约 kernel. 当上下文很短或 batch 已足够大, 拆分收益可能小于归约成本; 当上下文很长而活动序列少, 拆分才能填满 GPU. 调度器需要依据活动序列长度分布选择配置, 不能只用最大上下文长度.
 
@@ -236,7 +236,7 @@ stall 名称不能直接翻译成结论. 「等待内存依赖」可能是 HBM m
 
 ### 5.12. 优化前后的比较要守住 shape 与数值语义
 
-kernel A 比 kernel B 快, 首先要确认二者输入 shape、stride、dtype、累加精度和输出语义一致. TF32、FP16、BF16 的峰值不同; causal mask、dropout、bias 和 ragged sequence 会改变工作. 只比较名字相似的 kernel 没有意义.
+kernel A 比 kernel B 快, 这一结论要求二者输入 shape、stride、dtype、累加精度和输出语义一致. TF32、FP16、BF16 的峰值不同; causal mask、dropout、bias 和 ragged sequence 会改变工作. 只比较名字相似的 kernel 没有意义.
 
 数值误差也属于工程边界. 使用低精度累加、近似指数或改变归约顺序后, 输出不可能逐 bit 相同. 应按业务选择误差指标, 并测试极端输入、长序列和不同随机种子. 性能提升若依赖未说明的精度退化, 就不算同一问题上的优化.
 
@@ -244,7 +244,7 @@ kernel A 比 kernel B 快, 首先要确认二者输入 shape、stride、dtype、
 
 ### 5.13. 归约、逐元素与不规则访问
 
-矩阵乘不是 GPU 的全部. LayerNorm、RMSNorm、softmax 等算子需要沿某一维归约. 设一行有 $H$ 个元素, 一个 block 负责一行, 每个线程先处理若干元素得到局部统计量, 再在 warp 内用 shuffle 归约, 最后跨 warp 借助 shared memory 合并. 读取与写回通常是 $O(H)$ byte, 算术量也是 $O(H)$, 因而更容易受带宽与同步限制.
+矩阵乘只是 GPU 工作负载的一部分. LayerNorm、RMSNorm、softmax 等算子需要沿某一维归约. 设一行有 $H$ 个元素, 一个 block 负责一行, 每个线程处理若干元素得到局部统计量, 在 warp 内用 shuffle 归约, 跨 warp 时借助 shared memory 合并. 读取与写回通常是 $O(H)$ byte, 算术量也是 $O(H)$, 因而更容易受带宽与同步限制.
 
 以 RMSNorm 为例, 输入 $x\in\mathbb{R}^H$, 先算 $r=\left(H^{-1}\sum_i x_i^2+\epsilon\right)^{-1/2}$, 再输出 $y_i=x_ir\gamma_i$. 若输入、权重和输出均为 BF16, 不计 cache 时至少读取 $x$ 与 $\gamma$, 写出 $y$, 约 $6H$ byte; 平方、求和、缩放的 FLOPs 很少. 与残差加法融合可以少一次中间张量写读, 但归约要求所有 $x_i$ 的统计量就绪后才能做最终缩放, 实现可能先保存输入 fragment 或二次读取. 哪条路径更好取决于 H、寄存器容量和数据是否仍在 cache.
 
@@ -280,9 +280,9 @@ $$
 
 编译器 spill 会把放不下的局部值放到 local memory, 其物理位置通常在设备内存并经 cache 访问. 为提高 occupancy 强制限制 register, 可能用更多 local load/store 换来更多 warp, 得不偿失. 应比较 spill byte、实际吞吐和 kernel 时间, 让资源约束服务于最终时间, 而不是追求满 occupancy.
 
-线程块数量还要覆盖整张卡. 即使单个 SM 上的 occupancy 很好, 总网格只有 16 个 block 而设备有 120 个 SM, 大多数 SM 仍然没有工作. 小 batch decode、很小的词表切片和短序列归约都会遇到这种 grid-level underfill. 可以合并请求、让一个算子处理更多行, 或把单行沿特征/KV 维拆给多个 block; 最后一种做法需要额外归约. 选择时比较「增加并行度省下的主体时间」与「中间写回加归约的时间」, 而不是只看 SM active 百分比.
+线程块数量还要覆盖整张卡. 即使单个 SM 上的 occupancy 很好, 总网格只有 16 个 block 而设备有 120 个 SM, 大多数 SM 仍然没有工作. 小 batch decode、很小的词表切片和短序列归约都会遇到这种 grid-level underfill. 可以合并请求、让一个算子处理更多行, 或把单行沿特征/KV 维拆给多个 block; 沿特征或 KV 切分会增加一次归约. 选择时比较「增加并行度省下的主体时间」与「中间写回加归约的时间」, 而不是只看 SM active 百分比.
 
-调优结果还要覆盖尾部 shape. 只对整齐的 4096×4096 矩阵优化, 不能代表词表尾块、ragged batch 或最后一个不满 tile 的序列. 将常见 shape 按线上频率加权, 同时单列最慢边界 shape, 才能避免平均基准很好而请求 p99 被少数退化路径支配.
+调优结果还要覆盖尾部 shape. 只对整齐的 4096×4096 矩阵优化, 不能代表词表尾块、ragged batch 或不足一个 tile 的序列尾段. 将常见 shape 按线上频率加权, 同时单列最慢边界 shape, 才能避免平均基准很好而请求 p99 被少数退化路径支配.
 
 同一个逻辑算子还可能因 stride、对齐和 batch 分布进入不同 kernel. 验收时把这些调度条件连同最终选择的 kernel 名称一起保存. 若线上慢样本落到未覆盖的 fallback, 需要扩展优化范围或调整调度阈值, 而不是用主路径的峰值解释它.
 
