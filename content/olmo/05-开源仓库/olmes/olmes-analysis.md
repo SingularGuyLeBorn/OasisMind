@@ -49,6 +49,10 @@ shot 数影响上下文长度、任务说明清晰度与答案先验。对小模
 
 多选任务常通过候选 continuation 的条件 loglikelihood 打分，不需要模型实际生成选项。不同候选长度不同，是否按 token 数归一化会改变排名；unconditional normalization 还会扣除候选自身先验，减少模型偏好常见短语带来的影响。配置中的 `acc_uncond` 等 metric 名必须按实现解释，不能简写成普通 accuracy。
 
+论文把这种无条件归一化写成 $\ln P(a_i\mid q)-\ln P(a_i\mid u)$，其中 $u$ 只是通用前缀 `Answer:`。OLMES 只在 ARC-Challenge、CommonsenseQA 和 OpenBookQA 上采用它：这些任务的选项会出现 `Whirlpool bath` 一类先验概率很低的措辞，直接比较条件似然容易把措辞罕见误算成答案不可信。额外的无条件前向会增加成本，其他任务没有足够理由时就沿用各自的计分方法。归一化在这里属于逐任务确定的协议参数。
+
+任务表述造成的差异甚至大过不少模型升级。论文中的 Llama 3 70B 在 ARC-Challenge 多项选择版本上得到 93.7%，换成阅读理解式补全后只有 69.0%；错误率从 6.3% 变成 31.0%，接近五倍。模型没变，变化的是问题怎样呈现、答案怎样计分。看到一张只写「ARC-Challenge」的榜单时，缺少表述方式和归一化字段，分数本身还不足以比较。
+
 生成任务则受 `max_gen_toks`、temperature、top-p、stop sequence 和上下文截断控制。确定性 greedy 便于重复，但不一定代表产品采样行为；带采样评测需要种子和多次采样。README 安全评测示例显式给 2048，reasoning 模型给 32768，说明 token budget 本身就是协议的一部分。预算差异会把计算资源变成分数优势。
 
 后端可以是 Hugging Face、vLLM 或 LiteLLM API。数学上相同的 greedy decode 仍可能因 tokenizer、浮点精度、张量并行、logits processor 和 stop 实现不同而产生差异。API 模型还可能在同名版本下被供应商更新。可比报告要记录后端、版本、dtype、并行设置、请求参数和服务端模型标识。
