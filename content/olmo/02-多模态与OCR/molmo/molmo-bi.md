@@ -75,8 +75,7 @@ Figure 3. An image cropped without (left) and with (right) overlap.
 
 **Arranging vision tokens. 排列视觉 token.** 池化后的视觉 token 按顺序排列: 先放低分辨率全局 crop, 再放高分辨率 crop 拼成的 patch 网格, 按从左到右, 从上到下的行优先顺序. 低分辨率和高分辨率两段序列各有起止特殊 token, 行与行之间插入行尾 token 标出换行.
 
-> **拆开:** 「重叠 4 个 patch」是指相邻 crop 共享 4 个 patch 吗?
-> 答: 不是. 附录 A.1 说 crop 之间的重叠是 4 个 patch (56 像素). 官方代码 `overlap_margins=(4,4)` 的含义是每张 crop 两侧各丢掉 4 个 patch, 只保留中间 $24-8=16$ 个 patch. crop 步长因此是 $16 \times 14 = 224$ 像素, 相邻两张 crop 实际共享 $24-16=8$ 个 patch, 即 112 像素. 4 个 patch 是每侧丢弃的边距, 不是相邻 crop 的重叠宽度.
+不是. 附录 A.1 说 crop 之间的重叠是 4 个 patch (56 像素). 官方代码 `overlap_margins=(4,4)` 的含义是每张 crop 两侧各丢掉 4 个 patch, 只保留中间 $24-8=16$ 个 patch. crop 步长因此是 $16 \times 14 = 224$ 像素, 相邻两张 crop 实际共享 $24-16=8$ 个 patch, 即 112 像素. 4 个 patch 是每侧丢弃的边距, 不是相邻 crop 的重叠宽度.
 
 <!-- page 4 of 30 -->
 
@@ -84,8 +83,7 @@ Figure 3. An image cropped without (left) and with (right) overlap.
 
 **Multi-annotated images. 多标注图像.** 很多图有多条标注, 比如同一张图对应多个问答. 做法是把同一张图的所有标注拼进一个序列, 加注意力掩码让每条标注只看到图像 token 和自己的 token, 看不到其他标注. 论文称这和逐条训练图文对等价. 这样处理的图像数减少约三分之二, 训练时间缩短一半以上, 平均序列长度只增加 25%.
 
-> **核对:** 拼接多条标注后 loss 真的和逐条训练一样吗?
-> 答: 掩码保证了每条标注看到的上下文相同, 但官方代码对 loss 另有加权. `model_preprocessor.py` 在 `multi_annotation_weighting="root_subsegments"` 下把每条标注的 loss 乘以 $1/\sqrt{n}$, $n$ 是同图标注条数. 同一张图的 $n$ 条标注合计权重是 $\sqrt{n}$, 逐条训练时是 $n$. 论文没有提到这项加权.
+掩码保证了每条标注看到的上下文相同, 但官方代码对 loss 另有加权. `model_preprocessor.py` 在 `multi_annotation_weighting="root_subsegments"` 下把每条标注的 loss 乘以 $1/\sqrt{n}$, $n$ 是同图标注条数. 同一张图的 $n$ 条标注合计权重是 $\sqrt{n}$, 逐条训练时是 $n$. 论文没有提到这项加权.
 
 ## 3. Data · 数据
 
@@ -134,8 +132,7 @@ AskModelAnything, CapQA, Points, Count, Cap 这几个 PixMo 子集不加风格�
 
 **Pointing. 指点.** 模型以纯文本坐标输出点, 坐标归一化到 0 到 100. 指多个对象时, 论文称点按从上到下, 从左到右的顺序排列. 计数采用类似 CoT 的方式: 先逐个输出点, 最后输出总数.
 
-> **确认:** 点的排序真是「先上下, 后左右」吗?
-> 答: 和官方代码不一致. `data_formatter.py` 的 `points_to_text` 以 $x \times 10000 + y$ 为排序键, 主键是 $x$, 实际是先从左到右, $x$ 相同时再从上到下.
+和官方代码不一致. `data_formatter.py` 的 `points_to_text` 以 $x \times 10000 + y$ 为排序键, 主键是 $x$, 实际是先从左到右, $x$ 相同时再从上到下.
 
 ## 5. Evaluation · 评测
 
@@ -189,8 +186,7 @@ Molmo 的学术评测统一用 36 个 crop (训练是 12 个), 计数任务除�
 
 条件允许时用对应的风格提示 (如 `vqa2:`), AI2D 用透明框版本. 只用于评测的数据集, 短答题借用 VQA v2.0 的标签, 多选题借用 A-OKVQA 的标签. 人工评测不加风格标签, 用 12 个 crop (部分计数题会用到指点), 标注员只看到输出文字, 看不到点.
 
-> **对一下:** 「325k 次评分, 每对模型约 450 次」两个数能同时成立吗?
-> 答: 表 1 有 27 个模型, 两两组合 $\binom{27}{2}=351$ 对. $351 \times 450 \approx 158$k, 不到 325k 的一半; 反过来 $325\text{k}/351 \approx 926$ 次每对. 两个数至少有一个口径与表 1 的模型集合不符, 文中没有给出解释.
+表 1 有 27 个模型, 两两组合 $\binom{27}{2}=351$ 对. $351 \times 450 \approx 158$k, 不到 325k 的一半; 反过来 $325\text{k}/351 \approx 926$ 次每对. 两个数至少有一个口径与表 1 的模型集合不符, 文中没有给出解释.
 
 <!-- page 7 of 30 -->
 
@@ -466,8 +462,7 @@ Table 6. Model and training hyper-parameters (Molmo-1B-E, 7B-D, 7B-O, 72B-D). Ce
 
 表 6 要点: 四档模型共用同一个 ViT 和连接器池化结构, 差别在 LLM 底座和学习率. 1B-E 激活参数 1.2B, 总参数 6.9B, LLM 的 MLP 层有 64 个专家, 每次激活 8 个.
 
-> **看表:** 72B-D 一列 Heads 80, Layers 64 对吗?
-> 答: 和底座对不上. HF 上 `Molmo-72B-0924` 的 config 以及 Qwen2-72B 都是 `num_attention_heads` 64, `num_hidden_layers` 80, KV 头 8. 表 6 把这两行写反了; 用 $8192/64=128$ 的头维也能核对, $8192/80$ 不是整数.
+和底座对不上. HF 上 `Molmo-72B-0924` 的 config 以及 Qwen2-72B 都是 `num_attention_heads` 64, `num_hidden_layers` 80, KV 头 8. 表 6 把这两行写反了; 用 $8192/64=128$ 的头维也能核对, $8192/80$ 不是整数.
 
 连接器 MLP 的中间维度和 LLM 相同, 所以连接器大小随 LLM 变化; 池化层和 ViT 在各模型间一致. 所有训练都用余弦学习率, 最终降到峰值的 10%.
 

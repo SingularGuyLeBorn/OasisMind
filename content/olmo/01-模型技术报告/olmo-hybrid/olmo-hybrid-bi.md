@@ -31,9 +31,9 @@ willm@allenai.org marks core contributors. See author contributions here.
 
 Recent work has demonstrated the potential of non-transformer language models, especially linear recurrent neural networks (RNNs) and hybrid models that mix recurrence and attention. Yet there is no consensus on whether the potential benefits of these new architectures justify the risk and effort of scaling them up. To address this, we provide evidence for the advantages of hybrid models over pure transformers on several fronts. First, theoretically, we show that hybrid models do not merely inherit the expressivity of transformers and linear RNNs, but can express tasks beyond both, such as code execution. Putting this theory to practice, we train **Olmo Hybrid**, a 7B-parameter model largely comparable to Olmo 3 7B but with the sliding window layers replaced by Gated DeltaNet layers. We show that Olmo Hybrid outperforms Olmo 3 across standard pretraining and mid-training evaluations, demonstrating the benefit of hybrid models in a controlled, large-scale setting. We find that the hybrid model scales significantly more efficiently than the transformer, explaining its higher performance. However, its unclear why greater expressivity on specific formal problems should result in better scaling or superior performance on downstream tasks unrelated to those problems. To explain this apparent gap, we return to theory and argue why increased expressivity should translate to better scaling efficiency, completing the loop. Overall, our results suggest that hybrid models mixing attention and recurrent layers are a powerful extension to the language modeling paradigm: not merely to reduce memory during inference, but as a fundamental way to obtain more expressive models that scale better during pretraining.
 
-近期工作已展示非 Transformer 语言模型的潜力, 尤其是线性循环神经网络 (RNN) 以及把递归与注意力混在一起的 hybrid 模型. 然而社区尚未就一件事达成共识: 这些新架构的潜在收益, 是否足以支撑把它们做大的风险与投入. 为此, 我们从几条战线给出 hybrid 相对纯 Transformer 的优势证据. 首先在理论上, 我们证明 hybrid 并不只是继承 Transformer 与线性 RNN 的表达力, 还能表达两者都做不到的任务, 例如代码执行. 把理论落到实践, 我们训练 **Olmo Hybrid**: 一个大体可比 Olmo 3 7B 的 7B 参数模型, 只是把滑动窗层换成 Gated DeltaNet 层. 我们表明 Olmo Hybrid 在标准预训练与 mid-training 评测上超过 Olmo 3, 在可控的大规模设定下展示 hybrid 的收益. 我们发现 hybrid 相对 Transformer 显著更高效地 Scaling, 这解释了它更高的表现. 但为何特定形式问题上的更高表达力, 会带来更好的 Scaling, 或在与那些问题无关的下游任务上更强, 起初并不清楚. 为解释这道缝隙, 我们回到理论, 论证提高表达力为何应转化为更好的 Scaling 效率, 从而闭环. 总体而言, 结果表明把注意力与递归层混合的 hybrid 模型, 是对语言建模范式的有力扩展: 不只为了推理时省内存, 更是在部署前获得更有表达力, 预训练 Scaling 更好的模型的根本路径.
+近期工作已展示非 Transformer 语言模型的潜力, 尤其是线性循环神经网络 (RNN) 以及把递归与注意力混在一起的 hybrid 模型. 然而社区尚未就一件事达成共识: 这些新架构的潜在收益, 是否足以支撑把它们做大的风险与投入. 为此, 我们从几条战线给出 hybrid 相对纯 Transformer 的优势证据. 首先在理论上, 我们证明 hybrid 并不只是继承 Transformer 与线性 RNN 的表达力, 还能表达两者都做不到的任务, 例如代码执行. 把理论落到实践, 我们训练 **Olmo Hybrid**: 一个大体可比 Olmo 3 7B 的 7B 参数模型, 只是把滑动窗层换成 Gated DeltaNet 层. 我们表明 Olmo Hybrid 在标准预训练与 mid-training 评测上超过 Olmo 3, 在可控的大规模设定下展示 hybrid 的收益. 我们发现 hybrid 相对 Transformer 显著更高效地 Scaling, 这解释了它更高的表现. 但为何特定形式问题上的更高表达力, 会带来更好的 Scaling, 或在与那些问题无关的下游任务上更强, 起初并不清楚. 为解释这道缝隙, 我们回到理论, 论证提高表达力为何应转化为更好的 Scaling 效率, 把理论与实证结果接起来. 总体而言, 结果表明把注意力与递归层混合的 hybrid 模型, 是对语言建模范式的有力扩展: 不只为了推理时省内存, 更是在部署前获得更有表达力, 预训练 Scaling 更好的模型的根本路径.
 
-> 是部署前训练 token (因而也是训练 FLOPs). Abstract 后文写 「scale better during pretraining」; Fig. 1 明确是同一 Common Crawl loss / MMLU 下更少 training tokens. 推理省状态是另一条轴, 见 Tab. 1, 不是 Fig. 1 的纵轴.
+是部署前训练 token (因而也是训练 FLOPs). Abstract 后文写 「scale better during pretraining」; Fig. 1 明确是同一 Common Crawl loss / MMLU 下更少 training tokens. 推理省状态是另一条轴, 见 Tab. 1, 不是 Fig. 1 的纵轴.
 
 <!-- page 2 of 70 -->
 
@@ -100,7 +100,6 @@ To rectify this gap, we introduce **Olmo Hybrid**, a family of model artifacts c
 
 为补这一缺口, 我们引入 **Olmo Hybrid**: 一组大体可比 Olmo 3 的模型产物, 唯一关键架构差是把 Olmo 3 的滑动窗注意力层换成 Gated DeltaNet (GDN, Yang et al., 2025a; Grazzi et al., 2025) 与注意力按 3:1 交错. 我们把 Olmo Hybrid 7B 训到最多 6T token, 发现 token 效率 (因而也是算力效率) 大幅提升: 在 MMLU (Hendrycks et al., 2021) 上追平 Olmo 3 7B 只需少 49% 的训练 token. 预训练后, 这一 token 效率转化为 MMLU 及其他评测上的提升, 并在 mid-training 后保持; 最终 Olmo Hybrid base 检查点在 OlmoBaseEval 全部聚合域上超过 Olmo 3. 在标准 base 评测之外, 长上下文能力也大幅提升: RULER 64k 相对 Olmo 3 高 14.1%. 因为除 hybrid 架构外 Olmo Hybrid 与 Olmo 3 高度可比, 我们把这些结果视为支持 hybrid 优于纯 Transformer 的强证据.
 
-> **问:** Introduction 写 RULER 64k 相对 Olmo 3 提升 14.1%; 这对应 Tab. 3 哪一行差值?
 > Tab. 3: Olmo 3 + YaRN 在 64k 为 70.9; Olmo Hybrid + DroPE 为 85.0; 85.0 - 70.9 = 14.1. Hybrid + YaRN 为 76.9, 相对 70.9 只高 6.0, 引言的 14.1 对齐发布所选的 DroPE 行.
 
 Beyond large-scale experiments, we also present theoretical results and fully controlled scaling studies to explain these performance gains. Past theoretical work has shown attention and recurrence have complementary strengths (Merrill et al., 2024; Grazzi et al., 2025). Mixing them is, thus, a natural way to reap the benefits of both primitives. We extend this with novel theory showing that hybrid models are more powerful than the sum of their parts: there are formal problems related to code evaluation that neither transformers nor GDN can express on their own, but which hybrid models can represent theoretically and learn empirically. This greater expressivity does not immediately imply that hybrid models should be better LMs. We therefore run controlled scaling studies comparing hybrid models to transformers and show that they indeed attain better token efficiency, consistent with our observations from the Olmo Hybrid pretraining run. It is not clear prima facie why greater expressivity on specific formal problems should improve scaling efficiency on benchmarks like MMLU. To fill this gap, we develop a formal explanation of how increasing an architecture's expressivity can improve data and compute efficiency for loss and downstream tasks—even on tasks unrelated to new problems expressible by the model.
@@ -156,7 +155,6 @@ Table 1 Per-layer inference state size comparison under the Olmo 3 configuration
 | Grouped-Query SWA (4096 window, 8 KV heads, d<sub>h</sub>=128) | 8.39M | 16.0 MiB | 15.2× |
 | Olmo Hybrid GDN (30 heads, d<sub>k</sub>=96, d<sub>v</sub>=192) | 0.55M | 1.05 MiB | - |
 
-> **看表:** Tab. 1 里 GQA-SWA 相对 GDN 是 15.2×; 这 15.2× 比的是 Elements/FP16 Size, 还是把序列长度也折进去了?
 > 表内直接比 Elements 与 FP16 Size: SWA 8.39M / 16.0 MiB 对 GDN 0.55M / 1.05 MiB. SWA 行已把 window=4096 写进规格; GDN 行状态与序列长度无关. 不是另开 TestingTime 档, 是每层推理状态体积.
 
 ### 2.2 Training Overview 训练概览
@@ -197,7 +195,7 @@ As a proof of concept, we also apply the Olmo 3 post-training recipe to Olmo Hyb
 
 **预训练效率.** 如图 1, Olmo Hybrid 比 Olmo 3 更省算力与数据: 达到与 Olmo 3 7B 相同的 Common Crawl loss 与 MMLU 准确率, 所需训练 token 显著更少. 到 6T token 训练结束时, 这一更高效率转化为相对 Olmo 3 的增益
 
-> 是. 图注写 「and thus also 35% and 49% fewer FLOPs, respectively」, 在 N 固定的 7B 对照下, 训练 FLOPs 随 D 近似同比例. 这是部署前训练算力, 不是 TestingTime.
+是. 图注写 「and thus also 35% and 49% fewer FLOPs, respectively」, 在 N 固定的 7B 对照下, 训练 FLOPs 随 D 近似同比例. 这是部署前训练算力, 不是 TestingTime.
 
 <!-- page 6 of 70 -->
 
@@ -236,8 +234,7 @@ on both metrics compared to Olmo 3. This pretraining efficiency is a compelling 
 
 **与开源权重模型对照.** 在与 Olmo 3 的可控对照之外, 我们还把 Olmo Hybrid 与相近参数量的其他开源权重模型对比. 如图 2, 在开源稠密模型中, Olmo Hybrid 处于 「训练算力 → OlmoBaseEval 表现」 的 Pareto 前沿. 基线架构细节与完整结果见 §5.2.
 
-> **拆开:** Tab. 3 DroPE 在 4k 为 92.2, 低于 Olmo 3 的 95.8, 但 64k 为 85.0 高于 70.9; 作者把长上下文增益主要记在 YaRN 还是线性 RNN?
-> 正文写 「We attribute these gains on long-context tasks to the presence of linear RNN layers」. YaRN/DroPE 是扩展方法; Hybrid+YaRN 在 64k 已到 76.9>70.9, DroPE 再抬到 85.0. 短窗略低, 长窗更高是表内事实.
+正文写 「We attribute these gains on long-context tasks to the presence of linear RNN layers」. YaRN/DroPE 是扩展方法; Hybrid+YaRN 在 64k 已到 76.9>70.9, DroPE 再抬到 85.0. 短窗略低, 长窗更高是表内事实.
 
 <!-- page 7 of 70 -->
 
@@ -371,8 +368,7 @@ $$
 
 **图 6** 令 $\mathbf { k } _ { t } ^ { \top } = ( 1 , - 1 ) / \sqrt { 2 } ;$ 关键是 $\| \mathbf { k } _ { t } \| = 1$. 把 GDN 更新中的低秩项乘以 2, 转移矩阵就能有负特征值, 即能实现在状态间来回切换的动态 (Grazzi et al., 2025). 这对表达 parity 与 $A _ { 5 }$ 字问题等状态追踪任务很有用.
 
-> **确认:** Figure 6 两行矩阵只差一个系数 2; 若追问 Householder-style transition 为什么能表示 swap, 特征值从 0 变成 -1 是怎么来的?
-> 因为 $\| \mathbf{k}_t \| = 1$, $\mathbf{I} - c\,\mathbf{k}_t\mathbf{k}_t^{\top}$ 在 $\mathbf{k}_t$ 方向上的特征值是 1 - c, 在正交方向上保持 1. c = 1 时是投影, 得到 (a) 的 0; c = 2 时是反射, 得到 (b) 的 -1, 矩阵正好是交换两个坐标的 swap. Definition 1 里 $2\beta_t$ 配合 $\beta_t \in (0,1)$, 这个特征值就能落在 (-1, 1) 内取负值. §3.5 的消融也对得上: 去掉负特征值后, 线性 RNN 在 n = 64 与 128 时掉到 0.21484 与 0.22266.
+因为 $\| \mathbf{k}_t \| = 1$, $\mathbf{I} - c\,\mathbf{k}_t\mathbf{k}_t^{\top}$ 在 $\mathbf{k}_t$ 方向上的特征值是 1 - c, 在正交方向上保持 1. c = 1 时是投影, 得到 (a) 的 0; c = 2 时是反射, 得到 (b) 的 -1, 矩阵正好是交换两个坐标的 swap. Definition 1 里 $2\beta_t$ 配合 $\beta_t \in (0,1)$, 这个特征值就能落在 (-1, 1) 内取负值. §3.5 的消融也对得上: 去掉负特征值后, 线性 RNN 在 n = 64 与 128 时掉到 0.21484 与 0.22266.
 
 et al. (2024) show advantages of linear RNNs over transformers on star-free regular languages, a simpler type of state tracking compared to $A _ { 5 } ,$ and Merrill et al. (2026) show that DeltaNet and other linear RNNs like RWKV-7 are upper bounded by $\widehat { \mathsf { P N C } } ^ { 1 }$ and can solve $\mathsf { P N C } ^ { \mathrm { i } }$ -complete problems.
 
@@ -416,8 +412,7 @@ Proof Sketch. A hybrid model can solve state-based recall in two ways. One way i
 
 证明概要. Hybrid 模型有两种方式求解 state-based recall. 一种是先用 GDN 层对指针复合对换 (这是 $\mathbb { N } \mathbb { C } ^ { 1 }$-complete 状态追踪的一个实例), 再用注意力取出 $p _ { 1 }$ 处的值. 另一种是先用注意力头取出 $p _ { 1 } , \ldots , p _ { 5 }$ 处的值, 再对这些值复合对换. 因此, 层类型只交替一次, 无论先后, hybrid 模型都能表达该任务. 另一方面, 纯 transformer 与纯 GDN 各自缺少表达其中一块的能力, 因而表达不了 state-based recall. 这些否定结果的严格证明放在 Section B. □
 
-> **回看:** Theorem 1 说 「one alternation, in either order」 就够; 把 GDN→attention 与 attention→GDN 两条 layer ordering 拆开看, 各自先解决 Definition 2 的哪一半?
-> 按证明概要: GDN 在前时, GDN 先对 5 个指针复合对换 $\pi_1, \ldots, \pi_n$ 得到 q, 注意力再去比特串里取值. 注意力在前时, 先把 $p_1, \ldots, p_5$ 处的 5 个比特取回来, GDN 再对这 5 个值做对换. 两条路都是先把问题压成另一种原语擅长的形式, 所以一次交替就够. 多次交替会不会更强, 文中列为开放问题.
+按证明概要: GDN 在前时, GDN 先对 5 个指针复合对换 $\pi_1, \ldots, \pi_n$ 得到 q, 注意力再去比特串里取值. 注意力在前时, 先把 $p_1, \ldots, p_5$ 处的 5 个比特取回来, GDN 再对这 5 个值做对换. 两条路都是先把问题压成另一种原语擅长的形式, 所以一次交替就够. 多次交替会不会更强, 文中列为开放问题.
 
 Since state-based recall is expressible with GDN before attention or vice versa, it follows that alternating layers in either order also unlocks additional expressivity for hybrid models relative to full attention or full GDN. It is an open question whether multiple alternations between layer types buy more expressivity than having just one alternation.
 
@@ -501,8 +496,7 @@ To empirically validate the expressivity tradeoffs from Sections 3.1 to 3.3, we 
 
 **State-Based Recall.** 为检验状态追踪与召回的组合, 我们用 Figure 5 中的 state-based recall 任务: 状态更新变换一组指针, 这些指针随后用来对位数组取下标. 理论上, Theorem 1 预测在标准复杂度猜想下 hybrid 模型能表达 state-based recall, transformer 与 RNN 不能; 我们现在实证检验, 在该任务上训练这些模型时能否观察到这种分离. 如 Figure 7 所示, transformer 与纯 GDN 线性 RNN 都随难度上升而退化, 带负特征值的 hybrid 则在所有测试难度上基本保持完美. 相比之下, 无负特征值的 hybrid 失去了这一优势, 在 n = 128 时跌到 0.57031; 对应的无负特征值线性 RNN 同样很弱. 这说明实践中 hybrid 的组合优势依赖于循环块能否用上负特征值.
 
-> **停一下:** Figure 7(c) 的 hybrid 有注意力负责召回, 为什么去掉 negative eigenvalues 后在 n = 128 仍跌到 0.57031, 而 Figure 7(b) 的纯召回完全不受影响?
-> 因为 Definition 2 要先对 5 个指针复合 n 次对换, 这一半是 $\mathsf{NC}^1$-complete 的状态追踪, 按 Theorem 1 只能交给 GDN, 而 GDN 表达 swap 靠的正是 Figure 6 里的特征值 -1. 纯召回只用注意力那一半, 所以消融后 hybrid 不变. 组合任务的前半段一坏, 后面召回再准也取错了位置. 这与状态追踪实验里无负特征值 hybrid 在 n = 128 跌到 0.36328 是同一原因.
+因为 Definition 2 要先对 5 个指针复合 n 次对换, 这一半是 $\mathsf{NC}^1$-complete 的状态追踪, 按 Theorem 1 只能交给 GDN, 而 GDN 表达 swap 靠的正是 Figure 6 里的特征值 -1. 纯召回只用注意力那一半, 所以消融后 hybrid 不变. 组合任务的前半段一坏, 后面召回再准也取错了位置. 这与状态追踪实验里无负特征值 hybrid 在 n = 128 跌到 0.36328 是同一原因.
 
 Overall, these results support the theoretical picture while refining the architectural story: transformers excel at recall but struggle with hard state tracking, GDN-based linear RNNs show the opposite pattern, and hybrids with negative eigenvalues inherit both capabilities and remain strong on their composition. Removing negative eigenvalues has little effect on pure recall, but substantially harms state tracking and the composed state-based recall task, in line with theoretical predictions (Grazzi et al., 2025).
 
@@ -640,7 +634,7 @@ Figure 9 Scaling law coefficients E, A, B with 95% bootstrap CIs for the fixed-e
 
 图 9 固定指数拟合 (共享 α=β=0.22) 下的 Scaling Laws 系数 E, A, B 及其 95% bootstrap 置信区间, 区间很窄. 数据效率系数 B 显示 Hybrid GDN 相对 transformer 有稳健优势 (83.7 对 94.9, 置信区间不重叠, 标 ∗), E 与 A 的差异在统计上不具结论性.
 
-> 只看数据项做粗算: 要让 $B/D^{\beta}$ 相等, token 比例约为 (94.9/83.7)^{1/0.22} ≈ 1.77. 这与 §4.1 投影的 ∼1.3–1.9× 同量级. 实际 Figure 10(b) 是按 $D^*(N)$ 反解, 还带着 E 与 $A/N^{\alpha}$, 所以 1B 只有 ∼1.3×, 70B 才到 ∼1.9×. 另外只有 B 的置信区间不重叠, A (70.1 对 71.8) 与 E 的差异都不显著, 所以文中把主优势落在 B 上.
+只看数据项做粗算: 要让 $B/D^{\beta}$ 相等, token 比例约为 (94.9/83.7)^{1/0.22} ≈ 1.77. 这与 §4.1 投影的 ∼1.3–1.9× 同量级. 实际 Figure 10(b) 是按 $D^*(N)$ 反解, 还带着 E 与 $A/N^{\alpha}$, 所以 1B 只有 ∼1.3×, 70B 才到 ∼1.9×. 另外只有 B 的置信区间不重叠, A (70.1 对 71.8) 与 E 的差异都不显著, 所以文中把主优势落在 B 上.
 
 statistically indistinguishable across architectures—consistent with the theory (Section 4.2), which predicts that expressivity shifts the efficiency constants without altering the power-law exponents. The primary robust advantage of the hybrid model is thus its data efficiency coefficient $B ,$ as also predicted by our theoretical results in section 4.2.
 
@@ -768,8 +762,7 @@ See Section E for a proof. Theorem 4 can be interpreted as follows. If we can ex
 
 证明见 Section E. Theorem 4 可以这样理解. 若所有任务都可表达 $( \epsilon = 0 )$, 就回到 quantization model (Michaud et al., 2023) 的标准不可约 loss $L _ { \infty } ^ { 0 } = L _ { 0 } - \Delta$ 与 Scaling 系数 $A _ { 0 } = \Delta C ^ { \alpha }$, $B _ { 0 } = \dot { \Delta } T ^ { \alpha / ( \alpha + 1 ) }$. 另一方面, 若有部分任务不可表达 $( \epsilon   >   0 )$, Scaling 系数 $A _ { \epsilon }$ 与 $B _ { \epsilon }$ (以及可能的不可约 loss $L _ { \infty } ^ { \epsilon } )$ 都会改变. 具体而言, 如 Figure 11 所示, 减小 ϵ 会让 loss 向 $\epsilon = 0$ 的情形改善. 形式上, 在 Assumptions 1 to 3 的任何非平凡实例化下, 提升表达力都会让 loss 曲线下移:
 
-> **对一下:** Theorem 4 里数据幂律的指数是 $\alpha/(\alpha+1)$, 而 ε 只出现在 $A_\epsilon$, $B_\epsilon$, $L_\infty^\epsilon$ 中; 这和 Figure 8 各架构 β 差不多 (0.213 / 0.219 / 0.227) 能对上吗?
-> 能对上. Theorem 4 里的指数只来自 quantization model 的任务频率幂律 $p_k \propto k^{-(\alpha+1)}$, 与架构的 ε 无关, 所以表达力只改系数, 不改指数. 这正是 §4.1 先用无约束拟合看到指数统计上不可区分, 再固定 α=β=0.22 去比 B 的理由. 注意这里的 α 是任务分布的 Zipf 指数, 与 Eq. (1) 里参数项的 α 不是同一个量.
+能对上. Theorem 4 里的指数只来自 quantization model 的任务频率幂律 $p_k \propto k^{-(\alpha+1)}$, 与架构的 ε 无关, 所以表达力只改系数, 不改指数. 这正是 §4.1 先用无约束拟合看到指数统计上不可区分, 再固定 α=β=0.22 去比 B 的理由. 注意这里的 α 是任务分布的 Zipf 指数, 与 Eq. (1) 里参数项的 α 不是同一个量.
 
 **Corollary 4.1: Expressivity Always Improves Scaling 推论 4.1: 表达力总能改善 Scaling**
 
@@ -1075,7 +1068,6 @@ this substantial slowdown.<sup>8</sup>
 
 **后训练表现.** Table 7 展示 Olmo Hybrid 的 Think SFT, Instruct SFT 与 DPO checkpoint 相对 Olmo 3 的表现. 总体上, 更强的预训练表现转化为知识类任务上持续的增益, 但在 AIME 与 Omega (Sun et al., 2025) 这类长推理任务上仍落后于 Olmo 3. 我们预计, 为 hybrid 模型调整后训练数据能改善这些基准上的表现. 数据之外, 早期后训练结果对解码 kernel 及相关设置也很敏感, 在这方面改进也能进一步缩小差距. 其他工作表明, 最强的教师模型并不总能让下游学生模型同比例提升 (Guha et al., 2025; OpenThoughts-Agent Team, 2025), 这可能与 base 模型有关, 这也说明需要在 Olmo 3 所用数据之外继续迭代后训练数据.<sup>9</sup> 无论工程还是研究层面, hybrid 模型的后训练都还处在起步阶段; 我们会继续完善这些配方, 并与社区分享发现.
 
-> **问:** Table 8 在 1K 上下文时 Olmo Hybrid 只需 8 张推理 GPU, Olmo 3 7B (MHA) 要 32 张; 开了 enforce eager 后吞吐掉到约一半, GPU 数却不变. 用 KV cache memory pressure 怎么解释这两件事?
 > GPU 数由能否同时装下 1,024 条 rollout 的状态决定. Olmo 3 7B 用的是没有 GQA 的完整 MHA, Table 1 里 32K 时每层 512 MiB; Olmo Hybrid 的 3/4 层换成 GDN, 每层只有 1.05 MiB 的定长状态, 所以显存需求小得多. enforce eager 只是关掉 torch 编译, 影响每步计算速度, 不影响要存的状态, 所以 GPU 数不变, 墙钟时间变长 (1K 时 10.1h 变 21.7h). 按 §5.3, 开这个 flag 是因为编译引入的数值误差会在 GDN 的循环状态更新里累积.
 
 One limitation of our current investigation into post-training is that we have not considered the implications of switching to a hybrid architecture for safety. In future work, it would be interesting to assess whether Olmo Hybrid exhibits different behavior on safety evaluations compared to transformers.
@@ -1564,7 +1556,6 @@ The model was trained on 512 GPUs. At the beginning of training, these were H100
 
 **训练吞吐.** 初期实验中, 我们逐个去掉头, 直到训练吞吐与 Transformer 接近, 以此把吞吐校准到与 Olmo 3 可比. 具体做法是在 128 张 H100 上对几种训练配置测模型大小与吞吐. 如表 9, 去掉 2 个头的 hybrid 在参数量上与 Olmo 3 Transformer 接近, 训练吞吐略高. 因此 Olmo Hybrid 7B 训练选了 30 个头的 hybrid 架构.
 
-> **看表:** Tab. 9 里 31 头已把参数压到 7.4B, 为何还要再砍到 30 头?
 > 31 头的吞吐是 7.7K TPS, 仍低于 Olmo 3 的 8.0K; 30 头为 7.0B,8.2K TPS, 参数最接近 6.8B, 吞吐也反超. 选 30 头同时对齐了参数量和吞吐两个维度, 只看参数量的话 31 头还不够.
 
 **Training Stability.** To estimate the stability of Olmo training runs, we compute a spike score as an objective measure. Concretely, we define the spike score as the percentage of values in a time series that are at least six standard deviations away from a rolling average of the last 128 values. We use spike score on the L2 norm of
@@ -1591,7 +1582,7 @@ Figure 13 shows that Olmo 3 exhibits a high and growing number of spikes in the 
 
 图 13 显示 Olmo 3 梯度范数的尖峰多且越来越多, Olmo Hybrid 则低而平. 我们把这看作初步证据: 相比 Olmo 3, Olmo Hybrid 架构可能更稳定, 即更能承受大学习率与带噪数据.
 
-> 作者措辞是 「preliminary evidence」 与 「may be more stable」. 这个度量只看梯度 L2 范数, 且相对 Olmo Team (2024) 的做法已有改动, 分数偏高. 两条曲线用的是同一口径, 横向比有效; 至于能否承受更大学习率, 文中没有做对应实验.
+作者措辞是 「preliminary evidence」 与 「may be more stable」. 这个度量只看梯度 L2 范数, 且相对 Olmo Team (2024) 的做法已有改动, 分数偏高. 两条曲线用的是同一口径, 横向比有效; 至于能否承受更大学习率, 文中没有做对应实验.
 
 ### A.2 Mid-Training and Long Context Extension
 
@@ -2141,7 +2132,6 @@ where $L _ { \mathrm { t a r g e t } }$ is set to the minimum observed training 
 
 52
 
-> **确认:** Fig. 14 是 Scaling law fit diagnostics; 它支撑的是 §4.1 自由拟合 R^2≥0.998, 还是固定指数后的 B 区间?
 > 图在附录 D.2, 服务拟合诊断 (残差等). 主文 §4.1 的 R^2≥0.998 与 Fig. 8 自由拟合对应; 固定指数 B=83.7 vs 94.9 见 Fig. 9. Fig. 14 用来检查拟合是否可信, 不改写 Fig. 9 的系数.
 
 <!-- page 53 of 70 -->
@@ -2180,8 +2170,7 @@ Scaling 阶梯和消融实验中的所有模型, 在每个规模上共享同一�
 
 53
 
-> **看表:** Fig. 15 写 Hybrid 用 19–58% 更少 token 追上 Olmo 3; 这和 Fig. 1 的 35%/49% 是同一组曲线吗?
-> 不是同一组. Fig. 1 是 CE loss 与 MMLU; Fig. 15 是另外 6 个下游基准的扩展曲线, 文注写 sorted by token efficiency, 并指向 Fig. 1 看 CE/MMLU.
+不是同一组. Fig. 1 是 CE loss 与 MMLU; Fig. 15 是另外 6 个下游基准的扩展曲线, 文注写 sorted by token efficiency, 并指向 Fig. 1 看 CE/MMLU.
 
 <!-- page 54 of 70 -->
 
@@ -2223,7 +2212,6 @@ We report total (non-embedding) parameter counts and forward-pass floating-point
 
 55
 
-> **回看:** Fig. 17 标题是 pure architectures 的 FLOPs–指标; 和 Tab. 5 的 BPB 消融如何分工?
 > Tab. 5 是离散规模上的平均 BPB 表; Fig. 16–21 是按 FLOPs 投影的曲线族. 读纯 Transformer/GDN/Mamba2 走势看 Fig. 17; 读选定 3:1 数字仍以 Tab. 5 为准.
 
 <!-- page 56 of 70 -->
@@ -2360,8 +2348,7 @@ where $M _ { \mathrm { p r o j , c o n v , M L P } }$ represents the cost of pro
 
 60
 
-> **拆开:** §D.4.1 FLOP counting 若把 GDN 状态更新算进训练 FLOPs, 是否仍用主文 C=6ND 启发式?
-> 主文 Fig. 2 / 开源对照用 Kaplan C=6ND. 附录 D.4 给更细的参数量与 FLOP 计算, 用于 Scaling 阶梯内部对齐; 引用开源 Pareto 时仍按主文启发式, 不要把两套算法混成一行.
+主文 Fig. 2 / 开源对照用 Kaplan C=6ND. 附录 D.4 给更细的参数量与 FLOP 计算, 用于 Scaling 阶梯内部对齐; 引用开源 Pareto 时仍按主文启发式, 不要把两套算法混成一行.
 
 <!-- page 61 of 70 -->
 
@@ -2433,8 +2420,7 @@ Tokens leveraging unlearned tasks incur loss $L _ { 0 }$ If a task k has been le
 
 61
 
-> **对一下:** Appendix E Definition 3/4 与主文 Assumption 1–3 谁先谁后? Theorem 4 的证明落在 E.1–E.4 哪一节收束?
-> 主文 §4.2 陈述 Assumption 1–3 与 Theorem 4; 附录 E 给出 Definition 3/4 与证明细节. E.4 Main Results 收束 Corollary 4.1/4.2. 读定理先主文, 核对推导再进 E.
+主文 §4.2 陈述 Assumption 1–3 与 Theorem 4; 附录 E 给出 Definition 3/4 与证明细节. E.4 Main Results 收束 Corollary 4.1/4.2. 读定理先主文, 核对推导再进 E.
 
 <!-- page 62 of 70 -->
 

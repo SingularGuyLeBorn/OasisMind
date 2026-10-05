@@ -161,7 +161,7 @@ Figure 1 The model flow encompasses training data, code and intermediate checkpo
 
 图 1｜model flow 覆盖各阶段的训练数据, 代码和中间检查点. fully-open 和 open-weight 都会放出最终检查点 (深青色). Marin, Apertus, Olmo 还会沿 model flow 放出数据, 便于看中间阶段 (米色). 图中是 Olmo 3 Think 32B 以及规模和架构相近的其他开放模型. Olmo 3 Think 与 Qwen 3 32B 接近, 而 Qwen 3 32B 没有公开 base. 其底层 Olmo 3 Base 32B 超过其他 fully-open base.
 
-> 用来说明 Olmo 的 fully-open 优势: 可比最终 thinking, 也能回追 Base 与数据; 对方只给终点权重.
+用来说明 Olmo 的 fully-open 优势: 可比最终 thinking, 也能回追 Base 与数据; 对方只给终点权重.
 
 In addition, we train Olmo 3 Instruct 7B and 32B models tuned to produce shorter, more direct responses. By avoiding intermediate “thinking” outputs, Olmo 3 Instruct effectively reduces response latency and is optimized for general chat and function calling. Olmo 3 Instruct 7B and 32B surpass other notable open-weight models of comparable size—Qwen 2.5 (Qwen et al., 2024), Gemma 3 (Gemma 3 Team, 2025), IBM Granite 3.3 (Soule and Bergmann, 2025), and Llama 3 (Grattafiori et al., 2024)—and additionally reduces the remaining performance gap to Qwen 3 (Yang et al., 2025a). Finally, we introduce Olmo 3 RL-Zero 7B, a variant of Olmo 3 trained using RL directly from Olmo 3 Base. Olmo 3 RL-Zero enables researchers to study how base model data affects RL performance.
 
@@ -195,8 +195,7 @@ We develop Olmo 3 Base in three stages of pretraining for up to 5.9T tokens (Sec
 
 我们分三阶段开发 Olmo 3 Base: 预训练最多约 5.9T token (第 §3.4 节), midtraining 为 100B token (第 §3.5 节), 以及新加入的长上下文扩展: Olmo 3 Base 7B 为 50B token, Olmo 3 Base 32B 为 100B token (第 §3.6 节).
 
-> **问:** Fig. 2 左栏三阶段各自的 token 预算是多少?
-> 预训练至约 5.9T (32B 实际常写截到 5.5T), midtraining 100B, 长上下文 7B 50B / 32B 100B (§2.1, Fig. 4).
+预训练至约 5.9T (32B 实际常写截到 5.5T), midtraining 100B, 长上下文 7B 50B / 32B 100B (§2.1, Fig. 4).
 
 **Evaluation** We develop OlmoBaseEval, a collection of benchmarking suites to support decision-making during base model development (pretraining and midtraining). Our goal is to be compute-efficient by making development decisions based on models trained at a small scale. The challenge is that such models can exhibit random-chance performance on certain tasks, and have small differences in scores that are hard to distinguish from benchmark noise. To address this, we (1) aggregate scores over clusters of tasks that assess similar capabilities (Section §3.3.1); (2) develop proxy metrics for evaluating small-scale models (Section §3.3.2); and
 
@@ -285,8 +284,7 @@ Table 1 demonstrates a snapshot of our evaluation for Olmo 3 Think compared to o
 
 Table 1 给出 Olmo 3 Think 相对其他 open-weight 与 fully-open 模型的评测快照. 据我们所知, Olmo 3 Think 是迄今最强的 fully-open thinking 模型. 它优于 Qwen2.5-Instruct, Gemma 2 与 3 27B, DeepSeek R1 以及 Distilled Qwen 32B; 也接近 Qwen 3 与 Qwen 3 VL 32B, 在相近规模最强 open-weight 模型面前收窄差距, 同时训练 token 大约少 6x.
 
-> **看表:** §2.3 说 Think 训练 token 大约少 6x, 比较对象是哪一类模型?
-> 同尺度最强 open-weight thinking (文内与 Qwen 3 / Qwen 3 VL 32B 等对读), 不是 fully-open 旧档.
+同尺度最强 open-weight thinking (文内与 Qwen 3 / Qwen 3 VL 32B 等对读), 不是 fully-open 旧档.
 
 For more details and results of other models along our Olmo 3 model flow, refer to the quick links below.
 
@@ -348,7 +346,6 @@ In total, approximately 56 days elapsed from the start of training to the evalua
 • Post-training: ∼9 days (SFT, DPO, and RL) Post-training follows a different operational pattern in which we run each stage multiple times, sweeping over learning rates and other hyperparameters. The theory for post-training, particularly, RL, is less developed, so we have to run multiple experiments to identify the optimal hyperparameters for a given base model. We hope to address this in future work. During post-training, checkpoint evaluation consumes a larger proportion of compute resources, in part due to long generations from reasoning models on core benchmarks. For SFT, we swept over four candidate learning rates, on 256 GPUs each, in parallel for 36 hours. Then approximately 12 hours was spent on evaluation, merging, and checkpoint confirmation, totaling approximately two days. DPO training takes less time per run (about 18 hours for a full learning-rate sweep on 64 GPUs per job) but in practice extended over multiple days due to cluster instability. The final RL runs for the initial Olmo 3 Think 32B spanned approximately 5 days with at least a day of training time lost due to stability issues. After the initial release of Olmo 3, we continued our best RL run for another 21 days on 224 GPUs to produce Olmo 3.1 Think 32B.
 • 后训练: ∼9 天 (SFT, DPO 与 RL) 后训练运作方式不同: 每个阶段会多次运行, 扫描学习率等超参. 后训练尤其是 RL 的理论更不成熟, 因此要对给定 Base 做多组实验找最优超参. 我们希望在未来工作中改善这一点. 后训练期间检查点评测占用更大比例算力, 部分因为推理模型在核心基准上生成很长. SFT 扫描四个候选学习率, 各 256 GPU 并行约 36 小时; 再约 12 小时用于评测, 合并与确认, 合计约两天. DPO 单次更短 (完整学习率扫描约 18 小时 / 每任务 64 GPU), 但因集群不稳实际跨多天. 初始 Olmo 3 Think 32B 的最终 RL 约 5 天, 其中至少一天因稳定性问题损失. Olmo 3 首发后, 我们把最佳 RL 再继续 21 天 / 224 GPU, 得到 Olmo 3.1 Think 32B.
 
-> **拆开:** 后训练约 9 天里 SFT 学习率扫描怎么跑?
 > §2.4: 四个候选学习率, 各 256 GPU 并行约 36 小时, 再加约 12 小时评测与合并确认.
 
 While pretraining accounts for the majority of total GPU hours, a non-trivial share is consumed by post-training and by the repeated checkpoint evaluations required when transitioning between major training stages. These additional costs are not captured when reporting pretraining hours alone but remain significant across the model’s full development cycle. Further pretraining details, which represent the bulk of expenditure, are provided in Appendix A.2.
@@ -468,7 +465,6 @@ OLMo-core supports pretraining, midtraining, long-context extension, and SFT, al
 
 OLMo-core 支持预训练, midtraining, 长上下文扩展和 SFT, 并附带辅助工具, 用于 checkpoint 与 Hugging Face Transformers 格式之间的互相转换以及模型 checkpoint 合并. DPO 与 RL 的支持已在计划中, 但尚未完成.
 
-> **确认:** §3.2 说 OLMo-core 能训到 SFT, Think 的 DPO 与 RL 为何仍在 Open Instruct?
 > OLMo-core 覆盖预训练, midtraining, 长上下文扩展与 SFT, 但 DPO 与 RL 「planned but not yet complete」; RL 基础设施写在 §4.4.3 的 Open Instruct. 反过来, §4.2.2 的 SFT 从 Open Instruct 换到 OLMo-core, 训练吞吐提升 8×.
 
 Hyperparameters for training Olmo 3 Base 7B and 32B are presented in Table 35 in Appendix A.2. As in OLMo 2, we train in stages defined by the data curriculum and learning rate schedule (see Appendix Table 35 for details). Infrastructure and distributed training configurations for each stage are summarized in Appendix Table 34.
@@ -567,11 +563,9 @@ Figure 4 Learning rate schedule and loss for Olmo 3 Base 32B. The learning rate 
 
 图 4｜Olmo 3 Base 32B 的学习率调度与损失. 学习率调度是覆盖一个 epoch (5.93T token) 的余弦调度, 在 5.5T token 处截断. 预热为 2000 步, 峰值学习率为 $6  \times  10 ^{-4}$ 调度的目标最终学习率为峰值的 10%. 由于截断, 实际最终学习率为 $\mathrm { 6 . 2 1 0 \times 1 0 ^ { - 5 } }$ 有点反直觉的是, 32B 的学习率比 7B 更高, 但 32B 更大的 batch size (每个 batch 8M token, 7B 为 4M token) 在一定程度上抵消了这一点.
 
-> **回看:** Fig. 3 与 Fig. 4 的峰值学习率为何不同?
 > 7B 峰值 $3\times10^{-4}$, batch 4M token; 32B 峰值 $6\times10^{-4}$, batch 8M token. 文内说 32B 更高 LR 部分被更大 batch 抵消.
 
-> **停一下:** Fig. 4 按 5.93T 一 epoch 设计余弦, 为什么终学习率不是目标的峰值 10%?
-> 调度目标是峰值 10%, 但 32B 在 5.5T 处截断, 没走完 5.93T 的余弦尾段, 所以实际终学习率停在 $\mathrm{6.210\times10^{-5}}$ (Fig. 4 图注). 7B 则是前半段 5T 余弦, 后半段拉长到 5.93T (Fig. 3).
+调度目标是峰值 10%, 但 32B 在 5.5T 处截断, 没走完 5.93T 的余弦尾段, 所以实际终学习率停在 $\mathrm{6.210\times10^{-5}}$ (Fig. 4 图注). 7B 则是前半段 5T 余弦, 后半段拉长到 5.93T (Fig. 3).
 
 • We improve the overall signal-to-noise ratio by evaluating more examples from noisy tasks or even removing them entirely (Section §3.3.3).
 • 对噪声大的任务评测更多样本, 甚至直接移除这些任务, 以提高整体信噪比 (第 §3.3.3 节).
@@ -1204,7 +1198,6 @@ Table 9 Microanneal-level domain tradeoffs: meta-reasoning and program-verifiabl
 
 表 9｜microanneal 层面的领域权衡: meta-reasoning 与 program-verifiable 推理 (5B microanneal, 仅 Web 基线). 推理数据集同样存在领域权衡: 加入 meta-reasoning 和 program-verifiable 数据在数学和代码任务上带来显著提升, 但生成任务和 MCQA 任务的表现有所下降. (讨论见第 §3.5.4 节.)
 
-> **对一下:** Table 8/9 的 microanneal 想说明什么权衡?
 > Reddit-to-Flashcards 抬 MCQA/部分 code, 伤 math/GenQA; meta-reasoning 与 program-verifiable 抬 math/code, 伤部分 GenQA/MCQA.
 
 We also see these domain tradeoffs at the individual source level, observable in results from microanneals. Table 8 shows a microanneal comparison for the Reddit-to-Flashcards dataset, which relative to the web-only baseline yields improvement for multiple choice tasks, as well as a boost for certain code tasks, but results in some performance decrease in math and GenQA tasks. Conversely, in Table 9 we see that our novel synthetic reasoning data—meta-reasoning and program-verifiable reasoning—yields significant improvement in math and code tasks, but results in some performance drop on certain GenQA and MCQA tasks.
@@ -1235,7 +1228,7 @@ Table 10 Effect of thinking traces and instruction data on OlmoBaseEval.“Full 
 
 表 10｜thinking traces 与指令数据对 OlmoBaseEval 的影响. 「Full mix」 即表 6 中的 「Round 3」. 纳入指令与思考数据的混合在各项 base 评测指标上都更好, 说明即便在后训练之前, 纳入这些数据类型也是有益的. (讨论见第 §3.5.4 节.)
 
-> 在控制总 token 的 100B 对照里, 含 instruction 与 thinking 的 mix 在各项 OlmoBaseEval 上全面更好.
+在控制总 token 的 100B 对照里, 含 instruction 与 thinking 的 mix 在各项 OlmoBaseEval 上全面更好.
 
 <table><tr><td rowspan="10">Midtraining Data Sources</td><td rowspan="10">Total contam</td><td colspan="4">Evaluated splits:</td><td colspan="9">Val/Test</td><td colspan="8">All</td><td></td></tr><tr><td>Perf Δ</td><td>1.7</td><td>2.0</td><td>-1.2</td><td>-1.6</td><td>13.9</td><td>0.4</td><td>-0.4</td><td>-2.4</td><td>0.6</td><td>-0.1</td><td>-0.7</td><td>-0.0</td><td>0.6</td><td>0.9</td><td>-1.4</td><td>0.0</td><td>1.4</td><td>-0.3</td><td>1.8</td><td>1.1</td><td></td></tr><tr><td>% contam</td><td>27%</td><td>50%</td><td>4%</td><td>100%</td><td>9%</td><td>2%</td><td>2%</td><td>2%</td><td>2%</td><td>0%</td><td>5%</td><td>1%</td><td>24%</td><td>3%</td><td>6%</td><td>3%</td><td>2%</td><td>13%</td><td>3%</td><td>2%</td><td></td></tr><tr><td>SQUAD</td><td>Minerva</td><td>MMLU (MC)</td><td>GSM8K</td><td>DROP</td><td>CoQA (MC)</td><td>HumEval (@16)</td><td>DROP (MC)</td><td>LAMBADA</td><td>MedMCOA (MC)</td><td>MedQA En (MC)</td><td>SQUAD (MC)</td><td>LeetCode (@16)</td><td>M-E-HumEval (@16)</td><td>Jeopardy</td><td>HellaSwag</td><td>CoQA</td><td>ARC (MC)</td><td>PIQA (MC)</td><td>CSQA (MC)</td><td>SciQ (MC)</td><td></td></tr><tr><td>Common Crawl (High Q.)</td><td>2e3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2e3</td><td>50</td><td>0</td><td>256</td><td>0</td><td>1</td><td>119</td></tr><tr><td>StackEdu (FIM)</td><td>876</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>792</td><td>0</td><td>0</td><td>24</td><td>0</td><td>1</td><td>58</td></tr><tr><td>Gemini Reasoning Traces</td><td>606</td><td>0</td><td>513</td><td>31</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>43</td><td>0</td><td>19</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>OLMOCR Science PDFs (High Q.)</td><td>554</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>97</td><td>4</td><td>1</td><td>390</td><td>0</td><td>19</td><td>33</td></tr><tr><td>Sponge</td><td>308</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>38</td><td>1</td><td>0</td><td>190</td><td>0</td><td>0</td><td>79</td></tr><tr><td>General Reasoning Mix</td><td>113</td><td>0</td><td>6</td><td>68</td><td>3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>5</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td><td>0</td><td>27</td><td>0</td></tr></table>
 
@@ -1257,8 +1250,7 @@ from Marin 32B (Hall et al., 2025), we find that despite the fact that our decon
 
 Marin 32B (Hall et al., 2025) 的报告类似, 我们发现, 尽管去污染流程检测到数据中 GSM8K 完全泄漏, 用受污染的数据训练并没有带来更好的表现. 相反, 去污染数据上的表现实际上更好; Marin 的作者解释, 这是因为受污染数据的格式与评测格式不一致.23
 
-> **问:** Fig. 12 去污染后 DROP, Minerva, SQuAD 掉分, 能否都读成原先虚高?
-> 不能一概而论. 报告对所有基准的所有划分去污染, DROP 一项就从 Flan 等来源移除超过 60,000 个训练样本, 掉分既可能是阻止记忆, 也可能是删掉了同分布训练样本. 另有反例: DeepSeek LeetCode 污染与否都接近 0, SQuAD 在 MC 指标下两种情况都饱和; GSM8K 完全泄漏反而去污染版更好, 文内引 Marin 的格式不匹配解释.
+不能一概而论. 报告对所有基准的所有划分去污染, DROP 一项就从 Flan 等来源移除超过 60,000 个训练样本, 掉分既可能是阻止记忆, 也可能是删掉了同分布训练样本. 另有反例: DeepSeek LeetCode 污染与否都接近 0, SQuAD 在 MC 指标下两种情况都饱和; GSM8K 完全泄漏反而去污染版更好, 文内引 Marin 的格式不匹配解释.
 
 **Model souping can improve midtraining performance** For Olmo 3 Base 32B, we observe noteworthy performance improvement from merging two independent midtraining runs with differing seeds. Relative to the individual midtraining runs, the merged model yields nearly a full point of improvement in the MC<sub>STEM</sub> task cluster, 0.4 improvement in the GenQA task cluster, and in the Math task cluster result in improvements of 2.9 and 1.6 relative to the first and second midtraining runs, respectively. Other noteworthy improvements include approximately 1 point of improvement in MMLU, and 5 and 2 points of improvement in GSM Symbolic relative to the first and second runs. For this reason, we select the merged model as our final midtrained 32B checkpoint.
 
@@ -1312,7 +1304,7 @@ Table 11 Composition of Dolma 3 Longmino Mix. The 100B mix for Olmo 3 32B mainta
 
 **数据过滤** 我们用 gzip 可压缩性作为指标过滤这些数据. gzip 曾被用于文本分类 (Jiang et al., 2022), 也被用作细粒度 Scaling Laws 中的特征 (Pandey, 2024). 我们用 gzip 过滤数据时排除两端的极值: 去掉最易压缩的 20% 文本和最难压缩的 20% 文本.
 
-> 最可压缩 20% 与最不可压缩 20% 都剔除 (§3.6.1).
+最可压缩 20% 与最不可压缩 20% 都剔除 (§3.6.1).
 
 We also consider applying filters based on LongPpl (Fang et al., 2025b), which identifies tokens that rely moston long-range dependencies by measuring, for each token, the change in perplexity under an existing long-context model when additional preceding context is provided. We compute LongPpl over 10B tokens of Dolma 3 Longmino Mix using Gemma 3 4B (Gemma 3 Team, 2025) as the reference model, and comparing contextualization using 4K or 128K context windows. We use the same threshold as Fang et al. (2025b) for determining whether a token is a “key” token that requires long context dependencies.
 
@@ -1342,8 +1334,7 @@ Figure 13 Five key components of the Olmo 3 long-context extension recipe measur
 
 图 13｜在 RULER 基准上度量的 Olmo 3 长上下文扩展配方的五个关键组成部分. 只对全注意力层应用 YaRN 效果最好 (图 13a); olmOCR science PDFs 比其他配方更有效 (图 13b); 合成数据增强相比仅用自然文档能提升表现 (图 13c); 文档打包能提升更长上下文长度下的表现 (图 13d); 更长的扩展能提高 RULER 分数, 尤其是在更长序列上 (图 13e).
 
-> **看表:** Fig. 13a 关于 YaRN 的结论是什么?
-> 只对 full attention 层施加 YaRN 时 RULER 最好; 不要默认打到 SWA 层.
+只对 full attention 层施加 YaRN 时 RULER 最好; 不要默认打到 SWA 层.
 
 20% of documents with the least key tokens or lowest spread, and excluding both the top and bottom 20% as outliers; none of these possibilities outperform the gzip filter, so we do not use this for the final run.
 
@@ -1803,8 +1794,7 @@ We make the following improvements <sup>34</sup> over vanilla GRPO:
 • Active sampling: We maintain a consistent batch size in spite of zero gradient filtering with a novel, more efficient version of dynamic sampling (Yu et al., 2025), see Section §4.4.3 for details.
 • 主动采样: 我们用一种新的, 更高效的动态采样 (Yu et al., 2025) 版本, 在零梯度过滤的情况下仍保持批大小一致, 细节见第 §4.4.3 节.
 
-> **拆开:** Active sampling 要解决 zero gradient filtering 带来的什么副作用?
-> 过滤全同奖励组后 batch 变瘦; active sampling 用来维持稳定 batch 大小 (§4.4.1, §4.4.3).
+过滤全同奖励组后 batch 变瘦; active sampling 用来维持稳定 batch 大小 (§4.4.1, §4.4.3).
 
 • Token-level loss: We use a token-level loss to normalize the loss by the total number of tokens across the batch (Yu et al., 2025), rather than per-sample to avoid a length bias.
 • Token 级损失: 我们使用 token 级损失, 按整个批次的 token 总数对损失归一化 (Yu et al., 2025), 而不是按样本归一化, 以避免长度偏差.
@@ -1821,8 +1811,7 @@ We make the following improvements <sup>34</sup> over vanilla GRPO:
 • No standard deviation normalization: When calculating advantage, we do not normalize by the standard deviation of the group, following Liu et al. (2025b). This removes a difficulty bias, where questions with low standard deviation in their rewards (e.g., too hard or too easy) have their advantages significantly increased by the normalization term.
 • 不做标准差归一化: 计算优势时, 我们按 Liu et al. (2025b) 的做法, 不除以组内标准差. 这消除了一种难度偏差: 奖励标准差低的问题 (例如太难或太简单) 的优势会被归一化项显著放大.
 
-> **确认:** OlmoRL 相对 vanilla GRPO 明确去掉了哪两项常见项?
-> 去掉 KL 损失; advantage 计算去掉组内标准差归一化 (§4.4.1).
+去掉 KL 损失; advantage 计算去掉组内标准差归一化 (§4.4.1).
 
 **OlmoRL formulation** Our final objective function includes a token-level loss, truncated importance sampling, clip-higher, and no standard deviation in the advantage calculation:
 
@@ -1844,7 +1833,6 @@ $r \left( x , y _ { i } \right)$ is the reward score returned by the correspondi
 
 $r \left( x , y _ { i } \right)$ 是对应验证器返回的奖励分数. 各次运行的超参数见附录表 49.
 
-> **回看:** 式 (1) 里 $\rho$ 与 $\varepsilon_{\mathrm{high}}$ 各管什么?
 > $\rho$ 是截断重要性采样上限; $\varepsilon_{\mathrm{high}}$ 是 clip-higher 的上侧幅度, 允许对某些 token 更大更新.
 
 **Verifiers** We extend verifiable rewards beyond math domains from OLMo 2 to include general domains. For each domain we use a different custom verifier (see Figure 16):
@@ -2578,7 +2566,6 @@ Figure 24 Different domain runs of RL-Zero on Olmo 3 Base: math, precise instruc
 
 图 24｜Olmo 3 Base 上 RL-Zero 的不同域运行: 数学, 精确指令遵循, 代码, 以及三者加通用聊天的混合. 数学域主评测为 AIME 2024/2025 的 pass@1 (对 32 次采样做 bootstrap 平均) 与 pass@32. 各域画出训练奖励. Mix 另拆出各域奖励.
 
-> **停一下:** RL-Zero 数学评测的 pass@1 怎么估?
 > Fig. 24 叙述: AIME 2024/2025 的 pass@1 是对 32 次采样做 bootstrap 平均, 并另报 pass@32.
 
 prompt similar to Yu et al. (2025), shown in Figure 37. We furthermore “clean” all our evaluation prompts to remove special formatting (i.e., \boxed{}) to make evaluation prompts more similar to our training prompts.
@@ -2651,8 +2638,7 @@ evaluations. Performance either remains flat with random fluctuations or degrade
 
 评测. 表现要么平坦带随机波动, 要么下降, 符合模型学到与任务无关的任意模式. 这一负结果是证据: 数据去污染成功去掉了 Base 流水与 RLVR 评测数据之间的重叠.
 
-> **对一下:** Fig. 27 的随机奖励负对照若能抬分, 会说明什么?
-> 说明预训练或 midtraining 数据与评测集显著重叠, 虚假奖励只是把记忆解引出来. 实际按 Shao et al. (2025b) 协议给随机二值奖励后, 任一基准都没有提升, 表现平坦或下降, 报告据此认为去污染成功.
+说明预训练或 midtraining 数据与评测集显著重叠, 虚假奖励只是把记忆解引出来. 实际按 Shao et al. (2025b) 协议给随机二值奖励后, 任一基准都没有提升, 表现平坦或下降, 报告据此认为去污染成功.
 
 <!-- page 67 of 118 -->
 

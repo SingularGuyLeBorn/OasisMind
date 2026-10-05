@@ -64,8 +64,7 @@ With these models, we compare scaling, test reasoning capabilities, highlight th
 
 1. 发布一个通用框架, 用于评估形态各异的奖励模型架构, 并附带可视化, 训练与其他分析工具. 我们还发布评估中使用的全部数据, 即所有输入的文本-分数对, 以便对奖励模型的性质做进一步的数据分析.
 
-> **想:** 这里的 text-score pairs 指什么粒度, 是每对 completion 一个标量分吗?
-> 答: 是. 由 §4.2 与图 1, 每个 prompt 的 chosen 与 rejected 各自独立打一次分, 发布的就是这些 (文本, 标量分) 对; §E.2 与图 4-7 的分布图正是基于这些逐 prompt 分数画的. 数据发布在 https://huggingface.co/datasets/allenai/reward-bench-results .
+是. 由 §4.2 与图 1, 每个 prompt 的 chosen 与 rejected 各自独立打一次分, 发布的就是这些 (文本, 标量分) 对; §E.2 与图 4-7 的分布图正是基于这些逐 prompt 分数画的. 数据发布在 https://huggingface.co/datasets/allenai/reward-bench-results .
 
 2. Illustrate the differences between DPO and classifier-based reward models across a variety of datasets. DPO models, while more plentiful due to the method's simplicity, fail to generalize to popular preference data test sets and present a higher variance in performance.
 
@@ -129,8 +128,7 @@ Reward Modeling The first step of training a reward model, and therefore doing R
 
 $$p^*(y_{1} \succ y_x \ | \ x) = \frac{\text{exp}(r^*(x, y_1))}{\text{exp}(r^*(x, y_1)) + \text{exp}(r^*(x, y_2))}. \tag{1}$$
 
-> **核对:** 式 (1) 左边写的是 $y_1 \succ y_x$, 这个 $y_x$ 在全式中没有别处出现, 疑似应为 $y_2$.
-> 答: 从 Bradley-Terry 模型与下文「比较 $r(x, y_1)$ 与 $r(x, y_2)$」的写法看, $y_x$ 应为 $y_2$ 的笔误; LaTeX 源码 (2_related.tex 第 37 行) 确实写的是 y_x, 属论文自身的记号错误, 不影响分母用 $y_2$ 的语义.
+从 Bradley-Terry 模型与下文「比较 $r(x, y_1)$ 与 $r(x, y_2)$」的写法看, $y_x$ 应为 $y_2$ 的笔误; LaTeX 源码 (2_related.tex 第 37 行) 确实写的是 y_x, 属论文自身的记号错误, 不影响分母用 $y_2$ 的语义.
 
 Then, estimate the parameters of the RM by optimizing the maximum likelihood loss as follows: L(θ, D) = E(x,ychosen,yrejected)∼D[log(1 + erθ(x,yrejected) −rθ(x,ychosen))].For language models, the RM is often implemented by appending a linear layer to predict one logit or removing the final decoding layers and replacing them with a linear layer. At inference time, a trained reward model returns a scalar, such that P(y1 ≻y2 ∣x) ∝er(x,y1) (which intuitively is the probability that the completion would be a preferred response, but is trained indirectly via the pairwise loss). Thus, a win between completions y1 and y2 is achieved when r(x, y1) > r(x, y2).
 
@@ -140,8 +138,7 @@ $$\mathcal{L}(\theta, \mathcal{D}) = \mathbb{E}_{(x,y_\text{chosen}, y_\text{rej
 
 对语言模型而言, RM 的常见实现是在模型上加一个输出单个 logit 的线性层, 或去掉最后的解码层换成线性层. 推理时, 训练好的奖励模型返回一个标量, 满足 $P(y_1 \succ y_2 \,|\, x) \propto \text{e}^{r(x,y_1)}$ (直观上是该 completion 成为更受偏好回答的概率, 但它经由成对损失间接训练得到). 因此 $y_1$ 对 $y_2$ 获胜当且仅当 $r(x, y_1) > r(x, y_2)$.
 
-> **拆开:** 成对损失里只有 $r_\theta$ 的差值有监督, 那么 RM 输出的绝对标量值有含义吗?
-> 答: 式 (1) 经 softmax 只约束 $r^*(x, y_1) - r^*(x, y_2)$ 的相对大小, 对整体加常数不变; 所以单看标量绝对值没有概率含义, 只有同一 prompt 下两个 completion 的分数差有意义. §E.2 进一步指出各 RM 的分数分布形态各异 (图 4-7), 几乎没有以 0 为中心的高斯分布, 说明绝对值确实不可跨模型比较.
+式 (1) 经 softmax 只约束 $r^*(x, y_1) - r^*(x, y_2)$ 的相对大小, 对整体加常数不变; 所以单看标量绝对值没有概率含义, 只有同一 prompt 下两个 completion 的分数差有意义. §E.2 进一步指出各 RM 的分数分布形态各异 (图 4-7), 几乎没有以 0 为中心的高斯分布, 说明绝对值确实不可跨模型比较.
 
 Direct Preference Optimization Direct Preference Optimization solves the RLHF problem with- out needing to learn a separate reward model. It achieves this by reparameterizing the preference- based reward function using only the policy models (Rafailov et al., 2023) The implicit reward used in DPO is a function of the policy model probabilities (i.e. the model being trained), π(y∣x), a regularization constant, β, the base model probabilities, πref(y∣x), and a partition function Z(x):
 
@@ -235,8 +232,7 @@ Sets
 
 RLHFlow/ArmoRM-Llama3-8B-v0.1 89.0 96.9 76.8 92.2 97.3 74.3 RLHFlow/pair-preference-model-LLaMA3-8B 85.7 98.3 65.8 89.7 94.7 74.6 sfairXC/FsfairX-LLaMA3-RM-v0.1 83.6 99.4 65.1 87.8 86.4 74.9 openbmb/Eurus-RM-7b 81.6 98.0 65.6 81.2 86.3 71.7 Nexusflow/Starling-RM-34B 81.4 96.9 57.2 88.2 88.5 71.4 weqweasdas/RM-Mistral-7B 79.3 96.9 58.1 87.1 77.0 75.3 hendrydong/Mistral-RM-for-RAFT-GSHF-v0 78.7 98.3 57.9 86.3 74.3 75.1 stabilityai/stablelm-2-12b-chat 77.4 96.6 55.5 82.6 89.4 48.4 Ray2333/reward-model-Mistral-7B-instruct... 76.9 97.8 50.7 86.7 73.9 74.3 allenai/tulu-2-dpo-70b 76.1 97.5 60.5 83.9 74.1 52.8 meta-llama/Meta-Llama-3-70B-Instruct 75.4 97.6 58.9 69.2 78.5 70.4 prometheus-eval/prometheus-8x7b-v2.0 75.3 93.0 47.1 83.5 77.4 - NousResearch/Nous-Hermes-2-Mistral-7B-DPO 74.8 92.2 60.5 82.3 73.8 55.5 mistralai/Mixtral-8x7B-Instruct-v0.1 74.7 95.0 64.0 73.4 78.7 50.3 upstage/SOLAR-10.7B-Instruct-v1.0 74.0 81.6 68.6 85.5 72.5 49.5 HuggingFaceH4/zephyr-7b-alpha 73.4 91.6 62.5 74.3 75.1 53.5 allenai/tulu-2-dpo-13b 73.4 95.8 58.3 78.2 73.2 49.5 0-hero/Matter-0.1-7B-boost-DPO-preview 73.4 91.1 61.0 66.3 83.9 55.7 prometheus-eval/prometheus-7b-v2.0 72.4 85.5 49.1 78.7 76.5 - HuggingFaceH4/starchat2-15b-v0.1 72.1 93.9 55.5 65.8 81.6 55.2
 
-> **看表:** 表 2 的 Score 列是如何由各分区得分合成的, 能否用表中数字复算?
-> 答: 只凭表 2 复算不出来: 最终分是「子集逐 prompt 加权 → 分区得分 → 五分区再加权 (Prior Sets 计 0.5 权重)」两层加权的结果, 但各子集的具体权重 (Reasoning 中数学与代码等权的调节系数, 分区层的权重) 文中没有给出数值, 只给了规则 (§4.2 与脚注 4). 代码仓库的 `calculate_scores_per_section` (utils.py) 里才有 `EXAMPLE_COUNTS` 等权重常量. 用手头可验证的部分抽查: ArmoRM 的 Score 89.0 介于其五个分区得分 96.9/76.8/92.2/97.3/74.3 的加权结果范围内, 数量级合理, 但精确复算必须依赖代码.
+只凭表 2 复算不出来: 最终分是「子集逐 prompt 加权 → 分区得分 → 五分区再加权 (Prior Sets 计 0.5 权重)」两层加权的结果, 但各子集的具体权重 (Reasoning 中数学与代码等权的调节系数, 分区层的权重) 文中没有给出数值, 只给了规则 (§4.2 与脚注 4). 代码仓库的 `calculate_scores_per_section` (utils.py) 里才有 `EXAMPLE_COUNTS` 等权重常量. 用手头可验证的部分抽查: ArmoRM 的 Score 89.0 介于其五个分区得分 96.9/76.8/92.2/97.3/74.3 的加权结果范围内, 数量级合理, 但精确复算必须依赖代码.
 
 <!-- page 7 of 44 -->
 

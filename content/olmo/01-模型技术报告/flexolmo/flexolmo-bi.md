@@ -205,8 +205,7 @@ Otherwise default to $M_\text{pub}$. This helps the later merging process, where
 
 **加入偏置项** 标准路由器在全部专家之间联合学习, 而专家的协调训练只学一个专家与公共模型之间的两两路由决策. 也就是说, 训练中模型从不直接比较专家 $M_1$ 和 $M_2$, 这可能限制推理时的泛化. 为缓解这一点, 我们给每个独立训练的专家 $\{M_1, M_2, \ldots, M_n\}$ 加一个负偏置项 $b_i$, 满足上式时选择专家 $M_i$, 否则默认用 $M_\text{pub}$. 这有助于后续合并, 因为那时每个专家不只和公共模型竞争, 还要和所有其他专家竞争. 更多细节和理由见 §D.
 
-> **拆开:** 上式是「满足就选 $M_i$, 否则选 $M_\text{pub}$」的硬选择, 训练时真的只激活一个专家吗?
-> 答: 不是. 仓库 `scripts/train_expert_model.sh` 把两专家 MoE 的 `router.top_k` 设为 2, 两个专家每个 token 都参与计算, 偏置只改变 softmax 后的权重. `MoERouterWithExpertBias` 里 $b_i$ 是可学习参数, 前向时取 `torch.minimum(b, 0)` 保证非正; 文中没有说 $b_i$ 可学习, 也没有给初值或终值. 同一脚本实际构建的是 `olmoe_nx7b` 路由器, 带偏置的那一行被注释掉, HF 发布的 `FlexOlmoTopKRouter` 同样没有偏置.
+不是. 仓库 `scripts/train_expert_model.sh` 把两专家 MoE 的 `router.top_k` 设为 2, 两个专家每个 token 都参与计算, 偏置只改变 softmax 后的权重. `MoERouterWithExpertBias` 里 $b_i$ 是可学习参数, 前向时取 `torch.minimum(b, 0)` 保证非正; 文中没有说 $b_i$ 可学习, 也没有给初值或终值. 同一脚本实际构建的是 `olmoe_nx7b` 路由器, 带偏置的那一行被注释掉, HF 发布的 `FlexOlmoTopKRouter` 同样没有偏置.
 
 #### 3.3.3 Optional Router Training on Proxy Data · 可选: 在代理数据上训练路由器
 
@@ -220,8 +219,7 @@ resemble their closed data, we can optionally perform a lightweight router tunin
 
 按我们的模型设计, 专家模块无需任何额外训练就能合并. 不过, 如果数据拥有者愿意在公开数据集中找出与自己封闭数据相似的代理样本 (原文此处写作 $M_\text{pub}$, 应为 $D_\text{pub}$), 合并后就可以只用 $D_\text{pub}$ 的公开数据做一步轻量的路由器微调. 具体来说, 假设每个数据拥有者选出一个小的代理集 $\hat{D}_i \subseteq D_\text{pub}$, $|\hat{D}_i| \ll 0.01 \times |D_i|$, 用来近似其封闭数据集 $D_i$ 的分布. $\hat{D}_i$ 太小, 训练不了专家模块, 但仍能为提升路由质量提供有用信号. 构造 $\hat{D}_i$ 的方法是训练一个区分 $D_i$ 与 $D_\text{pub}$ 的二分类器, 选出被预测为属于 $D_i$ 的可能性最高的公开样本. 合并后, 在均匀采样的 $\hat{D}_1, \cdots, \hat{D}_n$ 与 $D_\text{pub}$ 的并集上微调路由嵌入 $\mathbf{r}_1, \cdots, \mathbf{r}_n, \mathbf{r}_\text{pub}$.
 
-> **问:** 路由训练也改了 $\mathbf{r}_\text{pub}$ 和其他专家的 $\mathbf{r}_j$, 还能满足 §3.1 的「移除 $M_i$ 即完全移除 $D_i$」吗?
-> 答: 不能严格满足. 代理集由在 $D_i$ 上训练的分类器挑出, 微调后的 $\mathbf{r}_\text{pub}$ 与各 $\mathbf{r}_j$ 都带上了 $D_i$ 的间接信号; `src/scripts/train/OLMoE-4x7B.py` 只冻结专家参数, 路由器整体可训. 删掉 $M_i$ 后, 留下的路由行仍是 RT 之后的值. 只有不做 RT 的版本 (表 1, 表 2 的 no RT 行) 才符合 §3.1 的第 (2) 条.
+不能严格满足. 代理集由在 $D_i$ 上训练的分类器挑出, 微调后的 $\mathbf{r}_\text{pub}$ 与各 $\mathbf{r}_j$ 都带上了 $D_i$ 的间接信号; `src/scripts/train/OLMoE-4x7B.py` 只冻结专家参数, 路由器整体可训. 删掉 $M_i$ 后, 留下的路由行仍是 RT 之后的值. 只有不做 RT 的版本 (表 1, 表 2 的 no RT 行) 才符合 §3.1 的第 (2) 条.
 
 ## 4 Experimental Setup · 实验设置
 
@@ -315,8 +313,7 @@ Each data owner then takes this checkpoint and performs continued-pretraining fo
 
 随后每个数据拥有者拿这个 checkpoint, 在自己的数据上继续预训练 500 亿 token (全部专家合计 4000 亿 token). 可选的路由器训练共用 50 亿 token. 最终在 8 个集合上训练的 FlexOlmo 总参数 370 亿, 激活 200 亿 (8 个专家中激活 4 个). 更多细节见 §A.2.
 
-> **核对:** 封闭集只有 7 个, 每个 50B, 合计应为 350B, 文中的 400B 从哪来?
-> 答: 只有把公共专家也算进去才是 $8\times 50\text{B}=400\text{B}$. 仓库 `scripts/train_public_model.sh` 在 1T token (step 238419) 之后另有一段在 public mix 上的 50B 退火 (`OLMoE-2x7B-anneal.py`, step 11921, 每步约 4.19M token), 本节没有交代这一步. 另外, 预训练的余弦调度按 5T 设定, 在 1T 处截停, 学习率并未衰减到底.
+只有把公共专家也算进去才是 $8\times 50\text{B}=400\text{B}$. 仓库 `scripts/train_public_model.sh` 在 1T token (step 238419) 之后另有一段在 public mix 上的 50B 退火 (`OLMoE-2x7B-anneal.py`, step 11921, 每步约 4.19M token), 本节没有交代这一步. 另外, 预训练的余弦调度按 5T 设定, 在 1T 处截停, 学习率并未衰减到底.
 
 ## 5 Results and Analysis · 结果与分析
 
@@ -376,8 +373,7 @@ Table 2: Evaluation of FlexOlmo trained on eight sets (public mix and seven simu
 
 **FlexOlmo 优于单个专家** 多数情况下 FlexOlmo 优于单个专家. 相比只用公开数据训练的模型, 它平均取得 41% 的相对提升. 提升最大的是那些封闭数据能显著拉高单个专家表现的基准, 例如 BBH 从 35.6 到 47.1, 数学从 8.1 到 50.7, 编程从 1.0 到 17.3. FlexOlmo 在专门任务上甚至追平或超过了对应专家 (如 BBH 和 Math2).
 
-> **看表:** 41% 是按哪一列算的?
-> 答: 用表 1 的 Avg. 列复算, $47.8/36.9-1\approx 29.5\%$ (no RT 行为 $46.7/36.9-1\approx 26.6\%$); 用表 2 复算为 $52.4/42.4-1\approx 23.6\%$. 改用逐类别相对提升取平均, 表 1 约 279%, 表 2 约 189%, 都被 Code4 从 1.0 左右涨到 17 左右这一项主导; 几何平均分别约 95% 和 67%. 文中没有给出 41% 的算法, 以上几种口径都得不到 41%. 同表里 no RT 行八项平均为 46.76, 印成 46.7.
+用表 1 的 Avg. 列复算, $47.8/36.9-1\approx 29.5\%$ (no RT 行为 $46.7/36.9-1\approx 26.6\%$); 用表 2 复算为 $52.4/42.4-1\approx 23.6\%$. 改用逐类别相对提升取平均, 表 1 约 279%, 表 2 约 189%, 都被 Code4 从 1.0 左右涨到 17 左右这一项主导; 几何平均分别约 95% 和 67%. 文中没有给出 41% 的算法, 以上几种口径都得不到 41%. 同表里 no RT 行八项平均为 46.76, 印成 46.7.
 
 **FlexOlmo achieves more effective merging than baselines** We also compare FlexOlmo with baseline merging methods (§4.3). All baselines outperform the model trained on Public Mix
 
@@ -464,8 +460,7 @@ Our results are as follows:
 2. 在数学数据集上训练的 dense 模型 (即数学专家), 提取率为 1.6%.
 3. 包含数学专家的 FlexOlmo, 提取率为 0.7%.
 
-> **对一下:** 脚注 4 说数学数据是最小的模拟封闭集, 数学专家训了三个 epoch; 和图 5 的统计对得上吗?
-> 答: 对不上. 图 5 中 Reddit 为 9.9B token, 小于 Math 的 20.3B; 按 §4.4 每个专家训 50B token, Math 约为 $50/20.3\approx 2.46$ 个 epoch, Reddit 约为 $50/9.9\approx 5.1$ 个 epoch. 另外 `src/scripts/utils/extraction_analysis.py` 从文档内随机位置取 32 token 前缀, 比对窗口是含前缀的 256 token, `generate(max_length=256)` 实际只新生成 224 token, 与正文「生成 256 token 续写」的口径不同.
+对不上. 图 5 中 Reddit 为 9.9B token, 小于 Math 的 20.3B; 按 §4.4 每个专家训 50B token, Math 约为 $50/20.3\approx 2.46$ 个 epoch, Reddit 约为 $50/9.9\approx 5.1$ 个 epoch. 另外 `src/scripts/utils/extraction_analysis.py` 从文档内随机位置取 32 token 前缀, 比对窗口是含前缀的 256 token, `generate(max_length=256)` 实际只新生成 224 token, 与正文「生成 256 token 续写」的口径不同.
 
 ⁴We chose the math data because it is the smallest among our simulated closed sets and the math expert is trained for three epochs (instead of one), making it more susceptible to extraction. Therefore, the extraction rates with the math data likely represent an upper bound.
 

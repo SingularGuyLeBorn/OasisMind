@@ -132,8 +132,7 @@ We randomly sample PDFs from an internal dataset of 240 million PDFs crawled fro
 
 我们从内部一个 2.4 亿份公开网站爬取 PDF 的数据集中随机采样, 另外加入从 Internet Archive 获取的公有领域图书 PDF. 网页爬取的部分多是原生数字文档, Internet Archive 的 PDF 则是图像扫描件. 随后做一组过滤: 用 Lingua 包 (Emond, 2025) 识别并滤掉非英文文档; 再删掉 pypdf 解析失败, 含垃圾关键词, 属于可填写表单或文本过短的文档.2 然后从每份 PDF 中均匀随机抽取 (最多) 三页. 数据分布汇总在 Table 1 和 Table 2.
 
-> **看表:** Table 1 的 Internet Archive 一行是 5,896 份文档, 17,701 页, 与「每份 PDF 最多抽三页」相容吗?
-> 答: 不相容. $5{,}896\times3=17{,}688$, 比 17,701 少 13 页, 平均每份 $17{,}701/5{,}896=3.002$ 页. 网页一行 $240{,}940/96{,}929=2.49$ 页, 没有问题. HF 数据卡给的是另一组数: 网页 99,903 份 249,332 页, Internet Archive 5,601 份 16,803 页 (恰好每份 3 页), 合计 266,135 页, 并写明「No source PDF has had more than 3 random pages extracted」. LaTeX 源码里被注释掉的旧版 Table 1 也是这组数. 论文正文的 Table 1 是更新后的统计, 但 Internet Archive 一行与抽样规则对不上, 文中没有给出解释.
+不相容. $5{,}896\times3=17{,}688$, 比 17,701 少 13 页, 平均每份 $17{,}701/5{,}896=3.002$ 页. 网页一行 $240{,}940/96{,}929=2.49$ 页, 没有问题. HF 数据卡给的是另一组数: 网页 99,903 份 249,332 页, Internet Archive 5,601 份 16,803 页 (恰好每份 3 页), 合计 266,135 页, 并写明「No source PDF has had more than 3 random pages extracted」. LaTeX 源码里被注释掉的旧版 Table 1 也是这组数. 论文正文的 Table 1 是更新后的统计, 但 Internet Archive 一行与抽样规则对不上, 文中没有给出解释.
 
 ### 2.2 Generating Linearized Plain Text · 生成线性化纯文本
 
@@ -169,8 +168,7 @@ Starting from a Qwen2-VL-7B-Instruct checkpoint, we fine-tune olmOCR-7B-0225-pre
 
 我们从 Qwen2-VL-7B-Instruct 检查点出发, 在 olmOCR-mix-0225 上微调出 olmOCR-7B-0225-preview. 训练用 Hugging Face 的 transformers 库实现 (Wolf et al., 2020). 有效 batch size 为 4, 学习率 1e-6, AdamW 优化器, 余弦退火日程, 共 10,000 步 (约 1.2 个 epoch).4 硬件是单节点 8 张 NVIDIA H100 (80GB). 一次训练用时 16 节点小时, 全部训练实验合计 365 节点小时.
 
-> **核对:** §2.3 的「有效 batch size 4, 10,000 步, 约 1.2 个 epoch」三个数能同时成立吗?
-> 答: 不能. Table 1 的总页数是 258,641, 按 batch 4 训 10,000 步只过 40,000 个样本, 约 0.15 个 epoch. 官方仓库 `olmocr/train/config/qwen2vl-7b.yaml` 写的是每卡 `batch_size: 1`, `gradient_accumulation_steps: 4`, 启动脚本 `scripts/qwen2vl-7b-gantry.sh` 用 8 张 GPU 跑 FSDP, 全局 batch 是 $1\times4\times8=32$, 10,000 步过 320,000 个样本, 约 $320{,}000/258{,}641=1.24$ 个 epoch, 与「约 1.2 个 epoch」吻合. 所以「有效 batch size 4」写的是单卡的梯度累积后 batch, 乘上 8 卡才是真正的有效 batch.
+不能. Table 1 的总页数是 258,641, 按 batch 4 训 10,000 步只过 40,000 个样本, 约 0.15 个 epoch. 官方仓库 `olmocr/train/config/qwen2vl-7b.yaml` 写的是每卡 `batch_size: 1`, `gradient_accumulation_steps: 4`, 启动脚本 `scripts/qwen2vl-7b-gantry.sh` 用 8 张 GPU 跑 FSDP, 全局 batch 是 $1\times4\times8=32$, 10,000 步过 320,000 个样本, 约 $320{,}000/258{,}641=1.24$ 个 epoch, 与「约 1.2 个 epoch」吻合. 所以「有效 batch size 4」写的是单卡的梯度累积后 batch, 乘上 8 卡才是真正的有效 batch.
 
 During fine-tuning, we slightly alter the document-anchoring prompt, removing some instructions and shrinking the image size so that PDF pages are rendered to a maximum dimension of 1024 pixels on the longest edge. The simplified text prompt is in Appendix E.2. The prompt is capped to 6,000 characters, so a typical prompt uses about 1,000 tokens to encode a page image, 1,800 tokens for the anchor text, for about 3,000 total input tokens. Each training example was truncated to 8,192 tokens to cover cases when the prompt was unusually large. Loss was masked so only the final response tokens participated in the loss calculation.
 
@@ -295,8 +293,7 @@ $$
 \text{Overall score} = \frac{1}{N} \sum_{s \in \text{Document sources}} \text{Score}(s)
 $$
 
-> **拆开:** §3.3 的式子里 $N$ 是 7 还是 8? 基线测试算不算一个「Document source」?
-> 答: 算, $N=8$. Table 4 每一行的 Overall 都等于 AR, OSM, TA, OS, HF, MC, LTT, Base 八列的算术平均, 例如 olmOCR Anchored 一行 $(74.9+71.2+71.0+42.2+94.5+78.3+73.3+98.3)/8=75.46$, 报告值 75.5; GOT OCR 一行 $386.5/8=48.31$, 报告值 48.3. 官方 `olmocr/bench/benchmark.py` 把每份 PDF 的基线测试放进一个单独的组, 再对所有组的通过率取平均, 与此一致. 基线测试几乎所有系统都在 94 到 99 之间, 它占 1/8 的权重, 会把各系统的总分一起往上抬, 把差距压窄; Qwen 2 VL 的 Base 只有 55.5, 是唯一被这一列明显拉低的系统.
+算, $N=8$. Table 4 每一行的 Overall 都等于 AR, OSM, TA, OS, HF, MC, LTT, Base 八列的算术平均, 例如 olmOCR Anchored 一行 $(74.9+71.2+71.0+42.2+94.5+78.3+73.3+98.3)/8=75.46$, 报告值 75.5; GOT OCR 一行 $386.5/8=48.31$, 报告值 48.3. 官方 `olmocr/bench/benchmark.py` 把每份 PDF 的基线测试放进一个单独的组, 再对所有组的通过率取平均, 与此一致. 基线测试几乎所有系统都在 94 到 99 之间, 它占 1/8 的权重, 会把各系统的总分一起往上抬, 把差距压窄; Qwen 2 VL 的 Base 只有 55.5, 是唯一被这一列明显拉低的系统.
 
 ## 4 Evaluating olmOCR · 评估 olmOCR
 
@@ -354,8 +351,7 @@ Finally, when considering real-world use, cost efficiency is just as important a
 
 最后, 考虑实际使用时, 成本效率和性能同样重要. Table 6 汇总了推理成本. 为了说明 olmOCR 的价值: 按每页 1,000 token 计, 处理 peS2o 的全部 PDF 光 H100 用量就要 1,030 万美元. 相比之下, Mistral OCR 是专做这项任务的商用 API 工具, 却贵五倍以上, 用于语言建模就更承受不起. 定价与成本计算细节见附录 B.
 
-> **问:** 「按每页 1,000 token, 处理全部 peS2o PDF 的 H100 用量 1,030 万美元」能从 Table 6 复算出来吗?
-> 答: 复算不出来. Table 6 的 H100 吞吐是 3,050 token/s, 单价 2.69 美元/小时, 每个输出 token 的成本是 $2.69/(3600\times3050)=2.45\times10^{-7}$ 美元. 1,030 万美元对应约 $4.2\times10^{13}$ 个 token, 按每页 1,000 token 是约 $4.2\times10^{10}$ 页, 分到 §1 所说的 790 万份 PDF 上, 每份约 5,300 页. 反过来按 peS2o 本身 58B token 估算页数 (每页 1,000 token 约 5,800 万页), H100 成本只有约 1.4 万美元. 文中没有给出 peS2o 的总页数, 也没有给出 1,030 万美元的算式, 这个数与 Table 6 差了两到三个数量级.
+复算不出来. Table 6 的 H100 吞吐是 3,050 token/s, 单价 2.69 美元/小时, 每个输出 token 的成本是 $2.69/(3600\times3050)=2.45\times10^{-7}$ 美元. 1,030 万美元对应约 $4.2\times10^{13}$ 个 token, 按每页 1,000 token 是约 $4.2\times10^{10}$ 页, 分到 §1 所说的 790 万份 PDF 上, 每份约 5,300 页. 反过来按 peS2o 本身 58B token 估算页数 (每页 1,000 token 约 5,800 万页), H100 成本只有约 1.4 万美元. 文中没有给出 peS2o 的总页数, 也没有给出 1,030 万美元的算式, 这个数与 Table 6 差了两到三个数量级.
 
 | Model | Hardware | Tokens/sec | Pages/USD | Cost per million pages |
 |---|---|---:|---:|---:|

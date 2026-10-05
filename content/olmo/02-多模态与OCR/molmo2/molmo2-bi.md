@@ -32,7 +32,7 @@ Today’s strongest video-language models (VLMs) remain proprietary. The stronge
 
 当前最强的视频语言模型 (VLM) 仍是专有模型. 最强的开放权重模型要么依赖专有 VLM 生成的合成数据, 等于在蒸馏它们, 要么不公开训练数据与配方. 结果是开源社区缺少改进最先进视频 (以及图像) 语言模型所需的基础. 更关键的是, 许多下游应用需要的不只是高层次的视频理解, 还需要 grounding, 即以像素级的指点 (pointing) 或跟踪 (tracking) 给出位置. 专有模型同样缺这一能力. 我们推出 Molmo2, 一个新的 VLM 家族, 在开源模型中达到最先进水平, 并在单图, 多图与视频任务上展现出以点为基础的 grounding 新能力. 核心贡献是一组新数据集: 7 个视频数据集和 2 个多图数据集, 包括一个用于预训练的高度详细视频描述数据集, 一个用于微调的自由形式视频问答数据集, 一个带复杂查询的新物体跟踪数据集, 以及一个新颖的视频指点数据集, 全部在不使用闭源 VLM 的条件下采集. 我们还给出针对这些数据的训练配方, 采用高效的 packing 与 message-tree 编码方案, 并表明视觉 token 上的双向注意力和一种新的 token 加权策略能提升性能. 同级最佳的 8B 模型在短视频, 计数和视频描述上超过开放权重且开放数据的同类模型, 在长视频上也有竞争力. 在视频 grounding 上, Molmo2 显著超过 Qwen3-VL 等现有开放权重模型 (视频计数准确率 35.5 对 29.6), 并在部分任务上超过 Gemini 3 Pro 等专有模型 (视频指点 F1 38.4 对 20.0, 视频跟踪 J&F 56.2 对 41.1).
 
-> **译注:** §1 与 §2 共列出 9 个新数据集, 其中视频侧 6 个, 多图侧 3 个, 与摘要的 「7 个视频数据集和 2 个多图数据集」 不一致. 摘要所列 Gemini 3 Pro 的 41.1 J&F 也未出现在 Table 4 或 Table 5 的对应行; Table 5 的 Gemini 3 Pro Overall 为 44.6, 41.1 出现在 SAM 3 的 Animals 分项.
+§1 与 §2 共列出 9 个新数据集, 其中视频侧 6 个, 多图侧 3 个, 与摘要的 「7 个视频数据集和 2 个多图数据集」 不一致. 摘要所列 Gemini 3 Pro 的 41.1 J&F 也未出现在 Table 4 或 Table 5 的对应行; Table 5 的 Gemini 3 Pro Overall 为 44.6, 41.1 出现在 SAM 3 的 Animals 分项.
 
 <!-- page 2 of 58 -->
 
@@ -133,8 +133,7 @@ Obtaining dense video captions is challenging because annotators must describe d
 
 **Molmo2-VideoTrack (人工).** 我们收集了基于点的物体跟踪数据, 覆盖 3.6k 个视频片段和 15k 条复杂自然语言查询, 平均每条查询对应 2.28 个物体. 采集方式沿用 Ref-VOS [12], 请标注员为已有跟踪标注重新打标签. 对每个视频, 我们展示分割或边界框形式的物体轨迹, 让标注员写出只适用于其中一部分物体的非平凡文本查询. 查询再经单独一轮校验. 视频和轨迹来自多种开源分割轨迹 [12, 33, 108, 122] 与边界框轨迹 [133, 183, 126, 144, 44, 30, 186, 37, 140, 174].
 
-> **对一下:** VideoTrack 的规模在全文有几种说法?
-> 答: 三种. 这里是 3.6k 个片段, 15k 条查询, 每条 2.28 个物体; Table 21(a) 是 6,624 个片段, 25,437 条轨迹, 29,704 条查询, 每条 3.38 个物体; 附录 F.1 写训练与评测合计 8k 片段 (6.6k + 1.3k), 29k 条查询, 每条 3.31 个物体, 每视频 1.33 条查询. 用 Table 21 复算, 每视频查询数是 29,704 / 6,624 = 4.48, 与 1.33 也对不上. Table 21 的总和与 F.1 的 6.6k / 29k 一致, 这里的 3.6k / 15k 更像早期版本的数字.
+三种. 这里是 3.6k 个片段, 15k 条查询, 每条 2.28 个物体; Table 21(a) 是 6,624 个片段, 25,437 条轨迹, 29,704 条查询, 每条 3.38 个物体; 附录 F.1 写训练与评测合计 8k 片段 (6.6k + 1.3k), 29k 条查询, 每条 3.31 个物体, 每视频 1.33 条查询. 用 Table 21 复算, 每视频查询数是 29,704 / 6,624 = 4.48, 与 1.33 也对不上. Table 21 的总和与 F.1 的 6.6k / 29k 一致, 这里的 3.6k / 15k 更像早期版本的数字.
 
 **AcademicVideoPoint and AcademicVideoTrack (curated).** For pointing, we convert existing object tracking annotations from six datasets [6, 143, 117, 12, 66, 31] into 49k pointing and counting QAs. We first obtain the timestamp of the first frame in which an object appears and then randomly sample a point in the object’s mask with a Gaussian distribution around the mask center. For tracking, we repurpose 7 existing Ref-VOS datasets [66, 127, 31, 6, 143, 166, 7] to obtain point tracking supervision data. In addition, we process 11 bounding-box based tracking datasets [182, 55, 116, 110, 53, 39, 181, 72, 151, 152, 189] by using SAM-2 to generate segmentation masks and corresponding point tasks.
 
@@ -212,7 +211,7 @@ We use a simple three-stage design: a light-weight image-only pre-training stage
 
 **Token 加权.** 我们的数据既有只输出单个 token 的选择题, 也有输出 4,000+ token 的长视频描述. 这些长输出样本即使很少被采到, 也很容易占据损失 token 的绝大多数, 导致短答案或选择题任务退化. 解决办法是在计算损失时调整部分样本的权重. 视频描述用固定权重 0.1, 指点用 0.2, 因为这两类任务的输出都可能很长很密. 其他任务采用启发式权重 $\frac{4}{\sqrt{n}}$, 其中 $n$ 是答案 token 数, 这样能更好地平衡长短输出的训练样本.
 
-> **译注:** 正文给出的权重为 $4/\sqrt{n}$, 仓库 `loss_token_weighting="root_subsegments_root_tokens"` 的实现则是 `2 / np.sqrt(loss_mask.sum())`. 开启 `root_subsegments` 后, 每条标注的损失还会除以 $\sqrt{\text{标注数}}$. 正文与代码在常数因子和第二层归一化上不一致.
+正文给出的权重为 $4/\sqrt{n}$, 仓库 `loss_token_weighting="root_subsegments_root_tokens"` 的实现则是 `2 / np.sqrt(loss_mask.sum())`. 开启 `root_subsegments` 后, 每条标注的损失还会除以 $\sqrt{\text{标注数}}$. 正文与代码在常数因子和第二层归一化上不一致.
 
 **Packing.** Examples can have anywhere from hundreds (pure-text or small images) to 16k+ (videos with subtitles or long videos during long-context training) of tokens. To avoid wasteful padding when creating training batches, we use packing to merge multiple short examples into a single long sequence. Packing is non-trivial for vision-language models due to the need to efficiently pack both crops for the ViT and tokens for the LLM, and the need to support models with different approaches to converting images/videos into tokens. We develop an on-the-fly packing algorithm that builds maximally efficient packed sequences from a small pool of in-memory examples and can be integrated into standard PyTorch data loaders.
 
@@ -266,8 +265,7 @@ We evaluate captioning by constructing Molmo2-CapTest, an eval set of 693 Creati
 
 我们构建了 Molmo2-CapTest 来评测视频描述: 693 个 Creative Commons 许可的视频, 每个至少有四条人工描述. 我们用 LLM-as-a-judge, 把模型描述中的陈述与标注员描述中的陈述对照, 计算 precision, recall 和 F1, 做法与 Molmo 的图像描述指标相近 [29]. 计数方面, 我们用 Molmo2-VideoPoint 的流水线收集了 533 个多样样本, 构成 Molmo2-VideoCount, 覆盖物体, 动作和动物查询, 最多 60 个点.
 
-> **看表:** Table 2 最后一列 Elo Rank 与 Elo Score 的大小顺序一致吗?
-> 答: 有两处颠倒. InternVL3.5-4B (935) 排 18, InternVL3.5-8B (941) 排 19; PLM-3B (841) 排 20, PLM-8B (853) 排 21. 按分数应是 8B 在前. 附录 Table 15 的 Overall 一列给的是 4B 排 19, 8B 排 18, PLM-3B 排 21, PLM-8B 排 20, 与分数顺序相符, 所以 Table 2 的排名列写反了.
+有两处颠倒. InternVL3.5-4B (935) 排 18, InternVL3.5-8B (941) 排 19; PLM-3B (841) 排 20, PLM-8B (853) 排 21. 按分数应是 8B 在前. 附录 Table 15 的 Overall 一列给的是 4B 排 19, 8B 排 18, PLM-3B 排 21, PLM-8B 排 20, 与分数顺序相符, 所以 Table 2 的排名列写反了.
 
 <!-- page 9 of 58 -->
 
@@ -458,7 +456,7 @@ We evaluate image pointing on Point-Bench [20], results are in Table 7. Molmo2 s
 
 我们在 Point-Bench [20] 上评测图像指点, 结果见 Table 7. Molmo2 超过了 Point-Bench 排行榜上的所有其他模型, 也超过近期的专用指点模型 Poivre [171]. 相比 Molmo 在指点上的提升, 我们归因于更好的视觉编码器, 指点预训练和 token 加权.
 
-> **译注:** Table 7 中 Qwen2.5-VL-32B-Instruct 与 72B-Instruct 的五个子项和平均分完全相同, 均为 76.8 / 60.0 / 54.4 / 46.5 / 57.1 / 59.0. 表注只说明基线分数来自 Point-Bench 排行榜, 没有解释两行为何逐项一致.
+Table 7 中 Qwen2.5-VL-32B-Instruct 与 72B-Instruct 的五个子项和平均分完全相同, 均为 76.8 / 60.0 / 54.4 / 46.5 / 57.1 / 59.0. 表注只说明基线分数来自 Point-Bench 排行榜, 没有解释两行为何逐项一致.
 
 ### 4.4 Ablations and specialized models · 消融与专用模型
 
@@ -536,8 +534,7 @@ Table 9 Counting and pointing ablations. BVC represents Burst-VideoCount accurac
 
 **视频消融.** Table 8 给出只用视频数据和只用视频描述数据时的结果与消融. 视频问答数据对描述有正迁移 (Table 8a), 反过来也成立 (Table 8c). Table 8b 显示双向注意力和 token 加权都提升问答性能, 不过 token 加权会让描述性能略有下降. 去掉帧时间戳会让两个指标都下降, 说明时间信息很重要, 对描述尤其如此. 把视频池化窗口从 3x3 增大到 4x4, 问答性能略降, 描述质量却明显下滑. 我们认为这是因为视频基准相对偏高层, 不需要理解小细节, 所以减少 token 并不太伤; 这也说明除其他基准外还要跟踪描述指标, 因为描述需要对视频有更细粒度的理解. 最后, 只基于人工转写 (V) 训练的描述模型, 结果不如包含帧级描述的版本 (VF), 但在这些描述的混合上训练并不带来提升 (8d).
 
-> **拆开:** 「decreasing the pooling size is not very harmful」 指的是哪个方向?
-> 答: 实验是把池化窗口从 3x3 增大到 4x4, 每帧 token 从 81 降到 49 (按代码 `arange_for_pooling` 的向上取整, 27 个 patch 在 4x4 下是 7x7). 所以这里 「pooling size」 实际指池化后的 token 数或输出尺寸在变小, 窗口本身是变大. 结论是 QA 平均只降 0.5 (64.8 到 64.3), 描述 F1 降 2.5 (39.5 到 37.0).
+实验是把池化窗口从 3x3 增大到 4x4, 每帧 token 从 81 降到 49 (按代码 `arange_for_pooling` 的向上取整, 27 个 patch 在 4x4 下是 7x7). 所以这里 「pooling size」 实际指池化后的 token 数或输出尺寸在变小, 窗口本身是变大. 结论是 QA 平均只降 0.5 (64.8 到 64.3), 描述 F1 降 2.5 (39.5 到 37.0).
 
 <!-- page 14 of 58 -->
 
@@ -1097,8 +1094,7 @@ Where image indices and frame timestamps are in blue, object indices are in purp
 
 原文中图像编号与帧时间戳标为蓝色, 物体编号为紫色, $x$, $y$ 坐标为绿色. 第一个样例指向出现在第 1, 2, 5 张图中的物体. 第二个样例在若干帧中跟踪两个不同物体. 「Inline text」 用来描述被指的是什么.
 
-> **问:** 第一个样例里的 「2 3 649 154」 与 「物体编号从 1 开始顺序递增」 怎么对上?
-> 答: 按格式, 分号后的第一个数是图像编号, 之后每三个数是 (物体编号, x, y). 「1 1 555 169」 是第 1 张图的 1 号物体; 「2 3 649 154 4 709 162」 是第 2 张图的 3 号和 4 号物体; 「5 5 758 175 6 808 183 7 852 187」 是第 5 张图的 5, 6, 7 号. 这里没有 2 号物体, 与 「顺序递增」 和 「最后编号即总数」 的说法冲突: 若最后编号 7 代表计数, 第 1 张图之后应接 2 号. 样例更像是手工改写时漏了一号.
+按格式, 分号后的第一个数是图像编号, 之后每三个数是 (物体编号, x, y). 「1 1 555 169」 是第 1 张图的 1 号物体; 「2 3 649 154 4 709 162」 是第 2 张图的 3 号和 4 号物体; 「5 5 758 175 6 808 183 7 852 187」 是第 5 张图的 5, 6, 7 号. 这里没有 2 号物体, 与 「顺序递增」 和 「最后编号即总数」 的说法冲突: 若最后编号 7 代表计数, 第 1 张图之后应接 2 号. 样例更像是手工改写时漏了一号.
 
 **Hyperparameters.** Hyperparameters for the Molmo2 models are shown in Table 12. The connector MLP uses the same intermediate dimension as the LLM, so its size depends on the LLM; otherwise, they are the same across all models. All models use the SigLIP 2 So400m/14 384px ViT [139].
 
@@ -1199,7 +1195,7 @@ Implementation-wise, we add this logic into torch’s DataLoader so that each da
 
 Table 12 Model and training hyper-parameters, Molmo2-O-7B is a version of Molmo2 with OLMo 3 [112]. Long-context post-training used the same parameters as SFT
 
-> **译注:** Table 12 把 Molmo2-O-7B 的连接器 MLP Dim 写成 100352, 但附录 A 说连接器沿用 LLM 中间维度, 同表 LLM MLP Dim 与 HF adapter 的 `intermediate_size` 都是 11008; 100352 实为词表大小. 同表还把 LLM Params 写成 7.3m / 8.2m, 量级应为 b, 并把图像尺寸写成 384x384, 而附录 A 与 HF 配置均为 378x378.
+Table 12 把 Molmo2-O-7B 的连接器 MLP Dim 写成 100352, 但附录 A 说连接器沿用 LLM 中间维度, 同表 LLM MLP Dim 与 HF adapter 的 `intermediate_size` 都是 11008; 100352 实为词表大小. 同表还把 LLM Params 写成 7.3m / 8.2m, 量级应为 b, 并把图像尺寸写成 384x384, 而附录 A 与 HF 配置均为 378x378.
 
 <!-- page 30 of 58 -->
 
@@ -1424,8 +1420,7 @@ Table 15 Human evaluation results. Scores updated using bootstrap Elo medians fr
 ![](images/bootstrap_elo_plot.png)
 Figure 5 Elo ratings with confidence intervals
 
-> **确认:** 「underperforms Qwen3-VL and GLM-4.1V on captioning」 与 Table 15 的描述 Elo 相符吗?
-> 答: 只对 4B 成立. Table 15 描述一栏 Molmo2-4B 1004, Molmo2-8B 1049, Molmo2-O-7B 1019, GLM-4.1V-9B 1013, Qwen3-VL-4B 1052, Qwen3-VL-8B 1105. 8B 和 O-7B 都高于 GLM-4.1V. 同一栏的排名也有重复与空缺: Qwen3-VL-8B (1105) 与 GPT-5 mini (1086) 都标 5, GLM (1013) 与 Molmo2-O-7B (1019) 都标 9, MiniCPM (978) 与 LLaVA-Video (981) 都标 14, 第 6, 12, 20 名缺失.
+只对 4B 成立. Table 15 描述一栏 Molmo2-4B 1004, Molmo2-8B 1049, Molmo2-O-7B 1019, GLM-4.1V-9B 1013, Qwen3-VL-4B 1052, Qwen3-VL-8B 1105. 8B 和 O-7B 都高于 GLM-4.1V. 同一栏的排名也有重复与空缺: Qwen3-VL-8B (1105) 与 GPT-5 mini (1086) 都标 5, GLM (1013) 与 Molmo2-O-7B (1019) 都标 9, MiniCPM (978) 与 LLaVA-Video (981) 都标 14, 第 6, 12, 20 名缺失.
 
 <!-- page 34 of 58 -->
 
@@ -1440,8 +1435,7 @@ across all model pairs, which are deterministic. We note that Molmo2-8B’s win 
 
 **计数与指点.** 视频计数评测中, 我们把视频预处理为 2 fps, 并截取 63 秒以内的随机区间. 除精确准确率和 close 准确率外, 我们还按查询类别 (Table 16) 和物体数量 (Table 17) 统计计数准确率. 我们发现 Molmo2-8B 在 Action/Event 和 Object 计数上表现最好, 仅次于 Gemini 2.5 Pro 和 GPT-5. Molmo2-8B 在 Animal 计数上也有竞争力, 略落后于 GPT-5 和 Qwen3-VL-8B. 重要的是, Molmo2 在低计数 (0-10) 查询上与 Qwen3-VL 准确率相近, 在高计数 (10-60) 情形下明显更好. 值得一提, Qwen3-VL 在 25-60 区间准确率为 0%, Molmo2 超过 10%, 仅次于 Gemini 2.5 Pro.
 
-> **回看:** 这段对 Table 16 和 Table 17 的描述与表中数字一致吗?
-> 答: 有三处不一致. 其一, Action/Event 一列 Molmo2-4B 是 51.7, 高于 8B 的 50.0, Gemini 3 Pro 是 58.6, 高于正文点名的 Gemini 2.5 Pro (53.4). 其二, 25-60 区间只有 Molmo2-4B (12.3) 超过 10%, 8B 是 7.0, O-7B 是 8.8; 该区间最高的是 Gemini 2.5 Pro (13.0), 其次 Gemini 3 Pro (12.5). 其三, LaTeX 源码中 Table 16 把 O-7B 的 Object 27.5 加粗, 而 8B 的 29.6 更高; Table 17 把 O-7B 在 10-15 区间的 27.5 加粗, 而 4B 是 30.0.
+有三处不一致. 其一, Action/Event 一列 Molmo2-4B 是 51.7, 高于 8B 的 50.0, Gemini 3 Pro 是 58.6, 高于正文点名的 Gemini 2.5 Pro (53.4). 其二, 25-60 区间只有 Molmo2-4B (12.3) 超过 10%, 8B 是 7.0, O-7B 是 8.8; 该区间最高的是 Gemini 2.5 Pro (13.0), 其次 Gemini 3 Pro (12.5). 其三, LaTeX 源码中 Table 16 把 O-7B 的 Object 27.5 加粗, 而 8B 的 29.6 更高; Table 17 把 O-7B 在 10-15 区间的 27.5 加粗, 而 4B 是 30.0.
 
 For the video pointing evaluation, we use 2 fps videos with a maximum of 384 frames along with ground truth points and masks at 2 fps. For metrics, we compute recall, precision, F1, and valid accuracy (i.e., the percentage of predictions that are parsed correctly), reporting all metrics in Table 3. In contrast to the counting task, Qwen3-VL struggles to perform meaningful pointing: Qwen3-VL-8B achieves only 1.5 F1, indicating that it rarely produces correct points. Even the strongest proprietary model shows a significant gap relative to ours: Gemini 3 and 2.5 Pro reach 20.0 and 13.0 F1, whereas Molmo2-4B and Molmo2-8B achieve 39.9 and 38.4 F1, respectively. This highlights a substantial performance advantage of Molmo2 on fine-grained spatio-temporal localization.
 
@@ -1560,8 +1554,7 @@ Table 18 Pre-training ablations. Columns show the average of our 12 video benchm
 
 **预训练消融.** Table 18 还给出一个不做图像指点预训练的消融. 该模型只在图像描述和 NLP 数据上预训练. SFT 阶段把图像指点数据集的采样率提高到 2 倍, 训练 28k 步而不是 25k 步, 以弥补预训练没见过图像指点数据. 在这一设置下各基准都有小幅下降, 包括与图像指点无关的基准. 我们推测指点预训练简化了 SFT 阶段, 模型不必再学基本的指点格式和任务, 可以更专注于非指点任务.
 
-> **停一下:** 这里说消融的 SFT 用 「28k steps instead of 25k」, 而正文 SFT 是 30k 步, 25k 指什么?
-> 答: 文中没有给出. §3.2 与 Table 12 的 SFT 都是 30k 步, 附录 B 的专用模型步数是 6k, 5k, 26k, 10k, 24k, 没有 25k. 这组消融可能用了一个缩短的 SFT 日程作基线, 但该日程的步数与数据只出现在这一句, 无从复核.
+文中没有给出. §3.2 与 Table 12 的 SFT 都是 30k 步, 附录 B 的专用模型步数是 6k, 5k, 26k, 10k, 24k, 没有 25k. 这组消融可能用了一个缩短的 SFT 日程作基线, 但该日程的步数与数据只出现在这一句, 无从复核.
 
 ### D.2 NLP Benchmarks · NLP 基准
 
@@ -1617,8 +1610,7 @@ Specifically, we evaluate different pooling strategies in the vision-language co
 
 具体来说, 我们评测视觉语言连接器中的不同池化策略: 216 帧配 $4\times4$ 池化, 332 帧配 $5\times5$ 池化. $5\times5$ 池化通过看到更多帧改善了长视频理解; 但两种设置在短视频理解上都有退化 (Table 20).
 
-> **对一下:** 「pool5, 332 frames」 的 10.6k 能复算出来吗?
-> 答: 按代码 `arange_for_pooling` 的向上取整与对称填充, 27x27 个 patch 用 $5\times5$ 窗口池化得到 $6\times6 = 36$ 个 token, 加上每帧 2 个特殊 token 为 38, $38 \times 332 = 12616$, 约 12.6k. 10.6k 对应每帧 32 个 token ($10624 / 332 = 32$), 与 36 + 2 对不上. 同表其他行可以复算: 默认 $3\times3$ 为 81 + 2 = 83, $83 \times 128 = 10624$; $4\times4$ 为 49 + 2 = 51, $51 \times 216 = 11016$, 即 11k.
+按代码 `arange_for_pooling` 的向上取整与对称填充, 27x27 个 patch 用 $5\times5$ 窗口池化得到 $6\times6 = 36$ 个 token, 加上每帧 2 个特殊 token 为 38, $38 \times 332 = 12616$, 约 12.6k. 10.6k 对应每帧 32 个 token ($10624 / 332 = 32$), 与 36 + 2 对不上. 同表其他行可以复算: 默认 $3\times3$ 为 81 + 2 = 83, $83 \times 128 = 10624$; $4\times4$ 为 49 + 2 = 51, $51 \times 216 = 11016$, 即 11k.
 
 **SlowFast encoding.** Since we find that our model can generalize to different pooling sizes at test time, we further explore a SlowFast video strategy [164]. We build on the interleaved SlowFast variant used in [165, 170, 129], which dynamically allocates computational resources across frames by varying their spatial pooling in the Molmo2 connector, with each frame represented exactly once – either in the slow or the fast pathway. Frames are categorized as slow or fast based on a periodicity parameter p: every p-th frame is designated as a slow frame, while the remaining frames are fast frames. We refer to this approach as Slowfast-periodic. Note that p = 1 reduces to the default setting. Slow frames use the default pooling size of 3 × 3, whereas fast frames use 9 × 9 pooling. We use four different periodicities p ∈{1, 2, 3, 4} with corresponding max frames M ∈{128, 224, 300, 368}. The max frame M for each periodicity is chosen such that the maximum number of vision tokens input to the LLM is approximately 10.6k. 10.6k is the maximum number of vision tokens used in the default setup of Molmo2. When processing a video with SlowFast encoding, after we sample Ft frames, p is selected to maximize the tokens in the slow pathway. For example, when Ft ≤128, we use p = 1 and all the frames are in the slow pathway, or when 128 < Ft ≤224, we use p = 2 and every other frame is in the slow pathway. In practice, that leads to stepwise changes in selected p as the number of frames ranges from 1 to 368.
 
@@ -1971,4 +1963,4 @@ Figure 35 Qualitative examples of pointing and QA from Molmo2-8B
 ![](images/failure1.png)
 Figure 36 Qualitative failure cases from Molmo2-8B. The model identifies false positives in the first two examples and misses several of the penguins in the bottom example.
 
-> **译注:** Figure 36 第二个失败样例询问 waterfalls, 回答却与 Figure 34 的 national flags 计数样例逐字相同, 包括时间戳, 坐标和最终计数 10. 这很可能是排版复制错误; 当前文字无法支持图注对该样例的错误分析.
+Figure 36 第二个失败样例询问 waterfalls, 回答却与 Figure 34 的 national flags 计数样例逐字相同, 包括时间戳, 坐标和最终计数 10. 这很可能是排版复制错误; 当前文字无法支持图注对该样例的错误分析.

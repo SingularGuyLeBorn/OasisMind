@@ -165,8 +165,7 @@ The ‘Ties’ subset score is a weighted score of accuracy (as measured by all 
 
 Ties 子集的分数是两项的加权和: 准确率项 (所有合法正确答案的得分都高于所有错误答案) 与间隔项 (正确与错误答案之间的奖励间隔超过得分最高与最低的正确回答之间的间隔). 对 Bradley-Terry 奖励模型, 该指标不仅奖励正确性, 还捕捉模型的置信度排序是否与真实质量差异一致——这是真实部署中的重要能力. 在 RLHF 中, 这保证「向正确性改进」的信号大于「在正确答案间减少多样性」的信号. 鉴于近期关于 RM 脆弱性的研究与「除准确率外还应看 RM 产出的分数分布」的论点, 本基准这个分布感知的组成部分让奖励模型评测更全面.
 
-> **核对:** Ties 的加权分数里两项各自的权重是多少, 正文与附录都没有写吗?
-> 答: 正文第 3 节只说「weighted score of accuracy ... and whether the reward margin ...」, LaTeX 源码同段也没有给出权重数值；现有数字不足以反推出具体权重，实际实现需要查阅官方评测代码.
+正文第 3 节只说「weighted score of accuracy ... and whether the reward margin ...」, LaTeX 源码同段也没有给出权重数值；现有数字不足以反推出具体权重，实际实现需要查阅官方评测代码.
 
 ## 4 ANALYSIS OF PERFORMANCE ON REWARDBENCH 2 · 在 REWARDBENCH 2 上的表现分析
 
@@ -234,8 +233,7 @@ Figure 2: Scores on REWARDBENCH 2 are much lower than scores on RewardBench.
 
 两个基准的分数对外部模型的相关性低于对作者训练模型的相关性, 表明存在针对 v1 的指标捕获 (metric capture) 的可能.
 
-> **想:** 图 2 的散点「对外部模型相关性更低」具体指什么, 有给出量化值吗?
-> 答: 正文只给出定性说法, 没有报 Pearson 值; 文中没有给出, 量化值需从官方发布数据自行计算.
+正文只给出定性说法, 没有报 Pearson 值; 文中没有给出, 量化值需从官方发布数据自行计算.
 
 Newly Trained Reward Models To analyze the performance of a larger variety of reward models than currently exists in the literature on our benchmark, we also trained our own Bradley- Terry reward models in a controlled setup, using the Open Instruct library (Wang et al., 2023b). We varied (1) hyperparameters like learning rate and number of training epochs, exploring values common in the literature; (2) the base model, examining multiple strong open-weight models that many existing RMs are trained on; and (3) training data, looking at two preference data mixtures with demonstrated success in post-
 
@@ -418,8 +416,7 @@ Figure 4: Downstream correlation of REWARDBENCH 2.
 
 (上图) RM 下游表现与基准表现的对比. PPO 分数对 on-policy 且 in-distribution 的奖励模型 (圆点) 饱和, 但对 off-policy 或 out-of-distribution 的奖励模型 (星点) 显著更低, 强调必须结合自身 PPO 训练设置来看基准分数. 另一方面, BoN 采样分数在所有模型上都相关, 说明基准有助于预测该应用中的下游表现. BoN 与 PPO 的分数不直接可比, 因为用的任务集不同, 放在一起只为展示二者相关性的不同性质.
 
-> **拆开:** 图 4 左侧 BoN 圆点与 PPO 圆点用同一坐标轴, 但正文说两者任务集不同不可比, 会不会误导?
-> 答: 作者自己在图注中声明「not meant to be directly compared」, 即仅展示相关性形态差异 (BoN 全程单调, PPO 仅低分段单调后饱和). 这是论文的有意选择, 读图时按图注口径理解即可.
+作者自己在图注中声明「not meant to be directly compared」, 即仅展示相关性形态差异 (BoN 全程单调, PPO 仅低分段单调后饱和). 这是论文的有意选择, 读图时按图注口径理解即可.
 
 Running PPO training with an RM initialized from a different starting point has the strongest effect, where top scoring RMs on REWARDBENCH 2 often do not help the policy improve on downstream metrics. We verified that this gap holds for additional hyperparameter configurations by additionally running these reward models with KL penalty coefficient of β = 0.0325. The relationship between REWARDBENCH 2 scores and downstream PPO performance is shown in Fig. 4, along with the BoN scores that remain correlated with REWARDBENCH 2. Importantly, we empirically verify that this limitation is not isolated to REWARDBENCH 2, with other benchmarks similarly displaying a good correlation with BoN outcomes and a low correlation with RLHF outcomes (see Appendix M), due to the on-policy and off-policy factor that we, to our knowledge, are the first to identify.
 

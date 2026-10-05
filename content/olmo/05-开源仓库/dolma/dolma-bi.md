@@ -8,7 +8,7 @@ excerpt: "固定到提交 669f534 的 Dolma README、数据格式、去重与 Mi
 
 # Dolma Toolkit 官方文档对照译稿
 
-本文只使用本地官方快照 `data/sources/dolma/repo`，提交 `669f534823b08d266a8fff01f8a1c916a5a56576`。对照范围为 `README.md` 全部说明正文、`docs/data-format.md` 全文，以及 `docs/deduplication.md` 与 `docs/mixer.md` 的介绍、配置和参数说明。代码、键名和路径保留原文；参数表按含义逐项译出。
+对照原文来自本地官方快照 `data/sources/dolma/repo`，固定提交为 `669f534823b08d266a8fff01f8a1c916a5a56576`。内容覆盖 `README.md` 全部说明正文、`docs/data-format.md` 全文，以及 `docs/deduplication.md` 与 `docs/mixer.md` 的介绍、配置和参数说明；代码、键名和路径保留原文，参数表按含义逐项译出。
 
 ## README.md
 

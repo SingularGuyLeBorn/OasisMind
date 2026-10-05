@@ -138,8 +138,7 @@ Additionally, we filter any samples that include references to other LLM systems
 
 另外, 本文过滤掉一切提及 GPT-4, Open Assistant 或 Claude 等其他 LLM 系统的样本, 避免与硬编码 prompt 矛盾. 过滤后 V2 混合共 326,154 条, 而 V1 混合是 490,445 条. 数据集见 https://huggingface.co/datasets/allenai/tulu-v2-sft-mixture.
 
-> **核对:** 各数据源条数加总是 330,490, 与过滤后的 326,154 对不上, 差的是什么?
-> 答: 逐项相加 50,000 + 50,000 + 7,708 + 114,046 + 20,000 + 20,022 + 1,030 + 30,000 + 30,000 + 7,544 + 140 = 330,490, 比 326,154 多 4,336 条, 对应上一句说的「过滤掉提及其他 LLM 系统的样本」这一步; 文中没有单独给出被过滤样本数, 4,336 是从这两个已给数字相减得到的.
+逐项相加 50,000 + 50,000 + 7,708 + 114,046 + 20,000 + 20,022 + 1,030 + 30,000 + 30,000 + 7,544 + 140 = 330,490, 比 326,154 多 4,336 条, 对应上一句说的「过滤掉提及其他 LLM 系统的样本」这一步; 文中没有单独给出被过滤样本数, 4,336 是从这两个已给数字相减得到的.
 
 Extended context length We expand the context length during training from a maximum of 2,048 tokens to 8,192 tokens in order to make better use of the many lengthy samples in datasets such as
 
@@ -159,8 +158,7 @@ RLHF training Reinforcement learning from human feedback (RLHF) is a core compon
 
 RLHF 训练. 基于人类反馈的强化学习 (RLHF) 是现代面向用户 LLM 系统的核心部件 [Bai et al., 2022, Ouyang et al., 2022, Touvron et al., 2023a]. 早期 RLHF 系统主要建立在 proximal policy optimization (PPO) 算法上, 后来的进展包括离线 RL [Snell et al., 2022], 用奖励模型过滤数据的 rejection sampling (RS) [Touvron et al., 2023a] 或 reinforced self-training (ReST) [Gulcehre et al., 2023], 以及直接利用偏好数据 [Rafailov et al., 2023]. 本文选用直接偏好优化 (DPO) 算法, 因为它实现简单 [Rafailov et al., 2023]. 具体沿用 Zephyr-Beta [Tunstall et al., 2023] 的做法: 在 UltraFeedback [Cui et al., 2023] 过滤并二值化后的版本上训练三个 epoch. 有一点值得注意: 为了让 DPO 稳定有效, 学习率必须很低, 取 $5 \times 10^{-7}$. 这样的训练显著改善了 AlpacaEval [Li et al., 2023] 等开放式生成评测, 而对 MMLU 和 HumanEval 等更侧重能力的评测几乎无影响.
 
-> **想:** DPO 的学习率 $5 \times 10^{-7}$ 只有 SFT 学习率 $2 \times 10^{-5}$ 的四十分之一, 为什么差这么多?
-> 答: 附录 B 给出两套超参: SFT 用学习率 $2 \times 10^{-5}$ (70B 用 $1 \times 10^{-5}$), DPO 用 $5 \times 10^{-7}$. 正文只说低学习率是「稳定且有效」DPO 训练的必要条件, 没有给出更细的原因或消融; 文中没有给出更深处的解释.
+附录 B 给出两套超参: SFT 用学习率 $2 \times 10^{-5}$ (70B 用 $1 \times 10^{-5}$), DPO 用 $5 \times 10^{-7}$. 正文只说低学习率是「稳定且有效」DPO 训练的必要条件, 没有给出更细的原因或消融; 文中没有给出更深处的解释.
 
 QLoRA training We experimented with QLoRA training at the instruction tuning stage in order to determine if we could reduce our compute demands without reducing performance. Due to sub-par performance at the instruction tuning stage, we did not explore using QLoRA during RLHF training, although we note that prior work has found it perform well for PPO-based RLHF training [Santacroce et al., 2023, Sun et al., 2023].
 
@@ -281,8 +279,7 @@ DPO 训练显著提升 AlpacaEval 和 MT-Bench 表现. 各规模上 DPO 都显�
 
 3At time of writing. See https://tatsu-lab.github.io/alpaca_eval/ 4At time of writing. See https://huggingface.co/spaces/lmsys/chatbot-arena-leaderboard
 
-> **看表:** 正文说最大的 DPO 模型以 95.1 对 89.4 超过 GPT-3.5-turbo-0314, 表 4 里为什么找不到 89.4 这个数?
-> 答: 表 4 只列了 GPT-3.5-turbo-0301, AlpacaEval 胜率 83.6, 没有 GPT-3.5-turbo-0314, 也没有 89.4; 89.4 在全文任何表中都没有出现, 文中没有给出它的出处. 按表 4 的数字, TÜLU 2+DPO 70B 的 95.1 对比 GPT-3.5-turbo-0301 应是 95.1 对 83.6, 正文引用的版本号与数字都和表 4 对不上, 属于论文自身的一处不一致.
+表 4 只列了 GPT-3.5-turbo-0301, AlpacaEval 胜率 83.6, 没有 GPT-3.5-turbo-0314, 也没有 89.4; 89.4 在全文任何表中都没有出现, 文中没有给出它的出处. 按表 4 的数字, TÜLU 2+DPO 70B 的 95.1 对比 GPT-3.5-turbo-0301 应是 95.1 对 83.6, 正文引用的版本号与数字都和表 4 对不上, 属于论文自身的一处不一致.
 
 
 <!-- page 7 of 15 -->
@@ -351,8 +348,7 @@ The gap between QLoRA and full-finetuning shrinks with size. Similar to prior wo
 
 QLoRA 与全量微调之间的差距随规模缩小. 与参数高效学习的先前工作 [Lester et al., 2021] 类似, QLoRA 与全量微调的平均差距随模型规模增大而缩小, 这提示在更大规模上 QLoRA 可能开始追平全量微调.
 
-> **拆开:** 同一行模型在表 2 和表 5 里的数字为什么不一样?
-> 答: 7B 的 TÜLU 2 在表 2 里是 TruthfulQA 50.2, 平均 54.2, 在表 5 里却是 TruthfulQA 40.8, 平均 53.0; 13B 和 70B 两行两表一致. 两个表测的应是同一批 checkpoint, 只有 7B 的 TruthfulQA 和平均对不上, 相差 9.4 与 1.2, 文中没有解释这个差异, 属于论文自身的一处不一致; 按表 5 的平均 53.0 反推, 它用的 TruthfulQA 应是 40.8.
+7B 的 TÜLU 2 在表 2 里是 TruthfulQA 50.2, 平均 54.2, 在表 5 里却是 TruthfulQA 40.8, 平均 53.0; 13B 和 70B 两行两表一致. 两个表测的应是同一批 checkpoint, 只有 7B 的 TruthfulQA 和平均对不上, 相差 9.4 与 1.2, 文中没有解释这个差异, 属于论文自身的一处不一致; 按表 5 的平均 53.0 反推, 它用的 TruthfulQA 应是 40.8.
 
 3.5 Improving Code Performance with CODE LLAMA
 

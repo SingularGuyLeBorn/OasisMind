@@ -593,7 +593,7 @@ We refer to these routing, compute-efficiency, and supporting runtime costs coll
 
 <sup>3</sup>FSDP2 也可以让未分片的参数一直保留到反向结束; 如果中间几次反向之后都不 reshard, 还能在整个累积窗口内保留 (PyTorch Contributors, 2026d). 这种策略放弃了 full-reshard FSDP 在未分片参数峰值显存上的大部分优势; 此时它的参数显存占用和通信节奏都接近带分片优化器状态的 DDP. 我们把它当作机制消融, 不当作主要的竞争方案. 所以主对比用 full reshard; 其他 reshard 策略见附录 B.3.
 
-> 按第 4.4 节的说法, 差别不在参数是否常驻, 而在常驻之外的几件事: 同一个 MoE 模块里 dense 参数和专家参数要走不同的副本组 (第 4.4.2 节, dense 在 D 上归约, 专家只在 EP-DP 上归约), 梯度要在 FP32 桶里累积和归约 (第 4.4.1 节), MXFP8 缓存要在优化器步后从 FP32 主权重统一重建 (第 4.4.3 节). 关掉 reshard 的 FSDP2 仍然在 shard 组上做 reduce-scatter, 参数常驻的那份是 all-gather 出来的整权重, 和 Olmo 的「compute weight 常驻 + 只分片 FP32 主权重与优化器状态」在显存构成上接近, 但副本组和 dtype 的控制权在 FSDP2 手里. 报告里没给这种 FSDP2 模式与 Olmo DDP 的吞吐对比 (附录 B.3 只是讨论), 所以「接近」是否也意味着吞吐接近, 报告里没写.
+按第 4.4 节的说法, 差别不在参数是否常驻, 而在常驻之外的几件事: 同一个 MoE 模块里 dense 参数和专家参数要走不同的副本组 (第 4.4.2 节, dense 在 D 上归约, 专家只在 EP-DP 上归约), 梯度要在 FP32 桶里累积和归约 (第 4.4.1 节), MXFP8 缓存要在优化器步后从 FP32 主权重统一重建 (第 4.4.3 节). 关掉 reshard 的 FSDP2 仍然在 shard 组上做 reduce-scatter, 参数常驻的那份是 all-gather 出来的整权重, 和 Olmo 的「compute weight 常驻 + 只分片 FP32 主权重与优化器状态」在显存构成上接近, 但副本组和 dtype 的控制权在 FSDP2 手里. 报告里没给这种 FSDP2 模式与 Olmo DDP 的吞吐对比 (附录 B.3 只是讨论), 所以「接近」是否也意味着吞吐接近, 报告里没写.
 
 <!-- page 17 of 168 -->
 
@@ -778,8 +778,7 @@ Let B be the tokens processed by one rank in an optimizer step, m the number of 
 
 <table><tr><td colspan="4">No model parallelism: every DP/DDP rank holds the whole model</td></tr><tr><td>Training work</td><td>When it happens</td><td>Approximate cost</td><td>What changes for MoE</td></tr><tr><td>Forward and backward model compute</td><td>Every microbatch</td><td> $\propto BP_{\text{active}}$  for parameter-linear terms</td><td>This is the useful work. It follows active, not total, parameters.</td></tr><tr><td>Gradient storage and accumulation</td><td>Kept through the accumulation window; initialize once; add after each backward</td><td>Storage and zeroing  $\propto P_{\text{total}}$ ; additions recur for each microbatch</td><td>Buffer capacity follows total parameters.A rank&#x27;s experts share one stacked gradient tensor, so each accumulation can touch the whole tensor even when only some experts received tokens.</td></tr><tr><td>Gradient synchronization</td><td>Final microbatch, or every microbatch</td><td>Payload  $\propto P_{\text{total}}$ ; the exact factor depends on D and the collective algorithm</td><td>Skipping it on the earlier microbatches (PyTorch&#x27;s no_sync()) leaves one synchronization per optimizer step, but the payload still covers the full gradient replica, including experts that received no tokens.</td></tr><tr><td>Optimizer update</td><td>Once per optimizer step</td><td>Arithmetic and memory traffic  $\propto P_{\text{total}}$ </td><td>An inactive expert still has a weight and optimizer states; in this unsharded baseline every DP rank carries them.</td></tr><tr><td>Updated-parameter distribution</td><td>After the optimizer step</td><td>Local only in unsharded DDP</td><td>Every rank updates its complete replica, so there is no parameter collective.Parameter movement appears only after choosing a sharded optimizer.</td></tr><tr><td>Routing and expert work setup</td><td>Every MoE layer and microbatch</td><td>Activation movement  $\propto BKd$  per routed layer, plus route metadata and launches</td><td>Top-K, counting, permutation, and combination already exist with all experts local; the grouped expert GEMMs are useful model work.</td></tr></table>
 
-> **拆开:** Table 4 说一个 rank 上的专家共用一个堆叠的梯度张量, 所以哪怕只有部分专家收到 token, 每次累积也可能碰到整个张量; 这次「碰到」具体是什么操作?
-> 对照代码 `nn/parallel/distributed.py` 的 `_fp32_post_grad_acc_hook` (约 586-600 行): autograd 先给整块专家权重 (如 `w_up_gate`, 形状按本地专家数堆叠) 产出一个 BF16 的 `param.grad`, hook 再对整块做 `main_grad.add_(g)` 加进 FP32 桶视图, 然后把 `param.grad` 置空. 没收到 token 的专家, 在 grouped GEMM 的 wgrad 输出里对应的是零, 但这一段零照样参与一次整张量的 BF16 产出和 FP32 加法. 所以每个 microbatch 的累积开销按本地专家总参数量计, 而不是按收到 token 的专家计, 这正是 Table 4 把它归到「Storage and zeroing $\propto P_{\text{total}}$, additions recur for each microbatch」的原因. EP 把本地专家数降到 $N/M_E$, 也就把这次整块加法缩小了 $M_E$ 倍.
+对照代码 `nn/parallel/distributed.py` 的 `_fp32_post_grad_acc_hook` (约 586-600 行): autograd 先给整块专家权重 (如 `w_up_gate`, 形状按本地专家数堆叠) 产出一个 BF16 的 `param.grad`, hook 再对整块做 `main_grad.add_(g)` 加进 FP32 桶视图, 然后把 `param.grad` 置空. 没收到 token 的专家, 在 grouped GEMM 的 wgrad 输出里对应的是零, 但这一段零照样参与一次整张量的 BF16 产出和 FP32 加法. 所以每个 microbatch 的累积开销按本地专家总参数量计, 而不是按收到 token 的专家计, 这正是 Table 4 把它归到「Storage and zeroing $\propto P_{\text{total}}$, additions recur for each microbatch」的原因. EP 把本地专家数降到 $N/M_E$, 也就把这次整块加法缩小了 $M_E$ 倍.
 
 These proportionalities identify pressure points; they are not additive terms in an elapsed-time model. Collective traffic also depends on the algorithm, topology, and overlap with other work. For example, ring all-reduce moves approximately $2 ( D   -   1 ) / D$ payload copies per rank, while aggregate network traffic additionally grows with the number of ranks (Patarasuk and Yuan, 2009).
 
@@ -841,8 +840,7 @@ These trends are consistent with the cost model: DDP spreads its once-per-step w
 
 这些趋势与成本模型一致: batch 变大时, DDP 每步一次的工作被摊到更多有效计算上, FSDP 则在每个 microbatch 里重复 gather 权重. 每个点只跑了一次, 也没有配套的通信 profile, 所以图里能看出趋势, 看不出确切原因; 而且它测的是吞吐, 训练质量和达到目标 loss 的时间都没有测.
 
-> **问:** 按式 (7) 和 $W_{\text{FSDP}} \propto m P_{\text{local}}$, FSDP 的有效计算和权重搬运都随 m 线性增长, 比值不变; 那 Figure 8a 里 FSDP 的 MFU 为什么还能从 26.4% 升到 29.8%?
-> 两者比值不变, 说明 FSDP 涨的那一点来自每步只付一次的成本被摊薄: 优化器更新 (Table 4 里 $\propto P_{\text{total}}$, 每步一次), 步首步尾的固定开销, 以及梯度同步, 如果 FSDP2 在非最后一个 microbatch 上关掉了 reduce-scatter. FSDP2 默认每次反向都 reduce-scatter, 要靠 `set_requires_gradient_sync(False)` 才能推迟; 报告没说这组对比里 FSDP 是否推迟了梯度同步, 也没给通信 profile (图注明说不分解). DDP 从 25.2% 升到 41.4%, 涨幅大得多, 和「DDP 每步一次的同步与重建全部被摊薄」相符. FSDP 那 3.4 个点具体归哪一项, 报告里没写, 以上归因只是从已知数字推出的说法, 没有数据验证.
+两者比值不变, 说明 FSDP 涨的那一点来自每步只付一次的成本被摊薄: 优化器更新 (Table 4 里 $\propto P_{\text{total}}$, 每步一次), 步首步尾的固定开销, 以及梯度同步, 如果 FSDP2 在非最后一个 microbatch 上关掉了 reduce-scatter. FSDP2 默认每次反向都 reduce-scatter, 要靠 `set_requires_gradient_sync(False)` 才能推迟; 报告没说这组对比里 FSDP 是否推迟了梯度同步, 也没给通信 profile (图注明说不分解). DDP 从 25.2% 升到 41.4%, 涨幅大得多, 和「DDP 每步一次的同步与重建全部被摊薄」相符. FSDP 那 3.4 个点具体归哪一项, 报告里没写, 以上归因只是从已知数字推出的说法, 没有数据验证.
 
 ## 4.3 DDP Alone Hits a Memory Wall · 只靠 DDP 会撞上显存墙
 
@@ -927,7 +925,7 @@ Olmo uses the per-tensor layout in the bottom row. Each eligible tensor is flatt
 
 Olmo 用的是最下面一行的逐张量布局. 每个符合条件的张量展平后, 在它的优化器副本组内各自独立切分; 它的 FP32 主权重和优化器状态使用 rank 本地的同一段切片. 映射只涉及单个张量, 所以更新, 重建和 checkpoint 的视图都是直接的, 容易检查. 代价是, 当前策略只在张量足够大且元素个数能被副本组大小整除时才分片. 小张量, 不能整除的优化器状态张量, 以及标量步数计数器, 都保持复制. 这种回退不影响训练, 但会减少分布式优化器省下的显存.
 
-> 代码 `optim/moe_optimizer.py` 的 `_distribute_tensor` (约 920-938 行) 写的是: `num_elements >= do_not_shard_tensor_smaller_than` 且 `num_elements % device_mesh.size(0) == 0` 时用 `Shard(0)`, 否则 `Replicate()` 并打一行日志; 门槛默认 4096 个元素 (约 512 行). 这里的 `device_mesh` 是该参数自己的副本组: dense 参数是大小为 D 的 DP 组, 专家参数按第 4.3.2 节是大小为 $D_E$ 的 EP-DP 组. 专家组更小, 整除条件更容易满足. 和脚注 5 的 Megatron 桶级布局对比: Megatron 按桶切等长区间, 不挑张量, 但要维护桶切片到参数切片的映射; Olmo 逐张量切, 映射简单, 代价是像 7 或 13 这样的组大小会让更多张量退回复制. 报告说生产里组大小基本是 2 的幂 (最大 128), 所以这项损失可以忽略; 这一判断报告没有给出被复制字节数的实测比例.
+代码 `optim/moe_optimizer.py` 的 `_distribute_tensor` (约 920-938 行) 写的是: `num_elements >= do_not_shard_tensor_smaller_than` 且 `num_elements % device_mesh.size(0) == 0` 时用 `Shard(0)`, 否则 `Replicate()` 并打一行日志; 门槛默认 4096 个元素 (约 512 行). 这里的 `device_mesh` 是该参数自己的副本组: dense 参数是大小为 D 的 DP 组, 专家参数按第 4.3.2 节是大小为 $D_E$ 的 EP-DP 组. 专家组更小, 整除条件更容易满足. 和脚注 5 的 Megatron 桶级布局对比: Megatron 按桶切等长区间, 不挑张量, 但要维护桶切片到参数切片的映射; Olmo 逐张量切, 映射简单, 代价是像 7 或 13 这样的组大小会让更多张量退回复制. 报告说生产里组大小基本是 2 的幂 (最大 128), 所以这项损失可以忽略; 这一判断报告没有给出被复制字节数的实测比例.
 
 In practice, this restriction is mild for the regular, mostly power-of-two replica groups in our production configurations, including groups of 128 ranks: nearly all large model tensors are divisible by these group sizes. Irregular sharding degrees such as 7 or 13 would cause more tensors to remain replicated, but we have not encountered that case in our production runs. Muon changes the number of optimizer history tensors, not this placement rule.
 
@@ -949,8 +947,7 @@ The second mechanism reduces the routed-expert memory that the distributed optim
 
 第二种机制缩小分布式优化器没动的那部分 routed 专家显存, 也就是仍被复制的部分. EP-MP 并行度为 $M _ { E }$ 时, 每个 rank 只存约 $N / M _ { E }$ 个 routed 专家及其梯度缓冲区, 而不是全部 N 个. 持有同一专家分片副本的 rank 组成大小为 $D _ { E }$ 的 EP-DP 组; 它们一起归约这个分片的梯度, 分布式优化器在这 $D _ { E }$ 个副本上对它的 FP32 主权重和优化器状态做分片. 由于原来的数据并行组大小是 $D = M_{E}D_{E}$, 经过两级分片之后, 专家优化器状态仍是在同样的总并行度 D 上切分. 所以 EP 额外省下的显存在 compute weight 和梯度缓冲区上; 对已经在 D 上分片过的优化器状态, 它不会再除一个因子. EP-MP 与 EP-DP 拓扑, 以及为这份节省付出的 dispatch/combine 流量, 见第 5 节.
 
-> **对一下:** Figure 9 的 $6 / M_E + 12 / D$ 里, 为什么 EP 只除掉了前面的 6 字节, 后面的 12 字节分母没变成 $M_E D$?
-> 按第 4.3.2 节逐项算: 每个 rank 存 $N/M_E$ 个专家, BF16 权重 2 字节加 FP32 梯度槽 4 字节, 摊到全局每个专家参数上就是 $6/M_E$. FP32 主权重和两个矩共 12 字节, 分布式优化器只在 EP-DP 组 (大小 $D_E$) 内分片, 而每个 rank 上这份 12 字节对应的本身也只是 $1/M_E$ 的专家, 摊到全局每个参数上是 $12/(M_E D_E) = 12/D$. 也就是说, 没有 EP 时优化器在 D 上切, 开了 EP 之后是「先按 $M_E$ 切专家, 再按 $D_E$ 切副本」, 总因子还是 D. 这条推导也说明 EP 的显存收益上限: 当 D 很大时 $12/D$ 已经很小, 剩下的主要是 $6/M_E$, 继续加大 $M_E$ 才有用, 而 $M_E$ 又受 EP 通信域约束 (第 7 节). 报告没给真实配置下这两项的实测字节数.
+按第 4.3.2 节逐项算: 每个 rank 存 $N/M_E$ 个专家, BF16 权重 2 字节加 FP32 梯度槽 4 字节, 摊到全局每个专家参数上就是 $6/M_E$. FP32 主权重和两个矩共 12 字节, 分布式优化器只在 EP-DP 组 (大小 $D_E$) 内分片, 而每个 rank 上这份 12 字节对应的本身也只是 $1/M_E$ 的专家, 摊到全局每个参数上是 $12/(M_E D_E) = 12/D$. 也就是说, 没有 EP 时优化器在 D 上切, 开了 EP 之后是「先按 $M_E$ 切专家, 再按 $D_E$ 切副本」, 总因子还是 D. 这条推导也说明 EP 的显存收益上限: 当 D 很大时 $12/D$ 已经很小, 剩下的主要是 $6/M_E$, 继续加大 $M_E$ 才有用, 而 $M_E$ 又受 EP 通信域约束 (第 7 节). 报告没给真实配置下这两项的实测字节数.
 
 ## 4.3.3 PP Shards Layers and Their Persistent Training State · PP 对层及其持久训练状态分片
 
@@ -974,8 +971,7 @@ This separation is more specific than generic mixed-precision execution. For an 
 
 这种分离比一般的混合精度执行更具体. 对普通的 BF16 参数, autograd 的叶子节点 AccumulateGrad 先产出一个临时的 BF16 param.grad. 一个 post-accumulate hook 立即把这个梯度加进该参数的 FP32 累积缓冲区, 并清空 param.grad. 每个 FP32 累积缓冲区都是训练前建好的一个扁平桶里的视图, 梯度归约直接在这个桶上进行.<sup>6</sup> 这里描述的策略用 FP32 累积和 FP32 归约.
 
-> **停一下:** 第 4.4.1 节强调梯度「在 FP32 里累积」, 但 hook 加进 FP32 桶的是 autograd 先产出的 BF16 `param.grad`; 那单个 microbatch 内的权重梯度到底是什么精度?
-> 是 BF16. 代码 `nn/parallel/distributed.py` 约 586-600 行: 进来的 `g` 是 BF16, 大张量走 `gradient_add` kernel, 否则 `main_grad.add_(g)`, 两条路都是把已经舍入到 BF16 的 wgrad 加进 FP32. 所以 FP32 保护的是跨 microbatch 的累加和跨 rank 的归约, 单个 microbatch 的 wgrad GEMM 输出已经在 BF16 上舍入过一次. Megatron-Core 的 gradient accumulation fusion 让 wgrad GEMM 直接以 FP32 累加进 `main_grad`, 省掉这次 BF16 舍入和一个临时张量. Olmo 代码里有一个实验性的 `_profile_rounded_wgrad` 路径 (同文件约 263-273 行), 让专家 wgrad 在外部直接写 FP32 桶, 但标为实验, 只在 profiling 里用. 报告没讨论这次 BF16 舍入对 microbatch 很多时累积精度的影响.
+是 BF16. 代码 `nn/parallel/distributed.py` 约 586-600 行: 进来的 `g` 是 BF16, 大张量走 `gradient_add` kernel, 否则 `main_grad.add_(g)`, 两条路都是把已经舍入到 BF16 的 wgrad 加进 FP32. 所以 FP32 保护的是跨 microbatch 的累加和跨 rank 的归约, 单个 microbatch 的 wgrad GEMM 输出已经在 BF16 上舍入过一次. Megatron-Core 的 gradient accumulation fusion 让 wgrad GEMM 直接以 FP32 累加进 `main_grad`, 省掉这次 BF16 舍入和一个临时张量. Olmo 代码里有一个实验性的 `_profile_rounded_wgrad` 路径 (同文件约 263-273 行), 让专家 wgrad 在外部直接写 FP32 桶, 但标为实验, 只在 profiling 里用. 报告没讨论这次 BF16 舍入对 microbatch 很多时累积精度的影响.
 
 <sup>6</sup>The wrapper constructs buckets by replica group, gradient-storage dtype, communication dtype, and size limit. It binds each parameter’s \_main\_grad\_fp32 to the corresponding slice of the bucket’s flat FP32 storage. Under the FP32-accumulation
 
@@ -1215,8 +1211,7 @@ symmetric-memory and GPU-initiated communication (NVSHMEM/RDMA) mechanisms that 
 
 目标行是确定的. route map 的构造器把三样东西合起来: 目标专家, 该专家之前已接受的路由数, 以及排在它前面的本地专家的偏移. 容量判定也在通信之前完成. 所以 route map 同时记下远端目标 rank 和所选专家要读的确切行. 路由计数和溢出元数据都留在 GPU 上, 不为数据搬运转成 host 端切分列表. 直接放置的前提是, 源 rank 上的 kernel 能写专家 rank 上的某一行. §5.5 介绍让远端行可寻址的对称内存和 GPU 发起通信 (NVSHMEM/RDMA) 机制.
 
-> **拆开:** §5.4 说目标行由「该专家之前已接受的路由数」决定, 且计数不下发到 host. 可一个专家的槽位同时被 EP-MP 组内所有源 rank 写入, 源 rank 怎么知道别的 rank 已经占了几行?
-> 答: 只靠本地计数做不到, 需要一次组内交换. §8.5 写了「The count exchange is one all-gather over the EP-MP group」. 代码 `src/olmo_core/nn/moe/v2/ep_no_sync_common.py` 的 `sync_tail_drop_allowed_splits_single_a2a` 做的就是这件事: 每个 rank 的请求计数形状是 [目标 rank, 本地专家], `all_gather_into_tensor` 拼成 [源 rank, 目标 rank, 本地专家] 的全局矩阵, 再按「本地专家优先, 其次源 rank」展平做 cumsum, 截到 `rank_capacity`. 各 rank 用同一份全局矩阵算出同一张 keep 矩阵, 于是某源 rank 在某专家上的起始行 = 前面本地专家的保留总数 + 编号更小的源 rank 在该专家上的保留数, 本 rank 内部再按顺序排. 这样不需要 host 介入, 也不需要锁. 一个副作用: 截断是对累积和做的, 容量满时先被丢的是编号靠后的本地专家和编号靠后的源 rank, 丢弃并不在专家间均摊. 该函数名带 `single_a2a`, rowwise 路径的行号构造是否完全复用它, 我没有逐行追到 kernel, 但 §8.5 的「一次 all-gather」和这里的布局一致.
+只靠本地计数做不到, 需要一次组内交换. §8.5 写了「The count exchange is one all-gather over the EP-MP group」. 代码 `src/olmo_core/nn/moe/v2/ep_no_sync_common.py` 的 `sync_tail_drop_allowed_splits_single_a2a` 做的就是这件事: 每个 rank 的请求计数形状是 [目标 rank, 本地专家], `all_gather_into_tensor` 拼成 [源 rank, 目标 rank, 本地专家] 的全局矩阵, 再按「本地专家优先, 其次源 rank」展平做 cumsum, 截到 `rank_capacity`. 各 rank 用同一份全局矩阵算出同一张 keep 矩阵, 于是某源 rank 在某专家上的起始行 = 前面本地专家的保留总数 + 编号更小的源 rank 在该专家上的保留数, 本 rank 内部再按顺序排. 这样不需要 host 介入, 也不需要锁. 一个副作用: 截断是对累积和做的, 容量满时先被丢的是编号靠后的本地专家和编号靠后的源 rank, 丢弃并不在专家间均摊. 该函数名带 `single_a2a`, rowwise 路径的行号构造是否完全复用它, 我没有逐行追到 kernel, 但 §8.5 的「一次 all-gather」和这里的布局一致.
 
 **Rowwise EP adds indexing and ordering costs.** Rowwise movement replaces a small number of block transfers with many indexed row transfers and adds route-map construction, fixed-capacity storage, and explicit write-ordering between communication and compute. It is beneficial only when those costs are lower than the permutations, temporary buffers, and host stalls of the block all-to-all path. Its end-to-end advantage depends on expert shape, EP degree, route imbalance, and network topology, which the current measurements only partly cover.
 
@@ -1246,7 +1241,7 @@ This example is consistent with the intended mechanism: rowwise replaces four ex
 
 这个例子与设计意图相符: rowwise 用驻留 GPU 的 route map 加索引式行搬运, 换掉了四次显式布局变换和两次按 peer 分块的集合通信, rowwise 的总时间里已经算上了设备端构造 route map 的耗时. 图中区间不含 block 路径等待 host 切分列表的时间 (§8.4). 这个实例指出了受影响的是哪些操作, 但不能说明在不同负载和网络上能省多少.
 
-> 答: 按表拆: block 路径两次 all-to-all 是 1.960 + 1.970 = 3.930 ms, 四次布局变换是 0.351 + 0.532 + 0.712 + 0.391 = 1.986 ms. rowwise 两个阶段 2.298 + 2.423 = 4.721 ms, 比 block 的纯传输还多 0.791 ms, 而且这 4.721 ms 里含 route map 构造和加权归约. 所以逐行搬运本身并不比 NCCL 分块交换快, 节省全部来自去掉的 1.986 ms 布局变换, 再扣掉 rowwise 多出的那部分. 两条 trace 采自不同节点 (Figure 17 题注), 0.8 ms 量级的差别不能当精确值. 表里没算 block 路径的 host 等待, 把它算进去会进一步拉开差距, 这部分收益属于 §8 的同步问题, 不属于本节的布局问题.
+按表拆: block 路径两次 all-to-all 是 1.960 + 1.970 = 3.930 ms, 四次布局变换是 0.351 + 0.532 + 0.712 + 0.391 = 1.986 ms. rowwise 两个阶段 2.298 + 2.423 = 4.721 ms, 比 block 的纯传输还多 0.791 ms, 而且这 4.721 ms 里含 route map 构造和加权归约. 所以逐行搬运本身并不比 NCCL 分块交换快, 节省全部来自去掉的 1.986 ms 布局变换, 再扣掉 rowwise 多出的那部分. 两条 trace 采自不同节点 (Figure 17 题注), 0.8 ms 量级的差别不能当精确值. 表里没算 block 路径的 host 等待, 把它算进去会进一步拉开差距, 这部分收益属于 §8 的同步问题, 不属于本节的布局问题.
 
 **Direct placement also lets communication use the MXFP8 representation consumed by grouped GEMM.** Olmo can quantize rows during dispatch, let expert grouped GEMM consume the received qdata (quantized data) and scales directly, and return quantized outputs before local reduction. Communication and expert compute thus share one representation without an intervening BF16 materialization. Section 11.4 follows the integrated forward and backward path.
 
@@ -1395,8 +1390,7 @@ GEMM stretch alone, however, does not decide the outcome. At the 128-block launc
 
 但 GEMM 被拉长多少并不单独决定结果. 在 128 个 block 的启动下, 重叠仍比顺序执行把这一对的 makespan 缩短了 22–25%: 宽启动让通信足够快地结束, 即使交了争用的代价, 也能藏在有用计算后面; 单 block 启动做不到.
 
-> **对一下:** 用 Table 9 的数代入式 (10), 128 block 时重叠为什么还能赢?
-> 答: GEMM 单独跑约 4.66 ms, 顺序 makespan 7.768 ms, 反推 dispatch 单独约 3.1 ms. 重叠后 makespan 5.833 ms, 正好落在被拉长的 GEMM 区间 5.736–5.874 ms 里, 即 $T_{\mathrm{overlap}} \approx \tilde{T}_{\mathrm{gemm}}$, 通信被完全盖住. 收益 7.768 - 5.833 = 1.935 ms, 约等于藏掉的 3.1 ms 通信减去 GEMM 多出的约 1.17 ms. combine 那组同理: 7.560 对 5.868. 所以式 (10) 成立的条件可以写成「被藏住的通信时间大于计算被拉长的时间」. 这个诊断是一整个大 GEMM 对一次传输; 真正的 wave 调度还要把 GEMM 切成四份 (§5.9 前文), 小 GEMM 的效率损失不在这张表里, 这就是 Table 9 赢而 Figure 24a 输的一个可能原因.
+GEMM 单独跑约 4.66 ms, 顺序 makespan 7.768 ms, 反推 dispatch 单独约 3.1 ms. 重叠后 makespan 5.833 ms, 正好落在被拉长的 GEMM 区间 5.736–5.874 ms 里, 即 $T_{\mathrm{overlap}} \approx \tilde{T}_{\mathrm{gemm}}$, 通信被完全盖住. 收益 7.768 - 5.833 = 1.935 ms, 约等于藏掉的 3.1 ms 通信减去 GEMM 多出的约 1.17 ms. combine 那组同理: 7.560 对 5.868. 所以式 (10) 成立的条件可以写成「被藏住的通信时间大于计算被拉长的时间」. 这个诊断是一整个大 GEMM 对一次传输; 真正的 wave 调度还要把 GEMM 切成四份 (§5.9 前文), 小 GEMM 的效率损失不在这张表里, 这就是 Table 9 赢而 Figure 24a 输的一个可能原因.
 
 **The complete wave candidate did not beat its no-wave baseline.** A two-node DeepEP v2 sweep measured BF16 forward and backward for $EP-MP   =   16,$ 128 experts, top-8, 16,384 tokens per rank, and $d   =   h   =   8 { , } 1 9 2$ The four-wave path used an expert-major static layout and overlapped dispatch, expert compute, and combine. Figure 24a shows that it remained slower than no-wave execution at every matched communication-SM setting.
 
@@ -1499,8 +1493,7 @@ The symbolic PP = 4 example makes the trade concrete (Table 10). With eight micr
 
 PP = 4 的示意例子把这个取舍落到了数上 (Table 10). 八个 microbatch 时, 循环放置把未配对的前向集中在靠前的 rank 上, rank 0 最多积压 11 个; V 放置每个 rank 都是 6 个. 这些是调度上的高水位, 不是 GB 数: 不同 stage 保留的数据大小可能不同, 重算也会改变哪些值要留下来. 放置方式同时决定保留前向激活的最大值和各 rank 间的偏斜.
 
-> **看表:** Table 10 里 1F1B-V 把各 rank 峰值拉平到 6, 可 Figure 25 的 bubble 从 15.8% 涨到 23.8%. Qi et al. (2024a) 的 V 形调度本来是以低 bubble 著称的, 这里为什么反而变差?
-> 答: V 形调度的低 bubble 依赖把反向拆成 B (输入梯度) 和 W (权重梯度), 让 W 去填空档; §6.1 写明 Olmo 的 stage 反向是不拆分的, W 没法单独挪. 只保留 V 的放置而去掉 B/W 拆分, 剩下的就只是显存平衡效果: rank 0 同时持有第一个和最后一个虚拟 stage, 最后一个 stage 的反向要等整条前向走完才能开始, 而它又和 rank 0 的第一个 stage 抢同一张卡的时间片, 首尾两端的空档更难填. 这一条因果是我按调度结构推的, 报告只给了两个 bubble 数, 没解释原因. 另外 Table 10 的积压总数: 循环放置 11+9+7+5 = 32, V 放置 6×4 = 24, V 不只是重新分配, 总量也少了.
+V 形调度的低 bubble 依赖把反向拆成 B (输入梯度) 和 W (权重梯度), 让 W 去填空档; §6.1 写明 Olmo 的 stage 反向是不拆分的, W 没法单独挪. 只保留 V 的放置而去掉 B/W 拆分, 剩下的就只是显存平衡效果: rank 0 同时持有第一个和最后一个虚拟 stage, 最后一个 stage 的反向要等整条前向走完才能开始, 而它又和 rank 0 的第一个 stage 抢同一张卡的时间片, 首尾两端的空档更难填. 这一条因果是我按调度结构推的, 报告只给了两个 bubble 数, 没解释原因. 另外 Table 10 的积压总数: 循环放置 11+9+7+5 = 32, V 放置 6×4 = 24, V 不只是重新分配, 总量也少了.
 
 Placement also decides which physical rank computes the loss. The final virtual stage computes the languagemodel loss and begins backward, and its physical rank follows the placement rather than a rank-number convention. Loss and metric handling must therefore follow stage identity, not the highest-numbered PP rank.
 
@@ -1592,8 +1585,7 @@ We encountered this hazard in a PP–EP correctness failure. Rowwise expert exec
 
 我们在一次 PP 加 EP 的正确性故障里碰上了这个风险. rowwise 专家执行保存了一份自管的对称内存 dispatch 数据, 后面算专家权重梯度要用. 对应的反向还没读它, 后来的一次流水线前向就可能复用了这块存储. 在 BF16 下, 被破坏的值可能仍是有限数, 所以 loss 没出 NaN 并不能排除梯度悄悄算错; 同一个 bug 在 MXFP8 下则因为 scale 过期, 表现为梯度范数变成无穷大. 修复用了两条互补的规则: 调度高水位决定预留多少个槽位; 保存的 autograd 值对自己那个槽位持有租约, 直到它的反向消费者结束 (Figure 22).
 
-> **问:** 同一个覆盖 bug, 为什么 BF16 下悄无声息, MXFP8 下却直接梯度范数 inf?
-> 答: BF16 槽位被覆盖后, 里面是另一个 microbatch 的合法激活, 量级相同, 算出的 Wgrad 只是错, 不会溢出. MXFP8 一条路由有 qdata 和 scale 两份 (§5.7), 每 32 个元素共用一个 E8M0 scale, 也就是一个 2 的幂次. 覆盖时如果 qdata 和 scale 不是同一批写入的 (比如 scale 行是旧的, qdata 是新的, 或者反过来), 反量化就是用错的指数去乘, 差几个指数位就是几个数量级, 很容易冲到 inf. 报告只写了「stale scales」, 没说是哪一份先被覆盖, 上面的配错机制是按 §5.7 的双份布局推的. 这也说明 MXFP8 在这里起了检测器的作用: 想在 BF16 下抓这类问题, 只看 loss 是否有限不够, 得对比 PP 和非 PP 下的逐参数梯度.
+BF16 槽位被覆盖后, 里面是另一个 microbatch 的合法激活, 量级相同, 算出的 Wgrad 只是错, 不会溢出. MXFP8 一条路由有 qdata 和 scale 两份 (§5.7), 每 32 个元素共用一个 E8M0 scale, 也就是一个 2 的幂次. 覆盖时如果 qdata 和 scale 不是同一批写入的 (比如 scale 行是旧的, qdata 是新的, 或者反过来), 反量化就是用错的指数去乘, 差几个指数位就是几个数量级, 很容易冲到 inf. 报告只写了「stale scales」, 没说是哪一份先被覆盖, 上面的配错机制是按 §5.7 的双份布局推的. 这也说明 MXFP8 在这里起了检测器的作用: 想在 BF16 下抓这类问题, 只看 loss 是否有限不够, 得对比 PP 和非 PP 下的逐参数梯度.
 
 Two schedule features change what the lease rule must cover. Recomputation (Section 13) changes whether a value must survive from the original forward, and two-batch overlap (TBO, Section 15.3) can multiply simultaneous acquisitions within one scheduled forward.
 
@@ -2021,8 +2013,7 @@ CUDA Graph replay could remove much of this remaining submission cost, but its s
 
 CUDA Graph 重放能去掉剩下提交开销的一大部分, 但它要求地址稳定, 形状固定, 和流水线里同时存活的多个 microbatch 冲突, 所以生产路径没有做图捕获. §15.6 分析这个取舍, 只把重放当作诊断用的上限, 用来区分设备服务时间和 eager 提交开销.
 
-> **停一下:** §8.5 说 rowwise 路径「无同步」, 但同一段又说计数交换是 EP-MP 组上的一次 all-gather, 外加 NVSHMEM barrier. 这和 block 路径的同步到底差在哪?
-> 答: 差在等的是谁. block 路径里, 计数要拷到 CPU, Python 拿到切分列表才能发起 all-to-all, CPU 停在那里, 提交余量清零 (§8.4, Figure 33). rowwise 路径里, all-gather 和 barrier 是 GPU stream 上的操作, 等待发生在设备队列里, CPU 照常往后提交 (§8.4 末段对 stream event 的区分). 所以 GPU 端的跨 rank 等待一点没少, 慢 rank 照样会拖住快 rank; 去掉的只是 host 的参与. 这也意味着「无同步」不保证没有 GPU 空闲: 如果 EP-MP 组内路由不均衡, 卡在 barrier 上的 GPU 照样闲着, 只是 CPU 不再陪着等. 附录 B.5 的单 rank trace 只能证明后一半, 证明不了前一半.
+差在等的是谁. block 路径里, 计数要拷到 CPU, Python 拿到切分列表才能发起 all-to-all, CPU 停在那里, 提交余量清零 (§8.4, Figure 33). rowwise 路径里, all-gather 和 barrier 是 GPU stream 上的操作, 等待发生在设备队列里, CPU 照常往后提交 (§8.4 末段对 stream event 的区分). 所以 GPU 端的跨 rank 等待一点没少, 慢 rank 照样会拖住快 rank; 去掉的只是 host 的参与. 这也意味着「无同步」不保证没有 GPU 空闲: 如果 EP-MP 组内路由不均衡, 卡在 barrier 上的 GPU 照样闲着, 只是 CPU 不再陪着等. 附录 B.5 的单 rank trace 只能证明后一半, 证明不了前一半.
 
 Host-wait behavior depends on the running configuration. Appendix B.6 records the verification checklist and a graph-replay microbenchmark that isolates the submission tax on short expert operations. In the captured rowwise timeline of Appendix B.5, no host wait interrupts submission for the eight-layer BF16 EP8 development model with a shared expert. This is a single-rank captured instance of the mechanism, not a guarantee for every configuration or execution phase; initialization, compilation, warmup, and buffer allocation remain outside the steady-state scope.
 
@@ -2407,7 +2398,7 @@ On every capacity-enabled sync-free forward, all expert-parallel ranks all-gathe
 
 每次开了容量的无同步前向里, 所有 expert 并行 rank 先 all-gather 各自请求的 split 计数, 再各自独立推出同一个确定性的 **keep 矩阵**. 对每个目标 rank, 当前策略按「本地 expert 为主序, 源 rank 为次序」把计数展平, 累加放行路由直到达到 $C_{\mathrm{rank}}$, 每个 (源, expert) split 内部保留一段前缀. 还原和 combine 时把尾部丢掉的路由 mask 掉. 这样溢出量有界, 结果可复现, 但排序会影响哪些路由留下来; 所以评估容量时应该报告丢弃的分布, 不能只报总数.
 
-> 答: 是. 代码 `nn/moe/v2/ep_no_sync_common.py` 里, 对每个目标 rank 把 `global_requested` 按 `permute(2, 0, 1)` 展平成 (本地 expert, 源 rank) 的顺序, 做 `cumsum` 后 `clamp(max=rank_capacity)`, 差分得到每段放行数. 所以一旦溢出, 先被截掉的总是编号最大的本地 expert, 其次是编号大的源 rank; 编号 0 的本地 expert 只要自己的请求不超过整个预算, 就永远不会丢. 被丢的路由集中在固定的几个 expert 上, 这些 expert 的梯度信号因此系统性偏少, 和 10.2 节「expert 被请求却收不到信号」是同一件事, 只是落点由编号决定, 不由负载决定. 式 (29) 只比较丢弃总数, 没涉及这种分布; 报告这里要求「报告丢弃的分布」, 正是因为这个顺序. 报告的设计意图是近乎不丢 (下面的方框), 偏置只在罕见溢出时出现; 如果溢出频繁, 轮转起始 expert 之类的做法能消除偏置, 但报告和代码里都没有, 只是从已知数字推出的说法, 没有数据验证.
+是. 代码 `nn/moe/v2/ep_no_sync_common.py` 里, 对每个目标 rank 把 `global_requested` 按 `permute(2, 0, 1)` 展平成 (本地 expert, 源 rank) 的顺序, 做 `cumsum` 后 `clamp(max=rank_capacity)`, 差分得到每段放行数. 所以一旦溢出, 先被截掉的总是编号最大的本地 expert, 其次是编号大的源 rank; 编号 0 的本地 expert 只要自己的请求不超过整个预算, 就永远不会丢. 被丢的路由集中在固定的几个 expert 上, 这些 expert 的梯度信号因此系统性偏少, 和 10.2 节「expert 被请求却收不到信号」是同一件事, 只是落点由编号决定, 不由负载决定. 式 (29) 只比较丢弃总数, 没涉及这种分布; 报告这里要求「报告丢弃的分布」, 正是因为这个顺序. 报告的设计意图是近乎不丢 (下面的方框), 偏置只在罕见溢出时出现; 如果溢出频繁, 轮转起始 expert 之类的做法能消除偏置, 但报告和代码里都没有, 只是从已知数字推出的说法, 没有数据验证.
 
 <!-- page 71 of 168 -->
 
@@ -2543,8 +2534,7 @@ This applies Equation 30 with accumulating hard counts and current-microbatch so
 
 这是把式 (30) 用在累积的硬计数和当前微批的 soft 分数上. 为什么这种硬/软耦合不一定能跟踪请求负载的均衡, 见 10.7 节. 第一个微批只看到自己的计数, 第二个看到前两个的, 依此类推. 早先的微批一旦做完反向, 后面的计数到了也不会重算它的梯度. 这种方法在线扩大了有效范围, 但除非 $M = 1$, 它不是精确的优化器 batch 目标. Qiu et al. (2025) 分析的带缓冲近似在微批之间累积路由计数. Megatron 的实现维护按微批个数平均的 $\overline{C}_{m,i} = m^{-1} \sum_{j \leq m} C_{j,i}^{\mathrm{req}}$, 用的是 $N \sum_i \mathrm{sg}(\overline{C}_{m,i}) Q_{m,i} / (K T_m^2)$, sg 表示 stop-gradient (NVIDIA, 2026e). 所有微批的有效 token 数相同时, 它和式 (32) 相等. 有 padding, mask 或变长打包微批时, 式 (32) 是本文提出的按 token 加权的推广, 不是 Megatron 公式的字面描述.
 
-> **对一下:** Megatron 的 $\mathrm{sg}(\overline{C}_{m,i}) Q_{m,i} / (K T_m^2)$ 和式 (32) 在微批 token 数不等时到底差在哪?
-> 答: 把两者都写成 $\sum_{j \leq m} C_{j,i}^{\mathrm{req}}$ 乘 $Q_{m,i}$ 再除以一个分母. 式 (32) 的分母是 $K T_m \sum_{j \leq m} T_j$; Megatron 的分母是 $K T_m \cdot m T_m$. 两者只差 $\sum_{j \leq m} T_j$ 和 $m T_m$, 也就是「前 $m$ 个微批的真实 token 总数」和「当前微批 token 数乘以 $m$」. $T_j$ 全相等时两者一致. 若当前微批的有效 token 比之前少 (例如 mask 掉的 padding 多), Megatron 的分母偏小, 硬频率被高估, 这个微批的均衡梯度偏大; 反过来就偏小. 所以 Megatron 式子的硬频率在变长微批下不再是概率向量, 其分量和不等于 1, 式 (30) 「均衡时为 1」的归一化也随之失效. 报告只说式 (32) 是推广, 没给变长微批下两者的实测差别.
+把两者都写成 $\sum_{j \leq m} C_{j,i}^{\mathrm{req}}$ 乘 $Q_{m,i}$ 再除以一个分母. 式 (32) 的分母是 $K T_m \sum_{j \leq m} T_j$; Megatron 的分母是 $K T_m \cdot m T_m$. 两者只差 $\sum_{j \leq m} T_j$ 和 $m T_m$, 也就是「前 $m$ 个微批的真实 token 总数」和「当前微批 token 数乘以 $m$」. $T_j$ 全相等时两者一致. 若当前微批的有效 token 比之前少 (例如 mask 掉的 padding 多), Megatron 的分母偏小, 硬频率被高估, 这个微批的均衡梯度偏大; 反过来就偏小. 所以 Megatron 式子的硬频率在变长微批下不再是概率向量, 其分量和不等于 1, 式 (30) 「均衡时为 1」的归一化也随之失效. 报告只说式 (32) 是推广, 没给变长微批下两者的实测差别.
 
 Equation 32 defines a conceptual global loss. A per-rank implementation can use local soft-score sums and rely on distributed gradient reduction, but the scale of that local contribution follows from the gradient-averaging convention of the DDP implementation—here MultiGroupDistributedDataParallel (Section 4)—so the correct group-size factor differs across training stacks rather than transferring between them.
 
@@ -2622,8 +2612,7 @@ Under PP, the controller requires a stage-local balance group: the default WORLD
 
 在 PP 下, 控制器需要 stage 内的 balance group: 默认的 WORLD 组会把不同 router 层的计数混在一起. 本报告不对这个控制器的模型质量, 稳定性, 反馈范围上的行为或系统成本作任何结论.
 
-> **停一下:** 10.6 节说默认 WORLD 组在 PP 下会混入不同 router 层的计数, 那 Olmo 的默认配置开 PP 时偏置控制器还对不对?
-> 答: 不对. 代码 `nn/moe/router.py` 的 `post_batch` 里, 累积的 `batch_size_per_expert` 直接做 `dist.all_reduce(..., group=self.group)`, `group` 没配置时是 `None`, 也就是 WORLD. post-batch hook 在每个 stage 上按层顺序逐个调用各 router 的 `post_batch`, WORLD 上的 all-reduce 按调用顺序配对, 于是 stage 0 的第 1 个 MoE 层和 stage 1 的第 1 个 MoE 层 (模型里是不同的层) 被加在一起. 每层拿到的是几层混合后的计数, 式 (37) 的 sign 对某一层可能是反的. 如果各 stage 上的 MoE 层数不同, all-reduce 次数对不上, 就是 10.5 节说的「违反集合通信顺序」, 可能卡死. 报告把这写成使用约束, 代码里这一处没看到 PP 开启时自动换组或报错的防护; 其他调用点有没有, 只看了这一个文件, 不确定.
+不对. 代码 `nn/moe/router.py` 的 `post_batch` 里, 累积的 `batch_size_per_expert` 直接做 `dist.all_reduce(..., group=self.group)`, `group` 没配置时是 `None`, 也就是 WORLD. post-batch hook 在每个 stage 上按层顺序逐个调用各 router 的 `post_batch`, WORLD 上的 all-reduce 按调用顺序配对, 于是 stage 0 的第 1 个 MoE 层和 stage 1 的第 1 个 MoE 层 (模型里是不同的层) 被加在一起. 每层拿到的是几层混合后的计数, 式 (37) 的 sign 对某一层可能是反的. 如果各 stage 上的 MoE 层数不同, all-reduce 次数对不上, 就是 10.5 节说的「违反集合通信顺序」, 可能卡死. 报告把这写成使用约束, 代码里这一处没看到 PP 开启时自动换组或报错的防护; 其他调用点有没有, 只看了这一个文件, 不确定.
 
 When used without LBL, the controller removes the balancing-loss gradient and its potential interference with cross-entropy. Its behavior still depends on the update rate and feedback scope. A large $\gamma$ can make loads oscillate around the target; a small value can lag behind a changing router; and a broad feedback scope
 
@@ -2891,7 +2880,7 @@ For every token, the auxiliary gradient transfers soft mass toward experts whose
 
 对每个 token, 辅助梯度把 soft 质量挪向请求负载 $f_i$ 低于分数加权平均的 expert. 这是设计中想要的均衡压力. 但一个任务偏好, 常被选中的 expert 仍可以只以任意小的分差保持胜出, 同时冷门或死 expert 吸走大部分可微质量. 所以梯度改善代理目标的速度, 可以快过它改善请求选择直方图的速度.
 
-> 答: 在 top-K 分配不变的区域里是. 式 (53) 对每个 token 都把 soft 质量从 $f_i$ 高的 expert 挪向 $f_i$ 低的 expert, 挪的量正比于 $p_{t,i}$, 不看这个 token 当前的胜者和第二名之间分差多大. 只要胜者的分数还在第 $K+1$ 名之上, $f$ 就不变, 梯度会继续把质量挪给冷门和死 expert, 一直到某个 token 的排序翻转. 翻转之前, 每一步都在把 $P$ 往与 $f$ 反向的方向推, 也就是让式 (41) 的交叉项变负; 而交叉熵在同时奖励胜者保持胜出. 两股力合起来的稳态正是 10.7.5 节的构造: 胜者以很小分差赢, 死 expert 拿走 soft 质量. 所以 Gerrymandering 不需要 router 「主动学会作弊」, 它是式 (53) 在分配不变区内的自然走向; 能把 router 拉回均衡的只有排序真正翻转, $f$ 跳变的那一刻. 10.9 节建议监控 top-K 与 top-$(K+1)$ 的分差, 原因就在这里: 分差越小, 说明 soft 质量越多地堆在了没被选中的 expert 上.
+在 top-K 分配不变的区域里是. 式 (53) 对每个 token 都把 soft 质量从 $f_i$ 高的 expert 挪向 $f_i$ 低的 expert, 挪的量正比于 $p_{t,i}$, 不看这个 token 当前的胜者和第二名之间分差多大. 只要胜者的分数还在第 $K+1$ 名之上, $f$ 就不变, 梯度会继续把质量挪给冷门和死 expert, 一直到某个 token 的排序翻转. 翻转之前, 每一步都在把 $P$ 往与 $f$ 反向的方向推, 也就是让式 (41) 的交叉项变负; 而交叉熵在同时奖励胜者保持胜出. 两股力合起来的稳态正是 10.7.5 节的构造: 胜者以很小分差赢, 死 expert 拿走 soft 质量. 所以 Gerrymandering 不需要 router 「主动学会作弊」, 它是式 (53) 在分配不变区内的自然走向; 能把 router 拉回均衡的只有排序真正翻转, $f$ 跳变的那一刻. 10.9 节建议监控 top-K 与 top-$(K+1)$ 的分差, 原因就在这里: 分差越小, 说明 soft 质量越多地堆在了没被选中的 expert 上.
 
 <!-- page 80 of 168 -->
 
@@ -2971,8 +2960,7 @@ This establishes reachability of the predicted surrogate-hacking signature for t
 
 这确立了在这个配置下, 预测的代理目标被钻空子的特征是可达的: 训练可以在降低有效目标的同时, 让语言建模和路由工作负载都变差. 它没有找出通用的系数阈值, 也没有确定这种失效多常发生. 这些曲线是随机训练 batch 上的值, 不是在一个固定 batch 上重新评估的损失, 而且归档指标里没有同一范围的 $f$ 和 $P$ 向量. 要把这条轨迹归因于精确的硬/软反向构造, 需要式 (41) 的中心化项, 或者来自从未被选中 expert 上的 soft 质量, top-K 与 top-$(K+1)$ 分差的等价证据. 更低的 LBL 标量并不证明 expert 工作负载更均衡.
 
-> **回看:** 图 45 下方的表里, 高系数轨迹的 LBL 和从 46.864 降到 41.278, 47 个块平均每块约 0.878, 低于 1; 按式 (41), 这是不是已经证明了反向对齐, 用不着再要 $f$ 和 $P$ 向量?
-> 答: 证明了反向对齐存在, 证明不了是哪种构造. 式 (41) 对任一个 $f$, $P$ 在同一批 token 上归一化的范围都成立, 单块值低于 1 当且仅当该范围内中心化内积为负. 这里用的是实例级 LBL, 记录值若是各序列单独算式 (30) 再平均, 那么平均低于 1 意味着至少有一部分序列, 在至少一部分块里, $f - u$ 和 $P - u$ 反向. 所以「交叉项为负」这件事, 归档的标量已经给出了. 报告说还缺的, 准确说是两个范数 $\|f - u\|_2$ 和 $\|P - u\|_2$: 交叉项为负既可能来自 10.7.5 节那种死 expert 吸走 soft 质量的构造, 也可能来自 10.7.3 节那种两边偏差都不大的温和反向. 不均衡度从 2.748 涨到 6.317 说明 $\|f - u\|$ 在变大, 但 $P$ 是否堆到了从未被选中的 expert 上, 标量里看不出来. 另外低系数分支稳定在约 47, 即每块约 1, 对应式 (41) 里交叉项接近零; 不均衡度在 2.5 左右, $f$ 并不均匀, 所以要么 $P$ 接近均匀, 要么两者偏差近乎正交, 标量分不出这两种情况. 记录值具体怎么在序列和块上聚合, 报告没写, 上面的推断假设它是逐序列算式 (30) 再平均.
+证明了反向对齐存在, 证明不了是哪种构造. 式 (41) 对任一个 $f$, $P$ 在同一批 token 上归一化的范围都成立, 单块值低于 1 当且仅当该范围内中心化内积为负. 这里用的是实例级 LBL, 记录值若是各序列单独算式 (30) 再平均, 那么平均低于 1 意味着至少有一部分序列, 在至少一部分块里, $f - u$ 和 $P - u$ 反向. 所以「交叉项为负」这件事, 归档的标量已经给出了. 报告说还缺的, 准确说是两个范数 $\|f - u\|_2$ 和 $\|P - u\|_2$: 交叉项为负既可能来自 10.7.5 节那种死 expert 吸走 soft 质量的构造, 也可能来自 10.7.3 节那种两边偏差都不大的温和反向. 不均衡度从 2.748 涨到 6.317 说明 $\|f - u\|$ 在变大, 但 $P$ 是否堆到了从未被选中的 expert 上, 标量里看不出来. 另外低系数分支稳定在约 47, 即每块约 1, 对应式 (41) 里交叉项接近零; 不均衡度在 2.5 左右, $f$ 并不均匀, 所以要么 $P$ 接近均匀, 要么两者偏差近乎正交, 标量分不出这两种情况. 记录值具体怎么在序列和块上聚合, 报告没写, 上面的推断假设它是逐序列算式 (30) 再平均.
 
 ## 10.9 Measuring Routing Transients and Outcomes · 测量路由的瞬态与结果
 
@@ -3086,8 +3074,7 @@ Each linear weight is consumed in two orientations. Forward computes with $W ^ {
 
 每个线性层权重要以两个方向被使用. 前向用 $W^{\top}$ 计算, dgrad 用 $W$ 计算. 每个方向都需要自己的 qdata 和 scale 布局. 本节把这些 qdata 加 scale 的表示叫作 **MXFP8 计算权重缓存**, 简称 **权重缓存**. 按名义存储算, 两个 MXFP8 视图对每个原始权重值需要 $2 \times 33/32 = 2.0625$ 字节. 还没算分块 scale 的 padding, 就已经比一份两字节的 BF16 计算权重多 3.125%.
 
-> **确认:** 为什么不能只存一份 MXFP8 权重, dgrad 时转置一下就用?
-> 答: 因为 MX 的 scale 块是沿收缩维划的 (11.1.1 节, 图 47: scale 网格是 $M \times (K/32)$ 和 $(K/32) \times N$). 前向 $Y = X W^{\top}$ 沿 $d_{\mathrm{in}}$ 收缩, $W$ 的 32 值块要沿 $d_{\mathrm{in}}$ 划; dgrad $\nabla X = \nabla Y W$ 沿 $d_{\mathrm{out}}$ 收缩, 块要沿 $d_{\mathrm{out}}$ 划. 两种划法下每个 scale 覆盖的 32 个元素完全不同, 转置 qdata 不会得到另一种划法的合法表示; 要从一份 MXFP8 再量化出另一份, 又会叠加两次舍入误差. 所以只能从 BF16 (或 FP32 主权重) 各量化一次, 存两份. 同一个约束也落在 Wgrad 上: $\nabla W_e = X_e^{\mathsf{T}} \nabla Y_e$ 沿 $M_e$ 收缩 (表 15), 块要沿 token 维划, 而 rowwise buffer 里各 expert 的段按真实 $M_e$ 紧密排列, $M_e$ 不一定是 32 的倍数, 32 值块会跨过 expert 边界. 这可能是 9.5 节说当前 Wgrad 退回 BF16 grouped GEMM 的原因之一; 具体理由报告放在 11.3 节, 本段范围内没写, 跨边界这一条只是推出的说法, 没有数据验证.
+因为 MX 的 scale 块是沿收缩维划的 (11.1.1 节, 图 47: scale 网格是 $M \times (K/32)$ 和 $(K/32) \times N$). 前向 $Y = X W^{\top}$ 沿 $d_{\mathrm{in}}$ 收缩, $W$ 的 32 值块要沿 $d_{\mathrm{in}}$ 划; dgrad $\nabla X = \nabla Y W$ 沿 $d_{\mathrm{out}}$ 收缩, 块要沿 $d_{\mathrm{out}}$ 划. 两种划法下每个 scale 覆盖的 32 个元素完全不同, 转置 qdata 不会得到另一种划法的合法表示; 要从一份 MXFP8 再量化出另一份, 又会叠加两次舍入误差. 所以只能从 BF16 (或 FP32 主权重) 各量化一次, 存两份. 同一个约束也落在 Wgrad 上: $\nabla W_e = X_e^{\mathsf{T}} \nabla Y_e$ 沿 $M_e$ 收缩 (表 15), 块要沿 token 维划, 而 rowwise buffer 里各 expert 的段按真实 $M_e$ 紧密排列, $M_e$ 不一定是 32 的倍数, 32 值块会跨过 expert 边界. 这可能是 9.5 节说当前 Wgrad 退回 BF16 grouped GEMM 的原因之一; 具体理由报告放在 11.3 节, 本段范围内没写, 跨边界这一条只是推出的说法, 没有数据验证.
 
 Our optimizer also retains an FP32 main weight and FP32 optimizer states. After the MXFP8 caches have been initialized, the full BF16 initialization anchor can be released, but the two caches take its place. MXFP8 therefore does not remove the persistent training-state memory wall by itself. EP, PP, and distributed optimizer sharding remain responsible for dividing parameters, gradients, and optimizer tensors, as described in Part II.
 
@@ -3333,7 +3320,7 @@ The direction of this result matches the NVIDIA recipe study: round-ceiling scal
 
 结果的方向与 NVIDIA 的配方研究一致: round-ceiling scaling 贴着高精度基线走, floor scaling 则出现肉眼可见的 loss 退化 (Mishra et al., 2025).
 
-> 答: 先按 Table 24 的伪代码算 floor 什么时候截断. floor 取 $e=\lfloor\log_2 a\rfloor-8$, 归一化后的块最大值 $a/2^e$ 落在 $[256,512)$; 落进 $(448,512)$ 的块, 最大元素就被 `sat_E4M3` 截到 448, 最多压小 12.5%. 若块最大值在对数尺度上大致均匀, 这类块约占 $\log_2(512/448)\approx 0.19$, 即五分之一左右的 32 元素块. rceil 把 $a/2^e$ 放进 $(224,448]$, 不截断, 代价是这些块的量化步长粗一倍. 所以 floor 的误差有偏 (只压每块的最大值), rceil 的误差是无偏的舍入误差. 梯度范数 +51% 与「被截的恰好是 outlier 通道」的推断一致, 但 Figure 56 只有全模型的总梯度范数, 没有分层或分张量的数据, 这一步报告里没写, 只是从已知数字推出的说法, 没有数据验证. 另外 trunk 的前 6000 步也是 floor, 报告没有一条从头 BF16 的对照, 所以只能说「从同一点出发, floor 比 rceil 和 BF16 差」, 不能说前 6000 步没被 floor 拖累. 代码侧, `src/olmo_core/mxfp8_config.py` 的 `MXFP8ScaleMode` 只有 `floor` 和 `rceil` 两档, 环境变量缺省取 `rceil`, 与正文「默认 rceil」一致.
+先按 Table 24 的伪代码算 floor 什么时候截断. floor 取 $e=\lfloor\log_2 a\rfloor-8$, 归一化后的块最大值 $a/2^e$ 落在 $[256,512)$; 落进 $(448,512)$ 的块, 最大元素就被 `sat_E4M3` 截到 448, 最多压小 12.5%. 若块最大值在对数尺度上大致均匀, 这类块约占 $\log_2(512/448)\approx 0.19$, 即五分之一左右的 32 元素块. rceil 把 $a/2^e$ 放进 $(224,448]$, 不截断, 代价是这些块的量化步长粗一倍. 所以 floor 的误差有偏 (只压每块的最大值), rceil 的误差是无偏的舍入误差. 梯度范数 +51% 与「被截的恰好是 outlier 通道」的推断一致, 但 Figure 56 只有全模型的总梯度范数, 没有分层或分张量的数据, 这一步报告里没写, 只是从已知数字推出的说法, 没有数据验证. 另外 trunk 的前 6000 步也是 floor, 报告没有一条从头 BF16 的对照, 所以只能说「从同一点出发, floor 比 rceil 和 BF16 差」, 不能说前 6000 步没被 floor 拖累. 代码侧, `src/olmo_core/mxfp8_config.py` 的 `MXFP8ScaleMode` 只有 `floor` 和 `rceil` 两档, 环境变量缺省取 `rceil`, 与正文「默认 rceil」一致.
 
 ## 11.4 The Olmo MXFP8 Recipe for MoE · Olmo 面向 MoE 的 MXFP8 配方
 
@@ -3649,8 +3636,7 @@ The profile shows which work repeats. A normal train\_batch contains 64 projecte
 
 profile 显示了哪些工作被重复. 正常的一个 `train_batch` 包含 64 段 block forward: 8 个 block 乘 8 个 rank 本地 microbatch. per-block recompute 把这个数提到 128, 因为每个 block 的 forward 都在 backward 时重算一遍; 7 个 routed block 的每次重算都包含 dispatch 和 combine. GEMM 与 attention kernel 的总时长增加 24.8%, rank 0 的 GPU span 增加 26.7%, 与独立测得的「单位有效工作耗时增加 26.5%」很接近. 这些时长之和只是工作量指标, 不能相加成 wall time 的分解, 因为不同 stream 上的 kernel 会重叠.
 
-> **拆开:** §13.4 里 per-block recompute 把 block forward 从 64 段翻到 128 段, 为什么 GEMM 与 attention kernel 时间只涨 24.8%, 低于「backward 约为 forward 两倍, 多一遍 forward 就多 1/3」给出的约 33%?
-> 答: 先对数: 单位工作耗时涨 26.5%, 对应吞吐降到 $1/1.265\approx0.790$, 正好是 Figure 62 的 -20.95%, 两个口径自洽. 33% 的估算假设 backward 恰好是 forward 的 2 倍. 偏低的可能来源有三处. 第一, attention backward 要重算 softmax, 通常比 forward 贵出两倍以上, 分母变大, 比例就下降. 第二, 输出 logits 和 LM head 不在 transformer block 里, 不参与重算, 却算在 GEMM 总时长里; Table 32 的说明提到 logits 在 40.8 GiB 瞬态峰值里有份, 说明这部分不小. 第三, 正常模式下 router 输入本来就走 §13.2 的 output-discard checkpoint, 两种模式都有这一点重算, 抵掉了一小截差值. §13 引言说的 non-reentrant 提前停止也可能少算最后一个算子. 各项各占多少报告没拆, 只是从已知数字推出的说法, 没有数据验证. 能确定的是 24.8%, 26.7%, 26.5% 三个数很接近, 说明多出来的时间基本就是重复计算本身, 重跑 dispatch 和 combine 没有引入明显的额外等待.
+先对数: 单位工作耗时涨 26.5%, 对应吞吐降到 $1/1.265\approx0.790$, 正好是 Figure 62 的 -20.95%, 两个口径自洽. 33% 的估算假设 backward 恰好是 forward 的 2 倍. 偏低的可能来源有三处. 第一, attention backward 要重算 softmax, 通常比 forward 贵出两倍以上, 分母变大, 比例就下降. 第二, 输出 logits 和 LM head 不在 transformer block 里, 不参与重算, 却算在 GEMM 总时长里; Table 32 的说明提到 logits 在 40.8 GiB 瞬态峰值里有份, 说明这部分不小. 第三, 正常模式下 router 输入本来就走 §13.2 的 output-discard checkpoint, 两种模式都有这一点重算, 抵掉了一小截差值. §13 引言说的 non-reentrant 提前停止也可能少算最后一个算子. 各项各占多少报告没拆, 只是从已知数字推出的说法, 没有数据验证. 能确定的是 24.8%, 26.7%, 26.5% 三个数很接近, 说明多出来的时间基本就是重复计算本身, 重跑 dispatch 和 combine 没有引入明显的额外等待.
 
 <!-- page 103 of 168 -->
 
@@ -3804,8 +3790,7 @@ A selective policy can offload at most approximately a fraction $f \; \leq \; 1 
 
 选择性策略在不形成持续 D2H 积压的前提下, 最多只能 offload 约 $f \leq 1 / \rho$ 比例的候选字节. $\rho \approx 6$ 时约为六分之一, 每个 block 约 0.65 GB, 整个 microbatch 约 5 GB: 不到同一工作点上 per-block recompute 所省显存的五分之一 (Figure 62), 却要引入一个有自己失效模式的新子系统. 在当前配方下, 这点节省撑不起这个子系统.
 
-> **问:** §15.1 用 $\rho\approx6$ 否掉了 CPU offload, 但 §11.4.3 的 MXFP8 activation saving 能把要搬的字节减半左右, 两者叠起来够不够满足式 (61)?
-> 答: 按 Table 32 的数字算. MXFP8 每元素 1 字节, 外加每 32 元素 1 字节 scale, 候选字节 $A$ 从 3.96 GB 降到约 $3.96\times(1+1/32)/2\approx2.04$ GB, $A/t_f\approx198$ GB/s. 对 63 GB/s 的规格带宽 $\rho\approx3.1$, 对实测的 53 GB/s 约 3.7, 式 (61) 仍不成立. 节点层面 8 卡合计约 1.6 TB/s, 和正文的 3 TB/s 相比减半, 但正文没给双路 DDR5 主机的吸收上限具体是多少, 能不能装下核不了. 若只按 $f\le1/\rho$ 做选择性 offload, 可卸载份额从约 1/6 提到约 1/3, 每个 block 约 0.66 GB 的 MXFP8 字节, 对应约 1.3 GB 的 BF16 activation, 整个 microbatch 约 10 GB, 仍不到 per-block recompute 所省 26.13 GiB (Figure 62) 的一半, 而且要同时付 Q/DQ 和 offload 子系统两份代价. 报告没测这种组合, 以上是按表中数字推的.
+按 Table 32 的数字算. MXFP8 每元素 1 字节, 外加每 32 元素 1 字节 scale, 候选字节 $A$ 从 3.96 GB 降到约 $3.96\times(1+1/32)/2\approx2.04$ GB, $A/t_f\approx198$ GB/s. 对 63 GB/s 的规格带宽 $\rho\approx3.1$, 对实测的 53 GB/s 约 3.7, 式 (61) 仍不成立. 节点层面 8 卡合计约 1.6 TB/s, 和正文的 3 TB/s 相比减半, 但正文没给双路 DDR5 主机的吸收上限具体是多少, 能不能装下核不了. 若只按 $f\le1/\rho$ 做选择性 offload, 可卸载份额从约 1/6 提到约 1/3, 每个 block 约 0.66 GB 的 MXFP8 字节, 对应约 1.3 GB 的 BF16 activation, 整个 microbatch 约 10 GB, 仍不到 per-block recompute 所省 26.13 GiB (Figure 62) 的一半, 而且要同时付 Q/DQ 和 offload 子系统两份代价. 报告没测这种组合, 以上是按表中数字推的.
 
 ## 15.2 Wave Overlap Was Not a Reliable Win · Wave overlap 不是稳定的收益
 
@@ -3847,8 +3832,7 @@ Figure 64 Two-batch overlap improves throughput by 1%, compared with a 17% ideal
 
 **TBO 下并发 kernel 耗时更长.** Olmo 的 rowwise NVSHMEM 通信不是不占 SM 的直接内存访问 (DMA) 传输. 它在路由粒度上的 PUT 和 GET kernel 要用 SM 调度和内存系统资源, 而 expert GEMM 也要用这些资源. profile 里, TBO 让 503.6 ms 的通信与计算重叠, 相当于 EP 传输区间的 72.2%. 与此同时, EP 传输的总时长增加 98.9%, GEMM 增加 20.4%, attention 增加 16.5%. 这些总和把争用和两条 lane 上更小 kernel 的效率下降混在一起, 彼此之间也可能重叠, 不能相加成 wall time 的分解. 取各区间的并集, GPU span 下降 0.9%, 与独立测得的 1.00% 吞吐提升一致. 所以争用确实存在, 但在这个配置下还没有完全吃掉 overlap 的收益. NCCL All-to-All 的争用特征可能不同, 但它保留了 rowwise EP 去掉的打包和解包置换.
 
-> **对一下:** §15.3 把 TBO 只拿到 1% 归因于 rowwise NVSHMEM 的 PUT/GET kernel 占 SM, 那么 DeepEP 文档里那条「围绕低干扰通信设计」的旧版 TBO, 和 Olmo 这条的差别落在哪一层?
-> 答: Figure 64 的数字给出上限: EP 传输占 GPU span 的 14.8%, 全藏住是 $1/(1-0.148)\approx1.17$, 即 17%. Olmo 实际藏住了 72.2% 的传输区间, 若无争用应得约 $1/(1-0.148\times0.722)\approx1.12$, 实得 1%, 差额全被三类 kernel 变慢 (传输 +98.9%, GEMM +20.4%, attention +16.5%) 吃掉. 所以瓶颈在通信 kernel 与计算 kernel 抢同一批 SM 和内存带宽. DeepEP 的思路是让通信尽量少占计算资源, 例如它的低延迟 kernel 用 hook 方式接收, 通信期间不占 SM, 报告只用一句话带过, 没给对照数据. 按本报告的因果链, 要让 TBO 在 Olmo 上划算, 需要的就是 §15 开头那张表里 TBO 一行写的「更低的通信干扰」, 换 kernel 实现比调调度更关键. DeepEP 那条路径在 Olmo 的形状上能拿多少, 报告里没写.
+Figure 64 的数字给出上限: EP 传输占 GPU span 的 14.8%, 全藏住是 $1/(1-0.148)\approx1.17$, 即 17%. Olmo 实际藏住了 72.2% 的传输区间, 若无争用应得约 $1/(1-0.148\times0.722)\approx1.12$, 实得 1%, 差额全被三类 kernel 变慢 (传输 +98.9%, GEMM +20.4%, attention +16.5%) 吃掉. 所以瓶颈在通信 kernel 与计算 kernel 抢同一批 SM 和内存带宽. DeepEP 的思路是让通信尽量少占计算资源, 例如它的低延迟 kernel 用 hook 方式接收, 通信期间不占 SM, 报告只用一句话带过, 没给对照数据. 按本报告的因果链, 要让 TBO 在 Olmo 上划算, 需要的就是 §15 开头那张表里 TBO 一行写的「更低的通信干扰」, 换 kernel 实现比调调度更关键. DeepEP 那条路径在 Olmo 的形状上能拿多少, 报告里没写.
 
 **Splitting the microbatch roughly doubles the host scheduling work.** Each half-batch lane has its own attention, dispatch, expert, combine, and synchronization stages. The profile records 89.8% more kernel launches and 126.4% more CUDA API calls than normal execution. Kernel-idle gaps of at least 10 µs also become 2.09× as frequent, although total idle time within the projected range rises by only 9.7 ms. The CPU remains far enough ahead at this rank-local microbatch size, so launch work does not erase the small win. At smaller microbatches or on a faster kernel path, the same extra submission work moves the system closer to a launch-limited regime. CUDA Graph replay could lower this cost, but the current stack has no stable graph path that captures this schedule end to end.
 
@@ -4094,7 +4078,7 @@ Across repeated internal tuning runs, we found $\alpha   =   0 . 5 3$ to be a us
 
 在多次内部调参运行中, 我们发现 $\alpha = 0.53$ 是个好用的经验设置: 与 $\alpha = 0.5$ 相比, 它更稳定地消除了 batch 增大处肉眼可见的弯折. 这个修正很小; batch 翻倍时, 学习率只比平方根缩放高 $2^{0.03}-1\approx2.1\%$. 修正的方向与上文 Adam 二阶矩适应慢的解释一致, 但具体数值是从实验里挑出来的, 不是从理论推出, 也不是拟合 Figure 66 那一条曲线得到的. 所以我们把 0.53 当作 Olmo 的训练配方给出, 不当作通用的缩放指数.
 
-> 答: 累计倍数是 $24^{0.53}/24^{0.5}=24^{0.03}\approx1.10$, 走完整个 warmup 后学习率比平方根规则高约 10%. 单次看, 6→9 约 1.2%, 9→15 约 1.5%, 15→24 约 1.4%, 每次都很小, 但会一直叠加到训练结束. 两种解释的时间特征不同. 二阶矩滞后: batch 变大后梯度噪声下降, 但 $\mathbb{E}_{\beta_2}[G_i^2]$ 里还留着旧的大噪声, 式 (71) 的分母偏大, 步长偏小, 等累加器追上 (约 $1/(1-\beta_2)$ 步) 后自行恢复; 这是暂时的. 指数偏小造成的学习率不足则一直存在. 把 $\alpha$ 从 0.5 改成 0.53, 是用一个永久的学习率上调去补一个本应暂时的滞后, 两者在机理上并不一一对应. 若主因是滞后, 更对口的做法是切换后短时间内放大学习率再回落, 或同时调 $\beta_2$, 也就是 Malladi et al. 那种连矩系数一起缩放的做法. 报告没给 $\beta_2$ 的值, 也没在 Figure 66 里放 $\alpha=0.53$ 的对照曲线, 读者没法区分两种解释, 也核不了「0.53 消除了弯折」这一句.
+累计倍数是 $24^{0.53}/24^{0.5}=24^{0.03}\approx1.10$, 走完整个 warmup 后学习率比平方根规则高约 10%. 单次看, 6→9 约 1.2%, 9→15 约 1.5%, 15→24 约 1.4%, 每次都很小, 但会一直叠加到训练结束. 两种解释的时间特征不同. 二阶矩滞后: batch 变大后梯度噪声下降, 但 $\mathbb{E}_{\beta_2}[G_i^2]$ 里还留着旧的大噪声, 式 (71) 的分母偏大, 步长偏小, 等累加器追上 (约 $1/(1-\beta_2)$ 步) 后自行恢复; 这是暂时的. 指数偏小造成的学习率不足则一直存在. 把 $\alpha$ 从 0.5 改成 0.53, 是用一个永久的学习率上调去补一个本应暂时的滞后, 两者在机理上并不一一对应. 若主因是滞后, 更对口的做法是切换后短时间内放大学习率再回落, 或同时调 $\beta_2$, 也就是 Malladi et al. 那种连矩系数一起缩放的做法. 报告没给 $\beta_2$ 的值, 也没在 Figure 66 里放 $\alpha=0.53$ 的对照曲线, 读者没法区分两种解释, 也核不了「0.53 消除了弯折」这一句.
 
 **Section takeaway.** Critical batch size identifies when a larger batch remains useful; the Adam learning-rate multiplier still needs tuning. In our batch-size transitions, α = 0.53 preserved the local loss trajectory more closely than square-root scaling.
 
@@ -4197,8 +4181,7 @@ Separate B300 stress measurements show that power limiting can reduce clocks and
 
 另一组 B300 压力测量表明, 功耗限制会压低时钟和吞吐. §9 的 grouped GEMM 诊断 (附录 A.12) 用极大的 expert 形状把 B300 顶到板卡功耗上限: 几乎每个遥测样本里软件功耗上限限制器都处于激活状态, SM 时钟中位数从 1174 MHz 降到 960 MHz, grouped GEMM 吞吐中位数从 1366 TFLOP/s 降到 1163 TFLOP/s; 而每次试验的每 MHz 吞吐 (该次吞吐除以它的平均 SM 时钟), 在同一个 kernel 模板上按形状取中位数, 都落在 1.16 到 1.19 TFLOP/s/MHz. 那次运行改的是形状而非操作数取值, 所以它说明这款硬件如何响应, 回答不了 Table 34 里是什么触发了响应. 在压力诊断里, 吞吐随时钟降低而下降. 这些测量不能说明原始运行里操作数取值为什么改变了耗时. Table 35 汇总了与「功耗加时钟」假说相关的观测. 按 §19.3 的做法对齐操作数, 就能控制住观测到的耗时效应, 不必先在几种机制之间做出判断.
 
-> **回看:** §19.2 用 B300 压力测试里「每 MHz 吞吐近乎恒定」去支撑功耗降频假说, 可 Table 34 里 dense GEMM 在常数填充下几乎不变 (24.350 对 24.724 ms), grouped GEMM 却快了 34%; 单靠「比特翻转少, 功耗低, 时钟高」解释得了这个差别吗?
-> 答: 按降频假说, 时间与时钟成反比, 常数填充时两种 GEMM 的翻转都应该很少. 若都处在功耗上限, 两者应该一起变快; dense 不变, 说明至少 dense 那次没有被功耗卡住, 或者它的耗时主要不由时钟决定. 一种可能是工作点不同: grouped GEMM 8 组各 16,384 行, 总量与 dense 的 $M=131{,}072$ 相同, 但 kernel 模板和 tile 调度不同, 各自离功耗上限多远可以不一样, 离得近的那个才对比特翻转敏感. 全零时 dense 也降了 21%, 与「零值翻转最少, 把 dense 也压到上限以下」相符. 这条推断要靠同时记录 SM 时钟和功耗来验证, 正文承认这次运行没记; 按 Table 35 只能确认「功耗限制会降频」和「取值会改功耗」两段, 中间「本次运行确实触发了降频」这一环没有数据, 只是从已知数字推出的说法, 没有数据验证.
+按降频假说, 时间与时钟成反比, 常数填充时两种 GEMM 的翻转都应该很少. 若都处在功耗上限, 两者应该一起变快; dense 不变, 说明至少 dense 那次没有被功耗卡住, 或者它的耗时主要不由时钟决定. 一种可能是工作点不同: grouped GEMM 8 组各 16,384 行, 总量与 dense 的 $M=131{,}072$ 相同, 但 kernel 模板和 tile 调度不同, 各自离功耗上限多远可以不一样, 离得近的那个才对比特翻转敏感. 全零时 dense 也降了 21%, 与「零值翻转最少, 把 dense 也压到上限以下」相符. 这条推断要靠同时记录 SM 时钟和功耗来验证, 正文承认这次运行没记; 按 Table 35 只能确认「功耗限制会降频」和「取值会改功耗」两段, 中间「本次运行确实触发了降频」这一环没有数据, 只是从已知数字推出的说法, 没有数据验证.
 
 Inline compression is another possible mechanism, but we have no evidence that it was active in this experiment. NVIDIA documents that Hopper can transfer compressible global memory using fewer physical bytes and thereby exceed nominal uncompressed bandwidth (NVIDIA, 2026s). This is an opt-in property of an individual allocation, requested through the CUDA Driver API; it is not a general promise that ordinary tensors are compressed (NVIDIA, 2026o). Our benchmark used ordinary PyTorch allocations on a Blackwell B300 and never requested the compressible-memory attribute. A later check on the same GPU class with the current PyTorch allocator found that an ordinary tensor, when it could be queried at all, reported no compression attribute; that check describes the current allocator rather than the environment of the original run. The high arithmetic intensity of these GEMMs and the different constant-fill behavior of grouped and dense kernels also argue against assuming a single bandwidth-only explanation.
 
@@ -4510,8 +4493,7 @@ gradient unchanged. Changing the merge rule is therefore also a parameter-family
 
 反向结果显示了 Olmo 参数化的第二个好处. router 系数固定时, 它的输入 Jacobian 尺度与稠密参照接近, 路由和共享 down 投影的梯度也保持系数为 1 时的尺度. 相比之下, 在 $K = 4$ 时, routed-unit-sum 归一化把路由 down 投影梯度的 RMS 降到 Olmo 的 0.25 倍, 共享 down 投影的梯度却不变. 所以, 除非初始化和优化器跟着一起调, 改合并规则也等于按参数族分别改了学习率.
 
-> **问:** routed-unit-sum 让路由 down 投影梯度降到 0.25×; 训练用的是 AdamW, 梯度的整体缩放会被二阶矩归一化抵消, 为什么还说它等于改学习率?
-> 答: 0.25 就是系数比 $p_i/(Kp_i)=1/K$: 式 (80) 里 $f_i$ 被乘 $r_i$, 所以 $\partial L/\partial W_d^{(i)}$ 同比例缩放. 对 Adam 而言, 一个参数张量的梯度整体乘常数, 更新量 $m/\sqrt{v}$ 基本不变 (只在梯度量级接近 $\epsilon$ 时才有差别), 被抵消的是「梯度小 4 倍」这一半. 没被抵消的是另一半: 同样大小的 $\Delta W_d^{(i)}$ 经过系数 $p_i$ 而非 $Kp_i$ 作用到输出, 对 $y_{\mathrm{MoE}}$ 的影响小 $K$ 倍, 而共享分支的有效步长不变. 所以在 Adam 下, 「路由参数族的有效学习率相对共享参数族变了 $K$ 倍」这一结论仍然成立, 只是来源从梯度大小换成了输出端的系数. 报告 §21.4 把 weight decay 和梯度裁剪也列进去, 裁剪按全局范数作用, 路由梯度变小会改变裁剪触发点, 这一点在 Adam 下不会被抵消. 报告没有给训练中的对照实验, 上面的 Adam 分析是推断.
+0.25 就是系数比 $p_i/(Kp_i)=1/K$: 式 (80) 里 $f_i$ 被乘 $r_i$, 所以 $\partial L/\partial W_d^{(i)}$ 同比例缩放. 对 Adam 而言, 一个参数张量的梯度整体乘常数, 更新量 $m/\sqrt{v}$ 基本不变 (只在梯度量级接近 $\epsilon$ 时才有差别), 被抵消的是「梯度小 4 倍」这一半. 没被抵消的是另一半: 同样大小的 $\Delta W_d^{(i)}$ 经过系数 $p_i$ 而非 $Kp_i$ 作用到输出, 对 $y_{\mathrm{MoE}}$ 的影响小 $K$ 倍, 而共享分支的有效步长不变. 所以在 Adam 下, 「路由参数族的有效学习率相对共享参数族变了 $K$ 倍」这一结论仍然成立, 只是来源从梯度大小换成了输出端的系数. 报告 §21.4 把 weight decay 和梯度裁剪也列进去, 裁剪按全局范数作用, 路由梯度变小会改变裁剪触发点, 这一点在 Adam 下不会被抵消. 报告没有给训练中的对照实验, 上面的 Adam 分析是推断.
 
 ## 21.4 Scope of the Initialization Result · 初始化结论的适用范围
 
@@ -4557,7 +4539,7 @@ Here we consider a response-only objective: the prompt conditions the prediction
 
 **实例级过滤把被移除的 token 留在分母里.** 另一条 instance-mask 路径把整条序列从目标中去掉, 却把它们的 token 数加回 loss 分母. 这些 token 于是以零 loss 占着非零的计数, 报告出的 loss 会比只在保留实例上精确求分母时低. 这种计法省去了在分布式下精确计算分母的开销; 偏差大小取决于过滤掉了多少实例. 跨阶段比较监督 loss 曲线时, 必须考虑分母上的这个差别.
 
-> 答: `ddp_train_module.py` 里是 `batch_num_tokens_for_loss += (~instance_mask).sum() * (labels.shape[1] - 1)`, 即每条被删序列按「序列长 - 1」个 token 计 (shift 后最后一个位置无 label), 不看这条序列里实际有多少非忽略 label. 代码注释也写明这会让 loss「artificially low」, 理由是分布式下精确统计又难又慢, 且要让每个 rank 公平参与. 若设保留实例的有效 label 数为 $n$, 被删 $m$ 条, 长度 $L$, 报告值是真值乘 $n/(n+m(L-1))$. 训练时会记录 `train/masked instances (%)`, 有这个比例和 label 统计就能事后近似还原; 但它同时缩放了梯度, 所以过滤比例随步变化时, 等于每步的有效学习率在随之波动, 这一点报告没提.
+`ddp_train_module.py` 里是 `batch_num_tokens_for_loss += (~instance_mask).sum() * (labels.shape[1] - 1)`, 即每条被删序列按「序列长 - 1」个 token 计 (shift 后最后一个位置无 label), 不看这条序列里实际有多少非忽略 label. 代码注释也写明这会让 loss「artificially low」, 理由是分布式下精确统计又难又慢, 且要让每个 rank 公平参与. 若设保留实例的有效 label 数为 $n$, 被删 $m$ 条, 长度 $L$, 报告值是真值乘 $n/(n+m(L-1))$. 训练时会记录 `train/masked instances (%)`, 有这个比例和 label 统计就能事后近似还原; 但它同时缩放了梯度, 所以过滤比例随步变化时, 等于每步的有效学习率在随之波动, 这一点报告没提.
 
 ## 22.2 Preference Training Scores Two Sequences Against a Reference · 偏好训练要对照 reference 给两条序列打分
 
@@ -4868,8 +4850,7 @@ Invalid routes use negative rank or row values. PUT kernels skip invalid routes.
 | Dispatch PUT | false | true |
 | Combine GET | true | false |
 
-> **确认:** 上表里 dispatch PUT 只要后置 barrier, combine GET 只要前置 barrier; 这两处 barrier 各自保护的是什么, 能不能省?
-> 答: 这是单边通信的可见性要求. PUT 是源 rank 往对端 buffer 写, 写完后对端要开始 grouped GEMM, 必须等所有源 rank 的写入落地, 所以 barrier 放在 PUT 之后; PUT 之前不需要, 因为对端的接收 buffer 由 lease 保证此时没人在读 (§5.7). GET 是本 rank 去对端读专家输出, 读之前必须等所有对端的专家计算写完, 所以 barrier 放在 GET 之前; 读完之后只改本地 scratch, 不需要再同步. 代码 `kernels/cuda/olmo_symm_mem_rowwise.cuh` 里每个 wrapper 都带 `pre_barrier`/`post_barrier` 两个开关, 实现就是 `nvshmemx_barrier_on_stream`. 一个后果是每次 dispatch 加 combine 至少两次全组 barrier, 等于每层两个同步点, 最慢 rank 决定进度; DeepEP 用逐 rank 的信号计数代替全组 barrier, 可以只等与自己有数据往来的 rank. 报告没讨论两者的开销差别.
+这是单边通信的可见性要求. PUT 是源 rank 往对端 buffer 写, 写完后对端要开始 grouped GEMM, 必须等所有源 rank 的写入落地, 所以 barrier 放在 PUT 之后; PUT 之前不需要, 因为对端的接收 buffer 由 lease 保证此时没人在读 (§5.7). GET 是本 rank 去对端读专家输出, 读之前必须等所有对端的专家计算写完, 所以 barrier 放在 GET 之前; 读完之后只改本地 scratch, 不需要再同步. 代码 `kernels/cuda/olmo_symm_mem_rowwise.cuh` 里每个 wrapper 都带 `pre_barrier`/`post_barrier` 两个开关, 实现就是 `nvshmemx_barrier_on_stream`. 一个后果是每次 dispatch 加 combine 至少两次全组 barrier, 等于每层两个同步点, 最慢 rank 决定进度; DeepEP 用逐 rank 的信号计数代替全组 barrier, 可以只等与自己有数据往来的 rank. 报告没讨论两者的开销差别.
 
 ## A.3 CUDA/NVSHMEM Kernels Operate per Route · CUDA/NVSHMEM kernel 按路由逐条处理
 
@@ -4976,8 +4957,7 @@ The EP degree does not divide $M _ { \mathrm { r a n k } } .$ an EP-MP group of 
 
 EP 度数并不会除掉 $M _ { \mathrm { r a n k } }$: 大小为 $M _ { E }$ 的 EP-MP 组先贡献 $M_E$ 份源 microbatch, 再把路由后的行分到同样多个目的 rank 上. Table 42 列出了几个代表性训练配置下的形状. 共享专家的计算另算, 负载不均衡会让个别 rank 偏离均衡时的期望值.
 
-> **拆开:** 式 (88) 里 $M_{\mathrm{rank}}\simeq B_\mu LK$ 与 EP 度数 $M_E$ 无关, 但 $\overline M_e$ 却随 $M_E$ 变; 拿 Table 42 的 Ultra-2 对一下, 加大 EP 对 grouped GEMM 意味着什么?
-> 答: 每个 rank 发出 $B_\mu LK$ 条路由, 组内 $M_E$ 个 rank 共发出 $M_E B_\mu LK$ 条, 均匀落到 $M_E$ 个目的 rank 上, 每个 rank 收到的仍是 $B_\mu LK$, 所以 $M_{\mathrm{rank}}$ 不含 $M_E$. 但本地专家数 $N_{\mathrm{local}}=N/M_E$ 随 EP 变小, 每个专家分到的行 $\overline M_e = M_E B_\mu LK/N$ 就随 EP 线性变大. Ultra-2: $2\times 8\mathrm K\times 4=64\mathrm K$, $N_{\mathrm{local}}=128/32=4$, $\overline M_e=16\mathrm K$; 若同样配置 EP=8, $\overline M_e$ 只有 4K. 所以加大 EP 在通信上要付出更多跨节点流量, 换来的是每个专家的 GEMM 行数更多, 离 A.8 式 (91) 的平衡点更远. Large-2 的 $\overline M_e=2\mathrm K$ 是表里最小的; 对照本节 $d=h=2048$ 的扫描, BMM 与 grouped GEMM 的交叉点在总行数 8K–16K, 即每专家 0.5K–1K 行, 2K 仍在 grouped GEMM 更快的一侧. 这层取舍报告没直接写, 是从式 (88) 推出来的.
+每个 rank 发出 $B_\mu LK$ 条路由, 组内 $M_E$ 个 rank 共发出 $M_E B_\mu LK$ 条, 均匀落到 $M_E$ 个目的 rank 上, 每个 rank 收到的仍是 $B_\mu LK$, 所以 $M_{\mathrm{rank}}$ 不含 $M_E$. 但本地专家数 $N_{\mathrm{local}}=N/M_E$ 随 EP 变小, 每个专家分到的行 $\overline M_e = M_E B_\mu LK/N$ 就随 EP 线性变大. Ultra-2: $2\times 8\mathrm K\times 4=64\mathrm K$, $N_{\mathrm{local}}=128/32=4$, $\overline M_e=16\mathrm K$; 若同样配置 EP=8, $\overline M_e$ 只有 4K. 所以加大 EP 在通信上要付出更多跨节点流量, 换来的是每个专家的 GEMM 行数更多, 离 A.8 式 (91) 的平衡点更远. Large-2 的 $\overline M_e=2\mathrm K$ 是表里最小的; 对照本节 $d=h=2048$ 的扫描, BMM 与 grouped GEMM 的交叉点在总行数 8K–16K, 即每专家 0.5K–1K 行, 2K 仍在 grouped GEMM 更快的一侧. 这层取舍报告没直接写, 是从式 (88) 推出来的.
 
 <table><tr><td rowspan="2">Scale</td><td colspan="3">Rank-local microbatch</td><td colspan="3">Expert layout</td><td colspan="2">Projection</td><td colspan="2">Routed rows</td></tr><tr><td> $B_{\mu}$ </td><td>L</td><td>K</td><td> $M_E$ </td><td>N</td><td> $N_{local}$ </td><td>d</td><td>h</td><td> $M_{rank}$ </td><td> $\overline{M_e}$ </td></tr><tr><td>Small-2</td><td>3</td><td>8K</td><td>4</td><td>8</td><td>64</td><td>8</td><td>2048</td><td>2560</td><td>96K</td><td>12K</td></tr><tr><td>Small-3</td><td>4</td><td>4K</td><td>8</td><td>8</td><td>64</td><td>8</td><td>2048</td><td>2560</td><td>128K</td><td>16K</td></tr><tr><td>Small-4</td><td>3</td><td>8K</td><td>8</td><td>8</td><td>128</td><td>16</td><td>1536</td><td>1536</td><td>192K</td><td>12K</td></tr><tr><td>Medium-2</td><td>3</td><td>8K</td><td>4</td><td>8</td><td>128</td><td>16</td><td>3584</td><td>4096</td><td>96K</td><td>6K</td></tr><tr><td>Large-2</td><td>1</td><td>8K</td><td>4</td><td>8</td><td>128</td><td>16</td><td>6144</td><td>8192</td><td>32K</td><td>2K</td></tr><tr><td>Ultra-2</td><td>2</td><td>8K</td><td>4</td><td>32</td><td>128</td><td>4</td><td>8192</td><td>10240</td><td>64K</td><td>16K</td></tr></table>
 
@@ -5175,8 +5155,7 @@ Nsight timelines at $M _ { e } = 2 \mathrm { K }$ and 32K show the same CUTLASS 
 
 $M _ { e } = 2 \mathrm { K }$ 和 32K 的 Nsight 时间线显示用的是同一个 CUTLASS grouped GEMM kernel 模板. 加上每 MHz 吞吐几乎不变, 这就排除了大 $M_e$ 时换了 kernel 分派的可能, 也没有证据表明出现了算法层面的扩展崩溃. 实际情况是, 持续运行的超大 grouped GEMM 在接近 1.1 kW 板卡功耗上限时稳定在一个更低的时钟. 这个更低工作点的具体微架构原因尚未确定. 这些极端形状下的计时, 要结合时钟, 功耗和操作数数值一起解读.
 
-> **停一下:** A.12 把 grouped GEMM 变慢归到功耗墙下的降频, 但同 FLOPs 的稠密对照一直持平在 1.41–1.42 PFLOP/s; 同样的算术量, 为什么 grouped GEMM 的时钟被压得更低?
-> 答: 先看 A.11: $T$ 为 32K 和 64K 时「all paths operate under the software power limit」, 稠密也在功耗墙下, 只是在墙下仍跑出 1.41 PFLOP/s, grouped 则稳定在它的 82.7%, 与这里 1163/1411 约 0.82 一致. 所以问题其实是: 同样卡在约 1.1 kW, 为什么 grouped 每焦耳做的有效 FLOPs 更少. Figure 73 图注给了线索: 稠密复用一个权重矩阵, grouped 读 16 个专家矩阵. 按 A.8 的式 (90), $M_e\ge 4\mathrm K$ 时两者的算术强度都在数千 FLOP/byte, 不受带宽限制, 但多出来的权重读取仍要消耗 HBM 和 L2 的能量, 同样的功耗预算留给 Tensor Core 的就少, 时钟被压低. 每 MHz 吞吐几乎不变 (1.16–1.19) 说明每个时钟周期的效率没变, 变的只是时钟. BMM 同样读 16 个矩阵, 吞吐平在 1.21–1.22 PFLOP/s, 报告没给它的时钟, 判断不了它是否也降了频. §19 说操作数数值会改变 GEMM 时间, 数值翻转率也影响功耗, 是另一个可能的因素. 报告明说「precise microarchitectural reason ... is not established」, 上面能耗分配的解释没有数据验证.
+先看 A.11: $T$ 为 32K 和 64K 时「all paths operate under the software power limit」, 稠密也在功耗墙下, 只是在墙下仍跑出 1.41 PFLOP/s, grouped 则稳定在它的 82.7%, 与这里 1163/1411 约 0.82 一致. 所以问题其实是: 同样卡在约 1.1 kW, 为什么 grouped 每焦耳做的有效 FLOPs 更少. Figure 73 图注给了线索: 稠密复用一个权重矩阵, grouped 读 16 个专家矩阵. 按 A.8 的式 (90), $M_e\ge 4\mathrm K$ 时两者的算术强度都在数千 FLOP/byte, 不受带宽限制, 但多出来的权重读取仍要消耗 HBM 和 L2 的能量, 同样的功耗预算留给 Tensor Core 的就少, 时钟被压低. 每 MHz 吞吐几乎不变 (1.16–1.19) 说明每个时钟周期的效率没变, 变的只是时钟. BMM 同样读 16 个矩阵, 吞吐平在 1.21–1.22 PFLOP/s, 报告没给它的时钟, 判断不了它是否也降了频. §19 说操作数数值会改变 GEMM 时间, 数值翻转率也影响功耗, 是另一个可能的因素. 报告明说「precise microarchitectural reason ... is not established」, 上面能耗分配的解释没有数据验证.
 
 ## A.13 Grouped Kernels Accept Managed Buffers · Grouped kernel 接受外部管理的 buffer
 
@@ -5437,8 +5416,7 @@ CPU launch time: replay changes the cache regime and excludes graph-launch laten
 
 在 $M = 128$ 时, 捕获成 graph 的设备端序列比 BF16 基线快 2 倍以上, 普通 eager 执行反而更慢. 到 $M = 32{,}768$, eager 与 graph 的结果趋于一致. 这种收敛说明 host 端提交会影响短算子的计时. 不过 eager 与 graph 的差距仍不能干净地度量 CPU launch 时间: replay 改变了缓存状态, 也不计 graph launch 的延迟; 而且这个基准不含路由, 通信, autograd 和训练步的其余部分. 所以相关的端到端指标仍是 eager 训练的墙钟时间.
 
-> **看表:** 页 147 的表里, $M = 128$ 时「含 Q」的 eager 只有 0.34×, graph 却有 2.03×; 激活量化在 eager 下为什么这么贵?
-> 答: 同一行里, 预量化输入的 graph 是 2.17×, 含 Q 的 graph 是 2.03×, 说明 GPU 上真正花在激活量化上的时间很少. eager 下从 0.66× 掉到 0.34×, 几乎慢了一倍, 多出来的主要是量化 kernel (算 block scale, 写 qdata) 在 host 端的 launch: $M = 128$ 时每个 kernel 的 GPU 时间很短, 提交开销占了大头, graph replay 正好把这部分去掉. 到 $M = 32{,}768$, 从预量化到含 Q, eager 是 1.43× 降到 1.21×, graph 是 1.42× 降到 1.22×, 两种执行方式降幅一致, 说明这时量化的代价是真实的 GPU 时间, 含 Q 的总时间里约 15% 花在量化上. 量化具体拆成几个 kernel, 报告这一段没写.
+同一行里, 预量化输入的 graph 是 2.17×, 含 Q 的 graph 是 2.03×, 说明 GPU 上真正花在激活量化上的时间很少. eager 下从 0.66× 掉到 0.34×, 几乎慢了一倍, 多出来的主要是量化 kernel (算 block scale, 写 qdata) 在 host 端的 launch: $M = 128$ 时每个 kernel 的 GPU 时间很短, 提交开销占了大头, graph replay 正好把这部分去掉. 到 $M = 32{,}768$, 从预量化到含 Q, eager 是 1.43× 降到 1.21×, graph 是 1.42× 降到 1.22×, 两种执行方式降幅一致, 说明这时量化的代价是真实的 GPU 时间, 含 Q 的总时间里约 15% 花在量化上. 量化具体拆成几个 kernel, 报告这一段没写.
 
 Removing the split-list round trip is also only one side of the trade-off: direct row movement adds its own route construction, capacity storage, and completion costs. Several experiments examine different parts of that trade-off. The profiled example of Section 5.4 localizes the shorter dispatch-and-combine path, the captured timelines above show the two submission regimes, the microbenchmark isolates the submission tax on short expert operations, and the feasibility point of Table 6 shows one complete operating point without attributing its throughput to a single mechanism.
 
@@ -5464,8 +5442,7 @@ Figures 45 and 46 derive from archived metric histories of two trajectories of t
 
 • **目标函数.** instance 粒度的 LBL, 不做逐层缩放; LM head 的 z-loss 系数为 $10^{-5}$; 关闭 router z-loss. 分叉时改的量是 LBL 系数: 原轨迹为 0.05, 分支为 0.005.
 
-> **拆开:** 「instance 粒度, 不做逐层缩放」意味着 0.05 这个系数实际作用在多大的总损失上?
-> 答: 看 `src/olmo_core/nn/moe/router.py` 的 `forward`: 每个 MoE 层的 router 各自算一份 `lb_loss`, 乘同一个 `lb_loss_weight` 后作为该层的 aux loss 返回, 没有按层数做除法. 所以 47 个 MoE block 的 LBL 是累加的. 如果各层 LBL 量级相近, 0.05 换成「按层平均」的口径约等于 2.35, 分支的 0.005 约等于 0.235; 同一个系数也就不能直接搬到层数不同的模型上. instance 粒度在 `src/olmo_core/nn/moe/loss.py` 里是按 batch 维逐条序列统计 expert 负载 (`batched_batch_size_per_expert`, 开 CP 时先在 CP 组内 all-reduce), 约束比按整个本地 batch 统计更紧. 两种粒度对第 10 节结论有什么影响, 本附录没写.
+看 `src/olmo_core/nn/moe/router.py` 的 `forward`: 每个 MoE 层的 router 各自算一份 `lb_loss`, 乘同一个 `lb_loss_weight` 后作为该层的 aux loss 返回, 没有按层数做除法. 所以 47 个 MoE block 的 LBL 是累加的. 如果各层 LBL 量级相近, 0.05 换成「按层平均」的口径约等于 2.35, 分支的 0.005 约等于 0.235; 同一个系数也就不能直接搬到层数不同的模型上. instance 粒度在 `src/olmo_core/nn/moe/loss.py` 里是按 batch 维逐条序列统计 expert 负载 (`batched_batch_size_per_expert`, 开 CP 时先在 CP 组内 all-reduce), 约束比按整个本地 batch 统计更紧. 两种粒度对第 10 节结论有什么影响, 本附录没写.
 
 • **Optimizer.** Skip-step AdamW (Loshchilov and Hutter, 2019) at learning rate $3   \times   1 0 ^ { - 5 }$ with betas (0.9, 0.95), weight decay 0.1 (zero on embeddings), a warmup–stable–decay schedule (Hu et al., 2024; Hägele et al., 2024) with a 2,000-step warmup, and gradient clipping at norm 1.
 
@@ -5587,8 +5564,7 @@ Slower launches of the Medium-96E and Medium-128E configurations are omitted fro
 
 Medium-96E 和 Medium-128E 有几次启动跑得较慢, 没有选进主表. 怀疑是环境问题, 但没有查明具体原因. 主表报告的是每个配置观测到的最高速率, 它既不是多次重复的均值, 也不是对硬件上限的估计.
 
-> **问:** 主表用随机路由的 run 当 headline, 它和学习路由的差距说明什么?
-> 答: `src/olmo_core/nn/moe/router.py` 的 `forward` 里, `random_expert_assignment` 打开时执行 `scores = scores * 0 + torch.rand_like(scores)`: router 仍在 autograd 图里, 计算和通信的形状不变, 只是 top-K 的落点变成与 token 无关的均匀随机. 均匀随机让各 expert 和各 EP rank 的负载近似均衡, 所以 headline 测的是负载均衡时的系统吞吐. 第二张表里能配对的两组: Tiny-64E 无 EP 是 903 对 895, 差不到 1%; Small-64E 24 Mi (EP8) 是 841 对 768, 学习路由低约 9%. 无 EP 时负载不均只改变本地 grouped GEMM 的形状; 开 EP8 后, 负载最重的 rank 还会拖长 dispatch/combine 和 expert 计算, 其他 rank 要等它, 差距随之放大. 因此 headline 更接近「路由均衡时的上界」, 真实训练的吞吐取决于学到的路由有多均衡, 也和第 10 节的 LBL 设置有关. 更大的配置上学习路由会差多少, 报告里没写.
+`src/olmo_core/nn/moe/router.py` 的 `forward` 里, `random_expert_assignment` 打开时执行 `scores = scores * 0 + torch.rand_like(scores)`: router 仍在 autograd 图里, 计算和通信的形状不变, 只是 top-K 的落点变成与 token 无关的均匀随机. 均匀随机让各 expert 和各 EP rank 的负载近似均衡, 所以 headline 测的是负载均衡时的系统吞吐. 第二张表里能配对的两组: Tiny-64E 无 EP 是 903 对 895, 差不到 1%; Small-64E 24 Mi (EP8) 是 841 对 768, 学习路由低约 9%. 无 EP 时负载不均只改变本地 grouped GEMM 的形状; 开 EP8 后, 负载最重的 rank 还会拖长 dispatch/combine 和 expert 计算, 其他 rank 要等它, 差距随之放大. 因此 headline 更接近「路由均衡时的上界」, 真实训练的吞吐取决于学到的路由有多均衡, 也和第 10 节的 LBL 设置有关. 更大的配置上学习路由会差多少, 报告里没写.
 
 ## B.11 Metrics Track Useful Work, Time, and Memory · 指标跟踪有效工作量, 时间与内存
 
@@ -5608,7 +5584,7 @@ This is the dense BF16 Tensor Core peak, not NVIDIA’s doubled 2:4-sparse peak 
 
 $C_{\mathrm{BF16}}$ 是稠密 BF16 Tensor Core 峰值, 不是 NVIDIA 翻倍后的 2:4 稀疏峰值 (NVIDIA, 2026r); 只选一部分 expert, 并不会让它们的权重矩阵变成 2:4 稀疏. 分子只计激活模型的工作量, 不含激活重算; 耗时则包含整个训练步. MXFP8 的 run 也沿用这个 BF16 参照, 保证归一化口径一致; 这些值不能读作 FP8 峰值的利用率.
 
-> 答: 按式 (95), 858 / 2250 ≈ 38.1% 的 BF16 参照 MFU. B.10 第一张表里 Ultra-128E 开了逐层重算, 反向之前要把每层的前向再算一遍. 按「前向 1 份, 反向 2 份」的常用比例粗估, 实际执行的矩阵乘约为有效工作量的 4/3, 即约 1144 TFLOP/s/GPU, 合 BF16 峰值的 51% 左右. 对照 Medium-64E 的 853: 它是 BF16, 不重算, 853 就是实际执行量. 两行数字接近, 但 Ultra-128E 背后硬件多做了约三分之一的工作, 而且它的 attention 和 MLP 矩阵乘走 MXFP8, 相对 FP8 峰值的利用率还会更低. 4/3 这个系数是按经验比例估的, 逐层重算是否覆盖 attention 内部, 报告里没写, 只是从已知数字推出的说法, 没有数据验证.
+按式 (95), 858 / 2250 ≈ 38.1% 的 BF16 参照 MFU. B.10 第一张表里 Ultra-128E 开了逐层重算, 反向之前要把每层的前向再算一遍. 按「前向 1 份, 反向 2 份」的常用比例粗估, 实际执行的矩阵乘约为有效工作量的 4/3, 即约 1144 TFLOP/s/GPU, 合 BF16 峰值的 51% 左右. 对照 Medium-64E 的 853: 它是 BF16, 不重算, 853 就是实际执行量. 两行数字接近, 但 Ultra-128E 背后硬件多做了约三分之一的工作, 而且它的 attention 和 MLP 矩阵乘走 MXFP8, 相对 FP8 峰值的利用率还会更低. 4/3 这个系数是按经验比例估的, 逐层重算是否覆盖 attention 内部, 报告里没写, 只是从已知数字推出的说法, 没有数据验证.
 
 <!-- page 151 of 168 -->
 
@@ -5816,8 +5792,7 @@ so each rank evaluates the full sequence for a subset of attention heads, which 
 
 Olmo-core 在 MoE 路径上使用 **Ulysses** 形式的 CP (Jacobs et al., 2023). 进入注意力之前, 每个 rank 按上下文切分的布局持有 query, key 和 value. 设 batch 大小为 $B$, 序列长度为 $S$, 头数为 $H$, 头宽为 $d_h$, 一次 all-to-all 按式 (96) 改变布局, 于是每个 rank 对一部分注意力头计算完整序列, 这要求 $C$ 整除 $H$. 第二次 all-to-all 把输出换回按上下文切分的布局. Transformer block 里的其余运算继续在本地 token 行上进行. 尤其是 MoE router 直接接收本地的 $S/C$ 行, 模型在路由前不会 gather 完整序列.
 
-> **确认:** 式 (96) 只要求 $C$ 整除 $H$; 在 GQA 下 key/value 头更少, 约束是否更紧?
-> 答: 更紧. `src/olmo_core/nn/attention/backend.py` 的 Ulysses 分支对 q 调 `all_to_all_single_cp2hp`, 对 k, v 调 `all_to_all_cp2hp`; 后者在 `src/olmo_core/distributed/parallel/context_parallel.py` 里把 `[B, T/CP, H, D]` 直接 `view` 成 `[B, T/CP, CP, H/CP, D]`. 对 k, v 来说这里的 $H$ 就是 KV 头数, 代码没有先复制 KV 头再切, 切完才用 `n_rep = n_heads // n_kv_heads` 在本地展开. 所以 $C$ 必须同时整除 query 头数和 KV 头数. 以 B.7 的模型为例 (16 个 query 头, 4 个 KV 头), Ulysses CP 最多开到 4. 有的实现在 CP 大于 KV 头数时会先复制 KV 头再切, Olmo-core 当前代码里没有这条路径, 报告也没提.
+更紧. `src/olmo_core/nn/attention/backend.py` 的 Ulysses 分支对 q 调 `all_to_all_single_cp2hp`, 对 k, v 调 `all_to_all_cp2hp`; 后者在 `src/olmo_core/distributed/parallel/context_parallel.py` 里把 `[B, T/CP, H, D]` 直接 `view` 成 `[B, T/CP, CP, H/CP, D]`. 对 k, v 来说这里的 $H$ 就是 KV 头数, 代码没有先复制 KV 头再切, 切完才用 `n_rep = n_heads // n_kv_heads` 在本地展开. 所以 $C$ 必须同时整除 query 头数和 KV 头数. 以 B.7 的模型为例 (16 个 query 头, 4 个 KV 头), Ulysses CP 最多开到 4. 有的实现在 CP 大于 KV 头数时会先复制 KV 头再切, Olmo-core 当前代码里没有这条路径, 报告也没提.
 
 CP ranks are not independent data-parallel replicas because they contribute different sequence slices of the same examples. This distinction matters when CP is combined with EP. Let D and C be the dense Data Parallelism (DP) and CP degrees within one pipeline stage, and let $D _ { E }$ and $M _ { E }$ be the expert-replica and expert-sharding degrees. Olmo-core forms two views of the same per-stage rank set:
 

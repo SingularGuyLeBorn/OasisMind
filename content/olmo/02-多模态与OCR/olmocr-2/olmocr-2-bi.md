@@ -117,8 +117,7 @@ We include two key motivating examples in Figures 1 and 2 to further illustrate.
 
 图 1 和图 2 给出两个说明动机的例子.
 
-> **拆开:** Figure 1 里第二行 (正文顺序对, 图注放在正文之后) 编辑距离是 0.85, 而第六行 (图注在前, 但绿, 黄两段顺序颠倒) 只有 0.40, 编辑距离为什么会把后者判得更近?
-> 答: 图中参考串的顺序是第一行「图注, 绿, 黄」, 它的编辑距离为 0. 编辑距离按字符的插入, 删除, 替换计数, 整段图注从开头挪到末尾, 相当于先删掉一整段再在后面插回一整段, 代价约为两倍图注长度; 第六行「图注, 黄, 绿」保留了图注在开头, 只需要把绿, 黄两段对调, 如果绿段比图注短, 代价就更小. 所以编辑距离量的是「离参考串的字面写法有多远」, 不区分哪一段放错了位置. 单元测试只检查「绿在黄之前, 中间不夹红」这一个约束, 第二行通过, 第六行不通过; 第五行 (绿, 图注, 黄) 正文顺序没错, 但图注把两段隔开, 同样不通过, 编辑距离却只给 0.45. 图里的数值是归一化后的距离, 具体归一化方式文中没有给出.
+图中参考串的顺序是第一行「图注, 绿, 黄」, 它的编辑距离为 0. 编辑距离按字符的插入, 删除, 替换计数, 整段图注从开头挪到末尾, 相当于先删掉一整段再在后面插回一整段, 代价约为两倍图注长度; 第六行「图注, 黄, 绿」保留了图注在开头, 只需要把绿, 黄两段对调, 如果绿段比图注短, 代价就更小. 所以编辑距离量的是「离参考串的字面写法有多远」, 不区分哪一段放错了位置. 单元测试只检查「绿在黄之前, 中间不夹红」这一个约束, 第二行通过, 第六行不通过; 第五行 (绿, 图注, 黄) 正文顺序没错, 但图注把两段隔开, 同样不通过, 编辑距离却只给 0.45. 图里的数值是归一化后的距离, 具体归一化方式文中没有给出.
 
 While prior work has explored improvements to edit distance, particularly for math formulas (Wang et al., 2025b), and such ideas have led to recent updates in popular benchmarks like OmniDocBench v1.5 (Ouyang et al., 2024), there is still much more work to be done to develop calibrated continuous scores for other types of OCR targets beyond math formulas. Binary unit tests, on the other hand, offer us a single elegant framework to simultaneously develop evaluations for a diversity of OCR errors.
 
@@ -178,8 +177,7 @@ document image, and ask it to "render this document as clean, semantic HTML" fit
 
 **实现** 上述流程中的通用 VLM 用的是 `claude-sonnet-4-20250514`. 总体上它足够准确, 成本也合适, 每页约 0.12 美元. 这条流水线对幻觉是稳健的: 即使 Claude 在做 OCR 时出错, 也不影响流水线, 因为单元测试只从 HTML 输出生成. 最终的数据集 olmOCR2-synthmix-1025 由 2,186 个 PDF 页面组成, 在这些页面上一共生成 30,381 个测试用例.
 
-> **问:** §3.1 说 Claude 做 OCR 出错也不影响流水线, 可 HTML 本身就是 Claude 写的, 抄错的字怎么不会变成错误的测试?
-> 答: 关键在训练时喂给模型的图像是什么. Figure 3 的题注写明「渲染后的 HTML 页面图像与原始 HTML 配对」作为监督; 官方 `grpo_train.py` 的 `OlmOCRBenchDataset` 从 `bench_data/pdfs/` 读页面, 数据集卡说明那里放的是由 HTML 重新渲染的单页 PDF. 所以策略模型看到的是 HTML 自己渲染出的页面, Claude 把原文 0.60 抄成 0.66, 渲染图上也是 0.66, 测试要求 0.66, 图像与测试互相一致, 错误只让这一页偏离了原始文档, 不会产生「看到 A 却要求输出 B」的错标. 这一说法只覆盖单元测试奖励; 同一份代码里的元数据奖励会拿 `claude_original/` 中 Claude 原始 OCR 输出的语言, 旋转, 是否表格等字段作参照, Claude 在这几个字段上的判断错误会直接进入奖励.
+关键在训练时喂给模型的图像是什么. Figure 3 的题注写明「渲染后的 HTML 页面图像与原始 HTML 配对」作为监督; 官方 `grpo_train.py` 的 `OlmOCRBenchDataset` 从 `bench_data/pdfs/` 读页面, 数据集卡说明那里放的是由 HTML 重新渲染的单页 PDF. 所以策略模型看到的是 HTML 自己渲染出的页面, Claude 把原文 0.60 抄成 0.66, 渲染图上也是 0.66, 测试要求 0.66, 图像与测试互相一致, 错误只让这一页偏离了原始文档, 不会产生「看到 A 却要求输出 B」的错标. 这一说法只覆盖单元测试奖励; 同一份代码里的元数据奖励会拿 `claude_original/` 中 Claude 原始 OCR 输出的语言, 旋转, 是否表格等字段作参照, Claude 在这几个字段上的判断错误会直接进入奖励.
 
 Alongside olmOCR2-synthmix-1025, we use a refreshed mix for supervised fine-tuning, olmOCR-mix-1025. The dataset contains 267,962 pages from over 100,000 PDFs sampled from diverse sources, including 9,828 pages from national archives. Compared to olmOCR-mix-0225, the new mix has been re-processed using GPT-4.1 instead of GPT-4o, has more consistent equation formatting (with `\[` and `\(` for block and inline math), uses HTML format for tables, and includes basic alt text for images. See Table 2 for SFT results using these two training sets.
 
@@ -204,8 +202,7 @@ Besides the unit test above, we include two additional rewards to ensure correct
 
 除了上述单元测试, 我们还加了两项保证输出格式正确的奖励: 一项是二元奖励, 看 completion 是否以 EOS token 结尾; 另一项取值 0 到 1, 确保模型在回复开头输出文档元数据 (例如主要语言, 旋转校正角度).
 
-> **核对:** §3.2 一共三项奖励, 单元测试通过率, EOS, 元数据, 三者怎样合成一个标量交给 GRPO? 各自权重是多少?
-> 答: 文中没有给出合成方式和权重. 官方 `grpo_train.py` 把每项奖励注册成一个 reward function, 权重由 `--reward_bench`, `--reward_eos`, `--reward_front_matter` 等参数给出 (不带数值时默认 1.0), 交给 TRL 的 `GRPOConfig(reward_weights=...)` 做加权求和, 再在每组 28 个 completion 内做组相对归一化 (`scale_rewards` 默认 `group`). 元数据奖励的实现是: front matter 能被解析得 0.5, 五个字段 (primary_language, is_rotation_valid, rotation_correction, is_table, is_diagram) 每与 Claude 原始输出一致加 0.1. 若三项权重都取 1, 总奖励落在 $[0,3]$, 单元测试一项只占三分之一的量程; 不过组内归一化只看同一页 28 个样本之间的差, 多数样本 EOS 与元数据都满分时, 优势主要由单元测试通过率的差异决定. 实际训练用的权重仓库里没有记录.
+文中没有给出合成方式和权重. 官方 `grpo_train.py` 把每项奖励注册成一个 reward function, 权重由 `--reward_bench`, `--reward_eos`, `--reward_front_matter` 等参数给出 (不带数值时默认 1.0), 交给 TRL 的 `GRPOConfig(reward_weights=...)` 做加权求和, 再在每组 28 个 completion 内做组相对归一化 (`scale_rewards` 默认 `group`). 元数据奖励的实现是: front matter 能被解析得 0.5, 五个字段 (primary_language, is_rotation_valid, rotation_correction, is_table, is_diagram) 每与 Claude 原始输出一致加 0.1. 若三项权重都取 1, 总奖励落在 $[0,3]$, 单元测试一项只占三分之一的量程; 不过组内归一化只看同一页 28 个样本之间的差, 多数样本 EOS 与元数据都满分时, 优势主要由单元测试通过率的差异决定. 实际训练用的权重仓库里没有记录.
 
 We use the Hugging Face TRL library (von Werra et al., 2020), with KL divergence $\beta = 0.01$. To maximize performance, we found it beneficial to train multiple models, and average, or *soup* (Wortsman et al., 2022), their weights. In detail, we train six models with different random seeds, and soup their weights at the end.
 
@@ -233,8 +230,7 @@ Table 3 汇总了从最初的 olmOCR 到 olmOCR 2 之间的主要开发节点, �
 
 **动态温度.** 第一版 olmOCR 的默认采样温度是 0.8. 我们发现低温采样往往效果更好, 但 VLM 推理更容易陷入重复循环. 为了既用上低温又缓解重复, 我们采用动态温度: 从 0.1 开始, 逐步升到 0.2, 0.3, 依此类推, 最高到 0.8. 每次升温都由模型没能生成 EOS token (因而无限重复) 触发. 这一改动让基准总分显著提高.
 
-> **再看:** 动态温度「0.1, 0.2, 0.3, 依此类推, 最高 0.8」在推理代码里是怎样一张表? 最多会重试几次?
-> 答: 论文给的固定 commit (f5fad405) 与 main 分支的 `pipeline.py` 都写着 `TEMPERATURE_BY_ATTEMPT = [0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0]`, 第 $k$ 次尝试 ($k$ 从 0 起) 取第 $k$ 项, 超出表长取最后一项; `--max_page_retries` 默认 8, 所以一页最多尝试 8 次, 温度依次是 0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0. 与论文描述有三处不同: 0.1 用两次, 0.3 之后跳到 0.5, 上限是 1.0 而不是 0.8. 重试的触发条件是返回的 `finish_reason` 不是 `stop` (没生成 EOS) 或总 token 超过 16384. 8 次都失败时, 这一页退回 `pdftotext` 抽取的文本层.
+论文给的固定 commit (f5fad405) 与 main 分支的 `pipeline.py` 都写着 `TEMPERATURE_BY_ATTEMPT = [0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0]`, 第 $k$ 次尝试 ($k$ 从 0 起) 取第 $k$ 项, 超出表长取最后一项; `--max_page_retries` 默认 8, 所以一页最多尝试 8 次, 温度依次是 0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0. 与论文描述有三处不同: 0.1 用两次, 0.3 之后跳到 0.5, 上限是 1.0 而不是 0.8. 重试的触发条件是返回的 `finish_reason` 不是 `stop` (没生成 EOS) 或总 token 超过 16384. 8 次都失败时, 这一页退回 `pdftotext` 抽取的文本层.
 
 **Better prompting.** We found an unintended bug in which order of image and the text was mismatched between training and inference prompts. We standardize prompt order by always including text first in all settings; matching the order in training and inference improved benchmark performance substantially. We experimented with the reverse order and found no meaningful difference in OCR performance, however placing any fixed text first allows for prompt caching by the inference engine.
 
@@ -267,8 +263,7 @@ Table 3 OCR model performance comparison. Results are reproduced in-house, excep
 
 表 3: OCR 模型成绩对比. 下半部分逐行累加 olmOCR 的开发改动.
 
-> **看表:** Table 3 的「+ Handle blank pages」一行与 Table 2 的 olmOCR-mix-0225 一行八个分项完全相同, 那么末行「+ Synth data, RLVR, souping」的 SFT 起点是哪一个?
-> 答: 两行逐项相同 (78.6 / 79.9 / 72.9 / 43.9 / 95.1 / 77.3 / 81.2 / 98.9), 说明「Handle blank pages」这个模型就是在 olmOCR-mix-0225 上微调一个 epoch 的结果. §3.2 和 §4 末尾都写明 RL 从 olmOCR-mix-1025 上的 SFT 模型出发, 也就是 Table 2 中 78.3 那一行. 所以 Table 3 最后一步其实同时换了三样东西: SFT 数据 (0225 换成 1025), RL 训练, 六模型 soup, 行名只写了后两样. 按真实起点算, RL 加 soup 的增益是 $82.4-78.3=4.1$ 分, ArXiv 从 70.8 到 83.0 涨了 12.2 分, Tables 从 77.9 到 84.9 涨 7.0 分, Multi column 从 81.3 到 83.7 只涨 2.4 分; 按表中相邻两行算则是 Tables +12.0, Multi column +6.4, ArXiv +4.4. 两种算法给出的「RL 主要改善了什么」并不相同, 前者把 Tables 和 Multi column 的一部分提升归给了 1025 数据本身. 单独的「1025 SFT + RL, 不 soup」或「0225 SFT + RL」的成绩文中没有给出.
+两行逐项相同 (78.6 / 79.9 / 72.9 / 43.9 / 95.1 / 77.3 / 81.2 / 98.9), 说明「Handle blank pages」这个模型就是在 olmOCR-mix-0225 上微调一个 epoch 的结果. §3.2 和 §4 末尾都写明 RL 从 olmOCR-mix-1025 上的 SFT 模型出发, 也就是 Table 2 中 78.3 那一行. 所以 Table 3 最后一步其实同时换了三样东西: SFT 数据 (0225 换成 1025), RL 训练, 六模型 soup, 行名只写了后两样. 按真实起点算, RL 加 soup 的增益是 $82.4-78.3=4.1$ 分, ArXiv 从 70.8 到 83.0 涨了 12.2 分, Tables 从 77.9 到 84.9 涨 7.0 分, Multi column 从 81.3 到 83.7 只涨 2.4 分; 按表中相邻两行算则是 Tables +12.0, Multi column +6.4, ArXiv +4.4. 两种算法给出的「RL 主要改善了什么」并不相同, 前者把 Tables 和 Multi column 的一部分提升归给了 1025 数据本身. 单独的「1025 SFT + RL, 不 soup」或「0225 SFT + RL」的成绩文中没有给出.
 
 **YAML.** The first olmOCR was trained to output JSON objects. We switched to YAML, which reduced the retry rate dramatically. We speculate this is because the model does not need to remember how many open quotes there are currently in the JSON and can simply output an EOS token as soon as it is done. With JSON, we also found more incidences of repetition loops. We found no benchmark score difference, but with fewer need for retries, this improved our inference efficiency.
 

@@ -181,7 +181,7 @@ where $r$, called the router, is a learned linear layer mapping from the input l
 
 其中 $r$ 称为路由器, 是一个学习得到的线性层, 把输入映射为对各专家的打分, 再从中选出 $k$ 个专家. 对路由器输出做 softmax, 得到全部 $N_E$ 个专家的路由概率. 每个被选中的专家 $E_i$ 处理输入 $x$, 其输出乘以对应的路由概率. 再把所有被选中的 Top-$k$ 专家的结果相加, 得到模型 $N_L$ 层中某一层 MoE 模块的输出. 设计 MoE 的关键决定包括: 激活参数与总参数各定多少, 专家的设计 (如粒度, 是否加共享专家), 以及路由算法的选择. 此外, 训练 MoE 还可能涉及从 dense 模型初始化 (稀疏上循环), 以及修改训练目标, 比如加入辅助的负载均衡损失与 router z-loss. 与这些设计选择相关的实验见 §4.1, 最终决定见 Table 1.
 
-> **译注:** 式 (1) 先对 64 个 logit 做 softmax, 再取 Top-8 概率, 没有在选中的 8 个专家之间重新归一化. HF 配置的 `norm_topk_prob` 为 `false`, 代码也采用先 `softmax` 再 `topk` 的顺序, 因此选中专家的权重和通常小于 1.
+式 (1) 先对 64 个 logit 做 softmax, 再取 Top-8 概率, 没有在选中的 8 个专家之间重新归一化. HF 配置的 `norm_topk_prob` 为 `false`, 代码也采用先 `softmax` 再 `topk` 的顺序, 因此选中专家的权重和通常小于 1.
 
 In summary, we use 1.3B active parameters out of a total of 6.9B, with 8 activated experts out of 64 per layer. We use dropless token choice routing [58]: For each input token, the learned router network determines 8 experts to process it. We train OLMoE-1B-7B from scratch with two auxiliary losses: load balancing loss ($\mathcal{L}_{LB}$) [154] and router z-loss ($\mathcal{L}_{RZ}$) [221], which we define and experiment with in §4.1.6 and §4.1.7, respectively. We multiply them with respective loss weights, $\alpha$ and $\beta$, and sum them linearly with the cross entropy loss ($\mathcal{L}_{\text{CE}}$) to arrive at our final training loss:
 
@@ -298,8 +298,7 @@ which aligns with findings from prior work [76, 122, 188]. Our DPO model, which 
 
 **适配之后** 在 Table 5 中, 我们评测 OLMoE-1B-7B 经指令微调 (SFT) 与偏好微调 (DPO) 后的表现. SFT 在所有测量任务上都带来提升. GSM8k 提升超过 10 倍, 很可能是因为预训练中数学数据较少, 我们在适配时补充了额外的数学数据 (§2). DPO 在多数任务上有帮助, 尤其是 AlpacaEval, 这与已有工作的发现一致 [76, 122, 188]. 我们的 DPO 模型, 即 OLMoE-1B-7B-Instruct, 在所有被测模型中平均分最高. 它超过 Qwen1.5-3B-14B 的 chat 版本, 尽管 Qwen 的参数量是它的 2 倍以上, 且 Qwen 的预训练模型在 Table 4 中强于 OLMoE-1B-7B. 在 AlpacaEval 上 84% 的分数也超过排行榜上许多大得多的 dense 模型,<sup>3</sup> 例如 Llama2-13B-Chat [183].
 
-> **看表:** Table 5 的 Avg 列是 7 个任务的算术平均吗? 对几行复算.
-> 答: OLMoE 两行对得上: +SFT 为 $(51.4+40.5+38.0+51.6+69.2+84.1+43.3)/7=54.0$, +DPO 为 57.7; DeepSeek +Chat 与 Qwen +Chat 也对得上 (57.0, 57.3). 对照模型几行对不上: OLMo-1B +SFT 写 35.9, 七列平均为 35.20; OLMo-1B +DPO 写 37.4, 平均 36.67; OLMo-7B +SFT 写 49.3, 平均 50.01; OLMo-7B +DPO 写 49.1, 平均 46.04; JetMoE +SFT 写 50.4, 平均 50.77. 文中没有给出这些 Avg 的另一种算法, 「OLMoE-1B-7B-Instruct 平均最高」的结论按七列平均重算后不变.
+OLMoE 两行对得上: +SFT 为 $(51.4+40.5+38.0+51.6+69.2+84.1+43.3)/7=54.0$, +DPO 为 57.7; DeepSeek +Chat 与 Qwen +Chat 也对得上 (57.0, 57.3). 对照模型几行对不上: OLMo-1B +SFT 写 35.9, 七列平均为 35.20; OLMo-1B +DPO 写 37.4, 平均 36.67; OLMo-7B +SFT 写 49.3, 平均 50.01; OLMo-7B +DPO 写 49.1, 平均 46.04; JetMoE +SFT 写 50.4, 平均 50.77. 文中没有给出这些 Avg 的另一种算法, 「OLMoE-1B-7B-Instruct 平均最高」的结论按七列平均重算后不变.
 
 <sup>3</sup> https://tatsu-lab.github.io/alpaca_eval/
 
@@ -353,8 +352,7 @@ and MMLU at around 130 billion tokens. However, we find that there are diminishi
 
 在 Figure 5 中, 我们观察到更细粒度的专家改善了训练 loss, 验证 loss 与下游表现. 8 专家的配置激活 1 个专家, 只有 $\binom{8}{1}=8$ 种组合. 把每个专家缩到四分之一, 数量增加到 32 个并激活 4 个 ($\binom{32}{4}=35,960$ 种组合), 在约 130B token 处 HellaSwag 与 MMLU 提升约 10%. 但粒度的收益递减. 再增加到 64 个专家激活 8 个 ($\binom{64}{8}=4,426,165,368$ 种组合), 下游指标只再提升 1 到 2%. 对 OLMoE-1B-7B 的算力预算<sup>4</sup> $3\times10^{22}$, Krajewski et al. [86] 预测的最优专家数为 256 (即其文中的 $G=32$). 但他们的预测针对算力最优模型 [32, 72], 而我们训练 5T token, 比该规模模型通常认为的最优量多出几个数量级. 所以他们的预测未必适用于我们的设置, 再加上 Figure 5 中的收益递减, **OLMoE-1B-7B 仍用 64 个专家**.
 
-> **问:** 「8 到 32 专家提升约 10%」是绝对点数还是相对比例? 能否与 Figure 5 读数对上?
-> 答: 文中没有说明口径. 从 Figure 5 在 130B token 处读数, HellaSwag 约从 63 升到 66, MMLU Var 约从 34.6 升到 36.5, 绝对提升约 3 点和 2 点, 相对提升约 5%. 无论按绝对还是相对算, 图上读数都到不了 10%. 64 专家相对 32 专家再提升 1 到 2 点, 与正文一致.
+文中没有说明口径. 从 Figure 5 在 130B token 处读数, HellaSwag 约从 63 升到 66, MMLU Var 约从 34.6 升到 36.5, 绝对提升约 3 点和 2 点, 相对提升约 5%. 无论按绝对还是相对算, 图上读数都到不了 10%. 64 专家相对 32 专家再提升 1 到 2 点, 与正文一致.
 
 <sup>4</sup> Approximated via $6*N*D$ [80], where $N$ are active parameters (1B) and $D$ are training tokens (5T).
 
@@ -380,7 +378,7 @@ combinations. This likely acts as a counterforce to the potential benefits of is
 
 在 Figure 6 中, 我们比较「一个共享专家加一个路由专家」与「两个路由专家」. 两种设置表现接近, 但共享专家略差. 共享专家削弱了模型的灵活性, 与 §4.1.2 的发现相悖: 那里表明允许更多专家组合能提升表现. 具体来说, Figure 6 中两个模型每层的可能组合分别为 $\binom{32}{4}=35,960$ 与 $\binom{31}{3}=4,495$. 也就是说, 拿出一个路由专家改作共享专家, 去掉了近 90% 的可能组合. 这可能抵消了在共享专家中隔离公共知识的潜在好处. 基于这些结果, **OLMoE-1B-7B 不使用共享专家**. 不过我们认为, 让某些专家更常被激活甚至始终激活, 这个想法有其价值. 只是与其用共享专家强行规定这种行为, 我们认为应当让模型自己学出来. 在当前设置下这很难做到, 因为必须使用负载均衡损失 (§4.1.6), 只要 token 在专家间分配不均, 模型就会受罚. 未来可以尝试去掉负载均衡损失, 让专家的使用更灵活.
 
-> **译注:** Figure 6 题注与组合数对应 32 个路由专家激活 4 个, 对照组则是 31 个路由专家激活 3 个再加 1 个共享专家. 官方消融配置也采用 `moe_num_experts: 32`, `moe_top_k: 3`, `moe_shared_expert: true`. 正文的 「single shared and single routed」 与题注, 组合数和代码配置不一致. $4495/35960=12.5\%$, 因而减少的是 87.5% 的组合.
+Figure 6 题注与组合数对应 32 个路由专家激活 4 个, 对照组则是 31 个路由专家激活 3 个再加 1 个共享专家. 官方消融配置也采用 `moe_num_experts: 32`, `moe_top_k: 3`, `moe_shared_expert: true`. 正文的 「single shared and single routed」 与题注, 组合数和代码配置不一致. $4495/35960=12.5\%$, 因而减少的是 87.5% 的组合.
 
 #### 4.1.4 Expert Choice vs. Token Choice · Expert Choice 与 Token Choice
 
@@ -432,8 +430,7 @@ The loss is further scaled by $N_{E}$ and a loss weight $\alpha$ (see Equation 2
 
 该损失再乘以 $N_{E}$ 和损失权重 $\alpha$ (见 Equation 2); $\alpha$ 是可选权重, 用于控制损失大小, 通常设为 0.01 [199, 221]. 我们没有试验改变 0.01 这个权重.
 
-> **确认:** 式 (3) 已经带了一个 $N_E$, 正文又说「再乘以 $N_E$」, 是乘了两次吗? $f_i$ 按什么归一?
-> 答: 式 (3) 与正文对乘几次 $N_E$ 说法不一, $f_i$ 是按 token 数还是按 token-专家对数归一也没交代. 训练实际用的是 megablocks 的 `batched_load_balancing_loss`: 系数为 $N_E\cdot\alpha/(N_L\cdot T\cdot k)$, 再乘各专家的 token 计数与平均路由概率的点积, 完全均衡时不含 $\alpha$ 的值为 1, 只乘一次 $N_E$. HF transformers 的 `load_balancing_loss_func` 则把 $k$ 个选择分别算比例再相加, 完全均衡时值为 $k=8$. Table 6 里的数值在 9.09 到 14.85 之间, 只有按后一种口径才可能出现, 所以 Table 6 与训练时用的损失不是同一个归一化.
+式 (3) 与正文对乘几次 $N_E$ 说法不一, $f_i$ 是按 token 数还是按 token-专家对数归一也没交代. 训练实际用的是 megablocks 的 `batched_load_balancing_loss`: 系数为 $N_E\cdot\alpha/(N_L\cdot T\cdot k)$, 再乘各专家的 token 计数与平均路由概率的点积, 完全均衡时不含 $\alpha$ 的值为 1, 只乘一次 $N_E$. HF transformers 的 `load_balancing_loss_func` 则把 $k$ 个选择分别算比例再相加, 完全均衡时值为 $k=8$. Table 6 里的数值在 9.09 到 14.85 之间, 只有按后一种口径才可能出现, 所以 Table 6 与训练时用的损失不是同一个归一化.
 
 <!-- page 13 of 63 -->
 
@@ -467,8 +464,7 @@ The loss is further multiplied with an optional loss weight, $\beta$ (see Equati
 
 该损失再乘以可选的损失权重 $\beta$ (见 Equation 2) 以控制其大小, 通常设为 0.001 [158, 221]. 我们没有试验改变 0.001 这个权重.
 
-> **对一下:** 式 (4) 只对 batch 求平均, 代码里的 z-loss 也是这样归一的吗?
-> 答: 不完全是. megablocks 的实现把每层每个 token 的 $(\log\sum_j e^{x_j})^2$ 相加后除以 $N_L\cdot T\cdot k$, 比式 (4) 在层间取平均之后又多除了一个 $k=8$, 再乘 `moe_zloss_weight: 0.001`. 所以相对式 (4) 的有效权重是 $0.001/8=1.25\times10^{-4}$. 官方仓库 issue #39 里作者确认了这一点, 并说没有对这个归一化做消融.
+不完全是. megablocks 的实现把每层每个 token 的 $(\log\sum_j e^{x_j})^2$ 相加后除以 $N_L\cdot T\cdot k$, 比式 (4) 在层间取平均之后又多除了一个 $k=8$, 再乘 `moe_zloss_weight: 0.001`. 所以相对式 (4) 的有效权重是 $0.001/8=1.25\times10^{-4}$. 官方仓库 issue #39 里作者确认了这一点, 并说没有对这个归一化做消融.
 
 <!-- page 14 of 63 -->
 
@@ -621,8 +617,7 @@ This is likely because which experts certain tokens get routed to is determined 
 
 我们用 §C 的评测设置对适配阶段的几项小设计做了实验. **(1) 辅助损失:** Zoph et al. [221] 发现常规微调中使用辅助负载均衡损失 (§4.1.6) 带来小幅提升. 但对指令微调, Shen et al. [156] 没有找到支持使用负载均衡损失或 router z-loss 的确凿证据, 差别都很小, 有支持也有反对. 在 Table 7 中我们给出适配阶段使用负载均衡损失的实验, 发现不用它表现更好 (指令微调 (SFT) 后 54.0 对 52.8, 偏好微调 (DPO) 后 57.7 对 57.1). 关闭负载均衡损失的一个潜在问题是, 它可能破坏专家间的均衡, 让部分专家变成死权重, §4.1.6 的预训练中就观察到过这种情况. 但在 Table 6 中用我们的 SFT 数据 (§2) 测负载均衡损失, 发现 SFT 期间它反而略有下降 (12.16 对 12.22). 这可能是因为某些 token 路由到哪些专家, 在预训练早期就已确定, 这一点在后面的分析 (§5.1) 中可以看到. 我们还在 §G (Figure 33) 中可视化了预训练后模型, 以及不加负载均衡训练的 SFT, DPO 模型的专家激活模式, 发现分布基本不变. 因此, 既然不加负载均衡适配出的模型表现更好, 又发现它对路由影响不大, **我们在适配阶段不使用负载均衡**. **(2) 退火检查点:** 我们还试过用退火前 (§2) 的检查点做适配, 发现退火后的检查点表现更好 (SFT 后 53.8 对 54.0, DPO 后 56.3 对 57.7), 因此 **我们用退火后的检查点.** **(3) 偏好算法:** DPO (Direct Preference Optimization) [138] 发布后, 出现了多种偏好算法 [54, 73, 114]. 我们试了 KTO [54], 发现在我们的设置 (§B) 下它在 Table 7 中与 DPO 持平. 两个模型我们都发布, 但最终的 OLMoE-1B-7B-Instruct **用 DPO**, 因为它在 AlpacaEval 上得分更高, 而 AlpacaEval 数据污染的可能性比我们的其他基准小 [198].
 
-> **回看:** §4.3 说适配阶段不用负载均衡损失, 附录 B 却写「SFT 和 DPO 都加了负载均衡损失, 依据是 §4.3 的实验」, 哪个是最终做法?
-> 答: 论文前后矛盾. 支持「不用」的有三处: Table 7 中不加 LBL 的 +SFT 54.0, +DPO 57.7, 都高于加 LBL 的 52.8 和 57.1; Figure 33 题注写「SFT 和 DPO 不加负载均衡损失」; §4.3 的结论句. 附录 B 的说法与这三处相反, 却引用 §4.3 作依据. 按 Table 7 的分数, 发布的 Instruct 模型 (57.7) 对应的是不加 LBL 的那一行.
+论文前后矛盾. 支持「不用」的有三处: Table 7 中不加 LBL 的 +SFT 54.0, +DPO 57.7, 都高于加 LBL 的 52.8 和 57.1; Figure 33 题注写「SFT 和 DPO 不加负载均衡损失」; §4.3 的结论句. 附录 B 的说法与这三处相反, 却引用 §4.3 作依据. 按 Table 7 的分数, 发布的 Instruct 模型 (57.7) 对应的是不加 LBL 的那一行.
 
 | Task ($\rightarrow$) | MMLU | GSM8k | BBH | Human-Eval | Alpaca-Eval 1.0 | XSTest | IFEval | Avg |
 |---|---|---|---|---|---|---|---|---|
@@ -698,8 +693,7 @@ In Figure 20 we find that after 1% of pretraining (5000 steps or 20B tokens), up
 
 在 Figure 20 中我们发现, 预训练进行到 1% (5000 step, 即 20B token) 时, 路由到 top-8 激活专家的部分已有最多约 60% 饱和 (右). 也就是说, 对给定输入, 模型此时用的 8 个专家已经和预训练结束时一样. 早期饱和与已有工作一致 [199]. 到预训练 40% 时, 饱和度最高约 80%. 但「哪个 top-1 专家路由概率最高」饱和得更慢 (左). 我们发现越靠后的层, 路由在预训练中饱和得越早. Layer 0 是个例外, 饱和明显慢于其他层. Dai et al. [39] 在第一层不用 MoE, 因为他们发现第一层的负载均衡收敛更慢. 这很可能与我们关于饱和的发现有关. 由于第一层的路由饱和较慢, 某类输入被路由到的专家会频繁变动. 这些变动可能让某个专家突然分到比其他专家多得多的数据, 从而破坏负载均衡. 我们期待未来有工作基于我们的开放发布, 进一步研究第一层发生了什么.
 
-> **停一下:** 「1% of pretraining (5000 steps or 20B tokens)」这三个数彼此一致吗?
-> 答: step 与 token 一致, 与 1% 不一致. 每 step 为 $1024\times4096=4{,}194{,}304$ 个 token, 5000 step 为 $2.10\times10^{10}$, 即约 21B token. 但预训练共约 1.2M step (Table 13 的检查点为 step 1,200,000, 总量 5.133T token 约合 1.22M step), 5000 step 只占约 0.42%. 真到 1% 应是约 12,000 step, 约 51B token. 所以 Figure 20 横轴最左那个点比标称的 1% 还早. 另外从图上读数, top-8 在该点的最大饱和度约 65%, 40% 处约 88%, 都比正文的「约 60%」「约 80%」略高.
+step 与 token 一致, 与 1% 不一致. 每 step 为 $1024\times4096=4{,}194{,}304$ 个 token, 5000 step 为 $2.10\times10^{10}$, 即约 21B token. 但预训练共约 1.2M step (Table 13 的检查点为 step 1,200,000, 总量 5.133T token 约合 1.22M step), 5000 step 只占约 0.42%. 真到 1% 应是约 12,000 step, 约 51B token. 所以 Figure 20 横轴最左那个点比标称的 1% 还早. 另外从图上读数, top-8 在该点的最大饱和度约 65%, 40% 处约 88%, 都比正文的「约 60%」「约 80%」略高.
 
 ### 5.2 Expert Co-activation · 专家共激活
 
@@ -751,7 +745,7 @@ In Figure 21, we find that there is no strong co-activation among experts in one
 
 在 Figure 21 中我们发现, 同一层内的专家之间没有强共激活, 只有少数例外. 这可能说明不同专家之间冗余很少. 总体上, layer 7 与 layer 15 的共激活模式相似, 有几组 3 个或 2 个专家倾向于一起被激活. 我们在 §5.4 中考察激活这些专家的 token. 此外在 §G (Figure 35) 中, 我们考察跨层而非同层的专家是否倾向于一起处理 token.
 
-> **译注:** Figure 21 每张热力图的坐标轴列出 16 个专家 ID, 与题注所说的 32 个不一致. 式 (6) 以 $N_{E_i}$ 为分母, 因而 $(E_i,E_j)$ 与 $(E_j,E_i)$ 一般不对称; layer 7 的 (5, 46) 与 (46, 5) 两格也呈现不同深浅.
+Figure 21 每张热力图的坐标轴列出 16 个专家 ID, 与题注所说的 32 个不一致. 式 (6) 以 $N_{E_i}$ 为分母, 因而 $(E_i,E_j)$ 与 $(E_j,E_i)$ 一般不对称; layer 7 的 (5, 46) 与 (46, 5) 两格也呈现不同深浅.
 
 ### 5.3 Domain Specialization · 领域特化
 
@@ -1503,8 +1497,7 @@ Table 9: All artifacts released and used in this work. We point from the name us
 
 **预训练** 我们在 §B 中给出 OLMoE-1B-7B 的预训练超参数配置, 并与其他相关模型对比. 我们沿用 Groeneveld et al. [65], 使用 AdamW 优化器 [107], 经 PyTorch FSDP [213] 实现 ZeRO [142], 并采用混合精度训练 [116]. 与 Groeneveld et al. [65] 不同的主要设置有: **(1) MoE 相关改动:** OLMoE-1B-7B 是使用 dropless MoE [58] 的稀疏激活 decoder-only transformer [185]. 与多数已有 MoE 不同, 我们采用高粒度 [39, 86], 用 64 个 FFN 维度只有 1,024 的小专家, 而不是少数大专家. 我们还使用两项辅助损失: router z-loss [221] 与负载均衡损失 [154]. **(2) 稳定性改进:** (a) 使用标准差 0.02, 下 (上) 截断点为 -0.06 (0.06), 即三个标准差的截断正态初始化. (b) 使用 QK normalization [44, 113, 173]. (c) 用 RMSNorm [208] 代替 Groeneveld et al. [65] 中的非参数 LayerNorm. **(3) 性能改进:** 除了部分同样影响表现的稳定性改进外, 我们还把 AdamW 的 epsilon 从 Groeneveld et al. [65] 的 1.0E-05 降到 1.0E-08, 以加快收敛. 最后, OLMoE-1B-7B 的训练时长远超以往所有 OLMo 模型, 达 5T token, 因而超过一个 epoch (1.3 个), 做法参照 Muennighoff et al. [121]. 开始第二个 epoch 前我们会打乱预训练数据集. 在最后 100B token 中, 学习率从 5.0E-04 线性衰减到 0. 其中许多设置的实验见 §4.
 
-> **拆开:** 附录 B 说退火从 5.0E-04 线性降到 0, 这与 Table 10 和官方配置一致吗?
-> 答: 不一致. Table 10 的峰值 LR 为 4.0E-04, 最小 LR 为 4.0E-05, 调度为 cosine. 官方 `OLMoE-1B-7B-0924.yml` 写 `learning_rate: 4.0e-4`, `cosine_with_warmup`, `t_max: 5e12`, `alpha_f: 0.1`, 即主阶段从 4e-4 余弦降到 4e-5; 退火配置 `olmoe-8x1b-newhp-newds-final-anneal.yml` 写 `learning_rate: 4.0e-5`, `linear_with_warmup`, `t_warmup: 0`, `alpha_f: 0`, 即从 4e-5 线性降到 0, 与 Table 10 的「Annealing min LR 0」吻合. 5.0E-04 是 JetMoE 在 Table 10 中的峰值. 另外论文末尾的 Changelog 写「把 Table 10 的 max LR 从 5.0E-04 改成 4.0E-05」, 而现行 Table 10 的峰值是 4.0E-04, 两处也对不上.
+不一致. Table 10 的峰值 LR 为 4.0E-04, 最小 LR 为 4.0E-05, 调度为 cosine. 官方 `OLMoE-1B-7B-0924.yml` 写 `learning_rate: 4.0e-4`, `cosine_with_warmup`, `t_max: 5e12`, `alpha_f: 0.1`, 即主阶段从 4e-4 余弦降到 4e-5; 退火配置 `olmoe-8x1b-newhp-newds-final-anneal.yml` 写 `learning_rate: 4.0e-5`, `linear_with_warmup`, `t_warmup: 0`, `alpha_f: 0`, 即从 4e-5 线性降到 0, 与 Table 10 的「Annealing min LR 0」吻合. 5.0E-04 是 JetMoE 在 Table 10 中的峰值. 另外论文末尾的 Changelog 写「把 Table 10 的 max LR 从 5.0E-04 改成 4.0E-05」, 而现行 Table 10 的峰值是 4.0E-04, 两处也对不上.
 
 **Adaptation** For finetuning we use Open Instruct [76, 188].<sup>8</sup> We filter all SFT samples to a length of fewer than 4096 tokens to match the sequence length of the model. Following Muennighoff et al. [122], we aggregate loss at the token level during SFT to improve performance on long generative tasks, such as AlpacaEval. We finetune in BF16 with a global batch size of 128 (4 H100 nodes with 8 GPUs each, a per device batch size of 2, and 2 gradient accumulation steps). We train for 2 epochs with a constant learning rate of 2.0E-5. For DPO [138], we reduce the global batch size to 32 (4 H100 nodes with 8 GPUs each and a per device batch size of 1). We train for 3 epochs with a learning rate of 5.0E-7 and a DPO beta of 0.1. Our adapted models are built on top of our annealed checkpoint, and we include the load balancing loss during both SFT and DPO based on our experiments in §4.3. Our preference tuning recipe is heavily optimized for DPO based on extensive experiments by Ivison et al. [76], thus for KTO [54] we experiment with a few settings in §F. Our final KTO adaptation uses the same hyperparameters as DPO, except that we use the RMSProp optimizer instead of Adam, which we use for SFT and DPO, and that we reduce the training duration to 1.3 epochs (5,000 steps) for KTO instead of the 3 epochs used for DPO.
 

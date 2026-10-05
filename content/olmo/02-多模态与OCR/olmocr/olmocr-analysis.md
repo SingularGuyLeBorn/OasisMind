@@ -3,11 +3,11 @@ title: "olmOCR: 用文档锚点把 PDF 页面线性化为训练文本"
 category: "多模态与OCR"
 tags: ["OLMo", "OCR", "PDF", "视觉语言模型", "数据工程"]
 published: true
-excerpt: "olmOCR 用 PDF 页面图像与内部文本坐标共同提示视觉语言模型, 以 GPT-4o 生成 25.9 万页监督数据, 再微调 Qwen2-VL-7B; 本文拆解文档锚点, 结构化输出, 单元测试式评测, 下游训练收益与百万页成本的计算边界."
+excerpt: "olmOCR 用 PDF 页面图像与内部文本坐标共同提示视觉语言模型, 以 GPT-4o 生成 25.9 万页监督数据, 再微调 Qwen2-VL-7B; 文档锚点, 结构化输出, 单元测试式评测共同决定下游训练收益与百万页处理成本."
 ---
 # olmOCR: 用文档锚点把 PDF 页面线性化为训练文本
 
-来源: Luca Soldaini 等, *olmOCR: Unlocking Trillions of Tokens in PDFs with Vision Language Models*, 2025. 对照译稿见同目录 `olmocr-bi.md`, 项目代码与模型见 [allenai/olmocr](https://github.com/allenai/olmocr). 本文讨论的是论文发布时的 olmOCR-7B-0225-preview 与 v0.1.75 管线; 论文中的数据统计, 评测与成本数字均按该版本解释.
+来源: Luca Soldaini 等, *olmOCR: Unlocking Trillions of Tokens in PDFs with Vision Language Models*, 2025. 对照译稿见同目录 `olmocr-bi.md`, 项目代码与模型见 [allenai/olmocr](https://github.com/allenai/olmocr). 文中的数据统计, 评测与成本均对应论文发布时的 olmOCR-7B-0225-preview 与 v0.1.75 管线.
 
 ## 1. PDF OCR 的目标不只是认字
 

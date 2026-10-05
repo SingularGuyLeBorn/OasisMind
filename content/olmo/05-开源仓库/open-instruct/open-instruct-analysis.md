@@ -11,7 +11,7 @@ excerpt: "基于固定提交 1182625 的代码与配置，解析 Open Instruct �
 Open Instruct 提交 `11826255077617a46919ce75cadf1f3d53f30dac` 的训练实现分布在 `open_instruct/dataset_transformation.py`、`data_loader.py`、SFT/DPO/RM 与 `grpo_fast.py`，配方和运行入口位于 `scripts/train/olmo3/`、`configs/`、`docs/olmo3.md` 及污染检查代码。仓库将自身定位为研究代码且不保证向后兼容，文中的接口描述因此对应这一提交。
 
 ![Open Instruct 从统一数据契约到 SFT、偏好学习和在线 RLVR 的训练图](images/open-instruct-training-flow.svg)
-> 图 1：统一数据转换把消息、偏好对和可验证任务送入不同阶段；SFT 产生策略起点，DPO 或奖励模型使用偏好数据，在线 RLVR 则把策略采样、验证奖励与参数更新连成闭环。
+> 图 1：统一数据转换把消息、偏好对和可验证任务送入不同阶段；SFT 产生策略起点，DPO 或奖励模型使用偏好数据，在线 RLVR 则把策略采样、验证奖励与参数更新连成反馈循环。
 
 图 1 中三条训练路线共享稳定的数据语义和模型接口，各自采用不同的损失。SFT 需要明确哪些 assistant token 参与交叉熵；DPO 要保证 chosen 与 rejected 共用同一 prompt，并依赖参考策略定义相对变化；RLVR 每轮都由当前策略生成 rollout，再由验证器给出奖励，因此采样服务、训练集群和版本标识必须同步。箭头没有表示 SFT、DPO、RLVR 必须全部执行，也没有表示后一阶段必然优于前一阶段；具体组合取决于目标行为、数据覆盖和计算预算。
 
@@ -43,7 +43,7 @@ DPO 的核心是比较策略相对参考模型对两种回答的偏好差异。b
 
 奖励模型把 chosen/rejected 映射为标量并优化排序。README 的模型表显示 Tulu 系列发布 RM，同时 RLVR 又可使用可验证奖励。二者不应混为一谈：RM 是学习到的偏好近似，可能继承标注偏差；verifier 对数学答案、代码测试或格式规则给出程序化信号，范围更窄但可审计。混合奖励时必须记录每项权重和聚合方式，否则同名“reward”无法复现。
 
-## 4. RLVR：生成、验证、训练构成异步闭环
+## 4. RLVR：生成、验证、训练构成异步反馈循环
 
 该提交的 RL 主入口是 `open_instruct/grpo_fast.py`。`data_loader.py` 不只是离线 batch loader，它包含 vLLM 配置、流式数据准备、rollout 结果组合、奖励统计和优势计算。每个 prompt 生成多条 response，配置项 `num_samples_per_prompt_rollout` 控制组大小；若设为 1，代码警告 GRPO 退化为 REINFORCE。因为组内只有一个样本时标准差恒为零，源码禁止同时开启零方差样本过滤。
 
@@ -95,7 +95,7 @@ OLMo 3 tokenizer 文档更证明“模型 ID”不是充分条件。7B Think 在
 
 运行前做三类小测试最划算。第一，抽取真实样本可视化 token 与 labels，确认 system/user 被 mask、assistant 和结束 token 被学习。第二，对同一 prompt 手算 verifier 与聚合 reward，检查总分和指标。第三，以极小模型跑 checkpoint 恢复和权重同步，观察 model step 陈旧性。它们无法替代大规模训练，却能提前发现最昂贵的语义错误。
 
-Open Instruct 公开了各阶段的连接方式：统一数据转换把消息变成可训练张量，SFT/DPO/RM 提供离线学习，vLLM rollout 与 verifier 构成在线 RL 闭环，脚本和容器把它们映射到集群。仓库仍保留了一些研究系统常见的粗糙边界，因此复现实验需要同时固定 tokenizer、数据、奖励、异步策略和环境，单独保存启动命令无法覆盖这些状态。
+Open Instruct 公开了各阶段的连接方式：统一数据转换把消息变成可训练张量，SFT/DPO/RM 提供离线学习，vLLM rollout 与 verifier 构成在线 RL 反馈循环，脚本和容器把它们映射到集群。仓库仍保留了一些研究系统常见的粗糙边界，因此复现实验需要同时固定 tokenizer、数据、奖励、异步策略和环境，单独保存启动命令无法覆盖这些状态。
 
 ## 10. 数据转换中的缓存、来源与可观测性
 

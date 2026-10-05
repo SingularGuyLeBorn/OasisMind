@@ -8,7 +8,7 @@ excerpt: "固定到提交 f7cfe4c 的 olmOCR README 项目说明、安装、使�
 
 # olmOCR 官方文档对照译稿
 
-本文只使用本地官方快照 `data/sources/olmocr/repo`，固定提交 `f7cfe4c22098b154c76b6ec950d1c0a464eecf8d`。对照范围为 README 从项目介绍至远程 inference server 使用章节，以及安装/overview 文档的对应公开正文。超长 benchmark 表保留类别、版本与总体结论，不重复转录每个第三方系统的全部数字。
+对照原文来自本地官方快照 `data/sources/olmocr/repo`，固定提交为 `f7cfe4c22098b154c76b6ec950d1c0a464eecf8d`。内容覆盖 README 从项目介绍至远程 inference server 使用章节，以及安装与 overview 文档的对应正文；benchmark 表保留类别、版本与总体结论。
 
 ## 项目介绍
 

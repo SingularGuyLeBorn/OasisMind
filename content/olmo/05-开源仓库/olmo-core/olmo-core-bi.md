@@ -8,7 +8,7 @@ excerpt: "固定到提交 5f6f58a 的 OLMo-core README 与数据加载指南选�
 
 # OLMo-core 官方文档对照译稿
 
-本文只翻译本地官方源码快照 `data/sources/OLMo-core/repo` 中的公开文档，固定提交为 `5f6f58a133e7ef577d596295f2c8db4651c27857`。范围是 `README.md` 的 **Installation、Official training scripts、Inference、Evaluation、Development** 五个连续章节，以及 `docs/source/guides/data_loading.rst` 从开头到 **Using a custom data loader** 结束的连续正文。标题、段落与列表依原顺序保留；代码块原样保留。没有把当前仓库之外的网页内容补进译文。
+对照原文来自本地官方源码快照 `data/sources/OLMo-core/repo`，固定提交为 `5f6f58a133e7ef577d596295f2c8db4651c27857`。内容覆盖 `README.md` 的 **Installation、Official training scripts、Inference、Evaluation、Development** 五个连续章节，以及 `docs/source/guides/data_loading.rst` 开头至 **Using a custom data loader** 的连续正文；标题、段落、列表与代码块均依原顺序保留。
 
 ## README.md：Installation
 
