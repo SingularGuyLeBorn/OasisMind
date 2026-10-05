@@ -468,7 +468,7 @@ We present DeepSeek-R1-Zero and DeepSeek-R1, which rely on large-scale RL to inc
 
 
 
-本文给出 R1-Zero 与 R1: 靠大规模 RL 激励推理. 预训练检查点本身就蕴藏复杂推理潜力; 解锁关键往往不是海量人类标注, 而是难题 + 可靠核验器 + 足够 RL 算力. 自我校验, 反思等行为, 看起来是在 RL 过程中自然长出来的.
+本文给出 R1-Zero 与 R1, 用大规模 RL 激励推理. 预训练检查点已经具备生成复杂推理路径的潜力; 难题、可靠核验器和足够的 RL 算力可以强化其中有效的路径, 对海量人类标注的依赖随之降低. 自我校验和反思等行为也在 RL 过程中逐渐出现.
 
 Even if DeepSeek-R1 achieves frontier results on reasoning benchmarks, it still faces several capability limitations, as outlined below:
 

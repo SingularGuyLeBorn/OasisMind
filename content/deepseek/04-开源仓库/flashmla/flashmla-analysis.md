@@ -44,7 +44,7 @@ MLA 的低秩潜变量与解耦 RoPE 推导见 llm-guide 的 [03-MLA-低秩潜�
 
 ### 2.1. paged KV 块与 indices 寻址
 
-首发版 (2025-02) 的 README 就写明了 KV 缓存的组织: BF16、分页 (paged) 的 kvcache, 块大小 64. 分页的意思是 KV 不是一条连续大数组, 而是切成固定大小 (64 个 token) 的 block, 由一张 `block_table` 记录每条序列用了哪些物理 block. 这套来自 vLLM 的 PagedAttention, 好处是不同长度的序列能共享物理显存、避免为最长序列预留连续空间. 历史 kernel 代码里有一条断言 `FLASH_ASSERT(params.page_block_size == Kernel_traits::kBlockN)`, 把页大小和 kernel 的 N 维 tile 绑在一起, 见 [`flash_fwd_mla_kernel.h` (b31bfe7)](https://github.com/deepseek-ai/FlashMLA/blob/b31bfe72a83ea205467b3271a5845440a03ed7cb/csrc/flash_fwd_mla_kernel.h).
+首发版 (2025-02) 的 README 写明 KV 缓存采用 BF16 分页 (paged) 布局, 块大小为 64. KV 被切成每块 64 个 token 的固定 block, `block_table` 记录每条序列对应的物理 block. 这套布局来自 vLLM 的 PagedAttention, 不同长度的序列可以共享物理显存, 无须按最长序列预留连续空间. 历史 kernel 代码中的断言 `FLASH_ASSERT(params.page_block_size == Kernel_traits::kBlockN)` 要求页大小等于 kernel 的 N 维 tile, 见 [`flash_fwd_mla_kernel.h` (b31bfe7)](https://github.com/deepseek-ai/FlashMLA/blob/b31bfe72a83ea205467b3271a5845440a03ed7cb/csrc/flash_fwd_mla_kernel.h).
 
 到了稀疏版 (2025-09 之后), 寻址方式变了. 稀疏 kernel 不再用 `block_table` 做间接寻址, 而是让调用方把 page block 下标直接编进 `indices`. 当前接口的契约写得很细: `indices_in_kvcache[i][j][k] = (token t 所在 page block 的下标) * page_block_size + (token t 在该 block 内的偏移)`, 其中 $t$ 是第 $i$ 个 batch、第 $j$ 条 query 序列的第 $k$ 个 token. 因为物理地址已经算进 `indices`, kernel 内部不再需要 `block_table`, 但为兼容旧签名仍要求传 (传 `None` 即可). 仓库提供了 `abs_indices2indices_in_kvcache` 做这步转换, 把逻辑下标 (0 到 $s_k-1$) 映射成带 page block 的物理下标, 见 [tests/quant.py](https://github.com/deepseek-ai/FlashMLA/blob/main/tests/quant.py).
 

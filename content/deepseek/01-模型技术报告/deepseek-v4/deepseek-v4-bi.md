@@ -176,7 +176,7 @@ In order to break the efficiency barrier in ultra-long contexts, we develop the 
 
 
 
-为打破超长上下文的效率墙, 做出 DeepSeek-V4 系列预览: Pro 总参 1.6T(激活 49B), Flash 总参 284B(激活 13B). 靠架构创新, 超长序列算力效率大幅跃升, 百万 token 上下文可以高效撑住, 下一代模型的「百万长度」时代由此铺开. 作者认为: 超长序列跑得起, 才打开下一档 test-time scaling, 才谈得上更深长程任务, 也为在线学习一类未来范式打底.
+DeepSeek-V4 系列面向超长上下文的效率问题: Pro 总参 1.6T(激活 49B), Flash 总参 284B(激活 13B). 新架构提高了超长序列的计算效率, 支持百万 token 上下文. 报告把这种长序列能力视为扩大 test-time scaling、执行更深的长程任务以及探索在线学习的基础.
 
 Compared with the DeepSeek-V3 architecture (DeepSeek-AI, 2024), DeepSeek-V4 series retain the DeepSeekMoE framework (Dai et al., 2024) and Multi-Token Prediction (MTP) strategy, while introducing several key innovations in architecture and optimization. To enhance longcontext efficiency, we design a hybrid attention mechanism combining Compressed Sparse Attention (CSA) and Heavily Compressed Attention (HCA). CSA compresses the KV caches along the sequence dimension and then performs DeepSeek Sparse Attention (DSA) (DeepSeek-AI, 2025), whereas HCA applies more aggressive compression to the KV caches but keeps dense attention. To strengthen modeling capability, we incorporate Manifold-Constrained Hyper-Connections (mHC) (Xie et al., 2026) that upgrade conventional residual connections. Additionally, we introduce the Muon (Jordan et al., 2024; Liu et al., 2025) optimizer to the training of DeepSeek-V4 series, leading to faster convergence and improved training stability.
 
@@ -1532,7 +1532,7 @@ In pursuit of extreme long-context efficiency, DeepSeek-V4 series adopted a bold
 
 代码 agent: 从 50+ 内部工程师收集约 200 道难任务(功能, 修 bug, 重构, 诊断; PyTorch/CUDA/Rust/C++ 等), 各带原仓库, 执行环境与人工 rubric, 严筛后留 30 题. Table 8: Pro 显著超过 Sonnet 4.5, 接近 Opus 4.5. 对 𝑁=85 名日常用 Pro 做 agent 编程的 DeepSeek 研发问卷: 52% 愿当默认主模型, 39% 倾向愿意, 不足 9% 否定; 多数任务满意, 但有琐碎错, 模糊提示误解与偶尔 over-thinking.
 
-本工作给出 V4 系列预览, 目标是打破超长上下文效率墙. CSA/HCA 混注带来长序列效率跃升; 架构创新叠加基建优化, 使百万上下文可原生高效支撑, 并为 test-time scaling, 长程任务与在线学习等未来范式打底. 评测显示 Pro-Max 重划开源 SOTA: 知识大幅超过先前开源, 推理逼近前沿闭源, agent 有竞争力; Flash-Max 推理可比领先闭源且架构更省. 作者认为 V4 开启开源百万长度上下文新时代.
+本工作给出 V4 系列预览, 目标是提高超长上下文效率. CSA/HCA 混合注意力与基础设施优化共同支撑百万 token 上下文, 并为 test-time scaling、长程任务与在线学习提供更大的序列预算. 评测中, Pro-Max 的知识能力超过此前开源模型, 推理能力接近前沿闭源模型, agent 任务也具有竞争力; Flash-Max 的推理成绩可与领先闭源模型相比, 同时采用更节省计算的架构. 报告据此把 V4 称为开源百万 token 上下文的新阶段.
 
 为冲极端长上下文效率, 架构偏大胆; 为控风险保留许多已初步验证的组件与技巧, 因而相对复杂. 后续会更系统, 更有原则地蒸馏到本质设计, 在不伤效果下更干净. Anticipatory Routing 与 SwiGLU Clamping 虽有效, 机理仍未透; 将继续研究训练稳定性基础问题并加强内部指标监控, 走向更可预测的大规模稳训.
 

@@ -59,9 +59,9 @@ In this study, we introduce DeepSeekMath, a domain-specific language model that 
 
 
 
-本文提出面向数学的 DeepSeekMath: 开源侧数学能力大幅领先, 学术基准上逼近 GPT-4. 为此先建 **DeepSeekMath Corpus**-- 约 120B 数学 token 的高质量预训练语料, 用基于 fastText 的分类器从 Common Crawl 里捞. 首轮: OpenWebMath 当正例, 多样网页当负例训分类器; 再去 CC 挖正例, 人工精修后更新分类器, 迭代放大. 质量上, DeepSeekMath-Base 7B 在 GSM8K 拿 64.2%, 竞赛级 MATH 拿 36.2%, 超过 Minerva 540B. 语料多语, 中文数学基准也涨. 作者认为这套数学数据处理经验只是起点, 后面还有很大改进空间.
+本文提出面向数学的 DeepSeekMath, 并在多项数学基准上取得接近 GPT-4 的成绩. 训练从构建 **DeepSeekMath Corpus** 开始: 使用 fastText 分类器从 Common Crawl 中筛出约 120B 数学 token. 第一轮以 OpenWebMath 为正例、多样网页为负例训练分类器, 随后从 Common Crawl 召回候选网页, 经人工检查后更新分类器并迭代扩大语料. DeepSeekMath-Base 7B 在 GSM8K 得到 64.2%, 在竞赛级 MATH 得到 36.2%, 超过 Minerva 540B. 多语语料也提高了中文数学基准成绩. 报告同时指出, 这套数学数据处理流程仍有进一步改进空间.
 
-解释: 数学语料构造 = 不是「下载 arXiv 就完事」, 而是用分类器在整个网页海里反复召回, 筛排名, 人工补种子域, 四轮迭代到约 3550 万页, 120B token; 同时做基准去污染(10-gram 精确匹配).
+解释: 数学语料来自四轮网页检索与筛选. 分类器在大规模网页中反复召回候选页面, 经过排序和人工补充种子域, 最终得到约 3550 万页、120B token, 同时用 10-gram 精确匹配进行基准去污染.
 
 DeepSeekMath-Base is initialized with DeepSeek-Coder-Base-v1.5 7B (Guo et al., 2024), as we notice that starting from a code training model is a better choice compared to a general LLM. Furthermore, we observe the math training also improves model capability on MMLU (Hendrycks et al., 2020) and BBH benchmarks (Suzgun et al., 2022), indicating it does not only enhance the model’s mathematical abilities but also amplifies general reasoning capabilities.
 
@@ -1007,7 +1007,7 @@ the exploration efficiency of policy models, also play an exceedingly important 
 
 
 
-**算法**: 把数据与奖励变成梯度系数. 现有方法在相当程度上**完全信任**奖励信号来加减某 token 条件概率; 但奖励不可能永远可靠-- 即便仔细标注的 PRM800K 仍约 20% 标错<sup>7</sup>. 因此要探索对噪声奖励稳健的 RL, 作者认为 **weak-to-strong** 对齐会从根本上改写学习算法.
+**算法**: 把数据与奖励变成梯度系数. 现有方法高度依赖奖励信号来调整 token 的条件概率, 奖励噪声也会直接进入梯度. 即使经过仔细标注, PRM800K 仍约有 20% 的错误标签<sup>7</sup>. 因此需要对噪声奖励更稳健的 RL 方法; 报告把 **weak-to-strong** 对齐视为可能改变学习算法的一条路线.
 
 **Reward Function** Reward function is the source of the training signal. In RL, the reward function is usually the neural reward model. We think there exist three important directions for reward models: 1) **How to enhance the generalization ability of the reward model.** The reward model must be effectively generalized to handle out-of-distribution questions and advanced decoding outputs; otherwise, reinforcement learning may merely stabilize the distribution of LLMs rather than improve their fundamental capabilities; 2) **How to reflect the uncertainty of reward model.** The uncertainty could potentially act as a linking bridge between the weak reward model and the weak-to-strong learning algorithms; 3) **How to efficiently build highquality process reward models** that can provide fine-grained training signals for the reasoning process (Lightman et al., 2023; Wang et al., 2023b).
 

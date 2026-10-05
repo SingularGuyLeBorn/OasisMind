@@ -68,7 +68,7 @@ Recent advancements in unified multimodal understanding and generation models ha
 
 统一「既能看懂又能画」的多模态模型近来进展很快. 这类做法常能抬高视觉生成侧的指令跟随, 也减少重复堆模型. 多数方法给理解任务和生成任务共用同一个视觉编码器; 两任务需要的表征并不一样, 理解侧往往吃亏. Janus 的对策是**把视觉编码拆开**: 理解一路, 生成一路, 缓解冲突, 两边都能做好.
 
-解释:「解耦视觉编码」不是把整网拆成两个无关模型, 而是输入图像时走两套编码器(理解用语义编码器, 生成用离散 tokenizer), 再在同一个自回归 LLM 里汇合; 共享的是语言骨干, 不是视觉前端.
+解释:「解耦视觉编码」让理解任务使用语义编码器, 生成任务使用离散 tokenizer, 两条视觉路径在同一个自回归 LLM 里汇合. 共享部分是语言骨干, 两套视觉前端仍各自独立.
 
 As a pioneering model, Janus is validated at the 1B parameter scale. However, due to the limited amount of training data and the relatively small model capacity, it exhibites certain shortcomings, such as suboptimal performance on short prompts image generation and unstable text-to-image generation quality. In this paper, we introduce Janus-Pro, an enhanced version of Janus that incorporates improvements across three dimensions: training strategies, data, and model size. The Janus-Pro series includes two model sizes: 1B and 7B, demonstrating scalability of the visual encoding decoding method.
 

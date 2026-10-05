@@ -46,7 +46,7 @@ The release of reasoning models (DeepSeek-AI, 2025; OpenAI, 2024a) marked a pivo
 
 
 
-推理模型(DeepSeek-AI, 2025; OpenAI, 2024a)把可验证领域的整体能力往上抬了一大截. 之后开闭源都在快进, 但近几个月轨迹分叉: 开源仍在进步, 闭源加速更陡. 结果不是收敛, 而是差距在拉大-- 复杂任务上专有系统越来越压一头.
+推理模型(DeepSeek-AI, 2025; OpenAI, 2024a)显著提高了可验证领域的整体能力. 此后开源与闭源模型都在进步, 但近几个月的速度出现分化: 闭源模型提升更快, 在复杂任务上进一步扩大了对开源模型的领先幅度.
 
 Through our analysis, we identify three critical deficiencies that limit the capability of open-source models in complex tasks. First, architecturally, the predominant reliance on vanilla attention (Vaswani et al., 2017) mechanisms severely constrains efficiency for long sequences. This inefficiency poses a substantial obstacle to both scalable deployment and effective post-training. Second, regarding resource allocation, open-source models suffer from insufficient computational investment during the post-training phase, limiting their performance on hard tasks. Finally, in the context of AI agents, open-source models demonstrate a marked lag in generalization and instruction-following capabilities compared to their proprietary counterparts (EvalSys, 2025; Li et al., 2025; Luo et al., 2025), hindering their effectiveness in real deployment.
 

@@ -698,7 +698,7 @@ As shown in Table 2, within a 10× compression ratio, the model’s decoding pre
 
 a feature of the forgetting mechanism. When compressing tokens by nearly 20×, we find that precision can still approach 60%. These results indicate that optical contexts compression is a very promising and worthwhile research direction, and this approach does not bring any overhead because it can leverage VLM infrastructure, as multimodal systems inherently require an additional vision encoder.
 
-遗忘机制的特征. 当 token 压缩接近 $20\times$ 时, 精度仍可接近 60%. 这些结果表明, 上下文光学压缩是有潜力的研究方向. 该方法可以利用 VLM 基础设施, 因为多模态系统本来就需要额外的视觉编码器, 所以作者认为它不引入额外开销.
+遗忘机制的特征. 当 token 压缩接近 $20\times$ 时, 精度仍可接近 60%. 这些结果表明, 上下文光学压缩是有潜力的研究方向. 该方法可以复用 VLM 已有的视觉编码器基础设施, 报告因此认为不会额外引入新的编码器开销.
 
 Table 4 | Edit distances for different categories of documents in OmniDocBench. The results show that some types of documents can achieve good performance with just 64 or 100 vision tokens, while others require Gundam mode.
 

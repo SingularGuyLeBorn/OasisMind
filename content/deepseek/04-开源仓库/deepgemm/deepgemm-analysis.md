@@ -34,7 +34,7 @@ DeepSeek-V3 把线性层的前向与反向大量放到 FP8 上算, 用的是细�
 
 ### 2.1 FP8 tensor core 的定点累加只保留 14 位
 
-README 一句话带过的「imprecise FP8 tensor core accumulation」, 官方在 issue [#50](https://github.com/deepseek-ai/DeepGEMM/issues/50) 里给了具体机制. Hopper 的 FP8 GEMM 在 tensor core 内部用的是定点累加: 把各个尾数乘积按最大指数右移对齐, 再相加. DeepSeek 的实验发现, 它在符号位填充右移之后只保留每个尾数乘积的最高 14 位, 超出的位直接截断. 也就是说, 沿 K 方向把很多 FP8 乘积加起来时, tensor core 给出的不是一个完整 FP32 精度的和, 而是一个精度被压到约 14 位尾数的中间值, issue 里把它记作 FP22. 对训练来说, 这种截断在长 K 上累积的误差足以影响收敛.
+README 提到的「imprecise FP8 tensor core accumulation」在官方 issue [#50](https://github.com/deepseek-ai/DeepGEMM/issues/50) 中有具体说明. Hopper 的 FP8 GEMM 在 tensor core 内部使用定点累加: 各个尾数乘积按最大指数右移对齐后相加. DeepSeek 的实验发现, 符号位填充右移后只保留每个尾数乘积的最高 14 位, 其余位被截断. 沿 K 方向累加大量 FP8 乘积时, tensor core 因而产生约 14 位尾数精度的中间值, issue 将其记作 FP22, 低于完整 FP32 累加精度. 长 K 下累积的截断误差可能影响训练收敛.
 
 这里的额外精度损失来自累加器, 与 FP8 输入的量化误差是两件事. 把 K 轴切成较短的分段后, tensor core 只负责段内累加, 每段结果再进入 FP32 累加器, 截断误差便被限制在段内. DeepGEMM 取 scale 的 K 粒度 $128$ 作为段长: 每 $128$ 个 K 元素完成一次 tensor core 累加, 取出结果、乘 scale, 随后累加到 FP32. 反量化与二级累加因此落在同一个位置.
 

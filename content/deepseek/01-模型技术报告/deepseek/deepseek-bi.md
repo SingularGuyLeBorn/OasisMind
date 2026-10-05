@@ -643,7 +643,7 @@ certain tasks declined.
 
 
 
-**推理:** SFT 里大量 CoT 格式, Chat 在 BBH, NaturalQuestions 等略涨; 作者认为 SFT 学的主要是推理路径的正确写法, 而不是「新的推理能力」本身.
+**推理:** SFT 包含大量 CoT 格式数据, Chat 在 BBH、NaturalQuestions 等任务上略有提升. 报告将其归因于模型学会了推理路径的书写形式, 没有据此声称 SFT 产生了新的推理能力.
 
 | Language Benchmark | DeepSeek 7B Base | DeepSeek 7B Chat | DeepSeek 67B Base | DeepSeek 67B Chat |
 | --- | --- | --- | --- | --- |
@@ -1237,7 +1237,7 @@ Figure 7 shows benchmark metrics curves across different training steps. We can 
 
 
 
-图 7: 随训练步数, 各基准持续上升; 若继续训, 作者认为还会再涨.
+图 7: 各项基准分数随训练步数持续上升; 报告据此预计延长训练仍可能带来提升.
 
 <table><tr><td rowspan="2">Model</td><td rowspan="2">Size</td><td colspan="2">HumanEval</td><td rowspan="2">MBPP</td></tr><tr><td>Python</td><td>Multilingual</td></tr><tr><td></td><td>Pre-Trained Models</td><td></td><td></td><td></td></tr><tr><td>Codex-001</td><td></td><td>33.5%</td><td>26.1%</td><td>45.9%</td></tr><tr><td>StarCoder</td><td>16B</td><td>36.0%</td><td>28.7%</td><td>46.8%</td></tr><tr><td>CodeGeeX2</td><td>6B</td><td>36.0%</td><td>24.5%</td><td>42.4%</td></tr><tr><td>CodeLlama</td><td>7B</td><td>31.7%</td><td>29.2%</td><td>41.6%</td></tr><tr><td>CodeLlama</td><td>13B</td><td>36.0%</td><td>35.4%</td><td>48.4%</td></tr><tr><td>CodeLlama</td><td>34B</td><td>48.2%</td><td>41.0 %</td><td>55.2%</td></tr><tr><td>DeepSeek-LLM-Base</td><td>67B</td><td>42.7%</td><td>37.2%</td><td>57.4%</td></tr><tr><td colspan="3">Instruction-Tuned Models</td><td></td><td></td></tr><tr><td>Wizard-Coder</td><td>34B</td><td>73.2%</td><td>48.8%</td><td>61.2%</td></tr><tr><td>DeepSeek-LLM-Chat</td><td>67B</td><td>73.8%</td><td>53.3%</td><td>61.4%</td></tr></table>
 

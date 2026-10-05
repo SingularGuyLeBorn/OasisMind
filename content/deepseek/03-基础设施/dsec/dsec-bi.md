@@ -183,7 +183,7 @@ DSec 部署在多个规模单元 (scale unit) 上, 这些单元共用一套 3FS 
 
 These numbers are important for understanding the rest of the report. DSec is not a single sandbox runtime or a thin wrapper around containers. It is a production execution platform that must combine user-facing sandbox abstractions, backend-specific runtimes, scalable image storage, high-density resource management, and training-framework integration.
 
-这些数字对理解报告其余部分很重要. DSec 不是单一的沙箱运行时, 也不是套在容器外面的一层薄包装. 它是一个生产执行平台, 要把面向用户的沙箱抽象, 各后端的运行时, 可扩展的镜像存储, 高密度资源管理和训练框架集成组合在一起.
+这些数字说明 DSec 面向的是完整的生产执行平台. 系统同时组合了面向用户的沙箱抽象、多个后端运行时、可扩展镜像存储、高密度资源管理和训练框架集成, 覆盖范围远大于单一沙箱运行时.
 
 ## 3. Platform Architecture · 平台架构
 
