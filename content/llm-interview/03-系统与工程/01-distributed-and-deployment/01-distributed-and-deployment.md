@@ -1,142 +1,388 @@
 ---
-title: "工程实现：分布式训练、LoRA 与推理部署"
+title: "分布式训练、参数高效微调与推理部署"
 published: true
-tags: ["工程实现", "分布式训练", "LoRA", "FSDP", "量化", "vLLM", "QLoRA"]
+tags: ["分布式训练", "LoRA", "FSDP", "ZeRO", "量化", "vLLM", "QLoRA"]
 ---
-# 工程实现：分布式训练、LoRA 与推理部署
+# 分布式训练、参数高效微调与推理部署
 
-> ⚠️ **时效性说明**：2025 年后，QLoRA、PagedAttention 取代传统微调和 Naive 推理成为主流考点。ZeRO-3 知识仍是基础但不再够用，需结合 3D 并行理解。
->
-> **来源**：AgentGuide 面经、小林笔记、牛客面经、CSDN 面试题、DeepSeek 工程博客
+训练和部署大模型时，参数量只是第一项。训练还要保存梯度、优化器状态和激活；推理还要容纳 KV cache、临时工作区与并发请求。单卡放不下以后，可选方案很多：分片参数、切分矩阵、切分层、压缩权重、减少可训练参数或重算激活。选型不能靠「多少 B 用哪种并行」的固定表格，而要先算内存和通信，再看计算是否能覆盖通信。
 
----
+本文采用以下符号：参数量为 $N$，数据并行规模为 $D_p$，张量并行规模为 $T_p$，流水线并行规模为 $P_p$，总 GPU 数通常满足 $W=D_pT_pP_p$。每卡 micro-batch 为 $b$，梯度累积步数为 $g$，数据并行组数为 $D_p$，则一次优化更新的全局 batch 为
 
-## 1. LoRA 原理 + 秩 r 选择 + α 缩放
+$$
+B_{global}=b\times g\times D_p.
+$$
 
-- **元数据**：`{topic: "工程·微调", quality: ⭐⭐⭐⭐⭐, year: "经典题·持续有效", difficulty: mid}`
-- **来源**：AgentGuide 面经、掘金
+序列长度也会显著改变激活和注意力成本，因此报告 batch 时必须同时给出序列长度、精度、并行拓扑和是否启用重计算。
 
-**原理**：冻结 W ∈ R^{d×k}，旁路学习低秩矩阵 A·B（r ≪ min(d,k)）：
-```
-W' = W + α·A·B,  A∈R^{d×r}, B∈R^{r×k}
-```
+## 1. 先算一张显存构成表
 
-**秩 r 的工业界经验**（2025-2026 新共识）：
-- r=8/16 仍是通用默认值
-- r=64 在需要学习新知识时更好（如代码、数学推理）
-- **选 r 的标准**：验证集上试 8/16/32/64，选效果饱和的最小值
+### 1.1 参数、梯度与优化器状态
 
-**追问**：「α 的典型值？」→ 通常设 r 的 1-2 倍。α 不是 r 的替代品，两者配合使用。
+以混合精度 AdamW 为例，一个常见但并非唯一的估算是：BF16 参数 2 字节，BF16 梯度 2 字节，FP32 主参数 4 字节，一阶矩与二阶矩各 4 字节，合计约 16 字节/参数。参数状态容量约为
 
-> ✅ **时效判断**：LoRA 是久经考验的经典题。2025-2026 新增"r=64"和"多任务 LoRA"变体。
+$$
+M_{state}\approx16N\ \text{bytes}.
+$$
 
----
+7B 模型仅这些状态就约 $112$ GB 十进制容量；70B 则约 $1.12$ TB。具体实现可能没有 FP32 主参数、使用 FP32 梯度、8-bit optimizer，或把部分状态卸载到 CPU，因此 16 字节只是明确假设下的起点。
 
-## 2. QLoRA: 4-bit NF4 + 双重量化
+训练峰值还包含激活、临时 buffer、通信 bucket、CUDA context 与 allocator 碎片。激活大体随 micro-batch、序列长度、层数和隐藏宽度增长，注意力中间量若未使用内存高效 kernel 还会出现 $S^2$ 项。只用「参数量乘 16」不能推出每卡 batch。
 
-- **元数据**：`{topic: "工程·量化微调", quality: ⭐⭐⭐⭐⭐, year: "2025-2026", difficulty: senior}`
-- **来源**：小林笔记、QLoRA 论文
+### 1.2 激活检查点
 
-**三个关键技术**：
-1. **NF4 (NormalFloat4)**：信息论最优的 4-bit 数据类型，比 INT4 更适合模型权重的正态分布
-2. **双重量化**：对量化常数再做 8-bit 量化，进一步压缩
-3. **Paged Optimizer**：显存不够时换出到 CPU 内存
+普通反向传播保存前向中间值，以便计算梯度。激活检查点只保存若干边界，反向时重跑区间内前向，用额外计算换显存。假设 $L$ 层被均匀分成 $K$ 段，保存边界的激活减少，但每段在反向阶段需要重算。精确比例依赖算子和检查点粒度，不存在通用的「固定多 20% 时间、少 50% 显存」。
 
-**效果**：单张 24GB 显卡微调 65B 模型。
+检查点粒度过细会增加 kernel 启动和重复计算，过粗则节省有限。FlashAttention 已经通过重算局部分数减少注意力中间存储，和整层 checkpoint 叠加时应依据 profiler 观察，而非把两个理论节省比例直接相乘。
 
-**追问**：「NF4 和 INT4 的区别？」→ INT4 均匀量化，NF4 按正态分布的非均匀量化，精度更高。
+## 2. DDP 与梯度同步
 
-> ✅ **时效判断**：2025 起热门，QLoRA 已成低成本微调标配。
+数据并行让每个 rank 保存完整模型，读取不同 micro-batch。局部反向得到梯度 $g_r$，随后 all-reduce：
 
----
+$$
+\bar g=\frac1{D_p}\sum_{r=1}^{D_p}g_r.
+$$
 
-## 3. FSDP / DeepSpeed ZeRO 分片策略详解
+各 rank 用相同平均梯度更新，因而参数保持一致。环形 all-reduce 中，每个 rank 的通信量近似为
 
-- **元数据**：`{topic: "工程·分布式", quality: ⭐⭐⭐⭐⭐, year: "2024-2026", difficulty: senior}`
-- **来源**：AgentGuide 面经、CSDN
+$$
+V_{AR}\approx2\frac{D_p-1}{D_p}M_g,
+$$
 
-| 策略 | ZeRO Stage | 分片内容 | 通信模式 |
-|---|---|---|---|
-| DDP | — | 无 | all-reduce 梯度 |
-| ZeRO-1 | Optimizer states | 优化器状态 | all-gather + reduce-scatter |
-| ZeRO-2 | + Gradients | 梯度 | 同上 |
-| **ZeRO-3 (FSDP)** | + Parameters | 全部参数 | 每层前 all-gather，后 reduce-scatter |
+$M_g$ 是梯度字节数。系数 2 对应 reduce-scatter 与 all-gather 两个阶段。真实时间还受延迟、拓扑、分桶和计算通信重叠影响。
 
-**FSDP vs Megatron 3D 并行**（2026 面试高频）：
-| | FSDP | Megatron (TP+PP+DP) |
-|---|---|---|
-| 切分粒度 | 层级别（纵向） | 层内切分（横向）+ 流水线 |
-| 通信量 | all-gather 完整层 | 更细粒度，带宽要求更高 |
-| 适用规模 | ≤ 100B | > 100B |
-| 易用性 | 高（几行配置） | 低（需手动切分） |
+DDP 通常在反向传播过程中按 bucket 启动通信。后面层的梯度先产生，可以一边计算前面层梯度，一边同步已完成 bucket。bucket 太大，通信启动晚；太小，collective 次数增加。`no_sync` 一类机制让梯度累积的前 $g-1$ 个 micro-batch 不做 all-reduce，只在累积末尾同步，否则通信量会随累积步数无谓增加。
 
-> ✅ **时效判断**：FSDP 是 2024-2026 标准答案。2025-2026 面试已不满足于背 ZeRO 表格，要求理解 FSDP vs 3D 并行的选型。
+DDP 的限制直接：每卡都要放完整参数、梯度和优化器状态。模型状态已接近单卡容量时，即使激活很小也无法训练，于是需要 ZeRO/FSDP 分片。
 
----
+## 3. ZeRO 与 FSDP 分别切什么
 
-## 4. PagedAttention / vLLM 推理优化
+ZeRO 从数据并行的重复状态入手。若数据并行规模为 $D_p$，理想均匀分片下：
 
-- **元数据**：`{topic: "工程·推理", quality: ⭐⭐⭐⭐⭐, year: "2025-2026", difficulty: senior}`
-- **来源**：林哥笔记、牛客面经
+- Stage 1 分片优化器状态；参数和梯度仍复制。
+- Stage 2 再分片梯度；参数仍复制。
+- Stage 3 连参数也分片；计算某个模块前临时聚合所需参数。
 
-**核心洞察**：KV Cache 存在严重碎片化问题（20-40% 利用率）。
+用每参数 2 字节低精度参数、2 字节梯度、12 字节优化器相关状态的假设，可写出每卡模型状态的粗估：
 
-**PagedAttention 方案**：像操作系统虚拟内存一样将 KV Cache 分页管理：
-- 固定大小 page（类似 4KB 内存页）
-- 按需分配，零碎片
-- 支持 Copy-on-Write（beam search 时共享 pages）
-- 内存利用率 → 95%+
+$$
+M_{Z1}\approx4N+\frac{12N}{D_p},
+$$
 
-**追问**：「vLLM 和 TensorRT-LLM 有什么区别？」→ vLLM 专注 PagedAttention 内存管理；TensorRT-LLM 侧重算子融合和编译优化。两者可结合使用。
+$$
+M_{Z2}\approx2N+\frac{14N}{D_p},
+$$
 
-> ✅ **时效判断**：2025-2026 面试超高频，每个推理优化相关岗位必问。
+$$
+M_{Z3}\approx\frac{16N}{D_p}.
+$$
 
----
+这些式子不包含激活、临时 full parameter、通信 buffer 和碎片。Stage 3 在前向与反向需要 all-gather 参数，并用 reduce-scatter 汇总梯度。分片显著降低常驻状态，代价是更多通信与参数生命周期管理。
 
-## 5. 模型量化部署对比
+FSDP 与 ZeRO-3 的核心思路接近：参数、梯度和优化器状态按数据并行 rank 分片，模块计算前 unshard，计算后 reshard。实际差异来自框架接口、wrap 粒度、prefetch、通信调度、混合精度、checkpoint 格式与 offload 实现，不能简单把二者视为两个完全不同的数学算法。
 
-- **元数据**：`{topic: "工程·量化", quality: ⭐⭐⭐⭐, year: "2025-2026", difficulty: mid}`
-- **来源**：掘金、小林笔记
+### 3.1 wrap 粒度为什么重要
 
-| 方式 | 精度 | 模型大小 (7B) | 适用场景 | 代表工具 |
-|---|---|---|---|---|
-| FP16 | 16-bit | ~14GB | 基线 | — |
-| INT8 | 8-bit | ~7GB | 在线服务 | TensorRT |
-| INT4 / NF4 | 4-bit | ~3.5GB | 单卡推理 | AWQ, GPTQ |
-| GGUF (Q4_K_M) | 4-bit CPU优化 | ~4GB | 本地笔记本 | llama.cpp |
+若整个模型作为一个 FSDP 单元，聚合时可能需要同时持有很大的完整参数；若每个小线性层都独立 wrap，collective 过碎，延迟增加。常见做法按 Transformer block wrap，让当前块聚合时，其他块保持分片，并预取下一块。
 
-**面试题**：「AWQ 和 GPTQ 有什么区别？」→ AWQ 是权重感知量化（保留重要权重精度）；GPTQ 是二阶近似量化（OBS 方法的推广）。AWQ 通常更简单高效。
+峰值显存还受「当前块完整参数 + 下一块预取参数 + 当前激活 + 通信 buffer」共同影响。某一层特别大，例如词表输出头或 MoE 专家层，平均 $16N/D_p$ 的估算会掩盖瞬时峰值，需要逐模块测量。
 
-> ✅ **时效判断**：2025-2026 面试中 AWQ 已取代 GPTQ 成为推荐答案。
+### 3.2 checkpoint 与恢复
 
----
+分片训练的 checkpoint 可以保存为每 rank shard，也可在保存时聚合成完整权重。前者写入并行、峰值低，但恢复时依赖 world size 和分片元数据；后者通用性强，聚合过程需要额外内存与网络。可靠恢复还要保存优化器状态、学习率调度器、随机数状态、数据迭代位置和混合精度 scaler。只恢复模型参数会改变后续训练轨迹。
 
-## 6. 分布式训练场景题
+## 4. 张量并行：切分一层里的矩阵
 
-- **元数据**：`{topic: "工程·场景题", quality: ⭐⭐⭐⭐⭐, year: "2025-2026", difficulty: senior}`
-- **来源**：牛客面经、AgentGuide
+考虑线性层 $Y=XW$，其中 $W\in\mathbb{R}^{d_{in}\times d_{out}}$。列并行把 $W$ 沿输出维切成 $[W_1,\ldots,W_{T_p}]$：
 
-**经典场景题 1**：「Qwen-72B 在 8×A100 (80GB) 上用 FSDP 训练，batch size 怎么配？」
-→ 72B FP16 = 144GB → 每卡 18GB 参数 → 剩余 ~62GB → per_gpu_batch_size=1，gradient_accum=8
+$$
+Y_i=XW_i,\qquad Y=\operatorname{Concat}(Y_1,\ldots,Y_{T_p}).
+$$
 
-**经典场景题 2**：「100B+ 模型该用 FSDP 还是 Megatron？」
-→ FSDP all-gather 完整层的通信开销在超大模型时太高 → Megatron TP（层内切分） + PP（流水线）是必须的。DeepSeek V2 配置参考：TP=8, PP=16, DP=…
+若后续算子能直接消费分片输出，拼接可以推迟。行并行把 $W$ 沿输入维切分，输入也切成 $X=[X_1,\ldots,X_{T_p}]$：
 
-**经典场景题 3**：「训练时显存不够，先调什么？」
-→ 便宜方案：Gradient Checkpointing（以算力换显存，~20% 训练时间换 ~50% 显存）
-→ 中等方案：ZeRO-2 → ZeRO-3
-→ 大动干戈：TP + PP 模型并行
+$$
+Y=\sum_iX_iW_i,
+$$
 
-> ✅ **时效判断**：2025-2026 面试出现"给配置推 batch size"类场景题频率上升，纯背表格不够了。
+需要 all-reduce 或 reduce-scatter 求和。Megatron 风格常把 MLP 的第一层做列并行、第二层做行并行，中间激活保持分片，从而每个 MLP block 只在合适位置做一次聚合。
 
----
+注意力中可按头切分 Q、K、V 与输出投影。若 $H_q$ 不能被 $T_p$ 整除，或 GQA 的 $H_{kv}$ 小于并行规模，头分配与 KV 复制需要额外设计。序列并行把某些逐 token 操作沿序列轴切分，减少 layer norm、dropout 和残差相关激活的重复存储。
 
-## 来源汇总
+张量并行通信发生在每层，频率高，适合节点内 NVLink/NVSwitch 等高带宽互联。跨低带宽节点扩大 $T_p$ 往往让 collective 暴露在关键路径上。它的价值不由模型参数阈值决定，而由单层是否放得下、矩阵规模、互联与通信重叠共同决定。
 
-- CSDN 大模型面试20题 — Transformer 与分布式训练核心解析
-- AgentGuide 面经 — LoRA、FSDP 面试追问
-- 小林笔记 — QLoRA NF4、PagedAttention 图解
-- 牛客面经 — KV Cache 显存计算场景题
-- DeepSeek 工程博客 — MoE + 3D 并行工程实践
+## 5. 流水线并行：切分层
 
-**🔍 下次搜索关键词**：Megatron TP 实现细节、Gradient Checkpointing 公式推导、DeepSeek 的 Multi-Token Prediction 训练加速
+流水线并行把连续层分到 $P_p$ 个 stage。朴素执行时，stage 0 完成整个 batch 后才交给 stage 1，其他设备会大量空闲。micro-batching 将 batch 切小，让不同 stage 同时处理不同 micro-batch。
+
+若每个 stage 计算时间相同，使用 $m$ 个 micro-batch 的简单 GPipe 调度，理想利用率可粗略写成
+
+$$
+\eta\approx\frac{m}{m+P_p-1}.
+$$
+
+$P_p=8,m=32$ 时约为 $32/39=82.1\%$。增加 micro-batch 可减少 bubble 比例，但会增加需要保存的在途激活，且 micro-batch 太小会降低矩阵效率。1F1B 调度在稳态交替执行前向与反向，能控制峰值激活；interleaved schedule 让每个物理 stage 持有多个模型 chunk，以更多通信换更小 bubble。
+
+层数均分不保证时间均衡。词表头、嵌入、MoE 层和跨节点边界成本不同，最慢 stage 决定吞吐。部署前需要按真实序列长度测每层时间，再决定分段。流水线还改变 checkpoint 和故障恢复：一个 rank 丢失便会中断整条 pipeline。
+
+## 6. 3D 并行怎样组合
+
+张量并行解决单层参数与计算切分，流水线并行解决层数切分，数据并行复制模型分片处理更多样本。三者组合时，总 world size 为 $T_pP_pD_p$。ZeRO/FSDP 常作用于剩余的数据并行维；序列并行或上下文并行还可继续切长序列。
+
+选型可按约束逐步收缩：单层放不下或节点内矩阵足够大时增加 TP；整模型层数放不下时增加 PP；模型能放下后，剩余设备用于 DP 提高吞吐；激活随长序列过大时考虑序列/上下文并行和 checkpoint。这个顺序只是分析方法，最终还需搜索通信拓扑和 batch 可行域。
+
+例如 64 张 GPU、节点内 8 卡高速互联。可先尝试 $T_p=8$ 让 TP 留在节点内，$P_p=4$ 跨 4 个节点切层，剩余 $D_p=2$ 做数据并行。若 stage 间发送激活成为瓶颈，可调整 PP 切分；若单层实际能以 $T_p=4$ 高效运行，则可释放更多 DP，提高全局吞吐。不存在仅凭「100B」就唯一确定的拓扑。
+
+## 7. LoRA 的容量与计算
+
+对权重 $W\in\mathbb{R}^{d_{out}\times d_{in}}$，LoRA 冻结 $W$ 并训练低秩更新：
+
+$$
+W'=W+\frac{\alpha}{r}BA,
+$$
+
+$$
+A\in\mathbb{R}^{r\times d_{in}},\qquad
+B\in\mathbb{R}^{d_{out}\times r}.
+$$
+
+新增参数为 $r(d_{in}+d_{out})$，全量矩阵为 $d_{in}d_{out}$。当两端均为 4096、$r=16$ 时，新增 131072 个参数，只占原矩阵约 0.78%。训练显存主要减少在可训练梯度和优化器状态；冻结底座仍需驻留或按设备切分，前向也仍计算 $XW$。
+
+$\alpha/r$ 控制低秩支路尺度。rank 越大表达空间越宽，收益是否继续增长取决于任务和注入层。不存在「学习新知识固定用 $r=64$」一类普遍经验。合理实验会同时扫描 rank、学习率、注入模块与训练步数，并比较相同可训练参数预算。
+
+初始化常令其中一矩阵为零，使训练开始时 $\Delta W=0$，模型输出等于底座；另一矩阵使用随机初始化以保证梯度可以流动。若 A、B 都初始化为零，第一步两边梯度也可能同时为零。
+
+## 8. QLoRA 的三项设计
+
+QLoRA 将冻结底座量化为 4 bit，计算时反量化到 BF16 等计算 dtype，LoRA 参数仍以较高精度训练。其 NF4 codebook 针对近似正态分布权重设计分位点，目标是在每个区间包含相近概率质量；它不是任意权重分布下都严格「信息论最优」的通用 4-bit 格式。
+
+对一个量化块，权重可近似写成
+
+$$
+w_i\approx s\,q_i,
+$$
+
+$q_i$ 是 codebook 项，$s$ 是块尺度。双重量化继续量化这些尺度常数，以减少 scale 元数据。块越小，尺度更贴合局部权重，但 scale 开销更大；块越大，压缩率好，量化误差可能增加。
+
+Paged optimizer 利用 NVIDIA unified memory，在显存压力峰值时将优化器页迁移到 CPU 内存。它用于抑制偶发峰值，并不意味着 CPU 交换没有代价；PCIe 迁移频繁时训练会明显变慢。所谓「单卡微调 65B」必须附带 GPU 容量、序列长度、batch、checkpoint、数据与训练配置，不能推广为任何 24GB 卡上的无条件结论。
+
+## 9. 推理量化：权重、激活与 KV 分开看
+
+只量化权重记为 W4A16 或 W8A16；权重和激活同时量化可写成 W8A8 等；KV cache 还可以使用独立精度。三者面对的统计分布和性能瓶颈不同。
+
+对称 per-group 量化的一个简化形式为
+
+$$
+s=\frac{\max_i|w_i|}{2^{b-1}-1},\qquad
+q_i=\operatorname{clip}\left(\operatorname{round}(w_i/s),-2^{b-1},2^{b-1}-1\right).
+$$
+
+反量化为 $\hat w_i=sq_i$。group size 越小，对离群值适应更好，同时 scale 数量和 kernel 处理更复杂。模型文件从 FP16 的约 $2N$ 字节降到 4-bit 的理论 $0.5N$ 字节，还需加入 scale、zero point、未量化层和格式对齐。
+
+GPTQ 使用近似二阶信息，按顺序量化权重并补偿误差；AWQ 根据校准激活识别对输出重要的权重通道，通过缩放保护这些通道。两者各有模型、kernel 与硬件适配范围，不能用一个方法「取代」另一个概括。量化质量需要在目标任务与上下文长度上测，速度则取决于是否存在原生低比特 kernel；把 4-bit 权重反量化后再做低效矩阵乘，可能只节省容量而没有延迟收益。
+
+## 10. KV cache 与 PagedAttention
+
+自回归 decode 保存历史 K、V。总容量为
+
+$$
+M_{KV}=2BL S H_{kv}d_hb_e,
+$$
+
+其中 $L$ 是层数，$S$ 是已缓存长度。请求长度不同且持续到达、结束时，若为每个请求预留最大连续空间，会产生内部浪费；动态连续分配又容易造成外部碎片和扩容拷贝。
+
+PagedAttention 将每个请求的逻辑 token 块映射到非连续物理块。逻辑上相邻的 KV 可以分散存放，kernel 通过 block table 找到物理地址。请求增长时按需分配新块，结束后回收；beam 或平行采样共享前缀块时可用 copy-on-write，在某分支写入前才复制。
+
+分页仍有内部碎片。末尾 block 可能未填满，block table 和引用计数也有元数据成本。若 block 大小为 $P$ token，一个请求长度为 $S$，分配 token 槽位为 $P\lceil S/P\rceil$，内部利用率为
+
+$$
+\eta=\frac{S}{P\lceil S/P\rceil}.
+$$
+
+$S=129,P=16$ 时分配 144 个槽位，利用率约 89.6%。block 越小，尾部浪费降低，但映射项更多，kernel 地址处理也更碎。
+
+## 11. 连续批处理与服务指标
+
+静态 batching 等到一组请求全部结束才释放 batch，短请求会被长请求拖住。连续批处理在每个 decode iteration 接收新请求并移除已完成请求，使 GPU 保持较高活跃序列数。调度器还要在 prefill 与 decode 之间分配算力：大块 prefill 容易延迟正在生成的请求，完全优先 decode 又会让新请求首 token 等待过久。
+
+服务评估至少区分首 token 延迟 TTFT、逐 token 延迟 TPOT、端到端延迟、请求吞吐和 token 吞吐。提高 batch 往往改善总吞吐，却可能恶化排队与尾延迟。吞吐曲线需要在明确的输入/输出长度分布、并发和延迟 SLO 下测量。
+
+prefix cache 复用相同前缀的 KV，适合固定系统提示或共享文档。cache key 必须包含完整 token 序列、模型/adapter 版本以及影响 KV 的位置与配置。文本看起来相同但 tokenizer、chat template 或 adapter 不同，KV 不能复用。
+
+## 12. vLLM 与 TensorRT-LLM 不能用一句话分工
+
+vLLM 以 PagedAttention、连续批处理和易用服务接口著称，后续也包含多种 kernel、量化、并行和调度能力。TensorRT-LLM 提供图优化、算子融合、低精度 kernel、in-flight batching 与分布式推理能力，也具有自己的 KV cache 管理。把前者限定成内存管理、后者限定成算子编译，会遗漏两边大量重叠功能。
+
+选型需要对照模型支持、硬件、量化格式、并行策略、动态 shape、结构化输出、LoRA 服务和运维接口。基准测试必须使用相同权重、精度、采样参数、输入输出长度与并发。框架默认值不同，例如 chunked prefill、最大 batch token、CUDA graph 范围和 KV dtype，未经对齐的吞吐数字没有直接可比性。
+
+## 13. 一道训练配置题怎样算
+
+假设训练 70B 稠密模型，64 张 80 GiB GPU，BF16 参数和梯度、FP32 主参数及 Adam 状态，模型状态粗估为 $16\times70$ GB，即 1.12 TB 十进制容量。若只做 8 路 FSDP，理想每卡状态约 140 GB，已经超过 80 GiB，且还没计激活，因此该配置不可行。
+
+将分片组扩大到 64，理想模型状态约 17.5 GB/卡，容量上可行，但跨所有节点频繁 all-gather 可能受网络限制。另一方案用节点内 TP=8、PP=4、DP=2，模型参数在 TP 与 PP 维共同切分，每卡低精度参数约 $140/(8\times4)=4.375$ GB；优化器状态再沿 DP 分片或采用分布式 optimizer。随后才能用剩余容量估算激活和 micro-batch。
+
+若每卡 $b=1$、序列长度 4096、梯度累积 $g=16$、DP=2，全局 batch 为 32 个序列，即每步 131072 token。想把全局 batch 提到 64，可把累积改成 32，前提是优化器超参数按目标 batch 调整且训练吞吐可接受。把「剩余 60GB」直接换成某个 batch 值没有依据，因为激活取决于层分配、隐藏宽度、checkpoint 和 attention kernel。
+
+配置题的答案应包含四步：列出容量假设；计算常驻状态；选择并行维度并估通信位置；用实际 profiler 验证激活峰值、MFU 和 collective 暴露时间。任何一步缺失，结论都只是猜测。
+
+## 14. 常见故障的定位顺序
+
+显存溢出先看峰值发生在前向、反向、optimizer step 还是 checkpoint。前向峰值通常关联激活、attention workspace 或预取参数；反向峰值可能由梯度、重算与通信 bucket 叠加；optimizer step 涉及状态和临时更新 buffer。只改 batch 有时无效，例如峰值来自一次 full-parameter all-gather。
+
+吞吐低先把 step time 分成数据等待、前向、反向、通信和 optimizer。GPU 利用率低可能来自输入 pipeline、过小 micro-batch、pipeline bubble 或 collective 阻塞。NCCL 时间高时再结合 topology 检查 TP 是否跨节点、FSDP wrap 是否过碎、梯度同步能否与反向重叠。
+
+多卡 loss 不一致先确认初始化、数据 sampler、梯度累积边界与混合精度状态。DDP 中每个 rank 的局部 loss 本就可不同，all-reduce 后梯度一致才是关键。出现 hang 时收集所有 rank 的 collective 序列；不同 rank 因条件分支调用了不同 collective，是常见原因。
+
+推理 OOM 则分清权重、KV、临时 workspace 和 CUDA graph 固定池。并发升高才出现的问题多与 KV 或 batch workspace 有关；单请求长 prompt 出现可能是 prefill attention 或最大 sequence 配置；启动即 OOM 多半是权重、图捕获或模型并行分配。把各部分分别记录，比只看进程总显存更容易找到可改参数。
+
+## 15. 通信时间怎样估
+
+collective 的成本可以用延迟—带宽模型粗略表示：
+
+$$
+T_{comm}\approx n_{step}\alpha+\frac{V}{BW_{eff}},
+$$
+
+$\alpha$ 是每一步启动和网络延迟，$n_{step}$ 是算法通信轮数，$V$ 是传输字节，$BW_{eff}$ 是有效带宽。小消息受第一项支配，大消息更接近带宽限制。因此，把一个大 bucket 拆成很多极小 bucket 即使总字节相同，也可能因 collective 次数增加而变慢。
+
+假设一次 collective 每 rank 有效传输 4 GB，测得互联有效带宽 200 GB/s，忽略延迟时下界约 20 ms。若相关计算只有 12 ms，即便完全重叠，也至少暴露约 8 ms 通信；若计算 35 ms 且启动足够早，通信有机会被覆盖。这里必须使用实测有效带宽，不能拿链路单向峰值直接代入，因为 collective 算法、协议、拓扑和并发都会降低可用带宽。
+
+通信量相同也可能表现不同。张量并行 collective 每层发生，消息相对小且频繁；FSDP 参数 all-gather 按 block 发生；DDP 梯度 all-reduce 能沿反向顺序逐桶重叠；流水线只在 stage 边界发送激活，但存在 bubble。分析 trace 时要看 collective 在关键路径上暴露了多少，而非把 NCCL kernel 的持续时间全部算作额外开销。
+
+### 15.1 All-reduce、reduce-scatter 与 all-gather
+
+若每个 rank 持有长度为 $n$ 的梯度，all-reduce 后每个 rank 都得到完整求和结果。reduce-scatter 先求和再将结果均匀分片，每个 rank 只保留 $n/D_p$；all-gather 再把各 shard 拼回完整张量。环形实现里，all-reduce 可以理解为这两个阶段组合。
+
+ZeRO-2/FSDP 用 reduce-scatter 让每个 rank 只保留自己的梯度 shard，避免完整梯度常驻；参数计算前用 all-gather 恢复所需权重。若代码误把本应分片的结果做成 all-reduce，显存和通信都会增加。检查 profiler 时，应把 collective 类型与预期分片生命周期对应起来。
+
+## 16. 长序列如何切分
+
+数据并行和张量并行都未必解决超长序列激活。上下文并行把序列轴分到多个 rank：每张卡持有部分 Q 以及相应的局部隐藏状态，但全注意力的每个查询仍需访问全局 K、V。系统可以环形传递 KV block，让本地 Q 依次与各 block 计算，并用在线 softmax 合并结果。
+
+设第一个 block 的行最大值、指数和与未归一化输出为 $(m_1,l_1,o_1)$，第二个 block 为 $(m_2,l_2,o_2)$。合并时
+
+$$
+m=\max(m_1,m_2),
+$$
+
+$$
+l=e^{m_1-m}l_1+e^{m_2-m}l_2,
+$$
+
+$$
+o=e^{m_1-m}o_1+e^{m_2-m}o_2.
+$$
+
+归一化结果为 $o/l$。这与 FlashAttention 的分块 softmax同源，使 K/V 无需同时聚合到一张卡。因果 mask 下，各 rank 能访问的 block 和每块内部 mask 不同，负载均衡比双向注意力更复杂。
+
+Sequence parallel 在 Megatron 语境中常指把 layer norm、dropout 等区域沿序列维切分，与 context parallel 的全注意力跨卡算法不能混为一谈。不同框架命名并不完全一致，读配置时要看张量在哪条轴分片、注意力是否跨 rank 通信，以及前后层何时 gather。
+
+长序列还会放大数据加载和 padding 浪费。若 batch 内序列长度差异大，统一 pad 到最大长度会让大量 token 不参与有效 loss。按长度分桶、sequence packing 与变长 attention kernel 可以提高有效 token 比例；packing 时必须阻止不同样本互相注意，并让位置编号符合训练设计。
+
+## 17. MoE 的专家并行
+
+MoE 层将 token 路由到少量专家。专家并行把不同专家放到不同 rank，token 先根据目的专家重排，通过 all-to-all 发送，专家计算完成后再通过 all-to-all 返回。若本地有 $T$ 个 token、隐藏宽度 $D$、每 token 选择 $k$ 个专家、元素宽度 $b_e$，单向有效载荷量级为
+
+$$
+V_{dispatch}\approx TkDb_e.
+$$
+
+实际还包含索引、padding、对齐和不均衡。某个 rank 收到的 token 远高于平均值时，它的专家 GEMM 和通信都更慢，其他 rank 只能等待。因而平均专家负载不足以描述性能，还要看最大值、分位数和每层负载变化。
+
+专家矩阵很大但每个专家收到的 token 少时，GEMM 的 $M$ 维过小，tensor core 利用率低。系统常把多个本地专家做 grouped GEMM，或者增大 token batch。增大 batch 又会提高延迟和激活容量，在线推理尤其受限。MoE 的激活参数少，只说明算术路径稀疏；总参数存储、all-to-all 和负载尾部仍决定成本。
+
+专家并行可与 TP、PP、DP 组合。专家层使用 EP，稠密注意力层使用 TP，pipeline 切层，外层再复制数据并行组。world size 分解时要确认各并行 group 是否正交，以及 checkpoint 如何从逻辑专家编号映射到 rank。拓扑放置通常让高频 all-to-all 留在高速域内，跨节点时更依赖网络能力。
+
+## 18. 量化误差手算
+
+取一组权重 $[-1.0,-0.3,0.2,0.9]$，做 3-bit 对称量化，可用整数范围 $[-3,3]$。尺度
+
+$$
+s=\frac{1.0}{3}=0.3333.
+$$
+
+四个量化整数约为 $[-3,-1,1,3]$，反量化为 $[-1.0,-0.3333,0.3333,1.0]$。误差分别约为 $[0,-0.0333,0.1333,0.1]$。若加入一个离群值 10，尺度变为 $10/3$，其余三个小权重大多会舍入到零。这说明 per-tensor 量化容易被离群值支配。
+
+改成更小 group 可以让离群值只影响所在组；per-channel 量化则为每个输出通道设置尺度。代价是更多 scale 读取，以及 kernel 必须在合适位置应用它们。SmoothQuant 通过等价缩放把激活的离群难度转移到权重：对通道尺度 $s_j$，
+
+$$
+XW=(X\operatorname{diag}(s)^{-1})(\operatorname{diag}(s)W).
+$$
+
+浮点计算下等式保持，重新分配后的两边更适合量化。尺度选择过激会让权重侧变难，因此需要校准数据估计激活范围。
+
+量化误差经过多层会累积，输出头、embedding 或少数敏感层可能保留高精度。困惑度变化小也未必覆盖生成中的罕见退化，代码语法、数学数字、长上下文检索与多语言都值得单测。校准集应接近部署输入，使用完全无关领域可能低估关键通道范围。
+
+## 19. 推理容量规划
+
+假设 32 层模型使用 GQA，$H_{kv}=8,d_h=128$，KV 采用 BF16。每 token、每序列的 KV 容量为
+
+$$
+2\times32\times8\times128\times2=131072\ \text{bytes}=128\ \text{KiB}.
+$$
+
+一个 8192-token 请求约占 1 GiB KV。若 GPU 为 cache 留出 48 GiB，忽略分页尾部和工作区，理论上可容纳 48 个这样的完整请求。实际并发由请求长度分布决定：大量短请求可以共享同一 token 容量池，少数长请求会快速吃满 cache。
+
+若 KV 改成 8 bit，理想数据部分减半，但每组 scale 和反量化 workspace 会占额外空间。若张量并行按 KV 头切分到 8 卡，每卡可只持有一个 KV 头的数据；若某框架为了适配 MQA/GQA 在多个 rank 复制 KV，容量比例会不同。容量公式必须和实际 shard 布局一致。
+
+服务端常设置最大批 token，而不只设置最大请求数。一次调度的 token 预算同时覆盖新请求 prefill chunk 和现有请求 decode token。预算过大能提升吞吐，也可能让单轮 kernel 时间过长，抬高 TPOT。容量规划需要结合 admission control：在接受请求时估计其最大新增 KV，避免运行中途才发现无页可分。
+
+## 20. 基准测试如何避免假快
+
+训练吞吐常用 tokens/s/GPU 与模型 FLOPs 利用率 MFU。有效 token 要排除 padding，FLOPs 估算需说明是否包含注意力二次项和重计算。梯度累积增大后，单 step 时间变长，step/s 下降并不代表 token 吞吐下降。至少预热若干步、排除编译与首次通信初始化，再统计稳定区间。
+
+推理 benchmark 需要给定请求到达模型。离线吞吐让队列始终有请求，适合测最大处理能力；在线压测按某种到达率提交请求，观察排队后的 TTFT、TPOT 和尾延迟。两者回答的问题不同。若只报告总 token/s，框架可以通过无限增大 batch 获得高吞吐，却让交互延迟不可接受。
+
+输出长度必须由服务实际生成，不能用预先指定长度后忽略 EOS 的结果冒充真实负载；另一方面，为比较 kernel 也可固定长度，前提是明确这是受控 microbenchmark。采样、logits processor、结构化解码和网络序列化都会影响端到端延迟。只计 GPU kernel 时间适合定位内核，不适合代表用户体验。
+
+正确性也要进入性能验收。量化或融合 kernel 先与高精度参考比较 logits、生成和任务指标；分布式推理要验证单卡与多卡在容差内一致；prefix cache、speculative decoding 和 CUDA graph 分别构造命中、未命中和边界长度测试。跑得快但输出错误没有部署价值。
+
+## 21. 推测解码为什么能加速
+
+自回归模型通常每次 decode 只确认一个 token，目标模型的权重需要反复读取。推测解码先让较小的 draft model 连续提出 $K$ 个候选 token，再由目标模型一次前向并行验证这些位置。若候选与目标分布一致，多个 token 可在一次目标模型调用中被接受。
+
+对随机采样，接受概率不能简化成「argmax 相同」。设 draft 分布为 $q$，目标分布为 $p$，候选 token $x$ 的接受概率为
+
+$$
+a(x)=\min\left(1,\frac{p(x)}{q(x)}\right).
+$$
+
+拒绝时从经过校正的剩余分布采样，从而保持目标模型原始分布不变。贪心推测解码的规则更简单，但只适用于对应的确定性生成设定。实现若省略校正，输出分布会改变，速度比较也失去同一基准。
+
+收益取决于接受长度、draft 成本和目标模型验证效率。draft 太弱，候选经常在第一个位置就被拒绝；draft 太大，自身推理成本抵消收益；$K$ 太大时，被早期拒绝的后续候选都白算。服务中还要维护两套 KV cache，或者设计共享层/共享表示的 draft。应按任务、温度与上下文长度统计平均接受 token 数，而不是只报理想加速倍数。
+
+## 22. 多 LoRA 服务
+
+同一底座可以挂载多个 LoRA adapter。若每个请求选择不同 adapter，直接把 LoRA 合并进底座会迫使系统频繁复制完整权重；保持分离则在基础线性层外计算
+
+$$
+Y=XW+\frac{\alpha}{r}(XA^T)B^T.
+$$
+
+batch 中 adapter 相同的请求可以共享 A、B 并做较大的矩阵乘；adapter 各不相同时，低秩支路会变成多个小 GEMM 或 grouped GEMM。调度器需要在等待同 adapter 聚批与请求延迟之间取舍。
+
+adapter 容量虽小，数量很多时仍要管理 GPU/CPU 缓存、版本和淘汰。cache key 必须包含 adapter 身份；prefix KV 由应用 adapter 后的层输出产生，也不能跨 adapter 复用。热加载时还要验证 rank、目标模块、底座版本和 tokenizer 是否匹配，否则 shape 能加载并不代表语义正确。
+
+## 23. 从 profiler 读出瓶颈
+
+时间线上若 GEMM 连续且利用率高、通信大多被覆盖，继续减少 collective 未必有明显收益；若 GPU 中间出现长空洞，先判断 CPU 数据准备、Python 调度、同步点还是 pipeline bubble。频繁 `cudaDeviceSynchronize`、逐请求的小 kernel 和动态 shape 触发重新编译，都会把设备执行切碎。
+
+观察显存时区分 allocated 与 reserved。框架 allocator 保留已释放块，进程监控看到的 reserved 不一定仍被活跃张量使用；但碎片可能让总空闲容量足够时仍无法分配一个大连续块。记录每个阶段的活跃张量、峰值和分配 histogram，比在 OOM 后只读一行错误更有用。
+
+网络问题需要结合 rank 拓扑。某些 rank 明显更慢，可能落在跨 NUMA、错误网卡绑定或拥塞链路上；所有 rank 同时等待，根因也可能是一个慢 rank 尚未进入 collective。用每 rank trace 对齐 collective 序号，可以区分通信本身慢与上游计算到达不齐。
+
+一个完整调优循环由模型约束开始：结果必须保持正确；随后确定目标指标与负载；再用 trace 找出关键路径；每次只改一项并复测容量、延迟与质量。参数分片、量化和调度会互相影响，孤立 microbenchmark 的胜负无法替代端到端验证。
+
+## 参考资料
+
+- [Rajbhandari et al., ZeRO](https://arxiv.org/abs/1910.02054)
+- [Zhao et al., PyTorch FSDP](https://arxiv.org/abs/2304.11277)
+- [Shoeybi et al., Megatron-LM](https://arxiv.org/abs/1909.08053)
+- [Narayanan et al., Efficient Large-Scale Language Model Training on GPU Clusters](https://arxiv.org/abs/2104.04473)
+- [Hu et al., LoRA](https://arxiv.org/abs/2106.09685)
+- [Dettmers et al., QLoRA](https://arxiv.org/abs/2305.14314)
+- [Frantar et al., GPTQ](https://arxiv.org/abs/2210.17323)
+- [Lin et al., AWQ](https://arxiv.org/abs/2306.00978)
+- [Kwon et al., Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180)
+- [vLLM Documentation](https://docs.vllm.ai/)
+- [TensorRT-LLM Documentation](https://nvidia.github.io/TensorRT-LLM/)
