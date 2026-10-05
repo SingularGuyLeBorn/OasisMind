@@ -10,6 +10,11 @@ excerpt: "基于固定提交 669f534 的源码与配置，解析 Dolma 的文档
 
 本文固定到本地官方源码提交 `669f534823b08d266a8fff01f8a1c916a5a56576`，证据来自 `src/` 下 Rust 实现、Python 工具入口、`docs/data-format.md`、`taggers.md`、`deduplication.md`、`mixer.md` 与 `parallel-processor.md`。这里分析的是 Dolma Toolkit 的数据处理机制，不把 README 所述三万亿 token 数据集等同于仓库源码，也不推断未在快照中出现的数据配方。
 
+![Dolma 从原始文档到版本化训练语料的数据处理图](images/dolma-data-dag.svg)
+> 图 1：原始 JSONL 文档经过稳定标识、Tagger 属性计算、过滤与去重，随后由 Mixer 按版本化配方输出训练语料；统计和审计记录横跨整条链路。
+
+图 1 中的实线箭头表示文档内容的主要流向，虚线表示不直接改写正文、却会影响后续选择的属性与统计。`source + id` 是追踪单条文档的主键，Tagger 输出的是证据，过滤规则才负责作出保留或删除决定。Mixer 的输入因此不是“已经绝对干净的数据”，而是一组带来源、属性和版本信息的候选文档。图中没有给出任何固定阈值或数据比例，因为这些属于具体数据版本的配方，不能从工具仓库本身推出。
+
 ## 1. 文档和属性分离：避免为每次实验复制语料
 
 Dolma 的基础对象不是训练 token，而是 gzip JSONL 中的文档。每行至少有稳定 `id`、`text` 和 `source`，可选 `added`、`created` 与 `metadata`。`source+id` 构成全局定位键，ID 要跨数据版本稳定。这让删除请求、评测 blocklist、人工审计和版本比较都能回到同一原始文档。若上游每次导出都重新编号，即便文本相同，追溯链也会断裂。

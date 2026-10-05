@@ -10,6 +10,11 @@ excerpt: "基于固定提交 5f6f58a 的真实源码，解析 OLMo-core 的 Trai
 
 本文分析的唯一代码基线是本地官方快照 `data/sources/OLMo-core/repo`，提交 `5f6f58a133e7ef577d596295f2c8db4651c27857`。主要证据来自 `src/olmo_core/train/trainer.py`、`train/train_module/`、`train/checkpoint.py`、`distributed/`、`data/`、`nn/transformer/`、`src/scripts/official/` 与 `docs/source/guides/`。这很重要：OLMo-core 是持续演进的训练库，讨论“它支持什么”若不绑定提交号，很容易把未来接口、外部仓库能力或 README 的愿景误写成当前实现。
 
+![OLMo-core 训练控制、数学步骤与可恢复状态的分层图](images/olmo-core-training-stack.svg)
+> 图 1：Trainer 管理循环和生命周期，TrainModule 定义前向、损失与优化步骤；设备网格承载数据、张量、流水线和上下文并行，数据游标与分布式状态共同进入 checkpoint。
+
+图 1 把“谁决定下一步做什么”和“这一步具体算什么”分开。Trainer 沿控制箭头触发取数、前后向、优化、日志与保存，TrainModule 返回损失和待更新状态；并行网格改变张量分片与通信位置，却不应悄悄改变训练目标。恢复箭头同时指向模型、优化器、调度器、随机数状态和数据游标，因为只恢复权重并不能保证继续看到相同的 token 顺序。图中没有指定某个 OLMo 版本采用哪组并行维度，那必须回到发布配置和运行记录核对。
+
 ## 1. 它不是一个模型，而是一套训练系统的装配层
 
 OLMo-core 的名称容易让人误以为它只是 OLMo 模型的内部实现。固定快照显示，它更准确的角色是“训练构件库”：模型结构、训练步骤、数据加载、分布式网格、checkpoint、回调、评测与启动器都被拆成可替换部件。README 把源码入口指向 `src/olmo_core`，官方模型训练脚本放在 `src/scripts/official`，两者之间形成清楚的边界：库提供机制，脚本给出某个已发布模型所采用的策略组合。

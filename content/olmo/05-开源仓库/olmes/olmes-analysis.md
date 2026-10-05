@@ -10,6 +10,11 @@ excerpt: "基于固定提交 5a51f50 的代码和配置，解析 OLMES 的任务
 
 本文只分析本地快照 `data/sources/olmes/repo` 的提交 `5a51f502d463b8cdc4a2dcad7d7096c41ff1197e`。主要依据 `oe_eval/configs/tasks.py`、`task_suites.py`、`models.py`、`tasks/base_task.py`、`aggregate_tasks.py`、`fewshot_sources.py`、各任务模块、`utilities/extraction_utils.py` 和输出文档。OLMES 基于 lm-evaluation-harness 思路扩展，但结论以当前代码为准。
 
+![OLMES 从任务定义到聚合结果的评测协议流水线](images/olmes-evaluation-pipeline.svg)
+> 图 1：任务版本先固定数据切分、Prompt 和 few-shot，再选择生成或概率打分路径，经过答案抽取、归一化与样本指标，最后按套件规则聚合并保存审计产物。
+
+图 1 的关键不是方框数量，而是每条边都会改变分数的含义。相同模型若更换 Prompt、few-shot 来源、最大生成长度或答案归一化规则，得到的已经是另一份评测协议。生成路径输出文本，概率路径输出候选的条件似然，两者不能在未说明归一化方式时直接拼成同一指标。图中也没有把最终分数画成“模型能力”的唯一读数：污染、采样随机性和任务权重仍需由结果文件与协议版本共同解释。
+
 ## 1. 评测不是“数据集加模型”，而是一份协议
 
 同一个 ARC、MMLU 或 GSM8K 数据集，可以因 prompt、选项格式、shot 样例、答案归一化和指标选择而得到不同分数。OLMES 的核心价值是把这些常被散落在脚本里的选择注册成带名字的任务变体。`arc_challenge:mc::olmes` 不只是 ARC 数据集别名，而是数据 split、表述 regime、few-shot 来源、概率归一化与 primary metric 的组合。
