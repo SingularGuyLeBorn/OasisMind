@@ -355,6 +355,44 @@ $dQ$ 虽无写冲突，也可能因候选行长不同而负载不均；$dK,dV$ �
 
 反向开销还应随 block size 一起重算。较大的 block 减少反向索引项，却让热门区域带入更多无效梯度乘加；较小的 block 降低填充，又扩大转置表和调度任务数。前向最优块长未必也是训练总步的最优块长。
 
+## 8. 量化 KV 与 kernel 特化
+
+### 8.1. 反量化放在读取路径的哪一层
+
+KV以INT8、FP8或更低bit保存时, 稀疏kernel读取候选块后要恢复计算值. 若先gather量化码到scratch再单独反量化, 候选数据至少经过两次全局内存; 更合理的路径是在tile load后立刻应用scale, 将重构值留在寄存器或shared memory, 随后进入QK/AV.
+
+Scale粒度决定地址. 每tensor一个scale最省元数据, 精度有限; 每head、每page或每channel更精细, kernel要同步读取更多scale. 设page有 $P$ 个token、head维 $d_h$, 每page每channel scale需要 $d_h$ 个值, 主KV码只有 $Pd_h$ 个值. $P$ 很小时, scale占比会明显上升. 性能核算要把scale字节与转换指令加入, 不能只按bit宽缩放KV流量.
+
+QK与AV对量化敏感性不同. K误差改变logits和softmax排序, V误差在线性加权后进入输出. 实现可为K、V使用不同格式或scale. 这会增加模板组合, 但比统一格式后靠扩大候选补质量更直接. 正确性基线也应使用同样的重构KV, 先隔离kernel误差, 再与高精度模型比较量化误差.
+
+### 8.2. 索引有序性影响scale复用
+
+候选按物理page排序后, 同一page的scale只需加载一次, 其内多个token或多个query head可以复用. 按分数顺序访问则可能重复切换page. GQA中多个query heads共享KV page与scale, kernel若按KV head组织工作, 能提高复用; 按query head各自启动, scale和K/V都会重复读取.
+
+去重应发生在反量化前. 两条selector分支若给出同一page, 先各自反量化再在attention里屏蔽, 已经浪费主要带宽. 对token索引, 同页的离散offset可先聚合成小bitmap或排序列表; page只加载选中token还是整个tile, 取决于候选密度与硬件事务.
+
+### 8.3. 编译特化不能覆盖无限形状
+
+高性能kernel常对 $d_h$、block size、dtype、causal、GQA比例和候选容量特化. 组合过多会增加编译时间与二进制体积, 还会让线上shape落到未调优路径. 配置应把实际模型形状归入少量稳定档位, 例如固定 $d_h\in\{64,128\}$、page size与若干候选上限.
+
+Autotune需要使用代表性的索引分布. 只用连续候选调出的tile, 面对随机pages时可能寄存器设置过大、并发不足; 只用平均行长会忽略长尾. 可以按候选聚集度、行长档位和batch各保留一组测试形状, 选择在加权流量上表现稳定的配置, 而非单点最快参数.
+
+运行时遇到未支持的head维或dtype, 应进入明确的参考/稠密路径并记录原因. 静默pad到下一个维度会增加FLOPs, 还可能让scale和RoPE布局出错. Fallback正确性先与参考实现核对, 性能告警则统计它占总请求比例; 一个很快的主kernel若大量流量回退, 整体收益仍会消失.
+
+### 8.4. Epilogue 融合的边界
+
+Attention输出后常接输出投影、残差或量化写回. 将简单的cast、scale或门控融合进epilogue, 可以少写一次中间O; 直接融合完整输出投影会让稀疏attention kernel承担大矩阵乘, 编译与调度复杂度显著上升. 是否融合取决于O的字节与后续GEMM能否高效独立运行.
+
+Split-KV路径先产生多个partial outputs, 必须完成LSE归并后才能执行非线性门控或量化. 在每个split里提前做dropout、activation或低bit截断, 结果通常无法按式(6)严格合并. 可线性分配的操作也要检查缩放位置. Epilogue顺序属于数学定义, 不应为了减少kernel数随意调整.
+
+训练时dropout mask要与稀疏索引和重计算一致. 前向只保存随机种子时, backward必须按相同候选顺序再生mask; 若索引排序在两次运行间不同, 同一逻辑边会拿到不同随机数. 稳妥做法让随机数由全局 `(batch,head,q_pos,k_pos)` 计数器确定, 而非由候选数组中的遍历序号决定.
+
+### 8.5. 交付前的算子矩阵
+
+最终测试矩阵至少覆盖 FP16/BF16主路径、启用的KV量化格式、MHA/GQA、causal/non-causal、连续与离散候选、短行与超长行、split-KV、CUDA Graph和fallback. 每格先比较reference输出与梯度, 再记录延迟、DRAM bytes、tensor core利用率和workspace.
+
+测试矩阵不要求所有组合都有专用kernel. 明确标记支持、回退和禁止, 比让未知组合自动落到错误模板安全. 模型接入时用配置生成实际会触发的子集, CI运行小shape正确性, 发布前在目标GPU运行长shape性能与内存压力. 这样索引协议、数值定义和硬件实现才能在同一版本下验收.
+
 ## 参考资料
 
 - [FlashAttention](https://arxiv.org/abs/2205.14135)
