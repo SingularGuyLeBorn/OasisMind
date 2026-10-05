@@ -21,6 +21,8 @@ excerpt: "Olmo-core 3 技术报告与发布博客的逐段中英对照译稿, �
 
 ![Image block](images/p01-image.jpg)
 
+> 图注: image.
+
 Mixture-of-Experts (MoE) models offer more total parameter capacity without proportionally increasing per-token compute: each token activates only a few experts. However, training cost depends not only on active compute but also on many other factors, including bytes moved, memory held, and kernels launched; many of those costs follow total parameter capacity rather than active compute. On infrastructure built for dense models, this mismatch is expensive: in our early baselines, throughput fell as stored expert capacity grew, even though the useful work per token stayed nearly fixed.
 
 MoE 模型能提供更大的总参数容量, 每个 token 的计算量却不按比例增加: 每个 token 只激活少数几个专家. 但训练成本不只取决于激活计算量, 还取决于很多别的因素, 包括搬运的字节数, 占用的显存和启动的 kernel 数; 其中很多成本跟着总参数容量走, 而不是跟着激活计算量走. 在为 dense 模型搭建的基础设施上, 这种错配代价很高: 在我们早期的基线里, 每个 token 的有效计算几乎不变, 吞吐却随存储的专家容量增长而下降.
@@ -453,6 +455,8 @@ The first factor captures **algorithmic efficiency**: a smaller $F _ { \mathrm {
 
 ![Image block](images/p12-figure-2-equal-flops-do-not-imply-equal-hbm-2.jpg)
 
+> 图注: figure 2 equal flops do not imply equal hbm 2.
+
 Analytical HBM model, not measured throughput. Up+gate and down GEMMs only; excludes activation and routing costs.
 
 **Figure 2 Equal FLOPs do not imply equal HBM traffic.** The forward fused up/gate and down GEMMs of a dense FFN with hidden width Kh are compared with N experts of hidden width $h ,$ selecting K per token. Here $N = 6 4$ K = 4, and input and expert hidden widths are $d = h = 4 0 9 6$ . **(a)** GEMM-side HBM byte categories, each normalized separately to dense. These ratios are not additive: each category contributes according to its absolute byte volume, not equally. The intermediate row counts up/gate output writes and down input reads, excluding the pointwise activation’s own accesses. **(b)** Analytical ceilings in bfloat16 (BF16), normalized to peak FLOPs, with balanced routes and one HBM read/write per operand/result. Each curve adds the two GEMM times; pointwise activation, packing, combine, network, and backward costs are excluded. Conceptual illustration with no measured quantities; assumptions are detailed in Appendix A.8.
@@ -468,6 +472,8 @@ An expert unused by one token contributes no expert arithmetic for that token, b
 <!-- page 13 of 168 -->
 
 ![Image block](images/p13-efficient-infrastructure-preserves-the-compute-frontier-in-wall.jpg)
+
+> 图注: efficient infrastructure preserves the compute frontier in wall.
 
 Efficient infrastructure preserves the compute frontier in wall time
 
@@ -851,9 +857,13 @@ FSDP has a direct advantage in persistent training-state memory. With enough sha
 
 ![Image block](images/p25-ddp-moe.jpg)
 
+> 图注: ddp moe.
+
 DDP (MoE)
 
 ![Image block](images/p25-figure-9-isolates-the-parameter-sized-persistent-training-state.jpg)
+
+> 图注: figure 9 isolates the parameter sized persistent training state.
 
 | Memory class | What it includes | Why it matters |
 | --- | --- | --- |
@@ -1399,6 +1409,8 @@ GEMM stretch alone, however, does not decide the outcome. At the 128-block launc
 
 ![Image block](images/p43-image.jpg)
 
+> 图注: image.
+
 | Concurrent pair | GEMM time (ms) | GEMM slowdown |
 | --- | --- | --- |
 | Grouped GEMM alone | 4.645-4.679 | - |
@@ -1507,6 +1519,8 @@ Interleaved-1F1B | PP=4 | Microbatches=8 | Bubble 15.8%
 
 ![Image block](images/p46-1f1b-v-pp-4-microbatches-8-bubble-23.jpg)
 
+> 图注: 1f1b v pp 4 microbatches 8 bubble 23.
+
 1F1B-V | PP=4 | Microbatches=8 | Bubble 23.8%
 
 (b) 1F1B-V placement.
@@ -1529,9 +1543,13 @@ is reached (Figure 26). This can reduce the exposed transfer wait; it does not r
 
 ![Image block](images/p47-non-overlap-p2p.jpg)
 
+> 图注: non overlap p2p.
+
 Non-Overlap P2P
 
 ![Image block](images/p47-figure-26-interleaved-1f1b-can-overlap-p2p-communication-with.jpg)
+
+> 图注: figure 26 interleaved 1f1b can overlap p2p communication with.
 
 Overlap P2P
 
@@ -1745,6 +1763,8 @@ The GPU executes each training step, but the CPU prepares and submits nearly all
 每个训练步由 GPU 执行, 但几乎所有工作都由 CPU 准备和提交. CUDA kernel 启动通常不等 kernel 跑完就返回, CPU 因而能在 GPU 执行前面的操作时提交后面的操作 (NVIDIA, 2026k; PyTorch Contributors, 2026f). 这种异步执行是高利用率的前提: 当前操作结束时, GPU 应当发现下一个操作已经排在那里. 如果 CPU 提交太慢, 或者阻塞着等一个设备算出的值, GPU 就会把队列里的工作耗光 (Figure 29). 提交慢, 要么减少 host 工作, 要么让每次启动带更多设备工作. 设备到 host 的等待则需要换一种接口, 让设备结果不进入 host 的稳态路径; 初始化, 编译与预热, 缓冲分配这些阶段仍可以同步.
 
 ![Image block](images/p53-figure-29-gpu-idle-intervals-caused-by-slow-submission.jpg)
+
+> 图注: figure 29 gpu idle intervals caused by slow submission.
 
 the queued lead from b1–b2 is spent; every later kernel waits for its own submission
 
@@ -2168,6 +2188,8 @@ M = 8K, corresponding to 256–512 routed rows per expert, and grouped GEMM is f
 ![Image block](images/p65-chart.jpg)
 
 ![Image block](images/p65-figure-38-grouped-gemm-and-capacity-padded-bmm-across.jpg)
+
+> 图注: figure 38 grouped gemm and capacity padded bmm across.
 
 Total routed rows across 16 local experts (M)
 
@@ -3124,6 +3146,8 @@ scale layout from scaled GEMM (NVIDIA, 2026w). Figure 51 draws the block decompo
 
 ![Image block](images/p87-figure-51-quantization-produces-one-contiguous-qdata-array-and.jpg)
 
+> 图注: figure 51 quantization produces one contiguous qdata array and.
+
 BF16 · 2 B per value
 
 **Figure 51 Quantization produces one contiguous qdata array and one contiguous scale array.** Sizes are drawn to byte scale for a two-row tensor with two 32-value blocks per row: each 64-byte BF16 block becomes a 32-byte E4M3 qdata block, half as wide, and the flattened scale array adds one E8M0 byte per block, each scale 1/32 the width of a qdata block. The four scales are the narrow strip at the lower left, drawn at true width; color marks which block each scale covers, and the dashed spans are logical: neither array is fragmented. Conceptual illustration with no measured quantities.
@@ -3327,11 +3351,15 @@ The optimizer keeps the authoritative main weights in FP32. Forward and dgrad us
 
 ![Image block](images/p93-mxfp8-rceil-closely-tracks-the-bf16-loss-trajectory.jpg)
 
+> 图注: mxfp8 rceil closely tracks the bf16 loss trajectory.
+
 MXFP8 rceil closely tracks the BF16 loss trajectory
 
 ![Image block](images/p93-chart.jpg)
 
 ![Image block](images/p93-mxfp8-rceil-keeps-gradient-norms-close-to-bf16.jpg)
+
+> 图注: mxfp8 rceil keeps gradient norms close to bf16.
 
 MXFP8 rceil keeps gradient norms close to BF16
 
@@ -3462,6 +3490,8 @@ These short performance runs verify the systems comparison, not long-horizon tra
 
 ![Image block](images/p97-figure-59-kernel-time-breakdown-throughput-and-memory-across-3.jpg)
 
+> 图注: figure 59 kernel time breakdown throughput and memory across 3.
+
 BF16 reference: 54.74K tokens/s/GPU, 103.4 GiB peak active. Dots in (‌c), (d): three fresh jobs per mode, 10-step windows, four B300, EP4.
 
 **Figure 59 Kernel-time breakdown, throughput, and memory across the four MXFP8 modes.** The combined recipe reduces the rank-0 kernel-duration sum by a quarter. Panels (a,b) use profiled kernel durations to identify changed work; panel (c) uses unprofiled runs for throughput because tracing perturbs the launch-heavy combined path. (a) Kernel-duration sums per captured train batch on rank 0 by kernel family, means of three captured batches per mode. Teal families are the ones MXFP8 targets, gray families are not targeted, and pink is the added quantization, scale-swizzle, and dequantization work (75.5, 203.1, and 262.1 ms per batch; 3.0%, 8.0%, and 10.3% of the BF16 sum). Family sums overlap across streams and are not an additive wall-time model; the triangle marks the union of kernelbusy intervals, which shrinks by 1.3%, 16.3%, and 20.2%. (b) Change of the three targeted families relative to BF16; the bars in each row are, top to bottom, dense GEMM, grouped GEMM, and EP transport, in the colors of (a). The EP-transport family includes barrier kernels; the payload-moving kernels alone fall by 41% in both the MLP+EP and combined modes, so part of the combined −50% is reduced waiting. (c) Throughput change over three fresh distributed jobs per mode; bars are means of the three ten-step windows and dots are the repetitions. The BF16 reference is 54.74K tokens/s/GPU and the largest sample standard deviation is 0.14K, smaller than the dot markers. (d) Peak active memory change in the same runs from the 103.40 GiB BF16 reference. Four B300 GPUs, EP = 4, uniform routing, and identical initialized weights, inputs, and routing in every mode (Table 26); these are systems measurements at one operating point, not training-quality evidence (Section 11.3.5).
@@ -3533,9 +3563,13 @@ The amount of recomputation also depends on the checkpoint implementation. PyTor
 
 ![Image block](images/p100-regular-forward-backward.jpg)
 
+> 图注: regular forward backward.
+
 Regular Forward-Backward
 
 ![Image block](images/p100-figure-61-non-reentrant-checkpointing-can-stop-recomputation-early.jpg)
+
+> 图注: figure 61 non reentrant checkpointing can stop recomputation early.
 
 Checkpointed Forward-Backward
 
@@ -3606,6 +3640,8 @@ We measured full per-block recompute in a matched four-GPU training run whose co
 | Repetitions | Three fresh processes per variant |
 
 ![Image block](images/p102-figure-62-block-recompute-removes-nearly-two-thirds-of.jpg)
+
+> 图注: figure 62 block recompute removes nearly two thirds of.
 
 Bars: arithmetic means · dots: three independent 10-step windows · whiskers: ±1 sample SD (smaller than the dots here) · lower segment: persistent memory resident between steps
 
@@ -3895,6 +3931,8 @@ Host submission can dominate a short operation. In a standalone single-GPU group
 ![Image block](images/p110-figure-65-under-a-pipeline-schedule-static-per-layer.jpg)
 
 ![Image block](images/p110-figure-65-under-a-pipeline-schedule-static-per-layer-2.jpg)
+
+> 图注: figure 65 under a pipeline schedule static per layer 2.
 
 Three slots, each with its own graph and static buffers, recycled when its microbatch’s backward for this layer has run.
 
@@ -4465,6 +4503,8 @@ The backward results expose a second advantage of the Olmo parameterization. Wit
 
 ![Image block](images/p124-c-weight-gradient-rms-relative-to-the-olmo.jpg)
 
+> 图注: c weight gradient rms relative to the olmo.
+
 (c‌) Weight-gradient RMS relative to the Olmo rule
 
 ![Image block](images/p124-figure-70-olmo-s-merge-rule-preserves-dense-like.jpg)
@@ -4960,6 +5000,8 @@ Grouped MM wins across the small-model routed-row range $(d = h = 2,048)$
 ![Image block](images/p137-figure-71-grouped-gemm-also-wins-across-the-small.jpg)
 
 ![Image block](images/p137-figure-71-grouped-gemm-also-wins-across-the-small-2.jpg)
+
+> 图注: figure 71 grouped gemm also wins across the small 2.
 
 Total routed rows across 16 local experts (M)
 

@@ -51,6 +51,8 @@ OLMo 2 was a team effort. marks core contributors. See full author contributions
 
 ![Image block](images/p01-we-present-olmo-2-the-next-generation-of-our-fully-open.png)
 
+> 图注: we present olmo 2 the next generation of our fully open.
+
 We present OLMo 2, the next generation of our fully open language models. OLMo 2 includes a family of dense autoregressive language models at 7B, 13B and 32B scales with fully released artifacts—model weights, full training data, training code and recipes, training logs and thousands of intermediate checkpoints. In this work, we describe our modified model architecture and training recipe, focusing on techniques for achieving better training stability and improved per-token efficiency. Our updated pretraining data mixture introduces a new, specialized data mix called Dolmino Mix 1124, which significantly improves model capabilities across many downstream task benchmarks when introduced via late-stage curriculum training (i.e. specialized data during the annealing phase of pretraining). Finally, we incorporate best practices from Tülu 3 to develop OLMo 2-Instruct, focusing on permissive data and extending our final-stage reinforcement learning with verifiable rewards (RLVR). Our OLMo 2 base models sit at the Pareto frontier of performance to training compute, often matching or outperforming open-weight only models like Llama 3.1, Qwen 2.5, and Gemma 2 while using fewer FLOPs and with fully transparent training data, code, and recipe. Our fully open OLMo 2-Instruct models are competitive with open-weight only models of comparable size and even some proprietary models like GPT-3.5 Turbo and GPT 4o Mini.
 
 我们推出 OLMo 2, 作为完全开放语言模型的下一代. 家族覆盖 7B, 13B 与 32B 的 dense 自回归模型, 并完整公开产物: 权重, 全量训练数据, 训练代码与配方, 训练日志, 以及数千个中间检查点. 本文说明修改后的架构与训练配方, 重点写训练稳定性与每 token 效率. 更新后的预训练混合引入专用集 Dolmino Mix 1124; 经后期课程 (预训练退火阶段的专用数据) 注入后, 多项下游基准显著抬升. 后训练侧吸收 Tulu 3 的做法得到 OLMo 2-Instruct, 强调宽松许可数据, 并把末段可验证奖励强化学习 (RLVR) 扩成多阶段. OLMo 2 基座落在性能对训练算力的 Pareto 前沿, 常以更少 FLOPs 追平或超过 Llama 3.1, Qwen 2.5, Gemma 2 等仅开放权重模型, 同时数据 / 代码 / 配方全透明. 完全开放的 OLMo 2-Instruct 与同档开源指令模型以及部分专有模型 (如 GPT-3.5 Turbo, GPT 4o Mini) 具有竞争力.
@@ -1237,6 +1239,8 @@ For the 1B and 32B model, we performed RLVR with Group Relative Policy Optimizat
 
 ![Chart block](images/p29-olmo-2-1124-13b-rlvr1-olmo-2-1124-13b-rlvr2-olmo-2-1124.png)
 
+> 图注: olmo 2 1124 13b rlvr1 olmo 2 1124 13b rlvr2 olmo 2 1124.
+
 OLMo-2-1124-13B-RLVR1 OLMo-2-1124-13B-RLVR2 OLMo-2-1124-13B-Instruct (Final RLVR)
 
 
@@ -1331,6 +1335,8 @@ RLVR on GSM8K, MATH, Prompts with Constraints
 
 ![Chart block](images/p31-episodes.png)
 
+> 图注: episodes.
+
 Episodes
 
 ![Chart block](images/p31-chart-2.png)
@@ -1340,6 +1346,8 @@ Episodes
 ![Chart block](images/p31-chart-4.png)
 
 ![Chart block](images/p31-olmo-2-1124-7b-instruct.png)
+
+> 图注: olmo 2 1124 7b instruct.
 
 OLMo-2-1124-7B-Instruct
 
@@ -1536,6 +1544,8 @@ Figure 16 The training throughput in tokens per second (TPS) per device over the
 图 16｜两台 OLMo-1B 在约 1000 step 上的每卡 token/s 吞吐 (显式 GC 相关).
 
 ![Chart block](images/p35-in-each-process-e-g-by-calling-gc-collect-1-3-2.png)
+
+> 图注: in each process e g by calling gc collect 1 3 2.
 
 in each process (e.g. by calling gc.collect $( 1 ) ^ { 3 2 } )$ .
 
@@ -2121,6 +2131,8 @@ Nevertheless, the OLMo 2-Instruct Preview learning curves can be found at Figure
 
 ![Chart block](images/p53-olmo-2-1124-13b-rlvr1.png)
 
+> 图注: olmo 2 1124 13b rlvr1.
+
 OLMo-2-1124-13B-RLVR1
 
 Figure 18 The top row shows the training curves of OLMo-2-1124-13B-RLVR1 showing verifiable rewards, KL divergence, and response lengths. The bottom row shows the corresponding downstream evaluations and the average scores across our evaluation suites.
@@ -2141,6 +2153,8 @@ Episodes
 
 ![Chart block](images/p53-olmo-2-1124-13b-rlvr2.png)
 
+> 图注: olmo 2 1124 13b rlvr2.
+
 OLMo-2-1124-13B-RLVR2
 
 ![Chart block](images/p53-figure-19-the-top-row-shows-the-training-curves-of-olmo.png)
@@ -2153,6 +2167,8 @@ Figure 19 The top row shows the training curves of OLMo-2-1124-13B-RLVR2 showing
 
 ![Chart block](images/p54-olmo-2-1124-13b-instruct.png)
 
+> 图注: olmo 2 1124 13b instruct.
+
 OLMo-2-1124-13B-Instruct
 
 Figure 20 The top row shows the training curves of OLMo-2-1124-13B-Instruct showing verifiable rewards, KL divergence, and response lengths. The solid lines in the bottom row show the corresponding downstream evaluation and the average scores across our evaluation suites.
@@ -2162,6 +2178,8 @@ Figure 20 The top row shows the training curves of OLMo-2-1124-13B-Instruct show
 ![Chart block](images/p54-chart.png)
 
 ![Chart block](images/p54-episodes.png)
+
+> 图注: episodes.
 
 Episodes
 
@@ -2175,6 +2193,8 @@ Episodes
 
 ![Chart block](images/p54-olmo-2-1124-13b-instruct-preview.png)
 
+> 图注: olmo 2 1124 13b instruct preview.
+
 OLMo-2-1124-13B-Instruct-Preview
 
 Figure 21 The OLMo-2-1124-13B-Instruct-Preview results. The top row shows the training curves of OLMo-2-1124-7B-Instruct on verifiable rewards, KL divergence, and response lengths. In the bottom row, the y-axes show the average scores across our evaluation suites and GSM8K scores. Overall, RLVR increases both training rewards and evaluation scores.
@@ -2187,6 +2207,8 @@ Figure 21 The OLMo-2-1124-13B-Instruct-Preview results. The top row shows the tr
 
 ![Chart block](images/p55-episodes.png)
 
+> 图注: episodes.
+
 Episodes
 
 ![Chart block](images/p55-chart-2.png)
@@ -2194,6 +2216,8 @@ Episodes
 ![Chart block](images/p55-chart-3.png)
 
 ![Chart block](images/p55-olmo-2-1124-7b-instruct-preview.png)
+
+> 图注: olmo 2 1124 7b instruct preview.
 
 OLMo-2-1124-7B-Instruct-Preview
 
@@ -2290,6 +2314,8 @@ RLVR on GSM8K, MATH, Prompts with Constraints
 
 ![Chart block](images/p57-episodes.png)
 
+> 图注: episodes.
+
 Episodes
 
 ![Chart block](images/p57-chart-3.png)
@@ -2297,6 +2323,8 @@ Episodes
 ![Chart block](images/p57-chart-4.png)
 
 ![Chart block](images/p57-olmo-2-7b-instruct-preview-alternative.png)
+
+> 图注: olmo 2 7b instruct preview alternative.
 
 OLMo 2 7B Instruct Preview (alternative)
 

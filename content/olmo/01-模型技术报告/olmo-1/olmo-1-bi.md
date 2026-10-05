@@ -930,6 +930,8 @@ After instruction finetuning, we then use the following hyperparameters for DPO 
 
 ![Chart block](images/p19-models-falcon-7b-llama2-7b-mpt-7b-llama-7b-pythia-6-9b.png)
 
+> 图注: models falcon 7b llama2 7b mpt 7b llama 7b pythia 6 9b.
+
 Models Falcon-7B LLaMA2-7B MPT-7B LLaMA-7B Pythia-6.9B RPJ-INCITE-7B OLMo-7B
 
 Figure 3: Bits per byte for each of the 7 remaining Paloma data sources not aggregated in Figure 2.

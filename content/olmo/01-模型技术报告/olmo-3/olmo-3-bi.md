@@ -51,6 +51,8 @@ Olmo 3 was a team effort; authors sorted alphabetically. marks core contributors
 
 ![Image block](images/p01-we-introduce-olmo-3-a-family-of-state-of-the-art-fully.png)
 
+> 图注: we introduce olmo 3 a family of state of the art fully.
+
 We introduce Olmo 3, a family of state-of-the-art, fully-open language models at the 7B and 32B parameter scales. Olmo 3 model construction targets long-context reasoning, function calling, coding, instruction following, general chat, and knowledge recall. This release includes the entire model flow, i.e., the full lifecycle of the family of models, including every stage, checkpoint, data point, and dependency used to build it. Our flagship model, Olmo 3.1 Think 32B, is the strongest fully-open thinking model released to-date.
 
 我们推出 Olmo 3 —— 7B 与 32B 参数规模上最先进的全开放语言模型家族. Olmo 3 的模型构建面向长上下文推理, function calling, 代码, 指令遵循, 通用对话与知识召回. 本次发布涵盖整个模型流程, 即该模型家族的完整生命周期, 包括构建它所用的每一个阶段, checkpoint, 数据点与依赖. 我们的旗舰模型 Olmo 3.1 Think 32B 是迄今为止发布的最强全开放 thinking 模型.
@@ -2065,6 +2067,8 @@ Table 23 Effect of core infrastructure improvements to OlmoRL. We ablate the eff
 ![Chart block](images/p51-chart.png)
 
 ![Chart block](images/p51-training-steps.png)
+
+> 图注: training steps.
 
 Training Steps
 

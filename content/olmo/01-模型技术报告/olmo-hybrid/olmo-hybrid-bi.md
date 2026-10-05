@@ -27,6 +27,8 @@ willm@allenai.org marks core contributors. See author contributions here.
 
 ![Image block](images/p01-recent-work-has-demonstrated-the-potential-of-non.png)
 
+> 图注: recent work has demonstrated the potential of non.
+
 Recent work has demonstrated the potential of non-transformer language models, especially linear recurrent neural networks (RNNs) and hybrid models that mix recurrence and attention. Yet there is no consensus on whether the potential benefits of these new architectures justify the risk and effort of scaling them up. To address this, we provide evidence for the advantages of hybrid models over pure transformers on several fronts. First, theoretically, we show that hybrid models do not merely inherit the expressivity of transformers and linear RNNs, but can express tasks beyond both, such as code execution. Putting this theory to practice, we train **Olmo Hybrid**, a 7B-parameter model largely comparable to Olmo 3 7B but with the sliding window layers replaced by Gated DeltaNet layers. We show that Olmo Hybrid outperforms Olmo 3 across standard pretraining and mid-training evaluations, demonstrating the benefit of hybrid models in a controlled, large-scale setting. We find that the hybrid model scales significantly more efficiently than the transformer, explaining its higher performance. However, its unclear why greater expressivity on specific formal problems should result in better scaling or superior performance on downstream tasks unrelated to those problems. To explain this apparent gap, we return to theory and argue why increased expressivity should translate to better scaling efficiency, completing the loop. Overall, our results suggest that hybrid models mixing attention and recurrent layers are a powerful extension to the language modeling paradigm: not merely to reduce memory during inference, but as a fundamental way to obtain more expressive models that scale better during pretraining.
 
 近期工作已展示非 Transformer 语言模型的潜力, 尤其是线性循环神经网络 (RNN) 以及把递归与注意力混在一起的 hybrid 模型. 然而社区尚未就一件事达成共识: 这些新架构的潜在收益, 是否足以支撑把它们做大的风险与投入. 为此, 我们从几条战线给出 hybrid 相对纯 Transformer 的优势证据. 首先在理论上, 我们证明 hybrid 并不只是继承 Transformer 与线性 RNN 的表达力, 还能表达两者都做不到的任务, 例如代码执行. 把理论落到实践, 我们训练 **Olmo Hybrid**: 一个大体可比 Olmo 3 7B 的 7B 参数模型, 只是把滑动窗层换成 Gated DeltaNet 层. 我们表明 Olmo Hybrid 在标准预训练与 mid-training 评测上超过 Olmo 3, 在可控的大规模设定下展示 hybrid 的收益. 我们发现 hybrid 相对 Transformer 显著更高效地 Scaling, 这解释了它更高的表现. 但为何特定形式问题上的更高表达力, 会带来更好的 Scaling, 或在与那些问题无关的下游任务上更强, 起初并不清楚. 为解释这道缝隙, 我们回到理论, 论证提高表达力为何应转化为更好的 Scaling 效率, 从而闭环. 总体而言, 结果表明把注意力与递归层混合的 hybrid 模型, 是对语言建模范式的有力扩展: 不只为了推理时省内存, 更是在部署前获得更有表达力, 预训练 Scaling 更好的模型的根本路径.
@@ -798,9 +800,13 @@ Impact of Expressivity $( 1 - \varepsilon )$ on Quantization Model Loss
 
 ![Chart block](images/p21-parameters-n.png)
 
+> 图注: parameters n.
+
 Parameters (N)
 
 ![Chart block](images/p21-tokens-d.png)
+
+> 图注: tokens d.
 
 Tokens (D)
 
