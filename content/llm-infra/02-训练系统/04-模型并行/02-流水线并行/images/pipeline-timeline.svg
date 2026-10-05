@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">GPipe 与 1F1B 的流水线时序</title>
+  <desc id="desc">四个 stage 上，GPipe 先执行全部前向再执行反向，1F1B 在预热后交替执行前向和反向。</desc>
+  <defs><style>.bg{fill:#f8fafc}.grid{stroke:#cbd5e1;stroke-width:1}.f{fill:#bfdbfe;stroke:#2563eb}.b{fill:#fecaca;stroke:#dc2626}.t{font:600 17px system-ui,sans-serif;fill:#0f172a}.s{font:14px system-ui,sans-serif;fill:#334155}.cell{stroke-width:1.5;rx:4}</style></defs>
+  <rect class="bg" width="1200" height="650" rx="18"/><text class="t" x="35" y="40">四级流水：蓝色 Forward，红色 Backward，空白为等待</text>
+  <text class="t" x="35" y="85">GPipe</text>
+  <g transform="translate(115,60)">
+    <text class="s" x="-70" y="62">Stage 0</text><text class="s" x="-70" y="107">Stage 1</text><text class="s" x="-70" y="152">Stage 2</text><text class="s" x="-70" y="197">Stage 3</text>
+    <g class="grid"><path d="M0 35H1040M0 80H1040M0 125H1040M0 170H1040M0 215H1040"/></g>
+    <g class="f cell"><rect x="0" y="40" width="55" height="34"/><rect x="58" y="40" width="55" height="34"/><rect x="116" y="40" width="55" height="34"/><rect x="174" y="40" width="55" height="34"/><rect x="58" y="85" width="55" height="34"/><rect x="116" y="85" width="55" height="34"/><rect x="174" y="85" width="55" height="34"/><rect x="232" y="85" width="55" height="34"/><rect x="116" y="130" width="55" height="34"/><rect x="174" y="130" width="55" height="34"/><rect x="232" y="130" width="55" height="34"/><rect x="290" y="130" width="55" height="34"/><rect x="174" y="175" width="55" height="34"/><rect x="232" y="175" width="55" height="34"/><rect x="290" y="175" width="55" height="34"/><rect x="348" y="175" width="55" height="34"/></g>
+    <g class="b cell"><rect x="580" y="40" width="55" height="34"/><rect x="522" y="40" width="55" height="34"/><rect x="464" y="40" width="55" height="34"/><rect x="406" y="40" width="55" height="34"/><rect x="522" y="85" width="55" height="34"/><rect x="464" y="85" width="55" height="34"/><rect x="406" y="85" width="55" height="34"/><rect x="348" y="85" width="55" height="34"/><rect x="464" y="130" width="55" height="34"/><rect x="406" y="130" width="55" height="34"/><rect x="348" y="130" width="55" height="34"/><rect x="290" y="130" width="55" height="34"/><rect x="406" y="175" width="55" height="34"/><rect x="348" y="175" width="55" height="34"/><rect x="290" y="175" width="55" height="34"/><rect x="232" y="175" width="55" height="34"/></g>
+  </g>
+  <text class="t" x="35" y="335">1F1B（概念图）</text>
+  <g transform="translate(115,315)">
+    <text class="s" x="-70" y="62">Stage 0</text><text class="s" x="-70" y="107">Stage 1</text><text class="s" x="-70" y="152">Stage 2</text><text class="s" x="-70" y="197">Stage 3</text>
+    <g class="grid"><path d="M0 35H1040M0 80H1040M0 125H1040M0 170H1040M0 215H1040"/></g>
+    <g class="f cell"><rect x="0" y="40" width="55" height="34"/><rect x="58" y="40" width="55" height="34"/><rect x="116" y="40" width="55" height="34"/><rect x="290" y="40" width="55" height="34"/><rect x="58" y="85" width="55" height="34"/><rect x="116" y="85" width="55" height="34"/><rect x="174" y="85" width="55" height="34"/><rect x="348" y="85" width="55" height="34"/><rect x="116" y="130" width="55" height="34"/><rect x="174" y="130" width="55" height="34"/><rect x="232" y="130" width="55" height="34"/><rect x="406" y="130" width="55" height="34"/><rect x="174" y="175" width="55" height="34"/><rect x="290" y="175" width="55" height="34"/><rect x="406" y="175" width="55" height="34"/><rect x="522" y="175" width="55" height="34"/></g>
+    <g class="b cell"><rect x="406" y="40" width="55" height="34"/><rect x="522" y="40" width="55" height="34"/><rect x="638" y="40" width="55" height="34"/><rect x="348" y="85" width="55" height="34"/><rect x="464" y="85" width="55" height="34"/><rect x="580" y="85" width="55" height="34"/><rect x="290" y="130" width="55" height="34"/><rect x="406" y="130" width="55" height="34"/><rect x="522" y="130" width="55" height="34"/><rect x="232" y="175" width="55" height="34"/><rect x="348" y="175" width="55" height="34"/><rect x="464" y="175" width="55" height="34"/></g>
+  </g>
+  <text class="s" x="35" y="610">1F1B 在 warmup 后让 backward 更早出现，因此 activation 能更早释放；首尾依赖仍产生 bubble。</text>
+</svg>
