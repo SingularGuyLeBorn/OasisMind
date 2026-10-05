@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -12,6 +12,8 @@ describe("rustScan", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "om-sync-test-"));
     const file1 = path.join(dir, "hello.md");
     const file2 = path.join(dir, "nested", "world.md");
+    const file3 = path.join(dir, "numeric.md");
+    const file4 = path.join(dir, "broken.md");
     fs.mkdirSync(path.dirname(file2), { recursive: true });
 
     fs.writeFileSync(
@@ -19,9 +21,11 @@ describe("rustScan", () => {
       "---\ntitle: Hello\ntags: [a, b]\npublished: true\n---\n# Content\n",
     );
     fs.writeFileSync(file2, "---\ntitle: World\n---\nSome text\n");
+    fs.writeFileSync(file3, "---\ntitle: Numeric\npublished: 1\n---\nNumber body\n");
+    fs.writeFileSync(file4, "---\ntitle: [broken\npublished: true\n---\nBroken body\n");
 
     const rustRecords = await scanWithRust(dir);
-    expect(rustRecords).toHaveLength(2);
+    expect(rustRecords).toHaveLength(4);
 
     const ts1 = parseMarkdownFile(file1);
     const ts2 = parseMarkdownFile(file2);
@@ -42,6 +46,10 @@ describe("rustScan", () => {
     expect(rust2!.data.tags).toBe("");
     // 未写 published 的磁盘文章必须保持草稿；全量 Rust 与增量 TS 语义一致。
     expect(rust2!.data.published).toBe(false);
+
+    // 数字 1 与损坏 YAML 都不能从 Rust 全量扫描旁路成已发布。
+    expect(rustRecords.find((r) => r.slug === "numeric")?.data.published).toBe(false);
+    expect(rustRecords.find((r) => r.slug === "broken")?.data.published).toBe(false);
 
     const mtime1 = getFileMtime(file1).getTime();
     const mtime2 = getFileMtime(file2).getTime();
@@ -86,12 +94,16 @@ describe("rustScan", () => {
     expect(records[0].data.published).toBe(false);
   });
 
-  it("增量 TypeScript 扫描对缺失或错误 published 采用草稿态", async () => {
+  it("增量 TypeScript 扫描对缺失、错误类型和损坏 YAML 均采用草稿态", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "om-sync-incremental-"));
     const missing = path.join(dir, "missing.md");
-    const invalid = path.join(dir, "invalid.md");
+    const stringValue = path.join(dir, "string.md");
+    const numericValue = path.join(dir, "numeric.md");
+    const broken = path.join(dir, "broken.md");
     fs.writeFileSync(missing, "---\ntitle: Missing\n---\nBody\n");
-    fs.writeFileSync(invalid, "---\ntitle: Invalid\npublished: \"true\"\n---\nBody\n");
+    fs.writeFileSync(stringValue, "---\ntitle: String\npublished: \"true\"\n---\nString body\n");
+    fs.writeFileSync(numericValue, "---\ntitle: Numeric\npublished: 1\n---\nNumeric body\n");
+    fs.writeFileSync(broken, "---\ntitle: [broken\npublished: true\n---\nBroken body\n");
 
     const syncer = createPostGardenSyncer("knowledge");
     // Post 同步器必须支持增量扫描；先收窄可选接口，避免测试用非空断言掩盖契约变化。
@@ -99,9 +111,39 @@ describe("rustScan", () => {
     if (!syncer.scanFile) throw new Error("Post 同步器缺少 scanFile 增量扫描能力");
 
     const missingRecord = await syncer.scanFile(missing, dir);
-    const invalidRecord = await syncer.scanFile(invalid, dir);
+    const stringRecord = await syncer.scanFile(stringValue, dir);
+    const numericRecord = await syncer.scanFile(numericValue, dir);
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const brokenRecord = await syncer.scanFile(broken, dir);
 
     expect(missingRecord?.data.published).toBe(false);
-    expect(invalidRecord?.data.published).toBe(false);
+    expect(stringRecord?.data.published).toBe(false);
+    expect(numericRecord?.data.published).toBe(false);
+    expect(brokenRecord?.data).toMatchObject({
+      title: "broken",
+      content: "Broken body\n",
+      published: false,
+      category: null,
+      tags: "",
+    });
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining("frontmatter 损坏，已按未发布同步"),
+      expect.any(String),
+    );
+    warning.mockRestore();
+
+    const upsert = vi.fn(async () => ({}));
+    const prisma = {
+      post: {
+        upsert,
+        findUnique: vi.fn(async () => null),
+      },
+    } as unknown as PrismaClient;
+    if (!brokenRecord) throw new Error("损坏 YAML 必须生成 fail-closed 缓存记录");
+    await syncer.upsert(prisma, brokenRecord);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
+      update: expect.objectContaining({ published: false }),
+      create: expect.objectContaining({ published: false }),
+    }));
   });
 });

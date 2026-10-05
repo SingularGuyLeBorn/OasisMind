@@ -321,6 +321,16 @@ mod tests {
         let invalid_record = parse_markdown_file(temp_dir.path(), &invalid)?.unwrap();
         assert!(!invalid_record.data.published);
 
+        let numeric = temp_dir.path().join("numeric.md");
+        fs::write(&numeric, "---\ntitle: Numeric\npublished: 1\n---\nBody")?;
+        let numeric_record = parse_markdown_file(temp_dir.path(), &numeric)?.unwrap();
+        assert!(!numeric_record.data.published);
+
+        let broken = temp_dir.path().join("broken.md");
+        fs::write(&broken, "---\ntitle: [broken\npublished: true\n---\nBody")?;
+        let broken_record = parse_markdown_file(temp_dir.path(), &broken)?.unwrap();
+        assert!(!broken_record.data.published);
+
         Ok(())
     }
 

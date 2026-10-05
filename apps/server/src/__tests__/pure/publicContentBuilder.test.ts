@@ -42,6 +42,10 @@ describe("buildPublicContent", () => {
       "---\ntitle: 字符串真值\npublished: \"true\"\n---\n不能公开\n",
     );
     fs.writeFileSync(
+      path.join(contentDir, "notes", "number.md"),
+      "---\ntitle: 数字真值\npublished: 1\n---\n不能公开\n",
+    );
+    fs.writeFileSync(
       path.join(contentDir, "notes", "draft.md"),
       "---\ntitle: 草稿\npublished: false\n---\n不能公开\n",
     );
@@ -186,19 +190,37 @@ describe("buildPublicContent", () => {
     await expect(buildPublicContent({ contentDir, outputDir })).rejects.toThrow("符号链接越出 content");
   });
 
-  it("重新生成会清除已经取消发布的旧文章产物", async () => {
+  it("重新生成会清除已经取消发布的旧文章与旧附件产物", async () => {
     const { contentDir, outputDir } = createFixture();
     const articlePath = path.join(contentDir, "notes", "toggle.md");
+    const imagePath = path.join(contentDir, "notes", "images", "toggle.png");
+    fs.writeFileSync(
+      imagePath,
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    );
     fs.writeFileSync(path.join(contentDir, "notes", "_garden.md"), "---\ntitle: 笔记\n---\n");
-    fs.writeFileSync(articlePath, "---\ntitle: 状态切换\npublished: true\n---\n第一版\n");
+    fs.writeFileSync(
+      articlePath,
+      "---\ntitle: 状态切换\npublished: true\n---\n第一版\n\n![即将取消发布](images/toggle.png)\n",
+    );
     await buildPublicContent({ contentDir, outputDir });
     expect(fs.existsSync(path.join(outputDir, "posts", "notes", "toggle.json"))).toBe(true);
+    const firstAssets = fs.readdirSync(path.join(outputDir, "assets"), { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => path.join(entry.parentPath, entry.name));
+    expect(firstAssets).toHaveLength(1);
 
     fs.writeFileSync(articlePath, "---\ntitle: 状态切换\npublished: false\n---\n第二版\n");
     const result = await buildPublicContent({ contentDir, outputDir });
     expect(result.postCount).toBe(0);
+    expect(result.assetCount).toBe(0);
     expect(fs.existsSync(path.join(outputDir, "posts", "notes", "toggle.json"))).toBe(false);
     expect(fs.existsSync(path.join(outputDir, "posts", "notes", "toggle.md"))).toBe(false);
+    expect(firstAssets.every((assetPath) => !fs.existsSync(assetPath))).toBe(true);
+    expect(fs.existsSync(path.join(outputDir, "assets"))).toBe(false);
   });
 
   it("frontmatter 损坏时安全跳过并报告，不从正文猜测发布状态", async () => {
