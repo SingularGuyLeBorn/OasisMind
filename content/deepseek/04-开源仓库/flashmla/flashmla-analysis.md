@@ -106,7 +106,7 @@ fp4 版把精度推到了更极端的一端. e2m1 只有 2 位指数、1 位尾�
 
 crossover 利用了 MQA 的一个事实: 同一个 query token 内的每个 query head 都看同一批 key. V3.2 有 128 个 query head, 而每个 CTA 只处理 64 个. 如果两个处理不同 query head 子集的 CTA 能共享反量化后的 K/V, 每个 CTA 就只需反量化一半. 实现靠 Hopper 的分布式共享内存 (DSM): 以 cluster 大小 2 启动 CTA, 每个 CTA 加载一半量化 K/V、在 CUDA Core 上反量化自己那一半、存进自己的共享内存, 同时用 `st.async` 把结果写进另一个 CTA 的共享内存, 用 cluster transaction barrier 同步. 交换完成后两个 CTA 的共享内存里都有完整的反量化 K 与 V. 这个名字来自减数分裂里的染色体交叉.
 
-效果是把反量化的 50 周期砍半, Tensor Core 不再空等. H800 SXM5 的计算受限配置 (`batch_size=128, num_heads=128, s_q=2, topk=2048`) 下拿到 410 TFLOPS, 相比没有 crossover 的上一版 250 TFLOPS 是明显提升. 这个 410 仍低于 bfloat16 稠密解码的 640 TFLOPS 峰值, 一个原因是它是稀疏 kernel 且 topk 只有 2048, topk 越小前导收尾的相对开销越大; 把 topk 设到 32768, 该 kernel 最高能到 460 TFLOPS. 换个口径看: 上述配置下它的执行时间与序列长约 3000 时的稠密解码相当, 超过 3000, 稀疏的优势越来越明显. 需要说明的是, crossover 依赖 Hopper 的 DSM 和 CTA cluster, 2026-09-30 后主分支移除了 Hopper 支持, 转到 SM100 后反量化走的是 Blackwell 原生的 fp8 转换路径, 这招的具体形态随之变了.
+效果是把反量化的 50 周期砍半, Tensor Core 不再空等. H800 SXM5 的计算受限配置 (`batch_size=128, num_heads=128, s_q=2, topk=2048`) 下拿到 410 TFLOPS, 相比没有 crossover 的上一版 250 TFLOPS 是明显提升. 这个 410 仍低于 bfloat16 稠密解码的 640 TFLOPS 峰值, 一个原因是它是稀疏 kernel 且 topk 只有 2048, topk 越小前导收尾的相对开销越大; 把 topk 设到 32768, 该 kernel 最高能到 460 TFLOPS. 换个口径看: 上述配置下它的执行时间与序列长约 3000 时的稠密解码相当, 超过 3000, 稀疏的优势越来越明显. crossover 依赖 Hopper 的 DSM 和 CTA cluster. 2026-09-30 后主分支移除了 Hopper 支持; 转到 SM100 后, 反量化改走 Blackwell 原生的 fp8 转换路径, 原先的 crossover 调度也就不再适用.
 
 ## 5. 稀疏化: DSA 的 top-k 怎么配进 kernel
 

@@ -182,7 +182,7 @@ Table V 写 Xid74 的出现率「比其他硬件故障高几个数量级」. 按
 
 图 10 解析: 横轴是 6 个月, 纵轴是月度计数, 自下而上依次堆叠 Main Memory, Network, Xid63, Xid64, Xid79, Xid94, Xid95. 每月总数在 42 到 54 之间, 10 月的 Network 层最厚. 图注说「xids」是与 GPU 显存 ECC 相关的错误, 但堆叠里包含 Xid79, 而 Table V 把 Xid79 归在不可纠正故障里, 不属于显存 ECC 类. 图里没有 Xid74, 所以它反映的是除 NVLink 以外的硬件故障.
 
-Table VII 的行列和都能对上: Main Memory 54, Network 89, Xid63 120, Xid64 1, Xid79 15, Xid94 7, Xid95 6, 六个月合计 292. 正文「IB link failures account for 30% of hardware faults excluding Xid74」是 $89/292 \approx 30.5\%$, 分母只含 Table VII 的七列, 不含 Xid61, Xid62 等其他不可纠正故障. GPU 侧 ECC 类 (Xid63, 64, 94, 95) 六个月 134 条, CPU 内存 ECC 54 条, 约 2.5 倍. 按容量折算差距更大: 10,000 张卡的显存共 400 TB, 1,250 台节点的主机内存共 640 TB. 需要说明的是, 按 NVIDIA 的 Xid 文档, Xid63 是行重映射 (row remapping) 的记录事件, 本身是 A100 处理 ECC 的正常路径, Table V 也写「多数情况下重置 GPU 即可」, 把它和不可纠正错误放在同一张图里, 会高估需要人工处理的故障数.
+Table VII 的行列和都能对上: Main Memory 54, Network 89, Xid63 120, Xid64 1, Xid79 15, Xid94 7, Xid95 6, 六个月合计 292. 正文「IB link failures account for 30% of hardware faults excluding Xid74」是 $89/292 \approx 30.5\%$, 分母只含 Table VII 的七列, 不含 Xid61, Xid62 等其他不可纠正故障. GPU 侧 ECC 类 (Xid63, 64, 94, 95) 六个月 134 条, CPU 内存 ECC 54 条, 约 2.5 倍. 按容量折算差距更大: 10,000 张卡的显存共 400 TB, 1,250 台节点的主机内存共 640 TB. NVIDIA 的 Xid 文档把 Xid63 定义为行重映射 (row remapping) 的记录事件, 这是 A100 处理 ECC 的正常路径; Table V 也写明「多数情况下重置 GPU 即可」. 因此, 把 Xid63 与不可纠正错误放进同一组累计, 会高估真正需要人工处理的故障数.
 
 ![](images/p11-figure-11-trends-of-ib-network-failures-link-flash.jpg)
 > 图 11: 2023 年 4 月 19 日到 2024 年 3 月 31 日每日 IB 链路闪断次数, 原数据见附录 Table VIII, 原文 Figure 11.
