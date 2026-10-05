@@ -8,9 +8,9 @@ excerpt: "Engram 把后缀 2-gram 和 3-gram 哈希成表索引, 每层每 token
 
 # Engram: 用哈希 N-gram 查表给 MoE 加一条记忆轴
 
-论文 *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models* 由北京大学与 DeepSeek-AI 合作完成, arXiv 编号 2601.07372, v1 发布于 2026 年 1 月, 当前 v2 日期为 2026-07-12, 正文加附录共 35 页. 官方代码在 [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram), 只有一个约 400 行的演示脚本 `engram_demo_v1.py`; 骨干的注意力和 MoE 用恒等函数占位, 训练代码与权重尚未发布. Engram 的机制推导可参阅 llm-guide 的 [条件记忆与 Engram](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/2.8.3-条件记忆与Engram.md) 和 [Engram: 从 N-gram 到可扩展查找](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md). 这篇解析继续追踪论文的实验设置、演示代码与公式之间的差异, 并据此判断公开材料能够支持哪些结论.
+论文 *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models* 由北京大学与 DeepSeek-AI 合作完成, arXiv 编号 2601.07372, v1 发布于 2026 年 1 月, 当前 v2 日期为 2026-07-12, 正文加附录共 35 页. 官方代码在 [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram), 只有一个约 400 行的演示脚本 `engram_demo_v1.py`; 骨干的注意力和 MoE 用恒等函数占位, 训练代码与权重尚未发布. Engram 的机制推导可参阅 llm-guide 的 [条件记忆与 Engram](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/2.8.3-条件记忆与Engram.md) 和 [Engram: 从 N-gram 到可扩展查找](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md). 论文给出了完整实验设置和公式, 演示代码则只覆盖寻址与融合的最小路径, 因而公开材料足以检查机制, 尚不足以复现训练结果.
 
-论文的主张分三层. 结构层: 给 Transformer 加一个按局部 token 序列查表的模块, 查表的地址只由输入 token 决定. 预算层: 在总参数和激活参数都固定时, 把 MoE 专家的一部分参数挪给查表模块, 验证损失随分配比例呈 U 形, 最优点在专家占 75% 到 80% 附近. 系统层: 因为地址在前向之前就能算出, 嵌入表可以放在主机内存里异步预取, 100B 参数的表只让吞吐下降不到 3%. 下面按寻址, 预算, 主实验, 机制分析, 系统代价的顺序逐层核对.
+论文的主张分三层. 结构层: 给 Transformer 加一个按局部 token 序列查表的模块, 查表的地址只由输入 token 决定. 预算层: 在总参数和激活参数都固定时, 把 MoE 专家的一部分参数挪给查表模块, 验证损失随分配比例呈 U 形, 最优点在专家占 75% 到 80% 附近. 系统层: 因为地址在前向之前就能算出, 嵌入表可以放在主机内存里异步预取, 100B 参数的表只让吞吐下降不到 3%. 寻址规则决定能存什么知识, 参数分配决定查表与计算的容量比例, 预取命中率则决定这部分容量能否以可接受的吞吐运行.
 
 ## 1. 寻址与融合: 一个 token 怎样拿到 16 行嵌入
 

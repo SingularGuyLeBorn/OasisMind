@@ -3,15 +3,15 @@ title: "DeepSeek-R1: 用规则奖励的 RL 训出长推理"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true
-excerpt: "本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照原技术报告观看."
+excerpt: "DeepSeek-R1 以规则奖励训练长推理模型, 并用冷启动、两轮 SFT 与两轮 RL 改善 R1-Zero 的可读性和通用能力."
 ---
 # DeepSeek-R1: 用规则奖励的 RL 训出长推理
 
-来源: [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) (本库收录的是带补充材料的 86 页版本, **基于 v1**, 2025-01-22; v2 于 2026-01-04 发布有更新, 本文未覆盖). 权重: https://huggingface.co/deepseek-ai
+来源: [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948). 本库采用带补充材料的 86 页 v1 (2025-01-22); 2026-01-04 发布的 v2 不在本页材料范围内. 权重: https://huggingface.co/deepseek-ai
 
-本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照[原技术报告](https://arxiv.org/abs/2501.12948)观看。配套对照译稿见同目录的 bi 稿。
+关键实验数字、公式和图表来自[原技术报告](https://arxiv.org/abs/2501.12948), 同目录 bi 稿提供逐段对照译文.
 
-这篇报告有两个模型. DeepSeek-R1-Zero 直接在 DeepSeek-V3-Base 上做 RL, 不经过 SFT, 奖励只看最终答案对不对和格式对不对; 训练中模型的回答越来越长, 自己学会了反思和验证, AIME 2024 的 pass@1 从 15.6% 升到 77.9%. DeepSeek-R1 在此基础上加了冷启动数据, 两轮 SFT 和两轮 RL, 解决 R1-Zero 可读性差, 中英混杂, 只会做题的问题, 最终 AIME 2024 79.8%, 与 OpenAI o1-1217 相当. 报告还把 R1 生成的 80 万条数据蒸馏进 Qwen 和 Llama 的小模型. 模型架构完全是 V3 的, 没有改动; 这篇报告的内容全在数据, 奖励, 训练日程和评测上. 下面按 RL 算法, R1-Zero, R1 的四个阶段, 基础设施, 评测, 蒸馏的顺序读, 并在每一处核对表里的数字.
+这篇报告有两个模型. DeepSeek-R1-Zero 直接在 DeepSeek-V3-Base 上做 RL, 不经过 SFT, 奖励只看最终答案对不对和格式对不对; 训练中模型的回答越来越长, 自己学会了反思和验证, AIME 2024 的 pass@1 从 15.6% 升到 77.9%. DeepSeek-R1 在此基础上加了冷启动数据, 两轮 SFT 和两轮 RL, 解决 R1-Zero 可读性差, 中英混杂, 只会做题的问题, 最终 AIME 2024 79.8%, 与 OpenAI o1-1217 相当. 报告还把 R1 生成的 80 万条数据蒸馏进 Qwen 和 Llama 的小模型. 模型架构完全沿用 V3; 差异集中在奖励设计、训练日程、数据流转和推理能力的评测结果上.
 
 ## 1. 起点与算法
 

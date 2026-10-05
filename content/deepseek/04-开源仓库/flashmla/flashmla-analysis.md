@@ -8,9 +8,9 @@ excerpt: "以代码为准讲清 FlashMLA: 矩阵吸收后 MLA 退化成 head dim
 
 # FlashMLA: MLA 解码为什么受计算限制, 以及 seesaw、FP8 KV 与稀疏化怎么落到 kernel
 
-来源: FlashMLA 仓库 ([github.com/deepseek-ai/FlashMLA](https://github.com/deepseek-ai/FlashMLA)), 2025-02-24 首次开源 (DeepSeek 开源周第一天), 作者 Jiashi Li、Shengyu Liu、Yuanhang Sun, MIT 许可证. 本文以当前 main 分支 (最新提交 2026-09-30, 昇腾 kernel 开源) 的代码与四篇官方 deep-dive 为准, 并对照译稿 `flashmla-bi.md`. 需要注意: 2026-09-30 的版本移除了对 Hopper 架构与 V3/V3.2/V4.0 的支持、改了 KV 缓存格式, 早期特性要看 [ba89a34 这个提交](https://github.com/deepseek-ai/FlashMLA/tree/ba89a3466e9470ad08ab39738d4e7bb66989e1e7). 本文会把早期 Hopper 解码 kernel 与现在的 SM100 稀疏 kernel 一并讲, 用 git 历史里的提交区分.
+[FlashMLA](https://github.com/deepseek-ai/FlashMLA) 于 2025-02-24 在 DeepSeek 开源周第一天公开, 作者包括 Jiashi Li、Shengyu Liu、Yuanhang Sun, 采用 MIT 许可证. 2026-09-30 的 main 版本加入昇腾 kernel, 同时移除了 Hopper 与 V3/V3.2/V4.0 支持并修改 KV cache 格式. 早期 Hopper 解码 kernel 对应提交 [ba89a34](https://github.com/deepseek-ai/FlashMLA/tree/ba89a3466e9470ad08ab39738d4e7bb66989e1e7), 当前 SM100 稀疏 kernel 则对应 main 分支; 两代实现需要按提交区分, 不能混用接口和缓存布局.
 
-FlashMLA 对外只做一件事: 注意力核那一截 $\mathrm{softmax}(QK^\top)V$ 的高性能实现, 不含前后的线性投影. 它支撑的模型从 2025 年的 DeepSeek-V3, 到 V3.2 的稀疏注意力, 再到 2026 年的 V4.1. 这条演进线上, kernel 的形态换过三轮: 先是 bfloat16 稠密 MLA 解码, 再是配 FP8 KV 的稀疏解码, 最后是把 norm、RoPE、cast 融进来的 fused kernel. 底层硬件也从 Hopper (SM90) 换到 Blackwell (SM100) 又加上华为昇腾. 下面按「它解决什么瓶颈、数据流怎么走、关键实现技巧、性能口径、版本演进、局限」的顺序展开.
+FlashMLA 对外只做一件事: 注意力核那一截 $\mathrm{softmax}(QK^\top)V$ 的高性能实现, 不含前后的线性投影. 它支撑的模型从 2025 年的 DeepSeek-V3, 到 V3.2 的稀疏注意力, 再到 2026 年的 V4.1. 这条演进线上, kernel 的形态换过三轮: 先是 bfloat16 稠密 MLA 解码, 再是配 FP8 KV 的稀疏解码, 最后是把 norm、RoPE、cast 融进来的 fused kernel. 底层硬件也从 Hopper (SM90) 换到 Blackwell (SM100), 随后增加华为昇腾实现. 每次变化都同时改动数据布局、调度方式和可支持的模型版本.
 
 ## 1. 它解决的瓶颈: 解码阶段 MLA 为什么受计算限制
 

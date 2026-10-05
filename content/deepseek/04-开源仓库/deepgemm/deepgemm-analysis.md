@@ -8,7 +8,7 @@ excerpt: "从代码出发讲清 DeepGEMM 怎么绕开 Hopper FP8 tensor core 的
 
 # DeepGEMM 技术解析: Hopper FP8 GEMM 的二级累加 、 细粒度 scale 布局与持久化调度
 
-来源: 仓库 [deepseek-ai/DeepGEMM](https://github.com/deepseek-ai/DeepGEMM), MIT 许可证. 2025-02-25 作为 DeepSeek 开源周第三天发布, 初始提交 `a6d97a1` 当时只支持 Hopper (SM90) FP8. 本文依据的最新提交是 2026-09-30 的 `057ca59` (Public release 26/09/30), 此时它已从单一 FP8 GEMM 扩成一个统一的 tensor core kernel 库, 覆盖 FP8 / FP4 / BF16 GEMM 、 带通信重叠的 Mega MoE 、 为 lightning indexer 服务的 MQA 打分 kernel 、 以及 HyperConnection 相关 kernel, 全部经 DeepJIT 在运行时编译. 下文结论以仓库内 `deep_gemm/include/` 的 kernel 实现 、 `csrc/apis/` 的 host 接口与 `docs/scaling-factor-format.md` 为准. 训练侧需求与量化原理可结合[DeepSeek-V3 技术报告解析](../../01-模型技术报告/deepseek-v3/deepseek-v3-analysis.md)和[FP8 混合精度训练详解](../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/02-FP8混合精度训练详解/02-FP8混合精度训练详解.md)阅读; 这里从 DeepGEMM 实际消费的量化张量、scale 布局和 kernel 路径开始.
+仓库 [deepseek-ai/DeepGEMM](https://github.com/deepseek-ai/DeepGEMM) 采用 MIT 许可证, 2025-02-25 作为 DeepSeek 开源周第三天的项目发布. 初始提交 `a6d97a1` 只支持 Hopper (SM90) FP8; 到 2026-09-30 的 `057ca59` (Public release 26/09/30), DeepGEMM 已从单一 FP8 GEMM 扩成统一的 tensor core kernel 库, 覆盖 FP8 / FP4 / BF16 GEMM、带通信重叠的 Mega MoE、为 lightning indexer 服务的 MQA 打分 kernel, 以及 HyperConnection 相关 kernel, 全部经 DeepJIT 在运行时编译. 具体实现分布在 `deep_gemm/include/` 的 kernel、`csrc/apis/` 的 host 接口与 `docs/scaling-factor-format.md`. 训练侧需求与量化原理可结合[DeepSeek-V3 技术报告解析](../../01-模型技术报告/deepseek-v3/deepseek-v3-analysis.md)和[FP8 混合精度训练详解](../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/02-FP8混合精度训练详解/02-FP8混合精度训练详解.md)阅读; DeepGEMM 接收的是已经量化的张量和 scale, 其主要工作是安排这些数据进入具体的 kernel 路径.
 
 ## 1. 它解决的瓶颈与版本演进
 
@@ -20,7 +20,7 @@ DeepSeek-V3 把线性层的前向与反向大量放到 FP8 上算, 用的是细�
 
 ### 1.2 从 Hopper FP8 到统一 kernel 库的演进
 
-从 git log 看, 这个库的能力是分几波叠上来的, 每一波都对应 DeepSeek 自己的模型或系统需求. 下面按时间列出主要节点, 数字与特性取自 README 的 News 一节和对应 PR 号.
+DeepGEMM 的能力随 DeepSeek 自身模型和系统需求分批加入. README 的 News 与对应 PR 记录了这些主要节点:
 
 - 2025-02-25 首发: 只支持 Hopper (SM90) FP8, 稠密 GEMM 加 MoE 的 contiguous / masked 两种 grouped GEMM.
 - 2025-05-14 (#95): 为 dense 与 MoE 反向加入权重梯度 kernel, 对应 K 轴分组的需求.
@@ -150,7 +150,7 @@ K 轴分组是第三种布局, 服务 MoE 权重反向. 反向时 $M$ 和 $N$ �
 
 DeepGEMM 的适用边界在 README 的 Notices 和各处约束里写得比较清楚. 它只做 GEMM 本身, 量化 cast 和输入转置要调用方自己融进上游 kernel, 用库里提供的 PyTorch 工具函数会慢. scale 必须是 $2$ 的整数次幂, 这由 UE8M0 格式和设备断言强制, 产 scale 时要传 `round_sf=True`. 硬件上只支持 SM90 和 SM100 (昇腾走单独的 DeepGEMM-Ascend 仓库), 需要 CUDA Toolkit 12.9 以上和支持 C++20 `<format>` 的编译器. grouped GEMM 只在 M (或反向的 K) 轴分组, N 和 K 必须固定, 这对专家形状不一致的 MoE 不适用.
 
-还有两点来自底层机制. 一是 FP8 tensor core 的累加精度 (本文 2.1 节) 是硬件特性, 二级累加能缓解但不能消除 FP8 本身的量化误差, 真正的精度来自细粒度分块量化, 这超出 DeepGEMM 的职责. 二是 JIT 虽然不做 auto-tuning, 但会按形状确定性地选 block 尺寸 、 warp group 数 、 流水级数和 TMA cluster 大小, 这个选择逻辑在 `csrc/jit_kernels/heuristics/` 下, 对库里没覆盖好的形状可能不是最优 —— 初始版 README 自己就写了「DeepGEMM 在某些形状上表现不佳, 欢迎优化 PR」. 对照代码时, 还要注意 2025-07 重构带来的文件和命名变化 (如 `gemm_fp8_fp8_bf16_nt` 在新版里叫 `fp8_gemm_nt`), 早期社区解读的符号未必对得上当前接口.
+还有两点来自底层机制. 一是 FP8 tensor core 的累加精度 (第 2.1 节) 是硬件特性, 二级累加能缓解但不能消除 FP8 本身的量化误差; 细粒度分块量化决定输入误差, DeepGEMM 负责按既定格式消费量化结果. 二是 JIT 不做 auto-tuning, 而是按形状确定性地选择 block 尺寸、warp group 数、流水级数和 TMA cluster 大小. 选择逻辑位于 `csrc/jit_kernels/heuristics/`, 未充分覆盖的形状可能得不到最优配置; 初始版 README 也明确记录了部分形状表现不佳. 2025-07 的重构还调整了文件与命名, 例如 `gemm_fp8_fp8_bf16_nt` 在新版中改名为 `fp8_gemm_nt`; 旧接口名称不能直接套到当前版本.
 
 ## 参考资料
 
