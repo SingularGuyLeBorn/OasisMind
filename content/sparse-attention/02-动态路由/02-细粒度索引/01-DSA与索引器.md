@@ -156,7 +156,7 @@ MISA 观察到 DSA 的多个 indexer heads 最终共同产生一套候选, 对�
 
 若原 indexer 有 $H^I=64$, 每个 query 只激活 $h=8$, token 打分主体减少到八分之一, 再加 router. MISA 官方摘要报告, 只激活 8 个 heads 时, 在 DeepSeek-V3.2 与 GLM-5 上分别以 8 倍和 4 倍更少的 indexer heads 匹配原 DSA 的 LongBench 质量, H200 上 TileLang kernel约有 3.82 倍加速. 实际加速低于 head 数缩减, 因为 router、内存和 top-k 没有同比消失.
 
-MISA 还给出层次变体: routed pass 先保留放大的候选集, 再用原 DSA 全 indexer 对候选精排. 这相当于「稀疏 heads 粗召回 + 完整 heads 局部精排」. 它与 HISA 的共同点是两阶段搜索, 区别在第一阶段剪掉的是 head 计算还是 token 区域. 论文官方名称为 hierarchical variant; 若实现或图中用版本号简称, 应以对应版本文档为准, 不能把非正式称呼当作独立架构.
+MISA 还给出 hierarchical variant: routed pass 先保留放大的候选集, 再用原 DSA 全 indexer 对候选精排. 这相当于「稀疏 heads 粗召回 + 完整 heads 局部精排」. 它与 HISA 都采用两阶段搜索, 第一阶段削减的对象不同: MISA减少参与扫描的heads, HISA先缩小token区域.
 
 ### 4.3. LISA: 线性状态与稀疏检索并联
 
@@ -164,7 +164,7 @@ LISA 的目标不只是让 DSA indexer 更快. 它在原模型中并联线性 at
 
 训练分两阶段. 第一阶段引入线性 attention, 配合滑动窗口 sparse attention, 通过冻结教师的知识蒸馏逼近 full self-attention. 第二阶段用 indexer 替换固定窗口, 以 per-head KL 对齐教师 attention pattern. 与 DSA 先预热共享 selector 再全模稀疏适配相比, LISA 明确保留两条并行信息通道, 并把对齐细化到 head.
 
-论文在 DeepSeek distilled Qwen 系列上报告 16K 上下文约 50% 推理加速, 推理类评测平均提升 5.6%. 这里的质量变化包含架构迁移与训练, 不能归因于 indexer 单独更准. LISA 的线性状态、sparse KV、indexer K 和 gate 都有运行状态, cache 账本也比纯 DSA 更复杂.
+论文在 DeepSeek distilled Qwen 系列上报告 16K 上下文约 50% 推理加速, 推理类评测平均提升 5.6%. 这里的质量变化包含架构迁移与训练, 不能归因于 indexer 单独更准. LISA 的线性状态、sparse KV、indexer K 和 gate 都有运行状态, cache构成也比纯 DSA 更复杂.
 
 ## 5. 内核、共享与失效边界
 

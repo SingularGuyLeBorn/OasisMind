@@ -1,6 +1,6 @@
 ---
 title: NSA: 压缩、选择与滑窗的训练原生稀疏 attention
-description: 解析 Native Sparse Attention 的三分支算法、GQA 共享选择、训练与推理 kernel、成本账本和失败边界.
+description: 解析 Native Sparse Attention 的三分支算法、GQA 共享选择、训练与推理 kernel、实际开销和失败边界.
 published: true
 ---
 
@@ -106,7 +106,7 @@ Decode状态包含三套K/V以及压缩器尾部. 新token到来时, window追�
 
 block size太大时, 候选预算浪费在邻居上; 太小时, index数量、排序与事务数增加. 最佳值依赖head维度、dtype、page布局与设备. 论文在A100与特定配置上的结果不能自动外推到其他加速器, 复现应重新profile而不是只保持相同理论稀疏率.
 
-### 4.2. 三条分支的计算账
+### 4.2. 三条分支的实际开销
 
 设历史长度为 $t$, 压缩步长为 $d$, window为 $w$, 选择 $n$ 个长度 $l'$ 的块. 单query参与attention的逻辑KV数量近似
 
@@ -140,9 +140,9 @@ $$
 
 DSA使用独立轻量indexer对历史token打分, 再从主MLA KV中读取token级top-k. 它的代理目标、索引K和主attention可分别训练与量化. NSA不另建selector, 而是复用compression attention分数, 候选单位是连续原始token blocks, 并保留独立window分支.
 
-CSA同样先压缩token轴再稀疏选择, 但本文对CSA的说明只依据V4公开报告: 它在压缩entries上执行主attention, 与NSA选择分支回读原始连续blocks不同. HCA对更强压缩后的全部entries做attention, 没有动态top-k漏选, 误差主要来自压缩. NSA则让compression全覆盖与selected原始细节并行存在.
+CSA同样先压缩token轴再稀疏选择. V4公开报告中的CSA在压缩entries上执行主attention, 与NSA选择分支回读原始连续blocks不同. HCA对更强压缩后的全部entries做attention, 没有动态top-k漏选, 误差主要来自压缩. NSA则让compression全覆盖与selected原始细节并行存在.
 
-不要因为NSA作者与后续模型团队存在关联, 就把论文结构直接等同某个未完整披露模型的内部实现. 可验证结论只来自NSA论文的算法、实验配置与kernel说明. 模型版本若没有官方技术材料明确引用, 应保留未知.
+NSA与后续模型的人员或团队关系无法确定具体结构. 模型内部是否采用NSA, 仍取决于正式技术材料给出的公式、层结构和实验配置.
 
 ### 5.3. 与HySparse及跨层共享的区别
 
@@ -199,6 +199,114 @@ speculative decoding回滚时, window尾部、selection原始KV和compression部
 分布式部署还要保持GQA组与KV分片对齐. 如果同组query heads分散到多个tensor parallel rank, 先聚合importance再做全局top-n会引入通信; 若每个rank局部选择, 最终KV读取并集又可能扩大. 更合适的切分通常让共享一个KV head的queries共置, 但还需兼顾投影与输出通信. pipeline parallel不会改变层内三分支语义, 却要求每个stage保存本层完整的压缩尾部和原始selection cache. 这些布局成本应计入端到端结果, 不能只引用单卡kernel速度.
 
 上线前可用故障注入验证状态管理: 改错一个selection block编号、丢弃一个未满compression尾部、交换两个GQA组的indices, 确认校验与canary输出能发现. 静默读错KV往往仍产生有限数值, 比显式崩溃更难定位. 元数据中保留请求、层、分支、位置范围与结构版本, 能把错误缩小到具体数据路径.
+
+## 6. 从张量形状走到一次完整执行
+
+### 6.1. 三条分支分别保存什么
+
+设batch为 $B$, 序列长度为 $N$, query head数为 $H_q$, KV head数为 $H_{kv}$, 每个head维度为 $D$. 输入 $X\in\mathbb{R}^{B\times N\times d_{model}}$ 先经过三套K/V投影. selection分支得到 $K^{slc},V^{slc}\in\mathbb{R}^{B\times H_{kv}\times N\times D}$; window分支的投影shape相同, 推理时只保留最近 $w$ 个位置; compression分支先生成逐token的K/V, 再沿序列轴把长度 $l$、步长 $d$ 的窗口压成 $M$ 个entries:
+
+$$
+M=\left\lfloor\frac{N-l}{d}\right\rfloor+1,
+\qquad
+K^{cmp},V^{cmp}\in\mathbb{R}^{B\times H_{kv}\times M\times D}.
+$$
+
+当 $N=65536,l=32,d=16$ 时, $M=4095$. 这个数字比粗略写成 $N/d=4096$ 少1, 差别来自第一个完整窗口需要先容纳32个token. 流式实现还会保存不足32个token的尾部; 尾部达到窗口长度后生成entry, 随后每进入16个新token再生成一个. 因果训练若允许部分窗口, 计算定义会改变, 训练和推理必须采用同一种规则.
+
+GQA的映射可写为 $g(h)=\lfloor hH_{kv}/H_q\rfloor$, 第 $h$ 个query head只读取第 $g(h)$ 个KV head. 若 $H_q=64,H_{kv}=4$, 每16个query heads共享一个KV head. NSA在这16个heads之间归约block importance, 选出共同的block IDs. kernel据此加载一次K/V, 让16个query heads复用; 若每个head各自top-$n$, 最坏情况下会出现 $16n$ 个不同block, GQA原有的带宽收益会被候选并集抵消.
+
+![NSA 三分支的训练与推理数据流](images/nsa-three-branch-flow.svg)
+
+> 图 1: NSA从同一层输入生成compression、selection与window三条K/V路径, compression权重继续产生共享block索引, 三个attention输出经gate合并.
+
+图1解析:
+
+- compression attention覆盖全部压缩entries, 其softmax权重同时参与最终输出和block importance归约.
+- top-$n$只决定selection分支读取哪些原始连续块, 不裁剪compression与window分支.
+- 反向传播沿三个输出分支回到各自投影; 离散索引在当前step固定, selection梯度只写回被选block.
+
+三条路径的投影独立, 所以cache也不能只保留一份原始K/V再临时切片. selection cache保留全部历史原始块, window cache只需循环保存最近 $w$ 项, compression cache保存 $M$ 个压缩entries和一个尚未封口的原始尾部. 若三个分支head维度都为128、KV head数为4、bf16每元素2字节, 64K序列中selection K/V约占 $2\times4\times65536\times128\times2=128$ MiB; window K/V约1 MiB; compression K/V约8 MiB. 这组数只计算单层裸张量, 未含页表、scale、对齐填充与临时workspace.
+
+### 6.2. selector的梯度到底走到哪里
+
+令compression logits为 $a_{t,i}$, 压缩注意力权重为 $p_{t,i}=\operatorname{softmax}(a_t)_i$. 第 $j$ 个selection block的分数由与它相交的compression窗口归约:
+
+$$
+s_{t,j}=\sum_i R_{j,i}p_{t,i},
+\qquad
+I_t=\operatorname{TopN}(s_t,n),
+$$
+
+其中 $R_{j,i}$ 表示第 $i$ 个压缩窗口对第 $j$ 个原始块的贡献. 若窗口跨越两个selection blocks, 对应的一行会把权重分到两个block, 具体系数由论文的空间覆盖映射决定. GQA还会在top-$n$之前对组内query heads的 $s_{t,j}$ 求和. $I_t$ 是整数索引集合, gather出的原始K/V进入selection attention.
+
+固定 $I_t$ 后, selection分支与普通attention一样可微. 选中block的K/V得到QK与AV两条梯度, query也从selection输出得到梯度; 未选block在这条路径上的梯度为0. `TopN`在排序交换点不连续, 常规反向不会对“某块差一点入选”产生梯度. NSA没有用straight-through estimator把离散索引伪装成连续变量.
+
+compression分支解决了训练信号中断的一部分. $p_{t,i}$直接参与compression输出, 因此语言建模损失会更新compression Q/K/V和压缩MLP; 同一组权重又决定 $s_{t,j}$, 参数变化会在后续step改变候选集合. 这属于通过共享表示产生的间接适配, 不是对top-$n$求导. window分支始终可微, 在训练早期selection尚不稳定时仍能传递局部梯度.
+
+gate梯度也需要单独观察. 设三个分支输出为 $u^{cmp},u^{slc},u^{win}$, gate logits为 $z^c$, 且论文使用逐分支sigmoid $g^c=\sigma(z^c)$. 对某个分支有
+
+$$
+\frac{\partial L}{\partial z^c}
+=\left\langle\frac{\partial L}{\partial o},u^c\right\rangle g^c(1-g^c).
+$$
+
+三个gate不要求和为1, 因而可以同时放大或同时减弱. 若某个 $z^c$过早进入sigmoid饱和区, $g^c(1-g^c)$接近0, 对应分支即使偶尔有用也难以恢复. 训练日志应按层、head组和token位置记录gate分布, 还要结合遮蔽分支后的loss变化; 单看平均gate会漏掉少量但关键的远距query.
+
+### 6.3. 64K上下文的计算与读取手算
+
+取论文常用配置 $N=65536,l=32,d=16,l'=64,n=16,w=512$, 暂时忽略固定块与动态块重叠. 对序列末尾的一个query, compression读取4095个entries, selection读取 $16\times64=1024$ 个原始位置, window读取512个位置, 合计5631个逻辑KV位置. 与Full Attention的65536个位置相比, QK和AV主体约为11.64分之一.
+
+这个比例只描述attention主体. 若 $H_q=64,D=128$, 每个逻辑位置在所有query heads上的QK与AV合计约需 $4H_qD$ 次浮点运算, 三分支主体约为
+
+$$
+4\times64\times128\times5631\approx1.85\times10^8\ \text{FLOPs/query}.
+$$
+
+Full Attention对应约 $2.15\times10^9$ FLOPs/query. NSA还要计算压缩MLP、importance归约、组内reduce、top-$n$、三次online softmax与gate. Decode下这些固定工作占比更明显; Prefill含大量queries, block attention主体更容易把排序与launch开销摊薄.
+
+带宽要按KV heads计算. 仍取 $H_{kv}=4,D=128$, bf16 K/V每个逻辑位置需要 $2\times4\times128\times2=2048$ 字节. 若三条分支具有相同head维度, 单步裸载荷约为 $5631\times2048=11.0$ MiB, Full Attention约128 MiB. 实际selection读取取决于页布局: 16个连续64-token blocks若各自跨页, 会额外读取对齐区域和页表; window通常连续, compression entries也规则排列. profiler应同时给出有效字节与HBM事务字节.
+
+短上下文会出现另一种结果. 当 $N=2048$ 时, compression只有127个entries, 固定的selection预算最多1024个token, window又读512个token. 三条分支合计接近1663个位置, 再加排序与三套softmax, 相对Full Attention的优势很小. 如果固定首块、局部块和动态块大量重合, 去重会降低selection实际读取; 若实现保留重复索引, 相同block会在selection softmax中重复出现并改变输出, 已经不只是性能问题.
+
+训练阶段还要乘上反向成本与保存状态. online softmax通常保存每行的log-sum-exp, selection保存block IDs, 压缩器保存反向所需激活. 朴素实现若为每个query保存完整4095维compression概率, workspace会随 $N^2/d$ 增长; fused kernel可重算部分统计量或分块保存, 用更多计算换显存. 所以训练报告需要列出峰值显存和backward时间, 单独的forward稀疏率无法代表可训练性.
+
+### 6.4. 与DSA、MoBA和KDA放到同一组坐标
+
+这些方法都减少长序列attention成本, 但它们削减的对象并不相同. 比较时可固定五个问题: 选择信号从哪里来、候选粒度是什么、训练时是否执行同一路由、局部信息由谁保证、部署时主要保存什么状态.
+
+| 方法 | 选择或状态信号 | 稀疏粒度 | 训练路径 | 局部路径 | 部署状态与主要代价 |
+|---|---|---|---|---|---|
+| NSA | compression attention权重 | 连续原始token block | 三分支从预训练开始共同优化 | 独立window分支 | 原始selection KV、window KV、compressed KV; 三次attention与top-$n$ |
+| DSA | 独立轻量indexer对历史token打分 | token级hard top-k | indexer先获得监督, 再与主干适配 | 由实现中的局部保留规则决定 | 主MLA KV加indexer状态; 随机token gather压力较大 |
+| MoBA | query与block代表计算gating分数 | block级hard top-k | 稀疏路由进入训练, 当前block保持可见 | 当前因果block | 原始block KV与路由结果; block并行和负载分布影响吞吐 |
+| KDA | recurrent线性状态按通道更新 | 没有候选集合 | 状态更新与读取连续可微 | 由局部分支或混合层补充 | 固定大小recurrent state; 状态容量和更新稳定性决定长程保留 |
+
+NSA与DSA都包含hard选择, 训练信号来源不同. DSA的indexer拥有自己的表示和监督目标, 可以单独测索引召回; NSA让compression权重兼任全局attention和路由信号, 少了一次独立历史扫描, 也把压缩质量与选择质量耦合在一起. NSA以连续block换取规则访存, DSA的token级候选纯度更高, kernel需要处理更细碎的地址.
+
+MoBA与NSA都选择连续block, MoBA把block routing本身作为主attention的稀疏拓扑, 当前block提供确定的因果局部连接. NSA保留完整的compression和window输出, selected blocks只是三条并行路径之一. 相同的top-$k$ block数无法代表相同成本: NSA还读取compressed entries和window, MoBA则受block代表计算、路由负载与当前block处理影响.
+
+KDA属于线性attention的recurrent路线. 它把历史压入随时间更新的状态, 每个token都参与状态更新, 没有“候选集合”“top-k召回”或“gather哪些KV”这几个步骤. 因而不能用selector recall评价KDA, 也不能把KDA的固定状态大小写成一种hard sparse attention. 对比指标应换成状态大小、每token更新成本、长程信息保留和并行训练方式. 混合模型可以让KDA承担全局状态, 再配局部softmax attention; 这与NSA用compression、selection和window分工的出发点相近, 计算图却完全不同.
+
+### 6.5. 消融怎样定位三条路径
+
+最直接的消融是分别关闭一个分支, 同时保持其余参数、训练token和推理预算不变. 关闭compression不仅去掉一个全局输出, 还会让selection失去importance来源, 因而不能把结果解释成单纯的“全局摘要贡献”. 若要测compression输出本身, 可以保留它产生的indices并把 $g^{cmp}$置0; 若要测路由作用, 则保留compression输出, 用随机块或固定块替换top-$n$. 两组实验回答不同问题.
+
+selection消融可以逐步改变 $n$ 与 $l'$. 固定总selected tokens $nl'$ 时, 小块提高定位精度并增加索引数量, 大块提升连续加载效率并带入更多邻居. 固定block数只会同时改变信息预算和计算量, 难以区分质量变化来自哪一项. GQA共享消融应比较每head top-$n$、组内共享top-$n$和组内候选并集, 同时报per-head oracle recall与实际读取字节.
+
+window消融要按任务距离切片. 把 $w$ 从512降到256会影响局部复制、代码缩进、短程语法和最近对话状态; 长检索下降也可能来自证据附近的局部组合被破坏. 将window扩大到全历史可验证该分支投影的dense参考, 却不能代表完整NSA退化成Full Attention, 因为compression与selection仍经独立softmax和gate参与输出.
+
+压缩器的消融应控制 $l/d$ 与entry数量. 把重叠窗口改成不重叠窗口会同时减少压缩构造计算并改变边界信息; 用平均池化替换可学习MLP则直接测试压缩表示能力. 除最终困惑度外, 还应记录compressed attention对远距证据的覆盖、selection block recall、top-$n$边界margin与分支遮蔽后的loss增量. 四类数结合起来, 才能区分“压缩内容丢了”“排序选错了”和“选对后gate没有使用”.
+
+一次可复现的长上下文实验至少给出 $B,N,H_q,H_{kv},D,l,d,l',n,w$, dtype、块页大小和是否去重. 训练结果还需给出预训练token数、长度日程、Full Attention基线是否同数据同算力, 以及forward/backward分别采用何种kernel. 系统结果按训练、Prefill和Decode分开, 再报告端到端模型吞吐; 这样才能看出收益来自少算QK/AV、少读KV, 还是其他模块占比变化.
+
+还可以用合成样本把错误定位到具体路径. 第一组样本把唯一证据放在selection block边界两侧, 逐个移动query位置, 观察importance映射是否随重叠窗口平滑变化. 第二组让同一GQA组的16个heads分别偏好不同block, 比较独立top-$n$、共享top-$n$与候选并集; 这组样本能直接暴露组内求和是否压掉少数head. 第三组把证据放在window之外但compression可见的位置, 再把compression gate置0, 检查模型是否确实依赖远距分支.
+
+数值正确性应分两层验证. 小shape下用显式dense mask构造三条参考attention, 固定indices后逐项比较输出、log-sum-exp以及Q/K/V梯度. 随后放开top-$n$, 比较compression logits、block scores和最终indices. 前一层失败说明attention kernel或scatter有错; 后一层失败通常来自边界映射、GQA归约精度或排序规则. 两类误差混在最终logits中时, 一个错误候选就足以掩盖后面的数值问题.
+
+性能曲线也要保留形状变化. 序列从2K扫到128K, batch从1扫到服务常用并发, 分别记录compression、selection、window、top-$n$和gate耗时. 若总时延在某个长度后不再近似线性, 通常需要检查selection pages是否过于分散、临时索引是否触发额外拷贝, 或并发请求的block数差异是否造成SM尾部空转. 这些数据最终会反过来约束 $l,d,l',n,w$ 的选择: 算法预算与硬件布局必须在同一组配置上验证.
+
+线上监控可以沿用相同分解. 每层记录实际unique blocks、压缩entry数、三分支gate分位数和HBM读取量, 再按请求长度分桶. 候选数没有变化但读取量突然升高, 多半是物理页分散或前缀复用失效; 读取量稳定而长检索下降, 则优先检查importance分布与边界margin. 这样定位时可以直接落到路由、布局或模型质量中的一层.
 
 ## 参考资料
 
