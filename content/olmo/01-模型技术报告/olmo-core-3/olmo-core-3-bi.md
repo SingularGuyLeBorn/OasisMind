@@ -583,7 +583,7 @@ In the full-reshard regime tested here, FSDP gathers weight shards to materializ
 
 The extra time appears in several forms. Routing requires decisions, counting, and bookkeeping. Dispatch and combine add memory movement, permutations, and, when experts are distributed, communication. Expert computation can become less efficient when the routed batches are small or uneven. Dynamic shapes and load imbalance can also introduce temporary buffers, extra kernel launches, CPU overhead, synchronization, and contention between communication and computation. The exact mixture depends on the routing decisions, the runtime implementation, and the hardware.
 
-额外时间有几种来源. 路由要做决策, 计数和簿记. dispatch 和 combine 带来显存搬运, 重排, 专家分布在多卡上时还有通信. 路由后的 batch 小或者不均匀时, 专家计算效率会下降. 动态形状和负载不均衡还会带来临时缓冲区, 额外的 kernel 启动, CPU 开销, 同步, 以及通信与计算之间的资源争用. 具体比例取决于路由结果, 运行时实现和硬件.
+额外时间有几种来源. 路由阶段需要计算选择结果并统计各专家负载. dispatch 和 combine 带来显存搬运与重排, 专家分布在多卡上时还会产生通信. 路由后的 batch 小或者不均匀时, 专家计算效率会下降. 动态形状和负载不均衡还会带来临时缓冲区, 额外的 kernel 启动, CPU 开销, 同步, 以及通信与计算之间的资源争用. 具体比例取决于路由结果, 运行时实现和硬件.
 
 We refer to these routing, compute-efficiency, and supporting runtime costs collectively as the **MoE runtime tax**. Unlike the capacity tax, it is not explained by model size alone: two batches with similar nominal model FLOPs can take different amounts of time because they route tokens differently and exercise the runtime differently. Section 5 examines token movement, Section 8 addresses host submission and synchronization, Section 9 studies expert compute efficiency, and Section 10 examines routing imbalance.
 
@@ -593,7 +593,6 @@ We refer to these routing, compute-efficiency, and supporting runtime costs coll
 
 <sup>3</sup>FSDP2 也可以让未分片的参数一直保留到反向结束; 如果中间几次反向之后都不 reshard, 还能在整个累积窗口内保留 (PyTorch Contributors, 2026d). 这种策略放弃了 full-reshard FSDP 在未分片参数峰值显存上的大部分优势; 此时它的参数显存占用和通信节奏都接近带分片优化器状态的 DDP. 我们把它当作机制消融, 不当作主要的竞争方案. 所以主对比用 full reshard; 其他 reshard 策略见附录 B.3.
 
-> **想:** 脚注 3 说 FSDP2 关掉中间 reshard 后「接近带分片优化器状态的 DDP」, 那 Olmo 为什么不直接用这个模式, 而要自己写一套 DDP?
 > 按第 4.4 节的说法, 差别不在参数是否常驻, 而在常驻之外的几件事: 同一个 MoE 模块里 dense 参数和专家参数要走不同的副本组 (第 4.4.2 节, dense 在 D 上归约, 专家只在 EP-DP 上归约), 梯度要在 FP32 桶里累积和归约 (第 4.4.1 节), MXFP8 缓存要在优化器步后从 FP32 主权重统一重建 (第 4.4.3 节). 关掉 reshard 的 FSDP2 仍然在 shard 组上做 reduce-scatter, 参数常驻的那份是 all-gather 出来的整权重, 和 Olmo 的「compute weight 常驻 + 只分片 FP32 主权重与优化器状态」在显存构成上接近, 但副本组和 dtype 的控制权在 FSDP2 手里. 报告里没给这种 FSDP2 模式与 Olmo DDP 的吞吐对比 (附录 B.3 只是讨论), 所以「接近」是否也意味着吞吐接近, 报告里没写.
 
 <!-- page 17 of 168 -->
@@ -918,7 +917,7 @@ The first of these three mechanisms, the distributed optimizer, keeps model exec
 
 Figure 10 compares the two useful balanced layouts with a naive baseline. Concatenate-then-shard flattens all eligible optimizer-state tensors into one sequence and partitions that sequence across ranks. It balances the aggregate optimizer state and does not require every tensor to be individually divisible by the sharding degree. Its cost is bookkeeping: shard boundaries may cut through tensors, so optimization, weight reconstruction, and checkpointing must all preserve a global map from each tensor to its flat-buffer views and offsets.<sup>5</sup> The figure’s same-param-count baseline assigns the same number of complete parameter tensors to every rank. It does not equalize the number of scalar elements. Because tensor sizes vary widely, equal tensor counts can produce severely unequal byte counts and are the least useful of the three layouts.
 
-Figure 10 把两种实用的均衡布局和一个朴素基线放在一起比较. 先拼接再分片 (concatenate-then-shard) 把所有符合条件的优化器状态张量展平拼成一个序列, 再把这个序列切给各个 rank. 它让优化器状态总量均衡, 也不要求每个张量各自都能被分片数整除. 代价是簿记: 分片边界可能切过张量中间, 所以优化, 权重重建和 checkpoint 都必须维护一张全局映射, 记录每个张量对应扁平缓冲区里的哪些视图和偏移.<sup>5</sup> 图中按参数个数均分的基线给每个 rank 分同样数量的完整参数张量. 它并不均分标量元素个数. 张量大小差别很大, 张量个数相同可能导致字节数严重不均, 所以它是三种布局里最不实用的.
+Figure 10 把两种实用的均衡布局和一个朴素基线放在一起比较. 先拼接再分片 (concatenate-then-shard) 把所有符合条件的优化器状态张量展平拼成一个序列, 再把这个序列切给各个 rank. 它让优化器状态总量均衡, 也不要求每个张量各自都能被分片数整除. 代价是额外的索引映射: 分片边界可能切过张量中间, 所以优化, 权重重建和 checkpoint 都必须记录每个张量在扁平缓冲区中的视图与偏移.<sup>5</sup> 图中按参数个数均分的基线给每个 rank 分同样数量的完整参数张量. 它并不均分标量元素个数. 张量大小差别很大, 张量个数相同可能导致字节数严重不均, 所以它是三种布局里最不实用的.
 
 ![Image block](images/p27-figure-10-optimizer-state-layout-choices-colors-identify-eligible.jpg)
 
@@ -928,7 +927,6 @@ Olmo uses the per-tensor layout in the bottom row. Each eligible tensor is flatt
 
 Olmo 用的是最下面一行的逐张量布局. 每个符合条件的张量展平后, 在它的优化器副本组内各自独立切分; 它的 FP32 主权重和优化器状态使用 rank 本地的同一段切片. 映射只涉及单个张量, 所以更新, 重建和 checkpoint 的视图都是直接的, 容易检查. 代价是, 当前策略只在张量足够大且元素个数能被副本组大小整除时才分片. 小张量, 不能整除的优化器状态张量, 以及标量步数计数器, 都保持复制. 这种回退不影响训练, 但会减少分布式优化器省下的显存.
 
-> **核对:** 第 4.3.1 节说只有「足够大」且「元素个数能被副本组大小整除」的张量才分片, 这两个门槛具体是什么, 专家张量按哪个组判断?
 > 代码 `optim/moe_optimizer.py` 的 `_distribute_tensor` (约 920-938 行) 写的是: `num_elements >= do_not_shard_tensor_smaller_than` 且 `num_elements % device_mesh.size(0) == 0` 时用 `Shard(0)`, 否则 `Replicate()` 并打一行日志; 门槛默认 4096 个元素 (约 512 行). 这里的 `device_mesh` 是该参数自己的副本组: dense 参数是大小为 D 的 DP 组, 专家参数按第 4.3.2 节是大小为 $D_E$ 的 EP-DP 组. 专家组更小, 整除条件更容易满足. 和脚注 5 的 Megatron 桶级布局对比: Megatron 按桶切等长区间, 不挑张量, 但要维护桶切片到参数切片的映射; Olmo 逐张量切, 映射简单, 代价是像 7 或 13 这样的组大小会让更多张量退回复制. 报告说生产里组大小基本是 2 的幂 (最大 128), 所以这项损失可以忽略; 这一判断报告没有给出被复制字节数的实测比例.
 
 In practice, this restriction is mild for the regular, mostly power-of-two replica groups in our production configurations, including groups of 128 ranks: nearly all large model tensors are divisible by these group sizes. Irregular sharding degrees such as 7 or 13 would cause more tensors to remain replicated, but we have not encountered that case in our production runs. Muon changes the number of optimizer history tensors, not this placement rule.
@@ -1248,7 +1246,6 @@ This example is consistent with the intended mechanism: rowwise replaces four ex
 
 这个例子与设计意图相符: rowwise 用驻留 GPU 的 route map 加索引式行搬运, 换掉了四次显式布局变换和两次按 peer 分块的集合通信, rowwise 的总时间里已经算上了设备端构造 route map 的耗时. 图中区间不含 block 路径等待 host 切分列表的时间 (§8.4). 这个实例指出了受影响的是哪些操作, 但不能说明在不同负载和网络上能省多少.
 
-> **核对:** §5.4 表里 rowwise 的 dispatch + combine 是 4.721 ms, block 是 5.916 ms. 省下的 1.195 ms 来自传输更快, 还是来自去掉布局变换?
 > 答: 按表拆: block 路径两次 all-to-all 是 1.960 + 1.970 = 3.930 ms, 四次布局变换是 0.351 + 0.532 + 0.712 + 0.391 = 1.986 ms. rowwise 两个阶段 2.298 + 2.423 = 4.721 ms, 比 block 的纯传输还多 0.791 ms, 而且这 4.721 ms 里含 route map 构造和加权归约. 所以逐行搬运本身并不比 NCCL 分块交换快, 节省全部来自去掉的 1.986 ms 布局变换, 再扣掉 rowwise 多出的那部分. 两条 trace 采自不同节点 (Figure 17 题注), 0.8 ms 量级的差别不能当精确值. 表里没算 block 路径的 host 等待, 把它算进去会进一步拉开差距, 这部分收益属于 §8 的同步问题, 不属于本节的布局问题.
 
 **Direct placement also lets communication use the MXFP8 representation consumed by grouped GEMM.** Olmo can quantize rows during dispatch, let expert grouped GEMM consume the received qdata (quantized data) and scales directly, and return quantized outputs before local reduction. Communication and expert compute thus share one representation without an intervening BF16 materialization. Section 11.4 follows the integrated forward and backward path.
@@ -2410,7 +2407,6 @@ On every capacity-enabled sync-free forward, all expert-parallel ranks all-gathe
 
 每次开了容量的无同步前向里, 所有 expert 并行 rank 先 all-gather 各自请求的 split 计数, 再各自独立推出同一个确定性的 **keep 矩阵**. 对每个目标 rank, 当前策略按「本地 expert 为主序, 源 rank 为次序」把计数展平, 累加放行路由直到达到 $C_{\mathrm{rank}}$, 每个 (源, expert) split 内部保留一段前缀. 还原和 combine 时把尾部丢掉的路由 mask 掉. 这样溢出量有界, 结果可复现, 但排序会影响哪些路由留下来; 所以评估容量时应该报告丢弃的分布, 不能只报总数.
 
-> **核对:** keep 矩阵按「本地 expert 主序, 源 rank 次序」做前缀放行, 溢出时丢的是哪些路由, 这是不是一种系统性偏置?
 > 答: 是. 代码 `nn/moe/v2/ep_no_sync_common.py` 里, 对每个目标 rank 把 `global_requested` 按 `permute(2, 0, 1)` 展平成 (本地 expert, 源 rank) 的顺序, 做 `cumsum` 后 `clamp(max=rank_capacity)`, 差分得到每段放行数. 所以一旦溢出, 先被截掉的总是编号最大的本地 expert, 其次是编号大的源 rank; 编号 0 的本地 expert 只要自己的请求不超过整个预算, 就永远不会丢. 被丢的路由集中在固定的几个 expert 上, 这些 expert 的梯度信号因此系统性偏少, 和 10.2 节「expert 被请求却收不到信号」是同一件事, 只是落点由编号决定, 不由负载决定. 式 (29) 只比较丢弃总数, 没涉及这种分布; 报告这里要求「报告丢弃的分布」, 正是因为这个顺序. 报告的设计意图是近乎不丢 (下面的方框), 偏置只在罕见溢出时出现; 如果溢出频繁, 轮转起始 expert 之类的做法能消除偏置, 但报告和代码里都没有, 只是从已知数字推出的说法, 没有数据验证.
 
 <!-- page 71 of 168 -->
@@ -2643,7 +2639,7 @@ When bias feedback and LBL are enabled together, the bias affects the requested 
 
 We next analyze the auxiliary-loss controller, separating what its scalar value measures from the effect of its gradient.
 
-接下来分析辅助损失这个控制器, 把它的标量值衡量的东西和它的梯度起的作用分开来看.
+辅助损失同时产生一个可观测标量和一组路由梯度, 两者表达的信息需要分别计算.
 
 ## 10.7 Token Gerrymandering: The Model Learns to Hack the LBL Objective · Token Gerrymandering: 模型学会钻 LBL 目标的空子
 
@@ -2895,7 +2891,6 @@ For every token, the auxiliary gradient transfers soft mass toward experts whose
 
 对每个 token, 辅助梯度把 soft 质量挪向请求负载 $f_i$ 低于分数加权平均的 expert. 这是设计中想要的均衡压力. 但一个任务偏好, 常被选中的 expert 仍可以只以任意小的分差保持胜出, 同时冷门或死 expert 吸走大部分可微质量. 所以梯度改善代理目标的速度, 可以快过它改善请求选择直方图的速度.
 
-> **想:** 式 (53) 的均衡梯度本身是不是就在把 router 推向 Token Gerrymandering?
 > 答: 在 top-K 分配不变的区域里是. 式 (53) 对每个 token 都把 soft 质量从 $f_i$ 高的 expert 挪向 $f_i$ 低的 expert, 挪的量正比于 $p_{t,i}$, 不看这个 token 当前的胜者和第二名之间分差多大. 只要胜者的分数还在第 $K+1$ 名之上, $f$ 就不变, 梯度会继续把质量挪给冷门和死 expert, 一直到某个 token 的排序翻转. 翻转之前, 每一步都在把 $P$ 往与 $f$ 反向的方向推, 也就是让式 (41) 的交叉项变负; 而交叉熵在同时奖励胜者保持胜出. 两股力合起来的稳态正是 10.7.5 节的构造: 胜者以很小分差赢, 死 expert 拿走 soft 质量. 所以 Gerrymandering 不需要 router 「主动学会作弊」, 它是式 (53) 在分配不变区内的自然走向; 能把 router 拉回均衡的只有排序真正翻转, $f$ 跳变的那一刻. 10.9 节建议监控 top-K 与 top-$(K+1)$ 的分差, 原因就在这里: 分差越小, 说明 soft 质量越多地堆在了没被选中的 expert 上.
 
 <!-- page 80 of 168 -->
@@ -3338,7 +3333,6 @@ The direction of this result matches the NVIDIA recipe study: round-ceiling scal
 
 结果的方向与 NVIDIA 的配方研究一致: round-ceiling scaling 贴着高精度基线走, floor scaling 则出现肉眼可见的 loss 退化 (Mishra et al., 2025).
 
-> **想:** §11.3.5 的三条支路共用一个 floor 训出的 step-6000 checkpoint, floor 支路只是照原样继续, 为什么偏偏它在约 11B token 内拉开 +0.022 的 loss, 梯度范数高 51%?
 > 答: 先按 Table 24 的伪代码算 floor 什么时候截断. floor 取 $e=\lfloor\log_2 a\rfloor-8$, 归一化后的块最大值 $a/2^e$ 落在 $[256,512)$; 落进 $(448,512)$ 的块, 最大元素就被 `sat_E4M3` 截到 448, 最多压小 12.5%. 若块最大值在对数尺度上大致均匀, 这类块约占 $\log_2(512/448)\approx 0.19$, 即五分之一左右的 32 元素块. rceil 把 $a/2^e$ 放进 $(224,448]$, 不截断, 代价是这些块的量化步长粗一倍. 所以 floor 的误差有偏 (只压每块的最大值), rceil 的误差是无偏的舍入误差. 梯度范数 +51% 与「被截的恰好是 outlier 通道」的推断一致, 但 Figure 56 只有全模型的总梯度范数, 没有分层或分张量的数据, 这一步报告里没写, 只是从已知数字推出的说法, 没有数据验证. 另外 trunk 的前 6000 步也是 floor, 报告没有一条从头 BF16 的对照, 所以只能说「从同一点出发, floor 比 rceil 和 BF16 差」, 不能说前 6000 步没被 floor 拖累. 代码侧, `src/olmo_core/mxfp8_config.py` 的 `MXFP8ScaleMode` 只有 `floor` 和 `rceil` 两档, 环境变量缺省取 `rceil`, 与正文「默认 rceil」一致.
 
 ## 11.4 The Olmo MXFP8 Recipe for MoE · Olmo 面向 MoE 的 MXFP8 配方
@@ -4100,7 +4094,6 @@ Across repeated internal tuning runs, we found $\alpha   =   0 . 5 3$ to be a us
 
 在多次内部调参运行中, 我们发现 $\alpha = 0.53$ 是个好用的经验设置: 与 $\alpha = 0.5$ 相比, 它更稳定地消除了 batch 增大处肉眼可见的弯折. 这个修正很小; batch 翻倍时, 学习率只比平方根缩放高 $2^{0.03}-1\approx2.1\%$. 修正的方向与上文 Adam 二阶矩适应慢的解释一致, 但具体数值是从实验里挑出来的, 不是从理论推出, 也不是拟合 Figure 66 那一条曲线得到的. 所以我们把 0.53 当作 Olmo 的训练配方给出, 不当作通用的缩放指数.
 
-> **再看:** §16.3 说 $\alpha=0.53$ 对一次翻倍只比平方根多 2.1%, 但 Figure 66 的 batch 从 1 Mi 一路涨到 24 Mi; 修正累计起来有多大, 而且「切换处 loss 下弯」到底指向指数偏小, 还是 §16.2 说的二阶矩滞后?
 > 答: 累计倍数是 $24^{0.53}/24^{0.5}=24^{0.03}\approx1.10$, 走完整个 warmup 后学习率比平方根规则高约 10%. 单次看, 6→9 约 1.2%, 9→15 约 1.5%, 15→24 约 1.4%, 每次都很小, 但会一直叠加到训练结束. 两种解释的时间特征不同. 二阶矩滞后: batch 变大后梯度噪声下降, 但 $\mathbb{E}_{\beta_2}[G_i^2]$ 里还留着旧的大噪声, 式 (71) 的分母偏大, 步长偏小, 等累加器追上 (约 $1/(1-\beta_2)$ 步) 后自行恢复; 这是暂时的. 指数偏小造成的学习率不足则一直存在. 把 $\alpha$ 从 0.5 改成 0.53, 是用一个永久的学习率上调去补一个本应暂时的滞后, 两者在机理上并不一一对应. 若主因是滞后, 更对口的做法是切换后短时间内放大学习率再回落, 或同时调 $\beta_2$, 也就是 Malladi et al. 那种连矩系数一起缩放的做法. 报告没给 $\beta_2$ 的值, 也没在 Figure 66 里放 $\alpha=0.53$ 的对照曲线, 读者没法区分两种解释, 也核不了「0.53 消除了弯折」这一句.
 
 **Section takeaway.** Critical batch size identifies when a larger batch remains useful; the Adam learning-rate multiplier still needs tuning. In our batch-size transitions, α = 0.53 preserved the local loss trajectory more closely than square-root scaling.
@@ -4564,7 +4557,6 @@ Here we consider a response-only objective: the prompt conditions the prediction
 
 **实例级过滤把被移除的 token 留在分母里.** 另一条 instance-mask 路径把整条序列从目标中去掉, 却把它们的 token 数加回 loss 分母. 这些 token 于是以零 loss 占着非零的计数, 报告出的 loss 会比只在保留实例上精确求分母时低. 这种计法省去了在分布式下精确计算分母的开销; 偏差大小取决于过滤掉了多少实例. 跨阶段比较监督 loss 曲线时, 必须考虑分母上的这个差别.
 
-> **核对:** 实例过滤把被删序列的 token 数加回分母, 具体加多少? 偏差能不能事后修正?
 > 答: `ddp_train_module.py` 里是 `batch_num_tokens_for_loss += (~instance_mask).sum() * (labels.shape[1] - 1)`, 即每条被删序列按「序列长 - 1」个 token 计 (shift 后最后一个位置无 label), 不看这条序列里实际有多少非忽略 label. 代码注释也写明这会让 loss「artificially low」, 理由是分布式下精确统计又难又慢, 且要让每个 rank 公平参与. 若设保留实例的有效 label 数为 $n$, 被删 $m$ 条, 长度 $L$, 报告值是真值乘 $n/(n+m(L-1))$. 训练时会记录 `train/masked instances (%)`, 有这个比例和 label 统计就能事后近似还原; 但它同时缩放了梯度, 所以过滤比例随步变化时, 等于每步的有效学习率在随之波动, 这一点报告没提.
 
 ## 22.2 Preference Training Scores Two Sequences Against a Reference · 偏好训练要对照 reference 给两条序列打分
@@ -5616,7 +5608,6 @@ This is the dense BF16 Tensor Core peak, not NVIDIA’s doubled 2:4-sparse peak 
 
 $C_{\mathrm{BF16}}$ 是稠密 BF16 Tensor Core 峰值, 不是 NVIDIA 翻倍后的 2:4 稀疏峰值 (NVIDIA, 2026r); 只选一部分 expert, 并不会让它们的权重矩阵变成 2:4 稀疏. 分子只计激活模型的工作量, 不含激活重算; 耗时则包含整个训练步. MXFP8 的 run 也沿用这个 BF16 参照, 保证归一化口径一致; 这些值不能读作 FP8 峰值的利用率.
 
-> **核对:** 式 (95) 的分子不计重算, 分母用 BF16 峰值; Ultra-128E 的 858 TFLOP/s/GPU 背后, 硬件实际执行了多少算力?
 > 答: 按式 (95), 858 / 2250 ≈ 38.1% 的 BF16 参照 MFU. B.10 第一张表里 Ultra-128E 开了逐层重算, 反向之前要把每层的前向再算一遍. 按「前向 1 份, 反向 2 份」的常用比例粗估, 实际执行的矩阵乘约为有效工作量的 4/3, 即约 1144 TFLOP/s/GPU, 合 BF16 峰值的 51% 左右. 对照 Medium-64E 的 853: 它是 BF16, 不重算, 853 就是实际执行量. 两行数字接近, 但 Ultra-128E 背后硬件多做了约三分之一的工作, 而且它的 attention 和 MLP 矩阵乘走 MXFP8, 相对 FP8 峰值的利用率还会更低. 4/3 这个系数是按经验比例估的, 逐层重算是否覆盖 attention 内部, 报告里没写, 只是从已知数字推出的说法, 没有数据验证.
 
 <!-- page 151 of 168 -->

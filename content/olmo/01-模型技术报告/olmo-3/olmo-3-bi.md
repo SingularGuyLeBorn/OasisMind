@@ -161,7 +161,6 @@ Figure 1 The model flow encompasses training data, code and intermediate checkpo
 
 图 1｜model flow 覆盖各阶段的训练数据, 代码和中间检查点. fully-open 和 open-weight 都会放出最终检查点 (深青色). Marin, Apertus, Olmo 还会沿 model flow 放出数据, 便于看中间阶段 (米色). 图中是 Olmo 3 Think 32B 以及规模和架构相近的其他开放模型. Olmo 3 Think 与 Qwen 3 32B 接近, 而 Qwen 3 32B 没有公开 base. 其底层 Olmo 3 Base 32B 超过其他 fully-open base.
 
-> **想:** Fig. 1 为什么强调 Qwen 3 32B 没有公开 base?
 > 用来说明 Olmo 的 fully-open 优势: 可比最终 thinking, 也能回追 Base 与数据; 对方只给终点权重.
 
 In addition, we train Olmo 3 Instruct 7B and 32B models tuned to produce shorter, more direct responses. By avoiding intermediate “thinking” outputs, Olmo 3 Instruct effectively reduces response latency and is optimized for general chat and function calling. Olmo 3 Instruct 7B and 32B surpass other notable open-weight models of comparable size—Qwen 2.5 (Qwen et al., 2024), Gemma 3 (Gemma 3 Team, 2025), IBM Granite 3.3 (Soule and Bergmann, 2025), and Llama 3 (Grattafiori et al., 2024)—and additionally reduces the remaining performance gap to Qwen 3 (Yang et al., 2025a). Finally, we introduce Olmo 3 RL-Zero 7B, a variant of Olmo 3 trained using RL directly from Olmo 3 Base. Olmo 3 RL-Zero enables researchers to study how base model data affects RL performance.
@@ -269,7 +268,6 @@ We post-train Olmo 3 Base into three model variants:
 • Olmo 3 Instruct (Section §5) is trained to produce efficient and helpful responses to user queries without generating internal thinking traces. This model prioritizes typical user needs, such as avoiding excessive verbosity for easy user understanding and function-calling for user information seeking. In such settings, thinking traces are unnecessary, and inference-time efficiency matters more than inference-time scaling.
 • Olmo 3 Instruct (第 §5 节) 训练成高效, 有帮助, 且不生成内部 thinking traces 的回复模型. 它优先服务典型用户需求: 避免过长以便理解, 以及用 function-calling 满足信息查询. 在这类场景下, thinking traces 并不必要, 推理期效率比 TestingTime 式放大更重要.
 
-> **核对:** Instruct 为什么说 thinking traces 不必要?
 > §2.2 写明在通用聊天与 function calling 场景, 中间思考抬延迟, 收益不足以抵消交互成本.
 
 ◦ We introduce Dolci Instruct SFT, our new dataset enriched with data specifically created for function calling (Section §5.2.1). To directly optimize model interactivity on top of capabilities, we extend our Delta Learning preference pipeline in Dolci Instruct DPO, incorporating multi-turn preference data and targeted data length interventions that encourage concise responses (Section §5.3.1). Finally, we use reinforcement learning with verifiable rewards (Section §5.4) to further refine core capabilities, where preference tuning synergizes with RL to improve model performance while maintaining learned brevity.
@@ -612,7 +610,7 @@ Figure 6 Scaling analysis on the OlmoBaseEval Math suite. We use the OLMo 2 scal
 
 1963), which iteratively merges evaluation scores to minimize the variance of scores between benchmarks within a cluster. Figure 5 shows the result of the clustering procedure, where we manually select a threshold to balance the amount and granularity of clusters. Importantly, we do not use the exact result of the clustering procedure—we manually move a few tasks to ensure the format of the task is the same within each cluster (e.g., tasks requiring code execution all occur in the same cluster). The resulting task clusters are: MC<sub>STEM</sub>, MC<sub>Non-STEM</sub>, GenQA, Math, Code, and Code FIM.
 
-1963), 该方法反复合并评测分数, 使簇内各基准间分数的方差最小. 图 5 展示了聚类结果, 我们手动选择阈值, 在簇的数量与粒度之间取得平衡. 需要强调的是, 我们并没有照搬聚类的原始结果: 我们手动移动了少数任务, 确保每个簇内任务格式一致 (例如需要执行代码的任务都在同一个簇). 最终的任务簇为: MC<sub>STEM</sub>, MC<sub>Non-STEM</sub>, GenQA, Math, Code 和 Code FIM.
+1963), 该方法反复合并评测分数, 使簇内各基准间分数的方差最小. 图 5 展示了聚类结果. 我们手动选择阈值来平衡簇的数量与粒度, 并移动少数任务, 让同一簇内的任务格式一致, 例如把需要执行代码的任务归到同一簇. 最终得到 MC<sub>STEM</sub>, MC<sub>Non-STEM</sub>, GenQA, Math, Code 和 Code FIM 六个任务簇.
 
 #### 3.3.2 Scaling analysis (3.3.2 Scaling 分析)
 
@@ -974,7 +972,6 @@ For lightweight testing we use the microanneal methodology introduced with OLMo 
 
 轻量测试使用 OLMo 2 中引入的 microanneal 方法, 我们对它做了进一步修改, 让基线对比更系统. 一次标准的 microanneal 设置如下: 1) 选定目标数据集, 2) 采样 5B token, 3) 配上 5B Web token, 4) 在得到的 10B 混合上退火. 然后把得到的 checkpoint 与一个仅在 10B Web 数据上做的基线 microanneal 比较, 以低成本, 高效率地评估该数据集对 base 模型表现的影响, 且这种影响是在仅用 Web 数据继续训练的效果之外的额外影响.<sup>13</sup>
 
-> **再看:** §3.5.1 标准 microanneal 为什么要配一个 10B 纯网页基线?
 > 5B 目标数据 + 5B Web 退火 10B, 再与 10B web-only 基线比, 衡量的是 「仅用 Web 继续训练」 之外的额外影响, 不是 100B 正式跑. 脚注 13 还列了变体: 只够 2.5B 的数据集用 5B microanneal, 以及省掉算力匹配基线, 直接看单次退火增益的旧式做法.
 
 This methodology allows us to make rapid, targeted assessments of the quality of datasets being considered for the midtraining mix, and to iterate on many data domains in parallel. Our workflow operates as follows: for each capability that we target for improvement (in categories of math, code, QA, instruction, and thinking), we generate or collect new datasets as candidates to boost performance for this capability; we assess each via microanneals—if the results are promising, new datasets can be incorporated into the larger integration tests described next.
@@ -1238,7 +1235,6 @@ Table 10 Effect of thinking traces and instruction data on OlmoBaseEval.“Full 
 
 表 10｜thinking traces 与指令数据对 OlmoBaseEval 的影响. 「Full mix」 即表 6 中的 「Round 3」. 纳入指令与思考数据的混合在各项 base 评测指标上都更好, 说明即便在后训练之前, 纳入这些数据类型也是有益的. (讨论见第 §3.5.4 节.)
 
-> **想:** Table 10 想证明 midtraining 里指令与 thinking 数据做什么?
 > 在控制总 token 的 100B 对照里, 含 instruction 与 thinking 的 mix 在各项 OlmoBaseEval 上全面更好.
 
 <table><tr><td rowspan="10">Midtraining Data Sources</td><td rowspan="10">Total contam</td><td colspan="4">Evaluated splits:</td><td colspan="9">Val/Test</td><td colspan="8">All</td><td></td></tr><tr><td>Perf Δ</td><td>1.7</td><td>2.0</td><td>-1.2</td><td>-1.6</td><td>13.9</td><td>0.4</td><td>-0.4</td><td>-2.4</td><td>0.6</td><td>-0.1</td><td>-0.7</td><td>-0.0</td><td>0.6</td><td>0.9</td><td>-1.4</td><td>0.0</td><td>1.4</td><td>-0.3</td><td>1.8</td><td>1.1</td><td></td></tr><tr><td>% contam</td><td>27%</td><td>50%</td><td>4%</td><td>100%</td><td>9%</td><td>2%</td><td>2%</td><td>2%</td><td>2%</td><td>0%</td><td>5%</td><td>1%</td><td>24%</td><td>3%</td><td>6%</td><td>3%</td><td>2%</td><td>13%</td><td>3%</td><td>2%</td><td></td></tr><tr><td>SQUAD</td><td>Minerva</td><td>MMLU (MC)</td><td>GSM8K</td><td>DROP</td><td>CoQA (MC)</td><td>HumEval (@16)</td><td>DROP (MC)</td><td>LAMBADA</td><td>MedMCOA (MC)</td><td>MedQA En (MC)</td><td>SQUAD (MC)</td><td>LeetCode (@16)</td><td>M-E-HumEval (@16)</td><td>Jeopardy</td><td>HellaSwag</td><td>CoQA</td><td>ARC (MC)</td><td>PIQA (MC)</td><td>CSQA (MC)</td><td>SciQ (MC)</td><td></td></tr><tr><td>Common Crawl (High Q.)</td><td>2e3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2e3</td><td>50</td><td>0</td><td>256</td><td>0</td><td>1</td><td>119</td></tr><tr><td>StackEdu (FIM)</td><td>876</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>792</td><td>0</td><td>0</td><td>24</td><td>0</td><td>1</td><td>58</td></tr><tr><td>Gemini Reasoning Traces</td><td>606</td><td>0</td><td>513</td><td>31</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>43</td><td>0</td><td>19</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>OLMOCR Science PDFs (High Q.)</td><td>554</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>97</td><td>4</td><td>1</td><td>390</td><td>0</td><td>19</td><td>33</td></tr><tr><td>Sponge</td><td>308</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>38</td><td>1</td><td>0</td><td>190</td><td>0</td><td>0</td><td>79</td></tr><tr><td>General Reasoning Mix</td><td>113</td><td>0</td><td>6</td><td>68</td><td>3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>5</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td><td>0</td><td>27</td><td>0</td></tr></table>
@@ -1316,7 +1312,6 @@ Table 11 Composition of Dolma 3 Longmino Mix. The 100B mix for Olmo 3 32B mainta
 
 **数据过滤** 我们用 gzip 可压缩性作为指标过滤这些数据. gzip 曾被用于文本分类 (Jiang et al., 2022), 也被用作细粒度 Scaling Laws 中的特征 (Pandey, 2024). 我们用 gzip 过滤数据时排除两端的极值: 去掉最易压缩的 20% 文本和最难压缩的 20% 文本.
 
-> **核对:** gzip 过滤在长上下文数据上砍的是哪两尾?
 > 最可压缩 20% 与最不可压缩 20% 都剔除 (§3.6.1).
 
 We also consider applying filters based on LongPpl (Fang et al., 2025b), which identifies tokens that rely moston long-range dependencies by measuring, for each token, the change in perplexity under an existing long-context model when additional preceding context is provided. We compute LongPpl over 10B tokens of Dolma 3 Longmino Mix using Gemma 3 4B (Gemma 3 Team, 2025) as the reference model, and comparing contextualization using 4K or 128K context windows. We use the same threshold as Fang et al. (2025b) for determining whether a token is a “key” token that requires long context dependencies.
@@ -2594,7 +2589,6 @@ prompt similar to Yu et al. (2025), shown in Figure 37. We furthermore “clean�
 
 **RL 算法** 除两点外全部跟随第 §4.4.1 节: (i) 训练响应长 16K, 以更好容纳数学与代码域的长 CoT 推理; (ii) 评测响应长 32K, 温度 1.0 以鼓励多样性, 因我们报告 pass@k. 超参见表 49.
 
-> **再看:** §6.1 RL-Zero 训练响应长 16K, 评测却放到 32K 且温度 1.0, 为什么?
 > 16K 用来容纳数学与代码域的长 CoT; 评测改 32K, 温度 1.0 是为鼓励多样性, 因为要报告 pass@k. 除这两点外全部跟随 §4.4.1, 超参见 Table 49.
 
 ### 6.2 Key Findings (6.2 关键发现)

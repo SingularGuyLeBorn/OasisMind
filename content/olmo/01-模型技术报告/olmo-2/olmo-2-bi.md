@@ -165,7 +165,7 @@ Modern language model development is an iterative process, whereby limitations o
 
 • **Pretraining Stability.** Language model training runs are often training instabilities and loss spikes, which are costly and known to be a detriment to final model performance. We discuss techniques we used to improve training stability, which was critical to ensuring performance of the final trained model (Section §3).
 
-- 预训练稳定性. 语言模型训练运行经常 训练不稳定性和 loss spikes, 这些代价高昂且已知会对最终模型性能产生不利影响. 我们讨论了我们用来提高训练稳定性的技术, 这对于确保最终训练模型的性能至关重要(第 3 节).
+- 预训练稳定性. 语言模型训练中会出现 loss spike, 既浪费算力, 也会损害最终性能. 第 3 节讨论初始化、归一化与优化器设置怎样降低尖峰频率.
 
 • **Mid-training Recipe.** OLMo-0424 (Ai2, 2024), DBRX (Databricks, 2024), and Llama 3 (Grattafiori et al., 2024) demonstrated the usefulness of data curricula for pretraining, as discussed by Blakeney et al. (2024). We discuss the advantages of splitting pretraining into two stages, with the latter mid-training stage being used to infuse new knowledge and patch deficiencies in capabilities. Further, we show how data sources for mid-training can be independently assessed to reduce experimentation cost through a technique we call micro-annealing (Section §4).
 
@@ -177,7 +177,7 @@ Modern language model development is an iterative process, whereby limitations o
 
 • **Infrastructure as a Research Catalyst.** High performance and reliable infrastructure is crucial for successful pretraining; yet, many pretraining papers do not discuss their training stack, or 略过crucial details. We discuss changes from OLMo-0424 that enable the improvements of OLMo 2, and how investing in solutions that let us monitor and orchestrate infrastructure helped us reduce failure rates and increase cluster utilization (Section §6).
 
-- 基础设施作为研究催化剂. 高性能和可靠的基础设施对成功预训练至关重要; 然而, 许多预训练论文不讨论它们的训练栈, 或 略过关键细节. 我们讨论了从 OLMo-0424 到 OLMo 2 的改进所依赖的变化, 以及对监控和编排基础设施的投入如何帮助我们降低故障率和提高集群利用率(第 6 节).
+- 基础设施作为研究催化剂. 第 6 节给出 OLMo-0424 到 OLMo 2 的训练栈变化, 包括监控、编排、故障率和集群利用率. 这些工程条件决定一次预训练能否稳定跑完, 也决定研究者能多快完成下一轮实验.
 
 Alongside these deep dives, we provide a description of the full model development procedure in Section §2: training data, pretraining, post-training, and evaluation. We highlight changes from OLMo 1 and OLMo-0424 when appropriate, and reference related projects, such as our scaling laws effort to efficiently estimate model downstream performance (Bhagia et al., 2024) and benchmark standardization through the OLMES evaluation framework (Gu et al., 2024).
 
@@ -226,7 +226,6 @@ Table 1 Summary of how OLMo family model architectures have evolved over time. L
 
 表 1｜OLMo 家族架构演变摘要. 最新 OLMo 2 改动由稳定性实验驱动. 详见 §2.1.
 
-> **想:** Table 1 里 Layer Norm Applied to 从 Inputs 改成 Outputs, 和式 (1)(2) 的重排是不是同一件事?
 > 是同一架构选择的两面. Table 1 写 Outputs; §2.1 式 (1)(2) 把 RMSNorm 放到 Attention / MLP 输出上. 文献里说的 reordered residual, 对应的就是这张表的 Outputs 行.
 
 
@@ -341,7 +340,6 @@ Table 3 OLMo 2 hyperparameters.
 
 表 3｜OLMo 2 hyperparameters.
 
-> **核对:** Table 3 里 32B 的 Attention Heads 写成 40/8 (GQA), 7B/13B 却是 MHA, 这是不是只改 32B?
 > 是. §2.3 写明为缩放 32B 才切到 GQA, 灵感来自同期 Qwen 3. 7B 与 13B 仍是 Q/KV 等头的 MHA. 7B/13B 仍是 MHA, 不要外推成全家标配.
 
 
@@ -685,7 +683,6 @@ Figure 7 Applying layer norm after the attention and feedforward layers along wi
 
 图 7｜把 LayerNorm 放到 Attention / FFN 输出侧, 再加 QK-norm, 稳定性优于输入侧归一化基线.
 
-> **再看:** Figure 7 把 post-norm 与 QK-norm 画在一起, 正文有没有把两者拆开的单独曲线?
 > §3.3.2 与 Figure 7 的叙述是「输出侧 LayerNorm + QK-norm」一并改善稳定性. 主文没有再给「只改 post-norm / 只改 QK-norm」的两张独立主图; 机制名字应对齐 Dehghani et al. 的 QK-Norm 与 Liu et al. 的 reordered residual.
 
 
@@ -727,7 +724,6 @@ Figure 9 Setting AdamW’s ϵ to ${ 1 0 } ^ { - 8 }$ lowers and stabilizes the n
 
 图 9｜把 AdamW 的 ε 设为 $10^{-8}$ 可降低并稳住训练早期的梯度范数.
 
-> **想:** Figure 9 把 AdamW ε 从 10^{-5} 降到 10^{-8}, 早期 grad norm 更低更稳, 这是不是改了 β2?
 > 不是. §3.4.1 只动 ε; 10^{-8} 是 PyTorch AdamW 默认. 图表现的是早期梯度范数更低更稳. 不要把它说成换了整套 AdamW 超参表.
 
 
@@ -861,7 +857,6 @@ Table 9 Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraini
 
 表 9｜Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraining and mid-training stages (setup mirrors Table 6). Pretrain checkpoints have been trained on 4 trillion (1B
 
-> **核对:** Table 9 说 mid-training 对小模型增益更大, 文中给出的 1B 相对涨幅是多少?
 > 附录 B / 正文引用: Dolmino Mix 1124 对 1B 的收益约 +37.0%, 高于更大模型. Table 9 是各档 pretrain 终点 vs mid-train 终点的对照. 口径是同一 OLMES 设定下的相对抬升, 不是 FLOPs 归一化后的另一张表.
 
 
@@ -1200,7 +1195,6 @@ Table 16 Comparison of performance for OLMo 2 Instruct after different training 
 
 表 16｜Comparison of performance for OLMo 2 Instruct after different training stages. The final Instruct model is from the RLVR stage. The following evaluation names are abbreviated: AVG 
 
-> **再看:** Table 16 把 SFT → DPO → RLVR 各阶段并排, RLVR 是不是替换了 DPO 而不是叠在后面?
 > §5 / Table 16: 最终 Instruct 来自在偏好调优之后继续做可验证奖励强化学习 (RLVR). 流水是叠加阶段, 不是「RLVR 替换 DPO」. 多阶段 RLVR 曲线见 Figure 13 / 14.
 
 
@@ -1506,15 +1500,15 @@ Host-device syncs can be detected by calling torch.cuda.set\_sync\_debug\_mode("
 
 **Asynchronous bookkeeping with a separate backend** A typical training loop involves periodic “bookkeeping” operations like logging metrics and saving checkpoints. While these operations may be relatively fast, their aggregate cost over the course of a training run can be significant. These operations also usually involve host-device syncs. For example, a training metric like cross-entropy loss is the result of computations that occur on the GPU, and it is materialized first as a CUDA tensor; therefore, logging that metric to the console forces a synchronization point.
 
-典型的训练循环涉及周期性的「簿记」操作, 如记录指标和保存检查点. 虽然这些操作可能相对较快, 但在整个训练运行中的累积成本可能很大. 这些操作通常也涉及 host-device 同步. 例如, 交叉熵损失等训练指标是 GPU 上计算的结果, 它首先物化为 CUDA 张量; 因此, 将该指标记录到控制台会强制一个同步点.
+典型的训练循环会周期性记录指标并保存检查点. 单次操作耗时不长, 长时间训练中的累计成本却很可观, 而且常会触发 host-device 同步. 例如, 交叉熵损失先在 GPU 上成为 CUDA 张量, 将它写入控制台便会强制一次同步.
 
 Many of these operations are essential and cannot be avoided, but it is possible to minimize the time they spend blocking the training loop by performing most of this bookkeeping work asynchronously, in a separate thread. However, the PyTorch NCCL backend is not thread safe. To work around this problem, we set up a separate backend that does not rely on NCCL (like GLOO), and use it exclusively for bookkeeping operations. The bookkeeping workflows could then look like this:
 
-许多这些操作是必不可少的, 无法避免, 但可以通过在单独线程中异步执行大部分簿记工作来最小化它们阻塞训练循环的时间. 然而, PyTorch NCCL 后端不是线程安全的. 为了解决这个问题, 我们设置了一个不依赖 NCCL 的单独后端(如 GLOO), 并专门用于簿记操作.
+指标记录和检查点保存仍要执行, 因此系统把其中大部分放到单独线程异步处理, 缩短训练循环等待它们的时间. PyTorch NCCL 后端缺少线程安全保证, 这里另设一个不依赖 NCCL 的后端, 如 GLOO, 专门承载这些辅助操作.
 
 1. For metric collection and logging: Decide on the interval in which to log metrics. Since this involves a host-device sync, it should not be done on every training step. More commonly, metrics are logged every 10 or every 50 steps. During every step, metrics are computed and stored in a GPU tensor on their original devices. Only when it is time to log metrics do we copy them to the CPU (causing a host-device sync), and then pass them to the bookkeeping thread, which uses its own PyTorch backend to aggregate the metrics and log them.
 
-簿记工作流程可以如下:
+异步辅助流程如下:
 
 2. For checkpointing: A similar workflow can be used for checkpointing. When it is time to save a checkpoint, the trainer makes a copy of the model and optimizer state in CPU memory (causing a host-device sync). Then it passes the copy to the bookkeeping thread, which assembles the model from the model shards that are stored on each compute node, and saves it to disk, while the main thread can 30 continue training
 
@@ -2353,5 +2347,5 @@ Figure 25 Prompt used to generate solutions for hard math word problems.
 <!-- residual QA anchors -->
 
 > **确认:** Table 12 的 microanneal 用来决定数学混合比例, 它和最终 100B/300B 退火是同一预算吗?
-> 不是. §4.4.2 把 microanneal 写成低成本探针: 短预算上先比 math/not-math 比例与源. 最终 Dolmino 采样是 50B / 100B / 300B (§2.3 / Table 5). microanneal 负责选料, 不是替换正式 soup 跑次.
+> §4.4.2 把 microanneal 用作低成本探针, 先在短预算上比较数学数据比例与来源. 最终 Dolmino 仍按 50B、100B 和 300B 三档采样 (§2.3 / Table 5), 正式训练使用据此选出的数据配方.
 

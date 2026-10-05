@@ -33,7 +33,6 @@ Recent work has demonstrated the potential of non-transformer language models, e
 
 近期工作已展示非 Transformer 语言模型的潜力, 尤其是线性循环神经网络 (RNN) 以及把递归与注意力混在一起的 hybrid 模型. 然而社区尚未就一件事达成共识: 这些新架构的潜在收益, 是否足以支撑把它们做大的风险与投入. 为此, 我们从几条战线给出 hybrid 相对纯 Transformer 的优势证据. 首先在理论上, 我们证明 hybrid 并不只是继承 Transformer 与线性 RNN 的表达力, 还能表达两者都做不到的任务, 例如代码执行. 把理论落到实践, 我们训练 **Olmo Hybrid**: 一个大体可比 Olmo 3 7B 的 7B 参数模型, 只是把滑动窗层换成 Gated DeltaNet 层. 我们表明 Olmo Hybrid 在标准预训练与 mid-training 评测上超过 Olmo 3, 在可控的大规模设定下展示 hybrid 的收益. 我们发现 hybrid 相对 Transformer 显著更高效地 Scaling, 这解释了它更高的表现. 但为何特定形式问题上的更高表达力, 会带来更好的 Scaling, 或在与那些问题无关的下游任务上更强, 起初并不清楚. 为解释这道缝隙, 我们回到理论, 论证提高表达力为何应转化为更好的 Scaling 效率, 从而闭环. 总体而言, 结果表明把注意力与递归层混合的 hybrid 模型, 是对语言建模范式的有力扩展: 不只为了推理时省内存, 更是在部署前获得更有表达力, 预训练 Scaling 更好的模型的根本路径.
 
-> **想:** Abstract 把 「scales significantly more efficiently」 与推理省内存并提; Fig. 1 的 35%/49% 少用的是训练 token 还是 TestingTime?
 > 是部署前训练 token (因而也是训练 FLOPs). Abstract 后文写 「scale better during pretraining」; Fig. 1 明确是同一 Common Crawl loss / MMLU 下更少 training tokens. 推理省状态是另一条轴, 见 Tab. 1, 不是 Fig. 1 的纵轴.
 
 <!-- page 2 of 70 -->
@@ -198,7 +197,6 @@ As a proof of concept, we also apply the Olmo 3 post-training recipe to Olmo Hyb
 
 **预训练效率.** 如图 1, Olmo Hybrid 比 Olmo 3 更省算力与数据: 达到与 Olmo 3 7B 相同的 Common Crawl loss 与 MMLU 准确率, 所需训练 token 显著更少. 到 6T token 训练结束时, 这一更高效率转化为相对 Olmo 3 的增益
 
-> **核对:** Fig. 1 写少 35% token 追平 Common Crawl loss, 少 49% 追平 MMLU; 正文说 「thus also 35% and 49% fewer FLOPs」. 这里 FLOPs 是否按 C=6ND 与 token 同比例?
 > 是. 图注写 「and thus also 35% and 49% fewer FLOPs, respectively」, 在 N 固定的 7B 对照下, 训练 FLOPs 随 D 近似同比例. 这是部署前训练算力, 不是 TestingTime.
 
 <!-- page 6 of 70 -->
@@ -642,7 +640,6 @@ Figure 9 Scaling law coefficients E, A, B with 95% bootstrap CIs for the fixed-e
 
 图 9 固定指数拟合 (共享 α=β=0.22) 下的 Scaling Laws 系数 E, A, B 及其 95% bootstrap 置信区间, 区间很窄. 数据效率系数 B 显示 Hybrid GDN 相对 transformer 有稳健优势 (83.7 对 94.9, 置信区间不重叠, 标 ∗), E 与 A 的差异在统计上不具结论性.
 
-> **再看:** Figure 9 固定 α=β=0.22 后 B 是 83.7 对 94.9; 回到 Eq. (1) 的 data term $B/D^{\beta}$, 这个差距大致折合多少 token?
 > 只看数据项做粗算: 要让 $B/D^{\beta}$ 相等, token 比例约为 (94.9/83.7)^{1/0.22} ≈ 1.77. 这与 §4.1 投影的 ∼1.3–1.9× 同量级. 实际 Figure 10(b) 是按 $D^*(N)$ 反解, 还带着 E 与 $A/N^{\alpha}$, 所以 1B 只有 ∼1.3×, 70B 才到 ∼1.9×. 另外只有 B 的置信区间不重叠, A (70.1 对 71.8) 与 E 的差异都不显著, 所以文中把主优势落在 B 上.
 
 statistically indistinguishable across architectures—consistent with the theory (Section 4.2), which predicts that expressivity shifts the efficiency constants without altering the power-law exponents. The primary robust advantage of the hybrid model is thus its data efficiency coefficient $B ,$ as also predicted by our theoretical results in section 4.2.
@@ -970,13 +967,12 @@ Table 5 Architecture ablation results — averages. Average OlmoBaseEval BPB (ac
 
 **Setup.** We organize our baseline open-weight models into four groups, distinguishing dense vs. MoE MLP layers and RNN-only vs. Hybrid vs. Attention-only architectures. We emphasize that baselines were trained with different datasets and token budgets, making direct comparisons between them less meaningful for evaluating architecture choices.
 
-**设置.** 我们把开放权重基线模型分成四组, 区分 dense 与 MoE 的 MLP 层, 以及纯 RNN, Hybrid 与纯注意力架构. 需要强调的是, 各基线的训练数据集与 token 预算不同, 因此它们之间的直接对比对评估架构选择意义有限.
+**设置.** 我们把开放权重基线模型分成四组, 区分 dense 与 MoE 的 MLP 层, 以及纯 RNN, Hybrid 与纯注意力架构. 各基线的训练数据集与 token 预算不同, 表中的横向分数无法单独归因于架构选择.
 
 The closest group to Olmo Hybrid are other hybrid models with dense MLP layers: Nemotron-H (NVIDIA, 2025), Falcon H1 (Zuo et al., 2025), and RecurrentGemma (Botev et al., 2024). Falcon H1 is a parallel hybrid mixer (also referred to as "intra-layer hybridization"): it uses Mamba-2 SSM and attention blocks on 100% of layers and performs a channel-wise concatenation prior to the MLP layer. Nemotron-H is the closest architecture to ours, with 8% of layers using self-attention (GQA; Ainslie et al., 2023) and all other layers
 
 与 Olmo Hybrid 最接近的一组, 是其他使用 dense MLP 层的 hybrid 模型: Nemotron-H (NVIDIA, 2025), Falcon H1 (Zuo et al., 2025) 与 RecurrentGemma (Botev et al., 2024). Falcon H1 是并行 hybrid 混合器 (也称 「层内 hybrid」): 它在 100% 的层上同时使用 Mamba-2 SSM 与注意力块, 并在 MLP 层之前按通道拼接. Nemotron-H 是与我们最接近的架构, 8% 的层使用自注意力 (GQA; Ainslie et al., 2023), 其余所有层
 
-> **想:** Table 5 里 600M 处 GDN (7:1) 是 0.748, 反而比 3:1 的 0.754 好; 按 §5.1 的 attention ratio 结论, 为什么最后仍选 3:1 interleaved?
 > §5.1 的依据是跨规模的一致性: 60M–190M 上 7:1 常最好或持平, 但到 600M–1B, 3:1 在所有领域都是最好或第二好 (Table 21), 1B 上 0.669 也低于 7:1 的 0.675 与 1:1 的 0.674. 表注还提醒同一名义规模实际参数量不同, 7:1 参数更多却略落后. 放置方式也一样看: 同为 3:1, 交错 0.669 对居中 0.672. 作者的结论是具体比例不如 「是否做 hybrid」 关键.
 
 <!-- page 26 of 70 -->
@@ -1595,7 +1591,6 @@ Figure 13 shows that Olmo 3 exhibits a high and growing number of spikes in the 
 
 图 13 显示 Olmo 3 梯度范数的尖峰多且越来越多, Olmo Hybrid 则低而平. 我们把这看作初步证据: 相比 Olmo 3, Olmo Hybrid 架构可能更稳定, 即更能承受大学习率与带噪数据.
 
-> **想:** Fig. 13 的 SpikeScore 是 「偏离滚动均值 6 个标准差」 的比例, 而这个滚动窗口只有 128 个值; Hybrid 曲线平, 能直接说它更稳吗?
 > 作者措辞是 「preliminary evidence」 与 「may be more stable」. 这个度量只看梯度 L2 范数, 且相对 Olmo Team (2024) 的做法已有改动, 分数偏高. 两条曲线用的是同一口径, 横向比有效; 至于能否承受更大学习率, 文中没有做对应实验.
 
 ### A.2 Mid-Training and Long Context Extension
@@ -1671,7 +1666,6 @@ Theoretical analysis of transformers makes various assumptions about the types o
 
 41
 
-> **核对:** Tab. 10 Think SFT total tokens 写成 47.6B, 公式是 45.4B×(1+2×2.47%); 2×2.47% 对应什么 upscale?
 > 表注写明: 相对 Olmo 3 baseline 45.4B, 再加 3× tool-use upscale, 公式 45.4B×(1+2×2.47%)=47.6B.
 
 <!-- page 42 of 70 -->
@@ -1784,7 +1778,7 @@ Thus, we are still restricted to remembering at most $O ( \log n )$ bits of an i
 
 Thus, assuming both $\mathsf { T C } ^ { 0 } \neq \mathsf { N C } ^ { 1 }$ and log precision, both transformers and linear RNNs cannot solve statebased recall, the permuted $A _ { 5 }$ word problem, or formula evaluation. As a side note, the same communication complexity argument also shows that RNNs cannot even recognize recall languages like ww and $w w ^ { R }$ , which have communication complexity $\Omega ( n )$ . These simple languages are, however, in uniform $\mathbb { A } \mathbb { C } ^ { 0 }$ and can also be easily recognized by fixed-depth AHATs (Strobl et al., 2024).
 
-于是, 在假设 $\mathsf{TC}^0 \neq \mathsf{NC}^1$ 且精度为对数级时, Transformer 和线性 RNN 都无法求解 state-based recall, 置换版 $A_5$ 字问题或公式求值. 顺带一提, 同样的通信复杂度论证还说明, RNN 连 ww 和 $w w^R$ 这类 recall 语言都识别不了, 它们的通信复杂度为 $\Omega(n)$. 而这些简单语言属于 uniform $\mathsf{AC}^0$, 固定深度的 AHAT 也能轻松识别 (Strobl et al., 2024).
+于是, 在假设 $\mathsf{TC}^0 \neq \mathsf{NC}^1$ 且精度为对数级时, Transformer 和线性 RNN 都无法求解 state-based recall, 置换版 $A_5$ 字问题或公式求值. 同样的通信复杂度论证还能推出, RNN 无法识别 ww 和 $w w^R$ 这类 recall 语言, 因为它们的通信复杂度为 $\Omega(n)$. 这些简单语言属于 uniform $\mathsf{AC}^0$, 固定深度的 AHAT 可以识别 (Strobl et al., 2024).
 
 ### B.2 Power of Hybrid Models
 
