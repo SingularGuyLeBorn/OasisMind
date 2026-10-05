@@ -41,7 +41,7 @@ published: true
 
 2026 年 9 月的 [HySparse2](https://arxiv.org/abs/2609.26368) 不满足于每层少看一点，它直接问 Prompt 为什么要把后半段网络也完整跑一遍。Self-Decoder先处理Prompt并产生不同深度的hidden states；Cross-Decoder需要的历史memory由这些状态桥接得到，Prompt Prefill可以在Self-Decoder结束。进入生成后，当前token仍沿Cross-Decoder残差流逐层产生各层Q，Cross层读取桥接的历史KV；其内部又保留HySparse式KV Reuse，让一个full层的KV与选择服务后续sparse层。外层省Prompt计算，内层省KV副本；代价是桥接表示必须够用，回滚、prefix cache和跨层状态生命周期更复杂。
 
-同月的 [DeepSeek-V4.1-Flash](https://arxiv.org/abs/2609.19969) 把 CED 与 CSA2 放到一起。这里最容易被一句“Decoder复用Encoder KV”说糊涂。更准确的数据流是：因果encoder处理Prompt并形成可供decoder使用的memory，decoder当前层仍用自己的输入hidden state算Q；CSA2再把层分成 Full、Reindex、Reuse。Full生产主KV、indexer K与候选，Reindex读取同一主KV但用当前层query重算索引，Reuse连候选positions也沿用。共享不是把四份KV拼成一份，也不是后层复制一份；是多个消费者指向同一个生产者状态。CED省的是Prompt不必沿传统decoder路径逐层重演，CSA2省的是主KV、索引K与top-k结果不再每层各存各算，FP4再压元素字节。代价是层间表示对齐、候选陈旧和更难的服务状态机。
+同月的 [DeepSeek-V4.1-Flash](https://arxiv.org/abs/2609.19969) 把 CED 与 CSA2 放到一起。因果 encoder 处理 Prompt，产生 decoder 后续读取的 memory；decoder 当前层仍用自己的输入 hidden state 计算 Q。CSA2 又把层分成 Full、Reindex、Reuse：Full 生产主 KV、indexer K 与候选，Reindex 读取同一主 KV，但用当前层 query 重算索引；Reuse 继续沿用候选 positions。这样，多个消费者直接引用同一个生产者状态，无须为每层复制主 KV。CED 省去 Prompt 在传统 decoder 路径中的逐层重演，CSA2 继续减少主 KV、索引 K 与 top-k 结果的重复存算，FP4 则降低每个元素的字节数。代价是层间表示必须对齐，复用的候选可能陈旧，服务状态机也更复杂。
 
 这条主线不是“新论文依次消灭旧论文”。MQA/GQA压head轴，MLA压每token表示，NSA/MoBA/DSA压可见token集合，KDA压成递推状态，HCA/CSA先压token再决定是否选择，HySparse2与CED/CSA2继续压层轴和Prefill执行路径。它们可以叠加，也可能互相冲突。每看到“复用”，都应该追问：**复用的是投影权重、投影后的KV、indexer K，还是最终top-k positions？生产者是谁？当前层自己的Q从哪来？**
 
