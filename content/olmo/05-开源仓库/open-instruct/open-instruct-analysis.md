@@ -17,7 +17,7 @@ excerpt: "基于固定提交 1182625 的代码与配置，解析 Open Instruct �
 
 ## 1. 多阶段后训练的共同底座是数据语义
 
-Open Instruct 同时覆盖 SFT、奖励模型、DPO 和 RLVR。表面上它们是四套损失，真正共同的困难却是把来源各异的数据变成稳定语义：消息角色怎样排列，system prompt 是否注入，assistant 哪些 token 参与损失，chosen/rejected 是否共享完全相同的 prompt，RL prompt 如何携带可验证答案与环境信息。`dataset_transformation.py` 超过普通“map 一下字段”的范围，集中处理 chat template、特殊 token、截断、缓存版本、标签和数据来源。
+Open Instruct 同时覆盖 SFT、奖励模型、DPO 和 RLVR。四类目标都依赖同一层数据语义：消息角色怎样排列，system prompt 是否注入，assistant 哪些 token 参与损失，chosen/rejected 是否共享完全相同的 prompt，RL prompt 如何携带可验证答案与环境信息。`dataset_transformation.py` 集中处理 chat template、特殊 token、截断、缓存版本、标签和数据来源，职责远多于简单的字段映射。
 
 源码注释直接列出三种主要目标：prompt-only、SFT 的 prompt+demonstration、RM/DPO 的 chosen+rejected。统一转换层的价值是让训练器消费明确张量，而不是各自在循环中猜测原始 schema。它也降低阶段间漂移：同一条 conversation 若在 SFT 与 DPO 中用不同模板渲染，偏好优化实际上是在另一个 token 分布上继续训练。
 
@@ -95,7 +95,7 @@ OLMo 3 tokenizer 文档更证明“模型 ID”不是充分条件。7B Think 在
 
 运行前做三类小测试最划算。第一，抽取真实样本可视化 token 与 labels，确认 system/user 被 mask、assistant 和结束 token 被学习。第二，对同一 prompt 手算 verifier 与聚合 reward，检查总分和指标。第三，以极小模型跑 checkpoint 恢复和权重同步，观察 model step 陈旧性。它们无法替代大规模训练，却能提前发现最昂贵的语义错误。
 
-Open Instruct 公开了阶段间最容易被忽略的连接组织：统一数据转换把消息变成可训练张量，SFT/DPO/RM 提供离线学习，vLLM rollout 与 verifier 构成在线 RL 闭环，脚本和容器把它们映射到集群。它也诚实留下研究系统的粗糙边界。使用这套仓库时，需要把 tokenizer、数据、奖励、异步策略和环境一起当作模型的一部分，照抄一条命令远远不够。
+Open Instruct 公开了各阶段的连接方式：统一数据转换把消息变成可训练张量，SFT/DPO/RM 提供离线学习，vLLM rollout 与 verifier 构成在线 RL 闭环，脚本和容器把它们映射到集群。仓库仍保留了一些研究系统常见的粗糙边界，因此复现实验需要同时固定 tokenizer、数据、奖励、异步策略和环境，单独保存启动命令无法覆盖这些状态。
 
 ## 10. 数据转换中的缓存、来源与可观测性
 
@@ -127,4 +127,4 @@ KL 控制是在线 RL 的另一安全栏。即使算法不显式训练价值网�
 
 隐私与安全又限制 trace 的公开程度。可行折中是公开聚合指标、哈希、脱敏样本和可重放的 verifier 测试，同时保留受控访问的完整日志。对代码执行任务，应公开 sandbox 镜像 digest 和测试依赖，不公开危险网络权限或密钥。开放并不要求泄露敏感信息，而要求明确哪些证据可得、哪些经过脱敏、哪些因政策不可发布。
 
-最终，Open Instruct 展示的是后训练工程的因果链：模板决定模型看到的 token，数据筛选决定监督分布，采样策略决定探索范围，verifier 决定可优化目标，异步系统决定策略陈旧度，分布式归一化决定梯度尺度。任何一环变化都可能改变结果。固定提交便于审查实现，但只有把整条链的配置和运行事实一起保存，模型发布才从“可下载”走向真正意义上的可复现。
+Open Instruct 展示了一条完整的后训练工程因果链：模板决定模型看到的 token，数据筛选决定监督分布，采样策略决定探索范围，verifier 决定可优化目标，异步系统决定策略陈旧度，分布式归一化决定梯度尺度。任何一环变化都可能改变结果。固定提交便于审查实现；模型发布若要支持复现，还需保存整条链的配置和运行记录。
