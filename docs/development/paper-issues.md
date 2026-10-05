@@ -118,6 +118,31 @@
 
 ## OLMo 库
 
+### OLMo 1 (arXiv 2402.00838)
+
+解析: `content/olmo/01-模型技术报告/olmo-1/olmo-1-bi.md`.
+
+- **olmo-1-1** Table 1 把 7B 隐藏维度 D 写成 4086, 附录 Table 5 的 Dimension 为 4096. 两张表数字不一致. 求证结果:
+- **olmo-1-2** Table 6 按 LUMI 官方可再生能源口径把 MI250X 排放记为 0, A100-40GB 行约为 70 tCO₂eq; Appendix B 报告总预训练排放约 69.78 tCO₂eq, 并给出采用水电强度 0.024 时 LUMI 一侧约 3.54 tCO₂eq. 引用排放数字时必须同时注明电力强度假设. 求证结果:
+
+### OLMoE (arXiv 2409.02060)
+
+解析: `content/olmo/01-模型技术报告/olmoe/olmoe-bi.md`.
+
+- **olmoe-1** Figure 6 正文称比较 「single shared and single routed」 与两个路由专家, 但题注, 组合数 $\binom{32}{4}$ 对 $\binom{31}{3}$, 以及官方配置都对应 31 个路由专家中激活 3 个再加 1 个共享专家. 正文的专家数量描述与实验设定不一致. 求证结果:
+- **olmoe-2** Figure 21 题注称展示共激活最高的 32 个专家, 每张热力图坐标轴实际只列出 16 个专家 ID. 式 (6) 以 $N_{E_i}$ 为分母, 共激活矩阵也并不对称. 求证结果:
+
+### Molmo2 (arXiv 2601.10611)
+
+解析: `content/olmo/02-多模态与OCR/molmo2/molmo2-bi.md`.
+
+- **molmo2-1** 摘要称发布 7 个视频数据集和 2 个多图数据集, §1 与 §2 的具体清单却是 6 个视频数据集和 3 个多图数据集, 总数均为 9. 求证结果:
+- **molmo2-2** 摘要把 Gemini 3 Pro 的视频跟踪结果写成 41.1 J&F, Table 4 与 Table 5 的 Gemini 3 Pro 行均无此数字; Table 5 的 Overall 为 44.6, 41.1 出现在 SAM 3 的 Animals 分项. 求证结果:
+- **molmo2-3** Token 加权正文写 $4/\sqrt{n}$, 官方代码实现为 $2/\sqrt{n}$, 并在 `root_subsegments` 下额外除以 $\sqrt{\text{标注数}}$. 常数因子和第二层归一化均未在正文说明. 求证结果:
+- **molmo2-4** Table 7 中 Qwen2.5-VL-32B-Instruct 与 72B-Instruct 的五个子项及平均分逐项完全相同, 表注只称数字来自 Point-Bench 排行榜, 没有解释重复原因. 求证结果:
+- **molmo2-5** Table 12 把 Molmo2-O-7B 的连接器 MLP Dim 写成 100352, 附录 A, 同表 LLM MLP Dim 与 HF adapter 配置均指向 11008; 100352 实为词表大小. 同表另把 7B/8B 参数量写成 7.3m/8.2m, 并把图像尺寸写成 384x384, 与附录 A 和 HF 配置的 378x378 不一致. 求证结果:
+- **molmo2-6** Figure 36 第二个失败样例询问 waterfalls, 回答却与 Figure 34 的 national flags 计数样例逐字相同, 包括时间戳, 坐标和最终计数 10. 图注称该例为 false positive, 当前输出文本无法支持这一分析, 疑似排版复制错误. 求证结果:
+
 ### FlexOlmo (arXiv 2507.07024)
 
 解析: `content/olmo/01-模型技术报告/flexolmo/flexolmo-analysis.md`.

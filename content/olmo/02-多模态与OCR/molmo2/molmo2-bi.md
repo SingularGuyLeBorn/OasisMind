@@ -32,8 +32,7 @@ Today’s strongest video-language models (VLMs) remain proprietary. The stronge
 
 当前最强的视频语言模型 (VLM) 仍是专有模型. 最强的开放权重模型要么依赖专有 VLM 生成的合成数据, 等于在蒸馏它们, 要么不公开训练数据与配方. 结果是开源社区缺少改进最先进视频 (以及图像) 语言模型所需的基础. 更关键的是, 许多下游应用需要的不只是高层次的视频理解, 还需要 grounding, 即以像素级的指点 (pointing) 或跟踪 (tracking) 给出位置. 专有模型同样缺这一能力. 我们推出 Molmo2, 一个新的 VLM 家族, 在开源模型中达到最先进水平, 并在单图, 多图与视频任务上展现出以点为基础的 grounding 新能力. 核心贡献是一组新数据集: 7 个视频数据集和 2 个多图数据集, 包括一个用于预训练的高度详细视频描述数据集, 一个用于微调的自由形式视频问答数据集, 一个带复杂查询的新物体跟踪数据集, 以及一个新颖的视频指点数据集, 全部在不使用闭源 VLM 的条件下采集. 我们还给出针对这些数据的训练配方, 采用高效的 packing 与 message-tree 编码方案, 并表明视觉 token 上的双向注意力和一种新的 token 加权策略能提升性能. 同级最佳的 8B 模型在短视频, 计数和视频描述上超过开放权重且开放数据的同类模型, 在长视频上也有竞争力. 在视频 grounding 上, Molmo2 显著超过 Qwen3-VL 等现有开放权重模型 (视频计数准确率 35.5 对 29.6), 并在部分任务上超过 Gemini 3 Pro 等专有模型 (视频指点 F1 38.4 对 20.0, 视频跟踪 J&F 56.2 对 41.1).
 
-> **核对:** 摘要说 「7 个视频数据集和 2 个多图数据集」, 与正文的清单对得上吗?
-> 答: 对不上. §1 与 §2 列出的 9 个新数据集里, 视频侧是 Cap, AskModelAnything, CapQA, SubtitleQA, VideoPoint, VideoTrack 共 6 个, 多图侧是 MultiImageQA, MultiImagePoint, SynMultiImageQA 共 3 个; §1 的分项也写 「(5) two multi-image datasets」 之外另有 MultiImageQA 归在 long-form QA 里. 总数 9 一致, 6 + 3 与 7 + 2 的划分不一致. 另外摘要里 Gemini 3 Pro 的 「41.1 J&F」 在 Table 4 与 Table 5 的 Gemini 3 Pro 行都找不到, Table 5 Overall 一列 Gemini 3 Pro 是 44.6, 41.1 出现在 SAM 3 的 Animals 一格.
+> **译注:** §1 与 §2 共列出 9 个新数据集, 其中视频侧 6 个, 多图侧 3 个, 与摘要的 「7 个视频数据集和 2 个多图数据集」 不一致. 摘要所列 Gemini 3 Pro 的 41.1 J&F 也未出现在 Table 4 或 Table 5 的对应行; Table 5 的 Gemini 3 Pro Overall 为 44.6, 41.1 出现在 SAM 3 的 Animals 分项.
 
 <!-- page 2 of 58 -->
 
@@ -213,8 +212,7 @@ We use a simple three-stage design: a light-weight image-only pre-training stage
 
 **Token 加权.** 我们的数据既有只输出单个 token 的选择题, 也有输出 4,000+ token 的长视频描述. 这些长输出样本即使很少被采到, 也很容易占据损失 token 的绝大多数, 导致短答案或选择题任务退化. 解决办法是在计算损失时调整部分样本的权重. 视频描述用固定权重 0.1, 指点用 0.2, 因为这两类任务的输出都可能很长很密. 其他任务采用启发式权重 $\frac{4}{\sqrt{n}}$, 其中 $n$ 是答案 token 数, 这样能更好地平衡长短输出的训练样本.
 
-> **想:** $\frac{4}{\sqrt{n}}$ 在官方代码里是这个常数吗?
-> 答: 不是同一个式子. `molmo2` 仓库 `launch_scripts/sft.py` 设 `loss_token_weighting="root_subsegments_root_tokens"`, `olmo/preprocessing/text_preprocessor.py` 的实现是 `loss_mask *= 2 / np.sqrt(loss_mask.sum())`, 常数为 2; 同时开启 `root_subsegments` 时还会把每条标注的损失再除以 $\sqrt{\text{标注数}}$. 正文的 4 与代码的 2 差一个常数因子, 且正文没有提第二层按标注数开方的归一化.
+> **译注:** 正文给出的权重为 $4/\sqrt{n}$, 仓库 `loss_token_weighting="root_subsegments_root_tokens"` 的实现则是 `2 / np.sqrt(loss_mask.sum())`. 开启 `root_subsegments` 后, 每条标注的损失还会除以 $\sqrt{\text{标注数}}$. 正文与代码在常数因子和第二层归一化上不一致.
 
 **Packing.** Examples can have anywhere from hundreds (pure-text or small images) to 16k+ (videos with subtitles or long videos during long-context training) of tokens. To avoid wasteful padding when creating training batches, we use packing to merge multiple short examples into a single long sequence. Packing is non-trivial for vision-language models due to the need to efficiently pack both crops for the ViT and tokens for the LLM, and the need to support models with different approaches to converting images/videos into tokens. We develop an on-the-fly packing algorithm that builds maximally efficient packed sequences from a small pool of in-memory examples and can be integrated into standard PyTorch data loaders.
 
@@ -460,8 +458,7 @@ We evaluate image pointing on Point-Bench [20], results are in Table 7. Molmo2 s
 
 我们在 Point-Bench [20] 上评测图像指点, 结果见 Table 7. Molmo2 超过了 Point-Bench 排行榜上的所有其他模型, 也超过近期的专用指点模型 Poivre [171]. 相比 Molmo 在指点上的提升, 我们归因于更好的视觉编码器, 指点预训练和 token 加权.
 
-> **再看:** Table 7 里 Qwen2.5-VL-32B-Instruct 和 Qwen2.5-VL-72B-Instruct 两行完全一样, 是巧合吗?
-> 答: 两行五个子项和平均都是 76.8 / 60.0 / 54.4 / 46.5 / 57.1 / 59.0, 规模差一倍多的两个模型逐项相同的可能性很低, 更像其中一行复制了另一行. 表注说基线分数取自 Point-Bench 排行榜, 正文没有说明这两行的来源.
+> **译注:** Table 7 中 Qwen2.5-VL-32B-Instruct 与 72B-Instruct 的五个子项和平均分完全相同, 均为 76.8 / 60.0 / 54.4 / 46.5 / 57.1 / 59.0. 表注只说明基线分数来自 Point-Bench 排行榜, 没有解释两行为何逐项一致.
 
 ### 4.4 Ablations and specialized models · 消融与专用模型
 
@@ -1202,8 +1199,7 @@ Implementation-wise, we add this logic into torch’s DataLoader so that each da
 
 Table 12 Model and training hyper-parameters, Molmo2-O-7B is a version of Molmo2 with OLMo 3 [112]. Long-context post-training used the same parameters as SFT
 
-> **核对:** Table 12 里 7B (Molmo2-O-7B) 连接器的 MLP Dim 为 100352, 与正文和 HF 配置一致吗?
-> 答: 不一致. 附录 A 写连接器 MLP 使用与 LLM 相同的中间维度, 同表 LLM 一栏 7B 的 MLP Dim 是 11008, HF 的 `Molmo2-O-7B/config.json` 中 adapter 的 `intermediate_size` 也是 11008; 100352 正是同表 7B 的 Embed (词表大小). 同表还有两处: LLM Params 写作 「7.3m」 「8.2m」, 按 4B 一格的 「4.0b」 应为 b; Image Size 写 384x384, 附录 A 与 HF 配置 (`image_default_input_size` [378, 378]) 都是 378, 27x27 个 14 像素 patch 正好是 378.
+> **译注:** Table 12 把 Molmo2-O-7B 的连接器 MLP Dim 写成 100352, 但附录 A 说连接器沿用 LLM 中间维度, 同表 LLM MLP Dim 与 HF adapter 的 `intermediate_size` 都是 11008; 100352 实为词表大小. 同表还把 LLM Params 写成 7.3m / 8.2m, 量级应为 b, 并把图像尺寸写成 384x384, 而附录 A 与 HF 配置均为 378x378.
 
 <!-- page 30 of 58 -->
 
@@ -1975,5 +1971,4 @@ Figure 35 Qualitative examples of pointing and QA from Molmo2-8B
 ![](images/failure1.png)
 Figure 36 Qualitative failure cases from Molmo2-8B. The model identifies false positives in the first two examples and misses several of the penguins in the bottom example.
 
-> **再看:** 失败样例第二例问的是 「How many waterfalls are there?」, 答案却是 「national flags」, 这是模型的错吗?
-> 答: 答案字符串与 Figure 34 计数样例 (「How many national flags are there in the video?」) 的输出完全相同, 时间戳和坐标 「7.0 1 743 468 9.5 2 776 500 ...」 逐字一致, 计数也是 10. 这更像排版时把 Figure 34 的输出复制到了 Figure 36, 而不是模型对瀑布视频的真实输出. 图注说前两例是 false positive, 但第二例给出的文本无法支撑这一判断.
+> **译注:** Figure 36 第二个失败样例询问 waterfalls, 回答却与 Figure 34 的 national flags 计数样例逐字相同, 包括时间戳, 坐标和最终计数 10. 这很可能是排版复制错误; 当前文字无法支持图注对该样例的错误分析.

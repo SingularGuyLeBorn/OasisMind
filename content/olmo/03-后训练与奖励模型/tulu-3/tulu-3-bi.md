@@ -951,7 +951,7 @@ Tülu 3 聚焦知识召回、推理、数学、代码、指令遵循、通用聊
 
 Tülu 3 在预训练语言模型之上采用四阶段后训练配方. 这条多阶段流水线结合强化学习算法进展、大规模基础设施和严格实验, 在各阶段策划数据并优化数据混合、方法与参数; 全过程使用精心选择的评测套件衡量表现.
 
-阶段 1 是数据策划. 团队准备将在后续多个优化阶段分配的多样提示, 优先使用现有公开提示, 并在缺少覆盖时生成新的合成提示. 本页末句延续到下一页.
+阶段 1 是数据策划. 团队准备将在后续多个优化阶段分配的多样提示, 优先使用现有公开提示, 并在缺少覆盖时生成新的合成提示.
 <!-- page 9 of 82 -->
 
 Benchmark(eval)
@@ -5567,7 +5567,6 @@ models with high-quality feedback. arXiv preprint arXiv:2310.01377, 2023.
 
 **第 52 页译文**
 
-本页为参考文献，列出有关 Nemotron、Anthropic Claude、对齐实验室、Constitutional AI、NuminaMath、代码模型评测、合成数据、Vicuna、Chatbot Arena、人类偏好深度强化学习、指令微调模型、Dolly 与高质量反馈训练等资料。论文标题和链接保留原文，以确保检索准确。
 <!-- page 53 of 82 -->
 
 DeepSeek-AI, A. Liu, B. Feng, B. Xue, B. Wang, B. Wu, C. Lu, C. Zhao, C. Deng, C. Zhang, C. Ruan, D. Dai, D. Guo,
@@ -5625,7 +5624,6 @@ Arcee’s mergekit: A toolkit for merging large language models. arXiv preprint 
 
 **第 53 页译文**
 
-本页继续列出参考文献，涉及 DeepSeek-V3、ShareGPT、RAFT、DROP、Llama 3、偏好评测、PPO/TRPO 实现、IMPALA、执行反馈、Gemini 1.5、Gemma 与模型合并工具等。专名、论文标题、会议及链接按原文保留。
 <!-- page 54 of 82 -->
 
 Z. Gou, Z. Shao, Y. Gong, yelong shen, Y. Yang, M. Huang, N. Duan, and W. Chen. ToRA: A tool-integrated reasoning
@@ -5683,7 +5681,6 @@ Camels in a changing climate: Enhancing lm adaptation with tulu 2. arXiv preprin
 
 **第 54 页译文**
 
-本页参考文献涵盖数学智能体、可复现评测、开放基础模型、安全审核工具、MMLU、MATH、PPO 实现细节、强化学习平台、RLHF 实证研究、TrustLLM、GPT-4o 系统卡、模仿学习、Tülu 2 等。为避免破坏引用可核查性，书目信息保留英文。
 <!-- page 55 of 82 -->
 
 H. Ivison, Y. Wang, J. Liu, Z. Wu, V. Pyatkin, N. Lambert, N. A. Smith, Y. Choi, and H. Hajishirzi. Unpacking dpo
@@ -5739,7 +5736,6 @@ Curry, A. R. Terrel, v. Roučka, A. Saboo, I. Fernando, S. Kulal, R. Cimrman, an
 
 **第 55 页译文**
 
-本页继续参考文献，主题包括 DPO 与 PPO、合成数据、推理信用分配、PagedAttention、可扩展监督、Arena-Hard、验证式推理、HumanEval+、指令数据收集、Evol-Instruct、参数化与非参数记忆、HarmBench、WildGuard、SymPy 等。标题和出处保持原文。
 <!-- page 56 of 82 -->
 
 computing in python. PeerJ Computer Science, 3:e103, Jan. 2017. ISSN 2376-5992. doi: 10.7717/peerj-cs.103. URL
@@ -5804,7 +5800,6 @@ graduate-level google-proof q&a benchmark, 2023.
 
 **第 56 页译文**
 
-本页参考文献涉及 SymPy、混合偏好路由、自然语言指令数据、Ministral、Ray、MPT-30B、指令微调、浏览器辅助问答、离策略强化学习、OpenAI 推理模型与 GPT-4o、基于人类反馈的指令遵循训练、长上下文扩展综述、智能体综述、Qwen2.5、语言模型隐式奖励建模、No Robots 数据集、ZeRO 与 GPQA 等。书目标题、作者、链接和出版信息保留英文，以便准确引用。
 <!-- page 57 of 82 -->
 
 P. Röttger, H. R. Kirk, B. Vidgen, G. Attanasio, F. Bianchi, and D. Hovy. Xstest: A test suite for identifying
@@ -5861,7 +5856,6 @@ Trl: Transformer reinforcement learning. https://github.com/huggingface/trl, 202
 
 **第 57 页译文**
 
-本页继续参考文献，涵盖偏好优化、指令遵循、安全评测、长上下文、模型合并与后训练研究。作者、题名、会议和链接保留英文，确保引用可检索。
 <!-- page 58 of 82 -->
 
 D. Wadden, K. Shi, J. Morrison, A. Naik, S. Singh, N. Barzilay, K. Lo, T. Hope, L. Soldaini, S. Z. Shen, et al. Sciriff: A
@@ -5920,7 +5914,6 @@ models to follow complex instructions. arXiv preprint arXiv:2304.12244, 2023.
 
 **第 58 页译文**
 
-本页为参考文献续页，集中列出强化学习、人类或 AI 反馈、数学推理、评测框架与开放模型相关工作。书目信息保持原文。
 <!-- page 59 of 82 -->
 
 H. Xu, B. Liu, L. Shu, and P. Yu. BERT post-training for review reading comprehension and aspect-based sentiment
@@ -5976,7 +5969,6 @@ language models from human preferences. arXiv preprint arXiv:1909.08593, 2019.
 
 **第 59 页译文**
 
-本页继续参考文献，涉及 DPO 变体、合成数据、越狱与安全、指令数据策划及语言模型评测。为避免专名歧义，引用条目不翻译。
 <!-- page 60 of 82 -->
 
 Hyperparameter
@@ -6045,7 +6037,6 @@ Figure 28.
 
 **第 60 页译文**
 
-本页结束参考文献部分，并保留全部论文标题、出版信息与网址原貌，便于逐项核查和检索。
 <!-- page 61 of 82 -->
 
 Dataset
