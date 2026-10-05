@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Ring 与 Ulysses 上下文并行数据流</title><desc id="desc">Ring 保留本地 query 并在设备间轮转 KV block；Ulysses 使用 all-to-all 在序列分片和 attention head 分片之间转置。</desc>
+  <defs><style>.bg{fill:#f8fafc}.r{fill:#dbeafe;stroke:#1d4ed8;stroke-width:2}.k{fill:#dcfce7;stroke:#15803d;stroke-width:2}.a{fill:#fef3c7;stroke:#b45309;stroke-width:2}.t{font:600 18px system-ui,sans-serif;fill:#0f172a}.s{font:14px system-ui,sans-serif;fill:#334155}.line{stroke:#475569;stroke-width:2.5;fill:none;marker-end:url(#m)}</style><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#475569"/></marker></defs>
+  <rect class="bg" width="1200" height="650" rx="18"/><text class="t" x="40" y="45">两条精确 attention 数据流</text>
+  <text class="t" x="40" y="92">Ring / Megatron CP：Q 固定，KV 沿环轮转</text>
+  <g transform="translate(90,125)"><rect class="r" x="0" y="0" width="190" height="90" rx="12"/><rect class="r" x="260" y="0" width="190" height="90" rx="12"/><rect class="r" x="520" y="0" width="190" height="90" rx="12"/><rect class="r" x="780" y="0" width="190" height="90" rx="12"/>
+  <text class="t" x="45" y="35">Rank 0</text><text class="s" x="28" y="65">Q₀ 固定 · KV₀→</text><text class="t" x="305" y="35">Rank 1</text><text class="s" x="288" y="65">Q₁ 固定 · KV₁→</text><text class="t" x="565" y="35">Rank 2</text><text class="s" x="548" y="65">Q₂ 固定 · KV₂→</text><text class="t" x="825" y="35">Rank 3</text><text class="s" x="808" y="65">Q₃ 固定 · KV₃→</text>
+  <path class="line" d="M190 45H255M450 45H515M710 45H775M970 45C1030 45 1030 120 0 120C-35 120-35 45-5 45"/></g>
+  <text class="s" x="95" y="285">经过 C 轮，每个本地 Q shard 都访问全部 KV；在线 softmax 合并各 block。</text>
+  <text class="t" x="40" y="350">Ulysses：All-to-all 转置 sequence shard 与 head shard</text>
+  <rect class="k" x="70" y="390" width="280" height="130" rx="12"/><text class="t" x="112" y="430">Sequence-sharded</text><text class="s" x="115" y="462">每 rank: [S/C, A]</text><text class="s" x="100" y="493">MLP / Norm 保持本地 token</text>
+  <rect class="a" x="460" y="410" width="220" height="90" rx="12"/><text class="t" x="515" y="447">All-to-all</text><text class="s" x="490" y="478">sequence ↔ heads</text>
+  <rect class="r" x="790" y="390" width="300" height="130" rx="12"/><text class="t" x="858" y="430">Head-sharded</text><text class="s" x="842" y="462">每 rank: [S, A/C]</text><text class="s" x="825" y="493">本地完成部分 heads attention</text>
+  <path class="line" d="M350 445H455"/><path class="line" d="M680 445H785"/><path class="line" d="M790 500C710 570 430 570 350 500"/>
+  <text class="s" x="70" y="610">两条路径都保持精确 attention；通信形态、head 约束和重叠窗口不同。</text>
+</svg>
