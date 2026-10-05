@@ -11,6 +11,8 @@ excerpt: "DeepSeek-OCR 2 以双向视觉 token 和因果 flow query 组成 DeepE
 
 ## 1. 固定 raster 顺序为何成为文档理解限制
 
+**固定 raster 顺序把二维文档结构预先压成了一条不可调整的一维路径.**
+
 ### 1.1. 2D patch 展平会把坐标顺序当成语义顺序
 
 ViT 通常把图像切成 patch, 按从左到右, 从上到下展平, 再加 position encoding. 对自然照片, 邻近 patch 的空间关系往往足够稳定; 对文档, 视觉坐标与阅读顺序经常不同. 双栏论文要先读完左栏再到右栏, 表格可能按表头与行列依赖读取, 公式包含分式, 上下标与多行对齐, 这些关系无法由单一 raster path 完整表达.
@@ -59,6 +61,8 @@ Q-former 常用少量 query 压缩大量 CLIP token. DeepEncoder V2 刻意让 qu
 global view 固定使用 256 query. 每个 local crop 使用共享的 144 query embedding, crop 数 $k$ 为 0–6. 最终 token 数为 $256+144k$, 即 256–1120. local crop 共享 query 参数, 但每个 crop 的视觉输入不同. 最大 1120 略低于 DeepSeek-OCR Gundam mode 的 1156, 便于在相近预算下比较.
 
 ## 3. 两级因果流的能力和代价
+
+**DeepEncoder V2 用两级一维因果过程生成可重排的视觉 token 流.**
 
 ### 3.1. encoder 重排, decoder 生成
 

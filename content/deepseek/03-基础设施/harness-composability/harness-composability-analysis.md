@@ -15,6 +15,8 @@ excerpt: "论文将 effect 和 coeffect 从静态类型概念提升为运行时�
 
 ## 1. 动态组合缺少的两项保证
 
+**动态组合至少要保证两件事: 组件能完整退出, 依赖变化能正确传播.**
+
 ### 1.1. 时间组合性要求完整撤回
 
 插件执行以后会注册事件, 打开连接, 写入共享表, 创建子组件. 传统插件系统通常给一个 `deactivate` 回调, 清理由作者手工维护. 创建行为和清理行为分散在两个位置, 新增一项资源时很容易忘记补清理. VSCode 扩展 host 甚至无法在运行中卸载单个含代码扩展, 禁用或卸载需要重启整个 host. 论文将这类问题称为 temporal composability: 移除组件时, 组件对共享环境造成的修改必须完整且有序地撤回.
@@ -100,6 +102,8 @@ Provider 开始卸载时先标记 UNLOADING, 从依赖解析角度立即停止�
 在假设 inverse 正确, effect 独立, coeffect 交换且 orchestrator 动作有限的条件下, 论文证明 preservation, temporal composability, spatial composability, progress 与 confluence. Progress 不是说组件代码必然终止, 论文显式假设 effect iterator 和 inverse 最终返回. Confluence 也只针对相同 orchestration 动作序列, 并在 fiber 重命名与观察等价意义下成立.
 
 ## 5. Cordis 工程实现与实际边界
+
+**Cordis 把 effect 撤销、coeffect 解析和组件生命周期收进同一个 runtime.**
 
 ### 5.1. 三层结构
 
