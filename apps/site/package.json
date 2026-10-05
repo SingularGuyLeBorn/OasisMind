@@ -6,7 +6,8 @@
     "dev": "next dev",
     "lint": "eslint . && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "build": "next build"
+    "build": "next build",
+    "verify:export": "node scripts/verify-export.mjs"
   },
   "dependencies": {
     "@oasismind/markdown": "workspace:*",
