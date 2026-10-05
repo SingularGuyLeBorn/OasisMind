@@ -8,7 +8,7 @@ excerpt: "基于固定提交 669f534 的源码与配置，解析 Dolma 的文档
 
 # Dolma Toolkit 技术解析：从文档流到可审计的训练语料
 
-分析对应本地官方源码提交 `669f534823b08d266a8fff01f8a1c916a5a56576`, 证据包括 `src/` 下的 Rust 实现, Python 工具入口, `docs/data-format.md`, `taggers.md`, `deduplication.md`, `mixer.md` 与 `parallel-processor.md`. README 所述三万亿 token 数据集是工具的一项产物, 本节讨论的是该提交中能够复核的数据处理机制.
+官方源码提交 `669f534823b08d266a8fff01f8a1c916a5a56576` 的数据处理机制分布在 `src/` 下的 Rust 实现, Python 工具入口, `docs/data-format.md`, `taggers.md`, `deduplication.md`, `mixer.md` 与 `parallel-processor.md`. README 所述三万亿 token 数据集是这套工具的一项产物.
 
 ![Dolma 从原始文档到版本化训练语料的数据处理图](images/dolma-data-dag.svg)
 > 图 1：原始 JSONL 文档经过稳定标识、Tagger 属性计算、过滤与去重，随后由 Mixer 按版本化配方输出训练语料；统计和审计记录横跨整条链路。

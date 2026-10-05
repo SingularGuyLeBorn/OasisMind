@@ -8,7 +8,7 @@ excerpt: "基于固定提交 5a51f50 的代码和配置，解析 OLMES 的任务
 
 # OLMES 技术解析：把模型评测变成可版本化实验
 
-本文只分析本地快照 `data/sources/olmes/repo` 的提交 `5a51f502d463b8cdc4a2dcad7d7096c41ff1197e`。主要依据 `oe_eval/configs/tasks.py`、`task_suites.py`、`models.py`、`tasks/base_task.py`、`aggregate_tasks.py`、`fewshot_sources.py`、各任务模块、`utilities/extraction_utils.py` 和输出文档。OLMES 基于 lm-evaluation-harness 思路扩展，但结论以当前代码为准。
+OLMES 提交 `5a51f502d463b8cdc4a2dcad7d7096c41ff1197e` 的评测实现分布在 `oe_eval/configs/tasks.py`、`task_suites.py`、`models.py`、`tasks/base_task.py`、`aggregate_tasks.py`、`fewshot_sources.py`、各任务模块、`utilities/extraction_utils.py` 和输出文档。它沿用并扩展 lm-evaluation-harness 的设计，接口描述对应这一提交。
 
 ![OLMES 从任务定义到聚合结果的评测协议流水线](images/olmes-evaluation-pipeline.svg)
 > 图 1：任务版本先固定数据切分、Prompt 和 few-shot，再选择生成或概率打分路径，经过答案抽取、归一化与样本指标，最后按套件规则聚合并保存审计产物。
@@ -105,7 +105,7 @@ LLM judge 还可能偏爱自身风格或训练家族。若被评模型与 judge 
 
 不要用“仓库可运行”代替“论文数字可复现”。README 中 OLMo 3 引用仍是 TBD，已经说明快照可能处于开发中；外部数据与模型也会变化。固定 commit 解决评测代码版本，但只有外部资产 revision 和运行记录一起冻结，结果才成为可复查实验。
 
-## 10. OLMES 的真正贡献与边界
+## 10. 标准化评测的贡献与局限
 
 OLMES 最有价值的是把评测自由度显式化。任务变体说明 prompt 与打分不是无关细节；few-shot source 固定示例；primary metric 与 suite 配置固定报告口径；实例级记录让总分可以下钻。它把“跑 benchmark”提升为“执行版本化协议”。
 

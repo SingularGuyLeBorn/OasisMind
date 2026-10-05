@@ -8,7 +8,7 @@ excerpt: "基于固定提交 1182625 的代码与配置，解析 Open Instruct �
 
 # Open Instruct 技术解析：从数据契约到 SFT、DPO 与在线 RLVR
 
-本文固定分析 `data/sources/open-instruct/repo` 的提交 `11826255077617a46919ce75cadf1f3d53f30dac`。证据主要来自 `open_instruct/dataset_transformation.py`、`data_loader.py`、SFT/DPO/RM 与 `grpo_fast.py`，以及 `scripts/train/olmo3/`、`configs/`、`docs/olmo3.md` 和污染检查代码。Open Instruct 明确自称研究代码且不保证向后兼容，所以所有接口判断都只针对该提交。
+Open Instruct 提交 `11826255077617a46919ce75cadf1f3d53f30dac` 的训练实现分布在 `open_instruct/dataset_transformation.py`、`data_loader.py`、SFT/DPO/RM 与 `grpo_fast.py`，配方和运行入口位于 `scripts/train/olmo3/`、`configs/`、`docs/olmo3.md` 及污染检查代码。仓库将自身定位为研究代码且不保证向后兼容，文中的接口描述因此对应这一提交。
 
 ![Open Instruct 从统一数据契约到 SFT、偏好学习和在线 RLVR 的训练图](images/open-instruct-training-flow.svg)
 > 图 1：统一数据转换把消息、偏好对和可验证任务送入不同阶段；SFT 产生策略起点，DPO 或奖励模型使用偏好数据，在线 RLVR 则把策略采样、验证奖励与参数更新连成闭环。

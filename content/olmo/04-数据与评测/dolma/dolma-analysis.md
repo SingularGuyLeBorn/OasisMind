@@ -8,7 +8,7 @@ excerpt: "解析 Dolma v1.6 的六类来源、网页清洗、内容与 PII 过�
 
 # Dolma 技术解析：三万亿 Token 开放语料的设计、验证与边界
 
-本文依据 arXiv:2402.00159v2 的 64 页论文、官方 LaTeX 与 Dolma Toolkit。论文为 Dolma v1.6 准备，因此数字只对应这一版本。Dolma 的贡献不只是约三万亿 token 的英语语料，还包括逐来源构建说明、数据消融和开源工具。
+arXiv:2402.00159v2 的 64 页论文、官方 LaTeX 与 Dolma Toolkit 对应 Dolma v1.6，文中数字也只适用于这一版本。Dolma 的贡献不只是约三万亿 token 的英语语料，还包括逐来源构建说明、数据消融和开源工具。
 
 ## 1. 设计目标与规模
 

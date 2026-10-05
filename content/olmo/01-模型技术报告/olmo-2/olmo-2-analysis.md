@@ -11,7 +11,7 @@ excerpt: "一句话身份: OLMo 2 是 Ai2 在 7B / 13B / 32B 三档 Dense decode
 
 一句话身份: OLMo 2 是 Ai2 在 7B / 13B / 32B 三档 Dense decoder-only 上的第二代全开放模型, 训练总量约 4.05T / 5.6T / 6.6T token. 它要解决的问题有两层: 第一代配方放大后训练尖峰频繁, 32B 很难训完; 就算训完, 全开放模型与 Llama 3.1, Qwen 2.5, Gemma 2 这一代开权重模型仍有明显差距. 报告的回答是四件事一起改: 预训练稳定性, 带专门数据的 mid-training, Tulu 3 式的 SFT → DPO → RLVR, 以及让大作业能跑完的集群运维.
 
-这四件事不是四个独立模块. 数据里的重复 n-gram 会诱发尖峰, 所以数据过滤是稳定性手段; 学习率退火的形状决定 mid-training 能吃多少新数据, 所以日程是数据课程的一部分; 底座换了, Tulu 3 的学习率就得重扫, 所以后训练超参跟着预训练走. 下文按这些牵连组织. 机制背景: [归一化层](../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.2-归一化层/2.1.2-归一化层.md), [GQA](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md), [分词器](../../../llm-guide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md), [Scaling Law](../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md), [DPO](../../../llm-guide/4-后训练/4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md), [PPO](../../../llm-guide/4-后训练/4.4-强化学习基础/04-PPO/04-PPO.md), [GRPO](../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), [RLVR 的边界](../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md).
+这四件事不是四个独立模块. 数据里的重复 n-gram 会诱发尖峰, 所以数据过滤是稳定性手段; 学习率退火的形状决定 mid-training 能吃多少新数据, 所以日程是数据课程的一部分; 底座换了, Tulu 3 的学习率就得重扫, 所以后训练超参跟着预训练走. 机制背景可见 [归一化层](../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.2-归一化层/2.1.2-归一化层.md), [GQA](../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md), [分词器](../../../llm-guide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md), [Scaling Law](../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md), [DPO](../../../llm-guide/4-后训练/4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md), [PPO](../../../llm-guide/4-后训练/4.4-强化学习基础/04-PPO/04-PPO.md), [GRPO](../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), [RLVR 的边界](../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md).
 
 ## 1. 定位与训练稳定性
 
@@ -133,6 +133,6 @@ Table 19 把成本换成环境单位: OLMo 2 7B 耗电 131 MWh, 碳强度 0.332,
 
 向后看 Olmo 3, 几条线都沿着这里继续: 上下文从 4096 提到 8192, 并在四层中三层加窗长 4096 的 sliding window attention; 预训练数据换成 Dolma 3, mid-training 扩到 100B 并混入 instruction 与 thinking trace; 多了长上下文扩展阶段; RL 从 PPO/GRPO 的短回答 RLVR, 变成改过的 GRPO 与长推理 RL. OLMo 2 里 「只有 32B 用 GQA」, 「RL 回复只有 2048」, 「没有长上下文与代码评测」 这些空白, 基本都在 Olmo 3 里被补上.
 
-材料边界同样要记清. 主叙事是英文学术基准和许可允许的数据, 多语不是优化目标 (SFT 删多语还掉分, 但作者没有做多语评测); 预训练量最多约 6T token, 低于 Table 6 注释里 Qwen 2.5 所说的 「最多 18T token」, Pareto 主张建立在每单位算力的表现上; 32B 的 GQA 与更长的退火属于规模特化, 不能推出 7B 也必须这样做. 报告没有长上下文, 代码, 多模态, 也没有针对安全的专门 RL.
+OLMo 2 的主叙事围绕英文学术基准和许可允许的数据, 多语并非优化目标 (SFT 删除多语数据后分数下降, 但作者没有做多语评测). 预训练量最多约 6T token, 低于 Table 6 注释里 Qwen 2.5 所说的「最多 18T token」, Pareto 主张建立在每单位算力的表现上. 32B 的 GQA 与更长退火属于规模特化, 不能推出 7B 也必须采用相同设置. 报告没有覆盖长上下文、代码、多模态或针对安全的专门 RL.
 
 选型时可以这样用这份报告: 要做训练动力学, 数据消融或可复现后训练, 扉页的产物表与中间检查点是主要理由; 只要一个开权重聊天模型, Table 7 只是候选之一. 三种误读值得提前排除. 一是把 Pareto 读成 「全面超过 Qwen 2.5」, Table 6 里 Qwen 2.5 在知识类格子仍更高. 二是把 Dolmino 当第二段从头预训练, 它只占 5–10% FLOPs, 依赖 Stage 1 已经训稳的底座. 三是把 RLVR 当成替代 DPO 的新算法, 它是接在 DPO 之后的可验证奖励训练, 7B/13B 用 PPO, 1B/32B 用 GRPO.

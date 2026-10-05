@@ -8,7 +8,7 @@ excerpt: "基于固定提交 f7cfe4c 的真实代码，解析 PDF 渲染、任�
 
 # olmOCR 技术解析：从 PDF 页面到可恢复的文档转换流水线
 
-本文固定分析 `data/sources/olmocr/repo` 的提交 `f7cfe4c22098b154c76b6ec950d1c0a464eecf8d`。主要证据来自 `olmocr/pipeline.py`、`work_queue.py`、`pdf_info.py`、`prompts/`、`filter/`、`datatypes.py`、`bench/`、`tests/` 与数据渲染脚本。olmOCR 的输出来自视觉语言模型，不应当作传统字符识别的确定性转写。
+olmOCR 提交 `f7cfe4c22098b154c76b6ec950d1c0a464eecf8d` 的主要实现位于 `olmocr/pipeline.py`、`work_queue.py`、`pdf_info.py`、`prompts/`、`filter/`、`datatypes.py`、`bench/`、`tests/` 与数据渲染脚本。它的输出来自视觉语言模型，不能当作传统字符识别的确定性转写。
 
 ![olmOCR 从 PDF 页面到可恢复 Markdown 文档的处理流水线](images/olmocr-page-pipeline.svg)
 > 图 1：PDF 先拆成带文档和页码标识的任务，单页渲染后进入视觉语言模型，输出经格式验证、重试与过滤，再按页序合并为 Markdown 文档。
@@ -101,7 +101,7 @@ PNG/JPEG 输入绕过部分 PDF 枚举，但仍有 EXIF 旋转、ICC 色彩、�
 
 如果目标是训练数据，应保留页级 provenance，使生成文本能回到源 PDF、页码与转换版本。后续发现 prompt bug、删除请求或许可问题时，才能定向重建/移除，而不必丢弃整个语料。
 
-## 10. 总结
+## 10. 质量控制形成闭环
 
 olmOCR 把生成式 OCR 工程化为页面渲染、任务队列、VLM 服务、重试验证和文档输出的闭环。它的优势是处理复杂阅读顺序、公式与表格，代价是输出具有模型随机性和幻觉风险。仓库用 gnarly PDFs、bench 和恢复队列正面处理这些问题。
 
