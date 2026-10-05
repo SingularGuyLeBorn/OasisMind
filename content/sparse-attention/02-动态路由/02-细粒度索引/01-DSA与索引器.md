@@ -332,6 +332,8 @@ indexer为 $O(n^2)$ 也不表示 DSA 没有价值. 低维、共享 key、FP8 和
 
 HISA 的高 IoU与 MISA 的高重合说明它们接近 DSA selector, 不能代替对稠密教师和任务的验证. LISA 的任务提升包含线性分支与蒸馏, 不能证明任何 Lightning Indexer都会提高推理能力. 每个数字都要保留模型、长度、硬件和训练口径.
 
+复现报告还应保存 selector 配置与模型权重的绑定关系. Indexer 参数、主模型继续训练步数、候选预算和 kernel版本中任一项改变, 原有 recall与延迟曲线都可能失效. 只保存最终权重而缺少稀疏训练阶段和候选配置, 无法判断另一个实现是否走了相同计算图.
+
 ## 参考资料
 
 - [DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models](https://arxiv.org/abs/2512.02556)
