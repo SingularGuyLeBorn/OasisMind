@@ -9,7 +9,7 @@ import { sendChatMessage, waitForSessionIdle } from "./helpers/mockChatFixture";
 
 function startHangServer(): Promise<{ url: string; close: () => Promise<void> }> {
   return new Promise((resolve) => {
-    const server = http.createServer((_req, _res) => {
+    const server = http.createServer(() => {
       /* 故意不 end，让 Playwright goto 挂起直到 cooperative abort */
     });
     server.listen(0, "127.0.0.1", () => {

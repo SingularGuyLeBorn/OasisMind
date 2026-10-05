@@ -29,14 +29,14 @@ const fixtures = vi.hoisted(() => ({
   mutate: vi.fn(),
   isPending: false,
   mutationMode: "success" as "success" | "error",
-  invalidateTree: vi.fn((_input?: { sessionId: string }) => Promise.resolve()),
-  invalidateInspect: vi.fn((_input?: { sessionId: string }) => Promise.resolve()),
-  invalidateList: vi.fn((_input?: { sessionId: string }) => Promise.resolve()),
+  invalidateTree: vi.fn((input?: { sessionId: string }) => Promise.resolve(input)),
+  invalidateInspect: vi.fn((input?: { sessionId: string }) => Promise.resolve(input)),
+  invalidateList: vi.fn((input?: { sessionId: string }) => Promise.resolve(input)),
   fetchList: vi.fn(
-    (_input?: { sessionId: string; limit: number }, _opts?: { staleTime?: number }) =>
-      Promise.resolve({ items: [{ id: "m1", content: "hi" }] }),
+    (input?: { sessionId: string; limit: number }, opts?: { staleTime?: number }) =>
+      Promise.resolve({ items: [{ id: "m1", content: "hi" }], request: { input, opts } }),
   ),
-  cancelList: vi.fn((_input?: { sessionId: string }) => Promise.resolve()),
+  cancelList: vi.fn((input?: { sessionId: string }) => Promise.resolve(input)),
   hydrate: vi.fn(),
   running: { items: [] as Array<{ sessionId: string }> },
 }));
