@@ -804,7 +804,7 @@ During decoding, we treat the shared expert as a routed one. From this perspecti
 
 Decode 把共享专家当必选路由专家, 每 token 选 9 个. 最小单元 40 节点 320 卡:
 
-> **问:** 训练账单很低, 是不是小集群也能部署?
+> **问:** 训练成本较低, 是否意味着小集群也能部署?
 > 不能这么推. decoding 的最小单元是 40 节点, 320 卡. prefilling 另有更小的一档, 但不是单机.
 
 > **核对:** 推理时为什么变成每 token 选 9 个专家?

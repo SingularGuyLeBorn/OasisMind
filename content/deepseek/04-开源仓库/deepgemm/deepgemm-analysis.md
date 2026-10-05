@@ -8,7 +8,7 @@ excerpt: "从代码出发讲清 DeepGEMM 怎么绕开 Hopper FP8 tensor core 的
 
 # DeepGEMM 技术解析: Hopper FP8 GEMM 的二级累加 、 细粒度 scale 布局与持久化调度
 
-来源: 仓库 [deepseek-ai/DeepGEMM](https://github.com/deepseek-ai/DeepGEMM), MIT 许可证. 2025-02-25 作为 DeepSeek 开源周第三天发布, 初始提交 `a6d97a1` 当时只支持 Hopper (SM90) FP8. 本文依据的最新提交是 2026-09-30 的 `057ca59` (Public release 26/09/30), 此时它已从单一 FP8 GEMM 扩成一个统一的 tensor core kernel 库, 覆盖 FP8 / FP4 / BF16 GEMM 、 带通信重叠的 Mega MoE 、 为 lightning indexer 服务的 MQA 打分 kernel 、 以及 HyperConnection 相关 kernel, 全部经 DeepJIT 在运行时编译. 下文结论以仓库内 `deep_gemm/include/` 的 kernel 实现 、 `csrc/apis/` 的 host 接口与 `docs/scaling-factor-format.md` 为准. DeepGEMM 服务的训练侧需求与量化方案, 见同库的 [DeepSeek-V3 技术报告解析](../../01-模型技术报告/deepseek-v3/deepseek-v3-analysis.md) 与 llm-guide 的 [FP8 混合精度训练详解](../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/02-FP8混合精度训练详解/02-FP8混合精度训练详解.md), 本文不重复 FP8 格式与分块量化的推导.
+来源: 仓库 [deepseek-ai/DeepGEMM](https://github.com/deepseek-ai/DeepGEMM), MIT 许可证. 2025-02-25 作为 DeepSeek 开源周第三天发布, 初始提交 `a6d97a1` 当时只支持 Hopper (SM90) FP8. 本文依据的最新提交是 2026-09-30 的 `057ca59` (Public release 26/09/30), 此时它已从单一 FP8 GEMM 扩成一个统一的 tensor core kernel 库, 覆盖 FP8 / FP4 / BF16 GEMM 、 带通信重叠的 Mega MoE 、 为 lightning indexer 服务的 MQA 打分 kernel 、 以及 HyperConnection 相关 kernel, 全部经 DeepJIT 在运行时编译. 下文结论以仓库内 `deep_gemm/include/` 的 kernel 实现 、 `csrc/apis/` 的 host 接口与 `docs/scaling-factor-format.md` 为准. 训练侧需求与量化原理可结合[DeepSeek-V3 技术报告解析](../../01-模型技术报告/deepseek-v3/deepseek-v3-analysis.md)和[FP8 混合精度训练详解](../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/02-FP8混合精度训练详解/02-FP8混合精度训练详解.md)阅读; 这里从 DeepGEMM 实际消费的量化张量、scale 布局和 kernel 路径开始.
 
 ## 1. 它解决的瓶颈与版本演进
 
