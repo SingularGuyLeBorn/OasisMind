@@ -17,15 +17,23 @@ from pathlib import Path
 HARD_PATTERNS = {
     "机械隐喻": re.compile(
         r"写死|钉死|锁死|焊死|打死|钉在一起|焊在一起|一笔账|两笔账|三笔账|"
-        r"工程账|系统账|算法账|训练账|成本账|算力账|通信账|显存账|同一本账|账本"
+        r"工程账|机制账|系统账|算法账|训练账|成本账|算力账|通信账|显存账|"
+        r"一本总账|第二本账|同一本账|同一笔账|两张账|账本|记账|往下钻"
     ),
     "审核元评论": re.compile(
         r"叙事边界|事实边界|证据状态|顺带把.{0,20}说清楚|这里不拿.{0,30}替代|"
         r"不是论文.{0,30}结论|不是.{0,20}(?:学术|技术)排名|不可量化的学术排名|"
         r"无法从.{0,30}确认|没有官方.{0,20}确认|(?:不能|不宜)写死|"
         r"本次(?:修改|检查|审计)|本轮(?:修改|检查|审计)|旧稿|改稿|交叉核对|"
+        r"(?:审稿|编辑|核查|复核)(?:过程|现场|口径|记录)|"
         r"这里能写|可以写死|不能写死|未找到一手来源|二手报道|"
-        r"(?:本文|本篇|本章|本节)(?:不从|不另|不搬|不编|不重复|只写|只保留)"
+        r"(?:本文|本篇|本章|本节)(?:不从|不另|不搬|不编|不重复|只写|只保留)|"
+        r"本次未打开|本会话|核对要点|不要把.{0,30}写成|缺的格不编"
+    ),
+    "禁用模板": re.compile(
+        r"本篇只钉|只钉|钉成|若只记三件事|有三处值得记住|"
+        r"一座桥|一律外链|不在此重推|不注水|架构精读|这里我卡住了|别混账|"
+        r"(?:写成|另写|另有|已有|放在)[^。！？\n]{0,20}专文"
     ),
     "协作口吻": re.compile(
         r"接下来我们|下面我们|我们先来|我们来看|希望这能|如果你愿意|"
@@ -121,12 +129,21 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="+", help="Markdown 文件或目录")
     parser.add_argument("--fail-on-soft", action="store_true", help="SOFT 命中也返回失败")
+    parser.add_argument("--summary", action="store_true", help="只输出分类计数和总计")
     args = parser.parse_args()
 
     files = iter_markdown(args.paths)
     findings = [item for path in files for item in scan_file(path)]
-    for item in findings:
-        print(f"{item.severity}\t{item.category}\t{item.path}:{item.line}\t{item.excerpt[:240]}")
+    if not args.summary:
+        for item in findings:
+            print(f"{item.severity}\t{item.category}\t{item.path}:{item.line}\t{item.excerpt[:240]}")
+    else:
+        counts: dict[tuple[str, str], int] = {}
+        for item in findings:
+            key = (item.severity, item.category)
+            counts[key] = counts.get(key, 0) + 1
+        for (severity, category), count in sorted(counts.items()):
+            print(f"{severity}\t{category}\t{count}")
     hard = sum(item.severity == "HARD" for item in findings)
     soft = len(findings) - hard
     print(f"SUMMARY\tfiles={len(files)}\thard={hard}\tsoft={soft}")
