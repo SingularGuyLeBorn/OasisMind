@@ -7,7 +7,7 @@ published: true
 
 自回归模型前向公式没有在首 token 后突然改变，但硬件看到的工作负载变了。Prefill 一次接收整段 prompt，线性层是较大的矩阵乘，attention 同时处理许多 query；decode 每轮每请求只新增一个 token，矩阵变窄，历史 KV 读取随上下文增长。把二者平均成一个 token/s，会丢掉系统设计最关键的分界。
 
-本文从统一 Transformer 层出发，推导两个阶段的 shape、FLOPs、字节和延迟，再讨论 chunked prefill、混合调度、模型并行与实际测量。所有数字都说明假设，不将硬件规格峰值当成实测。
+这里从统一 Transformer 层出发，推导两个阶段的 shape、FLOPs、字节和延迟，再讨论 chunked prefill、混合调度、模型并行与实际测量。所有数字都说明假设，不将硬件规格峰值当成实测。
 
 ## 1. 从一层 Transformer 的 shape 开始
 
@@ -131,7 +131,7 @@ $P_{shape}$ 是小矩阵可持续算力，不是规格峰值；$Q_w$ 是否每�
 
 取 7B 模型 BF16 权重约 14 GB，KV 配置仍为 32 层、8 KV head、128 维。batch=1、上下文 4096 时，权重约 14 GB，KV 约 0.5 GB，权重占主；batch=32 时，权重仍约 14 GB，KV 有效读取约 16 GB，KV 已可超过权重。连续 batching 提高权重摊销，却让 KV 成为下一瓶颈。
 
-如果权重做 INT4 后含元数据约 4 GB，batch=1 明显受益；batch=32、长上下文下，KV 不变时总字节从约 30 GB 降到 20 GB，理论加速只有 1.5 倍而非 3.5 倍。再加反量化和通信，端到端更低。这就是资源账本比「位宽降低四倍」更可靠的原因。
+如果权重做 INT4 后含元数据约 4 GB，batch=1 明显受益；batch=32、长上下文下，KV 不变时总字节从约 30 GB 降到 20 GB，理论加速只有 1.5 倍而非 3.5 倍。再加反量化和通信，端到端更低。这就是工作量与资源模型比「位宽降低四倍」更可靠的原因。
 
 ### 6.5. Chunked Prefill 的等价性与成本
 
@@ -165,7 +165,7 @@ Pipeline decode 的 stage 节拍由最慢 stage 决定。多个请求/token micr
 
 对 Prefill 记录有效/padding token、每个 prompt 长度、chunk/prefix、GEMM 与 attention 时间；对 Decode 记录活动序列、上下文长度和 KV 字节。只保存 batch size 无法重现实验。跨版本比较使用同一请求集合或同一开环到达 trace。
 
-优化顺序从瓶颈与目标出发：TTFT 排队高，先扩容量或调 batching；Prefill 设备高，分析 MLP/attention 与 padding；TPOT 随上下文升高，查 KV；小 batch 固定高，查权重带宽、launch 和 collective。每一步都能由本文公式给预期上限，再用实测判断差额。
+优化顺序从瓶颈与目标出发：TTFT 排队高，先扩容量或调 batching；Prefill 设备高，分析 MLP/attention 与 padding；TPOT 随上下文升高，查 KV；小 batch 固定高，查权重带宽、launch 和 collective。每一步都能由前述公式给预期上限，再用实测判断差额。
 
 ### 6.9. 长度分布怎样改变容量
 
@@ -219,7 +219,7 @@ PD 交接超时保留源端所有权，目标丢弃未提交 KV；源已释放�
 
 某服务 TTFT p99 目标 800 ms、TPOT p99 40 ms。Trace 显示长 prompt 请求排队 420 ms、prefill 300 ms，尚在目标内；decode 每轮 46 ms 超标，其中模型 kernel 35 ms、TP collective 6 ms、CPU gap 5 ms。继续优化 prefill 不会解决主要违约。
 
-账本显示 decode 35 ms 中权重/KV HBM 下界约 28 ms，先尝试提高连续 batch 的权重摊销或量化；collective 6 ms 随层数累积，检查 TP degree 与节点内映射；CPU 5 ms 可用 graph/批量 metadata。若量化把模型段降至 27 ms，总计约 38 ms，才可能守住目标。
+下界估算显示 decode 35 ms 中权重/KV HBM 下界约 28 ms，先尝试提高连续 batch 的权重摊销或量化；collective 6 ms 随层数累积，检查 TP degree 与节点内映射；CPU 5 ms 可用 graph/批量 metadata。若量化把模型段降至 27 ms，总计约 38 ms，才可能守住目标。
 
 上线后若 TTFT 因吞吐提高降到 650 ms、TPOT p99 39 ms，收益符合预测；若 TPOT 仍 45 ms，按新时间线查量化反解码或 batch 变化，而不是宣称 kernel 微基准成功就结束。
 

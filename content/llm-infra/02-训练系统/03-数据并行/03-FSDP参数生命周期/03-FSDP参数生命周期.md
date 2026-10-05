@@ -15,7 +15,7 @@ ZeRO-3 与 Fully Sharded Data Parallel（FSDP）解决的是同一类容量问�
 
 ## 1. FSDP1 与 FSDP2 管理参数的方式不同
 
-PyTorch 的经典 `FullyShardedDataParallel`，本文称为 FSDP1。它把一个管理单元内的原始参数展平并拼接为 `FlatParameter`。本地长期保存的是 flat buffer 的一段 shard；unshard 时，all-gather 的结果写入带 padding 的完整 flat buffer，再按照原参数的形状、stride 和 offset 暴露视图。源码中的 `FlatParamHandle` 负责 shard 元数据、存储切换和视图管理。同一个逻辑参数在运行期可能指向本地 shard、低精度 shard 或完整 flat buffer，因此用户代码若长期缓存 `parameter.data` 的引用，可能拿到已经失效的旧存储。
+PyTorch 的经典 `FullyShardedDataParallel`，这里简称 FSDP1。它把一个管理单元内的原始参数展平并拼接为 `FlatParameter`。本地长期保存的是 flat buffer 的一段 shard；unshard 时，all-gather 的结果写入带 padding 的完整 flat buffer，再按照原参数的形状、stride 和 offset 暴露视图。源码中的 `FlatParamHandle` 负责 shard 元数据、存储切换和视图管理。同一个逻辑参数在运行期可能指向本地 shard、低精度 shard 或完整 flat buffer，因此用户代码若长期缓存 `parameter.data` 的引用，可能拿到已经失效的旧存储。
 
 `use_orig_params=True` 保留原始 `nn.Parameter` 对象，便于 optimizer 参数组和逐参数超参数，但这些对象的数据仍会在分片与完整视图之间切换。某个 rank 对一个原始参数可能只拥有部分元素，甚至拥有长度为零的本地片段；以为每个 rank 都能直接读取完整 `.data`，会得到错误的检查结果。需要查看完整权重时，应进入官方提供的完整参数上下文，并把读取动作放在上下文内部。
 
@@ -39,7 +39,7 @@ $$
 B_{rs}=\frac{D-1}{D}\cdot 2\psi_k.
 $$
 
-随后完整参数和完整梯度均可释放，optimizer 用本地梯度 shard 更新本地 master parameter 与 moments。FULL_SHARD 每步对该组参数通常包含 forward all-gather、backward all-gather 和梯度 reduce-scatter；总算法发送量约为 $3(D-1)2\psi_k/D$。这只是网络字节账本，forward gather 可与前一层计算重叠，backward gather 可由后一层反向计算遮住，reduce-scatter 也可与更早层的反向计算并行，最终暴露时间由 ready 顺序和计算窗口决定。
+随后完整参数和完整梯度均可释放，optimizer 用本地梯度 shard 更新本地 master parameter 与 moments。FULL_SHARD 每步对该组参数通常包含 forward all-gather、backward all-gather 和梯度 reduce-scatter；总算法发送量约为 $3(D-1)2\psi_k/D$。这只是网络字节估算，forward gather 可与前一层计算重叠，backward gather 可由后一层反向计算遮住，reduce-scatter 也可与更早层的反向计算并行，最终暴露时间由 ready 顺序和计算窗口决定。
 
 举例：一个单元含 400M 参数，BF16 完整参数为 800 MB，$D=8$。本地参数 shard 为 100 MB，每次 ring all-gather 或 reduce-scatter 每 rank 发送约 700 MB，三次共约 2.1 GB。若有效带宽为 100 GB/s，单次纯带宽下界约 7 ms。该单元 forward 计算只有 4 ms 时，下一单元的 7 ms 预取无法完全藏住；backward 计算若有 10 ms，则有机会遮住一轮 gather 或 reduce-scatter，但两种通信争用同一链路时不能分别按满带宽相加。
 
@@ -75,7 +75,7 @@ $$
 
 ## 5. forward 与 backward 预取怎样改变时间线
 
-forward prefetch 在 $L_k$ 计算期间发起 $L_{k+1}$ 的 all-gather。若 $L_k$ 计算为 12 ms，下一组聚合为 8 ms，理想情况下通信完全隐藏；如果下一组为 1.5 GB、链路有效带宽 100 GB/s，八卡 ring 发送约 1.3125 GB，下界为 13.1 ms，至少约 1.1 ms 会暴露。提前两层预取可能遮住这部分，却让两个未来完整组同时驻留，显存账本必须增加相应容量。
+forward prefetch 在 $L_k$ 计算期间发起 $L_{k+1}$ 的 all-gather。若 $L_k$ 计算为 12 ms，下一组聚合为 8 ms，理想情况下通信完全隐藏；如果下一组为 1.5 GB、链路有效带宽 100 GB/s，八卡 ring 发送约 1.3125 GB，下界为 13.1 ms，至少约 1.1 ms 会暴露。提前两层预取可能遮住这部分，却让两个未来完整组同时驻留，显存占用明细必须增加相应容量。
 
 FSDP1 的 `forward_prefetch` 主要面向执行顺序固定的 CPU-bound 场景，它依据首次迭代记录的顺序提前发起下一次 all-gather；动态控制流若改变模块顺序，不能假定同样安全。`backward_prefetch` 则决定在当前模块反向计算前后，何时为下一个待反向模块预取参数。越早发起越容易重叠，也越可能让当前、下一完整参数和当前梯度同时存活。
 
@@ -93,11 +93,11 @@ FSDP1 的 `forward_prefetch` 主要面向执行顺序固定的 CPU-bound 场景�
 
 FSDP 的参数计算 dtype、梯度规约 dtype 与 buffer dtype 可以分别设置。常见配置让 forward/backward 使用 BF16 参数，reduce-scatter 也用 BF16，而 optimizer 保留 FP32 master state。本地长期状态依旧可以按“BF16 参数 shard + BF16 梯度 shard + 三份 FP32 optimizer 相关状态”估成 16 byte/parameter；unshard 的完整参数 buffer 则按 BF16 的 2 byte/parameter计算。
 
-如果把梯度规约改成 FP32，400M 参数单元的完整梯度通信输入从 800 MB 增到 1.6 GB。八卡 ring reduce-scatter 每 rank 的发送量由 700 MB 增到 1.4 GB；100 GB/s 的带宽下界从 7 ms 增到 14 ms，gradient buffer 峰值也相应翻倍。这样做可能改善数值稳定性，却不能沿用 BF16 的通信账本。`keep_low_precision_grads` 等配置还会影响 optimizer 看到的梯度 dtype，应在更新前直接记录本地 shard 的 dtype 与字节数。
+如果把梯度规约改成 FP32，400M 参数单元的完整梯度通信输入从 800 MB 增到 1.6 GB。八卡 ring reduce-scatter 每 rank 的发送量由 700 MB 增到 1.4 GB；100 GB/s 的带宽下界从 7 ms 增到 14 ms，gradient buffer 峰值也相应翻倍。这样做可能改善数值稳定性，却不能沿用 BF16 的通信量模型。`keep_low_precision_grads` 等配置还会影响 optimizer 看到的梯度 dtype，应在更新前直接记录本地 shard 的 dtype 与字节数。
 
 参数混合精度还存在两类完整 buffer。训练计算用的 unsharded buffer 可以是 BF16；在某些训练外操作中召回完整参数，框架可能需要全精度完整 buffer。7B 模型的 BF16 全量为 14 GB，FP32 全量为 28 GB。若保存或检查代码意外请求全精度完整参数，原本按 14 GB 预留的空间会立刻少 14 GB。完整参数上下文是否把结果移到 CPU、是否只在 rank 0 保留，以及退出时能否立即释放，都会改变峰值位置。
 
-buffer 通常不参与分片，BatchNorm 的 running statistics 或用户注册的大型 persistent buffer 会在每个 rank 上复制。假设模型参数分片后每卡 14 GB，却另有 3 GB 未分片 buffer，那么模型相关常驻量是 17 GB，而非公式中的 14 GB。对模型逐项统计 parameter 与 buffer，才能发现这类账外副本。
+buffer 通常不参与分片，BatchNorm 的 running statistics 或用户注册的大型 persistent buffer 会在每个 rank 上复制。假设模型参数分片后每卡 14 GB，却另有 3 GB 未分片 buffer，那么模型相关常驻量是 17 GB，而非公式中的 14 GB。对模型逐项统计 parameter 与 buffer，才能发现这类未计入的副本。
 
 ## 8. 共享参数和嵌套单元需要唯一所有者
 
@@ -113,7 +113,7 @@ buffer 通常不参与分片，BatchNorm 的 running statistics 或用户注册�
 
 一份 profile 显示某层 all-gather 自身耗时 8 ms，计算流在进入该层前又等待 5 ms。前一层只有 3 ms 计算窗口，说明这 5 ms 来自通信没有被遮住。另一份记录中，前一层计算持续 12 ms，all-gather 却到末尾才发起，此时应检查 hook 顺序、CPU 调度或预取配置。若通信已提前发起，耗时仍从 8 ms 膨胀到 20 ms，排查范围转向同链路的 TP 通信、reduce-scatter 和 rank 晚到。
 
-显存则在六个采样点记录：迭代开始、当前组 unshard 后、下一组 prefetch 后、forward reshard 后、backward unshard 后、reduce-scatter 后。当前完整组增加 800 MB、预取后再增 1 GB，符合账本；post-forward 后仍保留 1.8 GB，说明策略未 reshard、参数被外部引用，或 allocator 只把存储计入 reserved 而没有归还驱动。此时同时查看 allocated 与 reserved：allocated 下降而 reserved 不降属于缓存行为，二者都不降才说明活跃张量仍在。
+显存则在六个采样点记录：迭代开始、当前组 unshard 后、下一组 prefetch 后、forward reshard 后、backward unshard 后、reduce-scatter 后。当前完整组增加 800 MB、预取后再增 1 GB，符合容量估算；post-forward 后仍保留 1.8 GB，说明策略未 reshard、参数被外部引用，或 allocator 只把存储计入 reserved 而没有归还驱动。此时同时查看 allocated 与 reserved：allocated 下降而 reserved 不降属于缓存行为，二者都不降才说明活跃张量仍在。
 
 rank 间到达时间也要分开记录。七个 rank 在 10 ms 时进入 collective，一个 rank 在 25 ms 才进入，其余 rank 显示的 15 ms 等待来源是慢 rank 上游计算或数据输入。只看 NCCL 区间容易把它误判为网络带宽不足。固定输入并分别屏蔽数据加载、activation checkpoint 与 CPU offload，可以逐项缩小晚到来源。
 
@@ -184,7 +184,7 @@ Activation checkpoint 在 backward 重算 forward。它与 FSDP 单元边界不�
 
 ## 17. 官方来源对应表
 
-| 主题 | 官方依据 | 本文使用位置 |
+| 主题 | 官方依据 | 这里的使用位置 |
 | --- | --- | --- |
 | FSDP1 分片策略与参数 | `FullyShardedDataParallel` 文档 | FULL_SHARD、SHARD_GRAD_OP、`limit_all_gathers` |
 | FlatParameter 存储切换 | `_flat_param.py` | shard、完整 flat buffer 与原参数视图 |

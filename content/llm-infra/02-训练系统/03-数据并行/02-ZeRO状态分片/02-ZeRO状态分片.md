@@ -26,7 +26,7 @@ DDP 的每个 rank 都保存完整参数、梯度和 optimizer state。模型状
 | FP32 second moment | 4 | $4\Psi$ |
 | 合计 | 16 | $16\Psi$ |
 
-“16 byte/parameter”只对这组假设成立。BF16 optimizer 省去 master copy、梯度使用 FP32、moment 量化、参数冻结或额外 EMA 都会改变账本。计算时应从实际 dtype 与 optimizer 实现重新列项。
+“16 byte/parameter”只对这组假设成立。BF16 optimizer 省去 master copy、梯度使用 FP32、moment 量化、参数冻结或额外 EMA 都会改变资源计算。计算时应从实际 dtype 与 optimizer 实现重新列项。
 
 取 $\Psi=7$B，完整模型状态为 112 GB，即约 104.3 GiB。这里尚未计 activation、通信 buffer、临时 unshard、CUDA context 和碎片；所以“两张 80 GB 卡的总容量超过 112 GB”不能直接推出配置可运行，状态必须按并行策略落到每张卡并加入峰值时间线。
 
@@ -70,7 +70,7 @@ $$
 
 设某 Transformer block 有 $\psi_l=200$M 参数，BF16 完整参数为 400 MB，本地分片仅 50 MB。若 forward prefetch 下一层，同时当前层计算结束但尚未 reshard，瞬时可能存在当前层 400 MB、下一层 400 MB 和其他常驻分片。峰值至少比理想 $16\Psi/D$ 多出约 800 MB，再加 all-gather buffer、alignment 与 allocator reserved。模块包裹过粗会抬高聚合峰值，包裹过细则增加 collective 次数与启动延迟。
 
-## 5. 7B 模型在八卡上的横向账本
+## 5. 7B 模型在八卡上的横向容量对比
 
 在相同 BF16+FP32 AdamW 假设下：
 
@@ -97,7 +97,7 @@ Stage 1/2 通常在 optimizer step 后 all-gather 更新过的参数分片，使
 
 大量独立 parameter tensor 会造成 allocator 元数据、对齐碎片和许多小 collective。Contiguous gradients 把相同 dtype 的梯度写入连续 flat buffer，每个参数的 `.grad` 或内部主梯度成为其中一段视图。Reduce-scatter 可直接处理连续 bucket，规约完成后复用或释放该区间。
 
-Bucket 大小同时影响 ready 时刻、启动次数和临时容量。若 gradient bucket 为 500 MiB，Stage 2 在规约前可能短暂保留完整 500 MiB，本地输出分片约 62.5 MiB；通信实现若另分配输入/输出 workspace，峰值还要加上对应 buffer。四个 bucket 并发在不同 stream 排队时，账本不能只写单 bucket 大小，需要记录最多同时在途的数量。
+Bucket 大小同时影响 ready 时刻、启动次数和临时容量。若 gradient bucket 为 500 MiB，Stage 2 在规约前可能短暂保留完整 500 MiB，本地输出分片约 62.5 MiB；通信实现若另分配输入/输出 workspace，峰值还要加上对应 buffer。四个 bucket 并发在不同 stream 排队时，容量估算不能只写单 bucket 大小，需要记录最多同时在途的数量。
 
 Stage 3 的 prefetch bucket 控制提前聚合多少下一模块参数。当前模块完整参数为 600 MiB，下一模块为 700 MiB，本地分片分别为 75 与 87.5 MiB。若前一模块尚未 reshard 时预取下一模块，额外完整参数峰值约 1.3 GiB，而非两个本地分片之和 162.5 MiB。Prefetch 过浅会让计算等待 all-gather，过深则重新制造容量压力。
 
@@ -127,7 +127,7 @@ $M_{shard}$ 接近 $16\Psi/D$ 的常驻下界；$M_{current}$ 与 $M_{prefetch}$
 
 ## 10. 失败模式先看所有权和时间线
 
-某 rank 在 reduce-scatter 后保留完整梯度，显存会逐 step 或逐 bucket 高于账本。对比规约前后 allocated tensor，并检查梯度累积期间是否推迟释放。某模块 all-gather 时间突然增长，则比较各 rank 进入时刻；一个 rank 的 CPU offload copy 晚到，会让其他 rank 的等待看起来像网络变慢。
+某 rank 在 reduce-scatter 后保留完整梯度，显存会逐 step 或逐 bucket 高于容量估算。对比规约前后 allocated tensor，并检查梯度累积期间是否推迟释放。某模块 all-gather 时间突然增长，则比较各 rank 进入时刻；一个 rank 的 CPU offload copy 晚到，会让其他 rank 的等待看起来像网络变慢。
 
 参数 checksum 在 step 后不一致时，检查 overflow 决策、owner update 和参数同步版本。只有某些层不一致，通常指向 bucket/partition 映射、动态参数注册或 persistent 参数未刷新。全部参数相差固定比例，则更可能是梯度平均、loss scaling 或 world-size 除法错误。
 
@@ -149,7 +149,7 @@ $$
 
 假设每个 tile 含 512 MiB 状态，NVMe 有效读取带宽为 7 GiB/s，PCIe 有效带宽为 50 GiB/s，相关计算用时 40 ms。单 tile 的读取约 71.4 ms，PCIe 搬运约 10 ms，计算 40 ms，稳定节拍被 NVMe 的 71.4 ms 限制。即使计算与 PCIe 完全重叠，32 个 tile 仍至少花费约 $32\times71.4=2285$ ms，再加流水填充、写回与同步。此时把 tile 从 512 MiB 增到 1 GiB 不会改变带宽下界，只会减少 I/O 请求次数并加大 pinned buffer；若小请求开销才是主因，它才可能提高吞吐。
 
-分层 offload 通常准备双缓冲：GPU 计算 tile $k$ 时预取 $k+1$，同时把 $k-1$ 的结果向下层写回。双缓冲的代价也必须入账。512 MiB tile 若在 CPU 与 GPU 两侧各保留读、写两个 buffer，仅 staging 区就可能占用约 2 GiB CPU 内存与 1 GiB GPU 显存。预取距离继续增大，会把更多 tile 变成在途状态；只有当慢设备的长尾能因此被遮住时，这部分容量才值得。
+分层 offload 通常准备双缓冲：GPU 计算 tile $k$ 时预取 $k+1$，同时把 $k-1$ 的结果向下层写回。双缓冲的代价也必须计入容量。512 MiB tile 若在 CPU 与 GPU 两侧各保留读、写两个 buffer，仅 staging 区就可能占用约 2 GiB CPU 内存与 1 GiB GPU 显存。预取距离继续增大，会把更多 tile 变成在途状态；只有当慢设备的长尾能因此被遮住时，这部分容量才值得。
 
 流水线还需要反压：写回队列占满后，计算端必须停在仍有可回收 buffer 的边界，不能继续覆盖尚未落盘的 tile。假设准备四个 512 MiB CPU 写回槽，NVMe 持续写入只有 4 GiB/s，而每 50 ms 产生一个结果，生产速率约 10 GiB/s。队列容量 2 GiB 只能吸收约 $2/(10-4)=0.33$ 秒的差速，此后计算仍会等待存储。短时间 profiler 可能只看到队列增长，长时间稳态测试才会暴露真实吞吐。
 
@@ -217,7 +217,7 @@ $$
 
 ## 17. 官方实现中的术语对应
 
-| 本文概念 | 官方资料中的对应项 | 核对时关注什么 |
+| 这里概念 | 官方资料中的对应项 | 核对时关注什么 |
 | --- | --- | --- |
 | optimizer state 分片 | ZeRO Stage 1 / DeepSpeed distributed optimizer | master weight 与 moments 的 owner、更新后参数同步 |
 | 梯度分片 | ZeRO Stage 2、reduce-scatter | 是否保留完整梯度、平均因子放在哪一步 |
@@ -227,7 +227,7 @@ $$
 | CPU/NVMe 分层 | ZeRO-Offload、ZeRO-Infinity | pinned buffer、tile 大小、PCIe 与存储节拍 |
 | 分片 checkpoint | distributed checkpoint / sharded state dict | 元数据、不同 world size 的 reshard 与 optimizer 状态 |
 
-术语相同不代表默认行为相同。框架版本可能改变 bucket 默认值、是否保留原始参数、checkpoint 格式与预取方向。落地时应把实际配置、框架版本和 profiler 事件写进实验记录，再用本文公式复算数量级；公式负责暴露不可能的结果，运行时记录负责解释剩余差异。
+术语相同不代表默认行为相同。框架版本可能改变 bucket 默认值、是否保留原始参数、checkpoint 格式与预取方向。落地时应把实际配置、框架版本和 profiler 事件写进实验记录，再用前述公式复算数量级；公式负责暴露不可能的结果，运行时记录负责解释剩余差异。
 
 ## 参考资料
 

@@ -7,7 +7,7 @@ published: true
 
 DDP 在每个 rank 保存完整模型，却让不同 rank 读取不同样本。反向传播得到的本地梯度必须合成同一份全局梯度，随后各 rank 才能执行相同的 optimizer update。性能问题就藏在“本地梯度产生”到“全局梯度可用”之间：参数梯度并非同时出现，collective 也不是等反向结束后一次完成。
 
-本文跟随一个 step 中梯度真实出现的顺序，解释 bucket 如何形成、autograd hook 何时把参数标记为 ready、Reducer 何时发起异步 all-reduce，以及 optimizer 为什么仍要等待所有 bucket。图中的 DDP 行给出了状态所有权；ZeRO 与 FSDP 的差别会在后两篇展开。
+这里跟随一个 step 中梯度真实出现的顺序，解释 bucket 如何形成、autograd hook 何时把参数标记为 ready、Reducer 何时发起异步 all-reduce，以及 optimizer 为什么仍要等待所有 bucket。图中的 DDP 行给出了状态所有权；ZeRO 与 FSDP 的差别会在后两篇展开。
 
 ![DDP、ZeRO 与 FSDP 的状态生命周期](../images/state-flow.svg)
 
@@ -183,7 +183,7 @@ Profile 进一步显示最后一个 256 MiB bucket 混合了多个早期层参�
 
 ## 15. 来源与可核对事实
 
-| 事实 | 一手来源 | 本文使用位置 |
+| 事实 | 一手来源 | 这里的使用位置 |
 | --- | --- | --- |
 | DDP 在梯度 ready 时按 bucket 触发同步 | PyTorch DDP Notes 与 DDP API | Reducer、hook、ready 时间线 |
 | `no_sync` 要把 forward 放在上下文内 | PyTorch DDP API `no_sync()` 警告 | 梯度累积边界 |
