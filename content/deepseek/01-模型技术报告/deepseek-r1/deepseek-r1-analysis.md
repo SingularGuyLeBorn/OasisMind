@@ -37,7 +37,7 @@ GRPO 把 KL 的无偏估计 $\pi_{ref}/\pi_\theta - \log(\pi_{ref}/\pi_\theta) -
 
 Figure 4 用 DeepSeek-Coder-V2-Lite(16B MoE, 2.4B 激活)在 MATH 上比较两者: GAE 的 $\lambda$ 取开源实现常用的 0.95 时, PPO 明显不如 GRPO; 调到 1.0 后接近 GRPO(读图). $\lambda=1$ 意味着 GAE 退化为蒙特卡洛回报减价值基线, 不再依赖价值模型的逐步估计, 这恰好说明在结果奖励场景下价值模型的中间估计帮不上忙. 报告的结论是 PPO 调好也能用, 但要多花调参成本, 还要多训一个价值模型. 
 
-训练中每 400 步把参考模型换成最新策略, 因为几千步之后策略会离初始模型很远, 固定参考会把探索锁死.
+训练中每 400 步把参考模型换成最新策略, 因为几千步之后策略会离初始模型很远, 固定参考会过度约束后续探索.
 
 ![报告 Figure 4: 数学题上 GRPO 相对 PPO 的优势](images/p16-figure-4-performance-of-ppo-and-grpo-on-the-math-task.png)
 
