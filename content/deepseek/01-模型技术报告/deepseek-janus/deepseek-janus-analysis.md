@@ -9,8 +9,6 @@ excerpt: "Janus 是一个 1.3B 的统一多模态模型: 同一个自回归 Tran
 
 来源: [Janus: Decoupling Visual Encoding for Unified Multimodal Understanding and Generation](https://arxiv.org/abs/2410.13848) (arXiv: 2410.13848v1, 2024-10-17). 仓库: https://github.com/deepseek-ai/Janus
 
-对照译稿: `deepseek-janus-bi.md`. 表内数字回源文 `deepseek-janus.md`.
-
 Janus 是一个 1.3B 的统一多模态模型: 同一个自回归 Transformer 既回答关于图片的问题, 也按文字生成图片. 它的主张只有一条, 理解和生成对视觉表征的要求不同, 不该共用一个视觉编码器. 于是理解走 SigLIP, 生成走 VQ tokenizer, 两条通路在进入语言模型之前分开, 之后共用同一套 Transformer 和 next-token prediction 目标. 这篇报告的证据集中在 Table 5 的六组消融上, 主结果表更多是在说明「1.3B 的统一模型能做到什么程度」. 下面把架构, 数据配比, 三阶段训练, 评测协议和消融放在一起读, 看这条主张被证明到了哪一步.
 
 ## 1. 问题与架构

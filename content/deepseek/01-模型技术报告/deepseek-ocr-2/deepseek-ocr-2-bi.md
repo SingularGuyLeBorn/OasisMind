@@ -413,13 +413,12 @@ number of crops 𝑘ranging from 0 to 6 (no cropping is applied when both image 
 
 To better illustrate the attention mechanism of DeepEncoder V2, we visualize the attention mask in Figure 5. The attention mask is composed of two distinct regions. The left region applies bidirectional attention (similar to ViT) to original visual tokens, allowing full token-to-token visibility. The right region employs causal attention (triangular mask, identical to decoder-only LLMs) for causal flow tokens, where each token attends only to previous tokens. These two components are concatenated along the sequence dimension to construct DeepEncoder V2’s attention mask (M), as follows:
 
-
-
-𝑀=
-
-, where 𝑛= 𝑚 (1)
-
-1𝑚×𝑚 0𝑚×𝑛 1𝑛×𝑚 LowerTri(𝑛)
+$$
+M=\begin{bmatrix}
+\mathbf{1}_{m\times m} & \mathbf{0}_{m\times n} \\
+\mathbf{1}_{n\times m} & \operatorname{LowerTri}(n)
+\end{bmatrix},\qquad n=m. \tag{1}
+$$
 
 where 𝑛is the number of causal query tokens, 𝑚represents vanilla visual tokens number, and LowerTri denotes a lower triangular matrix (with ones on and below the diagonal, zeros above).
 
@@ -427,11 +426,9 @@ where 𝑛is the number of causal query tokens, 𝑚represents vanilla visual to
 
 Since DeepSeek-OCR 2 primarily focuses on encoder improvements, we do not upgrade the decoder component. Following this design principle, we retain DeepSeek-OCR’s decoder − a 3B-parameter MoE structure with about 500M active parameters. The core forward pass of DeepSeek-OCR 2 can be formulated as:
 
-𝜋𝑄
-
-T 𝐿(E(I) ⊕Q0; M) (2)
-
-O = D
+$$
+\mathbf{O}=\mathcal{D}\!\left(\pi_Q\!\left(\mathcal{T}^L\!\left(\mathcal{E}(\mathbf{I})\oplus\mathbf{Q}_0;\mathbf{M}\right)\right)\right). \tag{2}
+$$
 
 where I ∈R𝐻×𝑊×3 is the input image, E is the vision tokenizer mapping images to 𝑚visual tokens V ∈R𝑚×𝑑, Q0 ∈R𝑛×𝑑are learnable causal query embeddings, ⊕denotes sequence concatenation, T 𝐿represents an 𝐿-layer Transformer with masked attention, M ∈{0, 1}2𝑛×2𝑛is the block causal attention mask defined in Equation 1, 𝜋𝑄is the projection operator that extracts the last 𝑛tokens (i.e., Z = X𝑚+1:𝑚+𝑛), D is the language decoder, and O ∈R𝑛×|V| is the output logits over LLM vocabulary.
 

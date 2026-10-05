@@ -845,25 +845,22 @@ prove that (𝑝, 𝑞, 𝑟) is either (2, 4, 8) or (3, 5, 15).
 
 𝑝𝑞𝑟−1 = 𝑘· (𝑝−1)(𝑞−1)(𝑟−1) for some positive integer 𝑘, since 𝑝, 𝑞, 𝑟> 1, so (𝑝−1)(𝑞−1)(𝑟−1) > 0, and 𝑝𝑞𝑟−1 > 0.
 
-#### Step 2: Derive an upper bound for 𝑘 We can write:
+#### Step 2: Derive an upper bound for 𝑘
 
-𝑝𝑞𝑟−1 (𝑝−1) (𝑞−1) (𝑟−1) = 𝑘 We claim that 𝑘< 4. To prove this, observe that:
+We can write:
 
-
+$$
+\frac{pqr-1}{(p-1)(q-1)(r-1)}=k.
+$$
 
- 
+We claim that $k<4$. To prove this, observe that:
 
- 
-
-
-
-1 + 1 𝑝−1
-
-1 + 1 𝑞−1
-
-1 + 1 𝑟−1
-
-𝑝𝑞𝑟 (𝑝−1) (𝑞−1) (𝑟−1) =
+$$
+\frac{pqr}{(p-1)(q-1)(r-1)}=
+\left(1+\frac{1}{p-1}\right)
+\left(1+\frac{1}{q-1}\right)
+\left(1+\frac{1}{r-1}\right).
+$$
 
 Since 𝑝⩾2, 𝑞⩾3, 𝑟⩾4, we have: 1 + 1 𝑝−1 ⩽2, 1 + 1 𝑞−1 ⩽3
 

@@ -127,7 +127,7 @@ Stage 3 使用约 19.5B–20.0B token 做 SFT, 所有参数继续训练, 但只�
 
 ### 4.1. 学习率与并行配置
 
-三个阶段都使用 AdamW, $eta_1=0.9$, $eta_2=0.95$, weight decay 0.1, gradient clip 1.0. 视觉编码器学习率乘数固定为 0.1. Stage 1 和 Stage 2 的主学习率按模型不同约为 $4.2\times10^{-4}$ 到 $5.4\times10^{-4}$, Stage 3 降到 $1.4\times10^{-5}$ 到 $3.0\times10^{-5}$. 调度器分别为 cosine, step 与 constant.
+三个阶段都使用 AdamW, $\beta_1=0.9$, $\beta_2=0.95$, weight decay 0.1, gradient clip 1.0. 视觉编码器学习率乘数固定为 0.1. Stage 1 和 Stage 2 的主学习率按模型不同约为 $4.2\times10^{-4}$ 到 $5.4\times10^{-4}$, Stage 3 降到 $1.4\times10^{-5}$ 到 $3.0\times10^{-5}$. 调度器分别为 cosine, step 与 constant.
 
 视觉编码器位于流水线首段, 计算形态与均匀堆叠的 LLM block 不同. 动态切图还使每条样本 tile 数不同, 如果直接分配到数据并行 rank, 某些 rank 会等待 tile 更多的样本. HAI-LLM 对视觉编码器做细粒度层切分, 并在 forward 与 backward 中跨数据并行 rank 平衡 image tile 数, 以减少 pipeline bubble.
 

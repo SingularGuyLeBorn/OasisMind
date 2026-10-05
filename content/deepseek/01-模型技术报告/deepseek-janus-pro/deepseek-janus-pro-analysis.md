@@ -9,8 +9,6 @@ excerpt: "Janus-Pro 是 Janus 的升级版, 架构完全沿用: 理解走 SigLIP
 
 来源: [Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling](https://arxiv.org/abs/2501.17811) (arXiv: 2501.17811v1, 2025-01-29). 仓库: https://github.com/deepseek-ai/Janus
 
-对照译稿: `deepseek-janus-pro-bi.md`. 表内数字回源文 `deepseek-janus-pro.md`.
-
 Janus-Pro 是 Janus 的升级版, 架构完全沿用: 理解走 SigLIP, 生成走 VQ tokenizer, 两条视觉通路接同一个自回归 Transformer. 改动在三处: 训练日程重排, 理解和生成数据都大幅扩充, 语言底座从 1.5B 扩到 7B. 结果是 7B 版 MMBench 79.2, GenEval 0.80, DPG-Bench 84.19, 后两项超过 DALL-E 3 和 SD3-Medium. 报告只有 13 页, 没有消融表, 三处改动各贡献多少只能从 1B 和 7B 两个版本, 以及它们和 Janus 的对比里推算. 下面把训练日程, 数据, 模型配置和评测放在一起读, 看这些分数分别能归到哪一步.
 
 ## 1. 从 Janus 到 Janus-Pro

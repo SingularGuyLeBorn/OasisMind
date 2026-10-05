@@ -9,8 +9,6 @@ excerpt: "DeepSeekMath 常被记成「GRPO 的出处」, 但按投入和收益�
 
 来源: [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300) (arXiv: 2402.03300v3, 2024-04-27). 仓库: https://github.com/deepseek-ai/DeepSeek-Math
 
-对照译稿: `deepseek-math-bi.md`. 表内数字与公式编号回源文 `deepseek-math.md`.
-
 DeepSeekMath 常被记成「GRPO 的出处」, 但按投入和收益看, 这篇报告的主体是数据. 一个 7B 模型在竞赛级 MATH 上压过 Minerva 540B, 靠的是从 Common Crawl 里迭代召回的约 120B 数学 token, 加上从代码模型出发的初始化; SFT 和 RL 是在这个底座上再加两截. GRPO 在报告里只占一节, 设计动机也很朴素: 省掉 PPO 的 critic. 它后来成为 V2, V3, R1 共同的 RL 算法, 这是谱系上的意外收获. 下面按「数据怎么来, 底座怎么选, 后训练改变了什么」来读, 算法放在它实际所处的位置上.
 
 ## 1. 问题与语料

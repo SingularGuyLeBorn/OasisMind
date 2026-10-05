@@ -711,7 +711,7 @@ V4.1 therefore revises persistent KV cache management as follows: V4.1 因此改
 
 3.2.2. SWA Bounded Replay
 
-Since SWA dependencies accumulate across layers, exactly reconstructing the SWA KV of 𝐿 layers would require replaying $L \times n _ { \mathrm { w i n } }$ tokens. SWA Bounded Replay instead replays only the most recent $n _ { \mathrm { w i n } }$ tokens and truncates SWA to the replay segment, accepting approximate states: for a replay starting at position 𝑠, a query at position 𝑖 attends to SWA keys in -max(𝑠, 𝑖 − 𝑊 + 1), 𝑖 .
+Since SWA dependencies accumulate across layers, exactly reconstructing the SWA KV of 𝐿 layers would require replaying $L \times n _ { \mathrm { w i n } }$ tokens. SWA Bounded Replay instead replays only the most recent $n _ { \mathrm { w i n } }$ tokens and truncates SWA to the replay segment, accepting approximate states: for a replay starting at position 𝑠, a query at position 𝑖 attends to SWA keys in [max(𝑠, 𝑖 − 𝑊 + 1), 𝑖].
 
 精确重建 $L$ 层 SWA KV 要回放 $L\times n_{\mathrm{win}}$; 有界回放只回放最近 $n_{\mathrm{win}}$, 并把 SWA 截到回放段, 接受近似: 回放起点 $s$ 时, 位置 $i$ 的 query 看 $[\max(s, i-W+1), i]$ 上的 SWA key.
 

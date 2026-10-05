@@ -109,31 +109,12 @@ RL Objective. Building on a version of DeepSeek-V3.2-Exp-SFT which was supervise
 
 The RL objective for training the verifier is:
 
-
+$$
+\max_{\pi_\phi} \mathbb{E}_{(X_i,Y_i,s_i)\sim\mathcal{D}_v,\,(V_i',s_i')\sim\pi_\phi(\cdot\mid X_i,Y_i)}
+\left[R_{\mathrm{format}}(V_i')\cdot R_{\mathrm{score}}(s_i',s_i)\right]. \tag{2}
+$$
 
-
-
-max
-
-(2)
-
-𝑖, 𝑠𝑖)
-
-𝑖) · 𝑅score(𝑠′
-
-𝑅format(𝑉′
-
-𝑖,𝑠′
-
-𝑖)∼𝜋𝜑(·|𝑋𝑖,𝑌𝑖)
-
-𝜋𝜑E(𝑋𝑖,𝑌𝑖,𝑠𝑖)∼D𝑣,(𝑉′
-
-where 𝑉′
-
-𝑖denotes the verifier’s final response and 𝑠′
-
-𝑖is the proof score extracted from it.
+where $V_i'$ denotes the verifier’s final response and $s_i'$ is the proof score extracted from it.
 
 2.1.2. Introducing Meta-Verification to Review Proof Analyses
 

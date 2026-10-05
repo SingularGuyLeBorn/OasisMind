@@ -9,8 +9,6 @@ excerpt: "微观结构基本是 LLaMA 的配方: Pre-Norm 加 RMSNorm, FFN 用 S
 
 来源: [DeepSeek LLM: Scaling Open-Source Language Models with Longtermism](https://arxiv.org/abs/2401.02954) (arXiv: 2401.02954). 仓库: https://github.com/deepseek-ai/DeepSeek-LLM
 
-对照译稿: `deepseek-bi.md`. 表内数字回源文 `deepseek.md`.
-
 这是 DeepSeek 家族第一份通用底座报告. 模型本身是 Dense Transformer, 没有 MoE 和 MLA, 结构接近 LLaMA. 报告的主要增量有三项: 在自家语料上重新拟合 **Scaling Laws**, 建立覆盖 91 个 Common Crawl dump 的去重流水线, 并记录对齐阶段几项主动舍弃的方案. 后续 Coder, Math 与 V2 在分词器, 训练框架, 学习率调度和评测协议上都继承了这里的设定.
 
 ## 1. 底座与数据

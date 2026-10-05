@@ -9,8 +9,6 @@ excerpt: "DeepSeek-V2 总参 236B, 每个 token 激活 21B, 上下文 128K, 在 
 
 来源: [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model](https://arxiv.org/abs/2405.04434) (arXiv: 2405.04434v5, 2024-06-19). 仓库: https://github.com/deepseek-ai/DeepSeek-V2
 
-对照译稿: `deepseek-v2-bi.md`. 表内数字与公式编号回源文 `deepseek-v2.md`.
-
 DeepSeek-V2 总参 236B, 每个 token 激活 21B, 上下文 128K, 在 8.1T token 上预训练, 再经 1.5M 条 SFT 和两阶段 GRPO 得到 Chat 版. 摘要里的三组数字最常被引用: 相对 DeepSeek 67B 训练成本省 42.5%, KV cache 减 93.3%, 最大生成吞吐 5.76 倍. 这三组数字分别来自不同的环节: 42.5% 主要来自 MoE 的稀疏计算, 93.3% 是 MLA 和部署期 KV 量化叠在一起的结果, 5.76 倍则是显存省下来以后 batch 能开大的连锁效应. 读这份报告, 要把架构, 数据, 训练日程, 对齐和评测放在一起看, 才能分清哪一部分收益来自哪一步.
 
 ## 1. 起点与注意力: MLA

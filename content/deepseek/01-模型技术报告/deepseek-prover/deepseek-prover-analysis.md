@@ -9,8 +9,6 @@ excerpt: "DeepSeekMath 在结论里承认几何和定理证明是短板, 三个�
 
 来源: [DeepSeek-Prover: Advancing Theorem Proving in LLMs through Large-Scale Synthetic Data](https://arxiv.org/abs/2405.14333) (arXiv: 2405.14333v1, 2024-05-23).
 
-对照译稿: `deepseek-prover-bi.md`. 表内数字回源文 `deepseek-prover.md`.
-
 DeepSeekMath 在结论里承认几何和定理证明是短板, 三个月后的 DeepSeek-Prover 就对准了其中一块: 用 Lean 4 写出能被机器核验的证明. 模型和底座都没变, 仍是 DeepSeekMath-Base 7B, 训练方法也只是普通的监督微调. 这篇报告的全部分量都在数据上: 把网上爬来的约 87 万道竞赛题自动翻成 Lean 语句, 过滤, 证明, 用 Lean 核验器判对错, 通过的样本回流训练, 滚四轮得到约 **800 万**条带证明的形式语句. 读它要换一个视角: 这里的「数据流水」本身就是算法, Lean 核验器同时扮演标注员和质检员.
 
 ## 1. 数据合成流水

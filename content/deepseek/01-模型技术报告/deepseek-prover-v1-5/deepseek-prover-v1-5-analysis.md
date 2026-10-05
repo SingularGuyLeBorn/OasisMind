@@ -9,8 +9,6 @@ excerpt: "V1 用 800 万条合成语句把 7B 模型在 Lean 4 miniF2F-test 上�
 
 来源: [DeepSeek-Prover-V1.5: Harnessing Proof Assistant Feedback for Reinforcement Learning and Monte-Carlo Tree Search](https://arxiv.org/abs/2408.08152)(arXiv: 2408.08152v1, 2024-08-15, 后收入 ICLR 2025). 仓库: https://github.com/deepseek-ai/DeepSeek-Prover-V1.5.
 
-对照译稿: `deepseek-prover-v1-5-bi.md`. 表内数字回源文 `deepseek-prover-v1-5.md`.
-
 V1 用 **800 万**条合成语句把 7B 模型在 Lean 4 miniF2F-test 上推到 50.0%, 靠的是一遍写完整段证明. V1.5 没有换骨架, 参数仍是 7B, 改动落在四个地方: 继续预训练时加入形式语言, SFT 数据里插入自然语言 CoT 注释和 tactic 状态注释, 用 Lean 的 0/1 验证结果做 **GRPO**(报告叫 **RLPAF**), 推理时把整证生成接进蒙特卡洛树搜索并配上内在奖励(**RMaxTS**). 这四处互相依赖: 状态注释是树搜索续写的前提, 中等难度的提示筛选是 GRPO 能学到梯度的前提, 大规模 CPU 验证集群是一切大预算数字的前提. 下面按这条依赖链讲, 同时把报告里几张表互相对照, 看哪些结论站得住, 哪些只在 miniF2F 上成立.
 
 ## 1. 训练流水: 预训练, SFT 与 RLPAF
