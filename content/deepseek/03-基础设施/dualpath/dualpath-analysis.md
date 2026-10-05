@@ -49,7 +49,7 @@ PD 分离把 prefill 和 decode 放到不同 GPU 上, prefill 计算密集, deco
 
 DualPath 建立在逐层 prefill 之上. 长上下文 prefill 时, 整个 batch 的 KV 都要进 HBM, batch 大小因此受限; LayerKV 和 PrefillOnly 注意到第 $i$ 层的注意力只需要第 $i$ 层的 KV, 于是 KV 可以按层加载, 用完即释放, HBM 里只放一层. 有效 batch (按 token 计) 大约扩大到层数倍. 代价是 KV 被切成很多细块: 每层一份, 每块只含 $block\_size$ 个 token. 按 §4.1 举的 64 token 一块, 32.7k 上下文是约 511 个块, 乘 61 层约 3.1 万个单层块. 这是 §5.2 要比较拷贝提交开销的原因.
 
-为了既能细粒度传输, 又不让存储系统面对海量小对象, 论文定义两种块 (附录 A.5). Layer Block 是形状 $[1, tokens, bytes]$ 的字节张量, 存若干 token 的单层 KV; Full Block 的形状是 $[layer, tokens, bytes]$, 存同一批 token 的全部层. 把 $n_{layer}$ 个 Layer Block 拼起来就是一个 Full Block, 不需要转换内存布局. 与存储的交互一律用 Full Block, 存储里用 trie 组织, 每个树节点是一个 Full Block, 前缀相同的轨迹共享路径. 进出 GPU HBM 的传输一律用 Layer Block, 与逐层计算同步. 换句话说, DRAM buffer 是两种粒度的转换点: 从存储整块读进 DRAM, 再从 DRAM 按层切片发出.
+为了兼顾细粒度传输和存储对象数量, 论文定义两种块 (附录 A.5). Layer Block 是形状 $[1, tokens, bytes]$ 的字节张量, 存若干 token 的单层 KV; Full Block 的形状是 $[layer, tokens, bytes]$, 存同一批 token 的全部层. 把 $n_{layer}$ 个 Layer Block 拼起来就是一个 Full Block, 不需要转换内存布局. 存储侧一律使用 Full Block, 并以 trie 组织, 让前缀相同的轨迹共享路径; GPU HBM 侧一律使用 Layer Block, 与逐层计算同步. DRAM buffer 位于两种粒度之间, 负责接收整块数据并按层切片发出.
 
 ![](images/p05-figure-4-dual-path-loading-illustration-the-scheduler-dynamically.jpg)
 
@@ -97,7 +97,7 @@ $$
 2T_p\cdot Dg=\frac{2Bs}{g}\le B,\qquad (T_p+T_c)\cdot Dg=\frac{Bs}{g}\Big(1+\frac{D}{P}\Big)\le B\;\Rightarrow\;\frac{P}{D}\ge\frac{s}{g-s}.
 $$
 
-第一式化简后是 $s\le g/2$. 论文 §4.2 写的是 $s\le g$, 条件放宽了一倍. 这不影响实验结论, 因为实验里 $g=8$, $s=1$, 两个条件都远远满足.
+第一式化简后是 $s\le g/2$. 论文 §4.2 写成 $s\le g$, 条件放宽了一倍. 实验使用 $g=8$, $s=1$, 同时满足两个条件, 因此这处推导差异不会改变该组实验的可行性.
 
 DE 节点的 CNIC 读出: DE 读路径的 (3) 发往 PE 和 (6) 做 H2D 各一次, 加上 PE 读路径的 (8) 一次; 写入: PE 读路径的 (7) 写进 DE buffer 和 (9) 写进 HBM 各一次, 加上 DE 读路径的 (7) 一次. 由此
 
@@ -207,7 +207,7 @@ DeepSeek 把 KV cache 落到磁盘不是从这篇论文开始的. 2024 年 8 月
 
 几处数字的口径与标题措辞有出入, 按章节汇总. §4.2 式 (1) 的条件应为 $s\le g/2$, 论文写成 $s\le g$. §3 图 3 的 28.8 倍混合了 BF16, FP8 和 FP4 三种精度, 14.4 倍的 I/O 算力比下降因此偏大. 摘要和 §7.3 的 1.87 倍包含 Basic 没有的逐层 prefill, 双路径加调度单独约 1.4 到 1.6 倍. 摘要和 §7.4 的 1.96 倍是两个模型加速比的算术平均, 在线实验用的 trace 没有说明.
 
-另有几处缺少支撑数据. §7.5 图 13 的「三台机器」与默认配置不符, 图 14 的 1.06 只覆盖任务前 5%. §9 关于结合 DRAM 缓存收益很小的说法没有实验. 附录 A.1 的「约 99% 带宽留给模型通信」可以按 InfiniBand 仲裁单位推出 (见 4.1 节), 但论文没有测关闭隔离时 TPOT 的变化. §8.2 的工作集数字依赖的每 token 字节数没有给出. 这些地方不影响「让 decode 节点的存储网卡也读盘」这个核心机制的成立, 图 8 的等带宽配置对比已经足以说明存储网卡是瓶颈, 但影响对收益大小的判断.
+另有几处缺少支撑数据. §7.5 图 13 的「三台机器」与默认配置不符, 图 14 的 1.06 只覆盖任务前 5%. §9 关于结合 DRAM 缓存收益很小的说法没有实验. 附录 A.1 的「约 99% 带宽留给模型通信」可以按 InfiniBand 仲裁单位推出 (见 4.1 节), 但论文没有测关闭隔离时 TPOT 的变化. §8.2 的工作集数字依赖的每 token 字节数也未给出. 图 8 的等带宽配置对比支持存储网卡构成瓶颈, 上述缺项主要限制了对收益幅度和适用范围的判断.
 
 ## 参考文献
 
