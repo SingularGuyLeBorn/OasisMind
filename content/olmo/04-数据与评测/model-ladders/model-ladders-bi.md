@@ -175,17 +175,11 @@ where A, B, α, β, E are parameters to fit.
 
 We postulate that the same functional form applies to these losses. We validate this assumption by looking at the goodness of function fitting.
 
-Function fitting. We take the loss value of the final checkpoint of each ladder model {(Ni, Di, Li)}n
+Function fitting. We take the loss value of the final checkpoint of each ladder model $\{(N_i,D_i,L_i)\}_{i=1}^{n}$ (where $n=16$), and use this data to fit the parameters of Equation 1. We fit a separate set of parameters for each task. Following Hoffmann et al. (2022), we minimize the Huber loss between the logarithm of predicted and actual loss:
 
-i=1 (where n = 16), and use this data to fit the parameters of Equa- tion 1. We fit a separate set of parameters for each task. Following Hoffmann et al. (2022), we minimize the Huber loss between the logarithm of predicted and actual loss:
-
-
-
-log ˆL(Ni, Di) −log Li
-
-1 n ∑n
-
-i=1 Huberδ
+$$
+\frac{1}{n}\sum_{i=1}^{n}\operatorname{Huber}_\delta\!\left(\log\hat L(N_i,D_i)-\log L_i\right)
+$$
 
 , where δ = 10−3. We optimize A and B in log space – we apply transformation a = log A, b = log B and optimize (a, b, α, β, E). We use the
 
@@ -717,31 +711,16 @@ C.2 Task cross-entropy as the intermediate feature · 以任务交叉熵作为�
 
 Task loss only considers the correct choice of each problem. However, task RC accuracy is determined by the losses of both correct and incorrect choices, which is a major challenge for predicting downstream performance (Schaeffer et al., 2024):
 
-
+$$
+\operatorname{Acc}=\frac{1}{N}\sum_{i=1}^{N}\mathbbm{1}\!\left[\arg\max_k\left(-L_k^{(i)}\right)=\hat k^{(i)}\right]. \tag{5}
+$$
 
-
 
-
 
-1 
 
-−L(i)
 
-Acc = 1
 
-arg max
 
-= ˆk(i)
-
-, (5)
-
-k
-
-k
-
-N
-
-N ∑ i=1
 
 where L(i)
 
@@ -749,25 +728,10 @@ k is the loss over the k’th answer option of the i’th example and ˆk(i) is 
 
 To account for incorrect answers, we define an alternative intermediate feature. We com- monly maximize the accuracy by minimizing the task cross-entropy as a surrogate loss, in which the Lk terms are used as logits:
 
-!
+$$
+\operatorname{TaskCE}=\frac{1}{N}\sum_{i=1}^{N}\left(L_{\hat k^{(i)}}^{(i)}+\log\sum_k\exp\!\left(-L_k^{(i)}\right)\right). \tag{6}
+$$
 
-
-
-L(i)
-
-−L(i)
-
-TaskCE = 1
-
-exp
-
-. (6)
-
-k
-
-ˆk(i) + log∑
-
-N
 
 k
 
@@ -877,9 +841,9 @@ Figure 16: Comparison of absolute and relative prediction errors for all three i
 
 parameters k and L0 into A, B, E, so that we reduce to 7 free parameters:
 
- + b (8)
-
-Acc(N, D) = a 1 + exp  −(A/Nα + B/Dβ + E)
+$$
+\operatorname{Acc}(N,D)=\frac{a}{1+\exp\!\left[-\left(A/N^\alpha+B/D^\beta+E\right)\right]}+b. \tag{8}
+$$
 
 With this, we remove the a priori definition of a specific intermediate feature (i.e., the
 

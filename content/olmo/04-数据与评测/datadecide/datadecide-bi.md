@@ -234,17 +234,9 @@ Decision Accuracy Unlike previous work, we also mea- sure the impact of predicti
 
 决策准确率 与以往工作不同, 本文还衡量预测对「哪种数据配方更好」这一决策的影响. 对任意数据配方对 $A,B$, 目标规模表现更高的一方定义为正确胜者, 决策准确率就是全部配方对上的判断准确率. 它近似 Kendall 的 $\tau$, 但取值范围为 0 到 1. 目标规模胜者按 3 个随机种子的平均下游表现定义. 令 $P$ 为全部数据配方对 $(A,B)$ 的集合, $y_A,y_B$ 是观测平均表现, $\hat y_A,\hat y_B$ 是预测表现, 则决策准确率为:
 
-
-
-P
-
-(3)
-
-sign(ˆyA −ˆyB) = sign(yA −yB)
-
-(A,B)∈P I
-
-1 |P|
+$$
+\frac{1}{|\mathcal{P}|}\sum_{(A,B)\in\mathcal{P}}\mathbb{I}\!\left(\operatorname{sign}(\hat y_A-\hat y_B)=\operatorname{sign}(y_A-y_B)\right). \tag{3}
+$$
 
 Extrapolating Scaling Laws (Multi Scale) Another ap- proach to making decisions with predictions across scales used in works such as Dubey et al. (2024) is to fit scaling laws to multiple small experiments across a range of scales for each of the data recipes. The winning recipe is decided as the one whose scaling law shows the highest extrapolated performance at the target scale. Although scaling laws were first observed for language modeling loss (Kaplan et al., 2020; Hoffmann et al., 2022), they have been extended to predict downstream performance through a two-step ap- proach that also fits a function from loss to downstream performance (Gadre et al., 2024; Bhagia et al., 2024). We follow a method from Bhagia et al. (2024). Their proposed approach incorporates separate parameters for number of model parameters and number of tokens trained to account for over or undertrained models. But as our suite only in- cludes one token-parameter ratio, we use the simplified 3 parameter baseline, L(C), as a first step which we chain with second step, Acc(L), defined as follows where A, α, E, a, b, k, L0 are optimized parameters:
 
@@ -944,15 +936,9 @@ Single-step prediction. In this variant, the two-stage fitting procedure is repl
 
 单步预测 该变体用单一步骤替换两阶段拟合, 直接把算力 $C$ 映射为准确率:
 
- A
-
- + b (6)
-
-Acc(C) = a 1 + exp
-
-−k
-
-Cα + E −L0
+$$
+\operatorname{Acc}(C)=\frac{a}{1+\exp\!\left[-k\left(\frac{A}{C^\alpha}+E-L_0\right)\right]}+b. \tag{6}
+$$
 
 This combines the loss and accuracy mapping into one func- tion.
 
@@ -962,15 +948,9 @@ This combines the loss and accuracy mapping into one func- tion.
 
 五参数单步预测 作者还测试直接从 $(N,D)$ 映射到准确率的单步变体, 在预测损失上使用 logistic 函数, 把式 (5) 与式 (2) 合并为:
 
- A
-
- + b (7)
-
-−
-
-Acc(N, D) = a 1 + exp
-
-Nα + B Dβ + E
+$$
+\operatorname{Acc}(N,D)=\frac{a}{1+\exp\!\left[-\left(\frac{A}{N^\alpha}+\frac{B}{D^\beta}+E\right)\right]}+b. \tag{7}
+$$
 
 This formulation retains the same five parameters from the two-step (N, D) loss function. Following Bhagia et al. (2024), we merge the parameters k and L0 from the second- stage sigmoid into the loss-side parameters (A, B, E), yield- ing a simplified single-stage fit with 7 total free parameters: {A, α, B, β, E, a, b}.
 
@@ -1000,63 +980,13 @@ Table 2. DATADECIDE uses OLMo’s model ladder (Groeneveld et al., 2024; OLMo et
 
 create configurations for 14 model sizes with hyperparameters determined by heuristics in Porian et al. (2024). All models have sequence length of 2024 and MLP ratio of 8. Each configuration is pretrained over 25 data recipes (Table 1). Each recipe and configuration is also trained for 3 random seeds where model sizes < 1B are stopped early at 25% of the compute used to train the 1B model for all but the default seed. Model size is number of non-embedding parameters. Batch size is the number of sequences per batch.
 
-Metric Name Equation
-
-PN
-
-correct | contexti)
-
-CORRECT PROB 1 N
-
-i=1 P(c(i)
-
-
-
-PN
-
-P(c(i)
-
-i=1
-
-MARGIN 1 N
-
-correct | contexti) −maxc′̸=c(i)
-
-correct∈C(i) P(c′ | contexti)
-
-P (c(i)
-
-PN
-
-i=1
-
-correct|contexti) P
-
-NORM CORRECT PROB 1 N
-
-c∈C(i) P (c|contexti)
-
-PN
-
-P
-
-i=1
-
-c∈C(i) P(c | contexti)
-
-TOTAL PROB 1 N
-
-
-
-PN
-
-arg maxc∈C(i) P(c | contexti) = c(i)
-
-correct
-
-i=1 I
-
-ACCURACY 1 N
+| Metric Name | Equation |
+|---|---|
+| Correct Prob | $\frac{1}{N}\sum_{i=1}^{N}P(c_{\mathrm{correct}}^{(i)}\mid\mathrm{context}_i)$ |
+| Margin | $\frac{1}{N}\sum_{i=1}^{N}\left(P(c_{\mathrm{correct}}^{(i)}\mid\mathrm{context}_i)-\max_{c'\ne c_{\mathrm{correct}}^{(i)},\,c'\in C^{(i)}}P(c'\mid\mathrm{context}_i)\right)$ |
+| Norm Correct Prob | $\frac{1}{N}\sum_{i=1}^{N}\frac{P(c_{\mathrm{correct}}^{(i)}\mid\mathrm{context}_i)}{\sum_{c\in C^{(i)}}P(c\mid\mathrm{context}_i)}$ |
+| Total Prob | $\frac{1}{N}\sum_{i=1}^{N}\sum_{c\in C^{(i)}}P(c\mid\mathrm{context}_i)$ |
+| Accuracy | $\frac{1}{N}\sum_{i=1}^{N}\mathbb{I}\!\left[\arg\max_{c\in C^{(i)}}P(c\mid\mathrm{context}_i)=c_{\mathrm{correct}}^{(i)}\right]$ |
 
 * per token log(P (c|context))/tokens(c)
 

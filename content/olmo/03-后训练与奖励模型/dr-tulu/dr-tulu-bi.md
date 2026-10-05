@@ -322,12 +322,7 @@ x
 x
 as input to Grubric, obtaining a set
 of evolving rubrics Rnew
-x
-= Grubric
-x, {yi}G
-i=1, Rx
-
-. Specif-
+$R_x^{\mathrm{new}}=\mathcal{G}_{\mathrm{rubric}}\!\left(x,\{y_i\}_{i=1}^{G},R_x\right)$. Specif-
 ically, we instruct the LM to generate two types of evolving
 rubrics: (1) positive rubrics, which capture strengths or new,
 relevant knowledge explored by the current policy but not
@@ -2116,11 +2111,7 @@ Algorithm 1 Reinforcement Learning with Evolving Rubrics (RLER)
 Require: Dataset D, policy πθ, rollout size G, max active rubrics Kmax, rubric generator Grubric
 1: for each prompt x ∈D do
 2:
-Generate Rpersist
-x
-←Grubric
-x, SEARCH(x)
-
+Generate $\mathcal{R}^{\mathrm{persist}}_x \gets \mathcal{G}_{\mathrm{rubric}}\!\big(x,\textsc{Search}(x)\big)$
 ▷Generate initial search-based rubrics
 3:
 Ractive
@@ -2392,22 +2383,13 @@ with an associated (possibly empty) set of cited IDs for each claim,
 I(c) ⊆{ i },
 c ∈C.
 Citation-format reward. We reward valid citations by the fraction that resolve in S:
-Rfmt =
-
-
-
- S
-c∈C I(c) ∩keys(S)
-
- S
-c∈C I(c)
-
-,
-S
-c I(c)
- > 0,
-0,
-otherwise.
+$$
+R_{\mathrm{fmt}}=
+\begin{cases}
+\dfrac{\left|\bigcup_{c\in\mathcal{C}}I(c)\cap\mathrm{keys}(\mathcal{S})\right|}{\left|\bigcup_{c\in\mathcal{C}}I(c)\right|}, & \left|\bigcup_c I(c)\right|>0,\\[6pt]
+0, & \text{otherwise.}
+\end{cases}
+$$
 Per-claim recall and precision. For each claim c, we define the concatenated evidence
 E(c) = L
 i∈I(c) si,

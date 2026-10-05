@@ -1412,57 +1412,26 @@ N
 
 Kendall’s τ. Here, rather than report Kendall’s τ, we show it is proportional to decision accuracy. Kendall’s τ is defined as the difference between the concordant pairs C and discordant pairs D, divided by the total pairs of models: τ = (C −D)/
 
-肯德尔的 τ。在这里，我们没有报告 Kendall 的 τ，而是表明它与决策准确性成正比。 Kendall 的 τ 定义为一致对 C 和不一致对 D 之间的差值除以模型对总数： τ = (C −D)/
-
-2 
-
-N
+肯德尔的 τ。在这里, 我们没有报告 Kendall 的 $\tau$, 而是表明它与决策准确性成正比。Kendall 的 $\tau$ 定义为一致对 $C$ 和不一致对 $D$ 之间的差值除以模型对总数: $\tau=(C-D)/\binom{N}{2}$。
 
 .
 
 . We can then rewrite decision accuracy defined only by the number of concordant pairs C: decision accuracy = C/
 
-。然后我们可以重写仅由一致对 C 的数量定义的决策准确度：决策准确度 = C/
-
-2 
-
-N
+然后可以把决策准确度写成一致对数量 $C$ 的函数: $\text{decision accuracy}=C/\binom{N}{2}$。
 
 Since we do not allow ties, C and D make up the total number of pairs
 
-由于我们不允许平局，因此 C 和 D 构成了对的总数
+由于我们不允许平局, $C$ 和 $D$ 构成全部模型对, 即 $\binom{N}{2}=C+D$。因此:
 
-2 
-
-= C + D, we can rewrite decision accuracy as follows:
-
-
-
-N
-
-C −
-
-−C
-
-N
-
-2 
-
-2 
-
-τ =
-
-N
-
-N
-
-2  = 2C −
-
-2  = 2 · C N
-
-2  −1
-
-= 2 · (decision accuracy) −1
+$$
+\begin{aligned}
+\tau&=\frac{C-\left(\binom{N}{2}-C\right)}{\binom{N}{2}}
+=\frac{2C-\binom{N}{2}}{\binom{N}{2}}
+=2\cdot\frac{C}{\binom{N}{2}}-1\\
+&=2\cdot(\text{decision accuracy})-1.
+\end{aligned}
+$$
 
 Therefore, the decision accuracy measure in Magnusson et al. [38] is equivalent to Kendall’s τ modulo a scale and shift.
 
@@ -1514,19 +1483,11 @@ T (U(T) −U(0)) (6)
 
 Checkpoint-to-checkpoint Noise. Calculating the above sources of noise are either too expensive to estimate at large scales (e.g., training LLMs by varying the random seed) or difficult to run (e.g., evaluating every checkpoint on an LLM training curve). Instead, we propose an estimate measuring only the noise of the final n training checkpoints of training:
 
-检查点到检查点的噪声。计算上述噪声源要么成本太高，无法大规模估计（例如，通过改变随机种子来训练 LLM），要么难以运行（例如，评估 LLM 训练曲线上的每个检查点）。相反，我们提出仅测量训练的最后 n 个训练检查点的噪声的估计：
+检查点到检查点的噪声。计算上述噪声源要么成本太高, 无法大规模估计 (例如, 通过改变随机种子来训练 LLM), 要么难以运行 (例如, 评估 LLM 训练曲线上的每个检查点)。因此, 作者用训练末尾 $n$ 个 checkpoint 的分数估计噪声:
 
-
-
-
-
-Checkpoint-to-checkpoint Noise = σ
-
-(7)
-
-{U(tj)}T
-
-j=T −k+1
+$$
+\text{Checkpoint-to-checkpoint Noise}=\sigma\!\left(\{U(t_j)\}_{j=T-k+1}^{T}\right). \tag{7}
+$$
 
 A.3.1 Correlation between Sources of noise
 
@@ -1540,73 +1501,33 @@ The noise calculation introduced in Section 3.1 requires selecting some n interm
 
 3.1节中介绍的噪声计算需要选择一些n个中间检查点来估计检查点到检查点的噪声。在本节中，我们提供有关选择 n 的指导，并讨论其对我们的研究结果的影响。增加中间检查点 n 的数量将导致噪声估计的偏差较小。因此，我们可以计算 n 个中间检查点样本的最小数量，使得样本噪声 sn 是总体噪声 σ 的合理估计。
 
-We first assume the checkpoint to checkpoint scores are independent and normally distributed (which we observe when computing decision accuracy on intermediate checkpoints in Figure 7). Under this assumption, the ratio between the sample variance and the population variance follows a scaled chi squared distribution: (n−1)s2
+We first assume the checkpoint to checkpoint scores are independent and normally distributed (which we observe when computing decision accuracy on intermediate checkpoints in Figure 7). Under this assumption, the ratio between the sample variance and the population variance follows a scaled chi squared distribution: $\frac{(n-1)s_n^2}{\sigma^2}\sim\chi^2_{n-1}$. Therefore we would like to calculate the probability that the sample standard deviation $s_n$ is within one standard deviation of the population standard deviation $\sigma$: $|s_n-\sigma|<\sigma$.
 
-我们首先假设检查点到检查点的分数是独立的且呈正态分布（我们在计算图 7 中的中间检查点的决策准确性时观察到这一点）。在此假设下，样本方差与总体方差之间的比率遵循缩放卡方分布： (n−1)s2
-
-n σ2 ∼χ2
-
-n−1 Therefore we would like to calculate the probability that the sample standard deviation sn is within one standard deviation of the population standard deviation σ: |sn −σ| < σ
-
-n−1 因此我们要计算样本标准差 sn 在总体标准差 σ 的一个标准差内的概率： |sn −σ| < σ
+我们首先假设检查点到检查点的分数独立且呈正态分布。在此假设下, 样本方差与总体方差的比率服从缩放的卡方分布: $\frac{(n-1)s_n^2}{\sigma^2}\sim\chi^2_{n-1}$。需要计算样本标准差 $s_n$ 落在总体标准差 $\sigma$ 的一个标准差内的概率, 即 $|s_n-\sigma|<\sigma$。
 
 We can rewrite this inequality:
 
-σ −1
-
-σ < 2
-
-< 1 ⇒0 < sn
-
-sn
+$$
+\left|\frac{s_n}{\sigma}-1\right|<1\Rightarrow0<\frac{s_n}{\sigma}<2.
+$$
 
 And then, can substitute the chi-squared distribution to compute the likelihood w.r.t. n:
 
-然后，可以替换卡方分布来计算似然性。号：
+然后代入卡方分布计算关于 $n$ 的概率:
 
-
-
-
-
-s
-
-s
-
-χ2
-
-χ2
-
-sn
-
-
-
-χ2
-
-n−1 < 4(n −1)
-
-
-
-⇒P
-
-σ ∼
-
-n−1 n −1 ⇒P
-
-n−1 n −1 < 2
+$$
+\frac{s_n}{\sigma}\sim\sqrt{\frac{\chi^2_{n-1}}{n-1}}
+\Rightarrow P\!\left(\sqrt{\frac{\chi^2_{n-1}}{n-1}}<2\right)
+\Rightarrow P\!\left(\chi^2_{n-1}<4(n-1)\right).
+$$
 
 We can then solve the inequality for the smallest value of n for a particular threshold α:
 
-然后我们可以求解特定阈值 α 的 n 最小值的不等式：
+然后可以针对阈值 $\alpha$ 求解最小的 $n$:
 
-
-
-P
-
-χ2
-
-> α
-
-n−1 < 4(n −1)
+$$
+P\!\left(\chi^2_{n-1}<4(n-1)\right)>\alpha.
+$$
 
 Solving this inequality numerically with α = 0.95 for increasing values of n, we find that n = 9 provides the smallest sample size such that the probability that the sample standard deviation (the
 
@@ -2028,13 +1949,9 @@ i,j(ci −cj)2 0.2480 0.1457 0.1953 Gini Coefficient 1 2n2µ P
 
 i,j |ci −cj| 0.0944 0.0978 0.0829 Star Discrepancy (Shift+Scale) sup[0,c] |Fn(t) −F (t)| with shifting 0.0391 0.0768 0.0454 Star Rel. Discrepancy sup[0,c] |Fn(t) −F (t)|/F (t) 0.0379 0.0587 0.0420 Dispersion (Shift+Scale) maxi,j |ci −cj| with shifting 0.0374 0.0679 0.0382 Halfspace Depth min (Fn(x), 1 −Fn(x)) 0.0358 0.0395 0.0373 Discrepancy maxc |Fn(c) −F (c)| 0.0340 0.0754 0.0401
 
-
 
-Projection Depth
 
-1 + |x−med(c)| MAD(c)
-
-−1 0.0331 0.0392 0.0353 Star Discrepancy sup[0,c] |Fn(t) −F (t)| 0.0319 0.0665 0.0356
+Projection Depth $\left(1+\frac{|x-\operatorname{med}(c)|}{\operatorname{MAD}(c)}\right)^{-1}$ 0.0331 0.0392 0.0353 Star Discrepancy $\sup_{[0,c]}|F_n(t)-F(t)|$ 0.0319 0.0665 0.0356
 
 straight forward measures have similarly high correlations. We use relative dispersion, the highest correlated among them, as our measure of signal.
 

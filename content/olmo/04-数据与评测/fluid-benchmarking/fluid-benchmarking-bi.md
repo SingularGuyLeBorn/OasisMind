@@ -154,11 +154,11 @@ In this paper, we introduce benchmark refinement as the problem of improving ben
 
 Let mi be an LM that is to be evaluated on a benchmark Q. We refer to the elements qj ∈Q as items. In a general form, evaluating mi on Q can be expressed as
 
-令 mi 为将在基准 Q 上评估的 LM。我们将元素 qj ∈Q 称为项目。在一般形式中，对 Q 求 mi 可以表示为
+令 $m_i$ 为将在基准 $Q$ 上评估的 LM。我们将元素 $q_j\in Q$ 称为项目。在一般形式中, 对 $Q$ 评估 $m_i$ 可以表示为
 
-
-
-, (1)
+$$
+\operatorname{eval}(m_i,Q)=\underbrace{\operatorname{aggregate}_{q_j\in\operatorname{select}(Q)}}_{\text{benchmark-level aggregation}}\!\left(\underbrace{\operatorname{score}(m_i,q_j)}_{\text{item-level scoring}}\right). \tag{1}
+$$
 
 EVALUATE(mi, Q) = AGGREGATE
 
@@ -248,11 +248,11 @@ These features might be beneficial for benchmark refinement. In terms of efficie
 
 Formulation. Let M = {m1, . . . , mk} be a set of LMs that have been evaluated on a benchmark Q. Assuming items with two outcomes, the probability that an LM mi answers item qj correctly can be modeled as a Bernoulli random variable uij, where uij = 1 (success) iff the LM’s answer is correct. The probability that uij = 1 is modeled as
 
-配方。令 M = {m1, . 。 。 , mk} 是一组在基准 Q 上进行评估的 LM。假设有两个结果的项目，LM mi 正确回答项目 qj 的概率可以建模为伯努利随机变量 uij，其中 uij = 1（成功）当且仅当 LM 的答案是正确的。 uij = 1 的概率建模为
+配方。令 $M=\{m_1,\ldots,m_k\}$ 是一组在基准 $Q$ 上评估的 LM。假设项目只有两个结果, LM $m_i$ 正确回答项目 $q_j$ 的结果可建模为 Bernoulli 随机变量 $u_{ij}$, 当且仅当答案正确时 $u_{ij}=1$。$u_{ij}=1$ 的概率建模为
 
-
-
-, (2)
+$$
+P(u_{ij}=1\mid\theta_i,a_j,b_j)=\operatorname{logistic}\!\left(a_j(\theta_i-b_j)\right). \tag{2}
+$$
 
 p(uij = 1) = logistic
 
@@ -268,17 +268,9 @@ Given a fitted 2PL model, the item parameters aj and bj can be used to estimate 
 
 ˆθi of a previously unevaluated LM mi by maximizing
 
-
-
-logistic
-
-1−uij . (3)
-
-ˆθi = max
-
-uij 
-
-θ
+$$
+\hat\theta_i=\max_\theta\prod_{j=1}^{l}\left[\operatorname{logistic}\!\left(a_j(\theta-b_j)\right)\right]^{u_{ij}}\left[1-\operatorname{logistic}\!\left(a_j(\theta-b_j)\right)\right]^{1-u_{ij}}. \tag{3}
+$$
 
 aj(θ −bj)
 
@@ -314,13 +306,11 @@ Benchmarks are used to monitor performance during pretraining, when LMs are unde
 
 One way to approach this question is by examining the informativeness of items with respect to the ability estimate for a given LM, which can be formalized using Fisher information (Reckase, 2009). In the case of the 2PL model, this is given by
 
-解决这个问题的一种方法是检查项目相对于给定 LM 的能力估计的信息量，这可以使用 Fisher 信息进行形式化（Reckase，2009）。在 2PL 模型的情况下，由下式给出
+解决这个问题的一种方法是检查项目相对于给定 LM 的能力估计的信息量, 这可以使用 Fisher 信息进行形式化 (Reckase, 2009)。在 2PL 模型下:
 
- 
-
-
-
-. (4)
+$$
+I(\theta_i,a_j,b_j)=a_j^2\operatorname{logistic}\!\left(a_j(\theta_i-b_j)\right)\left[1-\operatorname{logistic}\!\left(a_j(\theta_i-b_j)\right)\right]. \tag{4}
+$$
 
 I(θi, aj, bj) = a2
 
@@ -388,31 +378,9 @@ Formulation. Inspired by these observations, we draw upon methods developed in t
 
 配方。受这些观察的启发，我们利用在计算机自​​适应测试的教育研究背景下开发的方法（Meijer & Nering，1999；Chang，2015；Magis 等人，2017）来使 Q* 适应 LM mi 的能力水平。具体来说，我们通过在给定当前能力估计的情况下迭代地从 Q 中选择具有最高 Fisher 信息的项目来评估 LM，
 
- 
-
- 
-
-
-
-I
-
-Q∗
-
-ABILITY(mi, Q∗
-
-i (0) = ∅; Q∗
-
-i (t) = Q∗
-
-i (t −1)), aj, bj
-
-i (t −1) ∪
-
-. (5)
-
- arg max qj∈Q\Q∗
-
-i (t−1)
+$$
+Q_i^*(0)=\emptyset;\qquad Q_i^*(t)=Q_i^*(t-1)\cup\left\{\arg\max_{q_j\in Q\setminus Q_i^*(t-1)}I\!\left(\operatorname{ability}(m_i,Q_i^*(t-1)),a_j,b_j\right)\right\}. \tag{5}
+$$
 
 We repeat this procedure until the total number of administered items has reached the budgeted size for Q∗, at which point we let Q∗
 
@@ -486,19 +454,9 @@ i, Q) represent the measured performance (e.g., accuracy) on benchmark Q for mod
 
 i, Q) 表示模型 mi 在某个检查点 t 的基准 Q 上测得的性能（例如，准确性）。我们测量归一化总变异，
 
-i (Q) −xt
-
-t=1 |xt+1
-
-i (Q)
-
-, (6)
-
-i(Q)| xn
-
-TV(mi, Q) = n n −1 × ∑n−1
-
-i (Q) −x1
+$$
+\operatorname{TV}(m_i,Q)=\frac{n}{n-1}\times\frac{\sum_{t=1}^{n-1}|x_i^{t+1}(Q)-x_i^t(Q)|}{|x_i^n(Q)-x_i^1(Q)|}. \tag{6}
+$$
 
 where a lower value means lower variance and hence better evaluation quality. – Saturation. To measure the saturation of a benchmark under a given evaluation strategy,
 
