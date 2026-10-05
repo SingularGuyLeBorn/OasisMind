@@ -233,7 +233,7 @@ $$
 MQA 保留 $H_q$ 个查询头，只使用一组 K、V：$H_{kv}=1$。GQA 使用 $1<H_{kv}<H_q$ 个 KV 头，每组 $g=H_q/H_{kv}$ 个查询头共享一组 K、V。reshape 后
 
 $$
-Q\in\mathbb{R}^{B\times H_q\times S\times d_h},qquad
+Q\in\mathbb{R}^{B\times H_q\times S\times d_h},\qquad
 K,V\in\mathbb{R}^{B\times H_{kv}\times S\times d_h}.
 $$
 
@@ -252,7 +252,7 @@ $$
 MLA 进一步把 K、V 的内容信息压缩到低维潜变量。用简化符号表示：
 
 $$
-c_t^{KV}=W^{DKV}h_t,qquad
+c_t^{KV}=W^{DKV}h_t,\qquad
 k_t^C=W^{UK}c_t^{KV},\qquad
 v_t^C=W^{UV}c_t^{KV}.
 $$
@@ -431,7 +431,7 @@ $$
 LayerNorm 对单个 token 的通道做统计。给定 $x\in\mathbb{R}^{D}$：
 
 $$
-\mu=\frac1D\sum_{i=1}^{D}x_i,qquad
+\mu=\frac1D\sum_{i=1}^{D}x_i,\qquad
 \sigma^2=\frac1D\sum_{i=1}^{D}(x_i-\mu)^2,
 $$
 
@@ -467,7 +467,7 @@ $$
 假设上游梯度 $G_O=\partial\mathcal{L}/\partial O$。由矩阵乘法可得
 
 $$
-G_V=P^TG_O,qquad G_P=G_OV^T.
+G_V=P^TG_O,\qquad G_P=G_OV^T.
 $$
 
 $G_P$ 还需经过逐行 softmax。对某一行向量 $p$ 与上游梯度 $g_p$，softmax 雅可比为 $J=\operatorname{diag}(p)-pp^T$，因此
@@ -479,7 +479,7 @@ $$
 这一形式比显式构造 $S\times S$ 雅可比更实用。它表示先计算概率加权的梯度均值，再从每个位置的梯度中减去该均值并乘以对应概率。经过分数矩阵乘法可得：
 
 $$
-G_Q=\frac{G_SK}{\sqrt{d_h}},qquad
+G_Q=\frac{G_SK}{\sqrt{d_h}},\qquad
 G_K=\frac{G_S^TQ}{\sqrt{d_h}}.
 $$
 
