@@ -11,21 +11,21 @@ excerpt: "从学生 rollout、参考解条件化教师到逐 token 分布目标�
 这里最容易看错的是参考解的位置。参考解不是学生要逐字复现的标签，也不负责产生受监督前缀。学生先按当前策略生成
 
 $$
-y\sim \pi_{\theta_k}(\cdot\mid x),\qquad s_t=(x, y_{<t}),
+y\sim \pi_{\theta_k}(\cdot\mid x),\qquad s_t=(x,y_{<t}),
 $$
 
 教师随后读取同一个 $s_t$，只是多看一份经过验证的推理轨迹 $c$：
 
 $$
-q_t(v)=\pi_{\bar\theta}(v\mid x, c, y_{<t}),\qquad
-p_t(v)=\pi_\theta(v\mid x, y_{<t}).
+q_t(v)=\pi_{\bar\theta}(v\mid x,c,y_{<t}),\qquad
+p_t(v)=\pi_\theta(v\mid x,y_{<t}).
 $$
 
 $\bar\theta$ 固定在训练起点，教师前向停止梯度；更新只作用于学生分布 $p_t$。这样一来，若学生在第十步写错了变量，训练仍会抵达这个错误状态。教师借助参考解判断接下来哪些 token 能修复推理，再把判断压回不带参考解的学生。**参考解提供方向，学生 rollout 决定训练发生在哪里。**
 
 ## 1. 为什么它比参考解 SFT 多做了一件事
 
-设参考解前缀为 $c_{<t}$，学生前缀为 $y_{<t}$。SFT 优化的是 $-\log\pi_\theta(c_t\mid x, c_{<t})$；当学生部署时生成了 $y_{<t}\neq c_{<t}$，这个目标没有说明如何从当前位置继续。OPSD 则直接比较 $q_t(\cdot\mid x, c, y_{<t})$ 与 $p_t(\cdot\mid x, y_{<t})$。两种训练都使用参考解，但前者学习参考轨迹上的动作，后者学习学生访问状态上的恢复策略。
+设参考解前缀为 $c_{<t}$，学生前缀为 $y_{<t}$。SFT 优化的是 $-\log\pi_\theta(c_t\mid x,c_{<t})$；当学生部署时生成了 $y_{<t}\neq c_{<t}$，这个目标没有说明如何从当前位置继续。OPSD 则直接比较 $q_t(\cdot\mid x,c,y_{<t})$ 与 $p_t(\cdot\mid x,y_{<t})$。两种训练都使用参考解，但前者学习参考轨迹上的动作，后者学习学生访问状态上的恢复策略。
 
 这也解释了为什么 OPSD 仍需要一个不太弱的起点。若学生 rollout 大部分无法解析，或错误前缀已经丢失了求解所需的信息，参考解条件化教师也未必能够恢复。参考解还可能采用另一套符号、跳过中间步骤，甚至本身有误。训练前应固定一批学生轨迹，比较教师加入参考解前后的正确续写率、关键 token margin 与续写最终成功率；只有条件视图确实更强，蒸馏才有信息可传。
 
@@ -52,4 +52,4 @@ OPSD 的教师没有新增参数知识。它利用的是模型看到参考解后
 
 一次更新至少要保存学生 rollout 的权重版本、参考解版本、教师参数版本、学生可见 token mask、教师可见 token mask，以及裁剪统计。最危险的错误是学生 mask 意外放开参考解：训练 loss 会快速下降，部署时移除参考解便立刻失效。第二类错误是教师沿参考解前缀评分，而没有沿学生前缀评分；这样训练又退回了 off-policy 蒸馏。第三类错误是 rollout 长期复用，名义上的 on-policy 数据已经落后于当前学生。
 
-原论文：[Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models](https://arxiv. org/abs/2601. 18734)。横向比较见[OPSD、SDFT 与 SDPO](01-三种自蒸馏. md)。
+原论文：[Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models](https://arxiv.org/abs/2601.18734)。横向比较见[OPSD、SDFT 与 SDPO](01-三种自蒸馏.md)。

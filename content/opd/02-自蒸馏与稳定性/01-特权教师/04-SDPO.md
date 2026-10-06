@@ -8,11 +8,11 @@ excerpt: "从环境文本反馈、条件化自教师与逐 token 蒸馏出发，
 
 代码、工具调用和科学推理环境往往不只返回 0 或 1。编译器会给报错位置，单元测试会指出失败用例，工具会返回结构化错误，评测器也可能说明约束在哪里被破坏。传统 RLVR 通常把这些信息压成一个序列级奖励，模型知道「这次失败了」，却看不见哪一步导致失败。**Self-Distillation Policy Optimization（SDPO）** 保留文本反馈：当前模型在额外读到反馈后充当教师，再把反馈条件下的下一 token 分布蒸馏回不带反馈的策略。
 
-设学生生成 $y$ 后，环境返回反馈 $f(x, y)$。教师与学生分别为
+设学生生成 $y$ 后，环境返回反馈 $f(x,y)$。教师与学生分别为
 
 $$
-q_t(v)=\pi_{\bar\theta}(v\mid x, y_{<t}, f),\qquad
-p_t(v)=\pi_\theta(v\mid x, y_{<t}).
+q_t(v)=\pi_{\bar\theta}(v\mid x,y_{<t},f),\qquad
+p_t(v)=\pi_\theta(v\mid x,y_{<t}).
 $$
 
 教师看到「测试 3 越界」以后，可能从数组边界开始改变续写；学生没有在部署输入中看到这条反馈，却可以通过分布损失吸收教师的回顾判断。**反馈先提升同一个模型的条件推理，再由蒸馏把序列级结果展开成 token 级训练信号。**
@@ -45,4 +45,4 @@ SDPO 可以使用 reverse KL、JSD 或压缩后的 top-$k$ 分布。reverse KL �
 
 每条训练记录至少要保留原问题、学生 rollout、环境原始反馈、反馈解析结果、作为教师条件的最终文本、同组成功样本、师生版本与损失粒度。反馈必须只进入教师输入；学生意外读取反馈会把训练变成带反馈策略，部署时条件不一致。成功样本若直接作为学生标签，方法则变成筛选式 SFT，不能再把收益归因于学生状态上的自蒸馏。
 
-原论文：[Reinforcement Learning via Self-Distillation](https://arxiv. org/abs/2601. 20802)，[官方实现](https://github. com/lasgroup/SDPO)。横向比较见[OPSD、SDFT 与 SDPO](01-三种自蒸馏. md)。
+原论文：[Reinforcement Learning via Self-Distillation](https://arxiv.org/abs/2601.20802)，[官方实现](https://github.com/lasgroup/SDPO)。横向比较见[OPSD、SDFT 与 SDPO](01-三种自蒸馏.md)。

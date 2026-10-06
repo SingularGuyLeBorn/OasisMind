@@ -11,14 +11,14 @@ excerpt: "解释 SDFT 如何把示范触发的上下文能力蒸馏到学生自�
 普通 SFT 在示范前缀 $d_{<t}$ 上优化
 
 $$
-\mathcal L_{\mathrm{SFT}}=-\sum_t\log\pi_\theta(d_t\mid x, d_{<t}).
+\mathcal L_{\mathrm{SFT}}=-\sum_t\log\pi_\theta(d_t\mid x,d_{<t}).
 $$
 
 SDFT 先采样 $y\sim\pi_{\theta_k}(\cdot\mid x)$，再构造
 
 $$
-q_t(v)=\pi_{\bar\theta}(v\mid x, d, y_{<t}),\qquad
-p_t(v)=\pi_\theta(v\mid x, y_{<t}).
+q_t(v)=\pi_{\bar\theta}(v\mid x,d,y_{<t}),\qquad
+p_t(v)=\pi_\theta(v\mid x,y_{<t}).
 $$
 
 学生学习的是 $q_t$ 在自身状态 $y_{<t}$ 上的行为。它仍从示范获得任务知识，却不必把训练状态锁在专家轨迹上。新任务的监督因此更接近部署时会访问的分布，旧行为也少受离线示范前缀的强行牵引。
@@ -53,4 +53,4 @@ OPSD 通常有逐题参考推理，目标是在同一道题的错误前缀上恢
 
 实现时要保存示范集合及顺序、学生 rollout 版本、EMA 教师版本和学生/教师两套 attention mask。部署评测必须移除示范，否则测到的仍是 in-context learning，而不是已经蒸馏进参数的能力。
 
-原论文：[Self-Distillation Enables Continual Learning](https://arxiv. org/abs/2601. 19897)。横向比较见[OPSD、SDFT 与 SDPO](01-三种自蒸馏. md)。
+原论文：[Self-Distillation Enables Continual Learning](https://arxiv.org/abs/2601.19897)。横向比较见[OPSD、SDFT 与 SDPO](01-三种自蒸馏.md)。

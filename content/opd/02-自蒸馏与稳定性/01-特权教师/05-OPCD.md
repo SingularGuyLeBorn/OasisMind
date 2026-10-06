@@ -12,8 +12,8 @@ excerpt: "解释 OPCD 如何在学生轨迹上使用条件化教师，把历史�
 
 $$
 y\sim\pi_{\theta_k}(\cdot\mid x),\qquad
-q_t=\pi_T(\cdot\mid c, x, y_{<t}),\qquad
-p_t=\pi_\theta(\cdot\mid x, y_{<t}),
+q_t=\pi_T(\cdot\mid c,x,y_{<t}),\qquad
+p_t=\pi_\theta(\cdot\mid x,y_{<t}),
 $$
 
 并在学生状态上最小化面向 $q_t$ 的 reverse-KL 类目标。训练完成后，学生不再需要携带 $c$。这件事的价值很直接：长系统提示词会占上下文与 Prefill 成本，历史经验会不断增长；若其中稳定、可迁移的部分能进入参数，推理时便可以省掉重复输入。
@@ -42,4 +42,4 @@ OPCD 与 OPSD 都把额外文本放进教师上下文。OPSD 的参考解通常�
 
 四者可以共用学生 rollout 与教师评分基础设施，却不应混成一个无来源标记的上下文框。训练记录必须标明条件来自参考解、专家示范、历史经验、系统提示词还是即时反馈。来源不同，可信度、更新频率与泄漏风险都不同。
 
-原论文：[On-Policy Context Distillation for Language Models](https://arxiv. org/abs/2602. 12275)。
+原论文：[On-Policy Context Distillation for Language Models](https://arxiv.org/abs/2602.12275)。
