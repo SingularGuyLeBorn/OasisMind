@@ -1,10 +1,10 @@
 ---
-title: "On-Policy Distillation"
+title: "OPD · On-Policy Distillation · 在线策略蒸馏"
 published: true
 tags: ["OPD", "On-Policy Distillation", "知识蒸馏", "后训练"]
 excerpt: "从学生访问的状态分布出发, 系统整理 On-Policy Distillation 的理论边界、目标函数、训练循环与工程代价."
 ---
-# On-Policy Distillation
+# OPD · On-Policy Distillation · 在线策略蒸馏
 
 2025 年下半年, Thinking Machines Lab 的一篇文章引爆了整个世界, 让 OPD 突然成为研究热点, 也迅速进入各家大模型训练 pipeline. Kevin Lu 与 Thinking Machines Lab 在 2025 年 10 月 27 日发布了官方技术文章 [On-Policy Distillation](https://thinkingmachines.ai/blog/on-policy-distillation/), 并开放了配套的 [Tinker distillation recipe](https://tinker-docs.thinkingmachines.ai/cookbook/recipes/distillation/). 此前, GKD 已在 2023 年提出让学生生成轨迹、教师在这些轨迹上给反馈, 论文于 ICLR 2024 发表;Qwen3 技术报告在 2025 年又给出了强到弱蒸馏的训练结果. TML 把这些目标接入现成的 RL 训练循环, 给出代码、模型组合和成本对照, 让更多团队可以直接复现.
 

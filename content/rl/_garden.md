@@ -1,9 +1,9 @@
 ---
-title: "RL · 强化学习"
+title: "RL · Reinforcement Learning · 强化学习"
 description: 从 MDP 与策略梯度到 RLHF 与 RLVR：算法推导、偏好优化、可验证奖励与选型
 published: true
 ---
-# RL · 强化学习
+# RL · Reinforcement Learning · 强化学习
 
 强化学习在大模型领域很容易被学成一串缩写. MDP, Q-learning, REINFORCE, Actor-Critic, TRPO, PPO 还没连起来, RLHF, DPO, GRPO 和 RLVR 又接着出现. 如果只从大模型后训练开始, PPO 的 ratio, advantage 和 KL 约束像是凭空写进损失函数; 如果只学经典控制, 又很难理解为什么生成模型要按 token 计算 log probability, 按整段回答给奖励, 还要处理一个 prompt 下多条采样之间的相对比较.
 

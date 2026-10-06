@@ -1,9 +1,9 @@
 ---
-title: "Long-Horizon · 长任务智能体"
+title: "Long-Horizon Agents · 长任务智能体"
 description: 多步骤真实任务中的状态一致、自我评估与跨轮记忆
 published: true
 ---
-# Long-Horizon · 长任务智能体
+# Long-Horizon Agents · 长任务智能体
 
 2025 年 2 月 24 日, Anthropic 发布 [Claude 3.7 Sonnet](https://www.anthropic.com/news/claude-3-7-sonnet), 同时把 Claude Code 作为研究预览推出; 2025 年 7 月, Moonshot AI 发布以 agentic intelligence 为重点的 [Kimi K2](https://github.com/MoonshotAI/Kimi-K2). 日期和产品说明是可核验事实. 从那段时间开始, 我第一次明显觉得模型进入了「聪明, 基本可用」的阶段, 这是我的主观分界, 不是公认的技术标准. 它也不意味着此前模型不能调用工具, 或此后的系统已经可靠.
 

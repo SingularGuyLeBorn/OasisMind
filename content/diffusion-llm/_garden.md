@@ -1,9 +1,9 @@
 ---
-title: "Diffusion LLM · 扩散语言模型"
+title: "Diffusion Language Models · 扩散语言模型"
 description: 从动机、机制到模型与对照：把 token 上的扩散讲到能独立读论文
 published: true
 ---
-# Diffusion LLM · 扩散语言模型
+# Diffusion Language Models · 扩散语言模型
 
 当代语言模型主要采用自回归生成：训练时预测下一个 token，推理时按从左到右的条件链逐项提交。这个方案拥有成熟的训练、缓存和部署体系，也是理解扩散语言模型的参照。扩散路线重新定义生成过程：模型从带噪或带掩码的序列出发，在多轮网络计算中同时修订多个位置。它改变了概率分解、注意力可见性和推理状态，也把并行揭开、答案修订与约束注入带进同一研究问题。
 

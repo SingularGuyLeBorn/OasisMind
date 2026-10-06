@@ -1,9 +1,9 @@
 ---
-title: "Sparse Attention · 稀疏注意力"
+title: "Sparse Attention · 稀疏注意力机制"
 description: 从复杂度、拓扑、动态路由到内核实现，理解长上下文注意力为何以及怎样变稀疏
 published: true
 ---
-# Sparse Attention · 稀疏注意力
+# Sparse Attention · 稀疏注意力机制
 
 第一次算 MHA 的计算量和 KV 读取量，我的反应很朴素：**他娘的这玩意也太贵了吧。** 2017 年的 Transformer 让每层每个 head 都拿自己的 Q、K、V，当前 query 与所有历史 key 做点积，再用 softmax 权重加权所有 value。长度为 $n$，分数配对就是 $n^2$；Decode 虽然每步只有一个新 query，却要把每层历史 K/V 再读一遍。Prompt 从 4K 拉到 128K，长度只多 32 倍，完整分数配对多 1024 倍。
 
