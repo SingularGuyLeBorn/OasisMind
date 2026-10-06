@@ -288,7 +288,7 @@ SAPO 用于训练 Qwen3-VL 系列, 论文称在不同尺寸, MoE 和稠密架构
 
 选择上可以按问题来源判断. 日志里大量 token 因出带失去梯度, 又不想改优势或采样: SAPO 只换门函数, 改动最小. MoE 上比率波动大, 想彻底避开 token 级比率: 看 [04 GSPO](../04-GSPO/04-GSPO.md). 想保住出带 token 的梯度, 同时让系数有明确上界并冻结权重: 看 [03 CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md). 需要价值网络和 GAE: 回到 [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md).
 
-## 参考文献
+**参考文献**
 
 1. Gao, C., Zheng, C., Chen, X.-H., Dang, K., Liu, S., Yu, B., Yang, A., Bai, S., Zhou, J., & Lin, J. (2025). *Soft Adaptive Policy Optimization*. arXiv:2511.20347. https://arxiv.org/abs/2511.20347
 2. Zheng, C., Liu, S., Li, M., Chen, X.-H., Yu, B., Gao, C., Dang, K., Liu, Y., Men, R., Yang, A., et al. (2025). *Group Sequence Policy Optimization*. arXiv:2507.18071. https://arxiv.org/abs/2507.18071

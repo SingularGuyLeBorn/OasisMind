@@ -191,9 +191,9 @@ Table 7 回答 RL 池不平稳的问题. RL 池混合了早期较弱的检查点
 
 论文自己列了三条. 第一, 方法假设有一个带完整观测的教师轨迹池; 实验里它来自教师的 RL rollout, 不花额外成本, 但池的覆盖和质量限定了学生能学到什么. 第二, 可靠性代理在一阶近似下退化成步数衰减, 它衡量的是前缀有多深, 不直接衡量某条前缀离「学生相关历史与教师可靠支撑的重叠区」有多远; 学出来的或依赖数据的可靠性估计可能更好. 第三, 式 (4) 的教师可靠性项是用教师支撑当代理的, 更紧, 能直接估计的可靠性度量和随之在线调整的权重留给后续工作.
 
-从实验设定还能读出几条边界. 按式 (9), 师生差距越大 $\kappa$ 应当越小, 但实验在所有任务和配对上固定 $\kappa=0.6$, 没有按差距调; 论文把随差距自适应的调度列为扩展方向. 搜索环境的教师和学生同属 Qwen3-4B 一族, 没有测大差距的搜索配对, 「搜索上持平」和「搜索属于可靠教师 regime」是同一组数据给出的, 没有独立验证. ReOPD 在个别基准上明显低于 OPD (Bamboogle 低 6.4, 多环境下 AMC23 低 4.2), 这两个基准题量小 (125 题和 40 题), 论文没有讨论. 最后, 学生只在被监督的一步 on-policy, 推理阶段学生自己走完整条轨迹, 后期步的历史分布和训练时的教师前缀之间的差距, 正是步数衰减选择少训练的部分.
+从实验设定还能读出几条边界. 按式 (9), 师生差距越大 $\kappa$ 应当越小, 但实验在所有任务和配对上固定 $\kappa=0.6$, 没有按差距调; 论文把随差距自适应的调度列为扩展方向. 搜索环境的教师和学生同属 Qwen3-4B 一族, 没有测大差距的搜索配对, 「搜索上持平」和「搜索属于可靠教师 regime」是同一组数据给出的, 没有独立验证. ReOPD 在个别基准上明显低于 OPD (Bamboogle 低 6.4, 多环境下 AMC23 低 4.2), 这两个基准题量小 (125 题和 40 题), 论文没有讨论. 最终, 学生只在被监督的一步 on-policy, 推理阶段学生自己走完整条轨迹, 后期步的历史分布和训练时的教师前缀之间的差距, 正是步数衰减选择少训练的部分.
 
-## 参考文献
+**参考文献**
 
 1. Liao, B., Dong, H., Monz, C., Xu, X., Dong, L., & Wei, F. (2026). [Multi-Turn On-Policy Distillation with Prefix Replay](https://arxiv.org/abs/2607.04763). arXiv:2607.04763. [arXiv HTML](https://arxiv.org/html/2607.04763). 代码: [BaohaoLiao/ReOPD](https://github.com/BaohaoLiao/ReOPD).
 2. Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Ramos, S., Geist, M., & Bachem, O. (2024). [On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes](https://arxiv.org/abs/2306.13649). *ICLR*.

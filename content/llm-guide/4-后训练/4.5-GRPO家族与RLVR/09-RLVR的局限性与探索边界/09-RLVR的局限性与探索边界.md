@@ -159,7 +159,7 @@ $$
 
 加 KL 的出发点是熵坍缩. 论文试过调高 rollout 温度, 发现这只能推迟熵坍缩, 熵仍随训练稳步下降; 高温仍然保留, 因为它抬高了初始熵. DAPO 的解耦 clip 和调温都能减缓熵下降, 论文认为显式的 KL 惩罚更强, 也更稳定.
 
-训练设置: 每题 16 条 rollout, 上下文 8096, 温度 1.2, batch 256, mini-batch 64 (每步 4 次更新), 学习率 $2\times10^{-6}$ 恒定; 4 个节点各 8 张 H100, 约 16k GPU 小时; 136K 道题, 覆盖数学, 代码, STEM, 逻辑谜题, 指令遵循五个领域; 训练 2000 步以上. 训练分 8 段: 第 1 段四个任务, 8k 上下文; 第 2 段重置; 第 3 段加入指令遵循数据 (第 1 段没有用这类数据, 因为当时还拿不到); 第 4, 5 段对未正确结束的回答做奖励塑形; 第 6, 7 段 rollout 从 16 增到 32; 第 8 段上下文 16k, rollout 回到 16, 最后约 200 步用 16k.
+训练设置: 每题 16 条 rollout, 上下文 8096, 温度 1.2, batch 256, mini-batch 64 (每步 4 次更新), 学习率 $2\times10^{-6}$ 恒定; 4 个节点各 8 张 H100, 约 16k GPU 小时; 136K 道题, 覆盖数学, 代码, STEM, 逻辑谜题, 指令遵循五个领域; 训练 2000 步以上. 训练分 8 段: 第 1 段四个任务, 8k 上下文; 第 2 段重置; 第 3 段加入指令遵循数据 (第 1 段没有用这类数据, 因为当时还拿不到); 第 4, 5 段对未正确结束的回答做奖励塑形; 第 6, 7 段 rollout 从 16 增到 32; 第 8 段上下文 16k, rollout 回到 16, 最终约 200 步用 16k.
 
 结果相对起点: 摘要报 pass@1 数学 +14.7, 代码 +13.9, 逻辑谜题 +54.8, STEM +25.1, 指令遵循 +18.1; §3 给的是另一组, 数学 +15.7, 代码 +14.4, STEM +25.9, 指令遵循 +22.0, 逻辑谜题 +54.8. Figure 1 左图显示 pass@1 和 pass@16 都随训练上升, 中图显示 ProRL 模型回答的 creativity index 更高. Figure 8 是各段训练的 KL 曲线, 每次重置后参考策略就等于当时的策略, 所以 KL 从 0 重新起算, 再随训练逐渐变大. Table 1 数学平均从 44.45 到 60.14 (DeepScaleR 54.54, 7B 模型 63.19); Table 2 代码平均从 23.08 到 37.49 (DeepCoder 30.96). Table 3:
 
@@ -208,7 +208,7 @@ LUFFY (arXiv:2504.14945) 报告了纯 on-policy 训练的两种失败: on-policy
 
 数学基准上还要防止猜答案. 代码的单元测试和去掉选择题的视觉基准受这一问题影响小; 数学上需要人工检查低正确率题的 CoT, 或像 Yue 等对 AIME24 那样先去掉不写 CoT 也能猜中的题. ProRL 的负相关结果提示, 在起点 pass@128 已经很高的任务上延长训练, 覆盖很难再扩大; 起点接近 0 的任务才是检验覆盖能否扩大的地方.
 
-## 参考文献
+**参考文献**
 
 1. Yue, Y., et al. (2025). [Does Reinforcement Learning Really Incentivize Reasoning Capacity in LLMs Beyond the Base Model?](https://arxiv.org/abs/2504.13837). 项目页 <https://limit-of-RLVR.github.io>.
 2. Shao, Z., et al. (2024). [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300).

@@ -208,7 +208,7 @@ NSA-R 在两个上限下都更高, 分别高 0.075 和 0.054. AIME 24 只有 30 
 
 训练 (Figure 6): 上下文越长加速越大, 64K 时前向 9.0×, 反向 6.0×. 论文归因于两点: 按块访存让合并读取能用满 Tensor Core; kernel 的循环调度消掉了冗余 KV 传输.
 
-解码 (Table 4): 解码受访存限制, 时延和 KV 读取量近似成正比. 每步最多读 $\lfloor(s-l)/d\rfloor$ 个压缩 token, $nl'$ 个选中 token 和 $w$ 个邻近 token, $s$ 是缓存长度. 表 4 的 4×, 6.4×, 9.1×, 11.6× 是按读取量之比算出的 "Expected Speedup", 也就是 2.5 节表格最后一列. 论文没有给出解码的实际时延曲线.
+解码 (Table 4): 解码受访存限制, 时延和 KV 读取量近似成正比. 每步最多读 $\lfloor(s-l)/d\rfloor$ 个压缩 token, $nl'$ 个选中 token 和 $w$ 个邻近 token, $s$ 是缓存长度. 表 4 的 4×, 6.4×, 9.1×, 11.6× 是按读取量之比算出的 "Expected Speedup", 也就是 2.5 节表格最终一列. 论文没有给出解码的实际时延曲线.
 
 ### 3.6 试过但没用的方案
 
@@ -256,7 +256,7 @@ NSA-R 在两个上限下都更高, 分别高 0.075 和 0.054. AIME 24 只有 30 
 
 **两路分支有先后依赖.** 选择分支的块索引来自压缩分支的 softmax 分数, 必须先算完压缩注意力才能选块. 按论文描述推算, 这两条分支在一层内不能完全并行, kernel 调度要把这段依赖算进去. 论文没有单独报告选块步骤的耗时.
 
-## 参考文献
+**参考文献**
 
 1. Yuan, J., Gao, H., Dai, D., et al. (2025). [Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention](https://arxiv.org/abs/2502.11089). arXiv:2502.11089. 式 (1)–(12), Table 1–4, Figure 4–8.
 2. Lu, E., Jiang, Z., Liu, J., et al. (2025). [MoBA: Mixture of Block Attention for Long-Context LLMs](https://arxiv.org/abs/2502.13189). arXiv:2502.13189.

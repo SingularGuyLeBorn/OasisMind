@@ -270,7 +270,7 @@ Yue 等 (arXiv:2504.13837) 在 VeRL 里重新实现了 PPO, GRPO, Reinforce++, R
 
 **规则验证器**: 数学和代码用规则判分时, 贪心基线仍然合法, 因为规则判分也是轨迹级标量. 此时基线的含义变成「贪心解码能否通过验证」, 取值只有 0 和 1. 组内 $z$-score, 过程监督, 序列级 clip 这些做法分别见 [4.5 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 与 [4.5 GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md); ReMax 没有组, 没有标准差, 没有 clip.
 
-## 参考文献
+**参考文献**
 
 1. Li, Z., Xu, T., Zhang, Y., Lin, Z., Yu, Y., Sun, R., & Luo, Z.-Q. (2024). [ReMax: A Simple, Effective, and Efficient Reinforcement Learning Method for Aligning Large Language Models](https://arxiv.org/abs/2310.10505). *ICML*.
 2. Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. *Machine Learning*.

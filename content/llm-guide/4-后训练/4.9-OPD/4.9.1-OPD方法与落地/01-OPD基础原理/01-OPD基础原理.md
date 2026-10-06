@@ -2,7 +2,7 @@
 title: "01 · OPD 基础原理: 学生前缀上的逐 token 蒸馏"
 published: true
 tags: ["OPD", "On-Policy Distillation", "Reverse KL", "MiniLLM", "GKD", "Self-Distillation", "后训练"]
-excerpt: "OPD 让学生自己采样轨迹, 教师只在学生前缀上给逐 token 的分布监督. 本文从 MiniLLM 和 GKD 的目标函数讲起, 推到单样本估计与零折扣的 RL 读法, 再用 Qwen3 Table 21 看算力对比, 最后把 OPSD, SDFT, SDPO 收进同一个自蒸馏框架."
+excerpt: "OPD 让学生自己采样轨迹, 教师只在学生前缀上给逐 token 的分布监督. 本文从 MiniLLM 和 GKD 的目标函数讲起, 推到单样本估计与零折扣的 RL 读法, 再用 Qwen3 Table 21 看算力对比, 最终把 OPSD, SDFT, SDPO 收进同一个自蒸馏框架."
 ---
 # OPD 基础原理: 学生前缀上的逐 token 蒸馏
 
@@ -32,7 +32,7 @@ GKD 第 3 节列出的几种做法, 加上 RL, 可以按 「前缀从哪来」 �
 | RL (如 GRPO) | 学生采样 | 整条轨迹共享的标量优势 | 奖励函数或验证器 |
 | OPD | 学生采样 | 教师的下一 token 分布或其单样本估计 | 教师前向 |
 
-只有最后两行的前缀分布与推理一致; 只有后三行的监督落到 token 级的分布上. OPD 同时满足两条. 代价是每一步都要让教师在学生的新样本上前向一次, 教师样本无法提前离线生成.
+只有最终两行的前缀分布与推理一致; 只有后三行的监督落到 token 级的分布上. OPD 同时满足两条. 代价是每一步都要让教师在学生的新样本上前向一次, 教师样本无法提前离线生成.
 
 还有一点区别影响学生能学到什么. 前三行的目标都是让学生复现某个固定的输出集合, 学生容量不够时, 只能在这些输出之间折中. OPD 和 RL 允许学生生成自己的答案, 教师只对学生实际走到的地方提出修改. MiniLLM 把这一点概括为: 学生不必记住教师的所有样本, 只需在自身容量内生成教师偏好的样本.
 
@@ -245,7 +245,7 @@ SDPO 中 「组内成功解」 的作用值得单独说明. RLVR 环境只返回
 
 **理论视角.** 学生前缀为什么重要, 可以从状态分布的角度推导: on-policy 训练让损失在学生自己的状态分布上取期望, 与推理时一致. 这一线索的展开见 [4.9.3 状态分布视角](../../4.9.3-状态分布视角/4.9.3-状态分布视角.md); 文献的系统整理见 [4.9.2 综述](../../4.9.2-OPD综述/01-Song-Zheng综述/01-Song-Zheng综述.md).
 
-## 参考文献
+**参考文献**
 
 1. Song, Zheng. *A Survey of On-Policy Distillation for Large Language Models*. arXiv:2604.00626. [链接](https://arxiv.org/abs/2604.00626)
 2. Gu, Dong, Wei, Huang. *MiniLLM: Knowledge Distillation of Large Language Models*. arXiv:2306.08543. [链接](https://arxiv.org/abs/2306.08543)

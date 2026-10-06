@@ -265,7 +265,7 @@ $\log Z_t$ 与 MaxVio 都是可以直接记录的训练指标. $\log Z_t$ 的绝
 
 ---
 
-## 参考文献
+**参考文献**
 
 1. Lepikhin, D., et al. (2020). [GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding](https://arxiv.org/abs/2006.16668). 第 2.2 节容量, 分组派遣, 辅助损失与随机派遣.
 2. Fedus, W., Zoph, B., & Shazeer, N. (2021). [Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity](https://arxiv.org/abs/2101.03961). 第 2.2 节, Table 1–3, 附录 No-Token-Left-Behind.

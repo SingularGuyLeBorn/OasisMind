@@ -20,13 +20,13 @@ $$
 |\mathrm{KV}|=2\times L_{\mathrm{layer}}\times T\times H\times d_{\mathrm{head}}\times 2=2\times32\times32\mathrm{K}\times32\times128\times2\ \mathrm{B}=16\ \mathrm{GB}. \tag{1}
 $$
 
-其中第一个 2 表示 K 和 V, 最后一个 2 是 FP16 的字节数. 论文引言中, 在 RTX 4090 上用 FP16 的 FlashInfer 实现, 读一遍这 16GB 至少需要 11 毫秒, 占推理延迟的 50% 以上; 第 2.1 节写这次加载占解码单步时间的 53%. 优化自注意力的数据搬运, 是长上下文推理效率的关键.
+其中第一个 2 表示 K 和 V, 最终一个 2 是 FP16 的字节数. 论文引言中, 在 RTX 4090 上用 FP16 的 FlashInfer 实现, 读一遍这 16GB 至少需要 11 毫秒, 占推理延迟的 50% 以上; 第 2.1 节写这次加载占解码单步时间的 53%. 优化自注意力的数据搬运, 是长上下文推理效率的关键.
 
 ### 1.2 注意力稀疏, 关键 token 随 query 变化
 
 之前的工作 (H2O, FastGen) 已经表明, 少数关键 token 就能积累足够的注意力分数. 论文在 LongChat-7B 上测量每层的稀疏度 (Figure 3): 在保证 PG-19 困惑度增加不超过 0.01 的前提下, 看每层能去掉多少 KV. 前两层的稀疏度低于 10%, 其余各层都高于 90%. 也就是说除前两层外, 不到 10% 的 token 就能达到相近的精度. 如果能估计出哪些 token 关键, 只对它们做注意力, 就能大幅减少数据搬运.
 
-问题在于 token 的关键程度是动态的, 高度依赖当前的 query. 论文的例子 (Figure 2): prompt 是「A is B. C is D. A is」, 在 Llama-2-7b 第 16 层的某个头中, 最后一个「is」要输出答案「B」, 所以「B」对它是关键的, 注意力分数很高. 但在此之前, 「B」对任何 query 都不关键, 注意力很低. 比如 query 是「D」时, 「B」的分数很低.
+问题在于 token 的关键程度是动态的, 高度依赖当前的 query. 论文的例子 (Figure 2): prompt 是「A is B. C is D. A is」, 在 Llama-2-7b 第 16 层的某个头中, 最终一个「is」要输出答案「B」, 所以「B」对它是关键的, 注意力分数很高. 但在此之前, 「B」对任何 query 都不关键, 注意力很低. 比如 query 是「D」时, 「B」的分数很低.
 
 论文用 Top-10 召回率量化这种现象 (Figure 4): 在 LongChat-7b-v1.5-32k 上做 10K 长度的 passkey 检索, 每个解码步统计各方法选中的 token 覆盖了完整注意力中前 10 名的多少. 完整 cache 的召回率是 100%. H2O 按历史信息剪枝, 关键 token 在之前的步骤中已被剪掉, 召回率很低. Quest 基于当前 query 估计, 召回率接近完整注意力.
 
@@ -43,7 +43,7 @@ $$
 
 这些方法基于历史信息或当前状态决定丢掉哪些 KV, 但被丢掉的 token 可能对未来的 token 很重要, 造成信息丢失. **SparQ** 通过通道剪枝计算近似注意力分数, 据此选择重要 token, 不丢弃 KV. 论文认为它在长依赖任务上没有充分验证, 而通道级的稀疏也难以转化为实际加速.
 
-用 1.2 节的「A is B. C is D. A is」看三种驱逐方法会怎样. 假设 cache 已满, 处理到「D」时需要丢掉一个 token. H2O 看累计分数, 「B」此前从未得到高注意力, 累计值低, 是候选; TOVA 看当前 query「D」的注意力, 「B」的分数很低, 也是候选; StreamingLLM 只保留开头和最近的 token, 如果这句话前面还有很长的文本, 「B」落在窗口外, 同样被丢. 三种方法的依据不同, 却都可能在最后一个「is」到来之前丢掉「B」. 而且一旦丢了, 最后一步即使 query 需要它, 也没有任何办法拿回来.
+用 1.2 节的「A is B. C is D. A is」看三种驱逐方法会怎样. 假设 cache 已满, 处理到「D」时需要丢掉一个 token. H2O 看累计分数, 「B」此前从未得到高注意力, 累计值低, 是候选; TOVA 看当前 query「D」的注意力, 「B」的分数很低, 也是候选; StreamingLLM 只保留开头和最近的 token, 如果这句话前面还有很长的文本, 「B」落在窗口外, 同样被丢. 三种方法的依据不同, 却都可能在最终一个「is」到来之前丢掉「B」. 而且一旦丢了, 最终一步即使 query 需要它, 也没有任何办法拿回来.
 
 Quest 的选择是保留全部 KV cache, 根据当前 query 选择其中一部分参与注意力. 它不减少显存占用, 减少的是每步从显存读入计算单元的数据量.
 
@@ -245,7 +245,7 @@ SparQ 和 Quest 同样不驱逐, 同样按当前 query 选择, 区别在近似�
 
 **和基线的效率比较是定性的.** 基线没有 kernel 实现, 论文用 FlashInfer 的延迟估计它们, 忽略了它们自身的运行时开销.
 
-## 参考文献
+**参考文献**
 
 1. Tang, J., Zhao, Y., Zhu, K., Xiao, G., Kasikci, B., Han, S. (2024). [Quest: Query-Aware Sparsity for Efficient Long-Context LLM Inference](https://arxiv.org/abs/2406.10774). ICML 2024, PMLR 235:47901–47911. arXiv:2406.10774. 第 3–4 节, Algorithm 1, Table 1, Figure 2–11. 代码: [mit-han-lab/Quest](https://github.com/mit-han-lab/Quest).
 2. Zhang, Z., Sheng, Y., Zhou, T., et al. (2023). [H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models](https://arxiv.org/abs/2306.14048). NeurIPS 2023.

@@ -330,7 +330,7 @@ Table 1 三档底座:
 | GRPO-7B (R1-Distill) | 43.3 | 67.5 | 89.0 | 39.7 | 56.7 | 59.3 |
 | GMPO-7B (R1-Distill) | 46.6 | 78.3 | 91.4 | 37.9 | 62.5 | 63.4 |
 
-摘要里的「平均 Pass@1 最多高 4.1%」指最后两行. 拆开看, AMC $+10.8$, OlympiadBench $+5.8$, AIME24 $+3.3$, MATH500 $+2.4$, Minerva $-1.8$. 均分领先, 五卷里有一卷落后. 1.5B 的 AIME24 也是 20.0 对 23.3, 均分仍高 1.4.
+摘要里的「平均 Pass@1 最多高 4.1%」指最终两行. 拆开看, AMC $+10.8$, OlympiadBench $+5.8$, AIME24 $+3.3$, MATH500 $+2.4$, Minerva $-1.8$. 均分领先, 五卷里有一卷落后. 1.5B 的 AIME24 也是 20.0 对 23.3, 均分仍高 1.4.
 
 把分差换算成题数更容易判断. AIME24 一题 3.33 分, R1-Distill 两行的 46.6 对 43.3 是一道题; AMC 一题约 1.2 分, $+10.8$ 约九道题; OlympiadBench 一题约 0.15 分, $+5.8$ 约 39 道题. 温度为 0, 每题只答一次, 论文没有报告多种子方差, 所以 AIME24 上一道题的差别不宜单独解读, AMC 和 OlympiadBench 上的差距更有分量. 论文正文还给了对 Dr. GRPO 的差值: 1.5B $+1.8$, 7B $+1.3$, R1-Distill $+1.9$, 比对 GRPO 的差距小.
 
@@ -384,7 +384,7 @@ Figure 4 画了熵, KL, 梯度范数和验证分. GMPO 的平均 token 熵在 MA
 
 GxPO 家族其他成员的对照见 [4.5 GRPO 家族与 RLVR](../4.5-GRPO家族与RLVR.md).
 
-## 参考文献
+**参考文献**
 
 1. Zhao, Y., Liu, Y., Liu, J., Chen, J., Wu, X., Hao, Y., Lv, T., Huang, S., Cui, L., Ye, Q., Wan, F., & Wei, F. (2025). *Geometric-Mean Policy Optimization*. arXiv:2507.20673. https://arxiv.org/abs/2507.20673
 2. Shao, Z., et al. (2024). *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300. https://arxiv.org/abs/2402.03300

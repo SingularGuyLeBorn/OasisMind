@@ -34,7 +34,7 @@ FastGen 不研究某一种驱逐策略, 而是组合多种策略, 让每个头�
 
 以恢复率 0.95 做画像, 统计第 1, 10, 20, ..., 80 层的画像结果分布 (Figure 3). 不同层的头结构差别很大:
 
-- 最前面和最后面的层, 有更多的头被分配到完整 cache, 说明这些层的头倾向于关注所有 token.
+- 最前面和最终面的层, 有更多的头被分配到完整 cache, 说明这些层的头倾向于关注所有 token.
 - 中间层大多数头主要关注特殊 token, 也就是特殊 token 上的累计注意力分数超过 0.95.
 
 中间层大量头集中在特殊 token 上, 和 [StreamingLLM](../01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md) 中的 attention sink 是相近的现象: 句首 token 往往就是特殊 token, 很多头把多余的注意力放在那里. FastGen 的特殊 token 策略可以看作对这类头的极端压缩, 只留 sink, 不留窗口. 区别在于 StreamingLLM 对所有头都保留 sink 加窗口, FastGen 只对确实只看 sink 的头这样做, 其他头另选策略.
@@ -222,7 +222,7 @@ FastGen 的基线 $\mathbf{C}_{\mathrm{local+frequent}}$ 就是 H2O 和 ScissorH
 
 **压缩比例和恢复率之间没有闭式关系.** 用户只能通过 $T$ 间接控制显存. 同样的 $T$ 在不同模型, 不同输入上压缩比例不同, 不能预先保证显存上限, 这和按固定预算压缩的方法 (SnapKV, PyramidKV) 不同.
 
-## 参考文献
+**参考文献**
 
 1. Ge, S., Zhang, Y., Liu, L., Zhang, M., Han, J., Gao, J. (2024). [Model Tells You What to Discard: Adaptive KV Cache Compression for LLMs](https://arxiv.org/abs/2310.01801). ICLR 2024. arXiv:2310.01801. 式 (1)(2), Algorithm 1–2, Figure 1–6, Table 1–5, 附录 A. 代码: [machilusZ/FastGen](https://github.com/machilusZ/FastGen).
 2. Zhang, Z., Sheng, Y., Zhou, T., et al. (2023). [H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models](https://arxiv.org/abs/2306.14048). NeurIPS 2023.

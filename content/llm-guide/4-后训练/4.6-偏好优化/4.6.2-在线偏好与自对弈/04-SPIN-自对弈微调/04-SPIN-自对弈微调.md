@@ -4,13 +4,13 @@ published: true
 tags: ["SPIN", "自对弈", "DPO", "SFT", "无奖励模型"]
 excerpt: "SPIN (Self-Play fIne-tuNing) 从已经 SFT 过的模型继续训练, 不新增人工标注: 主玩家区分人写的 y 和上一轮模型生成的 y', 对手就是上一轮的自己."
 ---
-# 04 SPIN: 自对弈微调
+# SPIN: 自对弈微调
 
 Chen, Deng, Yuan, Ji, Gu 的 *Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models* ([arXiv:2401.01335](https://arxiv.org/abs/2401.01335), ICML 2024) 处理的问题是: 模型已经在一份 SFT 数据上训过, 不再新增人工或 AI 标注, 能否从同一份数据里继续提升. 公式和数字以 [arXiv HTML](https://arxiv.org/html/2401.01335) 为准, DPO 的推导见 [01-DPO](../../4.6.1-离线偏好优化/01-DPO/01-DPO.md); 论文用 $\mathbf{x},\mathbf{y}$ 和 $\bm{\theta}$ 等粗体记号, 下文简写为 $x,y,\theta$.
 
-## 1. SFT 之后还剩什么
+## SFT 之后还剩什么
 
-### 1.1 SFT 的极限
+### SFT 的极限
 
 监督微调把预训练模型推向人写回答的分布 $p_{\mathrm{data}}$. prompt $x$ 来自 $q(\cdot)$, 回答 $y$ 来自 $p_{\mathrm{data}}(\cdot\mid x)$, 负对数似然是
 
@@ -24,15 +24,15 @@ $$
 
 式 (1) 的最小值在 $p_\theta=p_{\mathrm{data}}$ 处取到. 论文的起点模型是 zephyr-7b-sft-full, 即 Mistral-7B 在 UltraChat200k 上 SFT 1 个 epoch 的结果. 论文指出, 在这样的模型上继续用同一份数据做式 (1), 不但无效, 还可能变差. 附录 Table 5 中, 再训 1 个 epoch 后平均分从 58.14 降到 57.23. Figure 5 的对照里, Mistral-7B 在 UltraChat200k 上 SFT 到第 2, 第 3 个 epoch, 相对第 1 个 epoch 的提升不到 1%.
 
-### 1.2 差距仍在
+**差距仍在**
 
 SFT 数据里的信息并没有被模型完全学到. 论文 Figure 1 给了一个例子: 同一条关于南安普顿交通方式的 prompt, iter-0 的生成很流利, 却给各种交通方式编了具体的百分比, 很可能是幻觉; 人写回答只做了定性概括. iter-1 的生成改成了不带具体百分比的定性描述, 更接近人写回答, 还补充了细节.
 
 这说明模型的生成分布和 $p_{\mathrm{data}}$ 之间还有可以利用的差距. 缺的是新的训练信号. 没有成对偏好, DPO 的 $(y_w,y_l)$ 凑不齐; 没有奖励模型, [PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 也跑不起来. SPIN 的办法是: 用模型自己的生成当反例, 人写回答当正例, 从同一份 SFT 数据里再造出对比信号.
 
-## 2. 自对弈的两个玩家
+**自对弈的两个玩家**
 
-### 2.1 主玩家
+### 主玩家
 
 记第 $t$ 轮的对手为 $p_{\theta_t}$. 对 SFT 数据里的每条 $x$, 从 $p_{\theta_t}(\cdot\mid x)$ 采样得到 $y'$. 主玩家 $f_{t+1}$ 的任务是给人写回答 $y$ 打高分, 给生成回答 $y'$ 打低分. 论文从积分概率度量 (IPM) 出发, 先写成最大化期望差:
 
@@ -56,7 +56,7 @@ $$
 
 SPIN 取 logistic 损失 $\ell(t)=\log(1+\exp(-t))$. 它非负, 光滑, $t\to\infty$ 时指数衰减到 0, 不会让分数无限增长.
 
-### 2.2 对手
+**对手**
 
 对手要生成让主玩家难以区分的回答, 同时不能离上一轮太远. 带 KL 的目标是
 
@@ -80,7 +80,7 @@ p_{\theta_t}(y\mid x)
 \tag{5}
 $$
 
-### 2.3 把主玩家限制在对数比里
+**把主玩家限制在对数比里**
 
 希望 $\widehat p$ 仍然是一个语言模型. 反解式 (5), $f$ 只能是对数比的形式, 于是令主玩家的函数类为
 
@@ -102,15 +102,15 @@ $$
 
 代回式 (5) 得 $\widehat p=p_{\theta_{t+1}}$. 主玩家训练完成后, 它的权重直接成为下一轮的对手, 不需要单独训练一个判别器. 这是 SPIN 和 GAN 一类方法的主要区别: GAN, GAIL 每轮要分别训练判别器和生成器; SPIN 的两个角色都是同一个语言模型在相邻两轮的版本.
 
-### 2.4 一轮的执行顺序
+### 一轮的执行顺序
 
 一轮分两步, 两个角色不同时更新. 第一步, 冻结 $p_{\theta_t}$, 对全部 $N$ 条 prompt 采样得到 $y'_i$. 第二步, 最小化式 (8) 的经验平均, 得到 $\theta_{t+1}$. 第二步中 $p_{\theta_t}$ 只提供参考对数概率, 不更新, 这和 DPO 冻结 $\pi_{\mathrm{ref}}$ 一样. 第一步和第二步交替进行.
 
 iter-0 指第一次用 SFT 模型生成 $y'$ 并训练, 得到 $p_{\theta_1}$. 论文 Algorithm 1 的循环从 $t=0$ 开始, $t=0$ 时的对手就是 SFT 模型. iter-0 本身就带来了 2.66 的平均分提升.
 
-## 3. 训练损失
+## 训练损失
 
-### 3.1 损失函数
+### 损失函数
 
 把式 (6) 代入式 (3):
 
@@ -133,13 +133,13 @@ $$
 
 论文 §4.2 把 SPIN 和 DPO 的不同归纳为三点: SPIN 天然多轮迭代, DPO 默认一次; SPIN 不需要偏好对; SPIN 的 $\ell$ 可以换成其他满足假设的函数, logistic 只是一种选择.
 
-### 3.2 手算
+**手算**
 
 设 $\lambda=0.1$. 人写回答 $y$ 上 $\log p_\theta=-9$, $\log p_{\theta_t}=-11$; 生成回答 $y'$ 上 $\log p_\theta=-10$, $\log p_{\theta_t}=-10$. 成对差是 $0.1\bigl((-9+11)-(-10+10)\bigr)=0.20$, $\ell(0.20)=\log(1+e^{-0.20})\approx0.60$. 模型相对上一轮已经更偏向人写回答, 这条样本还在学, 更新不重.
 
 若排反: $y$ 上 $\log p_\theta=-12$, $y'$ 上 $\log p_\theta=-9$. 差是 $0.1\bigl((-12+11)-(-9+10)\bigr)=-0.20$, $\ell(-0.20)\approx0.80$, 更新更重.
 
-### 3.3 梯度与 SFT 的差别
+### 梯度与 SFT 的差别
 
 记式 (8) 括号里的成对差为 $\Delta$. 取 logistic 损失, 对单条样本求梯度:
 
@@ -165,7 +165,7 @@ $$
 
 代价在于反例来自模型自身. 生成质量很差时 $y'$ 很容易区分, $\Delta$ 很快变大, 权重降到接近 0, 该轮学不到多少东西; 生成质量已接近数据时, 正负两项方向接近, 有效梯度也小. 每轮的增量递减, 部分原因在这里.
 
-### 3.4 单步实现
+**单步实现**
 
 一条样本的损失只需要四个序列对数概率, 和 DPO 的实现完全一致:
 
@@ -181,9 +181,9 @@ def spin_loss(logp_y, logp_yprime, ref_logp_y, ref_logp_yprime, lam=0.1):
 
 `ref_logp_*` 在每轮开始前用 $p_{\theta_t}$ 算好即可, 训练时不必把参考模型常驻显存. 第一次调用时 $p_\theta=p_{\theta_t}$, $\Delta=0$, 损失等于 $\log2\approx0.693$; 训练日志里的初始损失偏离这个值, 通常说明参考模型和训练起点没对齐.
 
-### 3.5 $\lambda$ 与实现里的 $\beta$
+### $\lambda$ 与实现里的 $\beta$
 
-论文正文把 KL 系数记作 $\lambda$. 附录 B 的实现基于 Alignment Handbook 的 DPO 代码, 同一个系数在那里叫 $\beta$, 默认 0.1, 最后一轮 (iter-3) 调到 5.0. 论文给出的理由是最后一轮模型已接近收敛, 加大 $\beta$ 也就是加强 KL 约束, 让更新幅度变小.
+论文正文把 KL 系数记作 $\lambda$. 附录 B 的实现基于 Alignment Handbook 的 DPO 代码, 同一个系数在那里叫 $\beta$, 默认 0.1, 最终一轮 (iter-3) 调到 5.0. 论文给出的理由是最终一轮模型已接近收敛, 加大 $\beta$ 也就是加强 KL 约束, 让更新幅度变小.
 
 论文的定理允许 $\ell$ 取 logistic 以外的凸递减函数. Assumption 5.1 列出的例子有 correlation 损失 $1-t$, hinge 损失 $\max(0,1-t)$, 指数损失 $\exp(-t)$ 和 logistic 损失. 只有 logistic 时式 (8) 才和 DPO 同形. 实验全部使用 logistic.
 
@@ -199,9 +199,9 @@ def spin_loss(logp_y, logp_yprime, ref_logp_y, ref_logp_yprime, lam=0.1):
 - 橙框写 prefer $y$ over $y'$, 向下的实线标 minimize, 进入浅蓝框 $p_{\theta_{t+1}}$.
 - 最底部淡紫色虚线框表示拷贝权重, 方向单一. 下一轮开始时, 底部的 $p_{\theta_{t+1}}$ 就是顶部灰框里的新对手.
 
-## 4. 收敛点就是 $p_{\mathrm{data}}$
+## 收敛点就是 $p_{\mathrm{data}}$
 
-### 4.1 全局最优与 logistic 下的更新方向
+### 全局最优与 logistic 下的更新方向
 
 论文 Assumption 5.1 要求 $\ell$ 单调递减, $\ell'(0)<0$, 且为凸函数. Theorem 5.2 说: 若函数类里存在 $p_\theta=p_{\mathrm{data}}$, 则当 $p_{\theta_t}=p_{\mathrm{data}}$ 时, $\theta_t$ 是式 (8) 的全局最小点, 对任意 $\lambda\ge0$ 成立; 反过来, 若 $p_{\theta_t}\ne p_{\mathrm{data}}$, 总能找到某个 $\lambda$ 使 $\theta_t$ 不是全局最小. 训练停止的点, 就是生成分布等于数据分布的点.
 
@@ -219,7 +219,7 @@ $$
 
 用一个两点分布手算式 (10). 只看两条回答 A 和 B. 设 $p_{\mathrm{data}}=(0.8,0.2)$, 当前模型 $p_{\theta_t}=(0.5,0.5)$. 取 $\lambda=1$: 比值是 $(1.6,0.4)$, 乘上 $p_{\theta_t}$ 得 $(0.8,0.2)$, 归一化后正好是 $p_{\mathrm{data}}$, 一步到位. 取 $\lambda=2$: 比值开方得 $(1.265,0.632)$, 乘上 $p_{\theta_t}$ 得 $(0.632,0.316)$, 归一化为 $(0.667,0.333)$, 只走了一部分. 再迭代一轮, 比值是 $(1.2,0.6)$, 开方 $(1.095,0.775)$, 乘上 $(0.667,0.333)$ 得 $(0.730,0.258)$, 归一化 $(0.739,0.261)$. 每轮都向 $p_{\mathrm{data}}$ 靠近, 步子随差距缩小而变小. 这和实验中每轮增量递减的趋势一致.
 
-### 4.2 上限
+**上限**
 
 论文的 Limitation 一节写明: 理论结果表明 SPIN 当且仅当模型分布对齐到 $p_{\mathrm{data}}$ 时收敛, 因此研究的是一个固定的目标分布, 这给微调后模型的表现设了上限. 要突破这个上限, 需要动态变化的目标分布, 论文把这列为未来方向, 设想借此让模型越过这个上限, 甚至达到超过人类的水平. 同一节列出的另一个方向是减少所需的合成数据量: 每一轮都要用上一轮模型为 50k 条 prompt 各生成一条完整回答, 生成本身就要占用大量资源. Impact Statement 另外提到, SPIN 生成的合成数据也可以拿去给其他语言模型做训练增强.
 
@@ -229,9 +229,9 @@ $$
 
 附录 A 把这个过程和课程学习 (curriculum learning) 对照: 早期 $y'$ 与人写回答差别大, 主玩家容易区分; 越往后 $y'$ 越像人写回答, 区分越难, 样本难度随对手变强而上升.
 
-## 5. 实验与消融
+**实验与消融**
 
-### 5.1 设置
+**设置**
 
 起点 zephyr-7b-sft-full. 从 UltraChat200k 随机取 50k 条 prompt. 多轮对话只取第一轮作为 $(x,y)$. iter-0 的合成数据是 50k 条; 之后每轮把上一轮的合成数据和本轮新生成的合并, 得到 100k 条. 每轮训 2 个 epoch.
 
@@ -241,7 +241,7 @@ $$
 
 成本: 8 张 A100 (80G) 上, 每 64 条样本生成约 6.69 秒, 训练约 10 秒. 每轮生成 50k 条约 1.45 小时; 训练 iter-0 约 4.32 小时, 之后数据翻倍, 每轮约 8.64 小时. 训练时间多于生成时间.
 
-### 5.2 Open LLM Leaderboard (附录 Table 4)
+### Open LLM Leaderboard (附录 Table 4)
 
 评测用 Open LLM Leaderboard 的六项: Arc (25-shot), TruthfulQA (0-shot), Winogrande (5-shot), GSM8k (5-shot), HellaSwag (10-shot), MMLU (5-shot).
 
@@ -255,23 +255,23 @@ $$
 
 平均分每轮的增量依次是 2.66, 1.32, 0.85, 0.19. iter-0 相对 SFT, TruthfulQA 从 43.73 到 49.18, GSM8k 从 26.76 到 35.10. 提升主要来自 Arc, TruthfulQA, GSM8k, HellaSwag. Winogrande 在 iter-0 从 74.19 降到 72.69, iter-3 回到 73.72, 仍低于 SFT; MMLU 全程低于 SFT 的 60.92. 平均分上升不等于每项都上升.
 
-各项增量也在递减. Arc 依次增加 2.99, 1.79, 0.77, 最后一轮微降 0.09. TruthfulQA 的提升集中在前两轮 (5.45, 5.99), 之后小幅回落. GSM8k 在 iter-0 增加 8.34, iter-1 只增加 0.68, iter-2 再增加 2.28.
+各项增量也在递减. Arc 依次增加 2.99, 1.79, 0.77, 最终一轮微降 0.09. TruthfulQA 的提升集中在前两轮 (5.45, 5.99), 之后小幅回落. GSM8k 在 iter-0 增加 8.34, iter-1 只增加 0.68, iter-2 再增加 2.28.
 
 按四轮总量算, GSM8k 从 26.76 到 38.97, 增加 12.21 分, 相对提升约 46%, 是六项里最大的. TruthfulQA 增加 11.17 分, 排第二. 这两项恰好是起点分数最低的两项, 与第 4 节的结论一致: 模型与数据差距越大的地方, 自对弈能利用的信号越多. 起点分数本来就高的 HellaSwag 四轮只增加 2.69 分.
 
-### 5.3 与 DPO 对比
+**与 DPO 对比**
 
 zephyr-7b-beta (DPO, 62k 偏好) 的平均分是 61.31, 分项为 Arc 63.65, TruthfulQA 55.19, Winogrande 72.61, GSM8k 33.43, HellaSwag 84.44, MMLU 58.52. SPIN iter-0 平均 60.80, 与之相当; GSM8k 的 35.10 已经高于 DPO 的 33.43, TruthfulQA 的 49.18 低于 DPO 的 55.19. iter-1 平均 62.12 超过 DPO, TruthfulQA 55.17 与 DPO 持平. SPIN 全程没有使用这 62k 条偏好数据.
 
 附录 B.3 在 iter-3 之后再用同一份 UltraFeedback Binarized 训 2 个 epoch 的 DPO, 平均分到 64.05, 比 iter-3 高 0.89. 分项为 Arc 66.47, TruthfulQA 60.07, Winogrande 78.06, GSM8k 37.98, HellaSwag 86.17, MMLU 59.68. Winogrande 从低于 SFT 升到 78.06, 是偏好数据补上了自对弈没提升的部分. SPIN 和 DPO 可以前后串联使用.
 
-### 5.4 MT-Bench 与其他评测
+**MT-Bench 与其他评测**
 
 MT-Bench (附录 Table 6): SFT 5.94, iter-0 6.46, iter-1 6.65, iter-2 6.78. 同期的 vicuna-13b-v1.5 是 6.57, 论文指出从 iter-1 起 SPIN 超过它.
 
 Big-Bench Hard 部分任务: Causal Judgment 从 56.15 到 59.36, Formal Fallacies 从 49.6 到 51.2, Sports Understanding 从 96.0 降到 94.4. OpenBookQA 从 45.4 到 47.6.
 
-### 5.5 多 epoch, 数据量与成本
+**多 epoch, 数据量与成本**
 
 Figure 4 在 iter-0 的 50k 合成数据上多训几个 epoch. 前两个 epoch 提升最多, 之后只有小幅增长, 到不了 iter-1 的水平. 对手还是 SFT 模型, 主玩家学会区分这批 $y'$ 之后, 同一批数据不再提供新信息. 只有换对手, 生成新的 $y'$, 才有新的对比信号.
 
@@ -281,15 +281,15 @@ Figure 4 在 iter-0 的 50k 合成数据上多训几个 epoch. 前两个 epoch �
 
 Figure 4 还显示, iter-0 训练更多 epoch 时分数保持稳定, 没有下降. 所以多训几个 epoch 的代价只是算力, 不会损害模型; 但想继续提升, 只能进入下一轮.
 
-### 5.6 最后一轮的 $\beta=5.0$
+### 最终一轮的 $\beta=5.0$
 
-把第 4.1 节的两点例子换成 $\lambda=5$: 比值 $(1.6,0.4)$ 开 5 次方得 $(1.099,0.833)$, 乘上 $(0.5,0.5)$ 得 $(0.550,0.417)$, 归一化为 $(0.569,0.431)$. 同样的起点, $\lambda=1$ 一步走到 $(0.8,0.2)$, $\lambda=5$ 只把 A 的概率从 0.5 提到 0.569. 按式 (10), $\lambda$ 从 0.1 调到 5.0 后, 每轮朝 $p_{\mathrm{data}}$ 移动的幅度大幅缩小. 论文在 iter-3 这样设置, 同时学习率已降到 $1\times10^{-7}$, 最后一轮基本是小幅修正, 平均分只变动 0.19 也与此相符.
+把第 4.1 节的两点例子换成 $\lambda=5$: 比值 $(1.6,0.4)$ 开 5 次方得 $(1.099,0.833)$, 乘上 $(0.5,0.5)$ 得 $(0.550,0.417)$, 归一化为 $(0.569,0.431)$. 同样的起点, $\lambda=1$ 一步走到 $(0.8,0.2)$, $\lambda=5$ 只把 A 的概率从 0.5 提到 0.569. 按式 (10), $\lambda$ 从 0.1 调到 5.0 后, 每轮朝 $p_{\mathrm{data}}$ 移动的幅度大幅缩小. 论文在 iter-3 这样设置, 同时学习率已降到 $1\times10^{-7}$, 最终一轮基本是小幅修正, 平均分只变动 0.19 也与此相符.
 
 代价是, 若 iter-3 之前模型离 $p_{\mathrm{data}}$ 还远, 这样的设置会浪费一整轮的生成和训练. 要判断 5.0 是否必要, 需要补一组 iter-3 取 $\beta=0.1$ 的对照.
 
-## 6. 相邻方法, 选型与失效
+## 相邻方法, 选型与失效
 
-### 6.1 与相邻方法的分工
+### 与相邻方法的分工
 
 **DPO.** 需要 $(x,y_w,y_l)$. 论文的对照模型 zephyr-7b-beta 从同一个 zephyr-7b-sft-full 出发, 在约 62k 条 UltraFeedback Binarized 上训练, chosen 和 rejected 由 GPT-4 打分决定. SPIN 只用已有 SFT 数据: 从 UltraChat200k 随机取 50k 条 prompt, 由当前模型生成回答, 胜者是原来的人写回答.
 
@@ -322,7 +322,7 @@ Figure 4 还显示, iter-0 训练更多 epoch 时分数保持稳定, 没有下�
 - 右列顶部黄框只有 SFT 的 prompt, 没有新标注. 绿框是人写的 $y$, 灰框 $p_{\theta_t}$ 同时负责采样 $y'$ 和提供参考.
 - 右列底部紫框是 SPIN 损失. 页脚写 winner always human $y$, 参考模型每轮更换.
 
-### 6.2 什么时候用 SPIN
+**什么时候用 SPIN**
 
 前提条件有两个. 一是手上有一份质量明显高于当前模型生成的 SFT 数据; 如果 SFT 数据本身就是用这个模型或同级模型生成的, $p_{\mathrm{data}}$ 和 $p_{\theta_0}$ 差别很小, 能利用的差距也小. 二是没有偏好数据, 或者偏好数据成本很高. 论文的对比显示, SPIN 两轮可以达到并超过 62k 条 GPT-4 偏好训练的 DPO.
 
@@ -332,7 +332,7 @@ Figure 4 还显示, iter-0 训练更多 epoch 时分数保持稳定, 没有下�
 
 计算上, 每轮的成本是一次全量生成加一次 DPO 训练. 以论文设置估算, 四轮总计约 $4\times1.45+4.32+3\times8.64\approx36.0$ 小时 (8 张 A100), 其中 iter-0 约 5.8 小时就拿到全部增量 5.02 中的 2.66.
 
-### 6.3 实现要点
+### 实现要点
 
 数据准备: 每轮开始时, 用当前模型对所有 prompt 采样, 把 $(x,y,y')$ 写成 DPO 格式的 `prompt`, `chosen`, `rejected` 三个字段, chosen 填人写回答, rejected 填生成回答.
 
@@ -340,9 +340,9 @@ Figure 4 还显示, iter-0 训练更多 epoch 时分数保持稳定, 没有下�
 
 模板: 采样和训练要用同一套提示模板. 论文用的是 Alpaca 模板, 和 Zephyr 自带的 chat template 不同, 混用会让对数概率在两套包装下比较.
 
-超参: 学习率在后两轮降低, 最后一轮加大 $\beta$. 这两项都是为了在接近收敛时减小更新幅度.
+超参: 学习率在后两轮降低, 最终一轮加大 $\beta$. 这两项都是为了在接近收敛时减小更新幅度.
 
-### 6.4 失效模式
+### 失效模式
 
 **上限固定.** 收敛点就是 $p_{\mathrm{data}}$, 想超过 SFT 数据本身的质量, 必须换数据或引入外部信号.
 
@@ -364,7 +364,7 @@ Figure 4 还显示, iter-0 训练更多 epoch 时分数保持稳定, 没有下�
 
 带奖励的在线采样方法见 [04-PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 和 [01-GRPO](../../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), AI 反馈见 [4.7.1-RLAIF](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
 
-## 参考文献
+**参考文献**
 
 1. Chen, Z., Deng, Y., Yuan, H., Ji, K., & Gu, Q. (2024). [Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models](https://arxiv.org/abs/2401.01335). *ICML 2024*.
 2. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS 2023*.

@@ -4,13 +4,13 @@ published: true
 tags: ["DPO", "RLHF", "Bradley-Terry", "隐式奖励", "偏好优化"]
 excerpt: "DPO (Direct Preference Optimization) 从带 KL 约束的 RLHF 目标推出最优策略的闭式解, 反解出隐式奖励, 再把成对偏好写成一条二元分类损失."
 ---
-# 01 DPO: 隐式奖励直接优化
+# DPO: 隐式奖励直接优化
 
 Rafailov, Sharma, Mitchell, Ermon, Manning, Finn 的 *Direct Preference Optimization: Your Language Model is Secretly a Reward Model* ([arXiv:2305.18290](https://arxiv.org/abs/2305.18290)) 处理的问题是: RLHF 要先训一个独立奖励模型, 再用 PPO 在线优化, 能否跳过这两步, 直接在偏好数据上训练策略. 公式和数字以 [arXiv HTML](https://arxiv.org/html/2305.18290) 为准; 同目录的 [SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md), [KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md), [ORPO](../04-ORPO/04-ORPO.md) 都从 DPO 改出来, 区别集中在 6.1 节的表里.
 
-## 1. RLHF 的三阶段与那份独立奖励模型
+## RLHF 的三阶段与那份独立奖励模型
 
-### 1.1 三阶段流程
+### 三阶段流程
 
 Ziegler, Stiennon, Ouyang 等人的 RLHF 流程分三段. 第一段在下游任务数据上做 SFT, 得到 $\pi^{\mathrm{SFT}}$. 第二段用 $\pi^{\mathrm{SFT}}$ 对 prompt $x$ 采两条回答, 让人标出哪条更好, 记作 $y_w\succ y_l\mid x$, 再用这些比较拟合一个奖励模型 $r_\phi$. 第三段把 $r_\phi$ 当作环境给出的奖励, 用 PPO 最大化它, 同时用 KL 散度限制策略离参考分布的距离, 参考分布通常就是 $\pi^{\mathrm{SFT}}$.
 
@@ -27,7 +27,7 @@ $$
 
 这里的 $\sigma$ 是 logistic 函数. 式 (1) 的右边只含奖励差, 给 $r^*$ 加上任何只依赖 $x$ 的函数, 偏好概率都不变. 2.4 节会用到这一点.
 
-### 1.2 奖励模型的训练目标
+**奖励模型的训练目标**
 
 给定静态比较集 $\mathcal{D}=\{x^{(i)},y_w^{(i)},y_l^{(i)}\}_{i=1}^{N}$, 奖励模型按二元分类的负对数似然训练:
 
@@ -39,9 +39,9 @@ $$
 \tag{2}
 $$
 
-在语言模型上, $r_\phi$ 一般从 $\pi^{\mathrm{SFT}}$ 初始化, 在最后一层 Transformer 上接一个输出标量的线性头. 以往的工作还会把奖励做中心化, 让 $\mathbb{E}_{x,y}[r_\phi(x,y)]=0$, 降低方差.
+在语言模型上, $r_\phi$ 一般从 $\pi^{\mathrm{SFT}}$ 初始化, 在最终一层 Transformer 上接一个输出标量的线性头. 以往的工作还会把奖励做中心化, 让 $\mathbb{E}_{x,y}[r_\phi(x,y)]=0$, 降低方差.
 
-### 1.3 RL 阶段的目标
+**RL 阶段的目标**
 
 第三段优化带 KL 约束的期望奖励:
 
@@ -70,9 +70,9 @@ $\beta$ 控制策略可以离参考分布多远. KL 项有两个作用: 防止�
 
 DPO 保留式 (3) 这个目标, 改的是奖励的参数化方式. 奖励改由策略和参考模型的对数概率比表示, 最优策略因此有闭式解, 配分函数在成对相减时消掉, RL 循环就不需要了.
 
-## 2. 最优策略与隐式奖励
+**最优策略与隐式奖励**
 
-### 2.1 推导
+**推导**
 
 先不管奖励从哪来. 对任意奖励 $r(x,y)$ 和参考 $\pi_{\mathrm{ref}}$, 固定一个 $x$, 把式 (3) 的目标改写成最小化问题:
 
@@ -103,7 +103,7 @@ $$
 
 这是论文附录 A.1 的推法. 把 $\pi_r$ 对 $y$ 求和, 得到 $\frac{1}{Z(x)}\sum_y\pi_{\mathrm{ref}}\exp(r/\beta)=Z(x)/Z(x)=1$, 归一化成立.
 
-### 2.2 用三条回答看 $\beta$ 和 $Z(x)$
+### 用三条回答看 $\beta$ 和 $Z(x)$
 
 式 (4) 是对参考分布做指数加权. $\beta$ 越小, 权重 $\exp(r/\beta)$ 在不同回答之间差得越悬殊. $\beta\to0$ 时, 概率全部集中到 $\pi_{\mathrm{ref}}$ 支撑集里奖励最高的那条回答上, 等于只做奖励最大化. $\beta\to\infty$ 时, $\exp(r/\beta)\to1$, $\pi_r\to\pi_{\mathrm{ref}}$, 策略退回参考模型. 中间的 $\beta$ 在两者之间取折中.
 
@@ -115,7 +115,7 @@ $$
 
 这个例子能算出 $Z$, 是因为候选只有三条. 真实场景里 $Z(x)$ 要对所有可能的回答求和. 回答是变长 token 序列, 候选数随长度指数增长, 求不出来, 也很难估准. 即使奖励已经用 $r_\phi$ 的最大似然估计代替, 式 (4) 依然没法直接拿来训练. control as inference, reward-weighted regression 这类方法都要面对这个配分函数. DPO 的处理是: 训练时不去估 $Z(x)$, 把它留在反解出来的奖励表达式里, 让它在成对相减时消掉.
 
-### 2.3 反解隐式奖励
+**反解隐式奖励**
 
 对式 (4) 两边取对数并移项:
 
@@ -130,7 +130,7 @@ $$
 
 接着用第 2.2 节 $\beta=1$ 的数验证. $\log(0.179/0.5)\approx-1.027$, $\log(0.292/0.3)\approx-0.027$, $\log(0.529/0.2)\approx0.973$. 三个数分别加上 $\log Z=\log2.793\approx1.027$, 得到 $0,1,2$, 正好是原来的奖励. 三者两两相减, 差是 $1$ 和 $2$, 跟 $\log Z$ 无关.
 
-### 2.4 代入 Bradley-Terry, $Z(x)$ 成对抵消
+**代入 Bradley-Terry, $Z(x)$ 成对抵消**
 
 同一个 $x$ 下, $Z(x)$ 对所有 $y$ 都是同一个数. 把式 (5) 代入式 (1), 两个 $\beta\log Z(x)$ 相减为零:
 
@@ -149,7 +149,7 @@ $$
 
 式 (6) 说明, 人类偏好的概率可以完全用最优策略和参考策略表示, 奖励模型这个中间量不再出现.
 
-### 2.5 等价类与可识别性
+**等价类与可识别性**
 
 训练时用可训的 $\pi_\theta$ 代替未知的 $\pi^*$, 隐式奖励定义为
 
@@ -167,7 +167,7 @@ $$
 
 也就是把 $\beta\log Z(x)$ 从奖励里减掉. 减掉之后, $\pi_{\mathrm{ref}}\exp(f/\beta)$ 对 $y$ 的和恰好是 1. 论文的 Proposition 1 补充了唯一性: 每个等价类里只有一个奖励能写成这种对数比形式. 所以 DPO 并没有损失表达能力, 它只是在每个等价类里挑出满足「对应策略是合法分布」的那一个代表.
 
-### 2.6 手算: 常数从未进入 $\sigma$
+### 手算: 常数从未进入 $\sigma$
 
 设某条 $x$ 下, $\beta\log(\pi/\pi_{\mathrm{ref}})$ 在 $y_w$ 上是 $1.5$, 在 $y_l$ 上是 $0.4$, $\beta\log Z(x)=0.3$. 完整奖励分别是 $1.8$ 和 $0.7$, 差是 $1.1$. 只用对数比相减, 差还是 $1.1$. $\sigma(1.1)\approx0.75$, 两种算法得到的偏好概率相同.
 
@@ -181,9 +181,9 @@ $$
 - 黄框把同一条 $x$ 配上 $y_w$ 和 $y_l$. 绿框做差, $Z(x)$ 消掉, 虚线注脚标明它与 $y$ 无关.
 - 青绿框是 $\sigma(r_w-r_l)$, 橙框是 $-\log\sigma(\cdots)$, 对应式 (7). 页脚的 offline pairs 指损失计算中没有从当前 $\pi_\theta$ 再采样.
 
-## 3. 损失与梯度
+## 损失与梯度
 
-### 3.1 损失: 偏好似然直接写在策略上
+### 损失: 偏好似然直接写在策略上
 
 式 (6) 已经是「人更喜欢 $y_w$」的概率, 参数只在 $\pi_\theta$ 和冻结的 $\pi_{\mathrm{ref}}$ 上. 对它做最大似然, 取负对数:
 
@@ -208,13 +208,13 @@ $$
 
 式 (7) 里需要手动设定的只有 $\beta$. 它来自式 (3), 含义和 RLHF 中的 KL 系数相同. 论文附录 B 的默认设置是 $\beta=0.1$, batch size 64, RMSprop 优化器, 学习率 $1\times10^{-6}$, 前 150 步线性 warmup. TL;DR 摘要实验把 $\beta$ 改成 0.5, 其他不变. 论文说明几乎没有调超参, 因此 TL;DR 上的结果可能低估了 DPO. IMDb 实验扫过 $\beta\in\{0.05,0.1,1,5\}$. $\beta$ 增大, 策略更难离开 $\pi_{\mathrm{ref}}$; 减小, 策略更敢拉大偏好差.
 
-### 3.2 参考模型的选择
+**参考模型的选择**
 
 论文给的流程是两步. 先对每个 $x$ 从 $\pi_{\mathrm{ref}}$ 采样 $y_1,y_2$, 由人标出偏好, 构成离线数据集 $\mathcal{D}$. 再固定 $\pi_{\mathrm{ref}}$ 和 $\beta$, 最小化式 (7).
 
 实际中常用公开偏好数据集, 这些数据往往不是当前 $\pi_{\mathrm{ref}}$ 采出来的, 存在分布偏移. 论文的建议: 有生成数据所用的 SFT 模型时, 令 $\pi_{\mathrm{ref}}=\pi^{\mathrm{SFT}}$; 没有时, 在 chosen 回答上做一次最大似然, 即 $\pi_{\mathrm{ref}}=\arg\max_\pi\mathbb{E}_{x,y_w\sim\mathcal{D}}[\log\pi(y_w\mid x)]$, 缩小参考分布与数据分布的差距. Anthropic-HH 实验就是这样做的: 先让 Pythia-2.8B 在 chosen 回答上做 Preferred-FT, 再在它的基础上训 DPO.
 
-### 3.3 梯度形式与样本权重
+### 梯度形式与样本权重
 
 对 $\theta$ 求导 (论文 §4):
 
@@ -239,7 +239,7 @@ $$
 
 这个权重不能省. 把 $\sigma$ 权重拿掉, 就是 Unlikelihood 训练: 最大化 $\log\pi(y_w)$, 同时最小化 $\log\pi(y_l)$, 后者可以乘一个系数 $\alpha\in[0,1]$. 论文在 IMDb 情感任务上还保留了它, 在摘要和对话任务上不再报告, 因为它生成的是无意义文本. 附录 Table 3 给了两条温度 1.0 下的 TL;DR 样本, 摘要都退化成 `when when when` 一类的重复. 论文的解释是: 不加约束地压低 $y_l$ 的似然会破坏语言模型. 式 (8) 的权重让已经排对的样本停下来, 防止 $y_l$ 的似然被一直往下压.
 
-### 3.4 用同一套参数化看 PPO 的不稳定
+### 用同一套参数化看 PPO 的不稳定
 
 论文 §5.2 把同样的分析用在 PPO 上. 从 control as inference 的角度, RL 阶段相当于最小化 $\mathbb{D}_{\mathrm{KL}}[\pi_\theta\Vert\pi^*]$, 展开后目标里会出现
 
@@ -249,9 +249,9 @@ $$
 
 中间那一项是参考策略在奖励 $r_\phi$ 下的 soft value. 它不改变最优解, 但去掉它, 策略梯度的方差会变大. 以往的做法是学一个价值函数, 或者用人类回答的奖励当单样本基线, 去近似这一项. DPO 选出的奖励表示已经满足配分函数为 1, 所以不需要额外的基线.
 
-## 4. 实验数字
+## 实验数字
 
-### 4.1 IMDb 情感: 奖励与 KL 的前沿
+### IMDb 情感: 奖励与 KL 的前沿
 
 论文的实验回答两个问题: 在可控任务上, DPO 在「奖励」和「离参考的 KL」之间的权衡是否优于 PPO; 在更大的模型和更难的任务上 DPO 表现如何. 所有实验的模型都不超过 6B. 摘要和对话任务用 GPT-4 (`gpt-4-0314`) 当裁判算胜率.
 
@@ -261,7 +261,7 @@ $$
 
 结果 (Figure 2 左): DPO 的奖励-KL 前沿在所有方法之上, 连能直接看到真实奖励的 PPO-GT 也在它下面. 两者优化的是同一个式 (3), 差别在于优化效率.
 
-### 4.2 TL;DR 摘要: 胜率与温度
+**TL;DR 摘要: 胜率与温度**
 
 数据是 Reddit 帖子和 Stiennon 等人标注的摘要偏好. SFT 模型是 CarperAI 基于 GPT-J 训的 `openai_summarize_tldr_sft`, DPO, PPO, Preferred-FT 都从它出发. 偏好数据由另一个训练方式相近的 SFT 模型采样生成, 所以这里的数据并非当前模型的在线样本. 在测试集上, 用 GPT-4 对比模型摘要和人写的参考摘要, 统计胜率, 采样温度从 0.0 扫到 1.0.
 
@@ -271,7 +271,7 @@ $$
 
 人工评测里, 温度 0.25 的 DPO 对温度 0 的 PPO, 人类判 DPO 胜的比例是 58%.
 
-### 4.3 分布外: CNN/DailyMail
+**分布外: CNN/DailyMail**
 
 把 TL;DR 上训好的 DPO 和 PPO 直接用在 CNN/DailyMail 新闻上, 提示词里的 forum post 换成 news article, 用 GPT-4 对比数据集自带的参考摘要. 温度取 TL;DR 上表现最好的 0 和 0.25 (Table 1):
 
@@ -282,7 +282,7 @@ $$
 
 DPO 在新闻域上仍然领先. PPO 训练时还用了额外的无标注 Reddit 帖子来采样, DPO 没有用到这些 prompt. 论文把这组结果称为 initial evidence, 后续能否用 DPO 策略给无标注 prompt 自己打标签, 列为未来工作.
 
-### 4.4 Anthropic-HH 单轮对话
+**Anthropic-HH 单轮对话**
 
 Anthropic Helpful and Harmless 数据集有 170k 段人机对话, 每段末尾有一对回答和偏好标签, 生成回答所用的模型未公开. 没有现成的 SFT 模型, 所以从 Pythia-2.8B 出发, 先 Preferred-FT 再 DPO. GPT-4 以测试集的 chosen 回答为参照算胜率.
 
@@ -290,7 +290,7 @@ Anthropic Helpful and Harmless 数据集有 170k 段人机对话, 每段末尾�
 
 结果 (Figure 3): DPO 是唯一明显高于测试集 chosen 回答的高效方法. Best of 128 的胜率接近, 但每条查询要采 128 次. 训练过程中, DPO 在不同温度下的胜率都较早稳定下来.
 
-### 4.5 GPT-4 判分与人类是否一致
+### GPT-4 判分与人类是否一致
 
 为了验证 GPT-4 胜率的可信度, 论文做了人工评测 (Table 2). 三组对比都以温度 0 的 PPO 为对手: 温度 0.25 的 DPO, 温度 0.25 的 SFT, 温度 1.0 的 PPO. GPT-4 用了两套提示: (S) 只问哪条摘要更好地概括了要点; (C) 额外要求简洁. 评测者是 25 名志愿者, 每人评 25 条, 来自斯坦福 STEM 专业.
 
@@ -308,9 +308,9 @@ SFT 那一列每条只有一人评, 所以没有人与人一致率. GPT-4 与人
 
 GPT-4 也会判错. 附录 Table 10 中, 用户问 `what is 7 plus 2`, DPO 回答 9 但比较啰嗦, 数据集 chosen 回答 11, GPT-4 却判 chosen 更好. 自动胜率只能当代理指标.
 
-## 5. 实现
+**实现**
 
-### 5.1 损失代码
+**损失代码**
 
 附录 B 把式 (7) 写成几行 PyTorch. 输入是 batch 里每条 completion 在 $\pi_\theta$ 和 $\pi_{\mathrm{ref}}$ 下的序列对数概率:
 
@@ -331,13 +331,13 @@ def compute_dpo_loss(policy_chosen_logps, policy_rejected_logps,
 
 `chosen_rewards` 和 `rejected_rewards` 是 `detach` 后的隐式奖励, 只用于记日志. 常见的两个监控量是 `rewards/accuracies` (满足 $\hat r(y_w)>\hat r(y_l)$ 的比例) 和 `rewards/margins` (二者均值之差). 准确率趋向 1, 间隔变大, 说明隐式奖励在训练集上排对了; 生成质量仍要另外评估.
 
-### 5.2 序列对数概率
+**序列对数概率**
 
 序列对数概率是逐 token 的 $\log\pi(y_t\mid x,y_{<t})$ 之和, prompt 部分的 token 要 mask 掉, 只对 completion 求和. 每条样本要算四次前向: chosen 和 rejected 分别过 $\pi_\theta$ 和 $\pi_{\mathrm{ref}}$, 实现上通常把 chosen 和 rejected 拼进同一个 batch. $\pi_{\mathrm{ref}}$ 必须和 $\pi_\theta$ 用同一个分词器和同一套对话模板, 否则对数比比较的是两种不同切分下的概率. 长序列的对数概率在半精度下累加容易损失精度, 求和一般放在 float32 里做.
 
 Hugging Face TRL 的 `DPOTrainer` 实现的就是这套计算, 数据字段是 `prompt`, `chosen`, `rejected`, 参考模型冻结, 训练过程不做 rollout. 库的默认超参和论文附录 B 不完全相同, 复现论文数字应以附录为准.
 
-### 5.3 手算一条样本的损失
+### 手算一条样本的损失
 
 设 $\beta=0.1$, $\ell_\theta^{w}=-12$, $\ell_\theta^{l}=-10$, $\ell_{\mathrm{ref}}^{w}=\ell_{\mathrm{ref}}^{l}=-11$. `pi_logratios` $=-2$, `ref_logratios` $=0$, `logits` $=-2$, 乘 $\beta$ 得 $-0.20$. $\sigma(-0.20)\approx0.45$, 损失 $-\log0.45\approx0.80$. 当前策略给输家的概率比赢家高, 这条样本还在学.
 
@@ -345,9 +345,9 @@ Hugging Face TRL 的 `DPOTrainer` 实现的就是这套计算, 数据字段是 `
 
 用 LoRA 训练时, 参考模型可以和策略共用主干权重, 关掉 adapter 就得到 $\pi_{\mathrm{ref}}$ 的前向. 这样省的是一份权重的显存, 两套对数概率的前向计算仍然要做.
 
-## 6. 相邻方法与失效模式
+## 相邻方法与失效模式
 
-### 6.1 与相邻方法的分工
+### 与相邻方法的分工
 
 同一条思路衍生出很多变体, 区别在于数据形态, 是否需要参考模型, 奖励怎么定义.
 
@@ -362,7 +362,7 @@ Hugging Face TRL 的 `DPOTrainer` 实现的就是这套计算, 数据字段是 `
 
 PPO 和组相对的 GRPO 都需要在线采样, 见 [04-PPO](../../../4.4-强化学习基础/04-PPO/04-PPO.md) 和 [01-GRPO](../../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md). IPO (Azar 等, [arXiv:2310.12036](https://arxiv.org/abs/2310.12036)) 针对的是 DPO 在偏好接近确定时会把对数比推向无穷的问题, 用平方损失代替 $\log\sigma$, 见 [02-IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md). 只有点赞点踩, 没有成对数据时用 KTO. 想去掉参考模型时看 ORPO 和 SimPO. 偏好数据想换成当前策略的在线样本, 看 [01-OAIF](../../4.6.2-在线偏好与自对弈/01-OAIF-在线AI反馈/01-OAIF-在线AI反馈.md).
 
-### 6.2 失效模式
+### 失效模式
 
 **离线数据与策略的分布偏移.** 式 (7) 只在 $\mathcal{D}$ 上算, 而 $\mathcal{D}$ 一般来自别的模型. 训练推进后, 当前策略生成的回答越来越偏离数据分布, 损失在这部分区域没有约束. 用 chosen 做 SFT 来构造参考模型只能缓解, 不能消除. 在线变体 (OAIF, Self-Rewarding) 针对的就是这个问题.
 
@@ -378,7 +378,7 @@ PPO 和组相对的 GRPO 都需要在线采样, 见 [04-PPO](../../../4.4-强化
 
 **实验规模.** 论文实验最大到 6B (GPT-J 与 Pythia), 作者在结论里把扩展到更大模型列为未来工作.
 
-## 参考文献
+**参考文献**
 
 1. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS 2023*.
 2. Bradley, R. A., & Terry, M. E. (1952). Rank Analysis of Incomplete Block Designs: I. The Method of Paired Comparisons. *Biometrika*, 39(3/4), 324–345.

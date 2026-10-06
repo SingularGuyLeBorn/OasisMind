@@ -2,7 +2,7 @@
 title: "03 · MoE 专家计算: Grouped GEMM, SonicMoE 与系统优化分类"
 published: true
 tags: ["MoE", "Grouped-GEMM", "DeepGEMM", "MegaBlocks", "ScatterMoE", "SonicMoE", "token-rounding"]
-excerpt: "token 送到专家所在的卡以后, 剩下的问题是怎么把一堆长度不一的小矩阵乘喂给 Tensor Core. 本篇从单卡上的一次 MoE 前向出发, 推 grouped GEMM 的填充上界, 比较 Contiguous / Masked 布局与 MegaBlocks, ScatterMoE 两种不填数据的做法, 再按 SonicMoE 的算术强度与激活显存推导看细粒度专家的代价, 最后按瓶颈给 MoE 系统工作分类."
+excerpt: "token 送到专家所在的卡以后, 剩下的问题是怎么把一堆长度不一的小矩阵乘喂给 Tensor Core. 本篇从单卡上的一次 MoE 前向出发, 推 grouped GEMM 的填充上界, 比较 Contiguous / Masked 布局与 MegaBlocks, ScatterMoE 两种不填数据的做法, 再按 SonicMoE 的算术强度与激活显存推导看细粒度专家的代价, 最终按瓶颈给 MoE 系统工作分类."
 ---
 # 03 MoE 专家计算: Grouped GEMM, SonicMoE 与系统优化分类
 
@@ -133,7 +133,7 @@ MoE 系统工作可以按它要解决的瓶颈分成四类. 第一类是通信: 
 
 ### 4.2 代表工作对照
 
-下表列出几个代表工作, 最后一列是各自论文的对照基线:
+下表列出几个代表工作, 最终一列是各自论文的对照基线:
 
 | 工作 | 类别 | 做法 | 报告的收益 | 基线 |
 |------|------|------|------|------|
@@ -164,7 +164,7 @@ MoE 系统工作可以按它要解决的瓶颈分成四类. 第一类是通信: 
 
 这几行也说明了本篇和 [01](../01-MoE专家并行与All-to-All通信/01-MoE专家并行与All-to-All通信.md), [02](../02-MoE推理部署/02-MoE推理部署.md) 的关系. 01 决定 token 怎样到达, 02 决定专家放在哪里, 放几份, 本篇决定 token 到达以后怎样算. 一个 MoE 作业的性能是三段的乘积, 某一段做得再好, 另外两段仍可能成为上限.
 
-## 参考文献
+**参考文献**
 
 1. Guo, W., Mishra, M., Cheng, X., Stoica, I., & Dao, T. (2025). [SonicMoE: Accelerating MoE with IO and Tile-aware Optimizations](https://arxiv.org/abs/2512.14080). 式 (4) 算术强度, 激活显存分析, token rounding. 代码: [Dao-AILab/sonic-moe](https://github.com/Dao-AILab/sonic-moe).
 2. Gale, T., Narayanan, D., Young, C., & Zaharia, M. (2022). [MegaBlocks: Efficient Sparse Training with Mixture-of-Experts](https://arxiv.org/abs/2211.15841). MLSys 2023.

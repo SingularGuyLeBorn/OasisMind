@@ -234,7 +234,7 @@ Sigmoid 对每个专家独立映射到 $(0,1)$, 专家之间不再通过 Softmax
 
 沿用第 3.1 节的 logits: $\sigma(2)\approx0.881$, $\sigma(0.5)\approx0.622$, $\sigma(1)\approx0.731$, $\sigma(-1)\approx0.269$. $b=0$ 时 Top-2 仍是专家 1 与 3, 归一化后 $g\approx(0.5464,0,0.4536,0)$. 若 $b=(0,0,0,2.0)$, 排序分数变成 $(0.881,0.622,0.731,2.269)$, Top-2 改为专家 4 与 1, 门控按原始分数归一化: $s_1+s_4\approx1.150$, $g\approx(0.766,0,0,0.234)$. 偏置改变的是选中集合, 门控数值仍来自 $s$.
 
-偏置的更新规则出自 Wang et al., 一般形式与更新速度的对照见 [03](../03-MoE负载均衡与容量/03-MoE负载均衡与容量.md) 第 4.2 节. V3 的取值是: 每个 step 结束时统计整个 batch 上各专家的负载, 过载专家的 $b_i$ 减 $\gamma$, 欠载专家加 $\gamma$; 预训练前 14.3T token 取 $\gamma=0.001$, 最后 500B token 取 $\gamma=0$. 主均衡交给偏置后, V3 仍保留一个系数极小的序列级均衡损失, 防止单条序列内的极端偏斜:
+偏置的更新规则出自 Wang et al., 一般形式与更新速度的对照见 [03](../03-MoE负载均衡与容量/03-MoE负载均衡与容量.md) 第 4.2 节. V3 的取值是: 每个 step 结束时统计整个 batch 上各专家的负载, 过载专家的 $b_i$ 减 $\gamma$, 欠载专家加 $\gamma$; 预训练前 14.3T token 取 $\gamma=0.001$, 最终 500B token 取 $\gamma=0$. 主均衡交给偏置后, V3 仍保留一个系数极小的序列级均衡损失, 防止单条序列内的极端偏斜:
 
 $$
 \mathcal{L}_{\mathrm{Bal}}=\alpha\sum_{i=1}^{N_r}f_{i}P_{i},\qquad
@@ -287,7 +287,7 @@ $$
 
 ---
 
-## 参考文献
+**参考文献**
 
 1. Dai, D., et al. (2024). [DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models](https://arxiv.org/abs/2401.06066). 第 3 节式 (1)–(11), 第 4 节消融, 第 4.5 节专家特化, 第 5–6 节 16B 与 145B, Table 1–3, Table 7, 附录 B.
 2. DeepSeek-AI. (2024). [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model](https://arxiv.org/abs/2405.04434). 第 2.2 节设备受限路由与三级均衡损失, 第 3.1.2 节配置, 附录 B V2-Lite.

@@ -3,7 +3,7 @@ title: "03 · SnapKV: 用 prompt 末尾的观测窗压缩 KV"
 category: "LLM 指南"
 published: true
 tags: ["SnapKV", "KV-Cache", "Observation-Window", "Prompt-Compression", "NeurIPS 2024"]
-excerpt: "SnapKV 在 prefill 结束, 生成开始之前压缩 prompt 的 KV cache: 用 prompt 最后一段 token (观测窗) 对前面各位置的注意力投票, 一维池化后按头选 top-k, 再拼上整个观测窗. 生成阶段 prompt 侧 KV 数量固定, 不微调."
+excerpt: "SnapKV 在 prefill 结束, 生成开始之前压缩 prompt 的 KV cache: 用 prompt 最终一段 token (观测窗) 对前面各位置的注意力投票, 一维池化后按头选 top-k, 再拼上整个观测窗. 生成阶段 prompt 侧 KV 数量固定, 不微调."
 ---
 
 # SnapKV: 用 prompt 末尾的观测窗压缩 KV
@@ -31,13 +31,13 @@ GPT-4, Command-R 支持 128K 上下文, Claude-3 支持 200K, Gemini-Pro-1.5 支
 
 论文用 Ultrachat (140 万条多轮对话) 的样本, 筛选回复长于 512, prompt 长于 3K 的序列, 研究两个问题: prompt 中各 token 的注意力分配模式在生成时是否一致; 这个模式能否在生成前识别出来.
 
-**生成前就能识别.** 把每一层输入序列的注意力按 128 个 token 一个窗口切开, 对最后 20 个窗口分别计算平均注意力权重, 由每个窗口选出它认为重要的 prompt 位置, 再和生成时真正用到的重要位置比较重叠率 (Figure 2). 结果是, 输入序列最后一个窗口选出的位置和生成时的高度相似.
+**生成前就能识别.** 把每一层输入序列的注意力按 128 个 token 一个窗口切开, 对最终 20 个窗口分别计算平均注意力权重, 由每个窗口选出它认为重要的 prompt 位置, 再和生成时真正用到的重要位置比较重叠率 (Figure 2). 结果是, 输入序列最终一个窗口选出的位置和生成时的高度相似.
 
-**生成过程中保持稳定.** 把生成的 token 按 128 个一组分成 4 个窗口, 计算每个窗口和输入最后一个窗口选出的重要位置的重叠率 (Figure 3). 各层的重叠率都很高, 说明最后一个窗口选出的位置在整个生成过程中都重要.
+**生成过程中保持稳定.** 把生成的 token 按 128 个一组分成 4 个窗口, 计算每个窗口和输入最终一个窗口选出的重要位置的重叠率 (Figure 3). 各层的重叠率都很高, 说明最终一个窗口选出的位置在整个生成过程中都重要.
 
 两个观察合起来就是论文标题的意思: 模型在生成之前就「知道」要找什么. 更具体地说, prompt 末尾那一段 token 关注的位置, 和后面生成时关注的位置基本一致.
 
-为什么偏偏是最后一个窗口, 可以从因果注意力的结构理解. 在因果 mask 下, prompt 中第 $t$ 个位置的 query 只能看到前 $t$ 个 key. 中间某个窗口的 query 看不到它后面的内容, 自然无法给后面的位置投票; 只有最后一个窗口的 query 能看到整段 prompt, 和生成时的 query 看到的范围相同. 另外, 最后一段 token 在位置上紧挨着生成的开头, 通常是问题本身, 或者是对话模板中「轮到助手回答」的部分, 它们的作用和生成的第一批 token 最接近. 这是对 Figure 2 现象的解释, 论文本身只报告了重叠率.
+为什么偏偏是最终一个窗口, 可以从因果注意力的结构理解. 在因果 mask 下, prompt 中第 $t$ 个位置的 query 只能看到前 $t$ 个 key. 中间某个窗口的 query 看不到它后面的内容, 自然无法给后面的位置投票; 只有最终一个窗口的 query 能看到整段 prompt, 和生成时的 query 看到的范围相同. 另外, 最终一段 token 在位置上紧挨着生成的开头, 通常是问题本身, 或者是对话模板中「轮到助手回答」的部分, 它们的作用和生成的第一批 token 最接近. 这是对 Figure 2 现象的解释, 论文本身只报告了重叠率.
 
 这两个观察也决定了 SnapKV 和 H2O 的分歧. H2O 认为重要 token 要在生成过程中逐步发现, 所以每步都更新分数; SnapKV 的观察说明, 至少对 prompt 部分, 生成前那一次判断已经够用, 生成过程中重新判断带来的收益有限. 代价是, 如果生成中途关注点真的变了, SnapKV 没有机会修正.
 
@@ -51,7 +51,7 @@ $$
 L_{\mathrm{prompt}}=L_{\mathrm{prefix}}+L_{\mathrm{obs}}. \tag{1}
 $$
 
-观测窗 $L_{\mathrm{obs}}$ 是 prompt 的最后一段, prefix 是它前面的部分. 投票是观测窗里每个 query 在每个头上对 prefix 的注意力权重之和 (论文式 (2)(3)):
+观测窗 $L_{\mathrm{obs}}$ 是 prompt 的最终一段, prefix 是它前面的部分. 投票是观测窗里每个 query 在每个头上对 prefix 的注意力权重之和 (论文式 (2)(3)):
 
 $$
 \mathbf{C}=\sum_{i=0}^{L_{\mathrm{obs}}}\mathbf{W}_{\mathrm{obs}}[:,i,:],\qquad I=\mathrm{Top}_k(\mathbf{C},k), \tag{2}
@@ -206,7 +206,7 @@ SnapKV 和 H2O 都用注意力分数决定保留什么, 区别在时机和打分
 
 **每层预算相同.** 所有层, 所有头保留同样多的 KV. 按层分配不同预算的改进见 PyramidKV.
 
-## 参考文献
+**参考文献**
 
 1. Li, Y., Huang, Y., Yang, B., et al. (2024). [SnapKV: LLM Knows What You are Looking for Before Generation](https://arxiv.org/abs/2404.14469). NeurIPS 2024. arXiv:2404.14469. 式 (1)–(8), Listing 1, Table 1–4, Figure 2–10, 第 6 节, 附录 A. 代码: [FasterDecoding/SnapKV](https://github.com/FasterDecoding/SnapKV).
 2. Zhang, Z., Sheng, Y., Zhou, T., et al. (2023). [H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models](https://arxiv.org/abs/2306.14048). NeurIPS 2023.

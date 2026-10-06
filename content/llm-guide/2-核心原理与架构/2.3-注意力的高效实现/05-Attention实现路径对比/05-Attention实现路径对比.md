@@ -231,7 +231,7 @@ $$
 
 SDPA 文档中给 Llama 3 的 GQA 示例是 32 个 Query 头,8 个 KV 头,并且放在 `SDPBackend.MATH` 下运行.C++ 实现与参考公式一致,按参考实现的写法要先用 `repeat_interleave` 展开 KV,属于先复制再算;要按头号索引,需要让 SDPA 派发到支持 GQA 的融合后端.
 
-判断一份模型代码走的是哪一种,最直接的办法是看传进注意力函数的 K 张量形状:头数那一维是 $H_{kv}$,说明复制交给了内核或者根本没有复制;是 $H_q$,说明调用之前已经展开过.再配合性能分析工具看实际启动的 kernel 名称,就能确认 SDPA 最后派发到了哪个后端.
+判断一份模型代码走的是哪一种,最直接的办法是看传进注意力函数的 K 张量形状:头数那一维是 $H_{kv}$,说明复制交给了内核或者根本没有复制;是 $H_q$,说明调用之前已经展开过.再配合性能分析工具看实际启动的 kernel 名称,就能确认 SDPA 最终派发到了哪个后端.
 
 ### 2.6 训练时保存的中间结果
 
@@ -283,7 +283,7 @@ $$
 
 FP16 时 MHA($g=1$)为 1 FLOPs/字节,$g=8$ 的 GQA 为 8 FLOPs/字节,都远低于前面算出的约 295 的平衡点.解码注意力的时间几乎全由读 KV 决定,所以优化方向是少读:用 GQA,MQA,MLA 减少 KV 体积,用量化减少每个元素的字节数.
 
-$L=1$ 时 FlashAttention 原来的并行方式(按 batch,头和 query 分块切分)在小 batch 下切不出足够多的线程块,GPU 占不满.flash-attn 2.2 起加入的 Flash-Decoding 沿 KV 长度再切分,各段分别算局部 softmax 结果,最后用 logsumexp 合并,原理见 [6.6.3 Flash-Decoding](../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现/6.6.3-Flash-Decoding原理与实现.md).这也是先复制再算的 GQA 实现在解码时代价最大的原因:式 (16) 中的 $g$ 被复制抵消,读 KV 的量退回到 MHA 的水平.
+$L=1$ 时 FlashAttention 原来的并行方式(按 batch,头和 query 分块切分)在小 batch 下切不出足够多的线程块,GPU 占不满.flash-attn 2.2 起加入的 Flash-Decoding 沿 KV 长度再切分,各段分别算局部 softmax 结果,最终用 logsumexp 合并,原理见 [6.6.3 Flash-Decoding](../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现/6.6.3-Flash-Decoding原理与实现.md).这也是先复制再算的 GQA 实现在解码时代价最大的原因:式 (16) 中的 $g$ 被复制抵消,读 KV 的量退回到 MHA 的水平.
 
 ### 2.9 全屏蔽行和数值比较
 
@@ -320,7 +320,7 @@ $L=S=N$ 时它与式 (5) 中单个 $S$ 矩阵的读写同阶,融合内核省下�
 | 需要 float64,或调试注意力内部 | eager 或 SDPA 的 C++ 实现 | 可以检查 $S,P$ |
 | 头维度超过 256 | SDPA 的其他后端或 eager | FlashAttention-2 最大支持 256 |
 
-表的读法是默认用 SDPA,只有它表达不了的需求才换路径.第二行对应 2.2 节的派发规则:输入不满足某个融合内核的限制时,SDPA 只给警告并换用其他实现,在 `sdpa_kernel` 里只放目标后端,这种回退就变成报错.第三,四行是 flash-attn 独有的结构化参数和分页接口,参数含义见 2.4 节,打包见 2.7 节,掩码的表示见 2.10 节.最后两行落在融合内核的数据类型和头维度限制之外,只能回到非融合实现,代价是 2.1 节算过的 $O(N^2)$ 访存.
+表的读法是默认用 SDPA,只有它表达不了的需求才换路径.第二行对应 2.2 节的派发规则:输入不满足某个融合内核的限制时,SDPA 只给警告并换用其他实现,在 `sdpa_kernel` 里只放目标后端,这种回退就变成报错.第三,四行是 flash-attn 独有的结构化参数和分页接口,参数含义见 2.4 节,打包见 2.7 节,掩码的表示见 2.10 节.最终两行落在融合内核的数据类型和头维度限制之外,只能回到非融合实现,代价是 2.1 节算过的 $O(N^2)$ 访存.
 
 ## 3. 代码与边界
 
@@ -380,7 +380,7 @@ def attention_xformers(q, k, v, causal=False):
 
 几个容易出错的地方:
 
-- `transpose` 之后张量不连续.flash-attn 要求最后一维连续,`transpose(1, 2)` 只交换了前面的维度,一般满足;其他改变最后一维 stride 的操作需要先 `.contiguous()`.
+- `transpose` 之后张量不连续.flash-attn 要求最终一维连续,`transpose(1, 2)` 只交换了前面的维度,一般满足;其他改变最终一维 stride 的操作需要先 `.contiguous()`.
 - flash-attn 的 CUDA 实现支持 fp16 和 bf16,不支持 fp32 输入.
 - `attention_eager` 的因果掩码假定 $L=S$.增量解码时 $L<S$,要按式 (8) 的右下角对齐构造.
 - 比较几条路径的输出时,容差要按 dtype 设置.fp16 和 bf16 下融合内核与 eager 的差异来自累加顺序,不说明哪一条有错.
@@ -401,7 +401,7 @@ def attention_xformers(q, k, v, causal=False):
 
 **分页 KV cache 的块大小要求不同.** 上游 flash-attn 的分页接口要求块大小是 256 的倍数,PagedAttention 论文中 vLLM 的默认块大小是 16.接入时要核对所用内核对块大小的要求.
 
-## 参考文献
+**参考文献**
 
 1. Tri Dao, Daniel Y. Fu, Stefano Ermon, Atri Rudra, Christopher Ré. (2022). [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135). NeurIPS 2022.
 2. Tri Dao. (2023). [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691). ICLR 2024.

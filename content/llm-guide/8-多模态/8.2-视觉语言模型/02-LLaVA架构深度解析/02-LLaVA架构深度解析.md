@@ -9,7 +9,7 @@ tags: ["LLaVA", "LLaVA-NeXT", "LLaVA-OneVision", "VLM", "视觉语言模型"]
 
 > 本文只记录论文,项目页和官方仓库能够支持的结论.不同版本,骨干,输入分辨率,训练数据与评测协议不可混用;没有公开证据的准确率变化,失败率和内部机制不作估计.
 
-## 1. 一条主线,四个不同版本
+## 一条主线,四个不同版本
 
 LLaVA 系列共享一个简洁接口:视觉编码器产生视觉特征,连接器把特征映射到语言模型的词嵌入维度,语言模型在视觉前缀与文本上下文上生成回答.这个接口延续了下来,但视觉编码器,连接器,数据配方,可接受的视觉输入和评测协议都在变化.
 
@@ -22,7 +22,7 @@ LLaVA 系列共享一个简洁接口:视觉编码器产生视觉特征,连接器
 
 来源:[LLaVA 论文](https://arxiv.org/abs/2304.08485),[LLaVA-1.5 论文](https://arxiv.org/abs/2310.03744),[LLaVA-NeXT 官方页](https://llava-vl.github.io/blog/2024-01-30-llava-next/),[LLaVA-OneVision 论文](https://arxiv.org/abs/2408.03326).
 
-## 2. 原始 LLaVA:线性连接与两阶段训练
+### 原始 LLaVA:线性连接与两阶段训练
 
 设视觉编码器输出为
 
@@ -45,7 +45,7 @@ $$
 
 原始论文报告 8 张 A100 上阶段一约 4 小时,阶段二约 10 小时.这是作者特定硬件,实现和超参数下的复现实录,不应外推为所有 LLaVA 变体的成本.[论文训练细节](https://arxiv.org/html/2304.08485#Sx3).
 
-## 3. LLaVA-1.5:MLP,336 像素和公开数据混合
+## LLaVA-1.5:MLP,336 像素和公开数据混合
 
 LLaVA-1.5 把连接器改为两层 MLP:
 
@@ -65,7 +65,7 @@ $$
 
 来源:[官方仓库训练说明](https://github.com/haotian-liu/LLaVA#train),[LLaVA-1.5 数据混合表](https://arxiv.org/html/2310.03744#A1.T7),[官方 Data.md](https://github.com/haotian-liu/LLaVA/blob/main/docs/Data.md).
 
-## 4. LLaVA-NeXT:AnyRes 不是任意网格公式
+## LLaVA-NeXT:AnyRes 不是任意网格公式
 
 LLaVA-NeXT 将一张高分辨率图像表示为一个全局视图与若干局部裁块.官方 2024-01 页面列出的原始网格集合为:
 
@@ -85,7 +85,7 @@ $$
 
 来源:[LLaVA-NeXT 官方技术页](https://llava-vl.github.io/blog/2024-01-30-llava-next/),[官方消融页](https://llava-vl.github.io/blog/2024-05-25-llava-next-ablations/).
 
-## 5. LLaVA-OneVision:跨场景统一不等于"视频版 NeXT"
+### LLaVA-OneVision:跨场景统一不等于"视频版 NeXT"
 
 LLaVA-OneVision 的公开实例使用 Qwen2,SigLIP 和两层 MLP.它为单图,多图,视频选择不同的视觉表示预算:单图可使用 Higher AnyRes;多图使用每张图的基础分辨率;视频对每帧编码后通过插值控制每帧 token 数.论文有意让三个场景的最大视觉 token 预算接近,以支持跨场景迁移.
 
@@ -98,7 +98,7 @@ LLaVA-OneVision 的公开实例使用 Qwen2,SigLIP 和两层 MLP.它为单图,�
 
 论文还公开了更细的数据分项;总数与分项可能因去重,重采样和同一图像对应多种标注而不能直接相加.引用规模时必须注明来自论文表 1 还是数据附录,不能自行求和生成新口径.[训练表与评测协议](https://arxiv.org/html/2408.03326#S5).
 
-## 6. 评测必须绑定协议
+## 评测必须绑定协议
 
 | 要记录的字段 | 为什么不能省 |
 |---|---|
@@ -111,7 +111,7 @@ LLaVA-OneVision 的公开实例使用 Qwen2,SigLIP 和两层 MLP.它为单图,�
 
 LLaVA-1.5 论文在学术任务表中用星号明确标注"训练时见过对应训练图像/标注"的结果;这不等于测试集泄漏,但说明它们是任务内监督结果,不应贴上纯零样本标签.OneVision 论文则说明作者结果默认使用 LMMs-Eval,greedy decoding 和 0-shot,另有说明者除外.
 
-## 7. 一手来源
+**一手来源**
 
 - [Visual Instruction Tuning(LLaVA)](https://arxiv.org/abs/2304.08485)
 - [Improved Baselines with Visual Instruction Tuning(LLaVA-1.5)](https://arxiv.org/abs/2310.03744)

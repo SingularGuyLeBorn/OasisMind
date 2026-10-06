@@ -54,7 +54,7 @@ $$
 
 K3 每层固定 $N_s=2$. $\mathcal{T}_k(\bm{x})$ 是 Top-16 集合, $p_i$ 由第 3.1 节的门控给出. 路由器读的是满宽 $\bm{x}$, 不读 $\bm{z}$; dispatch 的对象是 $\bm{z}$. 所以通信按 $\ell$ 计, 打分仍使用完整信息. $\mathbf{W}^{\downarrow}$ 与路由器的输入相同, K3 的推理 kernel 把两者合并成一次 GEMM, 只读一次 $\bm{x}$.
 
-层的排布也决定了 MoE 层数. K3 的骨干由块重复组成, 每块 3 层 Kimi Delta Attention (KDA) 后接 1 层 Gated MLA, 共 23 块, 末尾再加 1 层 Gated MLA, 保证最后一层是全局注意力, 合计 69 层 KDA 与 24 层 MLA, 共 93 层. 报告 Fig. 2 中每个注意力层都接一个 Stable LatentMoE, Table 1 又列出 1 层稠密 FFN, 所以 MoE 层是 92 层. KDA 层与 MLA 层后面接的是同一种 Stable LatentMoE, 式 (2)–(4) 对两类层都成立, 第 1.3 节的参数估算因此可以按 92 层统一乘.
+层的排布也决定了 MoE 层数. K3 的骨干由块重复组成, 每块 3 层 Kimi Delta Attention (KDA) 后接 1 层 Gated MLA, 共 23 块, 末尾再加 1 层 Gated MLA, 保证最终一层是全局注意力, 合计 69 层 KDA 与 24 层 MLA, 共 93 层. 报告 Fig. 2 中每个注意力层都接一个 Stable LatentMoE, Table 1 又列出 1 层稠密 FFN, 所以 MoE 层是 92 层. KDA 层与 MLA 层后面接的是同一种 Stable LatentMoE, 式 (2)–(4) 对两类层都成立, 第 1.3 节的参数估算因此可以按 92 层统一乘.
 
 ### 1.3 宽度与参数
 
@@ -244,7 +244,7 @@ QB 让各专家被选中的次数接近 $q$, 但专家并行看的是每张卡�
 
 ---
 
-## 参考文献
+**参考文献**
 
 1. Moonshot AI. (2026). [Kimi K3 Technical Report](https://arxiv.org/abs/2607.24653). §2.1 层排布, §2.3 式 (11)–(14), §2.5 Per-Head Muon, §3.3 训练配方, Fig. 2, Fig. 4, Fig. 5, Table 1, 附录 C–E.
 2. Elango, V., et al. (2026). [LatentMoE: Toward Optimal Accuracy per FLOP and Parameter in Mixture of Experts](https://arxiv.org/abs/2601.18089).

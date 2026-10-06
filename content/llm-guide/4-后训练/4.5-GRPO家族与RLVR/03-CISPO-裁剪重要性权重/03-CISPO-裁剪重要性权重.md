@@ -11,9 +11,9 @@ excerpt: "CISPO 来自 MiniMax-M1 技术报告. 它把 PPO 和 GRPO 对 token �
 
 材料是 MiniMax-M1 技术报告 (*MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*, arXiv:2506.13585) 的 §3.1, CISPO 全称 Clipped IS-weight Policy Optimization. 问题是同一批 rollout 要更新多轮时, PPO/GRPO 的裁剪会让一部分 token 失去梯度.
 
-## 1. 问题: 多轮离策略更新中, 反思 token 被裁掉
+## 问题: 多轮离策略更新中, 反思 token 被裁掉
 
-### 1.1 PPO 和 GRPO 的目标
+### PPO 和 GRPO 的目标
 
 对数据集 $\mathcal{D}$ 中的问题 $q$, 旧策略 $\pi_{\theta_{old}}$ 生成回复 $o_i$. PPO 的目标 (论文式 (1)):
 
@@ -38,7 +38,7 @@ $$
 
 $R_i$ 可以来自规则校验器 (例如数学题判对错), 也可以来自奖励模型. 结果监督下, 同一条回复的所有 token 共享一个 $\hat A$.
 
-### 1.2 论文观察到的现象
+**论文观察到的现象**
 
 MiniMax 在混合注意力架构 (带 lightning attention 的 MoE 模型) 上做 zero-RL 的早期实验里, GRPO 损害了训练效果, 也没能促成长 CoT 推理行为的出现. 经过一系列受控消融, 作者把主要原因定位到 PPO/GRPO 损失里的裁剪操作.
 
@@ -46,13 +46,13 @@ MiniMax 在混合注意力架构 (带 lightning attention 的 MoE 模型) 上做
 
 训练设定放大了这个问题: 每生成一批数据, 要做 16 轮离策略更新. 第一轮时 $\pi_\theta=\pi_{\theta_{old}}$, 所有 $r=1$. 某个反思 token 的概率一旦被推高, 分母还是采样时的小概率, 后面每一轮 $r$ 只会更大, 一直落在区间外. DAPO 把裁剪上界调高 (Clip-Higher, Yu 等 2025) 来缓解, 作者发现在 16 轮更新的设定下效果不够.
 
-### 1.3 为什么低概率 token 先越界
+**为什么低概率 token 先越界**
 
 同样幅度的参数更新, 低概率 token 的比率变化更大. 看最简单的情形: 只有 token $v$ 的 logit 增加 $\delta$, 其余 logit 不变. 设更新前它的概率是 $p$, 更新后的概率是 $p'=p\,e^{\delta}/(1-p+p\,e^{\delta})$, 比率 $r=p'/p=e^{\delta}/(1-p+p\,e^{\delta})$. $p\to0$ 时 $r\to e^{\delta}$; $p\to1$ 时 $r\to1$. 取 $\delta=0.5$: $p=0.01$ 时 $r\approx1.638$, 已经远超 $1.2$; $p=0.9$ 时 $r\approx1.041$, 还在区间内. 另一方面, $\log\pi_v$ 对自身 logit 的梯度是 $1-p$, 正优势推高 $v$ 时, 低概率 token 的 logit 本来就被推得更多. 两个因素叠加, 区间外的 token 集中在低概率的那一端, 也就是论文说的反思 token 所在的位置.
 
 这个算例还说明另一点: 如果每批 rollout 只做一次梯度更新, 更新时 $\pi_\theta=\pi_{\theta_{old}}$, 所有 $r=1$, PPO, GRPO, CISPO 的梯度完全相同. 三者的差别只出现在同一批数据的第二轮及以后的更新里. 论文的 16 轮设定让这部分更新占了大多数.
 
-### 1.4 先看 PPO 的梯度
+**先看 PPO 的梯度**
 
 被裁掉为什么等于没有梯度, 要从式 (1) 的导数看. 比率对参数的导数是
 
@@ -72,9 +72,9 @@ $$
 
 第一行就是反思 token 的情形: 回复得到正优势, 反思 token 的概率已经被推高, $r>1+\epsilon$, 梯度为 0. 16 轮更新里, 只要它在第一轮之后越过上界, 剩下的轮次都对它没有作用. 第四行是另一个方向的问题: 负优势的回复里, 某个 token 的概率被意外推高, PPO 不限制它的系数. 这一行常被另外处理, 例如 dual-clip PPO (Ye 等 2020) 给它加了一个上界.
 
-## 2. CISPO 的目标
+**CISPO 的目标**
 
-### 2.1 从带重要性权重的 REINFORCE 出发
+### 从带重要性权重的 REINFORCE 出发
 
 离线更新时, 修正了分布的 REINFORCE 目标是 (论文式 (3)):
 
@@ -101,7 +101,7 @@ $$
 
 不裁权重时, 式 (7) 退化为标准的策略梯度目标. 论文实验中把 $\epsilon^{IS}_{low}$ 设得很大, 等于不设下界, 只调 $\epsilon^{IS}_{high}$.
 
-### 2.2 四种情形下的梯度
+**四种情形下的梯度**
 
 不设下界时, $\hat r=\min(r,1+\epsilon^{IS}_{high})$. 代入式 (7), 每个 token 的梯度是 $\hat r\hat A\nabla\log\pi_\theta$. 和1.4 节的表并排:
 
@@ -123,7 +123,7 @@ $$
 
 所以 CISPO 在 PPO 的基础上做了两件事: 区间外不再丢 token; 所有 token 的系数都不超过 $1+\epsilon^{IS}_{high}$. 论文承认, 因为裁了权重, 式 (7) 的梯度略有偏差; 换来的是所有 token 都保留梯度贡献, 尤其是长回复里的 token. 作者报告这样做降低了方差, 训练更稳.
 
-### 2.3 一个数值例
+**一个数值例**
 
 取 $\hat A=+1$, PPO 的 $\epsilon=0.2$, CISPO 的上界也取 $1.2$ (这里只为演示, 论文没有给 $\epsilon^{IS}_{high}$ 的值). 某个反思 token 的 $r=1.8$.
 
@@ -135,12 +135,12 @@ $$
 - PPO: 未裁剪项 $0.3\times(-1)=-0.3$, 裁剪项 $0.8\times(-1)=-0.8$, $\min$ 选 $-0.8$, 是常数, 梯度为 0.
 - CISPO (无下界): $\hat r=0.3$, 梯度 $-0.3\,\nabla\log\pi_\theta$.
 
-最后取 $\hat A=-1$, $r=5$.
+最终取 $\hat A=-1$, $r=5$.
 
 - PPO: 未裁剪项 $-5$, 裁剪项 $-1.2$, $\min$ 选 $-5$, 梯度 $-5\,\nabla\log\pi_\theta$.
 - CISPO: $\hat r=1.2$, 梯度 $-1.2\,\nabla\log\pi_\theta$.
 
-### 2.4 放弃信任域的代价
+**放弃信任域的代价**
 
 论文引言说 CISPO 放弃了信任域约束, 改为裁剪重要性权重来稳定训练. 这一点可以用 16 轮更新算一遍. 设某个反思 token 在 $\pi_{\theta_{old}}$ 下概率 $p=0.01$, 每轮更新让它的 logit 增加 $0.1$ (只为演示). 按 1.3 节的近似, 第 $k$ 轮之后 $r\approx e^{0.1k}$.
 
@@ -157,7 +157,7 @@ $$
 - 下栏是 CISPO: $r_t$ 先裁成 $\hat r$, 再做 $\mathrm{sg}(\hat r)$, 目标是 $\mathrm{sg}(\hat r)\hat A\log\pi_\theta$, 标注所有 token 保留 $\nabla\log\pi$.
 - 两栏的起点相同, 差别只在裁剪作用在哪里, 对应 2.2 节表格的第二, 四行.
 
-### 2.5 其他配置
+### 其他配置
 
 - **损失归一化.** 式 (7) 的分母是一组回复的 token 总数 $\sum_i|o_i|$, 每个 token 权重相同. 式 (1) 和式 (5) 先对每条回复除以 $|o_i|$, 短回复的每个 token 权重更大.
 - **动态采样和长度惩罚.** 沿用 DAPO 的做法: 动态采样过滤掉组内全对或全错的题 (这时式 (3) 的分子全为 0), 长度惩罚压制超长回复.
@@ -165,9 +165,9 @@ $$
 
 前两项都会改变每个 token 实际拿到的权重, 用一组两条回复就能算出来. 设 $G=2$, 一条回复 100 个 token, 另一条 1000 个 token. 按式 (1) 的写法, 先对每条回复取 token 平均, 再对两条取平均, 短回复的每个 token 权重是 $1/(2\times100)=1/200$, 长回复是 $1/2000$, 差 10 倍; 两条回复各占总权重的一半. 按式 (7), 每个 token 的权重都是 $1/1100$, 长回复占总权重的 $1000/1100\approx91\%$. 长 CoT 训练里, 回复越长, 它的 token 在式 (7) 下分到的总梯度越多, 不会因为长度被稀释. 动态采样处理的是式 (3) 的另一个边界: 组内 $G$ 条全对或全错时, 分子 $R_i-\mathrm{mean}$ 全为 0, 分母 $\mathrm{std}$ 也为 0, 这组题既算不出有意义的优势, 也不贡献梯度, 留在 batch 里只会让有效样本数变少.
 
-## 3. 和其他目标的联系
+## 和其他目标的联系
 
-### 3.1 与截断重要性采样的关系
+### 与截断重要性采样的关系
 
 把重要性权重截断来换取更小的方差, 在统计和 RL 文献里早有先例. Ionides 2008 研究了截断重要性采样: 权重的尾部很重时, 截断会引入偏差, 但方差有界. IMPALA (Espeholt 等 2018) 的 V-trace 在策略梯度项里用截断后的权重 $\rho_s=\min\bigl(\bar\rho,\ \pi(a_s\mid x_s)/\mu(a_s\mid x_s)\bigr)$ 乘 $\nabla\log\pi(a_s\mid x_s)$ 和优势估计, $\mu$ 是行为策略. 这个形式和式 (7) 一致: 只截上界, 截断后的权重当作系数, 梯度经过 $\log\pi$.
 
@@ -175,7 +175,7 @@ $$
 
 方差这一侧也可以直接写出来. 每个 token 的梯度贡献是 $\hat r\hat A\nabla\log\pi_\theta$, 不设下界时 $0\le\hat r\le1+\epsilon^{IS}_{high}$, 所以每个 token 的梯度范数不超过 $(1+\epsilon^{IS}_{high})\,|\hat A_{i,t}|\,\|\nabla_\theta\log\pi_\theta(o_{i,t}\mid\cdot)\|$. 不裁剪时 $r$ 没有上界, 16 轮更新后少数 token 的 $r$ 可以很大, 单个 token 就可能主导整批梯度. 裁剪把每个 token 的影响限制在未加权梯度的 $1+\epsilon^{IS}_{high}$ 倍以内. PPO 的裁剪也限制了正优势一侧的影响, 方式是把系数直接置零; 负优势, 大比率的那一侧它不限制 (1.4 节表格第四行).
 
-### 3.2 统一形式: 用掩码控制是否丢弃 token
+### 统一形式: 用掩码控制是否丢弃 token
 
 论文还给出一个带 token 掩码的统一目标, 用超参控制在哪些条件下丢弃哪些 token 的梯度 (论文式 (6)):
 
@@ -204,15 +204,15 @@ $$
 
 **stop-gradient 不能省.** 如果不对 $\hat r$ 做 stop-gradient, 在区间内, 目标项 $r\hat A\log\pi_\theta$ 对 $\theta$ 的导数会多出一项 $r\hat A\log\pi_\theta\cdot\nabla\log\pi_\theta$ (由式 (4) 得到), 这一项的大小取决于 $\log\pi_\theta$ 的数值, 没有意义; 在区间外, $\hat r$ 是常数, 又和 stop-gradient 一样. 只有加了 stop-gradient, 梯度才是式 (5) 那种重要性加权的策略梯度.
 
-## 4. 实验
+## 实验
 
-### 4.1 受控对比
+### 受控对比
 
 论文在 zero-RL 设定下 (不经 SFT, 直接对基座模型做 RL) 比较 CISPO, DAPO 和 GRPO: 用 Yu 等 2025 (DAPO) 的数学推理数据训练 Qwen2.5-32B-base, 在 AIME 2024 上报告成绩 (Figure 2). 相同训练步数下 CISPO 明显高于 DAPO 和 GRPO; CISPO 用 50% 的训练步数达到 DAPO 的成绩. 论文引言把这个结果写成相对 DAPO 2 倍的加速. 论文正文没有用表格给出 Figure 2 曲线的具体数值.
 
 这组对比里, 数据和基座相同, 三种方法的差别集中在目标函数上. 按 1.3 节的算例, 每批 rollout 的第一轮更新里所有 $r=1$, 三者梯度相同, Figure 2 的差距只能来自同一批数据后面几轮如何处理越界的 token. GRPO 用对称区间; DAPO 把上界调高 (Clip-Higher), 并加上动态采样和 token 级损失; CISPO 沿用 DAPO 的后两项 (2.5 节), 只把裁剪换成式 (6). 所以 CISPO 和 DAPO 的那一段差距, 主要可以归到「越界 token 还有没有梯度」这一处, 也就是 2.2 节表格的第二, 四行. 「2 倍加速」是按训练步数算的, 论文没有给这组对比的墙钟时间.
 
-### 4.2 在 MiniMax-M1 训练中的使用
+**在 MiniMax-M1 训练中的使用**
 
 MiniMax-M1 基于 MiniMax-Text-01, 是混合 MoE 架构, 总参数 456B, 每个 token 激活 45.9B, 使用 lightning attention. 摘要称, 混合注意力和 CISPO 结合, 让 M1 的完整 RL 训练在 512 张 H800 上三周完成, 租用成本 534,700 美元 (引言写约 0.53M 美元). 这是整套训练的成本, 包含架构带来的推理效率, 不能全部归到 CISPO 上.
 
@@ -226,7 +226,7 @@ MiniMax-M1 基于 MiniMax-Text-01, 是混合 MoE 架构, 总参数 456B, 每个 
 
 奖励模型一侧有长度偏差 (§4.2.2): 生成式奖励模型偏好更长的回复, 不管推理质量如何. 离线手段 (训练数据覆盖更多长度和来源, 加对抗样本, 改模型结构) 没能阻止 RL 训练中出现长度投机. 最终做法是训练中在线监控: 回复长度上涨而任务成功率和推理深度没有提升时, 立即重新校准奖励模型; RL 一侧再配合奖励整形和归一化, 降低奖励对长度这类表面特征的敏感度.
 
-### 4.3 扩展生成长度时的调整
+**扩展生成长度时的调整**
 
 M1 的第一次 RL 输出长度上限是 40K, 之后分阶段扩到 48K, 56K, 64K, 72K, 80K (§5). 是否进入下一阶段, 看生成序列的困惑度是否收敛, 以及输出长度的 99 分位是否接近当前窗口上限.
 
@@ -238,9 +238,9 @@ M1 的第一次 RL 输出长度上限是 40K, 之后分阶段扩到 48K, 56K, 64
 
 第 3 条说明 $\epsilon^{IS}_{high}$ 并非越大越好. 上界太宽时, 被保留的 token 系数也可以很大, 长序列上的累积更新仍然会过猛.
 
-## 5. 实现与相邻方法
+### 实现与相邻方法
 
-### 5.1 实现
+**实现**
 
 `log_prob`, `old_log_prob`, `advantages`, `response_mask` 形状都是 $[B,T]$, 结果监督下 `advantages` 是式 (3) 的值广播到每个 token. 下面把式 (6) 和式 (7) 写成 PyTorch:
 
@@ -265,7 +265,7 @@ g_ppo = lp.grad.clone(); lp.grad = None
 assert torch.allclose(g_ppo, lp.grad)
 ```
 
-最后几行验证 2.1 节的结论: 不裁剪时, $\mathrm{sg}(r)\hat A\log\pi$ 和 $r\hat A$ 对 log 概率的梯度相同.
+最终几行验证 2.1 节的结论: 不裁剪时, $\mathrm{sg}(r)\hat A\log\pi$ 和 $r\hat A$ 对 log 概率的梯度相同.
 
 **分母.** 设一组只有两条回复: 一条 100 个 token, $\hat A=+1$; 一条 400 个 token, $\hat A=-1$; 暂设 $\hat r=1$. 先按条平均再对组平均时, 短回复每个 token 的权重是 $1/200$, 长回复每个 token 是 $1/800$, 正样本的每个 token 分量是负样本的 4 倍. token 级分母是 500, 每个 token 的权重都是 $1/500$. 4.3 节的模式坍塌说明, token 级归一化也有自己的问题: 负样本更长时, 负梯度的总量更大.
 
@@ -273,7 +273,7 @@ assert torch.allclose(g_ppo, lp.grad)
 
 **数值精度.** 比率在指数域计算, 长序列上 `log_prob - old_log_prob` 的误差会被放大, 4.2 节的 LM head 精度问题就是一个例子. 至少在算比率时用 FP32. `response_mask` 和 EOS 位置不一致时, $|o_i|$ 和分母都会算错.
 
-### 5.2 与相邻方法的对照
+### 与相邻方法的对照
 
 ![GRPO, DAPO, CISPO 三列: 裁剪对象, 是否丢 token, 优势来源](./images/fig-cispo-vs-grpo-dapo.png)
 
@@ -306,9 +306,9 @@ assert torch.allclose(g_ppo, lp.grad)
 
 比率稍大时 SAPO 的系数比 CISPO 还大, 比率很大时降到接近 0; CISPO 在上界之后始终保持 $1.2$. 两种方法都在 $r$ 略超出 PPO 区间时保留梯度, 对极端比率的处理方向相反.
 
-## 6. 失效模式与适用边界
+## 失效模式与适用边界
 
-### 6.1 常见失效与偏差来源
+### 常见失效与偏差来源
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
@@ -321,13 +321,13 @@ assert torch.allclose(g_ppo, lp.grad)
 
 偏差的来源要分清. 权重被截断的 token, 梯度被系统性低估. 每批只更新一两轮时, 大多数 $r$ 都在 1 附近, 截断很少触发, 偏差很小; 论文的 16 轮设定下, 截断触发得更多, 这正是 CISPO 相对 PPO 的收益所在, 也是偏差最大的地方. 论文的判断是, 保留这些 token 的梯度比无偏更重要.
 
-### 6.2 什么时候换成 CISPO
+### 什么时候换成 CISPO
 
 判断依据是每批 rollout 上做几轮更新. 只做一轮时 (完全 on-policy), 1.3 节已经说明各方法梯度相同, 换 CISPO 没有收益. 做多轮时, 先统计每轮被 PPO 裁剪的 token 比例, 以及这些 token 的类型: 如果被裁的主要是正优势回复里的低概率 token, 而这些 token 恰好是希望模型学会的行为, CISPO 的改动正好对准这个问题. 如果被裁的比例本来就很低 (RLOO 一文在 RLHF 设定下测到不到 5%), 两者的差别也会很小.
 
 熵方面, 论文说 CISPO 避免丢弃 token, 同时让熵保持在合理范围, 保证探索稳定, 但没有单独给出熵曲线的对比. 它能做到的是让刚冒头的低概率 token 不因裁剪失去梯度; 如果熵在训练早期已经坍塌, 换成 CISPO 不能把它恢复.
 
-## 参考文献
+**参考文献**
 
 1. MiniMax. *MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*. arXiv:2506.13585, 2025. §3.1, §3.2, §5, Figure 2.
 2. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., Klimov, O. *Proximal Policy Optimization Algorithms*. arXiv:1707.06347, 2017.

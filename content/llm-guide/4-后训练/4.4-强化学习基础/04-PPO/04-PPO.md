@@ -4,13 +4,13 @@ published: true
 tags: ["PPO", "RLHF", "GAE", "Actor-Critic", "InstructGPT"]
 excerpt: "PPO 用裁剪后的重要性比率代替 TRPO 的 KL 约束, 只用一阶优化就能在同一批样本上多次更新; InstructGPT 把它接到语言模型上, 形成策略, 价值, 奖励, 参考四个模型的 RLHF 流程."
 ---
-# 04 PPO: 近端策略优化
+# PPO: 近端策略优化
 
 > 相关阅读: [03-TRPO](../03-TRPO/03-TRPO.md) · [01-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [04-GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md) · [05-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [4.4.0 强化学习的数学原理](../01-强化学习的数学原理/01-强化学习的数学原理.md) · [4.4.2 DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md)
 
-## 1. 问题: 策略梯度的方差和样本效率
+## 问题: 策略梯度的方差和样本效率
 
-### 1.1 策略梯度
+### 策略梯度
 
 语言模型生成可以写成序贯决策. 状态 $s_t$ 是 prompt 加上已生成的 token, 动作 $a_t$ 是下一个 token, 策略 $\pi_\theta(a_t\mid s_t)$ 是模型在当前前缀上的下一个 token 分布. 转移是确定的: 写下 $a_t$ 后, 新状态就是把它拼到前缀后面. 一条轨迹 $\tau=(s_0,a_0,s_1,a_1,\ldots)$ 就是一次完整生成. 目标是
 
@@ -24,7 +24,7 @@ $$
 \nabla_\theta J(\theta)=\mathbb{E}_{\tau\sim\pi_\theta}\Bigl[R(\tau)\sum_{t=0}^{T-1}\nabla_\theta\log\pi_\theta(a_t\mid s_t)\Bigr]. \tag{2}
 $$
 
-### 1.2 三个问题
+**三个问题**
 
 1. **方差大.** 式 (2) 用整条轨迹的回报给每一步加权. 前面一个好动作, 后面一个失误, 共用同一个 $R(\tau)$. 信用分配粗, 梯度估计方差大.
 2. **样本只能用一次.** 式 (2) 要求样本来自当前 $\pi_\theta$. 参数一更新, 之前采的轨迹就不再服从当前策略. PPO 论文指出, 直接在同一批数据上对 $L^{PG}=\hat{\mathbb{E}}_t[\log\pi_\theta(a_t\mid s_t)\hat{A}_t]$ 做多步优化缺乏理论依据, 实践中常导致破坏性的大步更新.
@@ -32,9 +32,9 @@ $$
 
 PPO 依次处理这三点: 用价值网络和 GAE 降方差, 用重要性比率复用样本, 用裁剪代替 KL 约束.
 
-## 2. 优势函数与 GAE
+**优势函数与 GAE**
 
-### 2.1 优势
+### 优势
 
 状态价值 $V^\pi(s)=\mathbb{E}[G_t\mid s_t=s]$, 动作价值 $Q^\pi(s,a)=\mathbb{E}[G_t\mid s_t=s,a_t=a]$, 其中 $G_t$ 是从 $t$ 起的 (折扣) 回报. 优势是
 
@@ -56,7 +56,7 @@ $$
 
 是优势的一个估计. 它只看一步, 方差小, 但 $V_\phi$ 不准时偏差大. 用完整回报 $G_t-V_\phi(s_t)$ 偏差小, 方差大.
 
-### 2.2 GAE
+**GAE**
 
 GAE (Schulman et al., arXiv:1506.02438) 用 $\lambda\in[0,1]$ 对多步残差做指数加权:
 
@@ -70,7 +70,7 @@ $$
 A_t=\delta_t+\gamma\lambda A_{t+1}. \tag{7}
 $$
 
-### 2.3 手算
+**手算**
 
 4 步轨迹, $\gamma=0.99$, $\lambda=0.95$. 奖励 $r_0=r_1=r_2=1$, $r_3=5$, 终止后 $V(s_4)=0$; 价值网络给出 $V(s_0)=1.5$, $V(s_1)=2.0$, $V(s_2)=2.5$, $V(s_3)=3.0$.
 
@@ -85,20 +85,20 @@ $$
 
 $\gamma\lambda=0.9405$. 回推: $A_3=2.0$; $A_2=1.47+0.9405\times2.0=3.351$; $A_1=1.475+0.9405\times3.351=4.627$; $A_0=1.48+0.9405\times4.627=5.831$. 价值目标 $R_t=A_t+V(s_t)$ 分别是 $7.331,6.627,5.851,5.0$.
 
-$\lambda=0$ 时四个优势就是四个 $\delta$, 最后一步的 $+5$ 传不到开头, $A_0=1.48$. $\lambda=0.95$ 时 $A_0=5.831$, 终点奖励按 $(\gamma\lambda)^l$ 衰减后传回前面. 这组数字是演示用的构造例子.
+$\lambda=0$ 时四个优势就是四个 $\delta$, 最终一步的 $+5$ 传不到开头, $A_0=1.48$. $\lambda=0.95$ 时 $A_0=5.831$, 终点奖励按 $(\gamma\lambda)^l$ 衰减后传回前面. 这组数字是演示用的构造例子.
 
-### 2.4 句末奖励下的 GAE
+### 句末奖励下的 GAE
 
-RLHF 里的奖励形态更特殊: 除最后一个 token 外, 即时奖励只有 KL 罚. 先忽略 KL, 设 $\gamma=1$, 一条 4 个 token 的回答得分 1, 价值网络给出 $V(s_0..s_3)=(0.5,0.6,0.4,0.8)$, 终止价值 0. 则 $\delta_0=0.6-0.5=0.1$, $\delta_1=0.4-0.6=-0.2$, $\delta_2=0.8-0.4=0.4$, $\delta_3=1-0.8=0.2$.
+RLHF 里的奖励形态更特殊: 除最终一个 token 外, 即时奖励只有 KL 罚. 先忽略 KL, 设 $\gamma=1$, 一条 4 个 token 的回答得分 1, 价值网络给出 $V(s_0..s_3)=(0.5,0.6,0.4,0.8)$, 终止价值 0. 则 $\delta_0=0.6-0.5=0.1$, $\delta_1=0.4-0.6=-0.2$, $\delta_2=0.8-0.4=0.4$, $\delta_3=1-0.8=0.2$.
 
 - $\lambda=1$: $A_t=\sum_{l\ge0}\delta_{t+l}$, 中间的 $V$ 全部抵消, $A_t=1-V(s_t)$, 即 $(0.5,0.4,0.6,0.2)$. 优势只依赖 $V(s_t)$ 本身, 价值网络只起基线作用, 不会把自身误差带进别的位置.
 - $\lambda=0.95$: $A_3=0.2$, $A_2=0.4+0.95\times0.2=0.59$, $A_1=-0.2+0.95\times0.59=0.3605$, $A_0=0.1+0.95\times0.3605=0.4425$. 和 $\lambda=1$ 相比, $A_1$ 从 0.4 降到 0.36, $A_2$ 从 0.6 降到 0.59. 差异来自后续位置 $V$ 的取值: $V$ 准确时差异是降方差的收益, $V$ 有偏时差异就是偏差.
 
 句末奖励, 确定转移, 长回答这三个条件叠在一起时, 价值网络很难对中间前缀给出准确估计, 低 $\lambda$ 带进来的主要是偏差. §6.1 中 $\lambda=1$ 表现最好的实验结果与此一致.
 
-## 3. 重要性比率与裁剪
+## 重要性比率与裁剪
 
-### 3.1 代理目标
+### 代理目标
 
 用旧策略 $\pi_{\theta_{\mathrm{old}}}$ 的样本估计新策略的目标, 引入概率比
 
@@ -114,7 +114,7 @@ $$
 
 论文给的例子是 $\varepsilon=0.2$. 在 $\theta=\theta_{\mathrm{old}}$ 处 ($r=1$), $L^{\mathrm{CLIP}}$ 与 $L^{\mathrm{CPI}}$ 一阶相同; 离开后, $L^{\mathrm{CLIP}}$ 是 $L^{\mathrm{CPI}}$ 的下界.
 
-### 3.2 两种符号, 逐项看
+**两种符号, 逐项看**
 
 $\hat{A}_t>0$: 式 (9) 是 $\min(r\hat{A},\mathrm{clip}(r)\hat{A})$. $r\le1+\varepsilon$ 时取 $r\hat{A}$, 梯度正常; $r>1+\varepsilon$ 时取 $(1+\varepsilon)\hat{A}$, 对 $\theta$ 的梯度为 0. $r<1-\varepsilon$ 时, $r\hat{A}<(1-\varepsilon)\hat{A}$, $\min$ 取未裁剪项, 梯度仍在, 会把概率往回拉.
 
@@ -151,7 +151,7 @@ title: PPO-Clip: 概率比与 [1−ε, 1+ε] 信任带
 epsilon: 0.2
 ```
 
-### 3.3 完整目标与算法
+### 完整目标与算法
 
 策略和价值共享参数时, 目标要合并价值损失, 再加熵奖励鼓励探索 (论文式 (9)):
 
@@ -159,13 +159,13 @@ $$
 L^{\mathrm{CLIP+VF+S}}_t(\theta)=\hat{\mathbb{E}}_t\Bigl[L^{\mathrm{CLIP}}_t(\theta)-c_1\bigl(V_\theta(s_t)-V^{\mathrm{targ}}_t\bigr)^2+c_2S[\pi_\theta](s_t)\Bigr]. \tag{10}
 $$
 
-论文 Algorithm 1: 每轮迭代, $N$ 个并行 actor 各用 $\pi_{\theta_{\mathrm{old}}}$ 跑 $T$ 步, 计算优势; 然后在这 $NT$ 个样本上用 mini-batch 大小 $M\le NT$ 优化 $K$ 个 epoch (通常用 Adam); 最后 $\theta_{\mathrm{old}}\leftarrow\theta$. 采样是 on-policy 的, 同一批上的多次更新带一点 off-policy, 由 clip 控制.
+论文 Algorithm 1: 每轮迭代, $N$ 个并行 actor 各用 $\pi_{\theta_{\mathrm{old}}}$ 跑 $T$ 步, 计算优势; 然后在这 $NT$ 个样本上用 mini-batch 大小 $M\le NT$ 优化 $K$ 个 epoch (通常用 Adam); 最终 $\theta_{\mathrm{old}}\leftarrow\theta$. 采样是 on-policy 的, 同一批上的多次更新带一点 off-policy, 由 clip 控制.
 
 **为什么是下界.** TRPO 的理论 (见 [03-TRPO](../03-TRPO/03-TRPO.md)) 说明, 对所有状态取最大 KL 的罚项目标是策略真实性能的下界, 按罚项优化可以保证单调改进; 但单一的 $\beta$ 很难同时适用于不同问题和训练的不同阶段, 所以 TRPO 改用硬约束. PPO 论文还指出, 只用固定 $\beta$ 加 SGD 不足以复现 TRPO 的单调改进. 裁剪目标换了一种方式构造悲观估计: 它不显式计算 KL, 而是在比率偏离 1 并且对目标有利时截断收益. 论文 Figure 2 在 Hopper 上沿第一次 PPO 更新的方向插值, 更新后的策略与初始策略的 KL 约为 0.02, $L^{\mathrm{CLIP}}$ 恰好在这一点取最大, 而未裁剪的 $L^{\mathrm{CPI}}$ 仍在继续上升. 也就是说, 沿同一方向再走远, 未裁剪目标会继续鼓励, 裁剪目标则开始下降.
 
 论文同时给出另一种做法, 自适应 KL 罚 (论文式 (8)): 目标为 $\hat{\mathbb{E}}_t[r_t\hat{A}_t-\beta\,\mathrm{KL}[\pi_{\theta_{\mathrm{old}}},\pi_\theta]]$, 每次更新后算平均 KL $d$, 若 $d<d_{\mathrm{targ}}/1.5$ 则 $\beta\leftarrow\beta/2$, 若 $d>1.5\,d_{\mathrm{targ}}$ 则 $\beta\leftarrow2\beta$. 论文说 1.5 和 2 是经验取值, 算法对它们不敏感.
 
-### 3.4 论文的实验数字
+### 论文的实验数字
 
 **目标函数对比** (Table 1): 7 个 MuJoCo 任务, 各 1M 步, 每个设置 3 个种子, 共 21 次运行, 分数按「随机策略为 0, 最好结果为 1」归一化后平均. 网络是两层 64 单元的 MLP, 策略与价值不共享参数, 不用熵奖励.
 
@@ -184,17 +184,17 @@ $$
 
 **超参数.** MuJoCo: $T=2048$, Adam 步长 $3\times10^{-4}$, 10 个 epoch, mini-batch 64, $\gamma=0.99$, $\lambda=0.95$. Atari: $T=128$, 3 个 epoch, 8 个 actor, $\varepsilon=0.1\times\alpha$, 其中 $\alpha$ 在训练中从 1 线性降到 0, $c_1=1$, $c_2=0.01$. 所以 $\varepsilon=0.2$ 是连续控制实验的取值, Atari 上用的是 0.1 并逐渐退火.
 
-**Atari** (Table 2, 49 个游戏, 3 个种子平均): 按整个训练期间的平均回报, PPO 赢 30 个, ACER 18 个, A2C 1 个; 按最后 100 个 episode, ACER 28 个, PPO 19 个, A2C 1 个, 平局 1 个. PPO 学得快, 最终性能和 ACER 互有胜负.
+**Atari** (Table 2, 49 个游戏, 3 个种子平均): 按整个训练期间的平均回报, PPO 赢 30 个, ACER 18 个, A2C 1 个; 按最终 100 个 episode, ACER 28 个, PPO 19 个, A2C 1 个, 平局 1 个. PPO 学得快, 最终性能和 ACER 互有胜负.
 
-## 4. InstructGPT 的 RLHF
+## InstructGPT 的 RLHF
 
-### 4.1 数据与奖励模型
+### 数据与奖励模型
 
 InstructGPT 在 GPT-3 架构上训练了 1.3B, 6B, 175B 三档策略. 约 40 名承包商负责写示范, 给模型输出排序和主评估. 三份数据: SFT 约 13k 个训练 prompt (来自 API 和标注员编写), RM 33k 个, PPO 31k 个 (只来自 API, 无人工标签). prompt 只取自 Playground, 不用生产环境客户数据. 用 langid.py 分类, 约 96% 的数据被判为英文.
 
 SFT 训练 16 个 epoch, 余弦学习率, residual dropout 0.2. 论文观察到验证损失在 1 个 epoch 后就过拟合, 但继续训练对 RM 分数和人类偏好都有帮助.
 
-奖励模型从去掉最后 unembedding 层的模型出发, 输出一个标量. 论文只用 6B RM: 省算力, 并且 175B RM 训练不稳定, 不适合当 RL 中价值函数的初始化. 标注员每次对 $K=4$ 到 $9$ 个回答排序, 每个 prompt 产生 $\binom{K}{2}$ 个比较对. 若把比较对打散成独立样本, 每个回答会参与 $K-1$ 次梯度更新, RM 一个 epoch 就过拟合; 所以同一 prompt 的全部比较对放在一个 batch 元素里. 损失是
+奖励模型从去掉最终 unembedding 层的模型出发, 输出一个标量. 论文只用 6B RM: 省算力, 并且 175B RM 训练不稳定, 不适合当 RL 中价值函数的初始化. 标注员每次对 $K=4$ 到 $9$ 个回答排序, 每个 prompt 产生 $\binom{K}{2}$ 个比较对. 若把比较对打散成独立样本, 每个回答会参与 $K-1$ 次梯度更新, RM 一个 epoch 就过拟合; 所以同一 prompt 的全部比较对放在一个 batch 元素里. 损失是
 
 $$
 \mathrm{loss}(\theta)=-\frac{1}{\binom{K}{2}}\mathbb{E}_{(x,y_w,y_l)\sim D}\Bigl[\log\sigma\bigl(r_\theta(x,y_w)-r_\theta(x,y_l)\bigr)\Bigr]. \tag{11}
@@ -202,7 +202,7 @@ $$
 
 损失对奖励整体平移不变, 论文在 RL 前加一个偏置, 让示范数据的平均奖励为 0.
 
-### 4.2 PPO 阶段
+**PPO 阶段**
 
 论文把环境写成 bandit: 给一个 prompt, 期待一个回答, RM 打分后 episode 结束. 每个 token 上加对 SFT 模型的 KL 罚, 防止过度优化 RM. 价值函数从 RM 初始化. 加上预训练梯度后的目标为
 
@@ -229,7 +229,7 @@ $\gamma=0$ 的模型叫 PPO, $\gamma>0$ 的叫 PPO-ptx. 论文中未特别说明
 
 有两点和常见印象不同. 第一, 175B 的策略配的是 6B 的价值网络, 「策略和价值同尺寸」并非 InstructGPT 的做法; 论文这样设置是为了在不同策略尺寸间公平比较, 并控制算力. 第二, 每批只跑 1 个内层 epoch, 第一个 mini-batch 完全 on-policy, 后面 7 个也只偏离几步, PPO 用来复用样本的多 epoch 机制在这里基本没用上.
 
-### 4.3 结果
+**结果**
 
 - 在 API prompt 测试集上, 1.3B InstructGPT 的输出比 175B GPT-3 更受偏好, 参数少 100 多倍.
 - 175B InstructGPT 对 175B GPT-3 的胜率 $85\pm3\%$, 对 few-shot 175B GPT-3 为 $71\pm4\%$.
@@ -241,7 +241,7 @@ $\gamma=0$ 的模型叫 PPO, $\gamma>0$ 的叫 PPO-ptx. 论文中未特别说明
 
 RM 对留出标注员只有约 70% 的准确率, PPO 仍然提升了人类偏好. 一个合理的读法是策略主要利用了 RM 给出的相对排序信号; 同时这个信号有噪声, 过度优化会被利用, 所以 KL 罚和预训练混合都需要保留.
 
-### 4.4 四个模型的数据流
+**四个模型的数据流**
 
 ![RLHF-PPO 的四个模型](./images/fig-ppo-four-models.png)
 
@@ -253,9 +253,9 @@ RM 对留出标注员只有约 70% 的准确率, PPO 仍然提升了人类偏好
 - Critic 的 $V$ 和 $r_t$ 一起进入 $\mathrm{GAE}(\gamma,\lambda)$ 框, 输出 $A_t$ 和 $R_t=A_t+V$.
 - $A_t$ 进入左下 $L^{\mathrm{CLIP}}\to\theta$, $R_t$ 进入右下 $L^{\mathrm{VF}}\to\phi$. 图中没有从损失回到模型的箭头, 更新写在底框里. 底注: 绿色和红色可训练, 黄色和紫色冻结, KL 在 GAE 之前进入奖励.
 
-一次迭代按图走: Actor 采完整回答并记录 $\log\pi_{\theta_{\mathrm{old}}}$; 参考模型算每个 token 的 $\log\pi_{\mathrm{ref}}$; RM 给完整 $(x,y)$ 一个分数; Critic 给每个前缀一个 $V$. 每个 token 的即时奖励是 $-\beta(\log\pi_{\theta_{\mathrm{old}}}-\log\pi_{\mathrm{ref}})$, 最后一个 token 再加上 RM 分数. 这些奖励和 $V$ 进入 GAE, 得到 $\hat{A}_t$ 和 $R_t$. 更新时只动 Actor 和 Critic.
+一次迭代按图走: Actor 采完整回答并记录 $\log\pi_{\theta_{\mathrm{old}}}$; 参考模型算每个 token 的 $\log\pi_{\mathrm{ref}}$; RM 给完整 $(x,y)$ 一个分数; Critic 给每个前缀一个 $V$. 每个 token 的即时奖励是 $-\beta(\log\pi_{\theta_{\mathrm{old}}}-\log\pi_{\mathrm{ref}})$, 最终一个 token 再加上 RM 分数. 这些奖励和 $V$ 进入 GAE, 得到 $\hat{A}_t$ 和 $R_t$. 更新时只动 Actor 和 Critic.
 
-### 4.5 逐 token KL 与序列 KL
+**逐 token KL 与序列 KL**
 
 式 (12) 里的 KL 项写在序列级: $\log\frac{\pi^{\mathrm{RL}}(y\mid x)}{\pi^{\mathrm{SFT}}(y\mid x)}$. 由式 (3) 的连乘分解, 按序列似然的连乘分解, 它等于逐 token 对数比之和:
 
@@ -265,7 +265,7 @@ $$
 
 所以把 $-\beta$ 乘逐 token 对数比分摊到每个位置, 再在 $\gamma=1$ 下求和, 与在序列末尾一次扣除 $\beta$ 乘序列对数比完全相同. 分摊到 token 的好处是 GAE 能把 KL 罚分配给具体位置: 某个 token 偏离 SFT 越多, 它所在位置的即时奖励越低. 对 $y\sim\pi^{\mathrm{RL}}$ 取期望, 式 (13) 是 $\mathrm{KL}(\pi^{\mathrm{RL}}\|\pi^{\mathrm{SFT}})$ 的无偏估计, 但单个样本可以为负. GRPO 改用另一种恒非负的估计量并把它放进损失, 推导见 [01-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) §2.2.
 
-### 4.6 显存的量级
+**显存的量级**
 
 InstructGPT 附录写明: 所有模型用 fp16 权重和激活, 并保留 fp32 主权重副本, 优化器为 Adam ($\beta_1=0.9$, $\beta_2=0.95$). 以 175B 策略为例, 按这一配置粗算参数相关的显存 (不含激活和 KV cache):
 
@@ -278,9 +278,9 @@ InstructGPT 附录写明: 所有模型用 fp16 权重和激活, 并保留 fp32 �
 
 参考模型和策略同尺寸, 冻结也要占 350 GB 左右; 价值网络如果也做成 175B, 会再增加约 2.8 TB. InstructGPT 用 6B 价值网络, 把这部分压到百 GB 以内. 这张表按每参数字节数算出, 论文没有报告实际显存. 它说明了后续工作为什么优先去掉价值网络: 同尺寸的价值网络大约让可训练部分的显存翻倍.
 
-## 5. 实现
+### 实现
 
-### 5.1 奖励模型
+**奖励模型**
 
 ```python
 def reward_model_loss(rm, prompt, chosen, rejected):
@@ -291,13 +291,13 @@ def reward_model_loss(rm, prompt, chosen, rejected):
 
 这是式 (11) 在 $K=2$ 时的形式. $K>2$ 时按 InstructGPT 的做法, 一个 prompt 的 $K$ 个回答各前向一次, 在 batch 内展开全部 $\binom{K}{2}$ 对.
 
-### 5.2 逐 token 奖励与 GAE
+**逐 token 奖励与 GAE**
 
 ```python
 def token_rewards(score, logp_old, logp_ref, mask, beta=0.02):
     kl = (logp_old - logp_ref) * mask                     # [B, T]
     rewards = -beta * kl
-    last = mask.sum(dim=-1).long() - 1                    # 最后一个有效 token
+    last = mask.sum(dim=-1).long() - 1                    # 最终一个有效 token
     rewards[torch.arange(rewards.size(0)), last] += score
     return rewards
 
@@ -318,7 +318,7 @@ def gae(rewards, values, mask, gamma=1.0, lam=0.95):
 
 $\gamma=1$ 对应 InstructGPT 的「不打折扣」. `mask` 让 padding 位置的优势和下一步价值都为 0. 旧对数概率必须在 rollout 时记下; 更新阶段用新权重重算会得到 $r_t\equiv1$, clip 失去作用.
 
-### 5.3 更新
+**更新**
 
 ```python
 def ppo_update(policy, critic, batch, clip_eps=0.2, c1=0.5):
@@ -335,7 +335,7 @@ def ppo_update(policy, critic, batch, clip_eps=0.2, c1=0.5):
 
 策略与价值不共享参数时, $c_1$ 只影响两个损失的相对尺度, 两个网络也可以各用自己的优化器和学习率. InstructGPT 正是这样: 价值网络用固定学习率. 很多实现会在 batch 内把 $\hat{A}$ 标准化 (减均值除标准差), 这是工程习惯, PPO 论文正文没有要求.
 
-### 5.4 一次迭代要做哪些计算
+**一次迭代要做哪些计算**
 
 按 InstructGPT 的设置数一遍. 每次迭代取 512 个 prompt:
 
@@ -347,7 +347,7 @@ def ppo_update(policy, critic, batch, clip_eps=0.2, c1=0.5):
 
 256k 个 episode 除以每批 512, 是 500 次迭代, 合计 4000 次策略参数更新. PPO-ptx 还要在每个 mini-batch 上额外算一次预训练梯度并累加, 预训练样本总数是 episode 数的 8 倍. 从这张清单可以看出去掉价值网络能省什么: 第 4 步里价值网络的前向, 第 5 步里价值网络的前向和反向, 以及它的优化器状态. 去掉参考模型 (例如 DAPO 不加 KL) 则省掉第 2 步.
 
-### 5.5 训练中看什么
+### 训练中看什么
 
 训练过程中常盯下面五个指标, 每个指标对应一类异常和处理办法:
 
@@ -359,9 +359,9 @@ def ppo_update(policy, critic, batch, clip_eps=0.2, c1=0.5):
 | 价值损失与 explained variance | 价值网络是否跟得上 | 价值长期拟合不了回报: 优势不可信, 先查价值学习率 |
 | 回答长度 | 是否在利用长度偏好 | 长度单调上涨且 RM 分同步上涨: 检查 RM 的长度偏差 |
 
-## 6. 组件检验, 失效模式与相邻算法
+## 组件检验, 失效模式与相邻算法
 
-### 6.1 RLHF 里 PPO 的组件有多少在起作用
+### RLHF 里 PPO 的组件有多少在起作用
 
 Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthropic-HH 和 TL;DR 上重新检查 PPO:
 
@@ -374,7 +374,7 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 
 这不等于 PPO 在 LLM 上无用. 推理任务的回答长, 一批 rollout 常切成多个 mini-batch 更新多次, off-policy 程度更高, clip 触发更频繁, 这正是 [04-GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md) 讨论的场景. 需要逐 token 价值估计 (例如过程奖励) 时, 价值网络也仍有用.
 
-### 6.2 失效模式
+### 失效模式
 
 | 现象 | 常见原因 | 处理 |
 |------|----------|------|
@@ -387,9 +387,9 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 | 优势被 padding 污染 | mask 漏掉 | GAE 和损失都按 mask 计算 |
 | 比率恒为 1 | 旧 logprob 在更新阶段重算 | rollout 时记录并保存 |
 
-价值网络的初始化也会影响前期稳定性. InstructGPT 从 RM 初始化价值网络: 在完整回答上, RM 的输出就是这条回答的得分, 也就是最后一个位置价值的目标, 所以训练开始时价值网络至少在末端位置有合理的估计. 随机初始化的价值头在训练初期给出的优势接近噪声, 这段时间里策略更新的方向不可靠, 一种做法是先只训练价值网络一段时间, 等价值损失下降后再放开策略更新.
+价值网络的初始化也会影响前期稳定性. InstructGPT 从 RM 初始化价值网络: 在完整回答上, RM 的输出就是这条回答的得分, 也就是最终一个位置价值的目标, 所以训练开始时价值网络至少在末端位置有合理的估计. 随机初始化的价值头在训练初期给出的优势接近噪声, 这段时间里策略更新的方向不可靠, 一种做法是先只训练价值网络一段时间, 等价值损失下降后再放开策略更新.
 
-### 6.3 与相邻算法的关系
+### 与相邻算法的关系
 
 | 算法 | 优势从哪来 | 比率与裁剪 | 价值网络 | 在线采样 |
 |------|-----------|-----------|----------|---------|
@@ -402,7 +402,7 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 
 选 PPO 的典型理由: 需要逐 token 的价值估计, 奖励不是简单的对错, 并且能承担价值网络的显存和训练成本. 只有序列级可验证奖励时, 先考虑 [01-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 或 RLOO.
 
-## 参考文献
+**参考文献**
 
 1. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). *Proximal Policy Optimization Algorithms*. arXiv:1707.06347. https://arxiv.org/abs/1707.06347
 2. Ouyang, L., et al. (2022). *Training Language Models to Follow Instructions with Human Feedback*. NeurIPS 2022. arXiv:2203.02155. https://arxiv.org/abs/2203.02155

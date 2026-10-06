@@ -4,15 +4,15 @@ published: true
 tags: ["GRPO", "PPO", "RLHF", "DeepSeekMath", "veRL", "HybridFlow", "OpenRLHF"]
 excerpt: "GRPO 是 PPO 的变体: 同一道题采 G 条回答, 用组内奖励的均值和标准差做基线, 不再训练与策略同量级的价值网络, KL 从奖励移到损失. DeepSeekMath-Instruct 7B 经 GRPO 后 GSM8K 82.9%→88.2%, MATH 46.8%→51.7%. 后半篇写一轮 GRPO 在 Infer 与 Train 两套引擎之间怎么走."
 ---
-# 01 GRPO: 组内相对优势
+# GRPO: 组内相对优势
 
 > 相关阅读: [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [05 GMPO](../05-GMPO/05-GMPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [05 RLOO](../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [4.5 GRPO 家族与 RLVR](../4.5-GRPO家族与RLVR.md) · [4.4.0 强化学习的数学原理](../../4.4-强化学习基础/01-强化学习的数学原理/01-强化学习的数学原理.md)
 
 材料是 Shao 等人的 DeepSeekMath (arXiv:2402.03300): §4.1 提出 GRPO, §5.2 给出统一范式, 附录 A.1 给出各方法的梯度系数, 文中式号对应论文式 (1)-(4) 与 (19)-(21). 后半部分取 HybridFlow (veRL) 与 OpenRLHF 的系统实现. 问题是去掉价值网络之后优势怎样估, 一轮训练又怎样在推理和训练两套引擎之间流转.
 
-## 1. 问题: PPO 的价值网络
+## 问题: PPO 的价值网络
 
-### 1.1 PPO 的做法与两个问题
+### PPO 的做法与两个问题
 
 PPO 是 actor-critic 方法. 策略 $\pi_\theta$ 生成 token, 价值网络 $V_\psi$ 估计每个前缀的期望回报, 优势 $A_t$ 用 GAE 从奖励和 $V_\psi$ 算出, 再套 clip. InstructGPT 的做法还要把奖励模型的分数改成逐 token 的奖励, 并在每个 token 上扣 KL (DeepSeekMath 式 (2)):
 
@@ -23,11 +23,11 @@ $$
 DeepSeekMath §4.1.1 列了这套做法在 LLM 上的两个问题:
 
 1. 价值函数通常是与策略同量级的另一个模型, 带来可观的显存和计算负担.
-2. 价值函数在优势计算里充当降方差的基线. LLM 场景下奖励模型通常只给最后一个 token 打分, 要训练一个在每个 token 上都准确的价值函数并不容易.
+2. 价值函数在优势计算里充当降方差的基线. LLM 场景下奖励模型通常只给最终一个 token 打分, 要训练一个在每个 token 上都准确的价值函数并不容易.
 
-第 2 点在长 CoT 上更明显. 一道数学题几百个 token, 中间某步写错, 最后的答案已经注定错误, 但前缀的文字看起来仍在正常推导. $V_\psi$ 若主要拟合「这段前缀像不像好的证明」, 会把文风和正确性混在一起, 优势随之偏.
+第 2 点在长 CoT 上更明显. 一道数学题几百个 token, 中间某步写错, 最终的答案已经注定错误, 但前缀的文字看起来仍在正常推导. $V_\psi$ 若主要拟合「这段前缀像不像好的证明」, 会把文风和正确性混在一起, 优势随之偏.
 
-### 1.2 GRPO 的做法与代价
+**GRPO 的做法与代价**
 
 GRPO 的处理是不估计前缀的价值, 只比较同一道题的几条完整回答. 对一道题 $q$ 当场采 $G$ 条, 用这 $G$ 个奖励的均值近似 $\mathbb{E}[r\mid q]$, 基线由同题对照给出. 论文还指出, 奖励模型本身通常就是在「同一问题的两条回答比较」上训练的, 组内相对的算法与奖励模型的比较性质一致.
 
@@ -44,9 +44,9 @@ GRPO 的处理是不估计前缀的价值, 只比较同一道题的几条完整�
 - 右栏: actor 先扩成一组 $o_1,\ldots,o_G$, 再打分, 再标准化. 紫框虚线进损失, 不进优势.
 - 右栏的 Group 指同一道题的多次采样, 与 MoE 的专家分组无关.
 
-## 2. 组内相对优势: 目标, 手算与代码
+**组内相对优势: 目标, 手算与代码**
 
-### 2.1 结果监督的优势
+**结果监督的优势**
 
 对每个问题 $q$, 从旧策略 $\pi_{\theta_{\mathrm{old}}}$ 采 $\{o_1,\ldots,o_G\}$, 奖励给出 $\mathbf r=\{r_1,\ldots,r_G\}$. 结果监督 (论文 §4.1.2) 下, 整条回答的所有 token 共用一个归一化分数:
 
@@ -66,7 +66,7 @@ $$
 - 左侧标注 sample $G$ / score / z-score / broadcast, 对应四个计算阶段.
 - 底栏是结果监督的定义. 过程监督在步骤边界给不同的 $A_{i,t}$, 见 3.1 节.
 
-### 2.2 KL 的估计器
+### KL 的估计器
 
 PPO 把 KL 扣进 $r_t$, 它会随 GAE 进入优势. GRPO 把 KL 直接加进目标, 优势只由组内相对奖励决定. 估计器取 Schulman (2020) 的形式 (论文式 (4)):
 
@@ -78,7 +78,7 @@ $$
 
 数值例: 某 token 上 $\pi_\theta=0.5$, $\pi_{\mathrm{ref}}=0.4$, $x=0.8$, 式 (3) 给 $0.8-\log0.8-1\approx0.0231$; 单样本的 $\log(0.5/0.4)\approx0.223$. 换成 $\pi_\theta=0.4$, $\pi_{\mathrm{ref}}=0.5$, $x=1.25$, 式 (3) 给 $\approx0.0269$, 单样本 $\log$ 给 $-0.223$. 后者在这个 token 上会把策略推离参考模型.
 
-### 2.3 完整目标
+**完整目标**
 
 论文式 (3) 先在每条回答内对 token 平均, 再对组平均, 减去 $\beta$ 倍 KL:
 
@@ -115,7 +115,7 @@ $$
 
 KL 项的梯度系数是 $\beta(\pi_{\mathrm{ref}}/\pi_\theta-1)$: 当前策略把某个 token 的概率抬得比参考模型高时, 这一项为负, 往回压; 压得比参考模型低时为正, 往回抬. 式 (6) 是第 3.3 节统一范式的出发点.
 
-### 2.4 手算: 一组四个分数
+**手算: 一组四个分数**
 
 取 $G=4$, 规则奖励, $\mathbf r=(1,0,1,0)$. 均值 0.5.
 
@@ -128,7 +128,7 @@ KL 项的梯度系数是 $\beta(\pi_{\mathrm{ref}}/\pi_\theta-1)$: 当前策略�
 
 把比率也放进来, $\varepsilon=0.2$. 某条正优势回答上, 一个 token 的 $\eta=1.5$, 超出 1.2, clip 分支生效, 代理目标锁在 $1.2\times\hat A$, 这个 token 的梯度为 0. 负优势回答上 $\eta=0.5$, 低于 0.8, 同样被锁. 正优势回答上 $\eta=0.5$ 的 token 则不受 clip 约束, 梯度照常按 $0.5\times\hat A$ 计.
 
-### 2.5 过程监督的一组数
+**过程监督的一组数**
 
 过程监督用同一套标准化, 粒度换成步骤 (第 3.1 节). 设 $G=2$, 每条三步, 六个步骤奖励为
 
@@ -138,9 +138,9 @@ $$
 
 六个数的均值约 0.367, 总体标准差约 0.386. 归一化后第一条约为 $(-0.43,\;1.12,\;1.64)$, 第二条约为 $(-0.69,\;-0.69,\;-0.95)$. 按式 (9), 第一条第一步内的 token 拿到三步之和 $-0.43+1.12+1.64\approx2.33$, 第二步内的 token 拿到 $1.12+1.64=2.76$, 第三步只有 $1.64$. 第二条三步依次是 $-2.33$, $-1.64$, $-0.95$. 同一条回答内, 越靠前的 token 累加的步骤越多, 绝对值通常越大; 第一条第一步因为本步奖励为负, 反而小于第二步.
 
-### 2.6 PyTorch 对照
+### PyTorch 对照
 
-下面按式 (2) 和式 (4) 写出组内标准化与损失. 形状约定: `token_level_rewards` 为 $(B,T)$, 结果监督时只有最后一个有效 token 非零; $B$ 能被组大小整除, 同一题的 $G$ 条在 batch 里相邻.
+下面按式 (2) 和式 (4) 写出组内标准化与损失. 形状约定: `token_level_rewards` 为 $(B,T)$, 结果监督时只有最终一个有效 token 非零; $B$ 能被组大小整除, 同一题的 $G$ 条在 batch 里相邻.
 
 ```python
 import torch
@@ -169,13 +169,13 @@ def grpo_loss(log_prob, old_log_prob, ref_log_prob, advantages, response_mask,
     return -per_seq.mean()
 ```
 
-最后两行是论文的聚合方式. 很多开源实现改成 `(per_token * mask).sum() / mask.sum()`, 即 batch 内所有有效 token 一起平均, 这是 DAPO 的 token 级损失. 两种分母在长短不一的回答上给出不同的梯度分配, 复现论文时要选对.
+最终两行是论文的聚合方式. 很多开源实现改成 `(per_token * mask).sum() / mask.sum()`, 即 batch 内所有有效 token 一起平均, 这是 DAPO 的 token 级损失. 两种分母在长短不一的回答上给出不同的梯度分配, 复现论文时要选对.
 
-## 3. 统一范式与 DeepSeekMath 的结果
+## 统一范式与 DeepSeekMath 的结果
 
-### 3.1 过程监督
+### 过程监督
 
-结果监督只在输出末尾给奖励, 信用分配粗: 中间写错, 最后碰巧对了, 整段拿正优势; 中间全对, 最后抄错, 整段挨罚. 论文 §4.1.3 按 Wang et al. (2023b) 的做法试了过程监督: 过程奖励模型在每个推理步骤结束处打分. 第 $i$ 条有 $K_i$ 步, 第 $j$ 步结束的 token 下标记作 $\mathrm{index}(j)$, 全部步骤奖励为
+结果监督只在输出末尾给奖励, 信用分配粗: 中间写错, 最终碰巧对了, 整段拿正优势; 中间全对, 最终抄错, 整段挨罚. 论文 §4.1.3 按 Wang et al. (2023b) 的做法试了过程监督: 过程奖励模型在每个推理步骤结束处打分. 第 $i$ 条有 $K_i$ 步, 第 $j$ 步结束的 token 下标记作 $\mathrm{index}(j)$, 全部步骤奖励为
 
 $$
 \mathbf{R}=\big\{\{r_i^{\mathrm{index}(1)},\ldots,r_i^{\mathrm{index}(K_i)}\}\big\}_{i=1}^{G} \tag{7}
@@ -195,7 +195,7 @@ $$
 
 目标仍是式 (4), 只换 $\hat A_{i,t}$. 论文 Figure 5 在 DeepSeekMath-Instruct 1.3B 上比较, GRPO+PS 优于 GRPO+OS, 作者的解释是按步骤区分的梯度系数更细. 式 (9) 也意味着过程奖励模型的错误会沿 token 往前累加: 某一步被错标为高分, 它之前所有 token 都会分到这份分数.
 
-### 3.2 迭代 RL
+**迭代 RL**
 
 奖励模型固定, 策略在变, 训练一段时间后奖励模型对新分布的打分就不再可靠. 论文 Algorithm 1 的迭代版本:
 
@@ -208,7 +208,7 @@ $$
 
 DeepSeekMath 的主实验里策略每次探索之后只更新一次, $\pi_{\theta_{\mathrm{old}}}$ 与 $\pi_\theta$ 在计算比率时几乎相同, clip 很少触发. 后来的长 CoT 训练普遍在同一批 rollout 上做多次 mini-batch 更新, 比率逐渐离开 1, clip 才成为主要约束, GMPO 和 GSPO 讨论的都是这种设定.
 
-### 3.3 统一范式
+**统一范式**
 
 论文 §5.2.1 把 SFT, RFT, DPO, Online RFT, PPO, GRPO 写成同一个梯度形式 (论文式 (5)):
 
@@ -234,7 +234,7 @@ $$
 
 这张表说明 GRPO 仍是策略梯度, 与其他方法的差别都落在 $\mathcal D$ 和 $GC$ 上. DPO 在表里是离线成对数据, 不做 rollout; 通用偏好对齐常用 DPO, 数学和代码这类可验证奖励更适合组相对的在线 RL, 两者常在同一条后训练流水线里先后使用.
 
-### 3.4 DeepSeekMath 的训练设定
+### DeepSeekMath 的训练设定
 
 | 项 | 取值 (论文 §4.2) |
 |---|---|
@@ -250,7 +250,7 @@ $$
 
 RL 数据只取 GSM8K 和 MATH 的题, 其他 SFT 题目刻意排除, 用来观察 RL 对没见过的基准有没有作用. 论文把 CoT 下的 GSM8K 和 MATH 算作领域内, 其余都算领域外.
 
-### 3.5 Table 5 的数字
+**Table 5 的数字**
 
 | 设定 | 模型 | GSM8K | MATH | MGSM-zh | CMATH |
 |---|---|---|---|---|---|
@@ -261,15 +261,15 @@ RL 数据只取 GSM8K 和 MATH 的题, 其他 SFT 题目刻意排除, 用来观�
 
 CoT 下四项分别涨 5.3, 4.9, 6.4, 4.2 个点. 两个中文基准不在 RL 数据里, 涨幅与领域内相当. 工具集成推理同样不在 RL 训练格式里, 四项也都上升. 摘要里另一个数, 7B 模型在 MATH 上 64 次采样自一致性达到 60.9%, 是解码时的多数投票, 与 GRPO 的组大小 $G=64$ 是两件事.
 
-### 3.6 RL 提升的是什么
+### RL 提升的是什么
 
 Figure 7 在温度 0.7 下画了 Instruct 和 RL 两个 7B 模型在 GSM8K, MATH 上的 Maj@K 和 Pass@K. RL 提升了 Maj@K, Pass@K 基本不变. 论文的解释是 RL 让输出分布更稳, 正确答案从 Top-K 里被提到更常被采到的位置, 基础能力没有明显提升. 后来针对 RLVR 的研究报告了同一类现象, 见 [RLVR 的局限性与探索边界](../09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md).
 
 §5.2.3 按统一范式的三个组成列了后续方向: 数据源上, 用领域外题目, 树搜索类的采样方法, 更快的推理引擎; 算法上, 奖励信号不总可靠, 算法不应完全相信它; 奖励上, 提升奖励模型的泛化, 反映不确定性, 构建高质量的过程奖励模型.
 
-## 4. 长度偏差和难度偏差
+## 长度偏差和难度偏差
 
-### 4.1 长度偏差
+### 长度偏差
 
 Liu et al. (2025, Dr. GRPO) 分析了式 (2) 和式 (4) 里的两个归一化项. 完整讨论见 [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md), 家族对照见 [4.5 GRPO 家族与 RLVR](../4.5-GRPO家族与RLVR.md).
 
@@ -282,7 +282,7 @@ $1/|o_i|$ 让同样大小的 $\hat A_i$ 摊在不同长度上. 设两条回答�
 
 正优势时短回答每个 token 被抬得更多, 策略更偏向短的正确写法; 负优势时长回答每个 token 被压得更少, 长的错误回答压得不够. 优势按整条回答算, 更新按 token 均摊, 两个粒度不一致, 结果是错误回答越来越长. Dr. GRPO 论文还指出, 很多 PPO 实现也按回答长度做 masked mean, 同样有这个偏差.
 
-### 4.2 难度偏差
+**难度偏差**
 
 $\mathrm{std}(\mathbf r)$ 在组内近乎全对或全错时很小. 第 2.4 节已经算过: 8 条里对 1 条, 那条的优势约 2.65; 对 4 条, 每条正确回答的优势是 1. 很容易和很难的题被放大了权重. 全对或全错时分子为 0, 这组题不产生任何梯度, 只占了采样算力.
 
@@ -291,7 +291,7 @@ $\mathrm{std}(\mathbf r)$ 在组内近乎全对或全错时很小. 第 2.4 节�
 - Dr. GRPO 两项都删: 优势只减均值, 不除标准差; 损失用固定常数 (如最大生成长度) 做分母.
 - DAPO 保留标准差, 用动态采样丢掉准确率为 0 或 1 的组, 并把损失分母换成 batch 内有效 token 总数.
 
-### 4.3 代码里的分母
+**代码里的分母**
 
 ```python
 def masked_mean(tensor, mask, dim):
@@ -303,9 +303,9 @@ def constant_normalized_sum(tensor, mask, max_tokens):
 
 改分母前先确认要复现的是 DeepSeekMath, Dr. GRPO 还是 DAPO.
 
-## 5. 一轮 GRPO 在机器上怎么走
+**一轮 GRPO 在机器上怎么走**
 
-### 5.1 采样和更新为什么分开
+**采样和更新为什么分开**
 
 前几节是数学目标, 这一节写一轮更新在集群上的数据流: 谁采样, 谁打分, 谁重算 logprob, 权重怎么回到推理引擎. 主要依据 HybridFlow (veRL 的论文, arXiv:2409.19256) 和 OpenRLHF (arXiv:2405.11143).
 
@@ -323,7 +323,7 @@ def constant_normalized_sum(tensor, mask, max_tokens):
 
 推理引擎算出的 logprob 与训练图的数值常常对不齐 (算子, 精度, 采样实现都不同), 所以训练引擎往往再做一次 teacher-forcing 前向, 用训练图重算旧策略的 logprob. 这次前向仍在训练引擎上执行.
 
-### 5.2 一轮循环
+### 一轮循环
 
 $$
 \text{rollout}(\pi_{\theta_{\mathrm{old}}}) \rightarrow \{y_i,\log\pi_{\theta_{\mathrm{old}}}(y_{i,t}\mid x,y_{i,<t})\}_{i=1}^{G} \rightarrow \{r_i\} \rightarrow \hat A_i \rightarrow \nabla_\theta\mathcal J_{\mathrm{GRPO}} \rightarrow \theta_{\mathrm{old}}\leftarrow\theta \tag{11}
@@ -343,7 +343,7 @@ $$
 
 式 (5) 的 $\eta_{i,t}$ 在实现中是 `exp(new_logp - old_logp)`, 所以采样阶段记下的 `old_logp` 是必需的. 少了这一列, 训练时只能用当前 $\theta$ 冒充 $\theta_{\mathrm{old}}$, 比率恒为 1, clip 失效. 在同一批 rollout 上做多次更新时, 每次都要用记下的 `old_logp`, 不能把上一次更新后的 $\theta$ 当成 $\theta_{\mathrm{old}}$.
 
-### 5.3 HybridFlow: 节点间单控制器, 节点内多控制器
+**HybridFlow: 节点间单控制器, 节点内多控制器**
 
 HybridFlow 的判断是: 单控制器能把数据依赖写清楚, 但每个分布式算子都由中心进程下发, 控制开销在 LLM 级并行下扛不住; 多控制器通信快, 算法逻辑却嵌在点对点通信里, 换一种 RLHF 算法要改很多通信代码. 它把单控制器用在节点之间 (prompt, 序列, 奖励去哪), 多控制器用在节点内部 (TP/PP/DP 自己通信). 论文 Figure 6 用这套 API 写 PPO 只需 8 行, 调用 `generate_sequences`, `compute_values` 这类原语.
 
@@ -370,13 +370,13 @@ HybridFlow Table 1 比较了几种系统在 actor 权重上的处理:
 
 吞吐方面, HybridFlow 报告在 PPO, ReMax, Safe-RLHF 上相对这些基线有 1.53 倍到 20.57 倍的提升. 以 PPO 为例 (Figure 9), 平均比 DeepSpeed-Chat 快 3.67 倍 (最多 7.84 倍), 比 OpenRLHF 快 3.25 倍 (最多 5.93 倍), 比 NeMo-Aligner 快 12.52 倍 (最多 20.57 倍). 这些实验里 actor, critic, reference, reward 四个模型同尺寸, 是系统吞吐的比较, 与 GRPO 的分数无关.
 
-### 5.4 OpenRLHF: Ray 分角色, DeepSpeed 训练
+**OpenRLHF: Ray 分角色, DeepSpeed 训练**
 
 OpenRLHF 用 Ray 把 RLHF 的各个角色分配到不同的 GPU 上, vLLM 负责生成, DeepSpeed ZeRO 负责训练, 权重从训练引擎同步到 vLLM. 它直接加载 HuggingFace 格式的权重, 不需要转换到 Megatron 格式. 选 veRL 还是 OpenRLHF, 主要看训练后端和集群规模, GRPO 的目标在两边相同.
 
 Megatron-LM 本身不是 RL 框架, 它提供 3D 并行下的前向, 反向和优化器. 在 veRL 里它是训练引擎的一种实现.
 
-### 5.5 显存和通信
+**显存和通信**
 
 **采样阶段**. 主要占用是 KV Cache. $G$ 条并行相当于把 batch 放大 $G$ 倍. DeepSeekMath 的 $G=64$, 最长 1024, 是 7B 模型短 CoT 的配置; 长 CoT 下 KV Cache 随长度线性增长, 组大小常常要降.
 
@@ -388,15 +388,15 @@ Megatron-LM 本身不是 RL 框架, 它提供 3D 并行下的前向, 反向和�
 
 通信按阶段分三类: 采样时推理引擎内部的 TP all-reduce; 训练时 DP 组的梯度 all-reduce (或 ZeRO 的 reduce-scatter / all-gather); 两阶段之间的参数广播或重分片. 诊断变慢时按这三类分开看: 采样慢多半是 KV Cache 或调度, 训练慢多半是流水线气泡或 ZeRO 的 all-gather, 同步慢才和共址方式有关.
 
-### 5.6 Verifier 和分组
+### Verifier 和分组
 
 规则奖励一般在控制器或独立的 CPU 进程上跑: 抽取 `\boxed{}` 里的答案, 运行单元测试, 比较数值. 它读的是文本, 不需要模型的中间状态. 奖励模型则是又一次 LLM 前向, 布局与参考模型相近.
 
 组统计必须在同一 prompt 的 $G$ 条回答上做. 控制器要按 prompt id 聚组, 再把结果分发回各数据并行 rank. 聚错组, 简单题和难题的奖励进了同一个 mean/std, 优势的尺度就乱了.
 
-## 6. 失效模式与变体
+## 失效模式与变体
 
-### 6.1 失效模式
+### 失效模式
 
 | 现象 | 常见位置 | 先查什么 |
 |---|---|---|
@@ -407,9 +407,9 @@ Megatron-LM 本身不是 RL 框架, 它提供 3D 并行下的前向, 反向和�
 | 采样很慢, 损失收敛很快 | 权重同步 | 推理引擎是否还在用上一轮的 $\theta$ |
 | 被 clip 的比例高, 但策略没怎么变 | 模板与温度 | 采样温度与计算 logprob 的温度是否一致 |
 
-最后一行展开说. 推理引擎在温度 $T$ 下采样, 存下的 logprob 若是 $T$ 缩放后的分布, 而训练引擎在 $T=1$ 的 logits 上算新 logprob, 比率会系统性偏离 1, clip 比例虚高. 采样模板与训练模板差一个 system prompt 也一样: 两边算的是不同条件分布下的概率, 比率失去重要性采样的含义.
+最终一行展开说. 推理引擎在温度 $T$ 下采样, 存下的 logprob 若是 $T$ 缩放后的分布, 而训练引擎在 $T=1$ 的 logits 上算新 logprob, 比率会系统性偏离 1, clip 比例虚高. 采样模板与训练模板差一个 system prompt 也一样: 两边算的是不同条件分布下的概率, 比率失去重要性采样的含义.
 
-### 6.2 变体与选用
+### 变体与选用
 
 | 算法 | 相对 GRPO 改什么 | 文章 |
 |---|---|---|
@@ -426,7 +426,7 @@ Megatron-LM 本身不是 RL 框架, 它提供 3D 并行下的前向, 反向和�
 - MoE 上 token 级比率随专家路由剧烈波动: [04 GSPO](../04-GSPO/04-GSPO.md).
 - 静态偏好对, 不做在线 rollout: DPO, 见 [01 DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md).
 
-## 参考文献
+**参考文献**
 
 1. Shao, Z., Wang, P., Zhu, Q., Xu, R., Song, J., Bi, X., Zhang, H., Zhang, M., Li, Y. K., Wu, Y., & Guo, D. (2024). *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300. https://arxiv.org/abs/2402.03300
 2. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). *Proximal Policy Optimization Algorithms*. arXiv:1707.06347. https://arxiv.org/abs/1707.06347

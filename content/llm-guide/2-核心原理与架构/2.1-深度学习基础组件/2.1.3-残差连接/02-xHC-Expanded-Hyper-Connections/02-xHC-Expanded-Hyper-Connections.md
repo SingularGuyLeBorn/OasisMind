@@ -142,7 +142,7 @@ $$
 
 只缩放行和超过 1 的行, 论文观察到它能稳定训练且不损害性能. 例如 Sinkhorn 没收敛时某一行是 $(0.6,0.3,0.2,0.1)$, 行和 1.2, 式 (12) 把它除以 1.2 得到 $(0.5,0.25,0.167,0.083)$; 行和为 0.9 的行除以 $\max(0.9,1)=1$, 保持不变.
 
-**出口**. 与 mHC 相同, 最后一层的 $N$ 条流按 token 求和成一份 $C$ 维向量, 再进入最终 RMSNorm 和 unembedding.
+**出口**. 与 mHC 相同, 最终一层的 $N$ 条流按 token 求和成一份 $C$ 维向量, 再进入最终 RMSNorm 和 unembedding.
 
 一层 xHC 子层的步骤 (论文 Algorithm 1 的概括):
 
@@ -233,7 +233,7 @@ $$
 \mathrm{input}^{(t)}=\underbrace{\sum_{i\notin\mathcal{I}}\mathcal{H}^{\mathrm{pre},t}_{i}x_{i}^{(0)}}_{\text{非激活流, 组入口算一次}}+\underbrace{\sum_{j=1}^{k}\mathcal{H}^{\mathrm{pre},t}_{\mathcal{I}_j}x_{\mathcal{I}_j}^{(t)}}_{\text{激活流, 用当前状态}} \tag{15}
 $$
 
-混合推迟到组内最后一个 MLP, 中间子层只改激活流, 所以非激活流在组内保持入口值 $x_i^{(0)}$, 第一项可以在组入口一次算完; 第二项只读 $k$ 条激活流. 最后的 MLP 做一次混合, 再散回全状态. 这样每子层的读写均摊到 $26.5C$ 和 $13.5C$, 合计 $40C$.
+混合推迟到组内最终一个 MLP, 中间子层只改激活流, 所以非激活流在组内保持入口值 $x_i^{(0)}$, 第一项可以在组入口一次算完; 第二项只读 $k$ 条激活流. 最终的 MLP 做一次混合, 再散回全状态. 这样每子层的读写均摊到 $26.5C$ 和 $13.5C$, 合计 $40C$.
 
 ### 3.3 结果 (Table 5, 10B)
 
@@ -323,11 +323,11 @@ xHC 的几个部件各有对应的失效. 结构上, 读也做稀疏时 (Table 2
 | Attention 侧去掉 $\mathcal{H}^{\mathrm{res}}$, 块内共享路由 | xHC-Flash, 每子层 $36C$ 读, $15C$ 写 |
 | 两个块共享路由, 混合只在第二个 MLP | xHC-Flash-4sub, 每子层 $40C$ |
 
-表的前两行是退化情形: $N=1$ 回到单流, $k=N$ 时稀疏更新退化为稠密. 中间三行就是 Table 2 从 mHC 走到 xHC 的路径, 先加宽, 再加时间增强, 最后改成稀疏更新, 每一步的 loss 变化见第 2.4 节. 最后两行只改访存, 不改模型能表达的东西.
+表的前两行是退化情形: $N=1$ 回到单流, $k=N$ 时稀疏更新退化为稠密. 中间三行就是 Table 2 从 mHC 走到 xHC 的路径, 先加宽, 再加时间增强, 最终改成稀疏更新, 每一步的 loss 变化见第 2.4 节. 最终两行只改访存, 不改模型能表达的东西.
 
 同族里, mHC 是 xHC 的直接前作, 多流加双随机混合, 主设定 $N=4$, 机制见 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). [Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) 也加宽到 4 条, 但读用逐元素门并删掉 $H_{\mathrm{res}}$, xHC 则在 $k$ 条激活流上保留 Sinkhorn 混合. [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) 每层用注意力对历史层输出加权聚合, 不维护固定条数的流. 名字相近而无关的有两个: Tay 等人的 Sparse Sinkhorn Attention 同样用 Sinkhorn-Knopp, 作用对象是注意力块的排序; HCA / CSA 是压缩注意力, 缩写里的 HC 与 Hyper-Connections 无关. 论文代码在 <https://github.com/aHapBean/xHC>.
 
-## 参考文献
+**参考文献**
 
 1. Zhang, X., Qin, X., Zou, S., Dai, T., Shi, X., Wu, H., Yang, Y., Xia, Z., Zhang, S., Yao, L., Liu, Y., Cheng, Y., & Yan, J. (2026). [xHC: Expanded Hyper-Connections.](https://arxiv.org/abs/2607.14530) *arXiv:2607.14530*. 式 (1)-(19), Algorithm 1-2, Table 1-12, Figure 1/4/5, 附录 A-E.
 2. Zhu, D., et al. (2024). [Hyper-Connections.](https://arxiv.org/abs/2409.19606) *arXiv:2409.19606*.

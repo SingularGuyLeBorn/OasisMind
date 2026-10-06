@@ -29,7 +29,7 @@ $\mathcal{S}(x)$ 是选中集合. 未选专家这一步不做前向, 也不存�
 
 ### 1.2 三种匹配方式
 
-路由本质上是 token 与专家的匹配, 常见三条路:
+路由从机制看是 token 与专家的匹配, 常见三条路:
 
 1. **Token-Choice**: 每个 token 给全体专家打分, 自己挑 Top-$K$ 个. Mixtral, DeepSeek, Qwen 都用这一路. 每个 token 的专家数固定, 每个专家收到的 token 数不固定.
 2. **Expert-Choice** (Zhou et al., 2022): 每个专家给一个路由组内的全体 token 打分, 自己挑固定数量的 token. 每个专家的负载固定, 每个 token 的专家数不固定.
@@ -313,7 +313,7 @@ a=\max\!\left(\delta_D,\frac{1+2B}{3}\right),\qquad
 y=h+\operatorname{detach}(ah-h) \tag{26}
 $$
 
-改变反向路径: 前向值仍是 $h$, 反向梯度按 $a$ 缩放. Top-$K$ 版本逐次采样并把已选专家的分数置为 $-\infty$, 最后求和. GRIN 另用流水线并行与张量并行避免训练中丢 token, 这属于系统配置, 与梯度估计是两项设计. 论文的 top-2 $16\times3.8$B 模型激活 6.6B 参数, 摘要报告 MMLU 79.4, HellaSwag 83.7, HumanEval 74.4, MATH 58.9.
+改变反向路径: 前向值仍是 $h$, 反向梯度按 $a$ 缩放. Top-$K$ 版本逐次采样并把已选专家的分数置为 $-\infty$, 最终求和. GRIN 另用流水线并行与张量并行避免训练中丢 token, 这属于系统配置, 与梯度估计是两项设计. 论文的 top-2 $16\times3.8$B 模型激活 6.6B 参数, 摘要报告 MMLU 79.4, HellaSwag 83.7, HumanEval 74.4, MATH 58.9.
 
 还有一条常被当作可导 Top-K 的路线: Gumbel-Softmax (Jang, Gu, Poole, [arXiv:1611.01144](https://arxiv.org/abs/1611.01144)) 用温度把离散样本松弛成单纯形上的连续向量, 温度趋于 0 才接近 one-hot. 稀疏 MoE 需要精确的 0 才能跳过整块 GEMM, 训练时门控若是软的, 省下的 FLOPs 就没有了, 所以它没有成为 LLM 主流路由器.
 
@@ -332,7 +332,7 @@ $$
 
 ---
 
-## 参考文献
+**参考文献**
 
 1. Jacobs, R. A., Jordan, M. I., Nowlan, S. J., & Hinton, G. E. (1991). [Adaptive Mixtures of Local Experts](https://doi.org/10.1162/neco.1991.3.1.79). *Neural Computation*, 3(1).
 2. Shazeer, N., et al. (2017). [Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer](https://arxiv.org/abs/1701.06538).

@@ -5,7 +5,7 @@ published: true
 excerpt: "逐项解释 DFlash2 如何利用候选选择空间,缓解块尾衰减,并分析实现,分布保持,消融结果和运行时约束."
 tags: ["DFlash2", "DFlash", "Dynamic Convolution", "Candidate Selector", "Speculative Decoding"]
 ---
-# 05 · DFlash2:局部卷积与候选路径选择
+# · DFlash2:局部卷积与候选路径选择
 
 如[上文结尾](../04-DFlash原理解析/04-DFlash原理解析.md#9-一次并行前向留下的两个误差来源)所述,DFlash 用一次块前向消除了草稿主干的逐 token 计算链,但仍留下两类相互独立的问题:块尾表示退化会让正确 token 掉出候选集;逐位置独立 top-1 又可能错过已经在候选集中的正确 token.用上文的记号表示,前者限制候选召回 $r_t(K)$,后者限制候选选择 $s_t(K)$.
 
@@ -13,7 +13,7 @@ DFlash2 没有放弃 DFlash 的并行主干,而是在这两处分别补上条件
 
 目标特征注入,掩码块主干和一次全词表 LM head 均沿用 DFlash.卷积对整个掩码块并行执行;selector 的相邻候选打分也可并行,只有沿预计算分数选出路径的短 walk 依赖前驱 token.因此,DFlash2 增加了局部条件依赖,却没有重新引入逐 token 的草稿 Transformer 或全词表 LM head 前向.
 
-## 1. 两个误差阶段对应两个模块
+## 两个误差阶段对应两个模块
 
 | DFlash 中的误差 | DFlash2 改动 | 作用阶段 | 直接作用 |
 |---|---|---|---|
@@ -24,7 +24,7 @@ DFlash2 没有放弃 DFlash 的并行主干,而是在这两处分别补上条件
 
 ![DFlash 独立 Top-1 与 DFlash2 相邻候选选择](../images/fig-dflash-vs-dflash2-token-path.png)
 
-## 2. 选择器为何从 top-16 出发
+### 选择器为何从 top-16 出发
 
 官方技术说明对五层 Qwen3-4B DFlash 做条件 recall 分析:
 
@@ -35,7 +35,7 @@ DFlash2 没有放弃 DFlash 的并行主干,而是在这两处分别补上条件
 
 实验条件为 GSM8K,前序草稿位置均正确;接受长度包含 verifier 的下一个 token.top-1 与 top-16 的差距说明,大量错误来自候选排序而非候选召回.DFlash2 因而保留 DFlash 的全词表 unary 计算,只在 top-16 内增加低成本路径选择.
 
-## 3. 前驱条件候选选择器
+## 前驱条件候选选择器
 
 设 DFlash 在位置 $t$ 的 unary logit 为 $U_t(b)$,候选集为
 
@@ -70,7 +70,7 @@ $$
 
 当 $T=0$ 时,selector 直接对 $S_t$ 取 argmax,目标端执行确定性的连续匹配;式(3)的 softmax 和随机拒绝采样不参与这一分支.
 
-### 3.1 选择器消融
+### 选择器消融
 
 五层 Qwen3-4B,GSM8K 的独立选择器消融如下,时延为相对纯 DFlash 的 draft–verify 周期开销:
 
@@ -82,7 +82,7 @@ $$
 
 该实验隔离了 path selector,没有加入卷积.它表明在此设置中,候选重排带来 0.34–0.47 个 token 的接受长度增益,同时避免顺序全词表校正的参数与时延成本.
 
-## 4. 局部动态卷积
+**局部动态卷积**
 
 选择器只能从已有候选中挑选.当 DFlash 的 Recall@16 从首位置 99.5% 降到末位置 87.8% 时,块尾还存在候选集质量下降.官方分析将其称为 suffix decay.
 
@@ -105,15 +105,15 @@ $$
 
 每个系数包含可学习基础核和由当前隐藏状态生成的动态修正;公开配置让每 16 个通道共享一组修正.输入投影同时生成子层前,子层后所需的动态核.卷积放在每个草稿层的 attention 子层前后,MLP 子层前后.
 
-第一个待预测位置的左邻表示来自本块锚点,即最后一个已验证 token;后续位置读取块内相邻隐藏表示.在每次子层前或子层后的卷积调用中,该阶段所有槽位的 $x_t$ 已同时产生,因此卷积可以并行处理整块;它不等待前一个 token 被采样.
+第一个待预测位置的左邻表示来自本块锚点,即最终一个已验证 token;后续位置读取块内相邻隐藏表示.在每次子层前或子层后的卷积调用中,该阶段所有槽位的 $x_t$ 已同时产生,因此卷积可以并行处理整块;它不等待前一个 token 被采样.
 
-### 4.1 为什么使用局部算子
+### 为什么使用局部算子
 
 DFlash 的 attention 同时承担读取长前缀与建立块内依赖两项工作.官方统计显示,块内注意力权重占比从第一层平均约 30% 降到第五层约 8%,后层的块内权重还集中在少数注意力头.加入卷积后,第四至第五层的平均块内注意力权重占比从 9.4% 降到 0.5%,与卷积承担局部传播,attention 继续读取上下文的分工一致.
 
 五层 DFlash 加卷积后,末位置 Recall@1 提高到 77.61%,接近十五层的 78.73%;新增参数为 16.5M(约 3%),周期时延增加 0.7%.这些结果表明,在 Qwen3-4B,GSM8K 的受控实验中,局部卷积比直接加深主干更有效率.
 
-## 5. 两个模块如何组成一次推理周期
+### 两个模块如何组成一次推理周期
 
 1. DFlash 主干用锚点,mask 和目标特征 KV 注入,一次产生所有位置的隐藏状态与 unary logits;
 2. 每层内部的局部动态卷积加强相邻隐藏状态传播;
@@ -125,7 +125,7 @@ DFlash 的 attention 同时承担读取长前缀与建立块内依赖两项工�
 
 DFlash2 的"一次前向"指一次草稿 Transformer 主干前向.top-$K$,lattice 打分,路径 walk,目标验证和缓存操作仍有独立成本.
 
-## 6. 分布保持如何证明
+## 分布保持如何证明
 
 DFlash2 的 selector 使位置 $t$ 的提议分布依赖已经选出的 $a_{t-1}$.在每个实际可达前缀上,令目标分布为 $p_t$,selector 后的实际提议分布为 $q_t$.候选 $Y_t\sim q_t$ 的接受概率为
 
@@ -163,7 +163,7 @@ top-$K$ 截断不会破坏推导:候选集外令 $q_t(v)=0$,这些 token 仍保�
 
 完整的 EOS,bonus,长度边界与缓存回滚推导见 [6.6.2.5](../07-投机采样数学证明与参考实现/07-投机采样数学证明与参考实现.md).
 
-## 7. 训练目标与公开配方
+### 训练目标与公开配方
 
 官方技术说明与发布推理代码没有公开 DFlash2 检查点的完整损失组合,数据配方和参数自由度.vLLM Speculators 提供一套实验性训练设计:
 
@@ -178,9 +178,9 @@ $\mathcal L_{\mathrm{unary}}$ 可使用 KL 等 DFlash 家族损失;$\mathcal L_{
 
 这套方案是一条公开可实现的训练路径.Speculators 与发布检查点应视为不同训练配方;Speculators 的全词表 codebook 与发布说明中的参数化口径不同,两者的参数量也不宜直接比较.
 
-## 8. 组合后的实验结果
+## 组合后的实验结果
 
-### 8.1 Qwen3.5-4B 匹配训练设置
+### Qwen3.5-4B 匹配训练设置
 
 Inco AI 对自行训练的 DFlash 与 DSpark 使用匹配设置;MTP 使用模型原生模块.thinking enabled,temperature 1.0,top-p 0.95,top-k 20,presence penalty 1.5,接受长度包含 verifier token:
 
@@ -195,7 +195,7 @@ Inco AI 对自行训练的 DFlash 与 DSpark 使用匹配设置;MTP 使用模型
 
 DFlash2 相对 DFlash 的平均接受长度增加 1.05(约 21%);selector 与卷积合计增加约 1.3% draft–verify 周期时延.该表展示接受长度,不直接等同于端到端吞吐增幅.
 
-### 8.2 发布检查点
+### 发布检查点
 
 | 目标模型与块长 | 对照 | 对照均值 | DFlash2 均值 |
 |---|---|---:|---:|
@@ -206,13 +206,13 @@ DFlash2 相对 DFlash 的平均接受长度增加 1.05(约 21%);selector 与卷�
 
 不同表中的模型,检查点来源,默认采样和块长不同,均值只在各自表内比较.Qwen3.8-27B 模型卡另给出单张 H200,SGLang,FlashAttention 3,7 个草稿 token,temperature 1,top-p 0.95,top-k 20,`xhigh` reasoning effort 和最大 4096 新 token 的复现口径.
 
-## 9. 检查点与运行时约束
+### 检查点与运行时约束
 
 DFlash2 检查点绑定目标模型的 tokenizer,完整词表,共享 embedding/LM head,目标隐藏层索引,草稿维度和 block 语义.当前 Speculators 实现要求 `draft_vocab_size` 等于 verifier 完整词表,并注明 LM head 需要保持未量化;这些属于该版本的实现契约.
 
 vLLM PR #52816 已于 2026-08-21 合入主分支.合入实现要求 DFlash2 使用 V2 model runner;普通 DFlash 的 V1 proposer 不执行 selector.Z Lab 模型卡示例中,SGLang 参数写 8,vLLM 参数写 7,对应同一 block size 8,7 个草稿 token 的语义差异.具体发行版,检查点 revision 与参数含义需要按部署 commit 对齐.
 
-## 10. 一手与官方实现来源
+**一手与官方实现来源**
 
 1. Inco AI, [DFlash 2: Keep Drafting Parallel](https://inco.ai/blog/dflash2/), 2026-08-18.
 2. Jian Chen, Yesheng Liang, Zhijian Liu, [DFlash: Block Diffusion for Flash Speculative Decoding](https://arxiv.org/abs/2602.06036), 2026.

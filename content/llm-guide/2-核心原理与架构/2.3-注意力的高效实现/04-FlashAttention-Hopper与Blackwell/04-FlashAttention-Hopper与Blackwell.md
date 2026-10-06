@@ -5,11 +5,11 @@ published: true
 tags: ["FlashAttention-3", "FlashAttention-4", "Hopper", "Blackwell", "TMA", "WGMMA", "TMEM", "FP8", "Warp Specialization", "Triton"]
 excerpt: "FlashAttention-2 在 H100 上只用到 35% 的峰值.FlashAttention-3 用 warp 专门化,矩阵乘与 softmax 重叠,FP8 块量化把 H100 前向推到 740 TFLOPs/s;FlashAttention-4 面对 Blackwell 上指数单元和共享内存跟不上 Tensor Core 的问题,用多项式模拟指数,条件重标度和 2-CTA MMA,在 B200 上达到 1613 TFLOPs/s."
 ---
-# 04 FlashAttention-3 与 FlashAttention-4:Hopper 与 Blackwell 上的流水设计
+# FlashAttention-3 与 FlashAttention-4:Hopper 与 Blackwell 上的流水设计
 
-## 1. 问题:Tensor Core 越来越快,其余部分跟不上
+## 问题:Tensor Core 越来越快,其余部分跟不上
 
-### 1.1 两代 GPU 的吞吐差距
+### 两代 GPU 的吞吐差距
 
 [03 FlashAttention:IO 感知分块](../03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md) 介绍的 v1 和 v2 解决的是 HBM 搬运问题.到了 Hopper 和 Blackwell,瓶颈出现在 SM 内部.
 
@@ -26,7 +26,7 @@ $$
 
 $M=N=d=128$ 时 $T_{\mathrm{MMA}}=1024$ 周期,$T_{\exp}=1024$ 周期,共享内存读取需要 768 周期.FA4 论文把这一现象总结为:非矩阵乘资源成了瓶颈,其耗时超出矩阵乘 25% 到 60%.
 
-### 1.2 一个块在两代 GPU 上的周期数
+### 一个块在两代 GPU 上的周期数
 
 把两篇论文的数字放到同一个块上比较.取 $M=N=d=128$ 的前向块,两次矩阵乘共 $4MNd=8{,}388{,}608$ 次浮点运算,需要计算 $MN=16{,}384$ 个指数.
 
@@ -38,7 +38,7 @@ B200 上矩阵乘吞吐再翻倍,BF16 就已经是 1024 周期,与指数相等.F
 
 可用来重叠的,是两代架构新加的异步硬件.Hopper 有 TMA(Tensor Memory Accelerator,按张量描述符异步搬运多维数据)和 WGMMA(由四个 warp 组成的 warpgroup 发起的异步矩阵乘,操作数可以直接取自共享内存).Blackwell 增加了每 SM 256KB 的 TMEM(Tensor Memory),矩阵乘结果直接写入 TMEM;单条 MMA 的块从 Hopper 的 $64\times N$ 扩大到 $128\times N$;还有 2-CTA MMA,让同一个 cluster 内的两个线程块合作完成一个更大的矩阵乘.Hopper 的 WGMMA 指令在 Blackwell 上没有前向兼容,FA3 不能直接在 B200 上运行.
 
-### 1.3 已有做法
+### 已有做法
 
 FA2 的设计面向 Ampere:同步的 `mma.sync` 指令,数据经寄存器搬运,softmax 和矩阵乘在同一个 warp 内顺序执行.把它直接编译到 H100 上能跑到 335 TFLOPs/s,但用不上 TMA 和 WGMMA 的异步能力.
 
@@ -46,21 +46,21 @@ FA2 的设计面向 Ampere:同步的 `mma.sync` 指令,数据经寄存器搬运,
 
 低精度方面,FP8 Tensor Core 的吞吐是 FP16 的两倍.但 E4M3 格式只有 3 位尾数,大语言模型的激活中常有离群值,如果整个张量共用一个缩放因子,大部分正常值会被量化得很粗.
 
-## 2. FlashAttention-3 的思路
+## FlashAttention-3 的思路
 
-### 2.1 生产者与消费者 warp 专门化
+### 生产者与消费者 warp 专门化
 
 FA3 中一个线程块仍负责一个 query 块 $Q_i$,但块内的 warp 分成两种角色.生产者 warp 用 TMA 把 $Q_i$ 和后续的 $K_j,V_j$ 载入共享内存的循环缓冲区;消费者 warpgroup 等待缓冲槽就绪后发起 WGMMA,用完释放槽位.缓冲区的状态由 barrier 协调:消费者只能读已经装载完成的槽,生产者不能覆盖仍在使用的槽.
 
 生产者只需发 TMA 指令,用的寄存器很少.Hopper 的 `setmaxnreg` 指令允许在 warpgroup 之间重新分配寄存器,FA3 把生产者的寄存器配额让给消费者,后者需要保存分数块,softmax 统计量和输出累加器.
 
-### 2.2 两个 warpgroup 的 pingpong 调度
+**两个 warpgroup 的 pingpong 调度**
 
 每处理一个 KV 块,消费者要做三件事:$S_j=Q_iK_j^\top$,对 $S_j$ 做在线 softmax 得到 $P_j$,再累加 $P_jV_j$.其中第一和第三步在 Tensor Core 上,第二步在 CUDA Core 和特殊函数单元上.
 
 FA3 让两个消费者 warpgroup 交替执行:warpgroup 1 做 softmax 时,warpgroup 2 做矩阵乘;下一阶段两者交换.用 `bar.sync` 强制这种先后关系,使一个 warpgroup 的 softmax 落在另一个 warpgroup 的矩阵乘时间段内.论文报告,在头维度 128,FP16 前向的设置下,pingpong 调度把吞吐从约 570 TFLOPs/s 提高到 620 到 640 TFLOPs/s.
 
-### 2.3 单个 warpgroup 内的跨迭代流水
+**单个 warpgroup 内的跨迭代流水**
 
 在一个 warpgroup 内部,第 $j$ 块的 softmax 依赖第 $j$ 块的 $S_j$,第 $j$ 块的 $P_jV_j$ 依赖 softmax 结果,这三步本身无法重叠.但第 $j+1$ 块的 $S_{j+1}=Q_iK_{j+1}^\top$ 不依赖第 $j$ 块的 softmax.FA3 在对第 $j$ 块做 softmax 时,异步发起第 $j+1$ 块的 $QK^\top$:
 
@@ -80,7 +80,7 @@ $$
 
 两项技术各自贡献了约 14% 到 16% 的吞吐.
 
-### 2.4 FP8:块量化与非相干处理
+### FP8:块量化与非相干处理
 
 FA3 的 FP8 路径有两项误差控制措施.
 
@@ -118,27 +118,27 @@ FP8 Tensor Core 对操作数的内存布局要求与 FP16 不同,$V$ 需要在�
 
 在这组数据上,误差的主要改善来自非相干处理:去掉它,误差回到基线水平;去掉块量化,误差只略有上升.完整 FA3 的 FP8 误差比基线低约 2.6 倍.
 
-### 2.5 FA3 的反向
+**FA3 的反向**
 
 FA3 论文附录 B.1 的 Algorithm 3 给出了带 warp 专门化的反向.先用一个预处理内核算出每行的 $D=\operatorname{rowsum}(dO\circ O)$ 并写入 HBM.主内核的每个线程块固定一个 KV 块 $K_j,V_j$,在片上初始化 $dK_j,dV_j$,然后扫描所有 query 块.块内分三种角色:
 
 - 生产者 warpgroup:先载入 $K_j,V_j$,再按循环缓冲区的节奏依次载入每个 $Q_i$ 和 $dO_i$.
-- 消费者 warpgroup:对每个 $i$,计算 $S=Q_iK_j^\top$ 和 $dP=dO_iV_j^\top$,用保存的 logsumexp 恢复 $P=\exp(S-L_i)$,算 $dS=P\circ(dP-D_i)$,再把 $P^\top dO_i$ 和 $dS^\top Q_i$ 累加到 $dV_j$ 和 $dK_j$;最后算出局部的 $dQ_i=dS\,K_j$,写入共享内存.
+- 消费者 warpgroup:对每个 $i$,计算 $S=Q_iK_j^\top$ 和 $dP=dO_iV_j^\top$,用保存的 logsumexp 恢复 $P=\exp(S-L_i)$,算 $dS=P\circ(dP-D_i)$,再把 $P^\top dO_i$ 和 $dS^\top Q_i$ 累加到 $dV_j$ 和 $dK_j$;最终算出局部的 $dQ_i=dS\,K_j$,写入共享内存.
 - 一个专门的 $dQ$ 写回 warp:等局部 $dQ_i$ 就绪后,用 semaphore 控制,原子加到全局内存的 $dQ_i$ 上.
 
 这样 $dQ$ 的原子加从消费者的关键路径上移走.FLOPs 的计数方式也在论文中说明:前向两次矩阵乘,反向因重算共五次,所以反向 FLOPs 取前向的 2.5 倍;因果掩码下大约只算一半元素,FLOPs 除以 2.
 
-### 2.6 FA3 的实验结果
+### FA3 的实验结果
 
 实验在 H100 SXM5 上进行,序列长度 512 到 16K,总 token 数 16K,隐藏维度 2048,头维度 64,128 和 256.对照为 FA2,Triton(3.0 nightly)和 cuDNN(9.1.1.17).
 
 - FP16 前向比 FA2 快 1.5 到 2.0 倍,最高 740 TFLOPs/s,即峰值的 75%;反向比 FA2 快 1.5 到 1.75 倍.比标准实现快 3 到 16 倍.序列长度在 1K 及以上时,FP16 前向超过了针对 H100 优化的 cuDNN.
-- 序列长度 4K 以上的测试点取 4224,8448,16896,使其能被 H100 SXM5 的 132 个 SM 整除,避免最后一轮线程块只占满部分 SM.
+- 序列长度 4K 以上的测试点取 4224,8448,16896,使其能被 H100 SXM5 的 132 个 SM 整除,避免最终一轮线程块只占满部分 SM.
 - FP8 前向接近 1.2 PFLOPs/s.H100 SXM5 的 FP8 稠密峰值约 1979 TFLOPs,按此算利用率约 61%,低于 FP16 路径的 75%.FP8 路径要在内核里转置 $V$ 并调整 $P$ 的布局,也没有用持久化内核,这些都会拉低利用率,论文没有给出各项占多少.头维度 64 时领先 cuDNN;头维度 128 和 256 时非因果持平,因果落后于 cuDNN.FP8 版本没有使用持久化内核,这是论文给出的原因之一.
 
-## 3. FlashAttention-4 的思路
+## FlashAttention-4 的思路
 
-### 3.1 前向流水与 TMEM
+### 前向流水与 TMEM
 
 FA4 的一个线程块同时处理两个 query 块.块内有四类 warpgroup:两个 softmax warpgroup 各负责一个 $128\times128$ 分数块;一个 correction warpgroup 负责对输出累加器做重标度;一个 warpgroup 驱动 Tensor Core 和 TMA.
 
@@ -148,7 +148,7 @@ $S$,$P$ 和输出累加器都放在 TMEM 中.因为 $P$ 通过 TMEM 交给下一
 
 更大的块带来寄存器压力.一行 128 个 BF16 分数需要 128 个寄存器作为输入,还要为指数结果等中间量预留空间.FA4 分阶段写出 $P$,避免同时持有全部中间值.
 
-### 3.2 用 FMA 模拟一部分指数
+**用 FMA 模拟一部分指数**
 
 式 (1) 表明指数单元和 Tensor Core 已经同样慢.FA4 的做法是让一部分元素的指数改用普通 FMA 单元计算,与 MUFU 并行.
 
@@ -177,9 +177,9 @@ $$
 
 全部改用多项式会增加寄存器压力,可能引起溢出.FA4 只对每行 10% 到 25% 的元素使用多项式,其余仍走 MUFU.EX2,具体比例按块配置下矩阵乘与指数的吞吐比调节.
 
-### 3.3 条件重标度
+**条件重标度**
 
-在线 softmax 每遇到更大的行最大值,就要把整行输出累加器乘一次 $e^{m_{\mathrm{old}}-m_{\mathrm{new}}}$.FA4 观察到,在实数运算中,用于缩放的参考值不一定是真实的最大值,只要指数不溢出,任何参考值都能在最后归一化时约掉.
+在线 softmax 每遇到更大的行最大值,就要把整行输出累加器乘一次 $e^{m_{\mathrm{old}}-m_{\mathrm{new}}}$.FA4 观察到,在实数运算中,用于缩放的参考值不一定是真实的最大值,只要指数不溢出,任何参考值都能在最终归一化时约掉.
 
 记 $a_{j-1}$ 为当前参考值,$c_j=\max(a_{j-1},\operatorname{rowmax}(S_j))$ 为候选的新最大值.FA4 只在涨幅超过阈值 $\tau$ 时才更新:
 
@@ -196,15 +196,15 @@ $$
 
 可以按这个阈值估一下数值余量.每个 $e^{S_j-a_j}$ 不超过 256,32K 长度下行和 $\ell$ 最多约 $32768\times256\approx8.4\times10^6$,FP32 的上限约 $3.4\times10^{38}$,余量很大.$P$ 舍入到 BF16 后取值可以大于 1,但 BF16 的指数位和 FP32 一样是 8 位,相对精度只看尾数,和值落在 $[0,1]$ 还是 $[1,256]$ 无关.所以把阈值放到 8 不会让 $P$ 的舍入误差变大.这段是按论文给出的阈值推算的.
 
-### 3.4 反向:共享内存成为瓶颈
+### 反向:共享内存成为瓶颈
 
 反向每轮有五次矩阵乘:重算 $S$,以及计算 $dP,dV,dQ,dK$.论文按 $M=N=d=128$ 估算,矩阵乘需要 2560 周期,指数 1024 周期,单 CTA 方案的共享内存流量需要 3328 周期.反向的瓶颈从指数变成了共享内存.
 
 FA4 用 Blackwell 的 2-CTA MMA 解决这个问题.一对 CTA 共同完成 $M=256,N=K=128$ 的矩阵乘:累加器沿 $M$ 维分给两个 CTA,操作数 $B$ 沿 $N$ 维分成两半,每个 CTA 只在自己的共享内存中准备一半,硬件把两半合起来使用.这样操作数 $B$ 的共享内存流量减半,共享内存周期从 3328 降到 2688,接近 2560 的矩阵乘周期.少掉的 640 周期约占原来的 19%,剩下的 2688 只比矩阵乘多 5%,反向的瓶颈又回到了矩阵乘附近.
 
-$dQ$ 需要沿 KV 维规约,与 2-CTA 的划分方向不一致.两个 CTA 通过分布式共享内存(DSMEM)交换一半 $dS$,使每个 CTA 得到一个 $\frac{M}{2}\times 2N$ 的操作数,规约维长度翻倍.每个 CTA 最后只写一半 $dQ$,写回全局内存的原子加次数也减半.
+$dQ$ 需要沿 KV 维规约,与 2-CTA 的划分方向不一致.两个 CTA 通过分布式共享内存(DSMEM)交换一半 $dS$,使每个 CTA 得到一个 $\frac{M}{2}\times 2N$ 的操作数,规约维长度翻倍.每个 CTA 最终只写一半 $dQ$,写回全局内存的原子加次数也减半.
 
-### 3.5 确定性模式,调度与 CuTe-DSL 实现
+**确定性模式,调度与 CuTe-DSL 实现**
 
 原子加的执行顺序不固定,浮点求和结果每次可能不同.强化学习等场景需要可复现的训练,FA4 提供确定性模式:用 semaphore 规定写同一个 $dQ$ 块的 CTA 顺序,并在头和批维度上重排 CTA 以减少等待.论文报告确定性模式最高可达非确定性模式速度的 75%.
 
@@ -212,7 +212,7 @@ $dQ$ 需要沿 KV 维规约,与 2-CTA 的划分方向不一致.两个 CTA 通过
 
 这些调度逻辑和前面的流水都写在 CuTe-DSL 里.FA4 完全用嵌入 Python 的 CuTe-DSL 编写,没有 CUDA C++ 部分.编译器把 Python 源码降到 PTX,再由 `ptxas` 生成机器码,需要时可以插入自定义 PTX.论文报告的编译时间:FA3 的 C++ 模板实现前向 55 秒,反向 45 秒;FA4 前向 2.5 秒,反向 1.4 秒,快 20 到 30 倍(前向 $55/2.5=22$ 倍,反向 $45/1.4\approx32$ 倍).改一处内核后几秒就能重新编译,调块大小和流水深度时可以多试几组.这是编译时间,不涉及运行速度.
 
-### 3.6 FA4 的实验结果
+**FA4 的实验结果**
 
 实验在 B200 上以 BF16 进行,序列长度 1K 到 32K,总 token 数 32K,头维度 64,128,以及 query/key 维度 192,value 维度 128 的组合.
 
@@ -220,7 +220,7 @@ $dQ$ 需要沿 KV 维规约,与 2-CTA 的划分方向不一致.两个 CTA 通过
 - 比 cuDNN 9.13 快 1.1 到 1.3 倍,比 Triton 快 2.1 到 2.7 倍.论文说明,之后的 cuDNN 版本吸收了这些技术,性能已经与 FA4 相当.
 - 论文没有在 B200 上运行 FA3,因为 FA3 使用的 Hopper 指令在 Blackwell 上不可用,所以不能从图表直接得到 FA4 相对 FA3 的倍数.
 
-### 3.7 四代 FlashAttention 的瓶颈与对策
+### 四代 FlashAttention 的瓶颈与对策
 
 | 版本 | 目标硬件 | 主要瓶颈 | 主要对策 | 论文报告的峰值利用率 |
 |---|---|---|---|---|
@@ -231,9 +231,9 @@ $dQ$ 需要沿 KV 维规约,与 2-CTA 的划分方向不一致.两个 CTA 通过
 
 四代计算的都是精确注意力,只有 FP8 路径引入了量化误差.变化的只是在给定硬件上如何安排数据搬运和各类运算单元.每一代解决的瓶颈,都来自上一代硬件中某个部件相对其他部件的增速差异.
 
-## 4. 用 Triton 写分块注意力与边界
+## 用 Triton 写分块注意力与边界
 
-### 4.1 用 Triton 写分块注意力
+### 用 Triton 写分块注意力
 
 Triton 官方的 fused attention 教程实现了 FA2 风格的前向:每个 program 负责一个 query 块,内循环扫描 KV 块.下面是去掉步长,边界掩码和自动调优配置后的骨架,用来对照前面的公式,不能直接运行.
 
@@ -273,7 +273,7 @@ Triton 源码与硬件指令之间的对应不是固定的.`tl.dot` 在 Ampere �
 
 块大小 `BLOCK_M`,`BLOCK_N` 越大,循环次数越少,矩阵乘越饱满,但分数块和累加器占用的寄存器越多,超出后会溢出到本地内存.`num_stages` 控制软件流水深度,越深越能覆盖加载延迟,也要同时保存更多块.这些参数需要按 GPU 和头维度自动调优.
 
-### 4.2 边界
+### 边界
 
 **硬件绑定.** FA3 的生产者消费者结构依赖 TMA,WGMMA 和 `setmaxnreg`,FA4 依赖 TMEM 和 2-CTA MMA.官方仓库中 FA3 目前仍标为 beta,需要 H100 或 H800,CUDA 12.3 以上(推荐 12.8).FA4 以 CuTe-DSL 包的形式发布,通过 `from flash_attn.cute import flash_attn_func` 调用,面向 Hopper 和 Blackwell;在 H100 上运行时走的是适合 Hopper 的数据路径,不能套用 B200 上的性能分析.
 
@@ -289,7 +289,7 @@ Triton 源码与硬件指令之间的对应不是固定的.`tl.dot` 在 Ampere �
 
 **软件版本变化快.** cuDNN 后续版本已追平 FA4 的性能,论文中的倍数只代表论文发表时的软件版本.部署时应按 GPU 架构,掩码,头维度,前向或反向,以及是否需要确定性分别测量.
 
-## 参考文献
+**参考文献**
 
 1. Jay Shah, Ganesh Bikshandi, Ying Zhang, Vijay Thakkar, Pradeep Ramani, Tri Dao. (2024). [FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision](https://arxiv.org/abs/2407.08608). NeurIPS 2024.
 2. Ted Zadouri et al. (2026). [FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling](https://arxiv.org/abs/2603.05451). arXiv:2603.05451.

@@ -92,7 +92,7 @@ DeepEP 这种做法的代价在显存: 输出按容量分配, 容量要按最坏
 
 MetaShuffling ([PyTorch Blog, 2025](https://pytorch.org/blog/metashuffling-accelerating-llama-4-moe-inference/)) 是 Meta 为 Llama 4 写的 MoE 推理方案. Llama 4 Scout 与 Maverick 每层一个共享专家, 分别有 16 和 128 个路由专家, dropless token-choice, Top-1. 博客比较了单卡上处理变长的三种办法: padding 把每个专家的激活补到最大长度后跑一次 batched 矩阵乘, 多占显存也多算填充; slicing 按真实长度切开逐专家调 GEMM, 小形状效率低, 还要频繁的主机设备同步, 与 CUDA Graph 和 `torch.compile` 不兼容; shuffling 直接把 token 按专家编号排序, 同一专家的 token 存在一起, 交给支持 M 维动态形状的 GroupedGEMM, 张量形状静态且没有填充. 上了 EP 以后, 它在 eager 模式用稠密张量加动态形状, 省网络流量; 在图模式用填充后的静态形状, 多传填充换取可捕获.
 
-padding, slicing, shuffling 三种办法和 [03](../03-MoE专家计算/03-MoE专家计算.md) 里 kernel 一侧的三条路线一一对应: padding 是固定容量加 batched GEMM, slicing 是逐专家调用, shuffling 是排序后交给 grouped GEMM. MetaShuffling 还把共享专家和路由专家放在两条 stream 上并行, 最后用一个 ScatterAdd kernel 把路由专家的输出按原位置直接加到共享专家的输出上, 不物化一份还原顺序的中间张量. Llama 4 的 Top-1 让这个问题更突出. 按 $TK/E$ 算, Maverick 在 decode batch 64 时 $T=64$, $K=1$, $E=128$, 平均每个专家只分到 0.5 个 token, 多数专家这一步收到 0 个或 1 个. padding 到统一长度时, 绝大部分计算花在填充上; 排序后交给 grouped GEMM, 空专家不产生计算. 同一个式子也说明 $K=1$ 时式 (1) 的通信量是 $K=2$ 的一半. 博客提到 TP 也可以和 EP 互换来提高 GEMM 效率, 代价是路由不均的风险变大; 这和第 1.1 节 Mixtral 的 EP 取舍是同一个问题.
+padding, slicing, shuffling 三种办法和 [03](../03-MoE专家计算/03-MoE专家计算.md) 里 kernel 一侧的三条路线一一对应: padding 是固定容量加 batched GEMM, slicing 是逐专家调用, shuffling 是排序后交给 grouped GEMM. MetaShuffling 还把共享专家和路由专家放在两条 stream 上并行, 最终用一个 ScatterAdd kernel 把路由专家的输出按原位置直接加到共享专家的输出上, 不物化一份还原顺序的中间张量. Llama 4 的 Top-1 让这个问题更突出. 按 $TK/E$ 算, Maverick 在 decode batch 64 时 $T=64$, $K=1$, $E=128$, 平均每个专家只分到 0.5 个 token, 多数专家这一步收到 0 个或 1 个. padding 到统一长度时, 绝大部分计算花在填充上; 排序后交给 grouped GEMM, 空专家不产生计算. 同一个式子也说明 $K=1$ 时式 (1) 的通信量是 $K=2$ 的一半. 博客提到 TP 也可以和 EP 互换来提高 GEMM 效率, 代价是路由不均的风险变大; 这和第 1.1 节 Mixtral 的 EP 取舍是同一个问题.
 
 ## 5. 卸载与部署失效
 
@@ -130,11 +130,11 @@ $t_{\mathrm{copy}}$ 是一次权重拷贝, $t_{\mathrm{g}}$ 是 GPU 上的专家
 | decode 用 contiguous 布局导致 CPU 同步 | CPU 需要知道每个专家的 token 数 | GPU 侧计数加 masked 布局, 配合 CUDA Graph |
 | 卸载后每层停顿数毫秒 | PCIe 拷贝没被预取藏住 | 提高预取命中率, 或量化冷专家留在 HBM |
 
-前两行是同一组数字在通信和计算两侧的表现: decode 的 $T$ 小, 通信变成延迟问题, 专家 GEMM 变成带宽问题, 两边加资源都不起作用, 要改的是部署形状. 第三行对应第 2.3 节, 训练里能做到的只是让每个 micro-batch 足够大, 线上的偏移只能靠冗余专家这类部署手段. 第四行对应第 4.1 节, CUDA Graph 的前提是形状静态, 动态的只能是 GPU 上的计数. 最后一行对应第 5.1 和 5.2 节.
+前两行是同一组数字在通信和计算两侧的表现: decode 的 $T$ 小, 通信变成延迟问题, 专家 GEMM 变成带宽问题, 两边加资源都不起作用, 要改的是部署形状. 第三行对应第 2.3 节, 训练里能做到的只是让每个 micro-batch 足够大, 线上的偏移只能靠冗余专家这类部署手段. 第四行对应第 4.1 节, CUDA Graph 的前提是形状静态, 动态的只能是 GPU 上的计数. 最终一行对应第 5.1 和 5.2 节.
 
 这几行的处理都有代价. 冗余专家多占显存, 每卡少放专家要更多的卡, 填充成静态形状多传数据, 预取多占 PCIe 带宽. 选哪一种, 要先用式 (1) 和式 (2) 算清楚当前部署卡在通信, 计算还是访存上, 再看哪一种代价付得起. 比如 decode 的时间主要花在第 2.2 节算出的几十微秒通信上时, 多放冗余专家换不回延迟, 应先缩小 All-to-All 的范围, 或者用另一个 micro-batch 的注意力把它重叠掉.
 
-## 参考文献
+**参考文献**
 
 1. DeepSeek-AI. (2024). [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437). §3.4 推理与部署, §4.5.3 batch 级负载均衡.
 2. Hwang, C., et al. (2023). [Tutel: Adaptive Mixture-of-Experts at Scale](https://arxiv.org/abs/2206.03382). MLSys 2023.

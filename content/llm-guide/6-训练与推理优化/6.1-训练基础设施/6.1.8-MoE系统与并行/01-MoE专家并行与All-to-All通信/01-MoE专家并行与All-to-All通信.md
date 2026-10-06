@@ -36,11 +36,11 @@ $$
 | 序列并行 (SP) | 序列维度上的激活 | AllGather / ReduceScatter |
 | 专家并行 (EP) | 专家 | dispatch / combine 两次 All-to-All |
 
-表中最后一列分成两类. AllReduce 让每张卡得到同一份聚合结果; All-to-All 让每张卡把不同的 token 发给不同的卡, 再收回属于自己的那些. ring 实现中, $R$ 张卡对 $n$ 字节数据做 AllReduce, 每张卡发送 $V_{\mathrm{AR}}=2\cdot\frac{R-1}{R}\,n$ 字节, ReduceScatter 与 AllGather 各占一半 ([Patarasuk & Yuan, 2009](https://doi.org/10.1016/j.jpdc.2008.09.002)). TP 每层都要对完整激活做 AllReduce, 通信量与 $d$ 和 token 数成正比, 与 $k$ 无关; EP 只移动被路由的 token, 且只有 MoE 层需要. 所以注意力层通常用 DP 或小规模 TP, MoE 层用 EP, 两者在同一批卡上共存.
+表中最终一列分成两类. AllReduce 让每张卡得到同一份聚合结果; All-to-All 让每张卡把不同的 token 发给不同的卡, 再收回属于自己的那些. ring 实现中, $R$ 张卡对 $n$ 字节数据做 AllReduce, 每张卡发送 $V_{\mathrm{AR}}=2\cdot\frac{R-1}{R}\,n$ 字节, ReduceScatter 与 AllGather 各占一半 ([Patarasuk & Yuan, 2009](https://doi.org/10.1016/j.jpdc.2008.09.002)). TP 每层都要对完整激活做 AllReduce, 通信量与 $d$ 和 token 数成正比, 与 $k$ 无关; EP 只移动被路由的 token, 且只有 MoE 层需要. 所以注意力层通常用 DP 或小规模 TP, MoE 层用 EP, 两者在同一批卡上共存.
 
 两种切法的字节数可以按每个 token 在整组卡上的总流量比较. 用 $R$ 路 TP 切专家 FFN 时, $R$ 张卡处理同一批 token, 前向在 FFN 之后做一次 AllReduce, 每个 token 在整组上的流量是 $R\cdot2\frac{R-1}{R}db=2(R-1)db$; 用 $R$ 路 EP 时, 每个 token 只在源卡上, dispatch 加 combine 的流量是 $2kdb\frac{R-1}{R}$. 取 $k=8$: $R=8$ 时两者分别是 $14db$ 和 $14db$, 打平; $R=64$ 时 TP 是 $126db$, EP 约 $15.75db$, 差 8 倍. TP 的流量随 $R$ 线性增长, EP 的流量趋于 $2kdb$ 封顶. TP 还把每个专家的矩阵切得更细, 专家 GEMM 本来就窄, 再切会更难跑满 Tensor Core. 这两点合起来, 是专家数多的模型优先用 EP 的原因.
 
-AllReduce 可以写成 $\mathrm{AllReduce}(x)=\mathrm{AllGather}(\mathrm{ReduceScatter}(x))$. 拆开以后, 中间的 ReduceScatter 结果按序列切分, 两个集合通信之间可以插入只需要局部数据的计算, ReduceScatter 和 AllGather 也能分别与相邻的 GEMM 重叠. 一层里最前面的 QKV GEMM 之前和最后的 MoE 下投影之后没有可以对插的计算, 这两处的通信藏不住. Kimi K3 的 prefill 用同一办法处理 Block AttnRes: TP 的 AllReduce 拆成 ReduceScatter 与 AllGather, 块内 kernel 在两者之间按序列切分的隐藏状态上运行, 不必在每个 TP rank 上物化全部 block 表示. ZeRO 分三级, ZeRO-1 只切优化器状态, ZeRO-2 再切梯度, ZeRO-3 连参数也切 ([Rajbhandari et al., 2020](https://arxiv.org/abs/1910.02054)); 每级都用更多通信换显存. DeepSeek 的 V2 与 V3 都只用 ZeRO-1, 参数与梯度在每个 DP rank 上完整保存.
+AllReduce 可以写成 $\mathrm{AllReduce}(x)=\mathrm{AllGather}(\mathrm{ReduceScatter}(x))$. 拆开以后, 中间的 ReduceScatter 结果按序列切分, 两个集合通信之间可以插入只需要局部数据的计算, ReduceScatter 和 AllGather 也能分别与相邻的 GEMM 重叠. 一层里最前面的 QKV GEMM 之前和最终的 MoE 下投影之后没有可以对插的计算, 这两处的通信藏不住. Kimi K3 的 prefill 用同一办法处理 Block AttnRes: TP 的 AllReduce 拆成 ReduceScatter 与 AllGather, 块内 kernel 在两者之间按序列切分的隐藏状态上运行, 不必在每个 TP rank 上物化全部 block 表示. ZeRO 分三级, ZeRO-1 只切优化器状态, ZeRO-2 再切梯度, ZeRO-3 连参数也切 ([Rajbhandari et al., 2020](https://arxiv.org/abs/1910.02054)); 每级都用更多通信换显存. DeepSeek 的 V2 与 V3 都只用 ZeRO-1, 参数与梯度在每个 DP rank 上完整保存.
 
 ### 1.3 dispatch 与 combine 在计算图上
 
@@ -144,7 +144,7 @@ DualPipe 的重叠粒度是 chunk: 一个 micro-batch 的通信对另一个 micr
 
 Flux ([Chang et al., 2024](https://arxiv.org/abs/2406.06858)) 处理的是 TP 那一侧的 AllReduce 和 AllGather. 它把通信和依赖它的 GEMM 拆成更细的操作, 再融合进一个更大的 kernel, 在 GEMM 的 tile 粒度上边算边通信. 论文称融合 kernel 最多能掩盖 96% 的通信, 训练相对 Megatron-LM 在 128 卡上最多加速 1.24 倍, 推理相对 vLLM 在 8 卡上 prefill 与 decode 分别最多加速 1.66 倍和 1.30 倍. 同一团队的 Triton-distributed ([Zheng et al., 2025](https://arxiv.org/abs/2504.19442)) 把这类重叠 kernel 的编写搬到 Triton 编译器里, 用通信原语加计算原语描述分布式 kernel. 注意力 TP 的通信交给 Flux 一类方法, 专家侧的 All-to-All 交给 DeepEP 和 Comet 一类方法, 两者作用在一层的不同位置, 可以同时使用.
 
-## 参考文献
+**参考文献**
 
 1. Lepikhin, D., et al. (2020). [GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding](https://arxiv.org/abs/2006.16668).
 2. Fedus, W., Zoph, B., & Shazeer, N. (2021). [Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity](https://arxiv.org/abs/2101.03961). 第 5 节.

@@ -4,13 +4,13 @@ published: true
 tags: ["Gated-Attention", "SDPA", "sigmoid", "attention-sink", "Qiu", "NeurIPS-2025"]
 excerpt: "Gated Attention 在每个注意力头的 SDPA 输出之后乘一个由当前 token 隐状态算出的 sigmoid 门. 这一步补上 Value 投影和输出投影之间缺的非线性, 让门值变得稀疏且随 query 变化, 并把首 token 的平均注意力占比从 46.7% 压到 4.8%."
 ---
-# 05 Gated Attention: SDPA 输出上的逐头 sigmoid 门
+# Gated Attention: SDPA 输出上的逐头 sigmoid 门
 
 Qiu, Wang, Zheng, Huang 等人在 [Gated Attention for Large Language Models](https://arxiv.org/abs/2505.06708) (NeurIPS 2025 Oral) 里只改了注意力子层的一处: 每个头做完 Scaled Dot-Product Attention (SDPA) 得到输出 $Y$ 之后, 先乘一个 head-specific 的 sigmoid 门, 再拼头进输出投影 $W_O$. 他们在 15B 总参 / 2.54B 激活的 MoE 和 1.7B dense 模型上比较了 30 多种门控变体, 结论是这个位置效果最好, 额外参数和墙钟时间都很小.
 
-## 1. 问题与门的候选位置
+## 问题与门的候选位置
 
-### 1.1 $W_V$ 与 $W_O$ 可以合成一个低秩矩阵
+### $W_V$ 与 $W_O$ 可以合成一个低秩矩阵
 
 标准多头注意力里, 第 $k$ 个头对位置 $i$ 的输出写成
 
@@ -21,7 +21,7 @@ $$
 
 其中 $S_{ij}^k$ 是 softmax 之后的注意力分数, $W_V^k\in\mathbb R^{d_{model}\times d_k}$, $W_O^k\in\mathbb R^{d_k\times d_{model}}$. softmax 只作用在分数上, 对 $V$ 来说整个求和是线性的, 所以 $W_V^kW_O^k$ 可以合成一个 $d_{model}\times d_{model}$ 的矩阵. 它的秩不超过 $d_k$, 而 $d_k<d_{model}$. FFN 里两次线性投影之间有激活函数, 注意力子层的这两个矩阵之间没有.
 
-### 1.2 attention sink 与 massive activation
+**attention sink 与 massive activation**
 
 第二个问题是 attention sink. 训练好的 LLM 里, 很多头会把大部分注意力分给第一个 token, 不管这个 token 的语义是否相关. Qiu 等人在 15A2B MoE 基线上统计到, 首 token 的平均注意力占比是 46.7%, 第 21 层高达 83%.
 
@@ -29,7 +29,7 @@ $$
 
 Sun 等人的 [Massive Activations](https://arxiv.org/abs/2402.17762) 在 LLaMA2-7B 上测到最大激活 2622, 中位数约 0.2, 集中在固定的两个维度, 把这些值置零模型会崩, 换成均值几乎无损. 他们把这类值解释为模型内部的固定偏置. Gu 等人的 [When Attention Sink Emerges](https://arxiv.org/abs/2410.10781) 发现 sink 在预训练里普遍出现, 和 softmax 的「权重和必须为 1」有关: 去掉归一化的 sigmoid 注意力在 1B 规模内不出现 sink.
 
-### 1.3 门的统一写法
+### 门的统一写法
 
 论文把所有变体写成同一个式子:
 
@@ -46,7 +46,7 @@ $Y$ 是被门控的张量, $X$ 是这一层经过 pre-norm 的隐状态, $W_\the
 4. **形式**: 乘性 $Y\odot\sigma(\cdot)$ 或加性 $Y+\sigma(\cdot)$.
 5. **激活**: sigmoid, SiLU 或恒等.
 
-### 1.4 五个候选位置与参数量
+### 五个候选位置与参数量
 
 一个注意力子层从输入到输出依次经过 $X$, $Q/K/V$ 投影, $QK^\top$ logits, softmax 权重, SDPA 输出 $Y$, $W_O$ 输出 $Z$. 论文给其中五个位置编号:
 
@@ -69,9 +69,9 @@ $Y$ 是被门控的张量, $X$ 是这一层经过 pre-norm 的隐状态, $W_\the
 
 门的参数量取决于张量形状和粒度. 15A2B 基线有 $q=32$ 个 query 头, $k=4$ 个 KV 头, 头维 $d_k=128$. 对长度 $n$ 的输入, $G_1$ elementwise 门的分数形状是 $n\times q\times d_k$, 多出 201M 参数. $G_2$, $G_3$ 门在 KV 头上, 形状 $n\times k\times d_k$, 只多 25M. headwise 门每个头只出一个标量, $G_1$ headwise 的形状是 $n\times q$, 只多 1.6M. elementwise 和 headwise 在 PPL 上相差不大 (5.761 vs 5.792), 后者参数少两个数量级.
 
-## 2. 为什么 G1 有效: 非线性, 稀疏, 没有 sink
+## 为什么 G1 有效: 非线性, 稀疏, 没有 sink
 
-### 2.1 非线性
+### 非线性
 
 把门加在 $G_2$ 或 $G_1$ 上, 式 (1) 分别变成
 
@@ -97,7 +97,7 @@ $$
 
 只加一层 RMSNorm 就从 6.026 降到 5.847, 说明 $W_V$ 和 $W_O$ 之间有任何非线性都能带来一部分增益. 乘性 sigmoid 比这三种都好, 剩下的差距来自稀疏.
 
-### 2.2 稀疏且随 query 变化
+**稀疏且随 query 变化**
 
 式 (3) 和式 (4) 的区别在门的下标. $G_2$ 的门写成 $\sigma(X_jW_\theta)$, 下标是被读的 token $j$, 同一个 value 被所有 query 读到时缩放一样. $G_1$ 的门写成 $\sigma(X_iW_\theta)$, 下标是当前 query $i$, 每个 query 可以决定自己要不要这个头的输出.
 
@@ -127,7 +127,7 @@ $$
 
 NS-sigmoid 那一行最直接: 非线性还在, 门却没法关掉一个头, PPL 增益只剩一半, sink 也基本回来了.
 
-### 2.3 一个手算例子: 「这个头这次不需要输出」
+### 一个手算例子: 「这个头这次不需要输出」
 
 下面用两维向量示意 softmax 头为什么会形成 sink, 以及 $G_1$ 怎么绕开它. 数值是为了演示构造的, 不是训练所得.
 
@@ -145,9 +145,9 @@ $$
 
 论文附录 A.2 的统计和这个例子方向一致: 门前后 SDPA 输出的平均绝对值从 0.71 降到 0.05, 门后的隐状态和无门基线的 SDPA 输出很接近. 论文据此推测, 门承担了 sink 原来过滤无关信息的作用. Quantizable Transformers 在 BERT 和 ViT 上也给出同样的解释, 见 4.2 节.
 
-### 2.4 sink 和 massive activation 的消失
+### sink 和 massive activation 的消失
 
-Figure 2 的数字: 基线首 token 平均注意力占比 46.7%, 加 $G_1$ 后 4.8%. 第 21 层从 83% 降到 4%. 在最后一层, 加门后的模型更倾向于把注意力分给序列里的个别 token.
+Figure 2 的数字: 基线首 token 平均注意力占比 46.7%, 加 $G_1$ 后 4.8%. 第 21 层从 83% 降到 4%. 在最终一层, 加门后的模型更倾向于把注意力分给序列里的个别 token.
 
 逐层看 (附录 A.3), 基线第 6 层 FFN 的输出出现 massive activation, 加进残差流后一直保留到后面各层, sink 也从第 6 层开始变明显. 加 $G_1$ 后前几层输出整体偏小, massive activation 随深度缓慢增长, 任何一层都没有明显的 sink.
 
@@ -155,15 +155,15 @@ Value 门 $G_2$ 和 head-shared 门都能压低 massive activation, sink 却还�
 
 论文还试了一种直接的做法: 不加门, 在注意力和 FFN 输出进残差前把值裁剪到 $(-c,c)$. $c$ 取 300 或 100, 学习率 8e-3 下模型照样收敛不了 (附录 A.5). 他们据此认为 pre-norm 训练的不稳定不只来自残差里的大激活, 任何一层输出过大都可能触发. 截断激活代替不了门.
 
-## 3. 实验与整机
+## 实验与整机
 
-### 3.1 设置
+### 设置
 
 主实验在 15A2B MoE 上做: 总参 15B, 激活 2.54B, 128 个细粒度专家, 每 token 用 softmax 路由选 8 个, 配 global-batch 负载均衡损失和 z-loss, 注意力用 GQA, 上下文 4096. 学习率 1k 步 warmup 到 2e-3, 再余弦衰减到 3e-5, batch 1024, 训练 100k 步, 约 400B token. 另一组是 1.7B dense, 分 28 层和 48 层两种深度, 训练量从 400B 到 3.5T token. 数据都取自同一个 3.5T 的多语言, 数学和通用知识语料.
 
 门带来的参数和计算量都很小, 墙钟时间增加不到 2%.
 
-### 3.2 MoE 主表 (Table 1 摘录)
+**MoE 主表 (Table 1 摘录)**
 
 | 方法 | 额外参数 | PPL | MMLU | GSM8k | C-eval |
 |---|---:|---:|---:|---:|---:|
@@ -183,7 +183,7 @@ Value 门 $G_2$ 和 head-shared 门都能压低 massive activation, sink 却还�
 
 表中 $G_2$ headwise 的 5.808 还有一个对照. SwitchHead 用 sigmoid 路由在每个头内部选 value 和 key 的投影专家. 论文附录 A.1 的 Table 6 在 15A2B 上试了几种配置: 在 key 和 value 上各 8 个专家全选, 多 38M 参数, PPL 5.847; 只在 value 上 1 个专家选 1 个, PPL 5.808. 后者和 $G_2$ headwise 门等价. 也就是说, 这类选择结构的增益里, 有一部分来自 sigmoid 路由本身带来的门控.
 
-### 3.3 dense 模型与训练稳定性 (Table 2 摘录)
+### dense 模型与训练稳定性 (Table 2 摘录)
 
 | 设置 | 学习率 | 训练量 | PPL | MMLU |
 |---|---|---:|---:|---:|
@@ -200,7 +200,7 @@ Value 门 $G_2$ 和 head-shared 门都能压低 massive activation, sink 却还�
 
 加门的版本为了参数量对齐, FFN 宽度相应调窄. 3.5T 设置下, 门大幅减少了训练中的 loss spike. 学习率提到 8e-3 后, 48 层基线在 400B 上 PPL 掉到 9.195, 在 1T 上直接发散. sandwich norm (注意力和 FFN 输出先归一化再加回残差) 能让 400B 的基线重新收敛, 但收益很小. 加门的版本在 8e-3 下比 5.3e-3 的结果更好, 门让模型能用更大的学习率.
 
-### 3.4 长上下文 (Table 5)
+**长上下文 (Table 5)**
 
 长上下文实验用 3.5T 训练的模型: 先把 RoPE base 从 10k 改到 1M, 在 32k 序列上续训 80B token, 得到 32k 模型; 再用 YaRN 外推到 128k. RULER 结果:
 
@@ -217,7 +217,7 @@ Value 门 $G_2$ 和 head-shared 门都能压低 massive activation, sink 却还�
 
 论文的解释是一个假设: 基线模型靠 sink 来调节注意力分数的分布, YaRN 改了 RoPE 之后, 这种分布在不重新训练的情况下难以适应. 加门的模型主要靠输入相关的门分数控制信息流, 对位置编码的改动更不敏感.
 
-### 3.5 放进整机: Qwen3-Next
+### 放进整机: Qwen3-Next
 
 Qwen3-Next-80B-A3B 的模型卡给出了布局: 48 层, 写成 `12 * (3 * (Gated DeltaNet -> MoE) -> 1 * (Gated Attention -> MoE))`. 每 4 层里 3 层是线性注意力 Gated DeltaNet, 1 层是带输出门的全注意力. Gated Attention 层有 16 个 Q 头, 2 个 KV 头, 头维 256, 其中 64 维做 RoPE.
 
@@ -225,9 +225,9 @@ Qwen3-Next-80B-A3B 的模型卡给出了布局: 48 层, 写成 `12 * (3 * (Gated
 
 Qwen3.5 系列 (如 Qwen3.5-397B-A17B) 的说明里写明沿用 Qwen3-Next 的 Gated DeltaNet + Gated Attention 混合注意力. 型号细节见 [Qwen3-Next 模型卡](../../../../../model-library/03-模型家族/03-qwen/qwen3-next/qwen3-next-bi.md) 和 [Qwen3.5](../../../../../model-library/03-模型家族/03-qwen/qwen3-5/qwen3-5-bi.md).
 
-## 4. 相关工作与适用边界
+## 相关工作与适用边界
 
-门控和对 softmax 的改动在注意力里已经有很多做法. 它们的区别首先是位置: 作用在 logits 上, 在 softmax 权重上, 还是在 SDPA 输出上. 下表按位置排列:
+门控和对 softmax 的改动在注意力里已经有很多做法. 它们的区别先是位置: 作用在 logits 上, 在 softmax 权重上, 还是在 SDPA 输出上. 下表按位置排列:
 
 | 方法 | 改动作用在 | 依赖谁 | 主要目的 |
 |---|---|---|---|
@@ -246,7 +246,7 @@ Qwen3.5 系列 (如 Qwen3.5-397B-A17B) 的说明里写明沿用 Qwen3-Next 的 G
 
 **图 2 解析**: 四个框分在中间「NOT」的四角. 左上是 $G_1$, 对整个 SDPA 输出 $Y$ 逐元素乘门. 右上是 SwitchHead, NSA, MoSA 这类选择方法, 挑选头, 专家或 token 块参与计算, 不对全部 $Y$ 做调制. 左下是 Gated Residual, $n_r=4$ 条残差分支, 门在读残差的那一步, 去掉了分支混合矩阵 $H_{res}$. 右下是 AttnRes, 对此前各层的输出在深度维上加权, softmax 不沿 token 维做. 四者作用在不同的张量上, 可以同时出现在一个模型里.
 
-### 4.1 Forgetting Transformer: 门加在 logits 上
+### Forgetting Transformer: 门加在 logits 上
 
 Lin 等人的 [Forgetting Transformer](https://arxiv.org/abs/2503.02130) (FoT) 给每个时间步算一个遗忘门 $f_t=\sigma(w_f^\top x_t+b_f)$, 再把累积的对数遗忘量加到 logits 上:
 
@@ -271,7 +271,7 @@ FoT 的 Pro 版本另外加了输出门, 位置接近 $G_1$. Qiu 等人在相关
 
 FoT 主实验用 760M 模型训 48B token, 训练长度 16384. Table 1 里 FoT 的 Wikitext PPL 23.04, LAMBADA 准确率 50.88. 同等设置的 Transformer 基线是 24.12 和 50.39.
 
-### 4.2 Quantizable Transformers: 让头可以「什么都不做」
+**Quantizable Transformers: 让头可以「什么都不做」**
 
 Bondarenko 等人的 [Quantizable Transformers](https://arxiv.org/abs/2306.12929) (QT) 是 Qiu 等人认为最接近的工作. QT 研究的是 BERT 和 ViT 里妨碍 INT8 量化的离群值. 他们发现 97% 以上的离群激活落在 [SEP], 句号, 逗号这类分隔 token 上, 并且和特定头对应, 比如 BERT 第 180 维的离群值来自第 3 个头.
 
@@ -295,7 +295,7 @@ $$
 
 Qiu 等人的工作在三处扩展了 QT: 规模从 BERT/ViT 扩到 15B MoE 和 3.5T token 的 LLM; 系统扫描了五个位置和多种粒度; 把增益拆成非线性和稀疏两部分, 并报告了训练稳定性和长上下文外推的收益.
 
-### 4.3 Differential Transformer: 两张注意力图相减
+**Differential Transformer: 两张注意力图相减**
 
 Ye 等人的 [Differential Transformer](https://arxiv.org/abs/2410.05258) 把 $Q,K$ 各拆成两组, 算两张 softmax 图后相减:
 
@@ -308,7 +308,7 @@ $\lambda$ 是可学标量, 初始化 $\lambda_{init}=0.8-0.6\exp(-0.3(l-1))$, $l
 
 Diff 的改动在权重上, 结果仍是 $V$ 的线性组合, 不在 $W_V$ 和 $W_O$ 之间加非线性. 论文报告的规模结果: 6.8B Diff 和 11B Transformer 的 loss 相当, 参数约为 62.2%; 用 160B token 训练的 Diff 和用 251B token 的 Transformer 相当, 约为 63.7%. 3B 模型上, 多针检索任务 Diff 0.85, Transformer 0.55. 消融里 3B 级下游平均分 Diff 60.6, 去掉 GroupNorm 57.5, Transformer 56.8. 激活离群值方面, 最大激活值约降 65%.
 
-### 4.4 Softpick 与 sigmoid 注意力: 替换 softmax
+**Softpick 与 sigmoid 注意力: 替换 softmax**
 
 另一条思路是不要 softmax 的归一化. Zuhri 等人的 [Softpick](https://arxiv.org/abs/2504.20966) 把 softmax 换成
 
@@ -332,7 +332,7 @@ $$
 
 这两种方法和 $G_1$ 解决的是同一个问题, 方式是改归一化. $G_1$ 保留 softmax, 在输出上加门, 不需要改 attention kernel.
 
-### 4.5 稀疏选头: SwitchHead, NSA, MoSA
+### 稀疏选头: SwitchHead, NSA, MoSA
 
 [SwitchHead](https://arxiv.org/abs/2312.07987) 在每个头内部做 MoE: value 和输出投影各有几个专家, 由路由按 token 选. 设第 $i$ 个头有 $E$ 个 value 专家和输出专家, 输出写成
 
@@ -345,13 +345,13 @@ $$
 
 [NSA](https://arxiv.org/abs/2502.11089) 把注意力拆成压缩, 选择, 滑窗三条分支, 输出由三个门 $g_t^c=\sigma(\text{MLP}(x_t))$ 加权合并. 门在分支层面, 作用类似 $G_1$ 的 headwise 版本. MoSA 用 expert-choice 路由让每个头只选一部分 token 参与计算. 这一类工作的目的是省计算, 门是路由的副产品.
 
-### 4.6 更早的门: LSTM, GRU, Highway, SwiGLU
+**更早的门: LSTM, GRU, Highway, SwiGLU**
 
 逐元素 sigmoid 门最早来自 LSTM 和 GRU, 用在递归状态上控制写入和遗忘. Highway Network 把它用在层间: $y=H(x)\cdot T(x)+x\cdot(1-T(x))$, $T$ 是 sigmoid 门, 决定这一层的变换和恒等通路各占多少. FFN 里的 GLU 家族 (SwiGLU 等) 把门放在两次线性投影之间, 写成 $(\text{Swish}(xW)\odot xV)W_2$, 详见 [GLU 家族: 从 GLU 到 SwiGLU](../../../2.1-深度学习基础组件/2.1.1-激活函数/02-GLU家族-从GLU到SwiGLU/02-GLU家族-从GLU到SwiGLU.md).
 
 $G_1$ 和 SwiGLU 的形式最像: 都是线性投影之后乘一个由输入算出的门, 再接一次线性投影. 区别在于 SwiGLU 的门和被门控的值来自同一个投影的两半, $G_1$ 的被门控值来自 SDPA, 已经混合了其他 token 的信息, 门只看当前 token.
 
-### 4.7 Gated Residual 和 AttnRes: 门在残差流上
+**Gated Residual 和 AttnRes: 门在残差流上**
 
 Gated Residual 把门放在残差流上. 它把隐状态扩成 $n_r=4$ 条分支, 读入子层前对四条分支做逐元素 sigmoid 加权, 子层输出按每条分支一个标量写回, 不使用 Hyper-Connections 里的分支混合矩阵 $H_{res}$. 门决定的是「从哪条残差分支读, 写到哪条」, 不改注意力子层内部.
 
@@ -365,13 +365,13 @@ Gated Residual 来自 Qwen3.8 技术报告. 报告 Table 6 在 28 层模型上�
 
 AttnRes 也在深度维上做加权, 但用的是 softmax 注意力: 每一层用一个可学的伪查询, 对此前所有层的输出做一次 softmax 加权求和, 取代 Pre-LN 残差里固定为 1 的系数. 它和 $G_1$ 改的是两根不同的轴, 一个是层间, 一个是注意力子层内部. 详见 [AttnRes: 深度维注意力聚合](../../../2.1-深度学习基础组件/2.1.3-残差连接/04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md).
 
-### 4.8 attention sink 的其他处理
+**attention sink 的其他处理**
 
 StreamingLLM 利用 sink 做长序列推理: 保留前几个 token 的 KV 和最近一段窗口, 中间的丢掉, 模型仍能正常生成. 它接受 sink 的存在并加以利用, 和 $G_1$ 的方向相反. 加了 $G_1$ 的模型首 token 占比只有 4.8%, 只保留首 token 的策略对它的意义也会变小. StreamingLLM 的细节见 [StreamingLLM 与 Attention Sink](../../../2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md).
 
 还有一类做法给 softmax 加一个可学的「空」位置 (如在 key 里加一个 bias token), 让头把多余的质量分给它. Gu 等人的实验显示, 这类 key bias 能把 sink 从首 token 移到这个额外位置上, 但 sink 本身仍存在. 只有去掉归一化 (sigmoid 注意力) 时 sink 才在他们测试的规模内消失. $G_1$ 保留归一化, 用输出门让头可以不贡献, 达到了接近的效果.
 
-### 4.9 适用边界
+### 适用边界
 
 论文在 Limitations 里写了两点: 非线性对注意力动态和整个训练过程的影响还没有充分研究; 去掉 sink 后长上下文外推变好, 但 sink 如何影响模型对更长序列的泛化, 没有严格的理论解释. 3.4 节的解释也只是假设.
 
@@ -387,7 +387,7 @@ StreamingLLM 利用 sink 做长序列推理: 保留前几个 token 的 KV 和最
 | 想用激活裁剪代替门 | 裁剪到 300 或 100, 8e-3 学习率下仍不收敛 | 加门; 不稳定不只来自残差里的大激活 |
 | 依赖首 token 的 KV 保留策略效果变差 | 加门后首 token 只占 4.8% 的注意力 | 在加门模型上重新验证 KV 保留策略 |
 
-## 参考文献
+**参考文献**
 
 1. Qiu Z., Wang Z., Zheng B., Huang Z., et al. [Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free](https://arxiv.org/abs/2505.06708). NeurIPS 2025. 代码: [GitHub 仓库](https://github.com/qiuzh20/gated_attention).
 2. Lin Z., Nikishin E., He X., Courville A. [Forgetting Transformer: Softmax Attention with a Forget Gate](https://arxiv.org/abs/2503.02130). ICLR 2025.

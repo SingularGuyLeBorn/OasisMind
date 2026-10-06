@@ -144,7 +144,7 @@ $$
 \tag{7}
 $$
 
-$\pi_w$ 固定, $\log\pi_w(y_l\mid x)^\beta$ 不参与梯度. 记 $C=\mathbb{E}_{(x,y_l)\sim\mathcal{D}}[\log\pi_w(y_l\mid x)^\beta]$, 定义 $\mathcal{L}'=\mathcal{L}(\pi_\theta;\pi_w)+C$, 它与 $\mathcal{L}(\pi_\theta;\pi_w)$ 的优化等价. 由于 $\pi_w(y_l\mid x)\le1$, 把式 (7) 最后一项里的 $\pi_w(y_l\mid x)^\beta$ 换成 1, 对数里的量变大, 负号后整体变大, 得到
+$\pi_w$ 固定, $\log\pi_w(y_l\mid x)^\beta$ 不参与梯度. 记 $C=\mathbb{E}_{(x,y_l)\sim\mathcal{D}}[\log\pi_w(y_l\mid x)^\beta]$, 定义 $\mathcal{L}'=\mathcal{L}(\pi_\theta;\pi_w)+C$, 它与 $\mathcal{L}(\pi_\theta;\pi_w)$ 的优化等价. 由于 $\pi_w(y_l\mid x)\le1$, 把式 (7) 最终一项里的 $\pi_w(y_l\mid x)^\beta$ 换成 1, 对数里的量变大, 负号后整体变大, 得到
 
 $$
 \mathcal{L}(\pi_\theta;\pi_w)+C\le
@@ -353,7 +353,7 @@ COMET-22 这类神经参考型指标与无参考指标更一致: en$\to$xx 上 A
 - 实验只做了机器翻译的十个方向, 偏好来自 QE 打分的三元组, 起点是经过单语续训和平行句 SFT 两个阶段的 ALMA. 换到对话或其他任务, 要能构造出同样「高质量但不完美」的负例; 论文没有在别的任务上做实验.
 - 训练期不从当前策略采样, 偏好数据一次构造完. 需要在线探索的任务不在这篇的范围内.
 
-## 参考文献
+**参考文献**
 
 1. Xu, H., Sharaf, A., Chen, Y., Tan, W., Shen, L., Van Durme, B., Murray, K., & Kim, Y. J. (2024). [Contrastive Preference Optimization: Pushing the Boundaries of LLM Performance in Machine Translation](https://arxiv.org/abs/2401.08417). *ICML*. [arXiv HTML](https://arxiv.org/html/2401.08417). 代码与模型: [fe1ixxu/ALMA](https://github.com/fe1ixxu/ALMA).
 2. Xu, H., Kim, Y. J., Sharaf, A., & Awadalla, H. H. (2023). [A Paradigm Shift in Machine Translation: Boosting Translation Performance of Large Language Models](https://arxiv.org/abs/2309.11674).

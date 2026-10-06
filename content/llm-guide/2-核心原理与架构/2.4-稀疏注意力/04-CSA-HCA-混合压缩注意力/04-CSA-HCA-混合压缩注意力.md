@@ -10,9 +10,9 @@ DeepSeek-V3.2 的 DSA 已经让核心注意力每个 query 只算 2048 个 token
 
 ---
 
-## 1. 从 DSA 到 CSA: 4 合 1, 再选 top-k
+## 从 DSA 到 CSA: 4 合 1, 再选 top-k
 
-### 1.1 V3.2 的 DSA 在 1M 上还剩什么
+### V3.2 的 DSA 在 1M 上还剩什么
 
 DSA 把注意力拆成两步. 第一步, lightning indexer 给 query $t$ 和每个历史 token $s$ 打分, 用少量 indexer 头, ReLU 激活, 低精度计算:
 
@@ -26,7 +26,7 @@ $$
 
 V4 报告 §2.3 的出发点是把这两项一起降下来: 沿序列维压缩 KV, cache 条目数和 indexer 扫描长度都变成 $n/m$. CSA 在压缩之后保留 DSA 的 top-k 选择, HCA 压得更狠, 直接放弃选择.
 
-### 1.2 两路条目与压缩权重
+**两路条目与压缩权重**
 
 记输入隐状态 $H\in\mathbb{R}^{n\times d}$, $n$ 是序列长度, $d$ 是隐维. CSA 先算两路 KV 条目和对应的压缩权重, 形状都是 $n\times c$, $c$ 是头维:
 
@@ -36,7 +36,7 @@ $$
 
 四个矩阵都是 $d\times c$ 的可训参数. $C^a, C^b$ 是每个 token 的候选 KV 内容, $Z^a, Z^b$ 是每个 token 在每个通道上的压缩 logit.
 
-### 1.3 重叠压缩
+**重叠压缩**
 
 第 $i$ 个压缩条目由本块的 $a$ 路 ($m$ 个 token) 和上一块的 $b$ 路 ($m$ 个 token) 共同决定. 先把两段 logit 加上可学习的位置偏置 $B^a, B^b\in\mathbb{R}^{m\times c}$, 拼成 $2m$ 行, 沿行 (token) 方向做 softmax:
 
@@ -76,7 +76,7 @@ token 4 到 7 同时出现在条目 1 的 $a$ 路和条目 2 的 $b$ 路, 两路
 
 和前几篇的块摘要对比: [MoBA](../01-MoBA架构深度解析/01-MoBA架构深度解析.md) 的块摘要是块内 key 的均值, 只用于路由, 不进入注意力计算; [QSA](../05-QSA-Qwen稀疏注意力/05-QSA-Qwen稀疏注意力.md) 的 indexer key 也是均值池化, 同样只用于打分; CSA 的压缩条目是学出来的逐通道加权和, 并且直接作为核心注意力的 key 和 value.
 
-### 1.4 Lightning indexer 在压缩条目上打分
+### Lightning indexer 在压缩条目上打分
 
 indexer 的 key 用和式 (3)(4) 相同的压缩操作得到 $K^{\text{IComp}}\in\mathbb{R}^{\frac{n}{m}\times c^I}$, $c^I$ 是 indexer 头维. indexer 的 query 走低秩路径, 先降维再升维:
 
@@ -98,7 +98,7 @@ $$
 
 indexer 的扫描长度从 $t$ 变成 $t/4$. V4-Flash 和 V4-Pro 都用 $n_h^I=64$ 个 indexer 头, $c^I=128$; top-k 分别是 512 和 1024 (报告 §4.2.1). 每个条目覆盖 4 个 token 的序列长度, 512 个条目对应 2048 个 token 的跨度, 1024 个对应 4096 个. 报告 §2.3.4 说 V4 的 top-k 比 V3.2 小, 用来提高短中文本上的效率.
 
-### 1.5 共享 KV 的 MQA
+**共享 KV 的 MQA**
 
 核心注意力是 MQA: 所有 query 头共享一份 KV, 而且每个压缩条目同时当 key 和 value. query 从同一个 latent $\mathbf{c}^Q_t$ 升维得到:
 
@@ -108,7 +108,7 @@ $$
 
 $n_h$ 是 query 头数, $\mathbf{o}_{t,i}\in\mathbb{R}^c$ 是第 $i$ 个头的输出. key 和 value 是同一个向量, cache 里每个条目只存一份 $c$ 维向量, 这和 MLA decode 时在 latent 上做 MQA 的形状一致. V4 的头维 $c=512$, 比常见的 128 大四倍, 单个 KV 头的表达容量靠头维补回来.
 
-### 1.6 分组输出投影
+### 分组输出投影
 
 $n_h$ 个头的输出拼起来是 $c n_h$ 维. V4-Pro 是 $512\times128=65536$ 维, 直接投影到 $d=7168$ 需要 $65536\times7168\approx 4.70\times10^8$ 个参数, 每层每个 token 也要做这么多次乘加. 报告 §2.3.1 的做法是两级投影: 把 $n_h$ 个头分成 $g$ 组, 每组 $c\,n_h/g$ 维先投到 $d_g$ 维 ($d_g<c\,n_h/g$), 再把 $g$ 个 $d_g$ 维结果拼起来投到 $d$ 维.
 
@@ -121,9 +121,9 @@ $n_h$ 个头的输出拼起来是 $c n_h$ 维. V4-Pro 是 $512\times128=65536$ �
 
 Pro 的输出投影降到直接投影的约 39%, Flash 降到 50%. 代价是第一级投影只在组内混合, 不同组的头要到第二级才交互.
 
-## 2. HCA, 共用细节与层排布
+## HCA, 共用细节与层排布
 
-### 2.1 HCA: 128 合 1, 稠密注意力
+### HCA: 128 合 1, 稠密注意力
 
 HCA 的压缩方式和 CSA 相同, 只有两处不同: 压缩率 $m'=128$, 远大于 $m$; 不做重叠. 每个 token 只算一路条目和权重:
 
@@ -145,12 +145,12 @@ query 的生成 (低秩 latent 升维) 和分组输出投影与 CSA 相同. 1M t
 
 CSA 和 HCA 的分工可以从两个数字读出来. CSA 的条目粒度细 (4 个 token), 但只看 top-k 个, 剩下的 $n/4-k$ 个条目对该 query 不可见; HCA 的条目粒度粗 (128 个 token), 但每个 query 能看到全部条目. 一个 query 在 CSA 层里漏掉的块, 在 HCA 层里至少还有一个 128 token 粒度的摘要可以看到.
 
-### 2.2 两种层共用的四个细节
+**两种层共用的四个细节**
 
 报告 §2.3.3 列了四项 CSA 和 HCA 都有的设计.
 
 **query 和 KV 条目的 RMSNorm.** 在核心注意力之前, 对每个 query 头和唯一的 KV 头各做一次 RMSNorm, 防止注意力 logit 爆炸. 报告 §2.4 把这一点和优化器联系起来: 用 Muon 训练时, 已有工作用 QK-Clip 限制注意力 logit (报告引 Liu et al., 2025); V4 的注意力结构允许直接在 query 和 KV 条目上做 RMSNorm, logit 的尺度已被控制, 所以 V4 的 Muon 不再用 QK-Clip.
-**Partial RoPE 和输出反旋转.** query 和 KV 条目只在最后 64 维施加 RoPE. 因为 KV 条目同时当 value, 核心注意力的输出是若干带旋转的条目的加权和, 输出向量的后 64 维会带上各条目的绝对位置. 为此, 报告对每个头输出的后 64 维再按 query 位置的相反数施加一次 RoPE. 记条目 $j$ 的位置为 $p_j$, 旋转矩阵为 $R(\cdot)$, 输出后 64 维是 $\sum_j s_j R(p_j)\,v_j$, 再乘 $R(-t)$ 得到 $\sum_j s_j R(p_j-t)\,v_j$, 每个条目对输出的贡献只依赖它和 query 之间的距离.
+**Partial RoPE 和输出反旋转.** query 和 KV 条目只在最终 64 维施加 RoPE. 因为 KV 条目同时当 value, 核心注意力的输出是若干带旋转的条目的加权和, 输出向量的后 64 维会带上各条目的绝对位置. 为此, 报告对每个头输出的后 64 维再按 query 位置的相反数施加一次 RoPE. 记条目 $j$ 的位置为 $p_j$, 旋转矩阵为 $R(\cdot)$, 输出后 64 维是 $\sum_j s_j R(p_j)\,v_j$, 再乘 $R(-t)$ 得到 $\sum_j s_j R(p_j-t)\,v_j$, 每个条目对输出的贡献只依赖它和 query 之间的距离.
 
 **滑动窗口分支.** 式 (6) 只允许 query 看已闭合的压缩块, query 自己所在块里的 token 在压缩分支里不可见. 而语言建模里最近的 token 通常最相关. 两种层都额外给每个 query 准备最近 $n_{\text{win}}$ 个未压缩 token 的 KV, 和压缩条目一起进入同一次核心注意力. V4 两个版本都取 $n_{\text{win}}=128$. HCA 一个块是 128 个 token, query 所在的未闭合块最多有 127 个 token, 窗口正好能覆盖.
 
@@ -162,7 +162,7 @@ $$
 
 $z_{h,i,j}$ 是头 $h$ 中 query $i$ 对第 $j$ 个前序 token 或压缩块的 logit. 分母多一项之后, 每行注意力权重之和可以小于 1, 甚至接近 0, query 找不到相关内容时不必把权重分给某个条目. 报告引的是 StreamingLLM 和 gpt-oss. 和 [01 StreamingLLM](../../2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md) 的做法不同, 这里没有保留任何真实 token 当 sink, 只是一个每头一个的标量.
 
-### 2.3 层排布与配置
+**层排布与配置**
 
 报告 §4.2.1 的配置:
 
@@ -182,9 +182,9 @@ $z_{h,i,j}$ 是头 $h$ 中 query $i$ 对第 $j$ 个前序 token 或压缩块的 
 
 其余部分沿用 DeepSeekMoE 和 MTP, 残差换成 mHC, 优化器换成 Muon.
 
-## 3. 1M 上的成本
+**1M 上的成本**
 
-### 3.1 条目数
+### 条目数
 
 按配置手算 1M ($2^{20}=1048576$) token 时每层 cache 的条目数, 不计 indexer key 和数值精度:
 
@@ -196,7 +196,7 @@ $z_{h,i,j}$ 是头 $h$ 中 query $i$ 对第 $j$ 个前序 token 或压缩块的 
 
 CSA 和 HCA 交错时平均每层条目数约为 V3.2 的 $(1/4+1/128)/2\approx 13\%$. CSA 层另有 $n/4$ 条 128 维的 indexer key.
 
-### 3.2 一个 query 和整段 prefill 实际算了什么
+**一个 query 和整段 prefill 实际算了什么**
 
 用 V4-Pro 的配置, 跟踪单个 query 在两个位置上的计算. 按式 (6), 位置 $t$ 的 query 在 CSA 层能打分的块数是 $\lfloor t/4\rfloor$; 在 HCA 层能看到的条目是已经闭合的 128 token 块, 个数 $\lfloor (t+1)/128\rfloor$. 两种层都再加最近 128 个未压缩 token.
 
@@ -206,13 +206,13 @@ CSA 和 HCA 交错时平均每层条目数约为 V3.2 的 $(1/4+1/128)/2\approx 
 
 **prefill.** prefill 时所有 query 一起算. CSA 的 indexer 对每个 query 扫 $t/4$ 个块, 总计约 $n^2/8$ 次块打分, 仍是平方量级, 只是常数变成 DSA 的 $1/4$; 核心注意力每个 query 最多 $k+n_{\text{win}}$ 个条目, 总计 $O(n(k+n_{\text{win}}))$, 和长度成线性. HCA 每个 query 看 $t/128$ 个条目, 总计约 $n^2/256$, 也是平方量级但常数很小. 压缩本身是每个 token 一次投影加一次 $2m$ 或 $m'$ 元素的 softmax, 和长度成线性. 在 1M 这个长度上, 两种层剩下的平方项都来自「每个 query 扫一遍压缩后的序列」, 这一项在 QSA 里由微块压缩 indexer 处理, 在 V4 里由序列压缩处理, 两者的思路相近.
 
-### 3.3 精度
+**精度**
 
 报告 §2.3.4 还列了三项降成本的做法. KV 条目的 RoPE 维用 BF16, 其余维用 FP8, cache 大小比纯 BF16 少近一半. indexer 内部的注意力计算用 FP4. 后训练阶段做量化感知训练时, indexer 的 QK 路径整体用 FP4 (MXFP4) 缓存, 加载和相乘, index 分数从 FP32 降到 BF16, 报告 §5 称 top-k 选择器因此加速 2 倍, KV 条目召回率保持 99.7%.
 
 按这个精度拆分算一个条目的字节数: 512 维里 64 维 RoPE 用 BF16, 占 128 字节, 其余 448 维用 FP8, 占 448 字节, 共 576 字节, 是纯 BF16 (1024 字节) 的 56%, 对应「少近一半」. 代入 3.1 节的条目数, 1M 长度上一层 CSA 的压缩条目是 $262144\times576$ 字节, 即 144 MiB; 一层 HCA 是 $8192\times576$ 字节, 即 4.5 MiB. 这两个数不含 indexer key, 窗口和尾部状态, 是按报告给的精度推算的. 折算到每个原始 token: 1M 对 262144 条是 4 个 token 一条, CSA 每 token 约 144 字节; 对 8192 条是 128 个 token 一条, HCA 每 token 约 4.5 字节. 作为对照, V3 的 MLA 每 token 每层存 512 维潜向量加 64 维 RoPE key, BF16 共 1152 字节, CSA 约是它的 1/8, HCA 约是 1/256. 这组对比只按报告给的条目数和精度推算, 没有计入 indexer 和窗口, 真实部署时每层的缓存会比这几个数大一些, 量级不变. HCA 一层在 1M 时只有几 MiB, 上下文再变长, 它占的显存也增长得很慢.
 
-### 3.4 报告给的总数
+### 报告给的总数
 
 条目数, 精度和较小的 top-k 合起来, 报告 Figure 1 右图估算: 1M 上下文时, V4-Pro 单 token 推理 FLOPs (按等效 FP8 计) 是 V3.2 的 27%, 累计 KV cache 是 10%; V4-Flash 激活参数更少, 两项分别是 10% 和 7%. 以 BF16, GQA8, 头维 128 为基线, V4 的 KV cache 约为基线的 2%. 这些是报告的估算值, 不是实测吞吐.
 
@@ -220,15 +220,15 @@ Flash 的 7% 和 Pro 的 10% 可以用层数粗略对上. 两者的 CSA, HCA 和
 
 FLOPs 一项不能这样对. 单 token FLOPs 里除了注意力还有 MoE 和投影, Pro 激活 49B, Flash 激活 13B, 1M 长度上 Pro 的 27% 和 Flash 的 10% 差距主要来自激活参数, 不来自注意力结构.
 
-## 4. 训练, 系统改动与长上下文效果
+## 训练, 系统改动与长上下文效果
 
-### 4.1 训练: 先稠密再稀疏, 上下文并行
+### 训练: 先稠密再稀疏, 上下文并行
 
 V4-Flash 的训练长度从 4K 逐步扩到 16K, 64K, 1M. 前 1T token 用稠密注意力预热, 长度到 64K 时引入稀疏注意力并保持到训练结束. 引入稀疏时先用一个短阶段只预热 CSA 的 lightning indexer, 然后再用稀疏注意力训练大部分步数 (报告 §4.2.2). V4-Pro 的稠密阶段更长, 引入稀疏的方式相同. 这和 V3.2 DSA 的「稠密预热 indexer, 再稀疏训练」是同一个两阶段骨架.
 
-训练的另一处改动在并行方式上. 常规上下文并行 (CP) 按序列维切分, 每个 rank 持有连续 $s$ 个 token. 压缩带来两个问题: 训练样本由多条序列打包, 每条序列单独压缩, 末尾不足 $m$ 个的 token 被丢弃, 所以各 rank 压缩后的长度不同且小于 $s/m$; 一个压缩块需要连续 $m$ 个 token, 可能跨两个 rank. 报告 §3.4.3 用两阶段通信解决: 每个 rank 先把最后 $m$ 个未压缩条目发给下一个 rank, 下一个 rank 连同本地 $s$ 个条目压缩出固定 $s/m+1$ 个条目 (含填充); 再 all-gather 所有 rank 的压缩条目, 用一个融合的选择加填充算子整理成总长 $\text{cp\_size}\cdot s/m$ 的序列, 填充放在末尾.
+训练的另一处改动在并行方式上. 常规上下文并行 (CP) 按序列维切分, 每个 rank 持有连续 $s$ 个 token. 压缩带来两个问题: 训练样本由多条序列打包, 每条序列单独压缩, 末尾不足 $m$ 个的 token 被丢弃, 所以各 rank 压缩后的长度不同且小于 $s/m$; 一个压缩块需要连续 $m$ 个 token, 可能跨两个 rank. 报告 §3.4.3 用两阶段通信解决: 每个 rank 先把最终 $m$ 个未压缩条目发给下一个 rank, 下一个 rank 连同本地 $s$ 个条目压缩出固定 $s/m+1$ 个条目 (含填充); 再 all-gather 所有 rank 的压缩条目, 用一个融合的选择加填充算子整理成总长 $\text{cp\_size}\cdot s/m$ 的序列, 填充放在末尾.
 
-### 4.2 推理侧 KV cache
+### 推理侧 KV cache
 
 混合注意力打破了 PagedAttention 的两个假设 (报告 §3.5.1): 不同层的 cache 长度和淘汰策略不同 (滑动窗口层只留最近 $n_{\text{win}}$ 个), 高性能 kernel 对块对齐有要求. V4 的做法是把 cache 分两部分:
 
@@ -237,9 +237,9 @@ V4-Flash 的训练长度从 4K 逐步扩到 16K, 64K, 1M. 前 1T token 用稠密
 
 kernel 一侧, 常规注意力 kernel 假设每个 cache 块有固定的 $B$ 个条目, 对应 CSA 的 $B\cdot m$ 个原始 token 和 HCA 的 $B\cdot m'$ 个. V4 用一个支持每层不同块内条目数的稀疏注意力 kernel, 和 cache 布局一起设计, 例如把块填充到对齐 cache line. 这样 CSA 层和 HCA 层可以共用同一套以 128 个原始 token 为单位的分配逻辑.
 
-**磁盘前缀缓存** (§3.5.2): 压缩条目全部落盘, 命中前缀时直接读到最后一个完整压缩块, 尾部不完整块里的 token 需要重算. 滑动窗口 KV 每层都有且不压缩, 体积约为 CSA 和 HCA 压缩条目的 8 倍, 报告给了三种策略: 全部存 (零重算, 但写入量大, 读取只用一小部分); 每隔 $p$ 个 token 存一次最近 $n_{\text{win}}$ 个 (按 $p$ 在存储和重算之间折中); 完全不存, 命中时利用已缓存的压缩条目重算最后 $n_{\text{win}}\cdot L$ 个 token ($L$ 是层数), 因为每层窗口 KV 只依赖上一层最近 $n_{\text{win}}$ 个 token.
+**磁盘前缀缓存** (§3.5.2): 压缩条目全部落盘, 命中前缀时直接读到最终一个完整压缩块, 尾部不完整块里的 token 需要重算. 滑动窗口 KV 每层都有且不压缩, 体积约为 CSA 和 HCA 压缩条目的 8 倍, 报告给了三种策略: 全部存 (零重算, 但写入量大, 读取只用一小部分); 每隔 $p$ 个 token 存一次最近 $n_{\text{win}}$ 个 (按 $p$ 在存储和重算之间折中); 完全不存, 命中时利用已缓存的压缩条目重算最终 $n_{\text{win}}\cdot L$ 个 token ($L$ 是层数), 因为每层窗口 KV 只依赖上一层最近 $n_{\text{win}}$ 个 token.
 
-### 4.3 长上下文效果
+### 长上下文效果
 
 报告 §5.3 用 OpenAI MRCR 和 CorpusQA 测 1M 上下文 (Table 6, Table 7). MRCR 在一段很长的多轮对话里放入多个相似的请求, 要求模型按指定序号复现其中某一次的回答, 考的是在大量相似干扰里定位并原样取回内容; CorpusQA 是在大语料上的问答. 前一项对「远处 token 只以压缩形式存在」最敏感.
 
@@ -254,9 +254,9 @@ kernel 一侧, 常规注意力 kernel 假设每个 cache 块有固定的 $B$ 个
 
 V4-Pro 在两项上都高于 Gemini 3.1 Pro, 低于 Claude Opus 4.6. 报告 Figure 9 给出 MRCR 随长度的曲线: 128K 以内检索很稳定, 超过 128K 后可见下降. 非思考模式在两项上都低很多, 长上下文检索的分数受推理模式影响大, 不能只归到注意力结构上.
 
-## 5. 压缩方案对照与边界
+## 压缩方案对照与边界
 
-### 5.1 和相邻方法的关系
+### 和相邻方法的关系
 
 | 方法 | 压缩了什么 | 选择单位 | 核心注意力看到什么 |
 |---|---|---|---|
@@ -268,11 +268,11 @@ V4-Pro 在两项上都高于 Gemini 3.1 Pro, 低于 Claude Opus 4.6. 报告 Figu
 | CSA | 序列 4 合 1, KV 本身被压缩 | 压缩条目 | top-k 个压缩条目 + 窗口 |
 | HCA | 序列 128 合 1 | 不选择 | 全部压缩条目 + 窗口 |
 
-这张表最后一列把 CSA 和其余块稀疏方法分开. NSA, MoBA, QSA 的块摘要只用来决定加载哪些块, 被选中的块以原始 token 精度参与注意力; CSA 和 HCA 里, 压缩条目本身就是 key 和 value, 原始精度只保留在 128 token 的窗口里. NSA 的压缩分支在这一点上和 HCA 更接近: 都是对全部压缩摘要做稠密注意力, 只是 NSA 用 MLP 压缩, HCA 用逐通道 softmax 加权.
+这张表最终一列把 CSA 和其余块稀疏方法分开. NSA, MoBA, QSA 的块摘要只用来决定加载哪些块, 被选中的块以原始 token 精度参与注意力; CSA 和 HCA 里, 压缩条目本身就是 key 和 value, 原始精度只保留在 128 token 的窗口里. NSA 的压缩分支在这一点上和 HCA 更接近: 都是对全部压缩摘要做稠密注意力, 只是 NSA 用 MLP 压缩, HCA 用逐通道 softmax 加权.
 
 压缩粒度上也能对比. NSA 论文的压缩分支块长 32, 步长 16, 相邻块重叠一半, 和 CSA 的「每个条目看 $2m$ 个 token, 步长 $m$」是同一种重叠方式; HCA 块长 128, 不重叠, 压缩率是 NSA 压缩分支的 8 倍. NSA 的窗口分支是 512 个 token, V4 的窗口只有 128 个, V4 用更短的原始精度窗口换更小的状态 cache. 这些数字来自不同规模和不同训练设置的模型, 只能说明设计取向, 不能直接比较效果.
 
-### 5.2 边界
+### 边界
 
 **远处 token 只以压缩形式存在.** CSA 的条目是 8 个 token 的逐通道加权和, HCA 是 128 个. 需要逐字复现远处一长串内容的任务, 依赖压缩权重能否把该段信息保留在条目里. MRCR 曲线在 128K 以后下降, 和这一点一致, 但报告没有做把下降归因到压缩的消融.
 
@@ -286,7 +286,7 @@ V4-Pro 在两项上都高于 Gemini 3.1 Pro, 低于 Claude Opus 4.6. 报告 Figu
 
 **效率数字是估算.** 27% 和 10% 是 Figure 1 的单 token FLOPs 与累计 KV 估算, 不是端到端吞吐或延迟.
 
-## 参考文献
+**参考文献**
 
 1. DeepSeek-AI. (2026). [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://arxiv.org/abs/2606.19348). arXiv:2606.19348. §2.3 式 (9)–(27), §2.3.4, §2.4 (QK-Clip), §3.4.3, §3.5.1–3.5.2, §4.2.1–4.2.2, §5 (QAT), Table 6–7, Figure 1, Figure 9. 开源推理实现: [DeepSeek-V4-Pro/inference](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/tree/main/inference).
 2. DeepSeek-AI. (2025). [DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models](https://arxiv.org/abs/2512.02556). arXiv:2512.02556. DSA 与 lightning indexer.

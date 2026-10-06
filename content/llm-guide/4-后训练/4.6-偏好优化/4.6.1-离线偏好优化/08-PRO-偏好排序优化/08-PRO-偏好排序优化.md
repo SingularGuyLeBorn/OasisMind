@@ -336,7 +336,7 @@ raw 排序长度为 2, 式 (4) 只有一项, 所以没有 $-\mathcal{L}^{k>1}$ �
 - $n=1$ 时式 (4) 没有项, 只剩 SFT. 需要在线探索或逐步过程奖励的任务, 这套离线排序损失帮不上.
 - Ethics 声明数据里有敏感和冒犯性内容, 只用于研究. 有害偏好排成序, 算法同样能拟合.
 
-## 参考文献
+**参考文献**
 
 1. Song, F., Yu, B., Li, M., Yu, H., Huang, F., Li, Y., & Wang, H. (2024). [Preference Ranking Optimization for Human Alignment](https://arxiv.org/abs/2306.17492). *AAAI*. [arXiv HTML](https://arxiv.org/html/2306.17492). 代码: [DAMO-ConvAI/PRO](https://github.com/AlibabaResearch/DAMO-ConvAI/tree/main/PRO).
 2. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.

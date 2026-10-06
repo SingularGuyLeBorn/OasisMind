@@ -147,7 +147,7 @@ $$
 \|\mathrm{polar}(M)-X_T\|_2\le|1-\ell^2|^{(q+1)^T}, \tag{9}
 $$
 
-$d=3$ 时二次收敛, $d=5$ 时三次收敛. 正文还写到, 即使真实的最小奇异值小于 $\ell$, 方法也严格快于 Newton–Schulz; 当 $\sigma_{\min}=\ell$ 时大约快一倍. 区间收缩到 1 附近后, 最优多项式会趋向 Padé 型的 Newton–Schulz 多项式, 渐近收敛阶也就接了回来. 论文公开的 $d=5$ 系数表最后一项是 $(1.875,-1.25,0.375)$, 正好是五次 Newton–Schulz 的 $(15/8,-10/8,3/8)$.
+$d=3$ 时二次收敛, $d=5$ 时三次收敛. 正文还写到, 即使真实的最小奇异值小于 $\ell$, 方法也严格快于 Newton–Schulz; 当 $\sigma_{\min}=\ell$ 时大约快一倍. 区间收缩到 1 附近后, 最优多项式会趋向 Padé 型的 Newton–Schulz 多项式, 渐近收敛阶也就接了回来. 论文公开的 $d=5$ 系数表最终一项是 $(1.875,-1.25,0.375)$, 正好是五次 Newton–Schulz 的 $(15/8,-10/8,3/8)$.
 
 §4.1 的数值实验用一个奇异值在 $10^{-6}$ 到 1 之间按对数均匀分布的随机矩阵, 比较几种五次方法. 五次 Newton–Schulz 收敛, 但前 17 步几乎没有进展; Jordan 的方法 11 步就到约 0.3 的误差, 之后不再下降; You 的方法只定义了 6 步, 速度和 Jordan 的相近. Polar Express 取 $\ell=\sigma_{\min}$ 时每一步都优于其它方法, 11 步达到很好的精度, 到达任一误差水平所需步数约为 Newton–Schulz 的一半. 即使 $\ell$ 设错两个数量级, 它仍有竞争力, 只是要到第 13, 14 步才超过 Jordan 的方法. 在 GPT-2 第四个 Transformer 块的真实梯度矩阵上, 调好 $\ell$ 的 Polar Express 同样最好, 把 $\ell$ 设得小很多个数量级则会推迟收敛.
 
@@ -168,7 +168,7 @@ Polar Express 前 5 个多项式在 0 点的斜率依次约为 8.21, 4.07, 3.91,
 
 奇异值的上界取 $\|M\|_F$: 先把 $M$ 除以 $\|M\|_F$, 令 $u=1$. 这个上界在最坏情况下可能很松, 但论文 §3.3 指出神经网络稠密层的梯度矩阵有效秩低, 实际只差一个小常数. 下界很难高效求得, 只能猜; 好在猜错的代价不大, 方法对任何 $\ell\in(0,u]$ 都收敛, 差一个数量级只推迟几步. 论文在 bfloat16 下工作, 取 $\epsilon_{\mathrm{mach}}=2^{-8}\approx3.91\times10^{-3}$, 设 $\ell=10^{-3}$. 所有输入矩阵共用这组上下界, 多项式只需离线算一次.
 
-低精度下有两个问题要处理 (§3.4, 附录 G). 第一, 舍入可能让某个奇异值略大于当前上界 $u_t$, 而最优多项式在区间外可能把 $u_t+\epsilon$ 映射到大于 $u_{t+1}+\epsilon$ 的位置, 多次迭代后这个奇异值会发散. 修法是把每个 $p_t(x)$ 换成 $p_t(x/1.01)$, 相当于把上界放宽 1%. 代价是奇异值收敛到 0.999998 而不是 1, 最后一步可以去掉这个因子. 第二, 最优多项式在区间上反复振荡, 靠近 $u_t$ 的奇异值可能被映射到 $\ell_{t+1}$ 附近, 比值 $p_t(\sigma_i)/\sigma_i$ 过小会损失精度, 极端情况下 $p_t(\sigma_i)<0$, 奇异向量变号, 收敛到错误矩阵的极分解. 修法沿用 Chen & Chow 的建议: $\ell_t<u_t/10$ 时按 $\ell_t=u_t/10$ 选多项式, 这样能保证 $p_t(x)/x\ge0.236$, 收敛只慢一点点. 第三处改动照搬原版 Muon 的实现, 归一化时除以 $\|M\|_F+10^{-2}$ 而不是 $\|M\|_F$.
+低精度下有两个问题要处理 (§3.4, 附录 G). 第一, 舍入可能让某个奇异值略大于当前上界 $u_t$, 而最优多项式在区间外可能把 $u_t+\epsilon$ 映射到大于 $u_{t+1}+\epsilon$ 的位置, 多次迭代后这个奇异值会发散. 修法是把每个 $p_t(x)$ 换成 $p_t(x/1.01)$, 相当于把上界放宽 1%. 代价是奇异值收敛到 0.999998 而不是 1, 最终一步可以去掉这个因子. 第二, 最优多项式在区间上反复振荡, 靠近 $u_t$ 的奇异值可能被映射到 $\ell_{t+1}$ 附近, 比值 $p_t(\sigma_i)/\sigma_i$ 过小会损失精度, 极端情况下 $p_t(\sigma_i)<0$, 奇异向量变号, 收敛到错误矩阵的极分解. 修法沿用 Chen & Chow 的建议: $\ell_t<u_t/10$ 时按 $\ell_t=u_t/10$ 选多项式, 这样能保证 $p_t(x)/x\ge0.236$, 收敛只慢一点点. 第三处改动照搬原版 Muon 的实现, 归一化时除以 $\|M\|_F+10^{-2}$ 而不是 $\|M\|_F$.
 
 Algorithm 1 因此分成离线和在线两段. 离线段用 float64 预计算所有多项式系数; 在线段在 bfloat16 下逐步套用. 五次多项式 $p_t=ax+bx^3+cx^5$ 按 Horner 规则计算: $Y=X^\top X$, $X\leftarrow X\big(aI+Y(bI+cY)\big)$. 附录 A 的代码在矩形矩阵上先转置成「宽」的形状再算 $XX^\top$, 以减少 FLOPs, 每步是 3 次矩阵乘法, 和 Newton–Schulz 五次式相同. 第一个多项式的系数是 $(8.287,-23.596,17.300)$, 这是区间最宽时为抬高小奇异值而选的形状; 往后系数逐步接近 $(1.875,-1.25,0.375)$. 论文对深度学习推荐 $d=5$, $T=5$ 或 6, $\ell_1=10^{-3}$, 对 $M/(\|M\|_F+10^{-2})$ 套用这组多项式. 该方法已被 NanoGPT speedrun 采用 (§1.3).
 
@@ -188,9 +188,9 @@ Step-3.5-Flash 在预训练中用 Polar Express 替换了 Newton–Schulz, 固�
 
 极分解要看到完整的矩阵, 这一点在分布式训练里带来额外通信. ZeRO-1 把单个参数的梯度 reduce-scatter 到多个 DP rank 上, 和 Newton–Schulz 需要完整梯度冲突; Megatron-LM 的实现在 Muon 更新前用 FP32 all-reduce 拼回完整梯度, 通信量接近翻倍. Step-3.5-Flash 把整个参数分给单个 DP rank, 重排梯度缓冲区, 一次 reduce-scatter 就把完整梯度送到参数所有者; 由于向最大 rank 填充的开销随 DP 规模增长, 这个办法只用于专家参数, 端到端迭代时间相对朴素 all-reduce 约减少 5%, 额外显存不到 4GB. Kimi K3 的分布式优化器按 DP rank 均匀切分参数, 每个 rank 通过点对点通信只取回自己负责的参数分片再做正交化, 不必在每个 rank 上 all-gather 整个参数缓冲区 (K3 §5.2.2). 这些改动都是通信层面的, Polar Express 和 Newton–Schulz 在这里的要求一样. 本章 [6.1 训练基础设施](../../../6.1-训练基础设施/6.1-训练基础设施.md) 讨论了 Muon 与 ZeRO 的配合.
 
-最后是适用范围. Polar Express 只让 $UV^\top$ 的近似在少步数下更准, 它不约束注意力 logit; 换上 Polar Express 之后 logit 爆炸仍要靠 QK-Clip, QK 归一化或别的权重约束处理. 反过来, QK-Clip 不影响 Muon 给出的方向, 它和用哪种多项式算极分解无关. 一维参数没有矩阵结构, Embedding 和输出层在 Moonlight, K2, DeepSeek-V4 和 Polar Express 的实验里都交给 AdamW; DeepSeek-V4 交给 AdamW 的还有 mHC 的静态偏置和门控系数与全部 RMSNorm 权重 (§2.4). Muon 和 AdamW 本身的对照, 以及 AdamW 超参在大模型报告里的取值, 见 [6.5.1](../../6.5.1-优化器综述-从SGD到AdamW/6.5.1-优化器综述-从SGD到AdamW.md).
+最终是适用范围. Polar Express 只让 $UV^\top$ 的近似在少步数下更准, 它不约束注意力 logit; 换上 Polar Express 之后 logit 爆炸仍要靠 QK-Clip, QK 归一化或别的权重约束处理. 反过来, QK-Clip 不影响 Muon 给出的方向, 它和用哪种多项式算极分解无关. 一维参数没有矩阵结构, Embedding 和输出层在 Moonlight, K2, DeepSeek-V4 和 Polar Express 的实验里都交给 AdamW; DeepSeek-V4 交给 AdamW 的还有 mHC 的静态偏置和门控系数与全部 RMSNorm 权重 (§2.4). Muon 和 AdamW 本身的对照, 以及 AdamW 超参在大模型报告里的取值, 见 [6.5.1](../../6.5.1-优化器综述-从SGD到AdamW/6.5.1-优化器综述-从SGD到AdamW.md).
 
-## 参考文献
+**参考文献**
 
 1. Amsel, N., Persson, D., Musco, C., & Gower, R. M. (2025). *The Polar Express: Optimal Matrix Sign Methods and Their Application to the Muon Algorithm*. https://arxiv.org/abs/2505.16932
 2. Kimi Team (2025). *Kimi K2: Open Agentic Intelligence*. https://arxiv.org/abs/2507.20534

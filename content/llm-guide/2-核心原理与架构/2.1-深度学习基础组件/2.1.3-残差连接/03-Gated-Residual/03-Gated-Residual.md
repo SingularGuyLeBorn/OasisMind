@@ -76,7 +76,7 @@ HC 用 $\phi=\tanh$, $\lambda_\star$ 初始化 0.01; mHC 改用 sigmoid, 并把 
 1. **有界正门**. sigmoid 门在 loss 和训练稳定性上都优于 tanh. 这与 mHC 一致, 也与报告中 GDN 和注意力组件里 sigmoid 门优于 SiLU 或 tanh 的观察一致.
 2. **数据依赖**. 让 $H_{\mathrm{mix}}$ 和 $H_{\mathrm{combine}}$ 依赖数据, loss 比静态版只降 0.002, 而静态版比 Pre-norm 降了 0.021. 下游分的比例正好反过来: 静态到动态涨 1.98 分 (54.47 减 52.49), 基线到静态涨 1.58 分 (52.49 减 50.91). 只看 loss 会低估这一步. 报告把它列为 loss 与下游准确率不同步的几处例子之一, 并据此在整个设计过程中同时检查 loss 和基准; 报告概述部分的说法是, loss 与基准同向时才只报 loss.
 3. **读的粒度比写重要**. 把 $H_{\mathrm{mix}}$ 从每分支一个标量细化到每分支每通道一个权重有用; 对 $H_{\mathrm{combine}}$ 做同样细化几乎没有收益, 所以写保持每分支一个标量.
-4. **用全部分支预测**. 从所有分支预测算子, 优于只用最后一条分支或先把分支池化; 每条分支单独做 RMSNorm (对加宽流的 group RMSNorm) 还有进一步收益.
+4. **用全部分支预测**. 从所有分支预测算子, 优于只用最终一条分支或先把分支池化; 每条分支单独做 RMSNorm (对加宽流的 group RMSNorm) 还有进一步收益.
 5. **$H_{\mathrm{res}}$ 加了也没用**. 读和写足够有表达力之后, 再加 $n_r\times n_r$ 混合算子没有显著改善.
 
 第 5 条与 mHC 自己的组件消融并不冲突. mHC 的读写是每分支标量, 在那个设定下只打开 $H_{\mathrm{res}}$ 收益最大 (01 第 3.1 节); GR 把表达力放到逐元素读上之后, 混合矩阵就没有剩余的作用.
@@ -253,7 +253,7 @@ GR 本身含门, 只有带 GN 一列. Full AttnRes 是该家族最强的设定, 
 
 还有几个名字相近, 但作用位置不同的机制. [Gated Attention](../../../2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md) 的 $G_1$ 门在注意力子层内部, 是 SDPA 输出上的逐头 sigmoid, 残差仍是普通的 $x+F(x)$; Qwen3.8 同时保留了注意力输出门和 GR. [SiTU](../../2.1.1-激活函数/01-SiTU-GLU/01-SiTU-GLU.md) 和 SwiGLU 是 FFN 里的激活, 不涉及残差拓扑. [AttnRes](../04-AttnRes-深度维注意力聚合/04-AttnRes-深度维注意力聚合.md) 对历史层输出做注意力, 不维护固定条数的分支, 对照见第 5.1 节. [CSA / HCA](../../../2.4-稀疏注意力/04-CSA-HCA-混合压缩注意力/04-CSA-HCA-混合压缩注意力.md) 是压缩注意力, 缩写里的 HC 与 Hyper-Connections 无关.
 
-## 参考文献
+**参考文献**
 
 1. Qwen Team. (2026). *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability*. [GitHub PDF](https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf). §2.2 式 (21)-(37), Table 5-6, Figure 1/7; §3.1 优化器分工; §3.3 压力测试, Figure 10-12.
 2. Qiu, Z., et al. (2026). [A Unified View of Attention and Residual Sinks: Outlier-Driven Rescaling is Essential for Transformer Training.](https://arxiv.org/abs/2601.22966) *arXiv:2601.22966*.

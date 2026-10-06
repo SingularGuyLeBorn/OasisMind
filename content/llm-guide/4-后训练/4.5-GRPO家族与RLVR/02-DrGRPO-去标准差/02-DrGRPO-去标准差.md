@@ -291,7 +291,7 @@ AIME 只有 30 题, 一题对错就是 3.3 个百分点. 43.3% 对应 13 题, Si
 
 可以直接复用的是式 (5)(6) 和附录 Table 6. 生成上限 3k, greedy 评测, Math-Verify 二元分, 这些条件变化后数字会随之变化.
 
-## 参考文献
+**参考文献**
 
 1. Liu, Z., Chen, C., Li, W., Qi, P., Pang, T., Du, C., Lee, W. S., & Lin, M. (2025). [Understanding R1-Zero-Like Training: A Critical Perspective](https://arxiv.org/abs/2503.20783). 代码 [sail-sg/understand-r1-zero](https://github.com/sail-sg/understand-r1-zero).
 2. Shao, Z., et al. (2024). [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300).

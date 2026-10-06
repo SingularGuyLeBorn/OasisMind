@@ -4,15 +4,15 @@ published: true
 tags: ["Loop Transformer", "Universal Transformer", "ALBERT", "Huginn", "DeepLoop", "latent thoughts"]
 excerpt: "普通 Transformer 的深度和参数绑定: 一层一套 W_Q, W_K, W_V, W_O 和一套 FFN. 循环 Transformer 只存 K 个物理块, 同一套块转 R 轮, 展开深度 N=KR."
 ---
-# 01 · Loop Transformer: 层重复用
+# · Loop Transformer: 层重复用
 
 普通 Transformer 的深度和参数绑定在一起: 一层一套 $W_Q,W_K,W_V,W_O$ 和一套 FFN. 想加深, 就得再存一套. 循环 Transformer 把两者分开: 只存 $K$ 个物理块, 同一套 (或这 $K$ 套) 转 $R$ 轮, 展开深度 $N=KR$, 参数量只取决于 $K$.
 
 要解决的问题是「更深必须更大」. 下文依次讲: 定义与 $N=KR$, 祖先, 常深度可编程, 合成推理上的 $k\otimes L$, Huginn 的 sandwich, 残差缩放, 以及和序列 RNN、CoT、MoE 的区别. 多吐 thinking token 的方法见 [4.8](../../../../4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md). Universal Transformer、Huginn、DeepLoop 的超参各不相同, 后面分开写.
 
-## 1. 定义与位置
+## 定义与位置
 
-### 1.1 K 块 × R 轮 = 展开深度 N=KR
+### K 块 × R 轮 = 展开深度 N=KR
 
 先定义记号. 一个物理块 $\phi_k$ 是标准 Transformer 层: 因果自注意力加 FFN, 外加残差和 Norm. 普通模型有 $L$ 个互不共享的块, 前向就是
 
@@ -41,7 +41,7 @@ $K=1$ 是「整网一套权重转 $R$ 圈」, Universal Transformer 的默认结
 
 直观上, 循环是用浅模型做深计算. 更准确地说: 表达力沿展开深度走, 记忆容量沿独立参数走. 第 3 节 Saunshi 的结果显示, 合成推理上循环几乎能追上同 FLOPs 的不循环深网; 语言建模的困惑度则仍更依赖参数.
 
-### 1.2 与序列 RNN、CoT、MoE 的区别
+**与序列 RNN、CoT、MoE 的区别**
 
 **序列 RNN.** [2.5.4](../../../2.5-线性注意力与状态空间模型/2.5.4-线性RNN与Griffin/2.5.4-线性RNN与Griffin.md) 的线性 RNN、RWKV、Griffin, 状态沿 token 下标 $t$ 走: $h_t=f(h_{t-1},x_t)$. 循环 Transformer 的状态沿深度下标 $r$ 走, 同一时刻整段序列仍可并行做自注意力. Dehghani et al. (2018) 的原话是: Universal Transformer 不在序列位置上循环, 而是对每个位置的向量表示做连续修订. 序列长度 $T$ 可以不动, $R$ 照样加.
 
@@ -49,9 +49,9 @@ $K=1$ 是「整网一套权重转 $R$ 圈」, Universal Transformer 的默认结
 
 **MoE.** MoE 稀疏的是**这一 token 激活哪些专家矩阵**. 循环减少的是**独立参数的份数**, 计算并不按专家关掉; 同一份权重被访问 $R$ 次. Mixture-of-Recursions 借用了 Expert-Choice / Token-Choice 这套词, 路由的对象是「这个 token 再进几轮」, 与 2.6 MoE 里的 FFN 专家无关.
 
-## 2. 祖先与表达力: Universal Transformer, ALBERT, 可编程构造
+**祖先与表达力: Universal Transformer, ALBERT, 可编程构造**
 
-### 2.1 深度维循环, 外加 ACT
+### 深度维循环, 外加 ACT
 
 深度维循环不是 2025 年才出现的. Universal Transformer (Dehghani et al., 2018, [arXiv: 1807.03819](https://arxiv.org/abs/1807.03819)) 是这条线的公开祖先: 一套权重沿深度转, 外加按位置的停机. 编码器从嵌入 $H^0\in\mathbb{R}^{m\times d}$ 出发, 每一步对**所有位置并行**做多头自注意力, 再过一套跨位置、跨步共享的转移函数, 得到 $H^t$. 残差、dropout、LayerNorm 包在外面. 步数 $T$ 不由序列长度决定, 由「每个符号的表示被修订几次」决定.
 
@@ -74,7 +74,7 @@ bAbI 上, 需要三个支持事实的任务, 平均 ponder time 是 $3.8\pm 2.2$
 
 理论侧, 论文证明 UT 在一定条件下 Turing 完备. 这是「存在一组权重能模拟」, 与「预训练出来的 LLM 在执行通用计算」是两回事. 2.3 节 Giannou 的结果给出更具体的构造.
 
-### 2.2 ALBERT: 共享省参数, 不加推理轮次
+**ALBERT: 共享省参数, 不加推理轮次**
 
 ALBERT (Lan et al., 2020, [arXiv: 1909.11942](https://arxiv.org/abs/1909.11942)) 把跨层共享做成 BERT 的省参手段. 默认**所有**层参数共享; 也可以只共享注意力或只共享 FFN. BERT-large 334M, 同宽度的 ALBERT-large 18M, 大约 18 倍, 训练快约 1.7 倍.
 
@@ -82,7 +82,7 @@ ALBERT (Lan et al., 2020, [arXiv: 1909.11942](https://arxiv.org/abs/1909.11942))
 
 UT 和 ALBERT 都把权重绑在深度上, 区别在用途: UT 用 ACT 按位置分配步数, ALBERT 只拿共享来省参数. ALBERT 说明深度维共享权重能减少参数; 第 4 节的 Huginn 说明同一套核可以在推理阶段多转几圈. 前者几乎不把 $R$ 当推理时的可调参数, 后者把 $r$ 用作推理阶段的算力.
 
-### 2.3 常深度循环当可编程计算机
+### 常深度循环当可编程计算机
 
 Giannou et al. (ICML 2023, [arXiv: 2301.13196](https://arxiv.org/abs/2301.13196)) 把循环 Transformer 构造成一台指令机. 输入序列分成三段: 指令, 可读写内存, 草稿区. 网络输出接回输入, 每轮执行一条指令. 深度不随程序行数增长, 只取决于执行一条指令要几层.
 
@@ -101,9 +101,9 @@ Giannou et al. (ICML 2023, [arXiv: 2301.13196](https://arxiv.org/abs/2301.13196)
 
 没有外循环, 层数就得按程序行数堆. 有外循环, 深度固定为执行单条指令所需的层数, 总时间仍随指令条数增长. 这与电路深度不能无代价压缩是同一件事.
 
-## 3. Latent thoughts: k 层循环 L 次 ≈ kL 层不循环
+## Latent thoughts: k 层循环 L 次 ≈ kL 层不循环
 
-### 3.1 记号与合成任务
+### 记号与合成任务
 
 Saunshi et al. (2025, [arXiv: 2502.17416](https://arxiv.org/abs/2502.17416)) 研究的问题是: 推理需要深度, 是否也需要那么多独立参数. 记号 $(k\otimes L)$: 一个 $k$ 层骨干循环 $L$ 次. 参数与 $(k\otimes 1)$ 相同, FLOPs 与 $(kL\otimes 1)$ 相同. 这里的 $L$ 是循环次数, 对应第 1 节的 $R$; $k$ 对应 $K$.
 
@@ -115,7 +115,7 @@ $p$-hop induction (Table 1 右, 字母表大小 4, 序列长 256). 随机猜至�
 
 三张表的共同点: 浅层不循环在加长问题上失效, 循环把深度补了回来, 差距远不止几个点. 论文的 Claim 1 就是: 许多推理问题需要深度, 不需要那么多独立参数.
 
-### 3.2 语言建模: 困惑度更差, 推理切片更近
+**语言建模: 困惑度更差, 推理切片更近**
 
 同一工作在 Pile 上预训练 250B token, 对照 24 层 1B. Table 3: 不循环 24 层验证困惑度 7.40, 推理原语 47.5, 数学应用题 29.3. $(12\otimes 2)$ 困惑度 7.90, 更差; 数学应用题 34.3, 推理原语 51.2, 反而超过 24 层基线. $(4\otimes 6)$ 困惑度 8.79, 推理原语 56.9; 同参的 $(4\otimes 1)$ 推理原语只有 19.4.
 
@@ -123,13 +123,13 @@ $p$-hop induction (Table 1 右, 字母表大小 4, 序列长 256). 随机猜至�
 
 同一张表还有一行 Middle Loop $(4\otimes 1,4,1)$: 首尾各 4 层不共享, 中间 4 层循环. 困惑度 7.81, 比 $(12\otimes 2)$ 的 7.90 略好; 推理原语 56.5. 这已经接近 Huginn 后来的 sandwich 切法: 两端当 prelude / coda, 中间才是循环核. Saunshi 只把这行当作对照, 没有展开训练稳定性.
 
-### 3.3 循环可以模拟 T 步 CoT
+### 循环可以模拟 T 步 CoT
 
 Theorem 5.4: 对固定输入长 $n$, CoT 步数 $m$ 的 $L$ 层不循环 Transformer, 存在层数 $L+O(1)$, 嵌入维多 $\Omega(\log(n+m))$, 头数多常数的 looped transformer, 在输入后面拼 $m$ 个占位符, 循环 $m$ 次之后, 输出与那 $m$ 步 CoT 相同.
 
 CoT 每生成一步只往上下文写 1 个 token; 循环在一次迭代里可以修改一整段潜状态. 这是存在性结果, 不说明 Huginn 或 Ouro 在潜空间里执行了 CoT. 两条轴可以叠加: CoT 消耗上下文长度, 循环消耗深度.
 
-### 3.4 循环启发的正则: 不共享参数, 只让相邻块相近
+### 循环启发的正则: 不共享参数, 只让相邻块相近
 
 3.2 节的循环模型推理分高、困惑度差. Saunshi 第 4 节试图两头都要: 保留 $L$ 层各自的参数, 只在训练里把相邻的 $k$ 层块往一起拉. 把 $L$ 层模型写成 $f_0\circ f_1\circ\cdots\circ f_{L/k-1}$, 每个 $f_i$ 含 $k$ 层. 对每个参数组 $G$ (如 Attn-Q、FFN-W2), 正则项是相邻块对应层权重的余弦相似度均值:
 
@@ -156,7 +156,7 @@ Table 4 (24 层 1B, 与 3.2 节同一设定):
 
 $k=4$, $\lambda_{\mathrm{reg}}=10$ 对应 $(4\otimes 6)$: 困惑度 7.38 与基线持平, 数学应用题从 29.3 到 36.4, 推理原语从 47.5 到 57.2, 比真正循环的 $(4\otimes 6)$ (困惑度 8.79, 推理原语 56.9) 困惑度好得多. 正则太弱 ($\lambda_{\mathrm{reg}}=1$) 时推理原语反而降到 42.5.
 
-## 4. Huginn: sandwich, 以及推理阶段加循环
+## Huginn: sandwich, 以及推理阶段加循环
 
 Geiping et al. (NeurIPS 2025, [arXiv: 2502.05171](https://arxiv.org/abs/2502.05171)) 把循环做成可预训练的 decoder-only 语言模型 Huginn. 主模型 3.5B 参数, 800B token. 形状写成三元组 $(l_P,l_R,l_C)=(2,4,2)$, 隐宽 $h=5280$, 存储的层共 8 个. 循环核转 $r$ 次时, 展开深度是
 
@@ -166,9 +166,9 @@ $$
 
 $r=32$ 时是 132 层. 参数切分: prelude 和头大约 1.5B, 循环核 1.5B, 绑定的输入嵌入 0.5B.
 
-### 4.1 结构: 哪些层进 loop, 输出怎么出
+### 结构: 哪些层进 loop, 输出怎么出
 
-标准块栈被切成三段. Prelude $P$ 把 token 嵌进潜空间, 得到 $e=P(x)$. 循环核 $R$ 接收当前状态 $s_{i-1}$ 和 $e$, 输出 $s_i$. Coda $C$ 把最后状态解回词表.
+标准块栈被切成三段. Prelude $P$ 把 token 嵌进潜空间, 得到 $e=P(x)$. 循环核 $R$ 接收当前状态 $s_{i-1}$ 和 $e$, 输出 $s_i$. Coda $C$ 把最终状态解回词表.
 
 $$
 \begin{aligned}
@@ -192,9 +192,9 @@ $$
 
 RoPE base $50000$, MLP 用 gated SiLU, RMSNorm. 作者说 $n_3$ 技术上多余, 主模型仍保留. 第一次大规模训练如果改回普通 Pre-LN, 又把学习率开到 $4\times 10^{-4}$, 会出现 token 表示之间的相关系数升到 1, 或模型学会忽略 $s$, 加 $r$ 也不降困惑度. 主运行把学习率降到 $4\times 10^{-5}$, 并保留 sandwich.
 
-训练时 $r$ 从对数正态 Poisson 分布抽样, 均值 $\bar r=32$. 反向只穿过最后 $k=8$ 次迭代, 内存不随 $r$ 增长, 类似深度维上的截断 BPTT. Prelude 的输出每步都注入, 仍能收到梯度.
+训练时 $r$ 从对数正态 Poisson 分布抽样, 均值 $\bar r=32$. 反向只穿过最终 $k=8$ 次迭代, 内存不随 $r$ 增长, 类似深度维上的截断 BPTT. Prelude 的输出每步都注入, 仍能收到梯度.
 
-### 4.2 「相当于 50B」的原文口径
+**「相当于 50B」的原文口径**
 
 摘要写: 模型可以在推理基准上提升, 有时很明显, **直到计算负载相当于 50B 参数**. 正文更具体: 预训练消耗的 FLOPs 接近一台 32B 固定深度 Transformer; 推理阶段加循环, 可以一直涨到 **与标准 50B 固定深度 Transformer 相当的 FLOP 预算**.
 
@@ -211,11 +211,11 @@ RoPE base $50000$, MLP 用 gated SiLU, RMSNorm. 作者说 $n_3$ 技术上多余,
 
 ARC-E 从 $r=4$ 的 49.07 到 $r=32$ 的 69.91. $r=16$ 之后多数项只在小数位上变化, 加循环的收益会饱和. Table 2: 带系统提示, $r=32$ 的 GSM8K CoT 是 34.80 / 42.08 (strict / flexible). Table 4: 同一套数据训到 180B token 时, 固定深度对照的 GSM8K CoT 只有 1.82 / 2.20, 循环核 $r=32$ 已经是 9.02 / 10.24; $r=1$ 评 800B 检查点, GSM8K 是 0.00. OpenBookQA 一类题更早收敛, GSM8K 一类需要更多圈数, 这是论文 Figure 1 的定性结论. EMA 再把 $r=64$ 的 GSM8K flexible 提到 47.23% (strict 38.59%).
 
-### 4.3 KV 缓存
+**KV 缓存**
 
 循环核共用一套 $W_K,W_V$. 不同 $r$ 写出来的 KV, 投影矩阵相同, 论文称为「match」.
 
-逐 token 早停时, 后面的 token 可能遇到「还没算到那么深」的历史 KV. Huginn 的做法是: attend **缓存里最后、也最深的那份** KV, 不回头补算缺失深度, 见 Remark 6.1.
+逐 token 早停时, 后面的 token 可能遇到「还没算到那么深」的历史 KV. Huginn 的做法是: attend **缓存里最终、也最深的那份** KV, 不回头补算缺失深度, 见 Remark 6.1.
 
 另一条是零样本 KV 共享. 给循环核设预算 $k$, 第 $i$ 步读写槽 $i\bmod k$. 例如 $k=16$ 时第 17 步覆盖第 1 步. MTBench 上预算 4 的分数是 5.86, 与标准设置列在同一附录表, 作者说没有下降.
 
@@ -223,9 +223,9 @@ Prelude / coda 是独立层, 按常规各写各的 KV.
 
 循环核还可以当自带的草稿模型. 少跑 $N$ 圈起草下一段 token, 再用 $M>N$ 圈验收. 草稿阶段算过的状态能留下, 验收不用从零开始. 这是论文第 6 节的 (self)-speculative decoding, 不另训草稿头, 也不靠跳层生成草稿.
 
-## 5. 残差不稳: Fully Looped 与 DeepLoop
+### 残差不稳: Fully Looped 与 DeepLoop
 
-### 5.1 Fully Looped: 残差爆炸, 梯度振荡
+**Fully Looped: 残差爆炸, 梯度振荡**
 
 循环把计算图拉深, 残差主干会先出问题. Fully Looped 和 5.2 的 DeepLoop 这两条近期工作处理的是**残差缩放和接线**, 没有改注意力核. 残差本身见 [2.1.3](../../../2.1-深度学习基础组件/2.1.3-残差连接/2.1.3-残差连接.md). *Simply Stabilizing the Loop via Fully Looped Transformer* ([arXiv: 2605.18797](https://arxiv.org/abs/2605.18797)) 对照了两档: Small 127M, 6 层; Base 318M, 12 层. 诊断窗口是前 2000 步. 两种问题: 早期梯度振荡; 循环次数高时残差范数持续变大. 12 圈的普通 LT 会训练失败: 损失停在高平台, 残差范数还在增长. 9 圈不一定失败, 但训练损失已经明显高于 6 圈. Base 档原 LT 在 9 圈直接标为失败, 没有评测分.
 
@@ -245,7 +245,7 @@ Softmax 之后, 注入量由当前 Value 流决定, 上一圈的范数不能直�
 
 12 圈设定下, 除 FLT 以外的对照都失败了. Base 尺寸, 6 圈时, FLT 比原 LT 的下游平均分高 4.82 个绝对点, 相对约 13.2%. 原 LT 在 Base、9 圈已经失败; FLT 在 9 圈平均到 41.72, 仍能继续加圈.
 
-### 5.2 DeepLoop: 按展开深度 N 改 α, β
+### DeepLoop: 按展开深度 N 改 α, β
 
 DeepLoop ([arXiv: 2607.13491](https://arxiv.org/abs/2607.13491)) 沿用 Post-LN DeepNorm 骨架, 只改缩放. DeepNorm 对不共享权重的 $N$ 层, $M=2N$ 次子层访问, 取
 
@@ -265,9 +265,9 @@ $$
 
 论文 Table 1: FineWeb-Edu 50B token, 步数 100000. GPT-2 small 骨干上 $R=1$ 的 $\Delta$ 是 $+0.0004$ nats; $R=3/5/7$ 分别是 $-0.0160$, $-0.0231$, $-0.0186$. medium 骨干 (隐宽 768→1024, 层数 12→24) 上 $R=1$ 是 $+0.0011$; $R=7$ 为 $-0.0278$. 下游八任务平均在 $R=1$ 基本打平, medium 的 1-shot 在 $R=7$ 为 55.20%. 结果为单次种子, 论文写明还需要多个种子才能定量方差.
 
-## 6. 相关工作, 整机位置, 失效
+## 相关工作, 整机位置, 失效
 
-### 6.1 Mixture-of-Recursions
+### Mixture-of-Recursions
 
 循环核插进整机之后, 还可以按 token 选深度 (MoR), 或在预训练里学停机 (6.2 的 Ouro). 两者都在回答 UT 的 ACT 当年回答过的问题: 每个 token 该走多深. MoR 用 Top-$k$ 路由器决定谁继续转, Ouro 用退出门加熵正则决定何时停, 它们的接口都落在式 (2) 的轮次下标 $r$ 上. Bae et al. (NeurIPS 2025, [arXiv: 2507.10524](https://arxiv.org/abs/2507.10524)) 在循环核上加**按 token 的深度路由**. 参数共享仍在, 但每个 token 不必跑满 $N_r$ 轮. 规模为 135M 到 1.7B (这是基座尺寸, MoR 因共享参数更少).
 
@@ -279,7 +279,7 @@ $$
 
 MoR 借用了 MoE 的术语, 路由对象是「这个 token 再进几轮循环核」. 专家矩阵的稀疏见 [2.6 MoE](../../../2.6-MoE/2.6-MoE.md).
 
-### 6.2 Ouro
+### Ouro
 
 Zhu et al. (2025, [arXiv: 2510.25741](https://arxiv.org/abs/2510.25741)). Ouro 是预训练的 LoopLM: 共享栈反复迭代, 熵正则学习深度分配, 语料 7.7T token. Table 2: Ouro 1.4B 为 24 层, 隐宽 2048; Ouro 2.6B 为 48 层, 隐宽 2048; 注意力 MHA, FFN 为 SwiGLU, 位置为 RoPE, 词表 49152. 公开材料把默认循环步数写成 4 (R4).
 
@@ -287,7 +287,7 @@ Zhu et al. (2025, [arXiv: 2510.25741](https://arxiv.org/abs/2510.25741)). Ouro �
 
 早停用退出门加均匀先验上的熵正则, 避免总是用到 $T_{\max}$. 这和 UT 的 ACT、Huginn 的 Poisson $r$ 是三种停机设计, 超参不能互相套用.
 
-### 6.3 失效
+### 失效
 
 | 现象 | 原因 | 说明 |
 |------|------|------|
@@ -302,7 +302,7 @@ Zhu et al. (2025, [arXiv: 2510.25741](https://arxiv.org/abs/2510.25741)). Ouro �
 
 参数量由 $K$ 决定, 深度和计算量由 $R$ 决定, 训练稳定性要靠残差缩放或 Attention Injection 单独处理.
 
-## 参考文献
+**参考文献**
 
 1. Dehghani, M., Gouws, S., Vinyals, O., Uszkoreit, J., & Kaiser, Ł. (2018). [Universal Transformers](https://arxiv.org/abs/1807.03819). *ICLR 2019*.
 2. Lan, Z., Chen, M., Goodman, S., Gimpel, K., Sharma, P., & Soricut, R. (2020). [ALBERT: A Lite BERT for Self-supervised Learning of Language Representations](https://arxiv.org/abs/1909.11942). *ICLR 2020*.

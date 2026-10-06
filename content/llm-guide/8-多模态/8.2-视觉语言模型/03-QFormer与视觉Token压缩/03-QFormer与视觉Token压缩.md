@@ -9,7 +9,7 @@ tags: ["Q-Former", "BLIP-2", "Perceiver Resampler", "TokenLearner", "视觉Token
 
 > "视觉 token 压缩"不是一种算法.Q-Former,Perceiver Resampler 和 TokenLearner 都能把较长视觉表示变短,但训练目标,模块位置,是否使用语言条件以及输出如何进入语言模型并不相同.
 
-## 1. 先区分四种接口
+## 先区分四种接口
 
 | 接口 | 输入到输出 | 是否改变 token 数 | 主要训练信号 | 典型位置 |
 |---|---|---:|---|---|
@@ -20,7 +20,7 @@ tags: ["Q-Former", "BLIP-2", "Perceiver Resampler", "TokenLearner", "视觉Token
 
 来源:[BLIP-2](https://arxiv.org/abs/2301.12597),[Flamingo](https://arxiv.org/abs/2204.14198),[TokenLearner](https://arxiv.org/abs/2106.11297).
 
-## 2. BLIP-2 的 Q-Former 到底做了什么
+### BLIP-2 的 Q-Former 到底做了什么
 
 BLIP-2 冻结预训练图像编码器和大语言模型,用 Q-Former 跨越两者的模态差异.Q-Former 以 BERT-base 权重初始化,包含 188M 参数;论文和官方 LAVIS 配置使用 **32 个可学习 query token**,并每隔一个 Transformer block 插入一次视觉交叉注意力.
 
@@ -45,7 +45,7 @@ $$
 
 输出的第一维由 query 数决定,因此仍为 32,而不是由 $M$ 决定.多层自注意力和交叉注意力继续更新这些 query,最终得到固定长度视觉表示.
 
-### 2.1 "可变视觉输入 → 固定 32 query"准确但有边界
+### "可变视觉输入 → 固定 32 query"准确但有边界
 
 - **成立的部分**:交叉注意力在数学上可读取不同长度 $M$ 的视觉序列,送往 LLM 的视觉前缀长度由 query 数固定为 32.
 - **不成立的外推**:BLIP-2 官方预训练配置采用 224×224 图像;"输出固定 32"不代表官方 checkpoint 已在任意分辨率或任意长视觉序列上训练并验证.
@@ -54,9 +54,9 @@ $$
 
 官方证据:[LAVIS `num_query_token: 32` 配置](https://github.com/salesforce/LAVIS/blob/main/lavis/configs/models/blip2/blip2_pretrain.yaml),[Q-Former 实现,`cross_attention_freq=2`](https://github.com/salesforce/LAVIS/blob/main/lavis/models/blip2_models/blip2_qformer.py).
 
-## 3. 两阶段预训练与注意力掩码
+## 两阶段预训练与注意力掩码
 
-### 3.1 第一阶段:视觉—语言表示学习
+### 第一阶段:视觉—语言表示学习
 
 BLIP-2 使用三个目标:
 
@@ -66,13 +66,13 @@ BLIP-2 使用三个目标:
 
 Q-Former 同时承载 query 和文本 token,但不同任务使用不同 attention mask.不能把它简化成"每层永远先 cross-attention 再 causal self-attention".尤其是 query token 本身不是按 1→32 自回归生成的,因此给 query-query 自注意力强加三角因果掩码不是 BLIP-2 的通用实现.
 
-### 3.2 第二阶段:从视觉到冻结 LLM
+### 第二阶段:从视觉到冻结 LLM
 
 Q-Former 的 32 个输出经过全连接层映射到目标 LLM 的嵌入维度.OPT 路线把它们作为软视觉提示;Flan-T5 路线按 encoder-decoder 接口连接.LLM 保持冻结,训练 Q-Former 与输出投影,让固定语言模型能够基于视觉前缀生成文本.
 
 因此,Q-Former 的"188M 参数"描述的是论文实例,不是一个仅由 query 数和 patch 数计算出的公式.参数主要由 BERT 规模 Transformer 权重决定.
 
-## 4. 与 Perceiver Resampler 的差异
+### 与 Perceiver Resampler 的差异
 
 Flamingo 同样把可变视觉输入压到固定长度,但系统接口不同:
 
@@ -83,7 +83,7 @@ Flamingo 同样把可变视觉输入压到固定长度,但系统接口不同:
 
 因此"Q-Former 与 Perceiver 功能等价"过于宽泛.它们共享"学习 latent/query 聚合变长输入"的形状,但参数初始化,训练任务,与文本 token 的交互和注入 LLM 的位置不同.
 
-## 5. 与 TokenLearner 的差异
+## 与 TokenLearner 的差异
 
 TokenLearner 从视觉特征图学习若干空间注意力函数,对空间位置加权汇聚,论文展示用 8 个学习 token 支撑图像和视频识别.它可以插在视觉主干内部,以减少后续视觉 Transformer 的计算.
 
@@ -95,7 +95,7 @@ TokenLearner 从视觉特征图学习若干空间注意力函数,对空间位置
 
 官方实现:[Google Research Scenic TokenLearner](https://github.com/google-research/scenic/tree/main/scenic/projects/token_learner).
 
-## 6. 只做可复核的效率账
+## 只做可复核的效率账
 
 若 LLM 看到 $T$ 个文本 token,视觉前缀从 $M$ 压为 $K$,仅就标准全注意力的序列二次项而言,比例是:
 
@@ -112,7 +112,7 @@ $$
 
 因此不保留未给出软件栈和测量协议的"TTFT 1200ms→180ms""显存 1.2GB→67MB"或臆测 GFLOPs 表.
 
-## 7. 失效模式与选择原则
+### 失效模式与选择原则
 
 固定查询瓶颈可能丢弃任务所需信息.可靠的评测应直接改变 query 数,分辨率与任务类型,并同时报告:
 
@@ -129,7 +129,7 @@ $$
 - 需要交错图文/视频和层间视觉注入时,参考 Flamingo;
 - 只想在视觉主干内部减少 token 时,TokenLearner 更接近问题本身.
 
-## 8. 一手来源
+**一手来源**
 
 - [BLIP-2 论文](https://arxiv.org/abs/2301.12597)
 - [Salesforce LAVIS 官方仓库](https://github.com/salesforce/LAVIS)

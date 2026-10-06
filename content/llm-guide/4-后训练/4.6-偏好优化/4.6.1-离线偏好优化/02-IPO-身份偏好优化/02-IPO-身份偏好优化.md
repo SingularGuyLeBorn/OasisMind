@@ -6,7 +6,7 @@ excerpt: "IPO 把 ΨPO 里的映射 Ψ 取成恒等, 损失是把对数似然比
 ---
 # 02 IPO: 身份偏好优化
 
-材料是 Azar 等 (Google DeepMind) 的 *A General Theoretical Paradigm to Understand Learning from Human Preferences* ([arXiv:2310.12036](https://arxiv.org/abs/2310.12036), AISTATS 2024). 问题是 RLHF 和 DPO 的目标能否统一写在成对偏好上, 以及在这个统一目标下, 怎样让 KL 正则在确定性偏好数据上仍然起作用. 论文先写出统一目标 ΨPO, 证明 RLHF 和 DPO 是其中 $\Psi$ 取 logit 的特例; 再指出 logit 无界会让正则在经验偏好全为 0 或 1 时失效; 最后把 $\Psi$ 换成恒等映射, 从闭式最优策略推出一个平方回归损失, 也就是 IPO.
+材料是 Azar 等 (Google DeepMind) 的 *A General Theoretical Paradigm to Understand Learning from Human Preferences* ([arXiv:2310.12036](https://arxiv.org/abs/2310.12036), AISTATS 2024). 问题是 RLHF 和 DPO 的目标能否统一写在成对偏好上, 以及在这个统一目标下, 怎样让 KL 正则在确定性偏好数据上仍然起作用. 论文先写出统一目标 ΨPO, 证明 RLHF 和 DPO 是其中 $\Psi$ 取 logit 的特例; 再指出 logit 无界会让正则在经验偏好全为 0 或 1 时失效; 最终把 $\Psi$ 换成恒等映射, 从闭式最优策略推出一个平方回归损失, 也就是 IPO.
 
 ## 1. 从 RLHF, DPO 到 ΨPO
 
@@ -354,7 +354,7 @@ IPO 和 DPO 共用 $h_\theta$ 和四次对数概率计算 ($\pi_\theta$ 与 $\pi
 
 把前面的推导连起来看: ΨPO 把 RLHF 和 DPO 统一成「偏好概率的映射减 KL」, 并指出 logit 映射加上省掉奖励模型, 会让 KL 正则在确定性经验偏好下失效. IPO 选恒等映射, 由闭式最优策略推出根寻找方程, 再用命题 3 换成伯努利标签, 最终得到式 (13) 的平方回归. 它的驻点是有限的 $h_\theta=\tau^{-1}/2$, $\tau$ 能直接控制策略离参考多远. 论文的实证只有三动作老虎机, 语言模型上的效果要看后续工作, 例如 [4.6.2 节](../../4.6.2-在线偏好与自对弈/4.6.2-在线偏好与自对弈.md)的在线版本和其他采用 IPO 损失的实验. 排序损失见 [07-RRHF](../07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md), 列表排序见 [08-PRO](../08-PRO-偏好排序优化/08-PRO-偏好排序优化.md).
 
-## 参考文献
+**参考文献**
 
 1. Azar, M. G., Rowland, M., Piot, B., Guo, D., Calandriello, D., Valko, M., & Munos, R. (2024). [A General Theoretical Paradigm to Understand Learning from Human Preferences](https://arxiv.org/abs/2310.12036). *AISTATS*. [arXiv HTML](https://arxiv.org/html/2310.12036).
 2. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.

@@ -120,14 +120,14 @@ flowchart TB
   end
 ```
 
-## 5. 失效条件
+**5. 失效条件**
 
 - 把 MXFP4 和 NVFP4 写成一种 checkpoint.
 - 给 OCP 编「必须用 $\mathrm{amax}/6$」--规格明确不规定算 scale 的算法.
 - 把 V4 的两级 FP8 tile 说成 NVFP4.
 - 用 25×/50× 当通用加速比.
 
-## 参考文献
+**参考文献**
 
 - OCP Microscaling Formats (MX) Specification v1.0(2023-09-07):https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf (§5.1–5.4,Table 1/5/7)
 - NVIDIA:Introducing NVFP4 for Efficient and Accurate Low-Precision Inference:https://developer.nvidia.com/blog/introducing-nvfp4-for-efficient-and-accurate-low-precision-inference/ (Table 1,两级 scale,R1-0528 PTQ,footprint,能效图注)

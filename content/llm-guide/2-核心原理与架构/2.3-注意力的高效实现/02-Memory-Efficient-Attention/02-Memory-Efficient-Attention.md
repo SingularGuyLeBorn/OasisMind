@@ -37,15 +37,15 @@ Rabe 和 Staats 关注的是另一件事:在当时的加速器上,长序列先�
 
 第二类是只切 query.Reformer 已经采用过这个办法:把 query 分成若干块,每次只算一块 query 对全部 key 的分数,算完写出结果再处理下一块.这样分数矩阵的峰值从 $n\times n$ 降到 $c_q\times n$,其中 $c_q$ 是 query 块长.这种做法保持了精确性,但 key 方向仍是整段.
 
-论文把「只切 query 会显著变慢」称为业内流传的经验,并在 $n=2^{15}$ 上做了对照(论文 Figure 5 左):query 块长小于等于 64 时性能明显下降,块长较大时损失不大.问题在于,序列越长,同样的显存上限就要求越小的 $c_q$,最后会被迫进入 $c_q\le 64$ 的慢区.
+论文把「只切 query 会显著变慢」称为业内流传的经验,并在 $n=2^{15}$ 上做了对照(论文 Figure 5 左):query 块长小于等于 64 时性能明显下降,块长较大时损失不大.问题在于,序列越长,同样的显存上限就要求越小的 $c_q$,最终会被迫进入 $c_q\le 64$ 的慢区.
 
 MEA 的目标因此很明确:计算和式 (1) 完全相同的函数,同时在 query 和 key 两个方向上都切分,让额外显存在理论上与 $n$ 无关,在实现上降到 $O(\sqrt{n})$.
 
 ## 2. lazy softmax 与分块算法
 
-### 2.1 Lazy softmax:把除法挪到最后
+### 2.1 Lazy softmax:把除法挪到最终
 
-式 (1) 的分母 $\sum_j e^{s_j}$ 对所有 $i$ 相同.按分配律,可以先累加分子,最后统一除一次:
+式 (1) 的分母 $\sum_j e^{s_j}$ 对所有 $i$ 相同.按分配律,可以先累加分子,最终统一除一次:
 
 $$
 s_i=\mathrm{dot}(q,k_i),\qquad
@@ -79,7 +79,7 @@ self-attention 的做法是对 $n$ 个 query 依次执行上述过程.除了单 
 
 式 (1) 到式 (3) 在浮点运算中都不稳定.论文给出的阈值是:分数大于等于 89 时,bfloat16 和 float32 的 $\exp$ 结果为 inf,inf 会一直传到输出.这个数可以自己验证:float32 的最大有限值约为 $3.4\times10^{38}$,$\ln(3.4\times10^{38})\approx88.7$,所以 $e^{89}$ 已经超出范围;bfloat16 的指数位和 float32 一样是 8 位,能表示的最大值同一量级,阈值也就相同.float16 的最大值只有 65504,$\ln 65504\approx11.1$,分数超过 11 就会溢出.标准实现的处理方法是先减去全局最大值 $\max_j s_j$,softmax 的值不变,所有指数的自变量都不大于 0.最大的那一项是 $e^0=1$,分母至少为 1,不会除零;很小的项会下溢成 0,丢掉的只是相对权重低于约 $e^{-88}$ 的项.
 
-流式算法不能直接照搬.全局最大值可能出现在最后一个位置,扫描到中途时并不知道;同时 $e^{s_i}$ 必须在加进累加和之前算出来,减法也不能推迟到最后.
+流式算法不能直接照搬.全局最大值可能出现在最终一个位置,扫描到中途时并不知道;同时 $e^{s_i}$ 必须在加进累加和之前算出来,减法也不能推迟到最终.
 
 论文的解法是再维护一个标量 $m^*$,表示到目前为止见过的最大分数.初始化 $v^*=0$,$s^*=0$,$m^*=-\infty$.每读入一对 $(k_i,v_i)$,先算 $s_i=\mathrm{dot}(q,k_i)$,再更新
 
@@ -312,7 +312,7 @@ Rabe 和 Staats 在论文第 6 节也提到 FlashAttention,把它描述为 MEA �
 
 **GPU 上的速度.** 不能拿 FlashAttention 的 2 到 4 倍加速去要求 MEA 的 JAX 实现.两者优化的目标不同,MEA 的设计中没有针对 SRAM 和 HBM 之间的数据搬运做安排.
 
-## 参考文献
+**参考文献**
 
 1. Markus N. Rabe, Charles Staats. (2021). [Self-attention Does Not Need $O(n^2)$ Memory](https://arxiv.org/abs/2112.05682). arXiv:2112.05682.
 2. Google Research. [`memory_efficient_attention`](https://github.com/google-research/google-research/tree/master/memory_efficient_attention). 官方 JAX 代码与 Colab.

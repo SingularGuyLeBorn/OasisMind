@@ -258,7 +258,7 @@ SDFT 依赖上下文学习能力, 而上下文学习能力随规模增强. 作�
 
 SDFT 与 context distillation (Bai 等 2022; Snell 等 2022) 的区别有两点: 训练是 on-policy 的; 教师的上下文是为每道题单独挑的示范, 而非固定的提示前缀.
 
-## 参考文献
+**参考文献**
 
 1. Shenfeld, Damani, Hübotter, Agrawal. *Self-Distillation Enables Continual Learning*. arXiv:2601.19897. [链接](https://arxiv.org/abs/2601.19897) · 项目页 [idanshenfeld.com/SDFT](http://idanshenfeld.com/SDFT)
 2. Yang, Pang, Feng, Wang, Chen, Zhu, Liu. *Self-Distillation Bridges Distribution Gap in Language Model Fine-Tuning*. ACL 2024. [链接](https://arxiv.org/abs/2402.13669)

@@ -131,7 +131,7 @@ $$
 
 论文伪代码中第 3 步写作 $I[:-r]\leftarrow0$, 按字面是把最近 $r$ 个之外的计数全部置零, 和注释「保留最近窗口内的 cache」相反. 按注释和上下文, 应理解为最近 $r$ 个 token 的计数置零.
 
-和 LRU 对照着看更清楚. LRU 淘汰最久没被访问的条目; ScissorHands 把「被访问」换成「得到高于平均的注意力」, 在最近 $w$ 步里被忽略次数最多的 token 先被淘汰. 区别是 LRU 只看最后一次访问的时间, ScissorHands 看一段时间内被忽略的频率. 最近 $r$ 个 token 置零, 是因为它们刚进来, 被观察的步数少, 低分计数天然偏小, 不置零也不太会被丢; 置零是为了明确保证它们不被丢, 论文的理由是缺乏关于它们重要性的信息.
+和 LRU 对照着看更清楚. LRU 淘汰最久没被访问的条目; ScissorHands 把「被访问」换成「得到高于平均的注意力」, 在最近 $w$ 步里被忽略次数最多的 token 先被淘汰. 区别是 LRU 只看最终一次访问的时间, ScissorHands 看一段时间内被忽略的频率. 最近 $r$ 个 token 置零, 是因为它们刚进来, 被观察的步数少, 低分计数天然偏小, 不置零也不太会被丢; 置零是为了明确保证它们不被丢, 论文的理由是缺乏关于它们重要性的信息.
 
 **超参.** 论文说 $w$ 和 $r$ 相当稳健, 所有实验取 $r=10$, $w=400$. $m$ 控制压缩的频率, 实验取 $m=0.5B$.
 
@@ -224,7 +224,7 @@ H2O 和 ScissorHands 是同期工作, 都用历史注意力识别重要 token, �
 
 **重复生成的问题.** 论文在讨论中提出一个开放问题: 重复注意力模式是否和语言生成中的重复等已知问题有关. 如果有关, 按持久性保留 token 可能会强化这种倾向, 论文没有研究.
 
-## 参考文献
+**参考文献**
 
 1. Liu, Z., Desai, A., Liao, F., Wang, W., Xie, V., Xu, Z., Kyrillidis, A., Shrivastava, A. (2023). [Scissorhands: Exploiting the Persistence of Importance Hypothesis for LLM KV Cache Compression at Test Time](https://arxiv.org/abs/2305.17118). NeurIPS 2023. arXiv:2305.17118. 第 2–6 节, Table 1–3, Figure 1–5, Algorithm 1–2, 定理 3.1, 4.1.
 2. Zhang, Z., Sheng, Y., Zhou, T., et al. (2023). [H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models](https://arxiv.org/abs/2306.14048). NeurIPS 2023.

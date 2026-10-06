@@ -370,7 +370,7 @@ $M_t=(I-\beta_tk_tk_t^\top)\operatorname{Diag}(\alpha_t)$, $\tilde S$ 是从零�
 
 **稀疏注意力是另一条路.** 论文讨论部分指出, 稀疏注意力检索细粒度信息的能力更强, 但要保留完整的 KV cache 来做选择, 效率不如固定状态的线性注意力; 两者可以结合.
 
-## 参考文献
+**参考文献**
 
 1. Kimi Team. (2025). [Kimi Linear: An Expressive, Efficient Attention Architecture](https://arxiv.org/abs/2510.26692). arXiv:2510.26692.
 2. Kimi Team. (2026). [Kimi K3: Open Frontier Intelligence](https://arxiv.org/abs/2607.24653). arXiv:2607.24653.

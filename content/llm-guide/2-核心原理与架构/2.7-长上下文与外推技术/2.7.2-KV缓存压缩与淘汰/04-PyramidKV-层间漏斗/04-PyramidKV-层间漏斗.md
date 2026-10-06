@@ -48,7 +48,7 @@ FastGen 按注意力头的特点选择不同的保留策略: 对关注局部的�
 
 模型有 $m$ 层, 编码 $n$ 个 token 时第 $l$ 层的 key 和 value 矩阵为 $\mathbf{K}^l,\mathbf{V}^l\in\mathbb{R}^{n\times d}$, $l\in[0,m-1]$. KV 压缩要在给定预算 $k^l<n$ 下, 找出子矩阵 $\mathbf{K}^l_s,\mathbf{V}^l_s\in\mathbb{R}^{k^l\times d}$. PyramidKV 分两步: 在层间分配预算; 在每层每头内选择保留哪些 KV.
 
-层间分配先按惯例给每层保留输入最后 $\alpha$ 个 token 的 KV. 这些 token 包含最直接的任务信息, 论文称为 instruction tokens, 其他文献也叫 local window. 剩余的总预算记作
+层间分配先按惯例给每层保留输入最终 $\alpha$ 个 token 的 KV. 这些 token 包含最直接的任务信息, 论文称为 instruction tokens, 其他文献也叫 local window. 剩余的总预算记作
 
 $$
 k^{\mathrm{total}}=\sum_{l=0}^{m-1}k^l. \tag{1}
@@ -227,7 +227,7 @@ LLaMa-3-70B-Instruct, 上下文 8K, 每层预算 128 (Figure 4). PyramidKV 的�
 
 **预算只按层分, 不按头分.** 同一层所有头的预算相同. 附录 B 把按实时注意力动态调整每层甚至每个头的预算列为未来工作. 底层各头都分散, 这个限制影响不大; 高层既有检索头也有其他头, 统一预算可能对检索头不够, 对其他头又有富余.
 
-## 参考文献
+**参考文献**
 
 1. Cai, Z., Zhang, Y., Gao, B., et al. (2024). [PyramidKV: Dynamic KV Cache Compression based on Pyramidal Information Funneling](https://arxiv.org/abs/2406.02069). COLM 2025. arXiv:2406.02069. 第 3, 4, 5 节, Table 1–2, 附录 D, H, I, K, L, P, R. 代码: [Zefan-Cai/KVCache-Factory](https://github.com/Zefan-Cai/KVCache-Factory).
 2. Li, Y., Huang, Y., Yang, B., et al. (2024). [SnapKV: LLM Knows What You are Looking for Before Generation](https://arxiv.org/abs/2404.14469). NeurIPS 2024.

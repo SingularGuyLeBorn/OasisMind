@@ -4,7 +4,7 @@ published: true
 tags: ["MQA", "GQA", "Multi-Query Attention", "Grouped-Query Attention", "KV-Cache"]
 excerpt: "MQA 让所有 Query 头共用一组 Key/Value, 把每 token 每层的 KV Cache 从 $2Hd_h$ 降到 $2d_h$; GQA 把 $H$ 个 Query 头分成 $G$ 组, 每组共用一组 KV, 在 $G=H$ (MHA) 与 $G=1$ (MQA) 之间取中间值. 两者都只改缓存的份数, 不改每份的维度."
 ---
-# 02 MQA 与 GQA: 让多个 Query 头共享 Key/Value
+# MQA 与 GQA: 让多个 Query 头共享 Key/Value
 
 MQA (Multi-Query Attention) 让所有 Query 头共用同一组 Key 和 Value, GQA (Grouped-Query Attention) 把 Query 头分成 $G$ 组, 每组共用一组 Key 和 Value. 两者处理的是同一个瓶颈: Decode 每生成一个 token, 都要把整份 KV Cache 从显存读一遍, 而 MHA 的缓存里每个头各有一份. 本篇沿用 [01 MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的记号: $H$ 个 Query 头, 每头维度 $d_h$, 隐藏维 $d$, 行向量写法 $xW$.
 
@@ -12,9 +12,9 @@ MQA 和 GQA 只改缓存的份数: MHA 存 $H$ 份, GQA 存 $G$ 份, MQA 存 1 �
 
 ---
 
-## 1. 问题与 MQA
+## 问题与 MQA
 
-### 1.1 Decode 每步都在重读 K/V
+### Decode 每步都在重读 K/V
 
 01 篇第 4.3 节引过 Shazeer (2019) §2.4.1 的分析: batch 为 $b$, 生成 $n$ 个 token, 隐藏维 $d$, MHA 逐步解码的访存与计算之比是
 
@@ -28,7 +28,7 @@ $1/b$ 一项可以靠加大 batch 压低; $n/d$ 一项来自每步重读形状�
 
 ---
 
-### 1.2 MQA: 所有 Query 头共用一组 K/V
+**MQA: 所有 Query 头共用一组 K/V**
 
 MHA 的三个投影都带头下标 $h$. MQA 只保留 $W_Q^{(h)}$ 的头下标, $W_K$ 和 $W_V$ 只有一份:
 
@@ -43,7 +43,7 @@ $$
 
 与 01 篇式 (3)–(4) 相比, 式 (3) 里的 $K, V$ 不随 $h$ 变化. $H$ 个注意力矩阵仍然各不相同, 因为 $Q^{(h)}$ 不同; 它们乘的是同一个 $V$. Shazeer 论文里的描述是: 代码与 MHA 完全相同, 只是在 einsum 里把 $K, V, P_k, P_v$ 的 `h` 去掉.
 
-### 1.3 坐标展开
+### 坐标展开
 
 Query 的第 $i$ 维仍按头计算, Key 和 Value 没有头下标:
 
@@ -69,7 +69,7 @@ $$
 
 各头取回的内容都在 $W_V$ 的同一个 $d_h$ 维子空间里, 头间差别只剩权重 $\alpha_{t,\cdot}^{(h)}$. $W_O$ 仍按头分块, 01 篇式 (11) 的 $y_t=\sum_h o_t^{(h)}W_O^{(h)}$ 不变; 不同头取回的同一子空间内容, 经过不同的 $W_O^{(h)}$ 写进残差流的不同方向.
 
-### 1.4 Decode 时省下了什么
+**Decode 时省下了什么**
 
 Shazeer 论文 §3.1 重新做了访存分析. 生成 $n$ 个 token 的总计算量仍是 $\Theta(bnd^2)$, 总访存变成 $\Theta(bnd + bn^2k + nd^2)$, 其中 $k=d_h=d/H$. 两者之比:
 
@@ -88,7 +88,7 @@ MQA 不减少 Query 侧的计算. 每步仍要算 $H$ 个 $q_t^{(h)}$, 仍要做
 | Decode 每步读缓存 (每层) | $2tHd_h$ 个元素 | $2td_h$ 个元素 |
 | Decode 每步注意力乘加 (每层) | $2tHd_h$ | $2tHd_h$, 不变 |
 
-### 1.5 共享 K/V 丢了什么
+### 共享 K/V 丢了什么
 
 从参数上看, MHA 的 $W_K, W_V$ 合计 $2d\cdot Hd_h=2d^2$ 个参数, MQA 只剩 $2d\cdot d_h=2d^2/H$. Shazeer 实验里把省下的参数加到前馈层, 就是为了让对比只反映结构差异.
 
@@ -98,9 +98,9 @@ MQA 不减少 Query 侧的计算. 每步仍要算 $H$ 个 $q_t^{(h)}$, 仍要做
 
 ---
 
-## 2. Shazeer 2019 的实验与 MQA 的代价
+## Shazeer 2019 的实验与 MQA 的代价
 
-### 2.1 实验设置与质量
+### 实验设置与质量
 
 WMT14 英德翻译, 6 层编码器-解码器 Transformer, $d_{model}=1024$, $d_{ff}=4096$, $H=8$, $d_k=d_v=128$, 2.11 亿参数. MQA 版本把编码器自注意力, 解码器自注意力, 编码器-解码器注意力全部换成共享 K/V; 去掉 K/V 头少了参数, 于是把前馈层从 4096 加宽到 5440, 让总参数量相同. 对照组还有另一种缩小 K/V 的办法: 直接减头数或减每头维度, 同样靠加宽前馈层补齐参数.
 
@@ -119,7 +119,7 @@ ln(PPL) 是 dev 集上每个子词的对数困惑度, 也就是交叉熵: 1.424 
 
 Billion-Word 语言建模 (6 层 decoder-only, $d_{model}=1024$, $d_{ff}=8192$) 上是同样的排序: dev 困惑度 MHA 29.9, MQA 30.2, 减头或减维的四种为 30.9–31.2.
 
-### 2.2 速度
+**速度**
 
 Table 2, TPUv2 (8 核) 上每个输出 token 的摊销时间, 单位 μs:
 
@@ -130,13 +130,13 @@ Table 2, TPUv2 (8 核) 上每个输出 token 的摊销时间, 单位 μs:
 
 推理设置是 batch 1024 条序列, 源长和目标长都是 128. 训练几乎不变, 编码器几乎不变, 解码器逐步生成从 46 μs 降到 3.8 μs, 约 12 倍. 这组数字与第 1.4 节的分析一致: 训练和编码器是并行计算, 带宽不是瓶颈; 解码器逐 token 生成, 每步都要重读 K/V, 去掉 $H$ 倍的 K/V 后速度变化最大. beam search 时每条源序列要同时维护 4 个候选, 缓存翻 4 倍, MHA 的解码器耗时涨到 203 μs, MQA 是 32 μs.
 
-### 2.3 MQA 与局部注意力可以叠加
+**MQA 与局部注意力可以叠加**
 
 论文还训练了「local」版本: 解码器自注意力只看当前位置和前 31 个位置, 其余注意力层不变. 局部窗口减少的是要看的位置数 $n$, MQA 减少的是每个位置存的宽度, 两者针对式 (1) 里 $n/d$ 的不同因子. 结果: multi-head local 的 dev BLEU 26.6, multi-query local 26.5, 质量与全局版本接近; 解码器耗时从 multi-head local 的 23 μs 降到 multi-query local 的 3.3 μs, beam-4 从 47 μs 降到 16 μs. 两种方法一起用, 速度收益基本可以相乘. 后来的滑动窗口注意力加 GQA 的组合, 依据的也是这种正交性.
 
 ---
 
-### 2.4 MQA 的代价
+**MQA 的代价**
 
 Shazeer 的实验在 2.11 亿参数的模型上, 质量损失很小. 后来的工作在更大的模型上看到了三个问题.
 
@@ -150,9 +150,9 @@ Shazeer 的实验在 2.11 亿参数的模型上, 质量损失很小. 后来的�
 
 ---
 
-## 3. GQA: 组数 $G$ 是一条连续的轴
+**GQA: 组数 $G$ 是一条连续的轴**
 
-### 3.1 公式
+### 公式
 
 把 $H$ 个 Query 头均分成 $G$ 组 ($H$ 能被 $G$ 整除), 每组共用一组 K/V. 头 $h$ ($h=0,\dots,H-1$) 所属的组为
 
@@ -172,7 +172,7 @@ $$
 
 输出投影与 MHA, MQA 相同. 式 (10) 与式 (3) 的唯一差别是把全局 $K, V$ 换成本组的 $K^{(g(h))}, V^{(g(h))}$.
 
-### 3.2 两个端点
+**两个端点**
 
 GQA 论文的记法是 GQA-$G$. 两个端点退化成已知方法:
 
@@ -185,7 +185,7 @@ GQA 论文的记法是 GQA-$G$. 两个端点退化成已知方法:
 
 把第 5.1 节第二行的配置代进去可以看到这个规律. $T=4096$, batch 为 1 时, 每生成一个 token, MHA 要读 10 GiB 缓存, GQA-8 读 1.25 GiB, MQA 读 160 MiB, 而 FP16 权重约 140 GB 每步都要读一遍. 单条序列时权重读取占大头, GQA-8 和 MQA 的差别在总访存里只占 1% 左右. batch 加到 32, 权重读取量不变, 缓存读取乘以 32: MHA 是 320 GiB, 已经超过权重; GQA-8 是 40 GiB, MQA 是 5 GiB. 所以组数的影响要放在具体的 batch 和长度下看, 单条短序列上几乎看不出来. 张量并行时, 只要 $G\ge P$ 且 $G$ 能被 $P$ 整除, 每张卡分到 $G/P$ 组 K/V, 不需要复制; $G<P$ 时又回到 MQA 的复制问题.
 
-### 3.3 RoPE
+**RoPE**
 
 RoPE 作用在每组的 Key 上: 组 $g$ 的历史 Key 在写入缓存时旋转一次, 得到 $R_s k_s^{(g)}$; 每个 Query 头在当前位置旋转自己的 $q_t^{(h)}$:
 
@@ -195,7 +195,7 @@ $$
 
 共享 K/V 对 RoPE 没有影响, 位置信息写在每组 Key 的相位里, 同组各头用各自的 Query 去读. MQA 是 $G=1$ 的特例, 全层只有一条旋转后的 Key 序列. MLA 遇到的 RoPE 冲突在这里不存在, 因为 MQA/GQA 的缓存里存的就是完整的 Key, 不需要再经过一个上投影矩阵.
 
-### 3.4 怎么选 $G$
+**怎么选 $G$**
 
 $G$ 受三个约束. 第一, $G$ 必须整除 $H$, 否则各组头数不等, 式 (8) 的连续分块不成立. 第二, 张量并行度为 $P$ 时, $G$ 最好是 $P$ 的整数倍, 每张卡分到整数个组, 不复制也不跨卡读 K/V; 单机 8 卡做张量并行时, $G=8$ 正好每卡一组. 第三, 质量和带宽的权衡: GQA 论文的 Figure 6 显示 $G$ 从 1 到 8 耗时增加不多, 再往上增长加快, 它据此选 8; 第 4.3 节的从头训练结果又说明, 在 decoder-only 模型上 $G=8$ 与 MHA 之间仍有可见的差距.
 
@@ -203,7 +203,7 @@ $G$ 受三个约束. 第一, $G$ 必须整除 $H$, 否则各组头数不等, 式
 
 ---
 
-### 3.5 手算: $H=4$, $G=2$
+### 手算: $H=4$, $G=2$
 
 取 $d=4$, $d_h=2$, $T=3$, 保留 $\sqrt{d_h}=\sqrt{2}$ 缩放, 省略 RoPE. 头 0, 1 属于组 0, 头 2, 3 属于组 1. 输入:
 
@@ -258,9 +258,9 @@ $$
 
 ---
 
-## 4. 从 MHA 转换与从头训练
+## 从 MHA 转换与从头训练
 
-### 4.1 从 MHA checkpoint 转换: mean pool 加 uptrain
+### 从 MHA checkpoint 转换: mean pool 加 uptrain
 
 GQA 论文的第一个贡献不是分组, 而是一个转换配方: 已经训练好的 MHA 模型, 不必从头训练一个 MQA/GQA 版本.
 
@@ -285,7 +285,7 @@ $G=1$ 时就是对全部 $H$ 个头取平均, 得到 MQA. $W_Q^{(h)}$ 和 $W_O$ 
 
 ---
 
-### 4.2 GQA 论文的主结果与它的范围
+### GQA 论文的主结果与它的范围
 
 Table 1, T5.1.1 架构, uptrain 比例 5%. 平均分是 CNN/Daily Mail, arXiv, PubMed, MediaSum, MultiNews 五个摘要任务 (ROUGE-1), WMT 英德翻译 (BLEU), TriviaQA (F1) 七项的平均; $T_{infer}$ 是在 TPUv4 上每样本每芯片的时间:
 
@@ -302,7 +302,7 @@ Table 1, T5.1.1 架构, uptrain 比例 5%. 平均分是 CNN/Daily Mail, arXiv, P
 
 ---
 
-### 4.3 从头训练时的差距
+### 从头训练时的差距
 
 [DeepSeek-V2](https://arxiv.org/abs/2405.04434) 附录 D.1 给了一组从头训练的对照: 三个 7B 稠密模型, 都训练 1.33T token, 除注意力外架构相同, 通过调整层数把参数量对齐到 7B 左右. 在四个较难的基准上 (Table 8):
 
@@ -319,9 +319,9 @@ Llama 2 论文附录 A.2.1 是另一组从头训练的对照, 结论偏向 GQA. 
 
 ---
 
-## 5. KV Cache, 实现与边界
+## KV Cache, 实现与边界
 
-### 5.1 KV Cache 字节数
+### KV Cache 字节数
 
 全模型 $N$ 层, batch $B$, 序列长 $T$, 每元素 $s$ 字节, 三种机制的缓存统一写成
 
@@ -343,7 +343,7 @@ $$
 
 ---
 
-### 5.2 实现: 不要把 K/V 复制 $H/G$ 份
+### 实现: 不要把 K/V 复制 $H/G$ 份
 
 最直接的实现是把 $G$ 组 K/V 沿头维度重复 $H/G$ 次, 变成 $H$ 份, 然后调用 MHA 的 kernel. 这在数学上正确, 但如果重复后的张量真的被写出来, Decode 每步读的数据量又回到了 MHA 的水平, GQA 在带宽上的收益就没了. 正确的做法是让 kernel 按组读: 每组 K/V 读一次, 在片上给 $H/G$ 个 Query 头用. 用 PyTorch 表达时, 可以把 Query 的头维度拆成 `[G, H/G]`, 让 K/V 的 `[G, 1]` 靠广播参与矩阵乘:
 
@@ -376,7 +376,7 @@ def gqa_decode_step(x, Wq, Wk, Wv, Wo, k_cache, v_cache, H, G):
 
 ---
 
-### 5.3 失效模式与边界
+### 失效模式与边界
 
 | 现象 | 原因 | 处理方向 |
 |---|---|---|
@@ -394,7 +394,7 @@ MQA 和 GQA 在同一条轴上: 份数从 $H$ 往 1 减, 缓存和带宽线性�
 
 ---
 
-## 参考文献
+**参考文献**
 
 1. Shazeer, N. (2019). [Fast Transformer Decoding: One Write-Head is All You Need](https://arxiv.org/abs/1911.02150). arXiv. §2.4, §3, Table 1–3.
 2. Ainslie, J., Lee-Thorp, J., de Jong, M., Zemlyanskiy, Y., Lebrón, F., & Sanghai, S. (2023). [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245). EMNLP. §2, §3, Table 1, Figure 4–6, Appendix A.

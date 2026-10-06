@@ -214,7 +214,7 @@ QuestA 的课程有额外成本: 题干要拼上大模型写的部分解答, 按
 
 ### 4.2 消融: 加标准技巧, 平台反而更低
 
-从 JustRL-DeepSeek 的配方出发, 在 DeepSeek 骨干上再训 3000 多步, 比较两种改动. 第一种加 DAPO 式 overlong penalty, 作用在最后 4k token 上. 第二种在此基础上换用 DeepScaleR 的宽松验证器, 减少假阴性.
+从 JustRL-DeepSeek 的配方出发, 在 DeepSeek 骨干上再训 3000 多步, 比较两种改动. 第一种加 DAPO 式 overlong penalty, 作用在最终 4k token 上. 第二种在此基础上换用 DeepScaleR 的宽松验证器, 减少假阴性.
 
 Figure 3 给出 AIME24 与熵. 约 2000 步之前三条曲线差别不大, 之后才分开.
 
@@ -256,7 +256,7 @@ Discussion 中列出复杂度可能有用的情形: 算力极度受限, 遇到�
 
 两个骨干都是蒸馏模型, 起点已经具备长 CoT 能力. 从基座直接做 RL 时, 熵和长度的行为可能完全不同, 例如 Dr.GRPO 在 Qwen2.5-Math 基座上观察到错误回答越写越长. 九项平均 54.87 和 64.32 依赖这两个骨干, DAPO-Math-17k 和 CompassVerifier 评测协议; 换验证器或采样次数, 或者把 Figure 1 的 58% 与 70% 以上的监控数字拿去横比, 结论都会变. AIME24 单项尤其不稳定, Nemotron 一线上 QuestA 反而更高.
 
-## 参考文献
+**参考文献**
 
 1. He, B., Qu, Z., Liu, Z., Chen, Y., Zuo, Y., Qian, C., Zhang, K., Chen, W., Xiao, C., Cui, G., Ding, N., & Liu, Z. (2025). [JustRL: Scaling a 1.5B LLM with a Simple RL Recipe](https://arxiv.org/abs/2512.16649). 代码 [thunlp/JustRL](https://github.com/thunlp/JustRL).
 2. Shao, Z., et al. (2024). [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300).

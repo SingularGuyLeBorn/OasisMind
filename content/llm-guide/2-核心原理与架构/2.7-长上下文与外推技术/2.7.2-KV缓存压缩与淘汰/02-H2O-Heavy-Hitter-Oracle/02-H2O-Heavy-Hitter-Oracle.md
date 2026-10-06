@@ -247,7 +247,7 @@ H2O 和 StreamingLLM 都保留最近的 token, 区别在另一部分: StreamingL
 
 **对位置编码的影响没有讨论.** 驱逐后 cache 里的 token 在原文中不连续. 对 OPT 这样的绝对位置编码, 位置在写入 KV 前就加好了, 不受影响; 对 RoPE 模型, 是按原文位置还是重新编号, 论文没有说明.
 
-## 参考文献
+**参考文献**
 
 1. Zhang, Z., Sheng, Y., Zhou, T., et al. (2023). [H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models](https://arxiv.org/abs/2306.14048). NeurIPS 2023. arXiv:2306.14048. Definition 2.1, 2.2, 4.1, 4.3, Algorithm 1, Theorem 4.4, Table 1–6, 9, 11, Figure 2–5, 附录 C. 代码: [FMInference/H2O](https://github.com/FMInference/H2O).
 2. Sheng, Y., Zheng, L., Yuan, B., et al. (2023). [FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU](https://arxiv.org/abs/2303.06865). ICML 2023.

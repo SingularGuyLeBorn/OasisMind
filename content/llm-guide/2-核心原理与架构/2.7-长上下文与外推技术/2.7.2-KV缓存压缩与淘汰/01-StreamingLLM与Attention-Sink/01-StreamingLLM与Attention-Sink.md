@@ -190,7 +190,7 @@ Llama-2-7B 的配置是 4096 总量: 0+4096 为 3359.95, 1+4095 为 11.88, 2+409
 
 **流里的提示信息会被移出.** 系统提示, 任务说明通常在对话开头, 紧跟在 sink 之后. 对话一长, 它们就滑出窗口, 只剩开头 4 个 token. LongBench 上 4+3496 低于截断基线, 论文给出的原因正是丢了开头的提示. 需要一直遵守系统提示的应用, 要把提示放进固定保留的部分, 例如像附录 D 那样把 sink 段加长, 代价是窗口相应缩短.
 
-## 参考文献
+**参考文献**
 
 1. Xiao, G., Tian, Y., Chen, B., Han, S., Lewis, M. (2024). [Efficient Streaming Language Models with Attention Sinks](https://arxiv.org/abs/2309.17453). ICLR 2024. arXiv:2309.17453. 式 (1)(2), Table 1–10, Figure 1–15. 代码: [mit-han-lab/streaming-llm](https://github.com/mit-han-lab/streaming-llm).
 2. Miller, E. (2023). [Attention Is Off By One](https://www.evanmiller.org/attention-is-off-by-one.html).
