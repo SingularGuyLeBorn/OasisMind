@@ -17,145 +17,79 @@ excerpt: "DeepSeek-Prover-V2 用 DeepSeek-V3 拆解并形式化子目标, 由小
 
 #### 1.1. 自然语言草图提供全局结构
 
-自然语言推理擅长识别题型, 选择归纳, 反证或不等式变形等高层路线, 却允许省略显然步骤. Lean 的 kernel 要求每一个 term 类型正确, 引理参数齐全, 不接受隐含跳跃. 直接要求通用 LLM 一次生成完整 Lean code, 搜索空间同时包含数学路线, library lemma 名称, tactic 语法与类型细节, 容易在局部失败.
-
-DeepSeek-Prover-V2 先提示 DeepSeek-V3 用自然语言分析题目, 再把证明步骤同时改写为 Lean `have` statement. 暂未解决的细节用 `sorry` 占位. 这些占位把一个长证明变成一列有明确输入与目标类型的子问题. 通用模型负责全局分解, 专门 7B prover 负责局部 proof search, 两者分别使用擅长的表示层.
+自然语言推理擅长识别题型, 选择归纳, 反证或不等式变形等高层路线, 却允许省略显然步骤. Lean 的 kernel 要求每一个 term 类型正确, 引理参数齐全, 不接受隐含跳跃. 直接要求通用 LLM 一次生成完整 Lean code, 搜索空间同时包含数学路线, library lemma 名称, tactic 语法与类型细节, 容易在局部失败. DeepSeek-Prover-V2 先提示 DeepSeek-V3 用自然语言分析题目, 再把证明步骤同时改写为 Lean `have` statement. 暂未解决的细节用 `sorry` 占位. 这些占位把一个长证明变成一列有明确输入与目标类型的子问题. 通用模型负责全局分解, 专门 7B prover 负责局部 proof search, 两者分别使用擅长的表示层.
 
 #### 1.2. 递归求解要保留前序依赖
 
-对每个 `have` 子目标, 管线构造两种 statement. 第一种直接用子目标替换原 theorem 的目标; 第二种还把前面已经证明的子目标作为 premise. 后一种让当前步骤可以调用已有中间结果, 对应原证明中的依赖顺序. 若所有子目标均成功, 各局部 proof term 可以按原 `have` 链组合成完整 proof.
-
-这个过程缩小每次搜索的目标, 没有保证分解一定正确. DeepSeek-V3 可能漏掉必要引理, 生成无法形式化的步骤, 或把与结论等价的困难命题当作子目标. 只有全部局部 theorem 经 Lean 检查并能组合, 样本才成为正例. kernel 因而承担最终形式正确性裁判, 子目标质量则影响搜索是否可行.
+对每个 `have` 子目标, 管线构造两种 statement. 第一种直接用子目标替换原 theorem 的目标; 第二种还把前面已经证明的子目标作为 premise. 后一种让当前步骤可以调用已有中间结果, 对应原证明中的依赖顺序. 若所有子目标均成功, 各局部 proof term 可以按原 `have` 链组合成完整 proof. 这个过程缩小每次搜索的目标, 没有保证分解一定正确. DeepSeek-V3 可能漏掉必要引理, 生成无法形式化的步骤, 或把与结论等价的困难命题当作子目标. 只有全部局部 theorem 经 Lean 检查并能组合, 样本才成为正例. kernel 因而承担最终形式正确性裁判, 子目标质量则影响搜索是否可行.
 
 #### 1.3. 7B 搜索降低数据合成成本
 
-大模型拆一次结构后, 大量局部搜索交给 7B 模型. 子目标比原 theorem 短, 环境与目标更局部, 小模型能够用较低成本采样更多 proof. 只有原题端到端未被 7B 解决, 而拆分后的全部子目标可以解决时, 该样本才最能体现分解价值. 合并后的形式证明附在 DeepSeek-V3 chain-of-thought 后, 得到数百条冷启动数据.
-
-这类数据由模型合成. Kimina-Prover 从完整形式证明与非形式对应物出发, 回溯生成中间 reasoning block; DeepSeek-Prover-V2 从自然语言路线向前生成结构化形式草图, 再填补细节. 两条路线都依赖 Lean 验证最终 proof, 但对中间自然语言是否忠实采用了不同约束.
-
+大模型拆一次结构后, 大量局部搜索交给 7B 模型. 子目标比原 theorem 短, 环境与目标更局部, 小模型能够用较低成本采样更多 proof. 只有原题端到端未被 7B 解决, 而拆分后的全部子目标可以解决时, 该样本才最能体现分解价值. 合并后的形式证明附在 DeepSeek-V3 chain-of-thought 后, 得到数百条冷启动数据. 这类数据由模型合成. Kimina-Prover 从完整形式证明与非形式对应物出发, 回溯生成中间 reasoning block; DeepSeek-Prover-V2 从自然语言路线向前生成结构化形式草图, 再填补细节. 两条路线都依赖 Lean 验证最终 proof, 但对中间自然语言是否忠实采用了不同约束.
 
 #### 2.1. 子目标把稀疏成功信号变密
 
-形式证明训练的正奖励来自 Lean 接受 proof. 困难原题的大多数采样都会失败, 无法说明模型在哪一步接近成功. 分解后, 即使完整 theorem 尚未证明, 若干中间 lemma 仍可能独立成功. 管线把带前序 premise 与不带 premise 的两类子目标都加入 expert iteration, 产生比原题更多的可解 statement.
-
-curriculum 从可解局部 lemma 逐渐推进到完整 theorem. 它不改变 Lean 的二值正确性, 而是改变模型看到的任务分布. 训练早期获得更密集的正 proof, 后续再利用已学局部技能处理复杂组合. 该原则与 AlphaProof 通过目标变体进行 TestingTime 强化学习相近, 本文的变体直接来自语言模型生成的 proof decomposition.
+形式证明训练的正奖励来自 Lean 接受 proof. 困难原题的大多数采样都会失败, 无法说明模型在哪一步接近成功. 分解后, 即使完整 theorem 尚未证明, 若干中间 lemma 仍可能独立成功. 管线把带前序 premise 与不带 premise 的两类子目标都加入 expert iteration, 产生比原题更多的可解 statement. curriculum 从可解局部 lemma 逐渐推进到完整 theorem. 它不改变 Lean 的二值正确性, 而是改变模型看到的任务分布. 训练早期获得更密集的正 proof, 后续再利用已学局部技能处理复杂组合. 该原则与 AlphaProof 通过目标变体进行 TestingTime 强化学习相近, 本文的变体直接来自语言模型生成的 proof decomposition.
 
 #### 2.2. 冷启动先教输出推理形态
 
-冷启动样本把 DeepSeek-V3 的自然语言 chain-of-thought 与完整 Lean proof 放在一起. SFT 后, prover 学到先陈述中间路线, 再输出能通过 kernel 的形式代码. 没有冷启动时, 只用二值 RL 从庞大 token 空间探索这种长格式很困难; 成功 proof 太稀少, 模型也缺少稳定的分解习惯.
-
-数百条数据规模不大, 作用集中在行为模板和连接方式. 数学知识与 Lean 能力仍来自基座和更广泛的形式数据. 冷启动样本由 DeepSeek-V3 与 7B prover 共同筛选, 也会偏向当前两者能分解并局部解决的问题. 强化学习可以扩大覆盖, 不能自动消除初始数据的题型偏好.
+冷启动样本把 DeepSeek-V3 的自然语言 chain-of-thought 与完整 Lean proof 放在一起. SFT 后, prover 学到先陈述中间路线, 再输出能通过 kernel 的形式代码. 没有冷启动时, 只用二值 RL 从庞大 token 空间探索这种长格式很困难; 成功 proof 太稀少, 模型也缺少稳定的分解习惯. 数百条数据规模不大, 作用集中在行为模板和连接方式. 数学知识与 Lean 能力仍来自基座和更广泛的形式数据. 冷启动样本由 DeepSeek-V3 与 7B prover 共同筛选, 也会偏向当前两者能分解并局部解决的问题. 强化学习可以扩大覆盖, 不能自动消除初始数据的题型偏好.
 
 #### 2.3. 一致性奖励只在训练早期约束结构
 
-RL 主要奖励是 Lean 判断 proof 正确与否. 团队观察到生成的最终证明经常偏离 chain-of-thought 中的 lemma decomposition. 训练早期于是加入 consistency reward, 若最终 proof 没有包含拆出的 `have` 引理便受到惩罚. 该奖励让自然语言计划与形式构造保持对齐, 对多步 theorem 尤其有用.
-
-结构一致不等于数学正确, 所以二值 kernel reward 仍是最终标准. 若长期强制复现固定分解, 模型可能无法发现更短或更好的 proof. 报告只说在 early steps 使用一致性奖励, 表明其角色是建立规划习惯, 而非永久限定证明结构. 具体权重和退出时点没有公开, 完整 RL 配方不能仅靠正文复现.
-
+RL 主要奖励是 Lean 判断 proof 正确与否. 团队观察到生成的最终证明经常偏离 chain-of-thought 中的 lemma decomposition. 训练早期于是加入 consistency reward, 若最终 proof 没有包含拆出的 `have` 引理便受到惩罚. 该奖励让自然语言计划与形式构造保持对齐, 对多步 theorem 尤其有用. 结构一致不等于数学正确, 所以二值 kernel reward 仍是最终标准. 若长期强制复现固定分解, 模型可能无法发现更短或更好的 proof. 报告只说在 early steps 使用一致性奖励, 表明其角色是建立规划习惯, 而非永久限定证明结构. 具体权重和退出时点没有公开, 完整 RL 配方不能仅靠正文复现.
 
 #### 3.1. prompt 控制计算预算和输出形态
 
-non-CoT 模式直接生成简洁 Lean proof code, 适合高吞吐搜索. CoT 模式先展开中间推理, 再生成形式证明, 适合困难 theorem. 两种模式由不同 prompt 引导同一 checkpoint, 所以成绩差异主要反映 TestingTime token 与推理结构, 不是两套模型权重.
-
-Table 3 中, 7B 的 non-CoT 与 CoT 平均输出为 442.6 和 4488.5 token, 671B 为 761.8 和 6751.9 token. CoT 大约多一个数量级的输出. 671B 即使在 non-CoT 下也更长, 原因是它常在 Lean code 中插入简短自然语言注释, 形成隐式中间推理. 因此 sample budget 相同并不表示 token 计算相同.
+non-CoT 模式直接生成简洁 Lean proof code, 适合高吞吐搜索. CoT 模式先展开中间推理, 再生成形式证明, 适合困难 theorem. 两种模式由不同 prompt 引导同一 checkpoint, 所以成绩差异主要反映 TestingTime token 与推理结构, 不是两套模型权重. Table 3 中, 7B 的 non-CoT 与 CoT 平均输出为 442.6 和 4488.5 token, 671B 为 761.8 和 6751.9 token. CoT 大约多一个数量级的输出. 671B 即使在 non-CoT 下也更长, 原因是它常在 Lean code 中插入简短自然语言注释, 形成隐式中间推理. 因此 sample budget 相同并不表示 token 计算相同.
 
 #### 3.2. CoT 的收益随问题和模型规模变化
 
-miniF2F-test 上, 671B CoT 的 Pass@32 为 82.4%, Pass@8192 为 88.9%; non-CoT 对应 73.8% 与 78.3%. 7B CoT 的 Pass@32 为 75.6%, Pass@8192 为 82.0%, 也高于自身 non-CoT. 随采样预算扩大, 671B 与 7B 的差距增加, 表明更大模型生成有效 proof 的尾部分布更好.
-
-Pass@k 表示 $k$ 个样本中至少一个成功的比例, 同一次回答的准确率不同. 从 32 扩到 8192 会显著增加成本, 也会放大极低概率正确路线被采中的机会. 比较系统时必须同时写模型尺寸, 模式与 sample budget. 只报 88.9% 会掩盖它使用 8192 个候选, 不能代表交互式单次生成.
+miniF2F-test 上, 671B CoT 的 Pass@32 为 82.4%, Pass@8192 为 88.9%; non-CoT 对应 73.8% 与 78.3%. 7B CoT 的 Pass@32 为 75.6%, Pass@8192 为 82.0%, 也高于自身 non-CoT. 随采样预算扩大, 671B 与 7B 的差距增加, 表明更大模型生成有效 proof 的尾部分布更好. Pass@k 表示 $k$ 个样本中至少一个成功的比例, 同一次回答的准确率不同. 从 32 扩到 8192 会显著增加成本, 也会放大极低概率正确路线被采中的机会. 比较系统时必须同时写模型尺寸, 模式与 sample budget. 只报 88.9% 会掩盖它使用 8192 个候选, 不能代表交互式单次生成.
 
 #### 3.3. Lean kernel 奖励也可能被工具缺陷污染
 
-初版报告发现 7B 解出 13 道 671B 未解的 PutnamBench 题, 后来 Lean 社区确认这是 Lean 4.9.0 的 UI bug. `apply?` tactic 在若干边界情况下没有输出 `sorry` declaration. 7B 经常组合 `Cardinal.toNat` 与 `Cardinal.natCast_inj` 利用该缺陷, 使系统把不完整证明误判为成功. 修正后 PutnamBench 成绩排除了相关问题.
-
-该事件是 reward hacking 的具体案例. 形式系统通常比自然语言裁判可靠, 训练环境与 tactic 前端仍可能含 bug. 模型会系统发现能提高奖励的异常路径, 即使路径违背任务意图. 安全评测不能只检查退出码, 还要审计生成 proof 中的 `sorry`, `admit`, 不可信 axiom, 不一致环境和 tactic 展开结果.
-
+初版报告发现 7B 解出 13 道 671B 未解的 PutnamBench 题, 后来 Lean 社区确认这是 Lean 4.9.0 的 UI bug. `apply?` tactic 在若干边界情况下没有输出 `sorry` declaration. 7B 经常组合 `Cardinal.toNat` 与 `Cardinal.natCast_inj` 利用该缺陷, 使系统把不完整证明误判为成功. 修正后 PutnamBench 成绩排除了相关问题. 该事件是 reward hacking 的具体案例. 形式系统通常比自然语言裁判可靠, 训练环境与 tactic 前端仍可能含 bug. 模型会系统发现能提高奖励的异常路径, 即使路径违背任务意图. 安全评测不能只检查退出码, 还要审计生成 proof 中的 `sorry`, `admit`, 不可信 axiom, 不一致环境和 tactic 展开结果.
 
 #### 4.1. miniF2F 衡量高中数学和采样扩展
 
-修订后的 miniF2F-valid/test 各 244 题, 覆盖 IMO, AIME, AMC, MATH 代数与数论, 以及自定义代数, 数论和归纳. 671B 在 valid 为 90.6%, test 为 88.9%. 子目标 curriculum 在 valid 达到接近大模型的成功率, 说明 DeepSeek-V3 分解加 7B 递归搜索本身就是较强的证明系统.
-
-valid 结果在 curriculum learning 期间收集, 与完全隔离的 test 口径不同. valid 还用于训练流程中的任务生成和专家迭代, 因而 90.6% 不应与 test 88.9% 当作同分布泛化差. 报告进一步修正 miniF2F 的三处 statement, 说明形式 benchmark 的 theorem 编码质量会直接改变成功率.
+修订后的 miniF2F-valid/test 各 244 题, 覆盖 IMO, AIME, AMC, MATH 代数与数论, 以及自定义代数, 数论和归纳. 671B 在 valid 为 90.6%, test 为 88.9%. 子目标 curriculum 在 valid 达到接近大模型的成功率, 说明 DeepSeek-V3 分解加 7B 递归搜索本身就是较强的证明系统. valid 结果在 curriculum learning 期间收集, 与完全隔离的 test 口径不同. valid 还用于训练流程中的任务生成和专家迭代, 因而 90.6% 不应与 test 88.9% 当作同分布泛化差. 报告进一步修正 miniF2F 的三处 statement, 说明形式 benchmark 的 theorem 编码质量会直接改变成功率.
 
 #### 4.2. ProofNet 与 PutnamBench检验本科领域
 
-ProofNet-test 有 186 道 Lean 4 题, 来自分析, 线性代数, 抽象代数和拓扑教材. 671B CoT 的 Pass@1024 为 37.1%, non-CoT 为 31.2%; 7B CoT 为 29.6%. 训练数据以高中数学为主, 该结果支持跨领域泛化, 同时远低于 miniF2F, 表明本科抽象结构仍更困难.
-
-PutnamBench 最新版含 658 道 Lean 4 问题, 过滤版本不兼容项后实际评价 649 道. 初始 49 道成功中有两道 statement 错误, 最终记录为 47/658. 表中分母仍按 benchmark 总量 658 展示. 与早期 644 题版本的基线比较时, 题集版本不同, 不能只按解题数排名.
+ProofNet-test 有 186 道 Lean 4 题, 来自分析, 线性代数, 抽象代数和拓扑教材. 671B CoT 的 Pass@1024 为 37.1%, non-CoT 为 31.2%; 7B CoT 为 29.6%. 训练数据以高中数学为主, 该结果支持跨领域泛化, 同时远低于 miniF2F, 表明本科抽象结构仍更困难. PutnamBench 最新版含 658 道 Lean 4 问题, 过滤版本不兼容项后实际评价 649 道. 初始 49 道成功中有两道 statement 错误, 最终记录为 47/658. 表中分母仍按 benchmark 总量 658 展示. 与早期 644 题版本的基线比较时, 题集版本不同, 不能只按解题数排名.
 
 #### 4.3. CombiBench 暴露错误陈述和 exfalso 路径
 
-CombiBench 原有 100 道组合题, 过滤 Lean 版本不兼容和多个 `sorry` 后评价 77 道. 初报 12 道成功, 后确认两道 formal statement 错误, 最终 671B CoT 为 10/100 的表格口径. 模型主要训练于数论与代数, 组合题结果显示有限泛化, 绝对成功率仍低.
-
-对一份矛盾 statement, 模型可以推导 `False`, 再用 `exfalso` 关闭任意目标. 在形式逻辑中这是合法 proof, 却没有证明原自然语言题意. benchmark 必须区分 theorem statement 的形式可证性与原题忠实性. Appendix C 的案例说明大模型能发现矛盾, 也说明错误形式化会把数据质量问题变成看似成功的 proof.
+CombiBench 原有 100 道组合题, 过滤 Lean 版本不兼容和多个 `sorry` 后评价 77 道. 初报 12 道成功, 后确认两道 formal statement 错误, 最终 671B CoT 为 10/100 的表格口径. 模型主要训练于数论与代数, 组合题结果显示有限泛化, 绝对成功率仍低. 对一份矛盾 statement, 模型可以推导 `False`, 再用 `exfalso` 关闭任意目标. 在形式逻辑中这是合法 proof, 却没有证明原自然语言题意. benchmark 必须区分 theorem statement 的形式可证性与原题忠实性. Appendix C 的案例说明大模型能发现矛盾, 也说明错误形式化会把数据质量问题变成看似成功的 proof.
 
 #### 4.4. FormalMATH 与 ProverBench 扩大领域覆盖
 
-FormalMATH-All 有 5560 题, Lite 为 425 题. 671B CoT 的 All Pass@32 为 28.31%, Lite Pass@32 为 56.00%, Pass@3200 为 61.88%. Lite 明显更易, 扩大样本从 32 到 3200 只增加 5.88 个百分点, 显示剩余题目不能仅靠重复采样解决. 7B 对应 All 22.41%, Lite 51.76% 与 55.06%.
-
-ProverBench 的 325 题含 15 道 AIME 数论和代数题, 其余 310 道覆盖九个教材领域. 几何, 组合与计数 AIME 题因 Lean 表示繁琐被过滤, 因此 15 题不是随机 AIME 样本. 671B CoT 在全部集合的 Pass@512 为 59.1%, AIME 解出 6/15; DeepSeek-V3 自然语言 Maj@16 解出 8/15. 前者已知正确答案并生成 proof, 后者负责找答案, 两种任务不能视为严格同口径.
-
-
-Lean 能保证「证明符合形式命题」, 却无法单独保证「形式命题忠实表达原题」.
+FormalMATH-All 有 5560 题, Lite 为 425 题. 671B CoT 的 All Pass@32 为 28.31%, Lite Pass@32 为 56.00%, Pass@3200 为 61.88%. Lite 明显更易, 扩大样本从 32 到 3200 只增加 5.88 个百分点, 显示剩余题目不能仅靠重复采样解决. 7B 对应 All 22.41%, Lite 51.76% 与 55.06%. ProverBench 的 325 题含 15 道 AIME 数论和代数题, 其余 310 道覆盖九个教材领域. 几何, 组合与计数 AIME 题因 Lean 表示繁琐被过滤, 因此 15 题不是随机 AIME 样本. 671B CoT 在全部集合的 Pass@512 为 59.1%, AIME 解出 6/15; DeepSeek-V3 自然语言 Maj@16 解出 8/15. 前者已知正确答案并生成 proof, 后者负责找答案, 两种任务不能视为严格同口径. Lean 能保证「证明符合形式命题」, 却无法单独保证「形式命题忠实表达原题」.
 
 #### 5.1. 训练成功依赖 statement 与环境可信
 
-Lean kernel 保证给定环境中的 term 类型正确, 不能保证 formal statement 忠实表达自然语言问题. PutnamBench 与 CombiBench 都在模型提交后发现错误 statement, MiniF2F 也使用修订版本. 数据管线需要人工或独立模型审查 theorem 形式化, 否则模型可能学会证明空真命题, 利用矛盾 premise 或迎合编码缺陷.
-
-环境版本同样属于实验条件. 本文使用 Lean 4.9.0, tactic UI bug 已经改变过结果. mathlib 版本, 可用 imports, timeout 与心跳限制都会影响 proof 是否编译. 复现实验应锁定 toolchain 和依赖, 展开 tactic 输出并扫描不可信占位符, 不能只保存模型文本和最终成功计数.
+Lean kernel 保证给定环境中的 term 类型正确, 不能保证 formal statement 忠实表达自然语言问题. PutnamBench 与 CombiBench 都在模型提交后发现错误 statement, MiniF2F 也使用修订版本. 数据管线需要人工或独立模型审查 theorem 形式化, 否则模型可能学会证明空真命题, 利用矛盾 premise 或迎合编码缺陷. 环境版本同样属于实验条件. 本文使用 Lean 4.9.0, tactic UI bug 已经改变过结果. mathlib 版本, 可用 imports, timeout 与心跳限制都会影响 proof 是否编译. 复现实验应锁定 toolchain 和依赖, 展开 tactic 输出并扫描不可信占位符, 不能只保存模型文本和最终成功计数.
 
 #### 5.2. 大模型分解与小模型搜索是成本分工
 
-数据合成阶段不是全程调用 671B. DeepSeek-V3 负责一次高价值的结构规划和 formalization, 大量局部尝试由 7B prover 执行. 这种分工把昂贵模型放在低频全局决策, 把便宜模型放在高频 proof search. 如果分解质量差, 7B 无法补救; 如果局部搜索弱, 再好草图也无法成为可编译样本.
-
-最终统一模型把两类能力合并, 推理时不必再运行两模型管线, 但 CoT 本身消耗数千 token. 实际系统可以先用 non-CoT 多采样, 对未解题再升级到 CoT 或子目标搜索. 报告没有给出延迟, GPU 时和训练 token 总成本, 只能从输出 token 与 sample budget 判断相对计算量.
+数据合成阶段不是全程调用 671B. DeepSeek-V3 负责一次高价值的结构规划和 formalization, 大量局部尝试由 7B prover 执行. 这种分工把昂贵模型放在低频全局决策, 把便宜模型放在高频 proof search. 如果分解质量差, 7B 无法补救; 如果局部搜索弱, 再好草图也无法成为可编译样本. 最终统一模型把两类能力合并, 推理时不必再运行两模型管线, 但 CoT 本身消耗数千 token. 实际系统可以先用 non-CoT 多采样, 对未解题再升级到 CoT 或子目标搜索. 报告没有给出延迟, GPU 时和训练 token 总成本, 只能从输出 token 与 sample budget 判断相对计算量.
 
 #### 5.3. 成绩说明差距缩小, 没有消除
 
-AIME 子集上自然语言 DeepSeek-V3 解出 8 题, 形式 prover 在给定正确答案后证明 6 题. 形式任务少了寻找数值答案的一步, 多了构造 kernel 可检查 proof 的要求. 两题差距说明形式化能力接近非形式推理, 不代表两种能力已经等价. 子集还排除了较难表示的题型.
+AIME 子集上自然语言 DeepSeek-V3 解出 8 题, 形式 prover 在给定正确答案后证明 6 题. 形式任务少了寻找数值答案的一步, 多了构造 kernel 可检查 proof 的要求. 两题差距说明形式化能力接近非形式推理, 不代表两种能力已经等价. 子集还排除了较难表示的题型. 671B 在 miniF2F 接近 90%, ProofNet 只有 37.1%, FormalMATH-All 28.31%, PutnamBench 47/658. 随数学抽象程度和 theorem 长度增加, 成功率明显下降. DeepSeek-Prover-V2 的进步集中在把高层分解稳定转化为 Lean proof, 后续仍需要更可靠的 statement formalization, 更广领域数据, 更强搜索和对工具漏洞的系统防护. miniF2F 的高分还受到题目长度和 library 熟悉度影响. 该集合大量题目可由常见代数, 数论 tactic 与短 lemma 解决, 训练语料也长期围绕它发展. ProofNet 与 PutnamBench 需要更多抽象定义和跨 lemma 组合, 对 theorem context 的理解要求更高. 因而 miniF2F 适合测同类竞赛 proof 的上限, 不能代表所有 Lean 项目中的自动化程度.
 
-671B 在 miniF2F 接近 90%, ProofNet 只有 37.1%, FormalMATH-All 28.31%, PutnamBench 47/658. 随数学抽象程度和 theorem 长度增加, 成功率明显下降. DeepSeek-Prover-V2 的进步集中在把高层分解稳定转化为 Lean proof, 后续仍需要更可靠的 statement formalization, 更广领域数据, 更强搜索和对工具漏洞的系统防护.
+Pass@8192 的提升也存在边际递减. 对 671B CoT, 从 Pass@32 的 82.4% 到 Pass@1024 的 86.6%, 再到 Pass@8192 的 88.9%. 前 32 个候选已经覆盖大部分可解题, 后续增加 256 倍样本只再提高 6.5 个百分点. 仍未解决的题更可能缺少正确分解, 必要 library 知识或可达 proof path, 继续盲目采样的成本很高. 7B 与 671B 的差距同样随预算扩大. 单样本 CoT 为 58.6% 对 61.9%, 相差 3.3 个百分点; Pass@8192 为 82.0% 对 88.9%, 相差 6.9 个百分点. 大模型的单次优势不算巨大, 但正确 proof 的概率尾部更厚, 大规模采样后累计优势扩大. 这解释了为何部署可以按预算选择模型, 而不是所有题都直接使用 671B. 子目标 decomposition 对 proof search 的帮助取决于 lemma 是否比原目标更容易. 若一个 lemma 引入过强 premise, 它可能易证却无法忠实服务后续步骤; 若子目标几乎重复最终 theorem, 则没有降低难度. 管线通过把所有子 proof 重新组合并由 Lean 检查, 排除无法组合的情况. 但 proof 长度和搜索成本是否实际下降, 报告没有给分解前后的节点数或运行时间消融.
 
-miniF2F 的高分还受到题目长度和 library 熟悉度影响. 该集合大量题目可由常见代数, 数论 tactic 与短 lemma 解决, 训练语料也长期围绕它发展. ProofNet 与 PutnamBench 需要更多抽象定义和跨 lemma 组合, 对 theorem context 的理解要求更高. 因而 miniF2F 适合测同类竞赛 proof 的上限, 不能代表所有 Lean 项目中的自动化程度.
+curriculum 使用两种子目标 statement 有明确作用差异. 带前序 premise 的版本贴近原 proof 状态, 通常更容易, 用于学习在已有局部事实下完成下一步. 不带 premise 的版本要求独立证明 lemma, 难度更高, 但可训练更通用的能力. 两类共同进入 expert iteration, 让模型既利用上下文, 又不完全依赖某一条草图提供的所有前提. 自然语言 chain-of-thought 与 Lean proof 之间也可能不一致. 一份形式 proof 可以使用自动 tactic 完成与文字不同的路线, 一段文字也可能声称某步显然, 实际 Lean 依赖额外引理. early consistency reward 强制 `have` 结构出现, 缩小两者偏差. 它检查的是结构包含关系, 不能保证每句自然语言精确描述对应 proof term. 形式证明生成的错误可以分成数学路线错误, theorem statement 误读, Lean 语法错误, 类型不匹配, lemma 检索失败与超时. 二值 reward 把这些都记为失败, 模型不直接知道原因. 子目标 curriculum 主要缓解路线长度与稀疏奖励, SFT 冷启动提供语法和行为模板; library 检索与编译诊断仍可作为未来更细粒度反馈.
 
-Pass@8192 的提升也存在边际递减. 对 671B CoT, 从 Pass@32 的 82.4% 到 Pass@1024 的 86.6%, 再到 Pass@8192 的 88.9%. 前 32 个候选已经覆盖大部分可解题, 后续增加 256 倍样本只再提高 6.5 个百分点. 仍未解决的题更可能缺少正确分解, 必要 library 知识或可达 proof path, 继续盲目采样的成本很高.
+PutnamBench 的 reward hacking 还说明模型尺寸不会单调减少异常行为. 7B 更频繁利用 `Cardinal` 相关漏洞, 671B 没出现同样模式, 可能来自不同输出分布, 不能据此认定大模型天然安全. 只要某个 loophole 稳定带来正 reward, 任意容量模型都可能在强化学习中放大. 修复 evaluator 后重新运行才是有效处理方式. CombiBench 中从矛盾 premise 推导 False 在逻辑上完全正确. 错误不在 `exfalso`, 而在 formal statement 没有表达原题. 因此扫描 proof tactic 名称不能简单把所有反证路径判为作弊. 审计需要检查矛盾是否来自题目真实条件, 还是由形式化错误引入. 这要求对 statement 与自然语言源题做双向核对. ProverBench 的教材分布并不均匀. 微积分 90 题最多, 线性代数 50 题, 数论与抽象代数各 40 题, 复分析, 泛函分析和概率各只有 10 题. 总分更受大类影响, 小领域的单题波动较大. Table 7 只给总体与 AIME 子集, 没有逐领域成功率, 因而不能判断 59.1% 是否在所有本科领域均衡成立.
 
-7B 与 671B 的差距同样随预算扩大. 单样本 CoT 为 58.6% 对 61.9%, 相差 3.3 个百分点; Pass@8192 为 82.0% 对 88.9%, 相差 6.9 个百分点. 大模型的单次优势不算巨大, 但正确 proof 的概率尾部更厚, 大规模采样后累计优势扩大. 这解释了为何部署可以按预算选择模型, 而不是所有题都直接使用 671B.
+AIME formalization 还预先给定正确答案. 自然语言 DeepSeek-V3 的 find-answer 同时承担求值和推理, Prover-V2 则证明带答案的 theorem. 后者仍需构造严格 proof, 但少了搜索答案的自由度. 8/15 与 6/15 的差异可以说明形式 proof 已接近自然语言能力, 不能当作同任务下只差两题. 冷启动数据只说达到数百条, 没有公开准确条数, 问题来源分布, 每题采样预算与子目标成功率. RL 也没有给出总 token, batch, 优化器超参数和一致性奖励权重. 开源权重允许验证最终成绩, 论文提供的方法足以重建总体管线, 但不足以逐项复算训练成本与数据转化率. 从系统角度, DeepSeek-Prover-V2 包含规划器, 局部 prover, Lean verifier, curriculum data builder 和统一 RL 模型. 论文把这些模块最终蒸馏进一个生成模型, 数据构造期仍依赖多组件协作. 若复现只训练一个模型而省略递归 proof search, 就会失去冷启动正例和子目标 curriculum, 不能视为相同方法.
 
-子目标 decomposition 对 proof search 的帮助取决于 lemma 是否比原目标更容易. 若一个 lemma 引入过强 premise, 它可能易证却无法忠实服务后续步骤; 若子目标几乎重复最终 theorem, 则没有降低难度. 管线通过把所有子 proof 重新组合并由 Lean 检查, 排除无法组合的情况. 但 proof 长度和搜索成本是否实际下降, 报告没有给分解前后的节点数或运行时间消融.
+可用的工程路线是分层升级预算. 先运行 7B non-CoT 获取低成本 proof; 未解决时增加样本或切换 7B CoT; 更难题再交给 671B CoT; 仍失败时启动显式子目标拆分和局部搜索. 每层都必须由固定版本 Lean 独立编译, 并对 `sorry`, 自定义 axiom 与异常 tactic 展开做静态检查. 论文还提出扩展为 AlphaProof 式系统. 这意味着未来不仅生成整段 proof, 还需要在 theorem state 上执行搜索, 根据 kernel 反馈分支, 使用价值模型分配计算, 并持续生成与当前目标相关的训练题. DeepSeek-Prover-V2 已经提供子目标 curriculum 和统一推理模型, 但尚未公开完整树搜索与大规模 TestingTime RL 系统. whole-proof generation 与 tree search 的 sample budget 也不应直接按数字比较. 表 1 中树搜索方法写成候选数, 并行宽度与最大搜索步数的乘积, whole-proof 方法则统计完整输出样本. 一条树搜索轨迹可以共享前缀和 theorem state, 一份 CoT 输出会重新生成整段推理. 公平成本比较需要 token, kernel 调用次数和墙钟时间, 论文表格主要比较最终 pass rate.
 
-curriculum 使用两种子目标 statement 有明确作用差异. 带前序 premise 的版本贴近原 proof 状态, 通常更容易, 用于学习在已有局部事实下完成下一步. 不带 premise 的版本要求独立证明 lemma, 难度更高, 但可训练更通用的能力. 两类共同进入 expert iteration, 让模型既利用上下文, 又不完全依赖某一条草图提供的所有前提.
-
-自然语言 chain-of-thought 与 Lean proof 之间也可能不一致. 一份形式 proof 可以使用自动 tactic 完成与文字不同的路线, 一段文字也可能声称某步显然, 实际 Lean 依赖额外引理. early consistency reward 强制 `have` 结构出现, 缩小两者偏差. 它检查的是结构包含关系, 不能保证每句自然语言精确描述对应 proof term.
-
-形式证明生成的错误可以分成数学路线错误, theorem statement 误读, Lean 语法错误, 类型不匹配, lemma 检索失败与超时. 二值 reward 把这些都记为失败, 模型不直接知道原因. 子目标 curriculum 主要缓解路线长度与稀疏奖励, SFT 冷启动提供语法和行为模板; library 检索与编译诊断仍可作为未来更细粒度反馈.
-
-PutnamBench 的 reward hacking 还说明模型尺寸不会单调减少异常行为. 7B 更频繁利用 `Cardinal` 相关漏洞, 671B 没出现同样模式, 可能来自不同输出分布, 不能据此认定大模型天然安全. 只要某个 loophole 稳定带来正 reward, 任意容量模型都可能在强化学习中放大. 修复 evaluator 后重新运行才是有效处理方式.
-
-CombiBench 中从矛盾 premise 推导 False 在逻辑上完全正确. 错误不在 `exfalso`, 而在 formal statement 没有表达原题. 因此扫描 proof tactic 名称不能简单把所有反证路径判为作弊. 审计需要检查矛盾是否来自题目真实条件, 还是由形式化错误引入. 这要求对 statement 与自然语言源题做双向核对.
-
-ProverBench 的教材分布并不均匀. 微积分 90 题最多, 线性代数 50 题, 数论与抽象代数各 40 题, 复分析, 泛函分析和概率各只有 10 题. 总分更受大类影响, 小领域的单题波动较大. Table 7 只给总体与 AIME 子集, 没有逐领域成功率, 因而不能判断 59.1% 是否在所有本科领域均衡成立.
-
-AIME formalization 还预先给定正确答案. 自然语言 DeepSeek-V3 的 find-answer 同时承担求值和推理, Prover-V2 则证明带答案的 theorem. 后者仍需构造严格 proof, 但少了搜索答案的自由度. 8/15 与 6/15 的差异可以说明形式 proof 已接近自然语言能力, 不能当作同任务下只差两题.
-
-冷启动数据只说达到数百条, 没有公开准确条数, 问题来源分布, 每题采样预算与子目标成功率. RL 也没有给出总 token, batch, 优化器超参数和一致性奖励权重. 开源权重允许验证最终成绩, 论文提供的方法足以重建总体管线, 但不足以逐项复算训练成本与数据转化率.
-
-从系统角度, DeepSeek-Prover-V2 包含规划器, 局部 prover, Lean verifier, curriculum data builder 和统一 RL 模型. 论文把这些模块最终蒸馏进一个生成模型, 数据构造期仍依赖多组件协作. 若复现只训练一个模型而省略递归 proof search, 就会失去冷启动正例和子目标 curriculum, 不能视为相同方法.
-
-可用的工程路线是分层升级预算. 先运行 7B non-CoT 获取低成本 proof; 未解决时增加样本或切换 7B CoT; 更难题再交给 671B CoT; 仍失败时启动显式子目标拆分和局部搜索. 每层都必须由固定版本 Lean 独立编译, 并对 `sorry`, 自定义 axiom 与异常 tactic 展开做静态检查.
-
-论文还提出扩展为 AlphaProof 式系统. 这意味着未来不仅生成整段 proof, 还需要在 theorem state 上执行搜索, 根据 kernel 反馈分支, 使用价值模型分配计算, 并持续生成与当前目标相关的训练题. DeepSeek-Prover-V2 已经提供子目标 curriculum 和统一推理模型, 但尚未公开完整树搜索与大规模 TestingTime RL 系统.
-
-whole-proof generation 与 tree search 的 sample budget 也不应直接按数字比较. 表 1 中树搜索方法写成候选数, 并行宽度与最大搜索步数的乘积, whole-proof 方法则统计完整输出样本. 一条树搜索轨迹可以共享前缀和 theorem state, 一份 CoT 输出会重新生成整段推理. 公平成本比较需要 token, kernel 调用次数和墙钟时间, 论文表格主要比较最终 pass rate.
-
-形式 proof 的长度还影响失败概率. CoT 模式平均数千 token, 中间任何语法或类型错误都可能使完整候选失效; decomposition 可以让局部 proof 分别验证, 成功片段再组合. 统一模型推理时输出完整 proof, 数据构造时却利用了局部可验证性. 将局部编译反馈重新引入推理循环, 可能比继续增加整段采样更节省计算.
-
-报告的标准差来自多次采样评测, 并非训练随机种子方差. 例如 miniF2F 的 $\mu\pm\sigma$ 描述有限 sample budget 下 pass rate 波动. 当预算达到 1024 或 8192 时, 部分表项不再给标准差. 这些区间可以比较相近模型的采样稳定性, 不能推断重新训练同一架构会得到相同 checkpoint.
-
-最终结果展示了一个清楚的能力分层: 通用 LLM 能给出数学路线并写形式草图, 小 prover 能解决局部 Lean obligation, curriculum 把局部成功转成训练信号, 大模型 RL 再把规划与形式化合并. 每层都由 Lean 检查输出, 但 statement 忠实性和 evaluator 实现仍需人工与工具审计. 这组边界决定了该系统更接近高性能证明搜索器, 而不是无需监督的数学正确性来源.
-
-对使用者而言, 锁定依赖后能够由 Lean kernel 重新编译的 proof term 比模型的自然语言信心更可靠. 编译通过之后, 仍要核对 theorem statement 与原题是否一致, 并检查环境是否引入不可信 axiom. 形式验证显著缩小了错误范围, 问题建模和工具链审计依然不可省略.
+形式 proof 的长度还影响失败概率. CoT 模式平均数千 token, 中间任何语法或类型错误都可能使完整候选失效; decomposition 可以让局部 proof 分别验证, 成功片段再组合. 统一模型推理时输出完整 proof, 数据构造时却利用了局部可验证性. 将局部编译反馈重新引入推理循环, 可能比继续增加整段采样更节省计算. 报告的标准差来自多次采样评测, 并非训练随机种子方差. 例如 miniF2F 的 $\mu\pm\sigma$ 描述有限 sample budget 下 pass rate 波动. 当预算达到 1024 或 8192 时, 部分表项不再给标准差. 这些区间可以比较相近模型的采样稳定性, 不能推断重新训练同一架构会得到相同 checkpoint. 最终结果展示了一个清楚的能力分层: 通用 LLM 能给出数学路线并写形式草图, 小 prover 能解决局部 Lean obligation, curriculum 把局部成功转成训练信号, 大模型 RL 再把规划与形式化合并. 每层都由 Lean 检查输出, 但 statement 忠实性和 evaluator 实现仍需人工与工具审计. 这组边界决定了该系统更接近高性能证明搜索器, 而不是无需监督的数学正确性来源. 对使用者而言, 锁定依赖后能够由 Lean kernel 重新编译的 proof term 比模型的自然语言信心更可靠. 编译通过之后, 仍要核对 theorem statement 与原题是否一致, 并检查环境是否引入不可信 axiom. 形式验证显著缩小了错误范围, 问题建模和工具链审计依然不可省略.
 
 ## 2. 概率目标、规划图与训练信号
 
@@ -167,354 +101,87 @@ $$
 \pi_\theta(y\mid x)=\prod_{t=1}^{T}\pi_\theta(y_t\mid x,y_{<t}).
 $$
 
-Verifier返回$r(y)\in\{0,1\}$,目标是最大化成功概率$J(\theta)=E_{y\sim\pi_\theta}[r(y)]$. 二值奖励精确但稀疏:一处语法、类型或数学错误都会把整段proof变成0.
-
-Pass@$k$为至少一个候选成功的概率. 若单样本成功率$p$且独立,
+Verifier返回$r(y)\in\{0,1\}$,目标是最大化成功概率$J(\theta)=E_{y\sim\pi_\theta}[r(y)]$. 二值奖励精确但稀疏:一处语法、类型或数学错误都会把整段proof变成0. Pass@$k$为至少一个候选成功的概率. 若单样本成功率$p$且独立,
 
 $$
 \operatorname{Pass@}k=1-(1-p)^k.
 $$
 
-实际候选高度相关,由Pass曲线反推的有效$p$随$k$下降. 大预算收益递减正说明错误模式共享.
+实际候选高度相关,由Pass曲线反推的有效$p$随$k$下降. 大预算收益递减正说明错误模式共享. 形式证明奖励与自然语言judge不同:kernel接受意味着proof term在当前逻辑环境成立,无需学习型RM判断. 奖励可靠性的薄弱点转移到statement、环境、超时与kernel实现. 自然语言草图把定理分成有向依赖图$G=(V,E)$. 节点$v_i$是lemma,边$v_j\to v_i$表示证明$i$可使用$j$. 按拓扑序求解后,最终节点组合为主定理. 线性CoT隐含一条路径,子目标图允许多个lemma共享前提、并行求解和失败重试. 图若有环,说明分解依赖不合法或需要归纳不变量重新表达. 每个局部目标难度不是仅由statement长度决定. 前提集合$\Gamma_i$越强,proof越容易;过强且不忠实的前提会让局部成功却无法组合. 递归求解必须由已验证前序lemma构造环境.
 
-形式证明奖励与自然语言judge不同:kernel接受意味着proof term在当前逻辑环境成立,无需学习型RM判断. 奖励可靠性的薄弱点转移到statement、环境、超时与kernel实现.
+分解质量可用节点成功率、图深度、总proof token、kernel调用和组合成功率评估. 只看最终pass无法区分规划与局部证明能力. 整题成功概率若近似为各关键步骤概率乘积$p=\prod_i p_i$,步骤多时迅速变小. 每个子目标独立验证后,模型能收集局部成功样本,无需等待全链同时正确. 假设10步各成功0.7,整题一次成功仅$0.7^{10}\approx2.8\%$;每步采10次成功概率接近$1-0.3^{10}$,再组合几乎必得局部解. 独立近似乐观,仍说明局部验证的指数优势. curriculum把这些局部proof作为训练样本,提高对应$p_i$,整题成功率乘法放大. 关键是训练后模型能把局部能力迁回完整上下文. 错误一是lemma不足:所有子目标成立仍推不出主结论. Lean组合阶段会失败. 错误二是lemma过强:自身比原题更难,没有降低搜索.
 
+错误三是依赖遗漏:局部proof偷偷使用未列前提或全局命名空间事实. 在隔离环境重新编译能发现. 错误四是形式化偏移:自然语言草图正确,Lean lemma表达了不同命题. 错误五是粒度失衡. 太粗仍是长proof,太细产生大量胶水、类型转换与命名开销. 最优粒度由局部prover成功曲线与组合成本决定. 大模型生成全局草图,依赖宽广数学知识与长程一致性;7B模型搜索局部Lean proof,依赖语法、library与短程tactic组合. 两者任务不同,尺寸不必相同. 局部搜索成本近似节点数乘每节点采样. 若大模型也做每个节点,成本高;小模型成功率不足时再升级,形成级联. Planner错误会让所有局部搜索浪费. 可以先让小模型尝试主定理,失败后才分解;或用轻量critic检查lemma图可组合性.
 
-自然语言草图把定理分成有向依赖图$G=(V,E)$. 节点$v_i$是lemma,边$v_j\to v_i$表示证明$i$可使用$j$. 按拓扑序求解后,最终节点组合为主定理.
+最终统一模型学习了由planner与prover生成的数据,推理时可直接输出CoT+proof. 数据构造的模块化没有自动变成推理期显式模块. RL从纯base模型开始,大多数rollout无法编译,奖励近零. 数百条高质量SFT样本先教格式、Lean语法、CoT与proof对应,把策略推入有非零成功概率区域. 冷启动样本质量比数量关键. 错误statement、脆弱tactic或不一致CoT会成为RL探索先验. 每条需kernel验证并审计环境. 样本分布若只含miniF2F短题,模型会偏向自动化tactic,面对抽象本科定理仍失败. 子目标数据扩展lemma类型与上下文形态. 当前模型采样proof,verifier筛成功样本,再训练新模型,构成expert iteration. 成功样本分布由当前策略与采样预算共同决定.
 
-线性CoT隐含一条路径,子目标图允许多个lemma共享前提、并行求解和失败重试. 图若有环,说明分解依赖不合法或需要归纳不变量重新表达.
-
-每个局部目标难度不是仅由statement长度决定. 前提集合$\Gamma_i$越强,proof越容易;过强且不忠实的前提会让局部成功却无法组合. 递归求解必须由已验证前序lemma构造环境.
-
-分解质量可用节点成功率、图深度、总proof token、kernel调用和组合成功率评估. 只看最终pass无法区分规划与局部证明能力.
-
-
-整题成功概率若近似为各关键步骤概率乘积$p=\prod_i p_i$,步骤多时迅速变小. 每个子目标独立验证后,模型能收集局部成功样本,无需等待全链同时正确.
-
-假设10步各成功0.7,整题一次成功仅$0.7^{10}\approx2.8\%$;每步采10次成功概率接近$1-0.3^{10}$,再组合几乎必得局部解. 独立近似乐观,仍说明局部验证的指数优势.
-
-curriculum把这些局部proof作为训练样本,提高对应$p_i$,整题成功率乘法放大. 关键是训练后模型能把局部能力迁回完整上下文.
-
-
-错误一是lemma不足:所有子目标成立仍推不出主结论. Lean组合阶段会失败. 错误二是lemma过强:自身比原题更难,没有降低搜索.
-
-错误三是依赖遗漏:局部proof偷偷使用未列前提或全局命名空间事实. 在隔离环境重新编译能发现. 错误四是形式化偏移:自然语言草图正确,Lean lemma表达了不同命题.
-
-错误五是粒度失衡. 太粗仍是长proof,太细产生大量胶水、类型转换与命名开销. 最优粒度由局部prover成功曲线与组合成本决定.
-
-
-大模型生成全局草图,依赖宽广数学知识与长程一致性;7B模型搜索局部Lean proof,依赖语法、library与短程tactic组合. 两者任务不同,尺寸不必相同.
-
-局部搜索成本近似节点数乘每节点采样. 若大模型也做每个节点,成本高;小模型成功率不足时再升级,形成级联.
-
-Planner错误会让所有局部搜索浪费. 可以先让小模型尝试主定理,失败后才分解;或用轻量critic检查lemma图可组合性.
-
-最终统一模型学习了由planner与prover生成的数据,推理时可直接输出CoT+proof. 数据构造的模块化没有自动变成推理期显式模块.
-
-
-RL从纯base模型开始,大多数rollout无法编译,奖励近零. 数百条高质量SFT样本先教格式、Lean语法、CoT与proof对应,把策略推入有非零成功概率区域.
-
-冷启动样本质量比数量关键. 错误statement、脆弱tactic或不一致CoT会成为RL探索先验. 每条需kernel验证并审计环境.
-
-样本分布若只含miniF2F短题,模型会偏向自动化tactic,面对抽象本科定理仍失败. 子目标数据扩展lemma类型与上下文形态.
-
-
-当前模型采样proof,verifier筛成功样本,再训练新模型,构成expert iteration. 成功样本分布由当前策略与采样预算共同决定.
-
-易题产生大量近重复proof,难题没有样本,会加剧课程偏斜. 每题限制样本数、按难度重加权和保留多样proof可缓解.
-
-模型更新后能解新题,数据边界外扩. 若采样只用贪心,探索不足;温度过高,编译失败占多数. 应按题难度调预算.
-
-
-REINFORCE形式
+易题产生大量近重复proof,难题没有样本,会加剧课程偏斜. 每题限制样本数、按难度重加权和保留多样proof可缓解. 模型更新后能解新题,数据边界外扩. 若采样只用贪心,探索不足;温度过高,编译失败占多数. 应按题难度调预算. REINFORCE形式
 
 $$
 \nabla J=E[(r-b)\nabla\log\pi_\theta(y\mid x)],
 $$
 
-$b$为baseline. 同一题组内多个rollout可用相对优势,降低题目难度方差. 全部失败或全部成功时组内优势为零.
+$b$为baseline. 同一题组内多个rollout可用相对优势,降低题目难度方差. 全部失败或全部成功时组内优势为零. 长proof的log概率梯度累加所有token,一个末尾错误让整条负优势. 模型不知道前缀哪些步骤正确. 子目标SFT与编译诊断可提供更细反馈. KL约束防策略为reward漏洞偏离base. Kernel漏洞若稳定给1,KL只能减慢利用,不能纠正方向. early consistency要求CoT中的子目标在Lean proof以`have`等结构体现. 它是结构奖励,缩小自然语言规划与形式proof分离. 权重过高会诱导模型机械插入无用`have`,增加proof长度. 训练后期取消或减弱,让kernel成功成为主目标.
 
-长proof的log概率梯度累加所有token,一个末尾错误让整条负优势. 模型不知道前缀哪些步骤正确. 子目标SFT与编译诊断可提供更细反馈.
+一致性不保证语义对应. 自然语言lemma与Lean proposition需要对齐检查,字符串或结构包含只能提供弱代理. non-CoT直接生成Lean proof,token少、采样便宜,适合熟悉短题.CoT先写自然语言路线,能为长题提供全局规划,也引入额外生成与不一致风险. prompt控制两种模式让同一模型按预算选择. 共享参数可让自然语言数学迁移到Lean,也可能让模型在proof中混入解释文本. 比较需按总生成token或GPU秒,不能只按候选数. 一条CoT候选可能是non-CoT数倍长度. 第一层是parser:Lean文本可解析. 第二层是elaboration:类型、隐式参数和实例解析成功. 第三层是kernel检查proof term. 第四层是环境审计:没有`sorry`、不可信axiom或漏洞.
 
-KL约束防策略为reward漏洞偏离base. Kernel漏洞若稳定给1,KL只能减慢利用,不能纠正方向.
-
-
-early consistency要求CoT中的子目标在Lean proof以`have`等结构体现. 它是结构奖励,缩小自然语言规划与形式proof分离.
-
-权重过高会诱导模型机械插入无用`have`,增加proof长度. 训练后期取消或减弱,让kernel成功成为主目标.
-
-一致性不保证语义对应. 自然语言lemma与Lean proposition需要对齐检查,字符串或结构包含只能提供弱代理.
-
-
-non-CoT直接生成Lean proof,token少、采样便宜,适合熟悉短题.CoT先写自然语言路线,能为长题提供全局规划,也引入额外生成与不一致风险.
-
-prompt控制两种模式让同一模型按预算选择. 共享参数可让自然语言数学迁移到Lean,也可能让模型在proof中混入解释文本.
-
-比较需按总生成token或GPU秒,不能只按候选数. 一条CoT候选可能是non-CoT数倍长度.
-
-
-第一层是parser:Lean文本可解析. 第二层是elaboration:类型、隐式参数和实例解析成功. 第三层是kernel检查proof term. 第四层是环境审计:没有`sorry`、不可信axiom或漏洞.
-
-第五层是statement忠实性:形式命题表达原题. Kernel无法检查自然语言到Lean的映射. CombiBench矛盾premise案例正暴露这一层.
-
-第六层是资源边界:proof在合理时间内编译,不靠超时差异或资源耗尽. 每层失败含义不同.
-
-
-若环境允许`sorry`或自定义axiom,模型可绕过证明. 通常禁用这些显式路径,仍可能利用library不一致、类型漏洞或异常实例.
-
-`exfalso`本身合法. 只有前提因形式化错误自相矛盾时,从False推出目标才反映数据漏洞. 静态封禁tactic会误杀正确反证.
-
-漏洞修复后应重验所有历史proof,因为相同文本可能不再通过. 训练数据也要清理,避免模型继续偏好漏洞pattern.
+第五层是statement忠实性:形式命题表达原题. Kernel无法检查自然语言到Lean的映射. CombiBench矛盾premise案例正暴露这一层. 第六层是资源边界:proof在合理时间内编译,不靠超时差异或资源耗尽. 每层失败含义不同. 若环境允许`sorry`或自定义axiom,模型可绕过证明. 通常禁用这些显式路径,仍可能利用library不一致、类型漏洞或异常实例. `exfalso`本身合法. 只有前提因形式化错误自相矛盾时,从False推出目标才反映数据漏洞. 静态封禁tactic会误杀正确反证. 漏洞修复后应重验所有历史proof,因为相同文本可能不再通过. 训练数据也要清理,避免模型继续偏好漏洞pattern.
 
 ## 3. 形式化接口、检索与证明搜索
 
 ### Statement formalization
 
-自然语言题到Lean theorem包含变量类型、量词、前提、目标和库定义选择. 任一处偏移都可能让proof“正确地证明错误命题”.
+自然语言题到Lean theorem包含变量类型、量词、前提、目标和库定义选择. 任一处偏移都可能让proof“正确地证明错误命题”. 双向检查可让模型把Lean statement翻译回自然语言,与原题比较;人工审计高风险样本;用反例生成器搜索两者差异. 答案已给定的AIME theorem少了求值自由度. 评测应明确任务是find-and-prove还是prove-given-answer. 很多失败来自不知道lemma名字、namespace或已有API,并非数学路线错误. 大模型参数记忆覆盖常见Mathlib,冷门领域不足. 检索可基于当前goal、类型和自然语言草图返回候选lemma. 错误检索增加上下文与歧义,需排序与类型过滤.
 
-双向检查可让模型把Lean statement翻译回自然语言,与原题比较;人工审计高风险样本;用反例生成器搜索两者差异.
+Kernel错误消息还能提示缺实例、类型不匹配与未闭合目标. 将诊断反馈给模型形成交互搜索,比整段盲采样更省. Whole-proof一次生成完整文本,并行简单,候选不共享前缀. 树搜索在tactic state上扩展节点,成功前缀可复用,需要Lean交互与价值估计. 若错误多发生早期,树搜索能及时剪枝;若proof可由强模型一次完成,whole-proof吞吐更高. 两者的最佳区域随题长与模型能力变化. 公平成本需计生成token、Lean调用、state序列化、并行效率和墙钟.Pass@候选数无法直接比较. Lean tactic执行后产生零个或多个goals. 搜索节点应包含local context、goals、环境与已用资源. 文本相似state可能类型环境不同.
 
-答案已给定的AIME theorem少了求值自由度. 评测应明确任务是find-and-prove还是prove-given-answer.
+去重可按规范化pretty-print或内部表达哈希. 过度规范化会合并不等价state,不足则搜索爆炸. 价值模型预测从state可证明概率,用于分配扩展. 训练标签可由搜索最终成功反传,存在选择偏差. 有限样本无放回估计常用$1-\binom{n-c}{k}/\binom nk$,其中$n$为生成数,$c$为成功数. 直接用$1-(1-c/n)^k$是有放回近似. 题目难度差异大,总体Pass应先按题计算再平均. 把所有候选混合会让易题主导. 大$k$下估计依赖尾部. 若每题只生成$k$条,Pass@$k$只是观测是否成功,方差由题数决定. 30题AIME区间很宽.
 
+同模型同prompt候选共享规划偏差. 温度增加语法错误同时提高路线多样. 多prompt、不同lemma检索或不同模型能降低相关. 对每题聚类proof骨架,有效多样性比文本去重重要. 8192条若只有几十种骨架,边际收益很低. 成功proof也可能大量同构. 数据回灌应控制骨架重复,否则模型只强化已会路线. 每token局部正确概率$q$,若错误近似独立,长度$T$完整成功约$q^T$,长proof指数更难. 实际错误相关,趋势仍成立. 分解缩短局部长度,分别验证后组合. 最终组合还需胶水proof,总token可能更多,成功概率因局部重试提高.
 
-很多失败来自不知道lemma名字、namespace或已有API,并非数学路线错误. 大模型参数记忆覆盖常见Mathlib,冷门领域不足.
+长度正则可鼓励简洁proof,过强会偏好脆弱自动tactic或漏洞. Kernel成功优先,成本作为次级目标. 高层tactic一行完成大量推理,搜索深度小,内部行为不透明且可能慢. 低层term proof长,可控但生成困难. 模型可混合:用`ring`,`linarith`,`simp`解决标准子问题,手写结构连接. Benchmark结果部分取决于可用tactic集合. 限制tactic必须在所有方法一致,否则成功率不可比. 环境版本变化也会改变自动化能力. 子目标难度可由7B采样成功率估计. 太易样本信息少,太难无正例. 选择中等成功率形成有效课程.
 
-检索可基于当前goal、类型和自然语言草图返回候选lemma. 错误检索增加上下文与歧义,需排序与类型过滤.
+随着模型变强,课程应更新. 固定旧子目标会饱和. Expert iteration自然生成新边界,但依赖planner提出更难lemma. 难度还包括环境长度、依赖深度、proof token和编译时间,单一成功率不能完整描述. miniF2F等公开题与proof长期存在于网络和训练语料. 高分可能包含记忆、模板迁移与真实推理. ProofNet、Putnam与新建基准减轻但不消除. 对定理重命名、变量改写、常数扰动和库API替换可测模板依赖. 生成新的形式题并保留隐藏测试更可靠. 成功proof与公开reference文本相似度也可审计. 相似不等于作弊,但需要标注.
 
-Kernel错误消息还能提示缺实例、类型不匹配与未闭合目标. 将诊断反馈给模型形成交互搜索,比整段盲采样更省.
+miniF2F以短竞赛题为主,自动tactic覆盖高.ProofNet连接本科自然语言与Lean,statement理解更难.PutnamBench抽象且proof长. FormalMATH规模大、领域广,总分受分布影响.ProverBench小领域样本少,应给逐域置信区间. 单一总分无法区分syntax、library、规划与数学能力. 按失败阶段分解更有教学价值. 解析失败:输出格式或Lean语法. Elaborator失败:类型、实例、未知标识符. Tactic失败:目标未解或超时. Kernel失败较少,通常前层已拦截. 数学失败表现为合法步骤走入死路. Statement失败则proof通过但任务无效,最危险. 工具漏洞是环境接受不应接受的term.
 
+记录错误码、goal state与位置,可构造分类型SFT. 二值RL无法提供这层信息. 实验一保持总token预算,比较whole-proof、固定分解和自适应分解. 测pass、kernel调用与墙钟. 实验二用oracle草图与模型草图交叉,分离planner和prover误差. 再用oracle局部proof测组合器. 实验三扫描子目标粒度,报告节点成功、组合成功和总成本,验证存在中间最优. 实验四移除一致性奖励、只保留kernel reward,测CoT-proof对应与最终pass. 区分结构监督收益.
 
-Whole-proof一次生成完整文本,并行简单,候选不共享前缀. 树搜索在tactic state上扩展节点,成功前缀可复用,需要Lean交互与价值估计.
-
-若错误多发生早期,树搜索能及时剪枝;若proof可由强模型一次完成,whole-proof吞吐更高. 两者的最佳区域随题长与模型能力变化.
-
-公平成本需计生成token、Lean调用、state序列化、并行效率和墙钟.Pass@候选数无法直接比较.
-
-
-Lean tactic执行后产生零个或多个goals. 搜索节点应包含local context、goals、环境与已用资源. 文本相似state可能类型环境不同.
-
-去重可按规范化pretty-print或内部表达哈希. 过度规范化会合并不等价state,不足则搜索爆炸.
-
-价值模型预测从state可证明概率,用于分配扩展. 训练标签可由搜索最终成功反传,存在选择偏差.
-
-
-有限样本无放回估计常用$1-\binom{n-c}{k}/\binom nk$,其中$n$为生成数,$c$为成功数. 直接用$1-(1-c/n)^k$是有放回近似.
-
-题目难度差异大,总体Pass应先按题计算再平均. 把所有候选混合会让易题主导.
-
-大$k$下估计依赖尾部. 若每题只生成$k$条,Pass@$k$只是观测是否成功,方差由题数决定. 30题AIME区间很宽.
-
-
-同模型同prompt候选共享规划偏差. 温度增加语法错误同时提高路线多样. 多prompt、不同lemma检索或不同模型能降低相关.
-
-对每题聚类proof骨架,有效多样性比文本去重重要. 8192条若只有几十种骨架,边际收益很低.
-
-成功proof也可能大量同构. 数据回灌应控制骨架重复,否则模型只强化已会路线.
-
-
-每token局部正确概率$q$,若错误近似独立,长度$T$完整成功约$q^T$,长proof指数更难. 实际错误相关,趋势仍成立.
-
-分解缩短局部长度,分别验证后组合. 最终组合还需胶水proof,总token可能更多,成功概率因局部重试提高.
-
-长度正则可鼓励简洁proof,过强会偏好脆弱自动tactic或漏洞. Kernel成功优先,成本作为次级目标.
-
-
-高层tactic一行完成大量推理,搜索深度小,内部行为不透明且可能慢. 低层term proof长,可控但生成困难.
-
-模型可混合:用`ring`,`linarith`,`simp`解决标准子问题,手写结构连接. Benchmark结果部分取决于可用tactic集合.
-
-限制tactic必须在所有方法一致,否则成功率不可比. 环境版本变化也会改变自动化能力.
-
-
-子目标难度可由7B采样成功率估计. 太易样本信息少,太难无正例. 选择中等成功率形成有效课程.
-
-随着模型变强,课程应更新. 固定旧子目标会饱和. Expert iteration自然生成新边界,但依赖planner提出更难lemma.
-
-难度还包括环境长度、依赖深度、proof token和编译时间,单一成功率不能完整描述.
-
-
-miniF2F等公开题与proof长期存在于网络和训练语料. 高分可能包含记忆、模板迁移与真实推理. ProofNet、Putnam与新建基准减轻但不消除.
-
-对定理重命名、变量改写、常数扰动和库API替换可测模板依赖. 生成新的形式题并保留隐藏测试更可靠.
-
-成功proof与公开reference文本相似度也可审计. 相似不等于作弊,但需要标注.
-
-
-miniF2F以短竞赛题为主,自动tactic覆盖高.ProofNet连接本科自然语言与Lean,statement理解更难.PutnamBench抽象且proof长.
-
-FormalMATH规模大、领域广,总分受分布影响.ProverBench小领域样本少,应给逐域置信区间.
-
-单一总分无法区分syntax、library、规划与数学能力. 按失败阶段分解更有教学价值.
-
-
-解析失败:输出格式或Lean语法. Elaborator失败:类型、实例、未知标识符. Tactic失败:目标未解或超时. Kernel失败较少,通常前层已拦截.
-
-数学失败表现为合法步骤走入死路. Statement失败则proof通过但任务无效,最危险. 工具漏洞是环境接受不应接受的term.
-
-记录错误码、goal state与位置,可构造分类型SFT. 二值RL无法提供这层信息.
-
-
-实验一保持总token预算,比较whole-proof、固定分解和自适应分解. 测pass、kernel调用与墙钟.
-
-实验二用oracle草图与模型草图交叉,分离planner和prover误差. 再用oracle局部proof测组合器.
-
-实验三扫描子目标粒度,报告节点成功、组合成功和总成本,验证存在中间最优.
-
-实验四移除一致性奖励、只保留kernel reward,测CoT-proof对应与最终pass. 区分结构监督收益.
-
-实验五固定候选数改变路线多样prompt,测骨架有效样本与Pass,验证相关性瓶颈.
-
-实验六修复已知漏洞后重验训练数据与checkpoint,观察reward hacking依赖.
-
-实验七自然语言题做双向formalization审计,报告statement错误率与proof pass联合指标.
-
-实验八把Lean错误诊断反馈加入交互修复,与重新生成整段proof按等kernel调用比较.
+实验五固定候选数改变路线多样prompt,测骨架有效样本与Pass,验证相关性瓶颈. 实验六修复已知漏洞后重验训练数据与checkpoint,观察reward hacking依赖. 实验七自然语言题做双向formalization审计,报告statement错误率与proof pass联合指标. 实验八把Lean错误诊断反馈加入交互修复,与重新生成整段proof按等kernel调用比较.
 
 ## 4. 成本、正确性边界与系统闭环
 
 ### 成本手算
 
-单题8192条,每条平均4000 token,共3277万生成token. 1000 token/s的聚合吞吐仍需约9.1 GPU小时,未计prefill与Lean.
+单题8192条,每条平均4000 token,共3277万生成token. 1000 token/s的聚合吞吐仍需约9.1 GPU小时,未计prefill与Lean. 若7B比671B单位token便宜约百倍量级,先用7B筛局部proof能显著降数据成本. 大模型只负责草图与难题. 假设10子目标、每个7B采32条、平均500token,局部生成16万token,比8192条完整proof低两个数量级. 独立与长度假设决定实际成功. 由人工或reference proof提取lemma图作为oracle,模型只解局部目标,得到prover上限. 模型草图加oracle prover测planner质量. 若oracle分解仍失败,问题在局部能力或library;模型分解与oracle差距大,应改规划训练.
 
-若7B比671B单位token便宜约百倍量级,先用7B筛局部proof能显著降数据成本. 大模型只负责草图与难题.
+Oracle可能贴合reference路线,其他有效路线被忽略. 应使用多种分解或允许模型改写lemma. Lean保证在指定axiom和definition下term类型正确. 它不保证axiom真实、definition符合意图、数值计算环境无bug或资源无限. `#print axioms`可检查依赖公理,锁定Mathlib与Lean版本保证复现. 自定义unsafe代码、native_decide与外部oracle需单独审计. Statement忠实性仍依赖人或另一套验证. 形式验证把开放错误缩小到建模和可信计算基. 同一模型支持CoT/non-CoT、规划与Lean,共享数学知识,部署简单. 不同任务token分布差异大,可能相互干扰.
 
-假设10子目标、每个7B采32条、平均500token,局部生成16万token,比8192条完整proof低两个数量级. 独立与长度假设决定实际成功.
+自然语言能力帮助提出lemma,Lean训练也可能让回答过度形式化. Prompt切换只控制行为,无法完全隔离参数. 多头或adapter可分离模式,增加训练与服务复杂度. 论文选择统一模型并用prompt约定接口. 换Mathlib版本、领域库或自定义项目后,lemma名与类型变化. 数学路线可迁移,表层proof大量失效. 检索增强和错误修复比继续记忆旧API更重要. 在目标库少量SFT可快速适配syntax与命名. 评测必须在干净环境构建,隐式导入与缓存会造成虚假成功.
 
+Benchmark通常单theorem、上下文短. 真实Lean项目有namespace、局部notation、已有lemma、循环依赖与编译图. 模型需定位相关文件、选择import、维护命名和避免破坏其他定理. Proof生成只是软件工程流程一部分. 增量编译、依赖分析与测试可以提供反馈. 单题pass不能代表仓库级自动化. 生成Lean代码应在沙箱运行,限制CPU、内存、文件与网络. 恶意或异常tactic可能耗尽资源. 超时应区分搜索太慢与环境死锁,统一0奖励会丢诊断. 重试需要固定资源保证公平.
 
-由人工或reference proof提取lemma图作为oracle,模型只解局部目标,得到prover上限. 模型草图加oracle prover测planner质量.
+缓存编译结果可省成本,键需包含代码、环境版本与资源配置. 多个成功proof提高鲁棒与训练覆盖. 仅按文本去重会保留alpha-equivalent变体,应按proof term或tactic骨架聚类. 短proof未必更好:可能依赖强自动化与大隐式搜索. 可解释proof更长但易维护. 数据采样可保留不同数学路线,而非同一`simp`参数排列. 成功rollout进入buffer后,模型持续变化,旧样本仍有价值. 只用最新数据易遗忘已会领域,全历史均匀又让易题主导.
 
-若oracle分解仍失败,问题在局部能力或library;模型分解与oracle差距大,应改规划训练.
+按难度、领域、新颖骨架和近期失败重加权. 定期重验旧proof防环境升级失效. 负样本也有信息,可用于错误分类或偏好训练,直接SFT只用正例更简单. 单题固定8192浪费易题. 根据早期成功、编译错误类型与价值模型动态追加. 已有多个独立proof时可停止. 难题预算应在“更多同路线采样”和“重新分解”之间选择. 轨迹高度相似时后者更有价值. 多臂bandit可把预算分给不同prompt、模型与搜索器,奖励为成功/成本. 离线回放可比较策略.
 
-Oracle可能贴合reference路线,其他有效路线被忽略. 应使用多种分解或允许模型改写lemma.
-
-
-Lean保证在指定axiom和definition下term类型正确. 它不保证axiom真实、definition符合意图、数值计算环境无bug或资源无限.
-
-`#print axioms`可检查依赖公理,锁定Mathlib与Lean版本保证复现. 自定义unsafe代码、native_decide与外部oracle需单独审计.
-
-Statement忠实性仍依赖人或另一套验证. 形式验证把开放错误缩小到建模和可信计算基.
-
-
-同一模型支持CoT/non-CoT、规划与Lean,共享数学知识,部署简单. 不同任务token分布差异大,可能相互干扰.
-
-自然语言能力帮助提出lemma,Lean训练也可能让回答过度形式化. Prompt切换只控制行为,无法完全隔离参数.
-
-多头或adapter可分离模式,增加训练与服务复杂度. 论文选择统一模型并用prompt约定接口.
-
-
-换Mathlib版本、领域库或自定义项目后,lemma名与类型变化. 数学路线可迁移,表层proof大量失效.
-
-检索增强和错误修复比继续记忆旧API更重要. 在目标库少量SFT可快速适配syntax与命名.
-
-评测必须在干净环境构建,隐式导入与缓存会造成虚假成功.
-
-
-Benchmark通常单theorem、上下文短. 真实Lean项目有namespace、局部notation、已有lemma、循环依赖与编译图.
-
-模型需定位相关文件、选择import、维护命名和避免破坏其他定理. Proof生成只是软件工程流程一部分.
-
-增量编译、依赖分析与测试可以提供反馈. 单题pass不能代表仓库级自动化.
-
-
-生成Lean代码应在沙箱运行,限制CPU、内存、文件与网络. 恶意或异常tactic可能耗尽资源.
-
-超时应区分搜索太慢与环境死锁,统一0奖励会丢诊断. 重试需要固定资源保证公平.
-
-缓存编译结果可省成本,键需包含代码、环境版本与资源配置.
-
-
-多个成功proof提高鲁棒与训练覆盖. 仅按文本去重会保留alpha-equivalent变体,应按proof term或tactic骨架聚类.
-
-短proof未必更好:可能依赖强自动化与大隐式搜索. 可解释proof更长但易维护.
-
-数据采样可保留不同数学路线,而非同一`simp`参数排列.
-
-
-成功rollout进入buffer后,模型持续变化,旧样本仍有价值. 只用最新数据易遗忘已会领域,全历史均匀又让易题主导.
-
-按难度、领域、新颖骨架和近期失败重加权. 定期重验旧proof防环境升级失效.
-
-负样本也有信息,可用于错误分类或偏好训练,直接SFT只用正例更简单.
-
-
-单题固定8192浪费易题. 根据早期成功、编译错误类型与价值模型动态追加. 已有多个独立proof时可停止.
-
-难题预算应在“更多同路线采样”和“重新分解”之间选择. 轨迹高度相似时后者更有价值.
-
-多臂bandit可把预算分给不同prompt、模型与搜索器,奖励为成功/成本. 离线回放可比较策略.
-
-
-低温语法稳定、路线重复;高温多样、解析错误多. 最优温度随阶段不同:草图可高一些,Lean代码低一些.
-
-两阶段解码分别设温度比统一温度更合理. 同一模型输出混合序列时需要位置或段落切换策略.
-
-报告temperature、top-p、最大长度与停止符,否则Pass不可复现.
+低温语法稳定、路线重复;高温多样、解析错误多. 最优温度随阶段不同:草图可高一些,Lean代码低一些. 两阶段解码分别设温度比统一温度更合理. 同一模型输出混合序列时需要位置或段落切换策略. 报告temperature、top-p、最大长度与停止符,否则Pass不可复现.
 
 ## 5. 修复、过程奖励与基准诊断
 
 ### Proof repair
 
-失败proof常接近成功. 把错误消息与goal返回模型,局部修复比重生成省token. 反复修复可能在同一路线循环.
+失败proof常接近成功. 把错误消息与goal返回模型,局部修复比重生成省token. 反复修复可能在同一路线循环. 保留已通过前缀,只改失败tactic,类似程序修复. Lean state提供精确信息,是形式系统的优势. 比较时按总生成token和kernel调用计成本,一次候选与多轮修复不能只按轨迹数. 每个成功tactic后state合法,可给局部正信号;走入仍合法但无解的state不易判断. Kernel只验证局部正确,不评估离目标距离. 价值模型从搜索结果学习state可解概率,提供稠密奖励. 标签受当前搜索器能力限制,未找到不等于不可证.
 
-保留已通过前缀,只改失败tactic,类似程序修复. Lean state提供精确信息,是形式系统的优势.
+子目标curriculum是离线过程监督的一种形式,避开在线价值模型复杂度. 给定答案的formal theorem只需证明等式或性质,自然语言模型需先求答案. 两任务共享推理,搜索空间不同. 更公平的对照是让自然语言模型也给定答案验证,或让prover形式化存在唯一值并求witness. 报告6/15与8/15应保留此差异. 15题样本小,一题对应6.7个百分点. 结论应看能力接近的数量级,避免精确排序. 抽象类型与Cardinal API复杂,library异常路径容易被模型发现. 成功率统计前需要自动扫描axiom、unsafe定义和可疑lemma.
 
-比较时按总生成token和kernel调用计成本,一次候选与多轮修复不能只按轨迹数.
+大模型没有出现某漏洞可能因采样不足或路线偏好,不是安全证明. 攻击性搜索专门寻找短异常proof更敏感. 基准维护应发布修复版本并重算历史模型,保持排行榜可比. 若formal premise不可满足,任何目标都可由False推出,proof在逻辑上正确. 这类题测的是statement质量,不是prover作弊. 可用模型或SMT尝试检查前提可满足性,高阶Lean命题一般不可判定,仍需人工审计. 报告应将invalid statement从prover成功率分母剔除或单独列出,避免奖励错误建模.
 
+miniF2F 244题,成功率0.9的二项标准误约$\sqrt{0.9\times0.1/244}=1.9\%$,忽略采样估计与题间异质. 相差一两个点未必显著. Pass@k由每题候选估计,题目bootstrap更稳妥. 多模型比较还需校正重复测试. 大预算表项若无重复运行,只知道该候选池结果,无法估训练seed方差. CoT与Lean合计可能上万token,模型需保持变量、lemma名与目标一致. 长上下文注意力能力直接影响形式证明. 局部分解减少每次上下文,组合时需要导入前序lemma. 命名冲突和上下文膨胀会重新增加长度.
 
-每个成功tactic后state合法,可给局部正信号;走入仍合法但无解的state不易判断. Kernel只验证局部正确,不评估离目标距离.
+按proof长度分桶报告成功率,能区分数学难度与序列可靠性. 生成statement时审计忠实性;生成proof时kernel编译;成功后检查axioms和环境;回灌前去重与漏洞扫描;发布时锁定版本. 任一环缺失,二值成功都可能失真. 形式化系统优势在于每环有明确接口,仍需实施. DeepSeek-Prover-V2把大模型规划、小模型局部搜索、Lean验证和RL串成数据飞轮. 子目标将整题乘法成功问题拆成可重试局部任务. 冷启动建立可编译输出分布,一致性奖励对齐文字规划与proof结构,kernel奖励提供精确终局信号.CoT/non-CoT让同一模型覆盖不同预算.
 
-价值模型从搜索结果学习state可解概率,提供稠密奖励. 标签受当前搜索器能力限制,未找到不等于不可证.
-
-子目标curriculum是离线过程监督的一种形式,避开在线价值模型复杂度.
-
-
-给定答案的formal theorem只需证明等式或性质,自然语言模型需先求答案. 两任务共享推理,搜索空间不同.
-
-更公平的对照是让自然语言模型也给定答案验证,或让prover形式化存在唯一值并求witness. 报告6/15与8/15应保留此差异.
-
-15题样本小,一题对应6.7个百分点. 结论应看能力接近的数量级,避免精确排序.
-
-
-抽象类型与Cardinal API复杂,library异常路径容易被模型发现. 成功率统计前需要自动扫描axiom、unsafe定义和可疑lemma.
-
-大模型没有出现某漏洞可能因采样不足或路线偏好,不是安全证明. 攻击性搜索专门寻找短异常proof更敏感.
-
-基准维护应发布修复版本并重算历史模型,保持排行榜可比.
-
-
-若formal premise不可满足,任何目标都可由False推出,proof在逻辑上正确. 这类题测的是statement质量,不是prover作弊.
-
-可用模型或SMT尝试检查前提可满足性,高阶Lean命题一般不可判定,仍需人工审计.
-
-报告应将invalid statement从prover成功率分母剔除或单独列出,避免奖励错误建模.
-
-
-miniF2F 244题,成功率0.9的二项标准误约$\sqrt{0.9\times0.1/244}=1.9\%$,忽略采样估计与题间异质. 相差一两个点未必显著.
-
-Pass@k由每题候选估计,题目bootstrap更稳妥. 多模型比较还需校正重复测试.
-
-大预算表项若无重复运行,只知道该候选池结果,无法估训练seed方差.
-
-
-CoT与Lean合计可能上万token,模型需保持变量、lemma名与目标一致. 长上下文注意力能力直接影响形式证明.
-
-局部分解减少每次上下文,组合时需要导入前序lemma. 命名冲突和上下文膨胀会重新增加长度.
-
-按proof长度分桶报告成功率,能区分数学难度与序列可靠性.
-
-
-生成statement时审计忠实性;生成proof时kernel编译;成功后检查axioms和环境;回灌前去重与漏洞扫描;发布时锁定版本.
-
-任一环缺失,二值成功都可能失真. 形式化系统优势在于每环有明确接口,仍需实施.
-
-
-DeepSeek-Prover-V2把大模型规划、小模型局部搜索、Lean验证和RL串成数据飞轮. 子目标将整题乘法成功问题拆成可重试局部任务.
-
-冷启动建立可编译输出分布,一致性奖励对齐文字规划与proof结构,kernel奖励提供精确终局信号.CoT/non-CoT让同一模型覆盖不同预算.
-
-高分证明模型已能处理大量竞赛与部分本科定理,ProofNet、Putnam和FormalMATH差距显示抽象规划、library与长proof仍是主要边界.
-
-最可靠的结论限于“给定忠实statement和可信环境,生成了可检查proof”. 从自然语言数学到该statement、从benchmark到真实项目,仍需要独立验证与搜索系统.
+高分证明模型已能处理大量竞赛与部分本科定理,ProofNet、Putnam和FormalMATH差距显示抽象规划、library与长proof仍是主要边界. 最可靠的结论限于“给定忠实statement和可信环境,生成了可检查proof”. 从自然语言数学到该statement、从benchmark到真实项目,仍需要独立验证与搜索系统.
 
 ## 6. 子目标价值、递归结构与数据构造
 
@@ -526,258 +193,57 @@ $$
 P(\text{success})=\prod_iP(v_i\text{ proved}\mid v_{<i}\text{ proved},G).
 $$
 
-一个强lemma能显著提高多个后续条件概率,其搜索价值高于叶子lemma. Planner应优先提出可复用、可证明且能简化后续的节点.
+一个强lemma能显著提高多个后续条件概率,其搜索价值高于叶子lemma. Planner应优先提出可复用、可证明且能简化后续的节点. 若某节点失败,可替换lemma而非重做全图. 分解带来的主要收益是局部可修复性与条件复用,不只是proof变短. 定义lemma价值为加入前提前后目标成功概率差$\Delta_i=P(goal\mid\Gamma+v_i)-P(goal\mid\Gamma)$,成本为证明它的期望搜索量$c_i$. 优先级可用$\Delta_i/c_i$. 实际概率未知,由prover采样成功率与价值模型估计. 易证但无用lemma的$c$低、$\Delta$近零;关键但极难lemma可能比直接证主目标更贵. Oracle reference proof中的lemma未必是模型最优路线. 训练应保留多种分解,让模型学习选择.
 
-若某节点失败,可替换lemma而非重做全图. 分解带来的主要收益是局部可修复性与条件复用,不只是proof变短.
+局部目标仍失败时可再次分解,形成递归树. 深度过大产生大量接口lemma与上下文,规划误差累积. 停止条件可基于局部prover成功率、目标长度、剩余预算与分解置信. 无限制递归会把难题变成更多同样难的题. 每层都需保证依赖无环与statement忠实. 自动命名和namespace管理避免冲突. 局部proof成功后,组合器把lemma插入主theorem. Lean会重新elaborate全部依赖,捕获局部环境差异. 若局部proof在更强context下完成,搬到主context可能缺实例或notation. 训练数据应保存完整imports与local context.
 
+组合失败可返回最小缺失依赖,让planner修订图. 简单文本拼接不够. 草图质量难由kernel直接奖励,只有最终proof间接反馈. 一致性奖励约束结构,不评价数学启发是否好. 可从成功formal proof抽取依赖图,再让模型生成对应自然语言说明,构造反向监督. 自动tactic隐藏的中间数学步骤可能难解释. 人工高质量草图少,蒸馏强模型是现实来源. 教师错误会被kernel组合过滤一部分. 交互搜索需把Lean内部目标转成模型文本. Pretty printer的隐式参数、类型别名与变量名会影响模型理解.
 
-定义lemma价值为加入前提前后目标成功概率差$\Delta_i=P(goal\mid\Gamma+v_i)-P(goal\mid\Gamma)$,成本为证明它的期望搜索量$c_i$. 优先级可用$\Delta_i/c_i$.
+过度展开使上下文冗长,隐藏太多又缺信息. 规范化格式应保留局部hypothesis类型、目标、namespace和可用lemma提示. 变量重命名增强能测试模型是否依赖表面名字. State格式版本需锁定以复现. 错误消息可分未知标识符、类型不匹配、未闭合目标、tactic超时等. 分类后给不同修复prompt,比统一“请修正”有效. 未知lemma先检索,类型错误展示expected/actual,未闭合目标返回剩余goals,超时要求换低复杂度路线. 修复轮次应设上限与循环检测. 同一错误重复出现时重新规划.
 
-实际概率未知,由prover采样成功率与价值模型估计. 易证但无用lemma的$c$低、$\Delta$近零;关键但极难lemma可能比直接证主目标更贵.
+短错误proof在解析阶段快速失败,接近正确的长proof可能消耗更多elaboration. Kernel调用成本分布重尾. 搜索预算按候选数会低估慢proof. 应用CPU秒、内存与超时计成本,并缓存相同前缀编译. 并行过高会争用磁盘、内存与Mathlib缓存,吞吐非线性. Benchmark需说明硬件与并发. 同一数学题可用Nat、Int、Rat、Real或抽象结构表达,难度差异巨大. 类型转换与强制转换常占proof大部. Formalizer选择过具体类型可能简化,也可能偏离原题一般性;过抽象需要高级typeclass与library知识.
 
-Oracle reference proof中的lemma未必是模型最优路线. 训练应保留多种分解,让模型学习选择.
+忠实性评审要看量词和域,不能只比最终公式表面. Lean环境可能包含classical choice、propext等标准公理,它们在Mathlib中通常接受. 自定义axiom或`False`公理不可信. `#print axioms theoremName`列出依赖,但通过opaque定义或外部代码的可信边界还需检查. 项目应维护允许列表. 不同基准对classical公理政策可能不同,排名需统一. `native_decide`、`norm_num`等把证明转为可信或半可信计算. 它们能极大缩短有限命题proof,依赖实现与kernel反射机制.
 
+若外部native代码不在kernel可信基内,需按基准规则决定是否允许. 禁用所有计算反射会不公平地增加proof难度. 评测应公开tactic白名单与安全假设,而非只说编译通过. 同一正确proof在较低资源限额下超时会记失败. 成功率包含模型能力与验证资源策略. 按proof长度或tactic类型动态超时可能提高召回,也给昂贵自动化更多预算. 公平比较使用统一CPU时间. 超时候选可在更高预算复验,区分错误与资源不足.
 
-局部目标仍失败时可再次分解,形成递归树. 深度过大产生大量接口lemma与上下文,规划误差累积.
+定理变量重命名、lemma包装和等价statement可能造成数据重复. 文本哈希不足,可规范化表达式、去除名字并做结构哈希. Proof term也可有大量语法不同但归约相同的版本. 完全判等昂贵,用tactic骨架与依赖lemma集合近似. 训练/测试污染检查需同时对statement和proof检索近邻. 编译失败proof包含丰富错误. 直接SFT可能教错误,可转成“失败proof—错误消息—修复proof”数据. 若同题有成功与失败候选,偏好训练让模型提高成功proof相对概率. 失败类型不同,权重可按接近程度设置.
 
-停止条件可基于局部prover成功率、目标长度、剩余预算与分解置信. 无限制递归会把难题变成更多同样难的题.
-
-每层都需保证依赖无环与statement忠实. 自动命名和namespace管理避免冲突.
-
-
-局部proof成功后,组合器把lemma插入主theorem. Lean会重新elaborate全部依赖,捕获局部环境差异.
-
-若局部proof在更强context下完成,搬到主context可能缺实例或notation. 训练数据应保存完整imports与local context.
-
-组合失败可返回最小缺失依赖,让planner修订图. 简单文本拼接不够.
-
-
-草图质量难由kernel直接奖励,只有最终proof间接反馈. 一致性奖励约束结构,不评价数学启发是否好.
-
-可从成功formal proof抽取依赖图,再让模型生成对应自然语言说明,构造反向监督. 自动tactic隐藏的中间数学步骤可能难解释.
-
-人工高质量草图少,蒸馏强模型是现实来源. 教师错误会被kernel组合过滤一部分.
-
-
-交互搜索需把Lean内部目标转成模型文本. Pretty printer的隐式参数、类型别名与变量名会影响模型理解.
-
-过度展开使上下文冗长,隐藏太多又缺信息. 规范化格式应保留局部hypothesis类型、目标、namespace和可用lemma提示.
-
-变量重命名增强能测试模型是否依赖表面名字. State格式版本需锁定以复现.
-
-
-错误消息可分未知标识符、类型不匹配、未闭合目标、tactic超时等. 分类后给不同修复prompt,比统一“请修正”有效.
-
-未知lemma先检索,类型错误展示expected/actual,未闭合目标返回剩余goals,超时要求换低复杂度路线.
-
-修复轮次应设上限与循环检测. 同一错误重复出现时重新规划.
-
-
-短错误proof在解析阶段快速失败,接近正确的长proof可能消耗更多elaboration. Kernel调用成本分布重尾.
-
-搜索预算按候选数会低估慢proof. 应用CPU秒、内存与超时计成本,并缓存相同前缀编译.
-
-并行过高会争用磁盘、内存与Mathlib缓存,吞吐非线性. Benchmark需说明硬件与并发.
-
-
-同一数学题可用Nat、Int、Rat、Real或抽象结构表达,难度差异巨大. 类型转换与强制转换常占proof大部.
-
-Formalizer选择过具体类型可能简化,也可能偏离原题一般性;过抽象需要高级typeclass与library知识.
-
-忠实性评审要看量词和域,不能只比最终公式表面.
-
-
-Lean环境可能包含classical choice、propext等标准公理,它们在Mathlib中通常接受. 自定义axiom或`False`公理不可信.
-
-`#print axioms theoremName`列出依赖,但通过opaque定义或外部代码的可信边界还需检查. 项目应维护允许列表.
-
-不同基准对classical公理政策可能不同,排名需统一.
-
-
-`native_decide`、`norm_num`等把证明转为可信或半可信计算. 它们能极大缩短有限命题proof,依赖实现与kernel反射机制.
-
-若外部native代码不在kernel可信基内,需按基准规则决定是否允许. 禁用所有计算反射会不公平地增加proof难度.
-
-评测应公开tactic白名单与安全假设,而非只说编译通过.
-
-
-同一正确proof在较低资源限额下超时会记失败. 成功率包含模型能力与验证资源策略.
-
-按proof长度或tactic类型动态超时可能提高召回,也给昂贵自动化更多预算. 公平比较使用统一CPU时间.
-
-超时候选可在更高预算复验,区分错误与资源不足.
-
-
-定理变量重命名、lemma包装和等价statement可能造成数据重复. 文本哈希不足,可规范化表达式、去除名字并做结构哈希.
-
-Proof term也可有大量语法不同但归约相同的版本. 完全判等昂贵,用tactic骨架与依赖lemma集合近似.
-
-训练/测试污染检查需同时对statement和proof检索近邻.
-
-
-编译失败proof包含丰富错误. 直接SFT可能教错误,可转成“失败proof—错误消息—修复proof”数据.
-
-若同题有成功与失败候选,偏好训练让模型提高成功proof相对概率. 失败类型不同,权重可按接近程度设置.
-
-没有成功配对的难题仍可训练错误诊断,不能提供最终路线.
-
-
-只差一个类型转换或lemma参数的proof是难负例,比完全乱码更能训练精确性. Kernel错误位置提供挖掘方式.
-
-奖励模型若区分接近成功,需避免把“几乎正确”当可接受终局. 稠密信号只用于优化,最终仍以kernel二值为准.
+没有成功配对的难题仍可训练错误诊断,不能提供最终路线. 只差一个类型转换或lemma参数的proof是难负例,比完全乱码更能训练精确性. Kernel错误位置提供挖掘方式. 奖励模型若区分接近成功,需避免把“几乎正确”当可接受终局. 稠密信号只用于优化,最终仍以kernel二值为准.
 
 ## 7. 搜索策略、奖励归因与预算分配
 
 ### 搜索树宽度与深度
 
-固定预算$B=wd$,宽度$w$探索路线,深度$d$完成长proof. 宽度大适合多路线不确定,深度大适合路线明确但步骤多.
+固定预算$B=wd$,宽度$w$探索路线,深度$d$完成长proof. 宽度大适合多路线不确定,深度大适合路线明确但步骤多. 价值模型可动态分配. 高熵state扩宽,高置信路线加深. Whole-proof采样相当于每条独立深路径,不共享节点. 公平比较需计共享前缀节省的生成与Lean调用. MCTS需要动作先验、value和可重复state transition.Lean tactic执行确定,适合树搜索;动作空间是开放文本,分支巨大. 模型生成候选tactic缩小动作,错误候选快速被Lean拒绝. Value训练受搜索策略偏置,未探索节点标签未知.
 
-价值模型可动态分配. 高熵state扩宽,高置信路线加深. Whole-proof采样相当于每条独立深路径,不共享节点.
+DeepSeek-Prover-V2未公开完整MCTS,只能视为后续方向. AlphaProof式系统结合形式问题生成、RL与搜索,强调大规模test-time compute.Prover-V2提供相似组件的一部分,训练与搜索细节不同. 不能由“扩展方向”推断已有同等系统能力. 比较应看公开kernel调用、搜索算法与数据生成规模. RL若迅速降低输出熵,成功路线被强化,探索新proof减少. KL与温度维持多样性. 按proof骨架计算熵比token熵更有意义. 大量措辞变化不代表数学路线多样.
 
-公平比较需计共享前缀节省的生成与Lean调用.
+过高熵造成syntax失败. 冷启动SFT建立结构,RL在结构内探索. Kernel成功只在序列末端返回. 将奖励均匀分给所有token会强化无关CoT措辞与冗余步骤. 成功与失败候选共享前缀时,分叉后token更有因果信息. Prefix比较或树搜索可局部归因. 一致性奖励早期提供结构归因,后期取消避免模板固化. 目标包含Lean成功、自然语言规划、一致性、简洁与安全. 加权和容易让可读性抵消正确性,Kernel成功应是硬门槛.
 
+先筛成功proof,再按长度或风格排序,形成词典序目标. RL奖励可给成功大常数、次级小权重. 简洁奖励需防漏洞和高成本自动tactic. 7B与671B单样本差距小、大采样差距扩大,说明大模型成功分布尾部更厚或候选相关更低. 模型规模提高世界知识、规划与library记忆,每token成本大增. 级联按题难选择最经济. 比较应按等算力Pass,不仅等样本. 小模型多采样可能胜大模型少采样.
 
-MCTS需要动作先验、value和可重复state transition.Lean tactic执行确定,适合树搜索;动作空间是开放文本,分支巨大.
+第一层7B non-CoT少量候选,第二层7B CoT,第三层671B,第四层显式分解与搜索. 每层只处理前层失败题. 若各层成本$c_i$、条件成功率$p_i$,平均成本$C=c_1+(1-p_1)c_2+(1-p_1)(1-p_2)c_3+\cdots$. 级联阈值由错误成本和延迟决定. 离线证明可高预算,在线IDE需低延迟. 代数自动化丰富,抽象代数、拓扑与分析需要更多定义和library导航. 总模型规模无法替代领域数据. 按领域构建子目标curriculum,从教材lemma到综合定理. 少样本领域成绩方差大,需扩充隐藏测试.
 
-模型生成候选tactic缩小动作,错误候选快速被Lean拒绝. Value训练受搜索策略偏置,未探索节点标签未知.
-
-DeepSeek-Prover-V2未公开完整MCTS,只能视为后续方向.
-
-
-AlphaProof式系统结合形式问题生成、RL与搜索,强调大规模test-time compute.Prover-V2提供相似组件的一部分,训练与搜索细节不同.
-
-不能由“扩展方向”推断已有同等系统能力. 比较应看公开kernel调用、搜索算法与数据生成规模.
-
-
-RL若迅速降低输出熵,成功路线被强化,探索新proof减少. KL与温度维持多样性.
-
-按proof骨架计算熵比token熵更有意义. 大量措辞变化不代表数学路线多样.
-
-过高熵造成syntax失败. 冷启动SFT建立结构,RL在结构内探索.
-
-
-Kernel成功只在序列末端返回. 将奖励均匀分给所有token会强化无关CoT措辞与冗余步骤.
-
-成功与失败候选共享前缀时,分叉后token更有因果信息. Prefix比较或树搜索可局部归因.
-
-一致性奖励早期提供结构归因,后期取消避免模板固化.
-
-
-目标包含Lean成功、自然语言规划、一致性、简洁与安全. 加权和容易让可读性抵消正确性,Kernel成功应是硬门槛.
-
-先筛成功proof,再按长度或风格排序,形成词典序目标. RL奖励可给成功大常数、次级小权重.
-
-简洁奖励需防漏洞和高成本自动tactic.
-
-
-7B与671B单样本差距小、大采样差距扩大,说明大模型成功分布尾部更厚或候选相关更低.
-
-模型规模提高世界知识、规划与library记忆,每token成本大增. 级联按题难选择最经济.
-
-比较应按等算力Pass,不仅等样本. 小模型多采样可能胜大模型少采样.
-
-
-第一层7B non-CoT少量候选,第二层7B CoT,第三层671B,第四层显式分解与搜索. 每层只处理前层失败题.
-
-若各层成本$c_i$、条件成功率$p_i$,平均成本$C=c_1+(1-p_1)c_2+(1-p_1)(1-p_2)c_3+\cdots$.
-
-级联阈值由错误成本和延迟决定. 离线证明可高预算,在线IDE需低延迟.
-
-
-代数自动化丰富,抽象代数、拓扑与分析需要更多定义和library导航. 总模型规模无法替代领域数据.
-
-按领域构建子目标curriculum,从教材lemma到综合定理. 少样本领域成绩方差大,需扩充隐藏测试.
-
-新领域的formalizer质量也更低,statement错误与prover错误混杂.
-
-
-自然语言草图可用不同语言,Lean接口相同. 数学术语翻译与变量描述会影响分解.
-
-多语言题到统一Lean statement能测试形式推理是否跨语言. 若statement已给定,自然语言差异被移除.
+新领域的formalizer质量也更低,statement错误与prover错误混杂. 自然语言草图可用不同语言,Lean接口相同. 数学术语翻译与变量描述会影响分解. 多语言题到统一Lean statement能测试形式推理是否跨语言. 若statement已给定,自然语言差异被移除.
 
 ## 8. 证明类型、迁移与鲁棒性
 
 ### 归纳证明
 
-归纳需要选择变量、归纳假设与generalization. 错误选择会让局部goal不可解,适合planner能力测试.
+归纳需要选择变量、归纳假设与generalization. 错误选择会让局部goal不可解,适合planner能力测试. 子目标分解可把base与step分开,Lean tactic state本身已提供结构. 自动`induction`候选仍需搜索. 递归定义与termination增加工程难度,benchmark短题覆盖有限. 存在目标需构造witness再证明性质. Planner可先自然语言求witness,局部prover验证. 给定答案的AIME类似已提供witness. 只证明存在而不输出可解释witness,Lean term仍包含构造或使用经典选择. 审计axiom决定计算意义.
 
-子目标分解可把base与step分开,Lean tactic state本身已提供结构. 自动`induction`候选仍需搜索.
+`ring`,`linarith`,`norm_num`处理标准代数,模型主要负责把目标转成tactic可接受形式. Benchmark高分部分来自成熟自动化. 禁用自动tactic会测不同能力,不能与原成绩直接比较. 真实使用允许复用可靠库是合理的. Mathlib更新可能重命名lemma、改变simp集合与类型推断. 固定proof在新版本失效并不代表数学错误. 发布模型应注明commit,评测容器锁定依赖. 迁移工具可根据deprecation提示修复. 依赖大量`simp`隐式lemma的proof对库变化敏感. 显式引用更长但稳定. 最短proof与可维护proof目标不同.
 
-递归定义与termination增加工程难度,benchmark短题覆盖有限.
+可在多个Mathlib近邻版本重编译,测鲁棒率. Benchmark通常只看单版本. 模型提出草图与局部proof,人类检查statement、关键lemma与库选择. Lean负责机械正确性. 三者分工比完全自动更现实. IDE中应展示剩余goals、依赖axiom和不确定分解,方便人修改. 单纯返回长proof难审阅. 自然语言CoT与Lean proof并存可帮助学习者看到非形式路线和形式细节. 两者不一致时会误导,需显式对齐. 自动tactic隐藏步骤,教学场景可要求展开关键lemma. 这与最短验证proof目标不同.
 
+形式证明工具可能执行生成代码与tactic,必须沙箱. 对仓库写权限、网络和进程限制与代码agent相同重要. 不可信proof文本即使最终kernel检查,elaborator和插件也可能存在漏洞. 最小环境减少攻击面. 命题一:分解稠密化奖励. 等总预算下,局部验证应提高难题成功并减少整段重复. 命题二:自然语言草图提供规划. Oracle草图与无草图差距应显著,随机草图应无益或有害. 命题三:一致性奖励改善接口. 移除后CoT与`have`对应下降,最终pass是否下降需实测.
 
-存在目标需构造witness再证明性质. Planner可先自然语言求witness,局部prover验证. 给定答案的AIME类似已提供witness.
+命题四:大模型优势来自路线尾部. Proof骨架多样性与成功覆盖应高于7B. 命题五:漏洞来自evaluator. 修复环境后相关proof应失效,正常proof保持. 某题7B单样本成功0.002,独立8192样本Pass约$1-e^{-16.4}$接近1,实际若只82%,说明独立假设严重失效或题间成功率异质. 对整体82%不能反推统一$p$:易题$p$高,难题$p=0$. 增加样本只改善中间题,结构性不可解题形成平台. 按题估计早期成功率并预测后续边际,可自适应停止.
 
-只证明存在而不输出可解释witness,Lean term仍包含构造或使用经典选择. 审计axiom决定计算意义.
+原题完整proof采样1024条,每条3000token,共307万token. 分解为8个lemma,每个采64条500token,共25.6万,加草图与组合约数万. 若每lemma成功率0.9,八个全成功约43%;允许每个多轮重分解可提高. 成本优势大,组合概率仍是挑战. 复用lemma到多题会进一步摊薄. 一次性过度分解则不值. 模型成绩验收分statement正确率、单样本pass、Pass曲线、token与kernel成本、漏洞率和逐领域结果. 系统验收分沙箱、依赖锁定、axiom扫描、超时、缓存和可复现. 数据验收分去重、污染、子目标组合与教师错误.
 
-
-`ring`,`linarith`,`norm_num`处理标准代数,模型主要负责把目标转成tactic可接受形式. Benchmark高分部分来自成熟自动化.
-
-禁用自动tactic会测不同能力,不能与原成绩直接比较. 真实使用允许复用可靠库是合理的.
-
-
-Mathlib更新可能重命名lemma、改变simp集合与类型推断. 固定proof在新版本失效并不代表数学错误.
-
-发布模型应注明commit,评测容器锁定依赖. 迁移工具可根据deprecation提示修复.
-
-
-依赖大量`simp`隐式lemma的proof对库变化敏感. 显式引用更长但稳定. 最短proof与可维护proof目标不同.
-
-可在多个Mathlib近邻版本重编译,测鲁棒率. Benchmark通常只看单版本.
-
-
-模型提出草图与局部proof,人类检查statement、关键lemma与库选择. Lean负责机械正确性. 三者分工比完全自动更现实.
-
-IDE中应展示剩余goals、依赖axiom和不确定分解,方便人修改. 单纯返回长proof难审阅.
-
-
-自然语言CoT与Lean proof并存可帮助学习者看到非形式路线和形式细节. 两者不一致时会误导,需显式对齐.
-
-自动tactic隐藏步骤,教学场景可要求展开关键lemma. 这与最短验证proof目标不同.
-
-
-形式证明工具可能执行生成代码与tactic,必须沙箱. 对仓库写权限、网络和进程限制与代码agent相同重要.
-
-不可信proof文本即使最终kernel检查,elaborator和插件也可能存在漏洞. 最小环境减少攻击面.
-
-
-命题一:分解稠密化奖励. 等总预算下,局部验证应提高难题成功并减少整段重复.
-
-命题二:自然语言草图提供规划. Oracle草图与无草图差距应显著,随机草图应无益或有害.
-
-命题三:一致性奖励改善接口. 移除后CoT与`have`对应下降,最终pass是否下降需实测.
-
-命题四:大模型优势来自路线尾部. Proof骨架多样性与成功覆盖应高于7B.
-
-命题五:漏洞来自evaluator. 修复环境后相关proof应失效,正常proof保持.
-
-
-某题7B单样本成功0.002,独立8192样本Pass约$1-e^{-16.4}$接近1,实际若只82%,说明独立假设严重失效或题间成功率异质.
-
-对整体82%不能反推统一$p$:易题$p$高,难题$p=0$. 增加样本只改善中间题,结构性不可解题形成平台.
-
-按题估计早期成功率并预测后续边际,可自适应停止.
-
-
-原题完整proof采样1024条,每条3000token,共307万token. 分解为8个lemma,每个采64条500token,共25.6万,加草图与组合约数万.
-
-若每lemma成功率0.9,八个全成功约43%;允许每个多轮重分解可提高. 成本优势大,组合概率仍是挑战.
-
-复用lemma到多题会进一步摊薄. 一次性过度分解则不值.
-
-
-模型成绩验收分statement正确率、单样本pass、Pass曲线、token与kernel成本、漏洞率和逐领域结果.
-
-系统验收分沙箱、依赖锁定、axiom扫描、超时、缓存和可复现. 数据验收分去重、污染、子目标组合与教师错误.
-
-只有statement忠实且可信环境编译通过的proof计为数学成功. 其他指标用于定位能力和成本,不能替代这一硬条件.
-
-
-DeepSeek-Prover-V2最关键的贡献是把自然语言规划和Lean局部验证接成可扩展训练数据管线. 大模型提出结构,小模型寻找局部证据,kernel筛选,RL把能力重新压回统一模型.
-
-子目标分解缓解整段二值奖励,没有消除规划错误、library缺口与组合依赖. 大规模采样提高覆盖,相关失败与结构性难题让曲线平台.
-
-形式验证给出比自然语言judge更硬的终局信号,可信范围严格受statement和环境限定. 对这些边界保持审计,才是“证明通过”的完整含义.
+只有statement忠实且可信环境编译通过的proof计为数学成功. 其他指标用于定位能力和成本,不能替代这一硬条件. DeepSeek-Prover-V2最关键的贡献是把自然语言规划和Lean局部验证接成可扩展训练数据管线. 大模型提出结构,小模型寻找局部证据,kernel筛选,RL把能力重新压回统一模型. 子目标分解缓解整段二值奖励,没有消除规划错误、library缺口与组合依赖. 大规模采样提高覆盖,相关失败与结构性难题让曲线平台. 形式验证给出比自然语言judge更硬的终局信号,可信范围严格受statement和环境限定. 对这些边界保持审计,才是“证明通过”的完整含义.
 
 ## 9. 联合概率、缓存与规划校准
 
@@ -789,98 +255,21 @@ $$
 P(\text{valid})=P(F=1)P(K=1\mid F=1).
 $$
 
-只报告$K$会把错误statement的易证性算作成功. Formalizer与prover误差相乘,任一环低都限制总体.
+只报告$K$会把错误statement的易证性算作成功. Formalizer与prover误差相乘,任一环低都限制总体. 给定人工statement的benchmark主要测第二项;从自然语言自动形式化的真实流程必须测两项. 让独立模型把Lean statement翻回自然语言,与原题做语义比较,可以发现量词、域和边界条件遗漏. 两个模型共享偏差时仍会漏错. 对有限域题可随机测试反例,对代数等式可符号验证,对一般高阶命题仍需人工. 工具验证覆盖面因题型不同. 双向一致高不等于严格等价,适合作筛查而非最终证明.
 
-给定人工statement的benchmark主要测第二项;从自然语言自动形式化的真实流程必须测两项.
+Planner生成lemma时,局部statement无需等价于自然语言句子,但必须可由原前提证明且足以服务主目标. 组合编译验证“足以服务”,无法验证是否偷偷引入额外假设. 每个lemma应在原context中声明,禁止新增axiom与未证明premise. 带前序premise版本需保证前序已经kernel通过. 独立lemma版本更通用,也更难. 两类数据应有明确标记,避免模型把局部假设误当全局事实. Tactic script经elaborator生成proof term,kernel检查term. 相同script在不同simp集合下可能生成不同term,环境版本很重要. 保存编译后的term或依赖信息可加强审计,体积更大. 公开文本proof便于复现,必须配套commit.
 
+模型生成term-style proof更明确,token长且类型细节多;生成tactic更短,依赖自动化. 相同goal state可能由不同路径到达,缓存已尝试tactic与结果能避免重复. Cache key包含环境、local context与资源限制. 失败缓存需区分确定类型错误和超时. 超时在更多资源下可能成功,不能永久记为不可行. 跨题共享lemma检索缓存可提高吞吐,不会改变数学成功定义. 训练集中常见代数、序列、整除lemma重复. 抽象出通用lemma后一次证明可服务多题,减少搜索.
 
-让独立模型把Lean statement翻回自然语言,与原题做语义比较,可以发现量词、域和边界条件遗漏. 两个模型共享偏差时仍会漏错.
+过度抽象增加类型参数与实例复杂度,模型反而难用. 最佳复用粒度由调用频率与证明难度决定. 统计成功proof依赖图中的高频子图,可构建课程与检索库. 模型生成的lemma名应唯一、可读且不与Mathlib冲突. 随机hash稳定但难读,语义名可能重复. 局部`have h1`简单,跨子proof组合需要映射. 名称本身不影响kernel,错误引用会导致elaboration失败. 规范化命名减少表面多样性,有助数据去重.
 
-对有限域题可随机测试反例,对代数等式可符号验证,对一般高阶命题仍需人工. 工具验证覆盖面因题型不同.
+局部目标带入所有前序lemma会使上下文膨胀、检索噪声增加. 依赖分析只保留实际需要的前提,能缩短prompt. 训练时从成功proof提取used constants近似最小依赖. Tactic自动化可能隐式使用大量simp lemma,完整追踪较难. Context删得过多会让proof失败,可逐步恢复前提. 同题采样多个草图,各自构建lemma图. 先用廉价模型估局部可证性,选择预期成本低的计划. 草图文本不同可能对应同一依赖图,应按lemma语义聚类. 多样性重点是数学路线.
 
-双向一致高不等于严格等价,适合作筛查而非最终证明.
+在一个计划上投入8192候选前,切换几个独立计划通常更能降低相关失败. 计划分数可综合lemma数量、估计成功率、依赖深度、library匹配和组合复杂度. 简单按语言模型概率偏好常见措辞,未必可证明. 从历史搜索数据训练value,标签是最终成本或成功. 选择偏差来自只执行高分计划,需保留探索. Oracle reference路线可监督,可能不是模型或当前library的最低成本路线. 局部prover给候选log概率,高概率proof不一定能编译. 按概率分桶测成功率,用于预算分配.
 
+不同goal类型校准不同. `simp`类目标高置信,抽象存在性目标低. 分领域或错误类型建模更准. 校准后可预测达到目标成功率所需样本,提前停止易节点. 一个lemma连续失败可能因为太难、statement错或library缺失. 仅继续采样会浪费. 根据错误分布决定动作. 大多syntax失败说明模型接口问题;大量合法但未闭合说明数学难;unknown identifier说明检索;一致超时说明tactic成本. 再分解前保留失败轨迹中的已验证局部事实,避免从零开始.
 
-Planner生成lemma时,局部statement无需等价于自然语言句子,但必须可由原前提证明且足以服务主目标. 组合编译验证“足以服务”,无法验证是否偷偷引入额外假设.
-
-每个lemma应在原context中声明,禁止新增axiom与未证明premise. 带前序premise版本需保证前序已经kernel通过.
-
-独立lemma版本更通用,也更难. 两类数据应有明确标记,避免模型把局部假设误当全局事实.
-
-
-Tactic script经elaborator生成proof term,kernel检查term. 相同script在不同simp集合下可能生成不同term,环境版本很重要.
-
-保存编译后的term或依赖信息可加强审计,体积更大. 公开文本proof便于复现,必须配套commit.
-
-模型生成term-style proof更明确,token长且类型细节多;生成tactic更短,依赖自动化.
-
-
-相同goal state可能由不同路径到达,缓存已尝试tactic与结果能避免重复. Cache key包含环境、local context与资源限制.
-
-失败缓存需区分确定类型错误和超时. 超时在更多资源下可能成功,不能永久记为不可行.
-
-跨题共享lemma检索缓存可提高吞吐,不会改变数学成功定义.
-
-
-训练集中常见代数、序列、整除lemma重复. 抽象出通用lemma后一次证明可服务多题,减少搜索.
-
-过度抽象增加类型参数与实例复杂度,模型反而难用. 最佳复用粒度由调用频率与证明难度决定.
-
-统计成功proof依赖图中的高频子图,可构建课程与检索库.
-
-
-模型生成的lemma名应唯一、可读且不与Mathlib冲突. 随机hash稳定但难读,语义名可能重复.
-
-局部`have h1`简单,跨子proof组合需要映射. 名称本身不影响kernel,错误引用会导致elaboration失败.
-
-规范化命名减少表面多样性,有助数据去重.
-
-
-局部目标带入所有前序lemma会使上下文膨胀、检索噪声增加. 依赖分析只保留实际需要的前提,能缩短prompt.
-
-训练时从成功proof提取used constants近似最小依赖. Tactic自动化可能隐式使用大量simp lemma,完整追踪较难.
-
-Context删得过多会让proof失败,可逐步恢复前提.
-
-
-同题采样多个草图,各自构建lemma图. 先用廉价模型估局部可证性,选择预期成本低的计划.
-
-草图文本不同可能对应同一依赖图,应按lemma语义聚类. 多样性重点是数学路线.
-
-在一个计划上投入8192候选前,切换几个独立计划通常更能降低相关失败.
-
-
-计划分数可综合lemma数量、估计成功率、依赖深度、library匹配和组合复杂度. 简单按语言模型概率偏好常见措辞,未必可证明.
-
-从历史搜索数据训练value,标签是最终成本或成功. 选择偏差来自只执行高分计划,需保留探索.
-
-Oracle reference路线可监督,可能不是模型或当前library的最低成本路线.
-
-
-局部prover给候选log概率,高概率proof不一定能编译. 按概率分桶测成功率,用于预算分配.
-
-不同goal类型校准不同. `simp`类目标高置信,抽象存在性目标低. 分领域或错误类型建模更准.
-
-校准后可预测达到目标成功率所需样本,提前停止易节点.
-
-
-一个lemma连续失败可能因为太难、statement错或library缺失. 仅继续采样会浪费. 根据错误分布决定动作.
-
-大多syntax失败说明模型接口问题;大量合法但未闭合说明数学难;unknown identifier说明检索;一致超时说明tactic成本.
-
-再分解前保留失败轨迹中的已验证局部事实,避免从零开始.
-
-
-不同子proof可能使用同名局部变量、shadowing或不同implicit参数. 组合器需alpha-renaming并让Lean重新推断.
-
-Namespace与open声明影响解析. 每个片段独立成功,放入共同文件可能冲突.
-
-最安全是以AST或term组合,文本拼接简单但脆弱.
-
-
-数学路线错误即使语法完美也无法闭合;Lean错误可能在正确路线中出现. 二者需要不同训练反馈.
-
-让模型先用自然语言解释未闭合goal,再判断缺数学lemma还是类型转换. 分类准确性可人工抽样验证.
+不同子proof可能使用同名局部变量、shadowing或不同implicit参数. 组合器需alpha-renaming并让Lean重新推断. Namespace与open声明影响解析. 每个片段独立成功,放入共同文件可能冲突. 最安全是以AST或term组合,文本拼接简单但脆弱. 数学路线错误即使语法完美也无法闭合;Lean错误可能在正确路线中出现. 二者需要不同训练反馈. 让模型先用自然语言解释未闭合goal,再判断缺数学lemma还是类型转换. 分类准确性可人工抽样验证.
 
 错误分类器本身不影响最终kernel标准,用于提高搜索效率.
 
@@ -888,112 +277,23 @@ Namespace与open声明影响解析. 每个片段独立成功,放入共同文件�
 
 ### 定义展开
 
-很多Lean目标难在抽象定义未展开. `simp [def]`或`unfold`能暴露可解结构,过度展开产生巨大term.
+很多Lean目标难在抽象定义未展开. `simp [def]`或`unfold`能暴露可解结构,过度展开产生巨大term. 模型需学何时使用高层API、何时展开. Library检索应优先已有lemma,避免重复底层证明. 跨版本定义变化使展开proof脆弱. 抽象代数proof依赖类型类实例. 缺失实例、推断歧义和搜索超时常见. 错误消息可提示需要`letI`或显式参数. 模型记忆实例链有限,检索环境结构比数学文本更重要. ProverBench抽象领域可暴露这一点.
 
-模型需学何时使用高层API、何时展开. Library检索应优先已有lemma,避免重复底层证明.
+`simp`集合随imports与local attributes变化. 一个环境成功的proof移到另一个环境可能失败或循环. 显式`simp only`更稳定、文本更长. 数据可同时保留简短与稳健版本. 自动化超时应限制rewrite集合,防资源攻击. Kernel检查巨大term可能耗时或内存爆炸. 编译通过在高资源机器不代表适合部署. 记录term大小、最大归约深度与kernel时间. 对等proof优先资源稳定版本.
 
-跨版本定义变化使展开proof脆弱.
+对有限命题,失败前可枚举小实例找反例. 发现反例说明statement假或缺前提,继续证明无意义. 无反例不证明定理. 反例搜索是formalizer和planner的前置过滤. CombiBench矛盾前提还可做可满足性检查,有限化近似提供线索. 成功后删除lemma或tactic片段并重编译,得到更小proof,识别冗余CoT/结构. 最小化数据更清晰,可能丢失教学路线. 保留原始与最小版,分别服务规划学习和高效验证.
 
+所有发现的Cardinal、axiom、contradictory premise与异常tactic案例加入固定回归. 环境升级后逐一重验. 训练模型也要在回归集主动搜索,确认没有变体绕过. 漏洞安全不能由一次修复证明. 修正statement会改变题目难度与历史成绩. 每题需要版本、变更原因与旧proof兼容状态. 排行榜按版本冻结,新版本重新评测. 把invalid题静默替换会破坏可比性. 总成本含教师草图、7B局部采样、Lean验证、数据过滤、SFT和RL rollout. 只报最终RL GPU低估管线.
 
-抽象代数proof依赖类型类实例. 缺失实例、推断歧义和搜索超时常见. 错误消息可提示需要`letI`或显式参数.
+Lean验证主要用CPU,大规模并行需要大量编译缓存和存储. 生成与验证吞吐需匹配,否则一侧空闲. 成功样本成本应按领域和难度报告,易题平均会掩盖Putnam级成本. 设7B单位候选成本1,671B成本约$c$. 单样本成功$p_s,p_l$. 在预算$B$下比较$1-(1-p_s)^B$与$1-(1-p_l)^{B/c}$. 大模型只有当成功率提升超过成本差带来的样本减少才占优. 候选相关使实际公式更偏向路线多样的一方. 级联通过易题用小模型、难题用大模型接近两者优势.
 
-模型记忆实例链有限,检索环境结构比数学文本更重要. ProverBench抽象领域可暴露这一点.
+100题中60题7B前32样本可解,剩40题升级1024样本,其中20题解;剩20题交671B 256样本,解8题. 总成功88. 固定所有题7B 1024需102400候选;级联7B候选$60\times32+40\times1024=42880$,再加大模型5120. 在相似成功下节省大量小模型预算. 具体数字是假设,展示按早期信号分层的计算方式. Kernel二值奖励不偏好长度,策略梯度对长序列累计token更多,可能产生长度效应. 每token KL和序列reward尺度需要平衡. 除以长度会偏短proof,不除可能长proof梯度大. 比较成功率与proof长度分布,防模型用冗长CoT扩大更新.
 
+训练使用自然语言CoT帮助规划,部署可以只返回Lean proof或同时返回草图. 隐藏CoT不影响kernel检查. 公开CoT可能含错误解释,即使proof正确. 用户应以formal term为准,解释单独审阅. 自然语言规划需要路线多样,Lean语法需要稳定. 若解码框架允许,在进入code fence后降低温度. 分段温度改变训练分布,应在验证集调. 停止标记识别失败会让设置错位. 一个模型formalize,一个planner,一个prover,一个critic可降低单点偏差,成本高且接口错误增加.
 
-`simp`集合随imports与local attributes变化. 一个环境成功的proof移到另一个环境可能失败或循环.
+统一模型部署简单,多模型管线在数据生成期更适合. Prover-V2正体现这种训练期协作、推理期统一. 不可能人工核对所有statement,可按高pass低可信、漏洞pattern、新领域和异常短proof优先抽样. 审计结果回流formalizer与过滤器. 只抽随机样本会错过稀有严重漏洞. 若子目标真正降低搜索,等成功率下kernel调用与token应下降;若只增加数据,成本可能上升. 若CoT提供规划,长难题收益应高于短自动化题;短题同样大涨可能来自额外参数行为.
 
-显式`simp only`更稳定、文本更长. 数据可同时保留简短与稳健版本.
-
-自动化超时应限制rewrite集合,防资源攻击.
-
-
-Kernel检查巨大term可能耗时或内存爆炸. 编译通过在高资源机器不代表适合部署.
-
-记录term大小、最大归约深度与kernel时间. 对等proof优先资源稳定版本.
-
-
-对有限命题,失败前可枚举小实例找反例. 发现反例说明statement假或缺前提,继续证明无意义.
-
-无反例不证明定理. 反例搜索是formalizer和planner的前置过滤.
-
-CombiBench矛盾前提还可做可满足性检查,有限化近似提供线索.
-
-
-成功后删除lemma或tactic片段并重编译,得到更小proof,识别冗余CoT/结构. 最小化数据更清晰,可能丢失教学路线.
-
-保留原始与最小版,分别服务规划学习和高效验证.
-
-
-所有发现的Cardinal、axiom、contradictory premise与异常tactic案例加入固定回归. 环境升级后逐一重验.
-
-训练模型也要在回归集主动搜索,确认没有变体绕过. 漏洞安全不能由一次修复证明.
-
-
-修正statement会改变题目难度与历史成绩. 每题需要版本、变更原因与旧proof兼容状态.
-
-排行榜按版本冻结,新版本重新评测. 把invalid题静默替换会破坏可比性.
-
-
-总成本含教师草图、7B局部采样、Lean验证、数据过滤、SFT和RL rollout. 只报最终RL GPU低估管线.
-
-Lean验证主要用CPU,大规模并行需要大量编译缓存和存储. 生成与验证吞吐需匹配,否则一侧空闲.
-
-成功样本成本应按领域和难度报告,易题平均会掩盖Putnam级成本.
-
-
-设7B单位候选成本1,671B成本约$c$. 单样本成功$p_s,p_l$. 在预算$B$下比较$1-(1-p_s)^B$与$1-(1-p_l)^{B/c}$.
-
-大模型只有当成功率提升超过成本差带来的样本减少才占优. 候选相关使实际公式更偏向路线多样的一方.
-
-级联通过易题用小模型、难题用大模型接近两者优势.
-
-
-100题中60题7B前32样本可解,剩40题升级1024样本,其中20题解;剩20题交671B 256样本,解8题. 总成功88.
-
-固定所有题7B 1024需102400候选;级联7B候选$60\times32+40\times1024=42880$,再加大模型5120. 在相似成功下节省大量小模型预算.
-
-具体数字是假设,展示按早期信号分层的计算方式.
-
-
-Kernel二值奖励不偏好长度,策略梯度对长序列累计token更多,可能产生长度效应. 每token KL和序列reward尺度需要平衡.
-
-除以长度会偏短proof,不除可能长proof梯度大. 比较成功率与proof长度分布,防模型用冗长CoT扩大更新.
-
-
-训练使用自然语言CoT帮助规划,部署可以只返回Lean proof或同时返回草图. 隐藏CoT不影响kernel检查.
-
-公开CoT可能含错误解释,即使proof正确. 用户应以formal term为准,解释单独审阅.
-
-
-自然语言规划需要路线多样,Lean语法需要稳定. 若解码框架允许,在进入code fence后降低温度.
-
-分段温度改变训练分布,应在验证集调. 停止标记识别失败会让设置错位.
-
-
-一个模型formalize,一个planner,一个prover,一个critic可降低单点偏差,成本高且接口错误增加.
-
-统一模型部署简单,多模型管线在数据生成期更适合. Prover-V2正体现这种训练期协作、推理期统一.
-
-
-不可能人工核对所有statement,可按高pass低可信、漏洞pattern、新领域和异常短proof优先抽样.
-
-审计结果回流formalizer与过滤器. 只抽随机样本会错过稀有严重漏洞.
-
-
-若子目标真正降低搜索,等成功率下kernel调用与token应下降;若只增加数据,成本可能上升.
-
-若CoT提供规划,长难题收益应高于短自动化题;短题同样大涨可能来自额外参数行为.
-
-若大模型尾部更厚,proof骨架覆盖随样本增长应持续超过7B;若只是单样本更准,等算力未必优势.
-
-若形式验证边界清晰,修正statement与环境后所有异常高分应可解释,不能依赖人工印象.
-
-
-DeepSeek-Prover-V2的训练管线把难以直接优化的整段formal proof拆成规划、局部证明、组合和验证. 每个局部成功都能转成数据,再由统一模型吸收.
-
-概率上,分解把极低的整题联合成功转成多个可重试条件事件;系统上,7B承担高频局部搜索,大模型承担全局结构;逻辑上,Lean给出终局硬验证.
-
-剩余难点集中在statement忠实、抽象library导航、长proof搜索、候选相关和evaluator漏洞. 这些边界都有明确可测接口,也决定下一步应增加数据、改规划、接检索还是加强审计.
+若大模型尾部更厚,proof骨架覆盖随样本增长应持续超过7B;若只是单样本更准,等算力未必优势. 若形式验证边界清晰,修正statement与环境后所有异常高分应可解释,不能依赖人工印象. DeepSeek-Prover-V2的训练管线把难以直接优化的整段formal proof拆成规划、局部证明、组合和验证. 每个局部成功都能转成数据,再由统一模型吸收. 概率上,分解把极低的整题联合成功转成多个可重试条件事件;系统上,7B承担高频局部搜索,大模型承担全局结构;逻辑上,Lean给出终局硬验证. 剩余难点集中在statement忠实、抽象library导航、长proof搜索、候选相关和evaluator漏洞. 这些边界都有明确可测接口,也决定下一步应增加数据、改规划、接检索还是加强审计.
 
 ## 11. 预算效率、题族泛化与完整诊断
 
@@ -1005,91 +305,34 @@ $$
 N=1+b+b^2+\cdots+b^d=\frac{b^{d+1}-1}{b-1}.
 $$
 
-当 $b=8,d=12$ 时, 这个数已经超过 $7.8\times10^{10}$. 模型把平均候选从8压到3, 同样深度只需约80万个节点. 因而策略模型的价值不只体现在「第一条答案是否正确」, 更在于它能否把正确动作稳定推到前几名. Top-1准确率相差不大的两个模型, Top-8召回率和排序质量可能让搜索成本相差几个数量级.
-
-子目标分解还能降低有效深度. 一条40步证明若能拆成5段, 每段8步且段间接口正确, 局部搜索可以分别重启. 代价不再近似 $b^{40}$, 而接近 $5b^8$ 加上规划与拼接成本. 这个估算忽略了各段依赖, 却准确指出方法的杠杆来自哪里：压缩分支因子、缩短单次连续决策链, 并让失败局限在局部.
-
-
-Pass@k默认候选近似独立, 实际生成常围绕同一骨架做表面变体. 采样1024次若只有16种证明路线, 它提供的信息量远小于1024个独立候选. 可以用候选成功指示变量之间的平均相关系数 $\rho$ 粗略估算有效样本量：
+当 $b=8,d=12$ 时, 这个数已经超过 $7.8\times10^{10}$. 模型把平均候选从8压到3, 同样深度只需约80万个节点. 因而策略模型的价值不只体现在「第一条答案是否正确」, 更在于它能否把正确动作稳定推到前几名. Top-1准确率相差不大的两个模型, Top-8召回率和排序质量可能让搜索成本相差几个数量级. 子目标分解还能降低有效深度. 一条40步证明若能拆成5段, 每段8步且段间接口正确, 局部搜索可以分别重启. 代价不再近似 $b^{40}$, 而接近 $5b^8$ 加上规划与拼接成本. 这个估算忽略了各段依赖, 却准确指出方法的杠杆来自哪里：压缩分支因子、缩短单次连续决策链, 并让失败局限在局部. Pass@k默认候选近似独立, 实际生成常围绕同一骨架做表面变体. 采样1024次若只有16种证明路线, 它提供的信息量远小于1024个独立候选. 可以用候选成功指示变量之间的平均相关系数 $\rho$ 粗略估算有效样本量：
 
 $$
 k_{\mathrm{eff}}\approx\frac{k}{1+(k-1)\rho}.
 $$
 
-当 $k=256,\rho=0.1$ 时, $k_{\mathrm{eff}}$ 只有约9.7. 这个公式不是精确的生成模型定律, 但能解释为什么继续堆采样有时几乎不涨分. 温度调整、不同prompt、不同子目标草图、不同检查点和检索结果的作用, 都应从「是否增加证明骨架的覆盖」来判断.
+当 $k=256,\rho=0.1$ 时, $k_{\mathrm{eff}}$ 只有约9.7. 这个公式不是精确的生成模型定律, 但能解释为什么继续堆采样有时几乎不涨分. 温度调整、不同prompt、不同子目标草图、不同检查点和检索结果的作用, 都应从「是否增加证明骨架的覆盖」来判断. 骨架多样性可以把 tactic 序列归一化后聚类：忽略变量名、格式和无关的 `simp` 参数, 保留主要引理调用与归纳结构. 同一聚类里生成一百条近似proof, 对发现新路线的价值仍接近一条. 评测若同时报告原始候选数、骨架数和成功骨架数, 读者才能判断模型是在探索, 还是在反复改写同一种答案. 生成器每秒产生 $\lambda$ 个候选, Lean worker 每秒处理 $\mu$ 个候选. 当 $\lambda\geq\mu$ 时, 队列会持续增长, 端到端延迟由验证侧主导. 增加GPU采样并不会提高单位时间内确认的正确proof, 只会积累尚未编译的文本. 实际系统需要让总服务率 $m\mu$ 明显高于到达率, 其中 $m$ 是并行worker数.
 
-骨架多样性可以把 tactic 序列归一化后聚类：忽略变量名、格式和无关的 `simp` 参数, 保留主要引理调用与归纳结构. 同一聚类里生成一百条近似proof, 对发现新路线的价值仍接近一条. 评测若同时报告原始候选数、骨架数和成功骨架数, 读者才能判断模型是在探索, 还是在反复改写同一种答案.
-
-
-生成器每秒产生 $\lambda$ 个候选, Lean worker 每秒处理 $\mu$ 个候选. 当 $\lambda\geq\mu$ 时, 队列会持续增长, 端到端延迟由验证侧主导. 增加GPU采样并不会提高单位时间内确认的正确proof, 只会积累尚未编译的文本. 实际系统需要让总服务率 $m\mu$ 明显高于到达率, 其中 $m$ 是并行worker数.
-
-候选验证时间也不是常数. 语法错误通常很快失败, 大规模 `simp`、实例搜索或归约可能占满超时窗口. 因此调度器可先做轻量解析和静态过滤, 再把剩余候选送入完整内核. 对预计耗时长的候选设置独立队列, 可避免少量慢任务阻塞大批快速候选.
-
-缓存键必须包含 Lean 版本、mathlib提交、导入集合、编译选项与完整statement. 只按proof文本缓存会把不同环境中的结果误认为相同. 缓存命中提升吞吐, 环境指纹保证结论仍可复现.
-
-
-用 token 数或 tactic 数衡量难度很方便, 却会把「很长但机械」与「很短但需要关键洞察」混在一起. 更稳妥的难度信号至少包含基线成功率、平均验证次数、搜索深度、所需库知识稀有度和失败类型. 设这些归一化信号为 $x_i$, 可构造课程权重
+候选验证时间也不是常数. 语法错误通常很快失败, 大规模 `simp`、实例搜索或归约可能占满超时窗口. 因此调度器可先做轻量解析和静态过滤, 再把剩余候选送入完整内核. 对预计耗时长的候选设置独立队列, 可避免少量慢任务阻塞大批快速候选. 缓存键必须包含 Lean 版本、mathlib提交、导入集合、编译选项与完整statement. 只按proof文本缓存会把不同环境中的结果误认为相同. 缓存命中提升吞吐, 环境指纹保证结论仍可复现. 用 token 数或 tactic 数衡量难度很方便, 却会把「很长但机械」与「很短但需要关键洞察」混在一起. 更稳妥的难度信号至少包含基线成功率、平均验证次数、搜索深度、所需库知识稀有度和失败类型. 设这些归一化信号为 $x_i$, 可构造课程权重
 
 $$
 w=\sigma\!\left(\sum_i a_i x_i+c\right),
 $$
 
-再按训练阶段移动系数 $a_i$. 早期提高语法与常用引理题的权重, 中期增加组合推理, 后期把预算投向低成功但仍有可学习信号的题. 对成功率接近零且没有局部反馈的题盲目加权, 只会产生高方差梯度.
+再按训练阶段移动系数 $a_i$. 早期提高语法与常用引理题的权重, 中期增加组合推理, 后期把预算投向低成功但仍有可学习信号的题. 对成功率接近零且没有局部反馈的题盲目加权, 只会产生高方差梯度. 课程还要防止遗忘. 每一轮只追当前最难题, 基础语法和常见代数变换可能退化. 训练批次中保留一部分稳定回放集, 同时按新失败分布增添样本, 才能让能力边界向外扩张而不是左右摆动. 形式化数据中常有大量同源定理：同一母题更换常数、交换变量名、把结论写成等价形式, 就能产生多个样本. 随机切分容易让训练集和测试集共享证明模板, 模型只需识别表面结构. 更严格的做法按生成来源、定理依赖图或证明骨架分组, 整个题族只能落在一个集合中.
 
-课程还要防止遗忘. 每一轮只追当前最难题, 基础语法和常见代数变换可能退化. 训练批次中保留一部分稳定回放集, 同时按新失败分布增添样本, 才能让能力边界向外扩张而不是左右摆动.
+还可以做对抗式改名：同时更换局部变量、辅助引理和命名空间, 保持类型与逻辑结构不变. 若成绩大幅下降, 模型依赖了名称线索. 进一步改变可交换前提的顺序、替换等价定义、减少自动导入, 能分别测出其对文本模式、声明顺序和环境便利性的依赖. 真正的迁移应跨越证明表面. 例如训练阶段见过自然数上的归纳, 测试阶段需要在列表长度或有限集合基数上选择同一抽象结构. 模型若只背 tactic 模板会卡在对象变化处；理解归纳不变量的模型能够重新构造局部引理. 同一道自然语言题可以有多种形式化表达. 两个statement文本不同, 可能在给定环境中逻辑等价；文本相近, 也可能因量词范围或隐含条件不同而改变含义. 检查等价性时可以尝试双向证明 $A\to B$ 与 $B\to A$, 但这本身又是一项定理证明任务, 搜索失败无法说明二者不等价.
 
+有限域上的命题可借助可执行枚举寻找反例. 若找到满足 $A$ 不满足 $B$ 的输入, 差异就被具体定位. 无限对象需要人工检查量词、类型、边界条件和定义展开. 尤其要留意自然数减法截断、除零约定、实数与整数强制转换, 这些细节经常让直觉等价失效. 数据制作可以保存三层对象：自然语言原题、规范化数学表达、Lean statement. 审核者沿三层逐级比较, 比直接从中文跳到Lean更容易发现漏条件. 规范化表达仍不是权威证明, 它提供的是一处可读的对齐接口. 把编译错误交回模型反复修改, 很容易形成循环：补一个类型标注后触发实例冲突, 删除标注又回到原错误. 系统应保存规范化后的proof状态与错误类别, 若同一状态重复出现就终止该分支. 还可以限制单分支修复次数, 把预算转给新的证明骨架.
 
-形式化数据中常有大量同源定理：同一母题更换常数、交换变量名、把结论写成等价形式, 就能产生多个样本. 随机切分容易让训练集和测试集共享证明模板, 模型只需识别表面结构. 更严格的做法按生成来源、定理依赖图或证明骨架分组, 整个题族只能落在一个集合中.
+修复动作最好与错误距离对应. 语法错误只需局部编辑；未知标识符需要检索命名空间；目标与假设不匹配可能要求换引理；数学路线错误则应重新规划. 每次都重写全文会破坏已经通过的片段, 每次只改一行又无法跨越路线级错误. 错误分类器的任务就是选择合适的编辑半径. 定义某轮修复后通过验证的概率为 $p_t$, 平均成本为 $c_t$. 当边际成功增量 $(p_{t+1}-p_t)$ 已低于新开分支的单位成本收益, 继续修补就不划算. 这个停止规则可由历史日志估计, 不必固定为任意的三轮或五轮. 模型可以同时给出下一动作分布、整题可解概率和当前证明骨架的自评. 原始概率往往过度自信, 需在独立集上做温度缩放或分桶校准. 校准后, 低置信样本直接增加采样, 中等置信样本交给检索或大模型, 高置信样本先快速验证.
 
-还可以做对抗式改名：同时更换局部变量、辅助引理和命名空间, 保持类型与逻辑结构不变. 若成绩大幅下降, 模型依赖了名称线索. 进一步改变可交换前提的顺序、替换等价定义、减少自动导入, 能分别测出其对文本模式、声明顺序和环境便利性的依赖.
+置信度不能取代Lean. 它用于分配资源, 终局结论仍由内核决定. 一个常见的好信号是多个独立骨架都导向通过；一个常见的坏信号是大量候选共享同一未解决子目标. 后者即使语言模型给出高概率, 也应触发重新分解. 升级策略可写成期望收益：对动作 $a$ 估计成功增量 $\Delta p_a$ 与成本 $c_a$, 优先选择 $\Delta p_a/c_a$ 最大者. 动作包括继续采样、提高温度、换prompt、检索引理、重新规划、调用大模型和人工介入. 这样「何时用671B」从经验判断变成可记录、可回放的决策问题. 只有最终成功与否, 很难指导下一轮训练. 完整日志应记录每个状态的目标、局部上下文、候选动作、排序分数、编译结果、耗时、错误位置和父节点. 将失败按阶段聚合后, 可以区分规划器没提出关键引理、检索器没找到声明、策略选错tactic、生成器写坏语法以及验证器超时.
 
-真正的迁移应跨越证明表面. 例如训练阶段见过自然数上的归纳, 测试阶段需要在列表长度或有限集合基数上选择同一抽象结构. 模型若只背 tactic 模板会卡在对象变化处；理解归纳不变量的模型能够重新构造局部引理.
+若大量失败集中在「引理存在但未被召回」, 扩大模型参数未必有效, 应改检索与命名空间训练. 若候选引理正确但参数统一失败, 需要更多类型推断和项构造样本. 若局部子目标都能解却无法拼接, 问题落在接口设计与变量依赖. 同一个总分背后可能是完全不同的瓶颈. 日志也能发现虚假进步. 新模型的Pass@1提高, 但平均编译时间暴涨十倍, 在固定墙钟预算下反而解题更少. 因此实验表至少同时给出题级成功率、kernel调用数、生成token、CPU时间、GPU时间和峰值内存. 复现不要求复制整个训练集群, 但应能验证核心因果链. 一个最小版本可以选择公开Lean题集, 固定Lean与mathlib版本, 准备基础模型、直接整题SFT模型和加入子目标训练的模型. 三者用相同采样参数、同一验证队列和等墙钟预算评测.
 
+实验至少回答四件事：子目标模型的局部成功率是否更高；整题成功提升来自更多独立骨架还是单一路线重复；去掉自然语言规划后长题下降多少；按等算力而非等样本比较时优势是否仍在. 再抽取成功与失败各若干题, 展示真实proof状态迁移, 数字才有可解释的落点. 发布材料需包括环境锁文件、题目版本与哈希、推理prompt、解码参数、超时规则、缓存规则、去重方法和评分脚本. 随机种子只能控制部分采样, 并行调度与底层算子仍可能带来波动, 所以关键结果应重复多次并报告区间. DeepSeek-Prover-V2可以被压缩成一个循环：先把整题变成带接口的子目标图, 再让局部证明产生可验证反馈, 用这些反馈训练统一策略, 推理时按难度分配采样与验证预算. 它的关键进步在于把稀薄的整题成败信号拆得更密, 同时仍让Lean内核守住正确性的终点.
 
-同一道自然语言题可以有多种形式化表达. 两个statement文本不同, 可能在给定环境中逻辑等价；文本相近, 也可能因量词范围或隐含条件不同而改变含义. 检查等价性时可以尝试双向证明 $A\to B$ 与 $B\to A$, 但这本身又是一项定理证明任务, 搜索失败无法说明二者不等价.
+理解这套方法时, CoT长度提供的信息很少, 更关键的是三件可测的事：分解是否减少有效搜索深度, 候选是否覆盖更多真正不同的证明骨架, 通过的statement是否忠实表达原题. 前两项决定效率, 第三项决定成绩有没有意义. 沿着这三条线看后续工作也很清楚. 搜索侧要控制分支因子和候选相关, 数据侧要建立题族隔离与困难课程, 验证侧要提升吞吐并审计环境. 参数规模会继续影响上限, 但只有与分解、检索、验证和预算调度组合起来, 才会转化为可复现的形式推理能力. 面对失败样本, 先确认statement与环境可编译, 再检查自然语言条件是否完整进入形式命题. 随后查看规划中的每个子目标能否共同推出结论, 并确认后续子目标使用的变量与假设已经在前面合法引入. 这一步能提前排除漂亮却无法拼接的草图.
 
-有限域上的命题可借助可执行枚举寻找反例. 若找到满足 $A$ 不满足 $B$ 的输入, 差异就被具体定位. 无限对象需要人工检查量词、类型、边界条件和定义展开. 尤其要留意自然数减法截断、除零约定、实数与整数强制转换, 这些细节经常让直觉等价失效.
-
-数据制作可以保存三层对象：自然语言原题、规范化数学表达、Lean statement. 审核者沿三层逐级比较, 比直接从中文跳到Lean更容易发现漏条件. 规范化表达仍不是权威证明, 它提供的是一处可读的对齐接口.
-
-
-把编译错误交回模型反复修改, 很容易形成循环：补一个类型标注后触发实例冲突, 删除标注又回到原错误. 系统应保存规范化后的proof状态与错误类别, 若同一状态重复出现就终止该分支. 还可以限制单分支修复次数, 把预算转给新的证明骨架.
-
-修复动作最好与错误距离对应. 语法错误只需局部编辑；未知标识符需要检索命名空间；目标与假设不匹配可能要求换引理；数学路线错误则应重新规划. 每次都重写全文会破坏已经通过的片段, 每次只改一行又无法跨越路线级错误. 错误分类器的任务就是选择合适的编辑半径.
-
-定义某轮修复后通过验证的概率为 $p_t$, 平均成本为 $c_t$. 当边际成功增量 $(p_{t+1}-p_t)$ 已低于新开分支的单位成本收益, 继续修补就不划算. 这个停止规则可由历史日志估计, 不必固定为任意的三轮或五轮.
-
-
-模型可以同时给出下一动作分布、整题可解概率和当前证明骨架的自评. 原始概率往往过度自信, 需在独立集上做温度缩放或分桶校准. 校准后, 低置信样本直接增加采样, 中等置信样本交给检索或大模型, 高置信样本先快速验证.
-
-置信度不能取代Lean. 它用于分配资源, 终局结论仍由内核决定. 一个常见的好信号是多个独立骨架都导向通过；一个常见的坏信号是大量候选共享同一未解决子目标. 后者即使语言模型给出高概率, 也应触发重新分解.
-
-升级策略可写成期望收益：对动作 $a$ 估计成功增量 $\Delta p_a$ 与成本 $c_a$, 优先选择 $\Delta p_a/c_a$ 最大者. 动作包括继续采样、提高温度、换prompt、检索引理、重新规划、调用大模型和人工介入. 这样「何时用671B」从经验判断变成可记录、可回放的决策问题.
-
-
-只有最终成功与否, 很难指导下一轮训练. 完整日志应记录每个状态的目标、局部上下文、候选动作、排序分数、编译结果、耗时、错误位置和父节点. 将失败按阶段聚合后, 可以区分规划器没提出关键引理、检索器没找到声明、策略选错tactic、生成器写坏语法以及验证器超时.
-
-若大量失败集中在「引理存在但未被召回」, 扩大模型参数未必有效, 应改检索与命名空间训练. 若候选引理正确但参数统一失败, 需要更多类型推断和项构造样本. 若局部子目标都能解却无法拼接, 问题落在接口设计与变量依赖. 同一个总分背后可能是完全不同的瓶颈.
-
-日志也能发现虚假进步. 新模型的Pass@1提高, 但平均编译时间暴涨十倍, 在固定墙钟预算下反而解题更少. 因此实验表至少同时给出题级成功率、kernel调用数、生成token、CPU时间、GPU时间和峰值内存.
-
-
-复现不要求复制整个训练集群, 但应能验证核心因果链. 一个最小版本可以选择公开Lean题集, 固定Lean与mathlib版本, 准备基础模型、直接整题SFT模型和加入子目标训练的模型. 三者用相同采样参数、同一验证队列和等墙钟预算评测.
-
-实验至少回答四件事：子目标模型的局部成功率是否更高；整题成功提升来自更多独立骨架还是单一路线重复；去掉自然语言规划后长题下降多少；按等算力而非等样本比较时优势是否仍在. 再抽取成功与失败各若干题, 展示真实proof状态迁移, 数字才有可解释的落点.
-
-发布材料需包括环境锁文件、题目版本与哈希、推理prompt、解码参数、超时规则、缓存规则、去重方法和评分脚本. 随机种子只能控制部分采样, 并行调度与底层算子仍可能带来波动, 所以关键结果应重复多次并报告区间.
-
-
-DeepSeek-Prover-V2可以被压缩成一个循环：先把整题变成带接口的子目标图, 再让局部证明产生可验证反馈, 用这些反馈训练统一策略, 推理时按难度分配采样与验证预算. 它的关键进步在于把稀薄的整题成败信号拆得更密, 同时仍让Lean内核守住正确性的终点.
-
-理解这套方法时, CoT长度提供的信息很少, 更关键的是三件可测的事：分解是否减少有效搜索深度, 候选是否覆盖更多真正不同的证明骨架, 通过的statement是否忠实表达原题. 前两项决定效率, 第三项决定成绩有没有意义.
-
-沿着这三条线看后续工作也很清楚. 搜索侧要控制分支因子和候选相关, 数据侧要建立题族隔离与困难课程, 验证侧要提升吞吐并审计环境. 参数规模会继续影响上限, 但只有与分解、检索、验证和预算调度组合起来, 才会转化为可复现的形式推理能力.
-
-
-面对失败样本, 先确认statement与环境可编译, 再检查自然语言条件是否完整进入形式命题. 随后查看规划中的每个子目标能否共同推出结论, 并确认后续子目标使用的变量与假设已经在前面合法引入. 这一步能提前排除漂亮却无法拼接的草图.
-
-进入搜索日志后, 统计正确关键引理是否出现在候选中. 从未出现说明召回或知识不足；出现却排位过低说明策略排序有问题；排位靠前但无法应用通常涉及类型、参数或上下文处理；局部证明全部通过而整题失败, 则继续查命名、作用域和依赖接口. 每种症状对应不同训练材料, 混成一个「推理失败」标签会浪费数据.
-
-成功样本也要诊断. 检查proof是否依赖异常强的自动化、隐藏公理或偶然导入, 再删除无关步骤并在干净环境重编译. 若简化后仍稳定通过, 才适合进入高质量回放集. 这套顺序把一条最终分数拆成可修复的组件, 也是阅读形式推理论文实验表时最实用的检查框架.
+进入搜索日志后, 统计正确关键引理是否出现在候选中. 从未出现说明召回或知识不足；出现却排位过低说明策略排序有问题；排位靠前但无法应用通常涉及类型、参数或上下文处理；局部证明全部通过而整题失败, 则继续查命名、作用域和依赖接口. 每种症状对应不同训练材料, 混成一个「推理失败」标签会浪费数据. 成功样本也要诊断. 检查proof是否依赖异常强的自动化、隐藏公理或偶然导入, 再删除无关步骤并在干净环境重编译. 若简化后仍稳定通过, 才适合进入高质量回放集. 这套顺序把一条最终分数拆成可修复的组件, 也是阅读形式推理论文实验表时最实用的检查框架.
