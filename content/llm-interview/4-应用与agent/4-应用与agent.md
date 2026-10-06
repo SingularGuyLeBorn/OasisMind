@@ -27,16 +27,18 @@ tags: ["RAG", "Agent", "Function Calling", "MCP", "A2A", "安全"]
   → 检索/回答/端到端评测
 ```
 
-### 关键设计问题
+### 1.1. 关键设计问题
 
-1. **切分**:按标题,段落,语义或固定窗口切分;chunk 大小和 overlap 没有通用最优值,需要按文档结构,检索粒度和模型上下文验证.
+1. **切分**:按标题,段落,语义或固定窗口切分;chunk 大小和 overlap 没有通用最优值,
+
+需要按文档结构,检索粒度和模型上下文验证.
 2. **召回**:BM25 擅长词项匹配,稠密检索擅长语义匹配;混合检索需要归一化或融合排名,不能直接相加不同量纲分数.
 3. **重排**:cross-encoder,生成式重排或规则过滤能提高精度,但增加延迟和成本.
 4. **权限**:访问控制必须在检索和读取阶段落实,不能等生成后再过滤敏感文本.
 5. **新鲜度**:用版本,时间过滤,增量索引和失效策略管理;任意 `相似度×时间衰减` 公式都只是候选,需要实验校准.
 6. **引用**:保存来源 id,版本和片段位置;引用存在不等于答案被证据支持.
 
-### 评测至少分三层
+### 1.2. 评测至少分三层
 
 | 层 | 示例指标 | 主要问题 |
 |---|---|---|
@@ -65,11 +67,15 @@ RAG 可以改善模型获得相关证据的机会,但不保证消除幻觉或保
 
 Self-RAG,Corrective RAG 等论文提供了不同的检索/反思机制,但产品系统通常还要解决权限,索引更新,超时和观测问题.
 
-## 3. Function Calling 到底完成了哪一步?
+### 2.1. Function Calling 到底完成了哪一步?
+
+Function Calling 把模型输出约束为可解析的工具请求，但调用是否获准、是否成功以及结果能否提交为事实，仍由执行层和验证层决定。
 
 **短答案:** 模型根据工具描述和 schema 生成结构化的调用建议;真正的参数校验,授权,执行,重试和结果处理由宿主系统负责.模型输出了 JSON 不等于工具已经执行,更不等于执行安全.
 
-### 一条完整的执行路径
+### 2.2. 一条完整的执行路径
+
+完整路径包括参数校验、权限检查、幂等控制、实际执行、结果读取和状态提交。任何一步缺失，都可能把格式正确的调用误当成任务完成。
 
 ```text
 用户请求
@@ -83,7 +89,7 @@ Self-RAG,Corrective RAG 等论文提供了不同的检索/反思机制,但产品
   → 最终回答与审计日志
 ```
 
-### 高频追问
+## 3. 高频追问
 
 **如何防止重复扣款或重复发信?**
 
@@ -103,7 +109,7 @@ Self-RAG,Corrective RAG 等论文提供了不同的检索/反思机制,但产品
 
 只有在明确的沙箱,最小权限,资源限制,网络策略和审计机制下才可考虑.代码生成是高风险执行形态,不是 Function Calling 的默认升级路线.
 
-## 4. MCP 的核心对象,生命周期和传输是什么?
+**MCP 的核心对象,生命周期和传输是什么?**
 
 MCP 用客户端—服务器协议把模型应用与上下文和能力连接起来.服务器侧三类核心 primitive 是:
 
@@ -115,18 +121,20 @@ MCP 用客户端—服务器协议把模型应用与上下文和能力连接起�
 
 客户端还可向服务器提供 sampling,roots,elicitation 等能力,实际可用项取决于双方在初始化阶段协商的 capabilities.
 
-### 标准传输
+### 3.1. 标准传输
 
 - **stdio**:客户端启动服务器子进程,通过标准输入/输出交换 JSON-RPC 消息;stdout 只能输出协议消息,日志写 stderr.
 - **Streamable HTTP**:服务器提供支持 POST/GET 的 MCP endpoint,可使用 SSE 进行流式消息;它取代旧的 HTTP+SSE 传输.
 
 对于 Streamable HTTP,规范明确要求关注 Origin 校验,本地服务绑定地址和认证,以降低 DNS rebinding 等风险.MCP 本身不会自动把工具放进沙箱,也不会自动赋予最小权限.
 
-### 规范版本问题
+## 4. 规范版本问题
 
-面试回答要声明版本.2025-11-25 稳定规范仍包含会话相关机制;后续 draft 已提出移除协议级 session,并增加请求头与扩展机制.draft 变化不能倒写成所有稳定实现都已经支持的事实.
+面试回答要声明版本.2025-11-25 稳定规范仍包含会话相关机制;后续 draft 已提出移除协议级 session,
 
-## 5. MCP 与 Function Calling,A2A 的边界是什么?
+并增加请求头与扩展机制.draft 变化不能倒写成所有稳定实现都已经支持的事实.
+
+### 4.1. MCP 与 Function Calling,A2A 的边界是什么?
 
 | 对象 | 主要解决的问题 | 不负责什么 |
 |---|---|---|
@@ -136,7 +144,7 @@ MCP 用客户端—服务器协议把模型应用与上下文和能力连接起�
 
 "MCP 是 USB,A2A 是网络"可以帮助记忆,但面试时应继续说出对象,状态和安全边界,不能停在比喻.
 
-## 6. A2A 0.3.0 的核心概念是什么?
+### 4.2. A2A 0.3.0 的核心概念是什么?
 
 A2A 的目标是在不同框架和供应商的 Agent 之间建立互操作语言,同时不要求对方暴露内部状态,记忆或工具.
 
@@ -151,7 +159,7 @@ A2A 的目标是在不同框架和供应商的 Agent 之间建立互操作语言
 
 规范迭代较快,旧版 `tasks/send` 等接口名不能直接代表 0.3.0.回答实现细节时必须绑定具体版本和所选 transport.
 
-## 7. ReAct,Plan-and-Execute 和状态机怎样组合?
+## 5. ReAct,Plan-and-Execute 和状态机怎样组合?
 
 ReAct 将推理与动作交替组织;Plan-and-Execute 先形成较完整计划,再由执行器推进.工程系统通常不是二选一:可以先生成粗计划,再在每一步通过观察动态调整.
 
@@ -167,7 +175,7 @@ ReAct 将推理与动作交替组织;Plan-and-Execute 先形成较完整计划,�
 
 "达到最大轮次就停止"只能防止无限运行,不能保证任务正确完成.生产系统还要检测无进展循环,重复副作用和状态竞争.
 
-## 8. 怎样防御提示注入与工具越权?
+### 5.1. 怎样防御提示注入与工具越权?
 
 提示注入的关键风险是把不可信内容中的指令误当成高权限指令.仅在系统提示里写"忽略恶意内容"不是充分防御.
 
@@ -183,7 +191,7 @@ ReAct 将推理与动作交替组织;Plan-and-Execute 先形成较完整计划,�
 - 记录调用者,参数摘要,结果,错误与审批;
 - 用攻击样本持续测试越权,数据外泄和跨租户访问.
 
-## 9. Agent 系统应该怎样评测?
+### 5.2. Agent 系统应该怎样评测?
 
 不要只统计最终成功率.至少覆盖:
 
@@ -198,7 +206,7 @@ ReAct 将推理与动作交替组织;Plan-and-Execute 先形成较完整计划,�
 
 离线基准,仿真环境,回放测试和线上 shadow/canary 各自回答不同问题.基准成绩不能替代真实权限和故障路径测试.
 
-## 一手资料
+**一手资料**
 
 - [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
 - [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629)
@@ -208,4 +216,4 @@ ReAct 将推理与动作交替组织;Plan-and-Execute 先形成较完整计划,�
 - [MCP Transports](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)
 - [MCP Draft Changelog](https://modelcontextprotocol.io/specification/draft/changelog)
 - [Agent2Agent Protocol 0.3.0 Specification](https://a2a-protocol.org/v0.3.0/specification/)
-- [OWASP Top 10 for LLM Applications: Prompt Injection](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)
+- [OWASP Top 10 for LLM Applications: Prompt Injection](https://genai.owasp.org/llmrisk/llm1-prompt-injection/)
