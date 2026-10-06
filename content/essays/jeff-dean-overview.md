@@ -8,9 +8,9 @@ published: true
 
 ---
 
-## 1. Path:个人背景与职业路径
+## Path:个人背景与职业路径
 
-### 1.1 学术起点:编译器与高性能系统
+### 学术起点:编译器与高性能系统
 
 Jeff Dean 于 1996 年在**华盛顿大学(University of Washington)**获得计算机科学博士学位,导师是 Vipin Kumar.在校期间,他的研究集中在**编译器优化,面向对象语言实现与并行计算**等方向[^1].他在一次公开讲座中回忆,自己早在 1990 年 Kumar 的课程中第一次接触神经网络,本科荣誉论文做的正是"并行训练神经网络"--这一主题在 2012 年之后以 Google Brain 和分布式深度学习的形式重新回归[^2].
 
@@ -18,7 +18,7 @@ Dean 本科就读于**明尼苏达大学(University of Minnesota)**,1990 年以 
 
 博士毕业后,Dean 先加入 **DEC 的 Western Research Lab**(1996–1999),从事低开销性能分析工具,乱序微处理器分析硬件与基于 Web 的信息检索研究[^24],随后在 1999 年加入 Google,成为公司第 30 号左右的员工[^3].
 
-### 1.2 从 Google 早期工程师到 Senior Fellow / Chief Scientist
+### 从 Google 早期工程师到 Senior Fellow / Chief Scientist
 
 在 Google 的 27 年里,Dean 的角色经历了几次关键跃迁:
 
@@ -31,31 +31,31 @@ Dean 本科就读于**明尼苏达大学(University of Minnesota)**,1990 年以 
 
 ---
 
-## 2. Pillars:核心技术贡献
+## Pillars:核心技术贡献
 
 Dean 的职业生涯横跨"系统基础设施"与"AI 基础设施"两条主线,二者最终在他身上合二为一.以下是他最具代表性的技术贡献.
 
-### 2.1 GFS 与 Chubby:分布式存储与锁服务的底座
+### GFS 与 Chubby:分布式存储与锁服务的底座
 
 在 MapReduce 之前,Google 已经需要解决海量网页的存储与协调问题.**Google File System(GFS)** 由 Sanjay Ghemawat,Howard Gobioff 和 Shun-Tak Leung 设计实现,提供了容错,高吞吐的分布式文件系统,支撑 Google 的爬虫,索引与日志数据[^27].Dean 虽未署名 GFS 论文,但他是这一系统栈的深度参与者,后续 MapReduce,Bigtable,Spanner 均构建在 GFS 及其继任者之上.
 
 与 GFS 配套的是 **Chubby** 锁服务,由 Mike Burrows 设计,基于 Paxos 提供粗粒度锁与可靠小对象存储,用于 GFS,Bigtable 等系统的 master 选举,元数据存储与任务协调[^28].Chubby 的"可靠性优先于性能"设计哲学,以及 master 租约,副本一致,客户端事件通知等机制,成为后来 ZooKeeper,etcd 等分布式协调系统的原型.
 
-### 2.2 MapReduce(2004):大数据时代的范式起点
+**MapReduce(2004):大数据时代的范式起点**
 
 2004 年,Dean 与 Ghemawat 发表 **MapReduce: Simplified Data Processing on Large Clusters**[^7].该论文提出了一种将大规模分布式计算抽象为 `Map` 和 `Reduce` 两个阶段的编程模型,屏蔽了并行,容错,负载均衡等复杂细节.MapReduce 直接启发了 **Hadoop**,**Spark** 以及整个大数据生态,至今仍是分布式计算的范式原点之一.
 
-### 2.3 Bigtable(2006):PB 级结构化存储
+**Bigtable(2006):PB 级结构化存储**
 
 Bigtable 是 Google 为索引,YouTube,Gmail 等业务打造的**列式分布式 NoSQL 数据库**,可扩展到 PB 级别,跨数千台服务器[^8].它证明了结构化数据在全球规模下的可管理性,并影响了 HBase,Cassandra,LevelDB 等后续系统.Dean 与 Ghemawat 同样是 Bigtable 论文的核心作者.
 
-### 2.4 Spanner 与 F1:全球分布式关系数据库
+**Spanner 与 F1:全球分布式关系数据库**
 
 Spanner 被 Dean 称为"世界第一个真正的全球分布式关系数据库"[^9].它提供**外部一致性(external consistency)**与**全球级事务语义**,通过 GPS 和原子钟实现 TrueTime 时间同步,让 Google 能够在全球数据中心之间运行强一致的关系数据库.Spanner 从 2017 年起作为 Google Cloud 产品对外提供服务.
 
 在 Spanner 之上,Google 还构建了 **F1**--一个基于 Spanner 的分布式关系数据库,支撑 AdWords 等关键业务,将传统 SQL 语义与全球规模结合[^29].F1 证明了分布式关系数据库不仅能做分析,还能承担高价值交易型负载.
 
-### 2.5 Borg / Omega:云原生调度器的先驱
+**Borg / Omega:云原生调度器的先驱**
 
 Dean 团队早期构建的 **Borg** 是 Google 内部的大规模集群管理系统,约始于 2003–2004 年,最初只有 3–4 人参与,与新版 Google 搜索引擎同步开发[^50].Borg 能同时运行来自数千个应用的数十万个 job,跨越多个集群,每个集群可达数万台机器.它解决了 Google 内部最核心的资源调度问题:
 
@@ -66,7 +66,7 @@ Dean 团队早期构建的 **Borg** 是 Google 内部的大规模集群管理系
 
 2013 年,Google 推出 **Omega**,作为 Borg 的下一代设计探索.Omega 采用**共享状态(shared-state)**调度架构,允许多个调度器同时访问集群状态,提高了调度灵活性,也为后来的 Kubernetes 架构提供了思想来源[^50].2014–2015 年,Google 将 Borg 的理念开源为 **Kubernetes**,并于 2016 年捐赠给 CNCF.Kubernetes 迅速成为云原生计算的事实标准,而 Borg 的基因--声明式配置,Pod 概念,控制器模式,滚动升级--都延续到了 Kubernetes 的设计中.可以说,Borg/Omega/Kubernetes 这条线是 Dean 团队对现代云计算基础设施的又一隐形贡献.
 
-### 2.6 Protobuf / LevelDB:无处不在的底层工具
+**Protobuf / LevelDB:无处不在的底层工具**
 
 Dean 还参与了 **Protocol Buffers**(高效序列化框架)与 **LevelDB**(轻量级键值存储引擎)的设计或实现[^10][^52].这些工具虽然不如 MapReduce 耀眼,却深深嵌入现代软件栈,成为工业界的事实标准.
 
@@ -82,7 +82,7 @@ protobuf 的设计思想直接影响了 gRPC,Cap'n Proto,FlatBuffers,Thrift 等�
 
 这两个项目说明 Dean 的贡献不仅在于"巨型系统",也在于**可被任意 small team 嵌入的通用基础设施**--从全球数据中心到单机进程,他都在塑造计算的地层.
 
-### 2.7 Google Brain(2011):把深度学习带入 Google 核心
+### Google Brain(2011):把深度学习带入 Google 核心
 
 在 Google Brain 之前,Dean 已经展现了他将**机器学习算法与大规模分布式系统结合**的能力.2007 年,Google Translate 首席架构师 Franz Och 基于 DARPA 比赛构建了一个巨型 N-gram 语言模型,在两万亿词的 Google 搜索索引上训练,取得了极高的分数--但翻译一个句子需要 **12 小时**.当 Dean 问"什么时候上线"时,Och 回答:"这是研究项目,不是产品."Dean 的回应是:"让我看看你的代码."几个月后,他将算法重构为在 Google 分布式基础设施上并行运行,把翻译速度从 12 小时降到 **100 毫秒**,让 Google Translate 成为可上线的产品[^46][^47].
 
@@ -96,7 +96,7 @@ Dean 对 Google Brain 的参与并非偶然:
 - Google 拥有当时世界上最大的标注与非标注数据,但缺少能够有效使用这些数据的系统.
 - 他认为神经网络需要专门硬件,因此推动了 **TPU** 的诞生.
 
-### 2.8 TensorFlow(2015):开源 AI 的工业标准
+**TensorFlow(2015):开源 AI 的工业标准**
 
 2015 年 11 月,Google 将 DistBelief 重写为 **TensorFlow** 并在 Apache 2.0 许可证下开源[^53].DistBelief 作为 Google 第一代分布式训练系统,虽然支撑了 Inception,语音识别,Google Photos 等大量突破,但它与 Google 内部基础设施深度耦合,难以对外分享和配置[^54].TensorFlow 的设计目标被明确为:**通用(general-purpose),可扩展(scalable),可移植(portable),开源(open-source)**,能够部署在 CPU,GPU,TPU 以及移动设备等多种硬件平台上[^54][^55].
 
@@ -112,7 +112,7 @@ TensorFlow 迅速成为最流行的深度学习框架之一,并衍生出庞大�
 
 在 Google 内部,TensorFlow 支撑了 Search,Photos,Translate,YouTube 推荐,Gmail Smart Reply 等核心产品;在外部,它成为学术界和工业界深度学习研究的主要工具,尽管后来 PyTorch 以动态图和易用性赢得了研究社区的大量份额,但 TensorFlow 在**生产部署,移动推理,企业级 MLOps** 领域仍保持重要地位[^56].Dean 是 TensorFlow 最重要的推动者之一,这一开源决策也体现了他"基础设施必须开放才能成为标准"的长期信念.
 
-### 2.9 TPU(2016):AI 专用芯片的先驱
+**TPU(2016):AI 专用芯片的先驱**
 
 Dean 在 2006 年做了一个著名的"信封背面计算":如果每个 Google 用户每天只用语音搜索 3 分钟,Google 就需要把全球数据中心数量翻倍[^13].这个计算暴露出通用 CPU/GPU 无法满足神经网络推理的成本结构,促使他推动 Google 设计专用 AI 芯片--**Tensor Processing Unit(TPU)**.
 
@@ -134,7 +134,7 @@ TPU 的成功不仅在于单芯片性能,而在于它把**芯片,互连网络,�
 
 TPU 的经济意义同样深远.它让 Google 语音搜索,Google Lens,Translate,YouTube 推荐等高 AI 负载的大规模商业化成为可能;也让 Google Cloud 能够提供与 NVIDIA GPU 竞争的差异化 AI 算力.Dean 曾说,希望"很多城市都有十万卡集群"--这背后正是 TPU 作为 AI 基础设施支柱的战略地位[^23].
 
-### 2.10 Pathways,PaLM 与 Gemini:下一代 AI 基础设施
+**Pathways,PaLM 与 Gemini:下一代 AI 基础设施**
 
 进入 2020 年代,Dean 推动 Google 构建 **Pathways**--一个异步分布式数据流系统,目标是让单个 Python 进程 + JAX 就能调度大规模 ML 训练,通信由系统接管[^32].Pathways 支撑了 **PaLM**(540B 参数大语言模型)的训练,使用 2 个 TPU pod,由 Dean 亲自带领近百人团队费时一年多完成[^33].
 
@@ -142,13 +142,13 @@ TPU 的经济意义同样深远.它让 Google 语音搜索,Google Lens,Translate
 
 在 AutoML 方向,Dean 团队还发表了 **Efficient Neural Architecture Search via Parameter Sharing(ENAS,2018)**,由 Hieu Pham,Melody Guan,Barret Zoph,Quoc Le 与 Dean 共同完成,提出通过参数共享大幅降低神经网络架构搜索的计算成本,成为 AutoML 与 NAS 领域的重要基础工作[^49].
 
-### 2.11 AlphaChip:AI 反哺芯片设计
+**AlphaChip:AI 反哺芯片设计**
 
 Dean 近年来还将 AI 用于芯片设计本身.**AlphaChip**(前身为 Nature 2020/2021 论文中的芯片布局方法)采用强化学习,将芯片布局视为游戏,从空白网格开始逐个放置电路元件,奖励基于线长,功耗,时延等目标[^34].AlphaChip 已被用于 Google 最近三代 TPU 的设计,在第六代 TPU Trillium 中为 25 个模块生成布局,相比人类专家减少 6.2% 的线长[^35].Dean 在访谈中估计,AI 有望将传统芯片设计成本降低 **20–100 倍**,Google 内部已借此提升约 20% 的芯片设计效率[^23].
 
 ---
 
-## 3. Products:产品影响与商业化落地
+### Products:产品影响与商业化落地
 
 Dean 的工作很少直接以"产品"形式出现,但他的基础设施几乎支撑了 Google 所有重要产品:
 
@@ -167,9 +167,9 @@ Dean 的技术路径体现了一个规律:**伟大的产品往往建立在伟大
 
 ---
 
-## 4. Philosophy:技术哲学与管理理念
+## Philosophy:技术哲学与管理理念
 
-### 4.1 "先见瓶颈,后造基础设施"
+### "先见瓶颈,后造基础设施"
 
 Dean 的职业生涯反复出现同一模式:
 
@@ -181,7 +181,7 @@ Dean 的职业生涯反复出现同一模式:
 
 进入 Gemini 时代后,这一模式以更细腻的方式延续:Dean 在内部访谈中透露,**Gemini 3 的跃迁来自约 40 处分别贡献 3–8% 的小创新叠加**,没有任何单一改进能带来 5 倍提升,但复利式相互作用最终效果非常显著[^23].这说明,即使是模型层面的突破,本质上也来自系统工程,算法优化与数据处理的长期协同.
 
-### 4.2 系统与机器学习的融合
+**系统与机器学习的融合**
 
 Dean 多次强调,现代 AI 的瓶颈越来越不纯粹是算法,而是**系统与硬件的协同设计**[^15].他在 Purdue 2024 年的讲座标题就是 *Some Exciting Trends in Machine Learning*,重点提到:
 
@@ -192,7 +192,7 @@ Dean 多次强调,现代 AI 的瓶颈越来越不纯粹是算法,而是**系统�
 
 在更具体的工程层面,Dean 把 Google 基础设施的演进主线概括为 **"单芯片能力最大化 → 集群能力最大化 → 可靠性(reliability)"**[^23].他关注的核心指标不是峰值算力,而是 **"What's the fraction of time making progress?"**--即训练任务真正在取得进展的时间占比.超大规模训练中,坏芯片,网络抖动,跨 metro 协同失败的损耗越来越显著,因此 Google 通过 **Pathways**(单 Python 进程 + JAX 接管通信),**跨 metro 多 TPU pod 训练**,以及 **Ironwood(TPU v7)与硬件团队的 co-design** 来提升有效训练时间[^23].
 
-### 4.3 "AI 是想法的孵化器,而非人类智慧的替代品"
+**"AI 是想法的孵化器,而非人类智慧的替代品"**
 
 在 2026 年 6 月华盛顿大学毕业典礼演讲中,Dean 对毕业生说:
 
@@ -208,7 +208,7 @@ Dean 多次强调,现代 AI 的瓶颈越来越不纯粹是算法,而是**系统�
 
 Dean 的"放大器"视角并非排斥 AI 的自主性,而是强调边界设计.他认为,随着模型能力增强,主动设计 safeguards(安全护栏),可解释性, human-in-the-loop 决策机制,隐私保护等,应该被内嵌到技术路线中,而不是作为事后补丁.这一理念也影响了 Gemini 产品在多模态安全,内容过滤, red-teaming 等方面的工程实践.
 
-### 4.4 开源与工业标准思维
+**开源与工业标准思维**
 
 Dean 推动 Google 将 TensorFlow,Transformer 等研究成果开源,不是因为慈善,而是因为他认识到:
 
@@ -226,7 +226,7 @@ Dean 推动 Google 将 TensorFlow,Transformer 等研究成果开源,不是因为
 
 Dean 在内部访谈中明确说自己是 **"big believer in open source"**,认为来自中国的开源模型相当强,对下游任务非常有帮助;开源与闭源并不互斥,而是服务于不同目标:开源促进生态,创新,人才培养,闭源确保可控,安全,商业模式可持续[^23].这一立场也反映了 Google 作为同时拥有搜索,云,广告,硬件等多条业务线的公司,对"技术扩散"与"战略控制"之间平衡的长期思考.
 
-### 4.5 工程文化:从 Google 内部玩笑到真实传奇
+**工程文化:从 Google 内部玩笑到真实传奇**
 
 Google 工程师内部流传着许多关于 Jeff Dean 的"神话"[^17][^48]:
 
@@ -239,7 +239,7 @@ Google 工程师内部流传着许多关于 Jeff Dean 的"神话"[^17][^48]:
 
 这些玩笑背后是工程师文化对他技术权威的认可.在硅谷,Dean 与 Ghemawat 是唯二获得过 Google 最高技术荣誉 **Senior Fellow** 的员工.
 
-### 4.6 长期搭档:Jeff Dean × Sanjay Ghemawat 与<Performance Hints>
+**长期搭档:Jeff Dean × Sanjay Ghemawat 与<Performance Hints>**
 
 Dean 职业生涯中最重要的技术伙伴关系是与 **Sanjay Ghemawat** 的合作.二人 1999 年前后同时从 DEC 加入 Google,共同打造 MapReduce,GFS,Bigtable,Spanner 与 Pathways 等系统,并因共同获得 **2012 年 ACM-Infosys Foundation 计算科学奖** 而闻名[^36].<纽约客>在 *The Friendship That Made Google Huge* 一文中详细描绘了他们二人**同一张桌子结对编程**的工作方式:一人打字,另一人持续 review,保持共享心智模型,把 ego 降到最低,代码归属团队而非个人[^44].
 
@@ -253,7 +253,7 @@ Dean 职业生涯中最重要的技术伙伴关系是与 **Sanjay Ghemawat** 的
 
 Dean 将自己的创造力部分归因于 **"Shallow on many different areas"**--在多个领域都懂一点,从而能在交叉点找到创新[^23].而 Ghemawat 的互补能力则体现在对分布式一致性,锁服务与底层工程细节的极致把控.二人离开 Google 后共同创立 Discovery Loop,延续了这段跨越近三十年的合作[^40].
 
-### 5.1 2019 VentureBeat 访谈:2020 年 AI 趋势
+**2019 VentureBeat 访谈:2020 年 AI 趋势**
 
 Dean 在 NeurIPS 2019 期间接受 VentureBeat 采访,预测 2020 年的趋势[^18]:
 
@@ -268,7 +268,7 @@ Dean 在 NeurIPS 2019 期间接受 VentureBeat 采访,预测 2020 年的趋势[^
 
 这次访谈中,Dean 还表达了一个对研究社区的忠告:**不要过度痴迷 SOTA(state-of-the-art)**.他认为,真正重要的不是在一个公开 benchmark 上刷出 0.1% 的提升,而是解决有意义的问题,构建可复用的系统,把技术带到真实产品中[^65].这一观点与他在 2024–2026 年访谈中提出的"5–30% 才是发力区"的判断前后呼应--SOTA 追逐往往在能力已经接近天花板时边际收益递减,而真正的突破发生在"模型能做一点但还做不好"的区间.
 
-### 5.2 2018 Metis Strategy 访谈:Google 的 AI 战略
+**2018 Metis Strategy 访谈:Google 的 AI 战略**
 
 Dean 在 2018 年 Metis Strategy 播客中谈到 Google 如何保持创新:
 
@@ -289,7 +289,7 @@ Dean 还讨论了当时 AI 的几个关键趋势:
 
 这次访谈的价值在于,它揭示了 Dean 不只是一个"基础设施工程师",而是**同时思考技术,组织与生态**的战略型技术领袖.他的核心信念是:Google 的竞争优势不在于某一项算法,而在于把算法,数据,算力,工程人才和全球用户反馈闭环整合起来的系统能力.
 
-### 5.3 2018 GCP Podcast:Google AI 的技术方向
+**2018 GCP Podcast:Google AI 的技术方向**
 
 在 2018 年 9 月的 Google Cloud Podcast(Episode 146)中,Dean 作为 Google AI 负责人概述了团队正在推进的方向[^63]:
 
@@ -302,7 +302,7 @@ Dean 还讨论了当时 AI 的几个关键趋势:
 
 Dean 还强调,AI 研究的速度正在加快,五年内(2018–2023)语言模型,图像生成,多模态理解等领域都会发生显著变化.事后回顾,这一预测高度准确:Transformer,BERT,GPT,Stable Diffusion,Gemini 等模型都在这一周期内涌现,而 Dean 领导的 Google Brain/DeepMind 正是这些变化的核心推动者之一.
 
-### 5.4 2024 Purdue 讲座:机器学习五大趋势
+**2024 Purdue 讲座:机器学习五大趋势**
 
 Dean 在 Purdue 大学的讲座 *Some Exciting Trends in Machine Learning* 中提出:
 
@@ -312,7 +312,7 @@ Dean 在 Purdue 大学的讲座 *Some Exciting Trends in Machine Learning* 中�
 4. AI for Science(科学发现).
 5. AI 在健康与可持续发展中的应用.
 
-### 5.5 2026 UW 毕业典礼:对下一代工程师的寄语
+**2026 UW 毕业典礼:对下一代工程师的寄语**
 
 > "AI is an incubator for ideas, not a substitute for human ingenuity."
 > "Use AI as an amplifier, not a replacement."
@@ -320,11 +320,11 @@ Dean 在 Purdue 大学的讲座 *Some Exciting Trends in Machine Learning* 中�
 
 这三句话可以看作 Dean 对 AI 时代工程师责任的总结:技术既要向前推进,也要嵌入人类价值观.
 
-### 5.6 2024–2026 内部访谈与 Q&A 观点(YZ 思学整理)
+**2024–2026 内部访谈与 Q&A 观点(YZ 思学整理)**
 
 2024–2026 年间,中文公众号「YZ 思学」整理了一组与 Jeff Dean 当面交流后的 Q&A 观点,涉及 Gemini 训练,Scaling Law,数据策略,组织整合,机器人与芯片等前沿判断[^23].这些访谈补充了他公开演讲之外的工程与战略细节.
 
-#### 5.6.1 复利式进步:Gemini 3 的 40 处小创新
+**复利式进步:Gemini 3 的 40 处小创新**
 
 Dean 用一句话概括 Gemini 3 的提升逻辑:
 
@@ -332,7 +332,7 @@ Dean 用一句话概括 Gemini 3 的提升逻辑:
 
 没有任何单一改进能带来 5 倍提升,但 40 处分别贡献 3–8% 的创新,加上它们之间的相互作用,叠加起来效果显著.Dean 认为这正是"复利式进步"的本质--模型能力的跃迁不是某一篇论文的灵光一现,而是大量小改进与系统工程协同的结果.
 
-#### 5.6.2 预训练还能走多远?与 Ilya 的分歧
+### 预训练还能走多远?与 Ilya 的分歧
 
 针对 Ilya Sutskever "我们所知的预训练将终结"的论断,Dean 回应:**"Maybe even more."** 他的理由包括:
 
@@ -343,7 +343,7 @@ Dean 用一句话概括 Gemini 3 的提升逻辑:
 
 他同时强调,预训练不是唯一最重要的事--**数据质量,算法改进,优化器探索**同样关键.
 
-#### 5.6.3 数据配比:预训练是零和游戏
+**数据配比:预训练是零和游戏**
 
 Dean 提出一个鲜明判断:
 
@@ -357,7 +357,7 @@ Dean 提出一个鲜明判断:
 - **最差的数据是小模型(~1B)产出的低质数据**,要主动剔除 auto-generated from weak models 与带 AI watermark 的内容.
 - **数据过滤本身正在被自动化**:"There are auto efforts on automating the data filtering process."
 
-#### 5.6.4 多模态与视频模型:Scaling Law 仍然成立
+**多模态与视频模型:Scaling Law 仍然成立**
 
 关于 Veo 1/2 看不到"智能",Veo 3 突然涌现出推理与规划能力,Dean 的解释朴素而坚定:
 
@@ -365,7 +365,7 @@ Dean 提出一个鲜明判断:
 
 他明确确认 scaling law 在视频模型上同样成立.当被问及 Nano Banana Pro 为何懂建筑时,他回答:没有做垂类调优,而是在海量,多类型数据上训练,通用能力外溢到建筑领域.这正是 Google 长期坚持的"通用模型"路线.
 
-#### 5.6.5 评测方法论:5–30% 才是发力区
+**评测方法论:5–30% 才是发力区**
 
 Dean 透露 Google 除了公开榜单,还有一套逐版本迭代修订的内部 benchmark.他的判断心法:
 
@@ -373,7 +373,7 @@ Dean 透露 Google 除了公开榜单,还有一套逐版本迭代修订的内部
 - **5%–30% 是 comfort zone**:能力雏形已有,投入就能显著改善,应该重点发力.
 - 公开 benchmark 的有效窗口很短,模型会从榜单里学到东西,因此需要内部 benchmark 持续迭代.
 
-#### 5.6.6 算力,芯片与工程系统:从"最快"到"最可靠"
+**算力,芯片与工程系统:从"最快"到"最可靠"**
 
 Dean 描述 Google 基础设施的演进主线:
 
@@ -393,7 +393,7 @@ Dean 描述 Google 基础设施的演进主线:
 - Anthropic,Apple 等也是 TPU 用户.
 - Google 不会卖 TPU,但可以租给云客户;Gemini 团队与云业务之间存在天然张力,但"这没关系".
 
-#### 5.6.7 Code Red 到 Gemini:组织合并如何发生
+**Code Red 到 Gemini:组织合并如何发生**
 
 ChatGPT 发布后,Dean 在 Google 内部写了一页 memo,要求 legacy DeepMind 与 Brain 合并人才,算力,资源,成立统一的 Gemini 项目.他认为两边"各干各的"很蠢:
 
@@ -407,7 +407,7 @@ DeepMind 的遗产在 RL 和小模型,Brain 的遗产在 scaling,大模型和 Tr
 - Sergey Brin 亲自下场盯 Gemini.
 - Google DeepMind 约 8000 人,算力分配既有 bottom-up 需求,也有 top-down 分配,拒绝时会说明资源给了哪个团队,保持透明.
 
-#### 5.6.8 持续学习,机器人与 AI for Chip Design
+**持续学习,机器人与 AI for Chip Design**
 
 被问及"最期待什么"时,Dean 的答案是 **continual learning(持续学习)**.他认为这是自己长期关注但尚未 practical 的方向,而当前 Gemini 3 仍是 Transformer 架构,还做不到真正的持续学习.
 
@@ -424,7 +424,7 @@ DeepMind 的遗产在 RL 和小模型,Brain 的遗产在 scaling,大模型和 Tr
 - AlphaChip 采用端到端学习方法,Google 内部用 AI 做芯片设计效率提升约 20%.
 - ML 在编译器优化,内存管理,缓存策略等方面也有革命性空间.
 
-#### 5.6.9 开源,中国模型与产品商业化
+**开源,中国模型与产品商业化**
 
 Dean 是 **"big believer in open source"**.他认为:
 
@@ -435,7 +435,7 @@ Dean 是 **"big believer in open source"**.他认为:
 
 在产品商业化方面,他看好 **AI 广告 agent**--真正了解用户全部细节与需求的智能广告系统;Agentic capabilities 是他 2024 年就在讲的方向.GCP 的竞争力在于速度快,20 家独角兽里有 18 家在用 Google Cloud.
 
-#### 5.6.10 对就业与社会的判断
+**对就业与社会的判断**
 
 Dean 与 Hinton 对谈时一致认为,**持续增加算力和扩大模型规模仍是 AI 进步的核心引擎**.他们共同看好的方向包括:
 
@@ -449,7 +449,7 @@ Dean 与 Hinton 对谈时一致认为,**持续增加算力和扩大模型规模�
 
 > **"人做的事情一定会变.AI 重塑的是人把时间花在什么上面."**
 
-#### 5.6.11 个人方法论:跨领域是创造力的来源
+**个人方法论:跨领域是创造力的来源**
 
 Dean 将自己的成功归因于:
 
@@ -457,7 +457,7 @@ Dean 将自己的成功归因于:
 
 在很多不同领域都懂一点,因此能想到有创造性的结合点;并且乐于与不同人合作,互相学习.这与他的职业路径高度一致--从编译器,系统,分布式计算到机器学习,芯片设计,机器人,他始终在不同领域之间做"浅但广"的连接.
 
-### 6.1 学术荣誉与论文影响力
+**学术荣誉与论文影响力**
 
 Dean 是 **ACM Fellow(2009)**,**IEEE Fellow**,并于 **2009 年入选美国国家工程院(National Academy of Engineering)**[^24][^25].2012 年,他与 Sanjay Ghemawat 共同获得 **ACM-Infosys Foundation 计算科学奖**,表彰二人在互联网规模分布式系统领域的领导贡献[^36].他与 Ghemawat 也是 Google 内部唯二获得 **Senior Fellow**(Level 11,超出原 10 级上限)技术职级的工程师[^37].
 
@@ -477,7 +477,7 @@ Dean 是 **ACM Fellow(2009)**,**IEEE Fellow**,并于 **2009 年入选美国国�
 
 需要指出的是,他本人尚未获得 ACM 图灵奖(Turing Award 由 ACM 授予个人,2024 年授予 Barto 与 Sutton 以表彰强化学习奠基工作),但他是多项图灵奖级工作的关键推动者.他的 dblp 论文列表显示其研究跨度从编译器,分布式系统,数据库到深度学习与芯片设计[^39].
 
-### 6.2 历史定位:现代互联网与 AI 基础设施的双重奠基人
+**历史定位:现代互联网与 AI 基础设施的双重奠基人**
 
 如果说 Larry Page 和 Sergey Brin 给了 Google 商业灵魂,那么 Jeff Dean 和 Sanjay Ghemawat 给了 Google 技术躯体[^21].但 Dean 的贡献不仅限于 Google,他塑造的是整个互联网与 AI 产业的底层结构:
 
@@ -494,7 +494,7 @@ Dean 是 **ACM Fellow(2009)**,**IEEE Fellow**,并于 **2009 年入选美国国�
 
 如果用一句话定位 Jeff Dean:他是**现代互联网与 AI 基础设施的建筑师之一**.他的代码和思想不常出现在用户界面,但用户每一次搜索,每一次翻译,每一次语音指令,每一次模型训练,都可能经过他参与设计的某一层系统.
 
-### 6.3 2026 年:离开 Google 与 Discovery Loop
+### 2026 年:离开 Google 与 Discovery Loop
 
 2026 年 8 月 5 日,Google 宣布高层调整:Demis Hassabis 转任 DeepMind 董事长并出任 Alphabet 首席科学家,Koray Kavukcuoglu 接管 Gemini 研发;与此同时,Jeff Dean 与 Sanjay Ghemawat,Oriol Vinyals,Quoc Le 离开 Google,创立公益公司 **Discovery Loop**[^22][^40].
 
@@ -510,7 +510,7 @@ Dean 的离开被外界视为一个时代的结束--他是 Google 内部最后�
 
 ---
 
-## 7. 中文总结:为什么 Jeff Dean 值得被写成综述
+## 中文总结:为什么 Jeff Dean 值得被写成综述
 
 Jeff Dean 是一个典型的"**地层建造者**".他的工作不常直接出现在用户界面,但现代互联网和 AI 的很大一部分"地基"都与他有关.从 MapReduce 到 TensorFlow,从 Bigtable 到 TPU,他的技术路径始终围绕一个核心信念:
 
@@ -527,7 +527,7 @@ Jeff Dean 是一个典型的"**地层建造者**".他的工作不常直接出现
 
 ---
 
-## 参考来源
+**参考来源**
 
 [^1]: [Jeff Dean Biography | All American Speakers](https://www.allamericanspeakers.com/celebritytalentbios/Jeff+Dean/447761)
 [^2]: [Computer Science Alumnus & Google Chief Scientist Jeff Dean Returned to Campus](https://cse.umn.edu/dsi/news/computer-science-alumnus-google-chief-scientist-jeff-dean-returned-campus)

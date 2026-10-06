@@ -21,7 +21,7 @@ Transformer 是在论文 [Attention is All You Need](https://arxiv.org/abs/1706.
 
 **2025 更新**:我们构建了一个[免费的短视频课程](https://bit.ly/4aRnn7Z),用动画把本文内容更新到最新([视频 3](https://www.youtube.com/watch?v=k1ILy23t89E)).
 
-## 高层视角(A High-Level Look)
+### 高层视角(A High-Level Look)
 
 让我们先把模型看作一个黑盒.在机器翻译应用中,它输入一种语言的句子,输出另一种语言的翻译.
 
@@ -47,7 +47,7 @@ decoder 也有这两个层,但在它们之间还有一个**注意力层**,帮助
 
 **(图 Image 6:decoder 的结构--含 masked 自注意力,encoder-decoder 注意力,前馈层)**
 
-## 把张量引入画面(Bringing The Tensors Into The Picture)
+### 把张量引入画面(Bringing The Tensors Into The Picture)
 
 现在我们已经看到了模型的主要组件,让我们看看各个向量/张量是如何在这些组件之间流动,把一个已训练模型的输入变成输出的.
 
@@ -67,7 +67,7 @@ decoder 也有这两个层,但在它们之间还有一个**注意力层**,帮助
 
 接下来,我们把例子换成一个更短的句子,看看 encoder 每个子层里到底发生了什么.
 
-## 现在我们开始编码!(Now We're Encoding!)
+### 现在我们开始编码!(Now We're Encoding!)
 
 如前所述,encoder 接收一个向量列表作为输入.它通过把这些向量传入"自注意力"层,然后传入前馈神经网络来处理这个列表,然后把输出向上发送给下一个 encoder.
 
@@ -93,7 +93,7 @@ decoder 也有这两个层,但在它们之间还有一个**注意力层**,帮助
 
 一定要看看 [Tensor2Tensor notebook](https://colab.research.google.com/github/tensorflow/tensor2tensor/blob/master/tensor2tensor/notebooks/hello_t2t.ipynb),你可以加载一个 Transformer 模型,并用这种交互式可视化来检查它.
 
-## 自注意力详解(Self-Attention in Detail)
+### 自注意力详解(Self-Attention in Detail)
 
 让我们先看看如何用向量计算自注意力,然后再看它实际是如何用矩阵实现的.
 
@@ -127,7 +127,7 @@ decoder 也有这两个层,但在它们之间还有一个**注意力层**,帮助
 
 这就是自注意力计算的整个过程.得到的向量可以送入前馈神经网络.然而在实际实现中,这个计算是以矩阵形式完成的,以便更快处理.既然我们已经看到了词级别的计算直觉,现在来看看矩阵形式吧.
 
-## 自注意力的矩阵计算(Matrix Calculation of Self-Attention)
+### 自注意力的矩阵计算(Matrix Calculation of Self-Attention)
 
 **第一步**是计算 Query,Key,Value 矩阵.我们把嵌入打包进矩阵 $X$,乘以我们训练好的权重矩阵($W^Q$,$W^K$,$W^V$).
 
@@ -173,7 +173,7 @@ $$
 
 **(图 Image 22:全部注意力头的可视化,难以解读)**
 
-## 用位置编码表示序列顺序(Representing The Order of The Sequence Using Positional Encoding)
+### 用位置编码表示序列顺序(Representing The Order of The Sequence Using Positional Encoding)
 
 我们目前描述的模型还缺少一个东西:**考虑输入序列中词顺序**的方法.
 
@@ -197,7 +197,7 @@ $$
 
 **(图 Image 26:论文版位置编码--sin 与 cos 信号交织而非拼接)**
 
-## 残差(The Residuals)
+### 残差(The Residuals)
 
 在继续之前,我们需要提到 encoder 架构中的一个细节:每个 encoder 的每个子层(自注意力,前馈)周围都有**残差连接**,后面跟着一个[层归一化](https://arxiv.org/abs/1607.06450)步骤.
 
@@ -211,7 +211,7 @@ $$
 
 **(图 Image 29:2 encoder + 2 decoder 的完整残差与归一化结构)**
 
-## 解码器一侧(The Decoder Side)
+### 解码器一侧(The Decoder Side)
 
 现在我们已经覆盖了 encoder 侧的大部分概念,基本上也知道 decoder 的组件是如何工作的了.但让我们看看它们是如何协同工作的.
 
@@ -243,7 +243,7 @@ Linear 层是一个简单的全连接神经网络,它把 decoder 堆叠产生的
 
 然后 softmax 层把这些分数变成概率(全为正,加起来为 1.0).选择概率最高的单元,与之关联的词作为该时间步的输出.
 
-## 训练回顾(Recap Of Training)
+### 训练回顾(Recap Of Training)
 
 既然我们已经覆盖了训练好的 Transformer 的完整前向过程,看一眼训练模型的直觉会很有用.
 
@@ -259,7 +259,7 @@ Linear 层是一个简单的全连接神经网络,它把 decoder 堆叠产生的
 
 回顾完这些,让我们讨论模型的**损失函数**--训练阶段我们要优化的指标,以得到一个训练好的,希望是非常准确的模型.
 
-## 损失函数(The Loss Function)
+### 损失函数(The Loss Function)
 
 假设我们在训练模型.假设这是训练阶段的第一步,我们在训练一个简单例子--把 "merci" 翻译成 "thanks".
 

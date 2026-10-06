@@ -25,9 +25,9 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 ***
 
-## P0-1 · MEA 风格的任务状态外置(LongHorizon-Harness)
+### P0-1 · MEA 风格的任务状态外置(LongHorizon-Harness)
 
-### 动机
+**动机**
 
 见微已有 ReAct + Goal + Swarm + 审批,但长 Goal / 过夜调研时,**进度真相仍常混在增长的 ChatMessage 上下文里**;Agent 自评「做完了」缺少环境侧独立认证(MEA 的 Auditor).
 
@@ -41,7 +41,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 3. **跨轮唯一记忆 = audit report**:对标现有 `contextSummary` / auto-compact--长 Goal 结束后把审计事实写入 GoalState,而不是整段 transcript.
 4. **AgentAdapter 思路**:见微已是自有 harness;重点是 **角色可换模型**(criticModel 已存在于 reflection),把 auditor 接到 `config.yaml` 便宜模型.
 
-### 验收
+**验收**
 
 * [ ] 过夜 Goal 刷新后仍能从 DB 恢复 `verifiedProgress`(PULL)
 * [ ] 子任务完成但审计失败时,状态不前进(PUSH 事件可见)
@@ -59,28 +59,28 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 见微 Chat 已有 steer / follow\_up / 用户队列,但**没有把「意图修订」与「任务切换」从普通追加消息中区分开**.论文显示 function switch 是最大跌点;oracle 复述当前目标仍难追回单轮水平--说明需要**结构化状态更新**,不是更长历史.
 
-### 建议改动
+**建议改动**
 
 1. **IntentContract**:`function` + `arguments{}` + `superseded[]`;用户消息可标注/由轻量分类器标为 `reveal | revision | switch`.
 2. **revision**:覆盖旧 argument,写入 tombstone(禁止被 compact 摘要当成仍有效).
 3. **switch**:归档当前 Goal 子树为 paused/superseded,开新 Goal 分支并显式 handoff「仍有效的约束」.
 4. **评测**:用 `microsoft/evolving-intent` 思路,把内部可验证任务(如 post 写入,tool 沙箱断言)升维成多轮意图扰动回归(mock-llm scenario).
 
-### 验收
+**验收**
 
 * [ ] 用户中途改约束后,工具调用不再使用旧 argument(抽检 trace)
 * [ ] switch 后旧 Goal 不继续 autoConsume 污染新目标
 * [ ] 新增至少 2 个 mock-llm evolving-intent 场景 E2E
 
-### 精读
+**精读**
 
 * [Evolving User Intent](../longhorizon/2-状态记忆与恢复/2.1-用户意图演化.md)
 
 ***
 
-## P1-1 · Verification-gated 运行时自进化(Argus)
+**P1-1 · Verification-gated 运行时自进化(Argus)**
 
-### 动机
+**动机**
 
 见微已有 Skill,Memory,curator,心跳决策;缺的是 Argus 式:**候选技能/记忆/路由入持久态前必须角色门控 + 任务原生证据**,否则「自进化」= 污染搜索策略.
 
@@ -91,21 +91,21 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 3. **四角色轻映射**:Manager=super/Goal;Planner=manager;Engineer=sub/executor;Reviewer=独立 run 或 reflection critic;低风险允许 Engineer self-review(记台账).
 4. **保留证伪路线**:RSIBench/Argus 都强调「失败路径有价值」--`data/sessions` 摘要与 Memory experience 应能引用 rejected route.
 
-### 验收
+**验收**
 
 * [ ] 无证据的 skill\_promote / memory\_create(global) 被硬拦
 * [ ] 心跳 `terminal_no_followup` / `wait_user_gate` 能附带「已证伪路线」摘要
 * [ ] 台账可查:某条经验因何证据被 admit
 
-### 精读
+**精读**
 
 * Argus
 
 ***
 
-## P1-2 · Harness 三性质自检(Code as Agent Harness + Orchard)
+**P1-2 · Harness 三性质自检(Code as Agent Harness + Orchard)**
 
-### 动机
+**动机**
 
 见微 harness 已强(loop/tools/hub/审批),应用三性质做**缺口清单**,而不是再造一套:
 
@@ -117,7 +117,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 Orchard 的启示:把 **Env(沙箱生命周期)** 与 **Harness(推理循环)** 分层--见微 E2E/mock 已部分做到,可把「可重置 Workspace + 断言」收成评测 Env 原语,供 Goal 过夜与 RSI 实验复用.
 
-### 建议改动
+**建议改动**
 
 1. 文档化「见微 Harness 边界图」进 `docs/development/`(执行器 vs 控制平面 vs 记录平面).
 2. 为 Goal 增加可选 `envAssertions[]`(文件存在,测试命令 exit 0,post 已发布).
@@ -137,27 +137,27 @@ Orchard 的启示:把 **Env(沙箱生命周期)** 与 **Harness(推理循环)** 
 
 RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更差**.见微心跳 / Skill curator / 自动改 prompt 若「有反馈就改」,会系统性回退.
 
-### 建议改动
+**建议改动**
 
 1. **Checkpoint 保留**:任何自动修改 config/agents,skills,prompts 前 git/版本快照;回退默认开启.
 2. **Curator 门禁**:采纳变更需验证集或用户确认;禁止连续失败仍 raise 变更幅度.
 3. **指标**:区分 discovery(出现过更好分数)与 reliability(最终提交仍好).
 
-### 精读
+**精读**
 
 * [RSIBench-Data](../rsi/5-可靠性与安全/5.3-评测基准.md)
 
 ***
 
-## P3 · 知识库与 Skill 流水线(本波次元工作)
+### P3 · 知识库与 Skill 流水线(本波次元工作)
 
-### 已落地(本 Goal)
+**已落地(本 Goal)**
 
 1. **建库 SkillTemplate**:`config/skills/knowledge-garden/templates/garden-bootstrap.md`
 2. **论文成文 SkillTemplate**:`config/skills/knowledge-garden/templates/paper-article.md`(精读→解析;改进集中本篇)
 3. 论文 PDF → `content/uploads/papers/`;GitHub → `content/uploads/github-readme/`(不整仓 clone)
 
-### 后续可做
+**后续可做**
 
 1. `knowledge-garden` SKILL.md 主流程显式引用上述两模板;论文波次强制「改进只写汇总文」.
 2. 接入 `bilibili2skill` / CS329A skill 为可选外部 Skill(人工审核后 `skills` 目录).
@@ -182,7 +182,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 
 ***
 
-## 建议开工顺序(同一主题内)
+### 建议开工顺序(同一主题内)
 
 1. **IntentContract + Goal verifiedProgress 数据模型**(P0-1 ∩ P0-2,一次 schema 设计)
 2. **Auditor 只读回合**(可先复用 reflection critic 通道)
@@ -194,14 +194,14 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 
 ## 本波次资产索引
 
-### PDF
+**PDF**
 
 `content/uploads/papers/`:`longhorizon-harness`,`llms-evolving-user-intent`,`openforge-rl`,`reopd-prefix-replay`,`orchard-agentic-modeling`,`code-as-agent-harness`,`argus-verification-guided`,`rsibench-data`,`explorative-modeling`
 
-### GitHub README 摘要
+**GitHub README 摘要**
 
 `content/uploads/github-readme/`:LongHorizon-Harness,evolving-intent,ReOPD,RSIBench-Data,Orchard,Polaris,stanford-ai-agent-skill,bilibili2skill 等
 
-### 精读文
+**精读文**
 
 见各花园 `_garden.md` 内容地图.
