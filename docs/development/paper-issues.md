@@ -104,7 +104,7 @@
 
 ### PEAR (arXiv 2609.35031)
 
-解析: `content/rsi/6-自动研究与实验室/6.4-PEAR工业搜索自动研究/6.4-PEAR工业搜索自动研究.md` §3, §4, §5.3.
+解析: `content/rsi/6-自动研究与实验室/6.4-PEAR工业搜索自动研究.md` §3, §4, §5.3.
 
 - **pear-1** 式 (10) 上标: $[j]$ 表示启用序列里的位置, §5.2.3 到 5.2.5 里 $(2),(3),(4)$ 是级别编号. 实验从 L2 开始, L2 推广出的集合按式 (10) 是 $\mathcal{A}^{[2]}$, 按 §5.2.4 是 $\mathcal{A}^{(3)}$. 求证结果:
 - **pear-2** 图 2 标注: 写七天的 L4 反馈「重新校准 L2 代理」. §6.2 只说 L4 结果用于重新评估假设, §5.2.2 的 $R_\psi$ 是 L1, L2 共用的固定模型, 全文没有校准步骤. 全文搜 recalibrat, 只出现在图里. 求证结果:
@@ -569,7 +569,7 @@
 
 ### REINFORCE
 
-解析：`content/rl/01-基础/01.04-reinforce/01.04-reinforce.md`。
+解析：`content/rl/1-基础/1.4-reinforce.md`。
 
 - **reinforce-1** 仓库旧附件标注为 arXiv `1807.04077`，实际对应一篇心脏异常检测论文，并非 REINFORCE 原论文。REINFORCE 的一手来源是 Ronald J. Williams 1992 年发表于 *Machine Learning* 的 *Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning*，DOI `10.1007/BF00992696`. 求证结果: 正文已改用正确论文链接，旧附件不再作为来源。
 
