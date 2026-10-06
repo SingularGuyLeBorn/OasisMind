@@ -15,13 +15,13 @@ tags: ["Markdown", "LaTeX", "KaTeX", "手写效果", "指南"]
 
 ### 1. 标题与层级
 
-# 一级标题 H1
+`# 一级标题 H1`
 
-## 二级标题 H2
+`## 二级标题 H2`
 
-### 三级标题 H3
+`### 三级标题 H3`
 
-#### 四级标题 H4
+`#### 四级标题 H4`
 
 ##### 五级标题 H5
 
@@ -45,20 +45,20 @@ tags: ["Markdown", "LaTeX", "KaTeX", "手写效果", "指南"]
 
 ### 3. 列表与任务清单
 
-#### 无序列表
+**无序列表**
 
 * 墨色花园设计语言
 * 本地优先,Markdown 为唯一事实源
   * 支持三栏式 Agent 智能体对话
   * 支持自定义 Skill 与 MCP 工具扩展
 
-#### 有序列表
+**有序列表**
 
 1. 第一步:配置 SQLite / Prisma 数据库
 2. 第二步:同步 `content/` 目录下知识库文件
 3. 第三步:启动 Next.js 16 + React 19 客户端
 
-#### 任务清单 (Task Lists)
+**任务清单 (Task Lists)**
 
 * [x] 完成 L1–L5 系统基础架构落地
 * [x] 重构 Chat 三层状态机 store
@@ -114,19 +114,19 @@ export const getPostBySlug = publicProcedure
 
 ### 1. 上下括号与标记 (`\overbrace` & `\underbrace` & `\tag`)
 
-#### 上括号 `\overbrace`
+**上括号 `\overbrace`**
 
 $$
 \overbrace{a_1 + a_2 + \dots + a_n}^{n \text{ 个正实数}} \ge n \sqrt[n]{a_1 a_2 \dots a_n} \tag{1.1}
 $$
 
-#### 下括号 `\underbrace`
+**下括号 `\underbrace`**
 
 $$
 f(x) = \underbrace{x^4 - 2x^2 + 1}_{\text{可化为 } (x^2-1)^2} + \underbrace{\sin^2(x) + \cos^2(x)}_{\text{恒等于 } 1} \tag{1.2}
 $$
 
-#### 定位与间距 (`\quad`, `\qquad`, `\,`)
+**定位与间距 (`\quad`, `\qquad`, `\,`)**
 
 $$
 A \quad \text{与} \qquad B \quad \text{之间具有间距}
@@ -136,37 +136,37 @@ $$
 
 ### 2. 矩阵全系列 (Six Matrix Environments)
 
-#### 普通矩阵 `matrix`
+**普通矩阵 `matrix`**
 
 $$
 \begin{matrix} a & b \\ c & d \end{matrix}
 $$
 
-#### 圆括号矩阵 `pmatrix`
+**圆括号矩阵 `pmatrix`**
 
 $$
 \begin{pmatrix} 1 & 2 & 3 \\ 0 & 1 & 4 \\ 5 & 6 & 0 \end{pmatrix}
 $$
 
-#### 方括号矩阵 `bmatrix`
+**方括号矩阵 `bmatrix`**
 
 $$
 \mathbf{J} = \begin{bmatrix} \frac{\partial f_1}{\partial x_1} & \dots & \frac{\partial f_1}{\partial x_n} \\ \vdots & \ddots & \vdots \\ \frac{\partial f_m}{\partial x_1} & \dots & \frac{\partial f_m}{\partial x_n} \end{bmatrix} \tag{2.1}
 $$
 
-#### 行列式矩阵 `vmatrix`
+**行列式矩阵 `vmatrix`**
 
 $$
 \det(A) = \begin{vmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{vmatrix} = a_{11}a_{22} - a_{12}a_{21}
 $$
 
-#### 范数矩阵 `Vmatrix`
+**范数矩阵 `Vmatrix`**
 
 $$
 \|A\| = \begin{Vmatrix} x_1 & x_2 \\ y_1 & y_2 \end{Vmatrix}
 $$
 
-#### 行内小矩阵 `smallmatrix`
+**行内小矩阵 `smallmatrix`**
 
 行内嵌入小矩阵:$\left(\begin{smallmatrix} a & b \\ c & d \end{smallmatrix}\right)$ 完美适应正文行高.
 
@@ -174,7 +174,7 @@ $$
 
 ### 3. 多行对齐与分段函数 (`aligned` & `cases`)
 
-#### 多行推导对齐 `aligned`
+**多行推导对齐 `aligned`**
 
 $$
 \begin{aligned}
@@ -185,7 +185,7 @@ $$
 \end{aligned} \tag{3.1}
 $$
 
-#### 分段函数 `cases`
+**分段函数 `cases`**
 
 $$
 u(x, t) = \begin{cases} 
@@ -198,19 +198,19 @@ $$
 
 ### 4. 微积分,极限与多重积分
 
-#### 多重积分与路径积分
+**多重积分与路径积分**
 
 $$
 \iint_D \left( \frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y} \right) \mathrm{d}x \mathrm{d}y = \oint_{\partial D} (P \mathrm{d}x + Q \mathrm{d}y) \tag{4.1}
 $$
 
-#### 三重积分与极限
+**三重积分与极限**
 
 $$
 \lim_{N \to \infty} \sum_{i=1}^N f(x_i^*) \Delta x = \iiint_\Omega f(x, y, z) \, \mathrm{d}V
 $$
 
-#### 偏导数与拉普拉斯算子
+**偏导数与拉普拉斯算子**
 
 $$
 \Delta \psi = \nabla^2 \psi = \frac{\partial^2 \psi}{\partial x^2} + \frac{\partial^2 \psi}{\partial y^2} + \frac{\partial^2 \psi}{\partial z^2} = \frac{1}{c^2} \frac{\partial^2 \psi}{\partial t^2}
@@ -220,12 +220,12 @@ $$
 
 ### 5. 希腊字母与字体变体
 
-#### 希腊字母及变体
+**希腊字母及变体**
 
 * 小写:$\alpha, \beta, \gamma, \delta, \epsilon, \varepsilon, \zeta, \eta, \theta, \vartheta, \lambda, \mu, \pi, \rho, \sigma, \tau, \phi, \varphi, \chi, \psi, \omega$
 * 大写:$\Gamma, \Delta, \Theta, \Lambda, \Xi, \Pi, \Sigma, \Upsilon, \Phi, \Psi, \Omega$
 
-#### 数学字体集
+**数学字体集**
 
 * 双线体(黑板报体):$\mathbb{R}, \mathbb{N}, \mathbb{Z}, \mathbb{Q}, \mathbb{C}$
 * 花体(手写体):$\mathcal{L}, \mathcal{D}, \mathcal{N}, \mathcal{O}, \mathcal{A}$
@@ -240,7 +240,7 @@ $$
 
 > **块级公式写法**:`$$` 各占一行, 公式写在中间. 同一行里的 `$$…$$` 若独占一段, 渲染时也按块级处理.
 
-#### 帽子与修饰符
+**帽子与修饰符**
 
 $$
 \hat{x}, \quad \bar{x}, \quad \tilde{x}, \quad \vec{v}, \quad \dot{y}, \quad \ddot{y}, \quad \widehat{AB}, \quad \widetilde{XYZ}
@@ -252,7 +252,7 @@ $$
 
 见微 采用 `rough-notation` 打造极致手绘感文本标注.所有手绘效果均具有视口滚动自然随文平移的架构保障.
 
-### 1. 常见手绘样式示范
+**1. 常见手绘样式示范**
 
 * **单/双下划线**:`<mark data-annotation="underline" data-color="#7d917f">莫兰迪鼠尾草绿</mark>` 渲染效果为 <mark data-annotation="underline" data-color="#7d917f">莫兰迪鼠尾草绿</mark>.
 * **手绘矩形框**:`<mark data-annotation="box" data-color="#1f8a7a">青绿高亮框</mark>` 渲染效果为 <mark data-annotation="box" data-color="#1f8a7a">青绿高亮框</mark>.
