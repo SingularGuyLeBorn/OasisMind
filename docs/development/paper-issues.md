@@ -690,3 +690,15 @@
 - **deepseek-v3-2-6** 合成 Agent 环境的任务分布、环境失败率和奖励误判率披露有限，工具调用成绩不能直接外推到开放网络环境。求证结果：报告只给环境类别与汇总结果。
 - **deepseek-v3-2-7** Speciale 使用更大推理预算和竞赛专用协议，其结果不能与普通 V3.2 的默认单次回答分数直接横比。求证结果：附录为竞赛任务规定独立评测流程。
 - **deepseek-v3-2-8** 搜索 Agent 的串行上下文扩展同时增加搜索调用、token 和墙钟时间，收益不能只解释为上下文管理策略。求证结果：缺少等工具调用与等 token 对照。
+### DeepEP
+
+解析：`content/deepseek/04-开源仓库/deepep/deepep-analysis.md`。
+
+- **deepep-1** V2.5 主分支删除了 V1 代码和文档，normal/low-latency、NVSHMEM、IBGDA 与 hook 的经典说明必须绑定历史提交。求证结果：当前 main 不能直接复现 V1 接口。
+- **deepep-2** README 的“瓶颈带宽”按有效载荷和理论瓶颈链路计算，不等同于网卡或 NVLink 的原始计数器带宽。求证结果：性能表公式可复算。
+- **deepep-3** 节点受限路由给出每 token 跨节点副本上界，却不能保证各目标节点与专家负载均匀。求证结果：路由约束控制集合大小，不控制实际直方图。
+- **deepep-4** dispatch/combine 的数值正确性依赖 token 到专家的置换、计数、前缀偏移和 combine 权重完全一致，局部通信成功不能证明语义正确。求证结果：接口返回多组 layout 元数据供反向路径复用。
+- **deepep-5** low-latency 模式的延迟数字依赖 IBGDA、GPU Direct RDMA、QP 配置和固定消息形状，不能外推到普通 NCCL 部署。求证结果：V1 文档列出严格网络前提。
+- **deepep-6** normal kernel 的高吞吐来自 NVLink/RDMA 两级转发与 SM 角色分工，跨节点拓扑变化会改变最优路径。求证结果：实现假定特定节点内 GPU 组织。
+- **deepep-7** 通算重叠可能占用 SM、寄存器和网络资源，通信 kernel 局部更快不保证专家 MLP 的端到端吞吐同步提升。求证结果：公开表格主要报告通信阶段。
+- **deepep-8** DeepEP-Ascend 复用 API 语义，但通信栈、拓扑和 kernel 实现不同，CUDA 版本性能结论不能直接迁移。求证结果：两仓库为独立实现。
