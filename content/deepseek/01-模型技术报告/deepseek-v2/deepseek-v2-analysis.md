@@ -167,7 +167,7 @@ $$
 MHA 令 $n_{kv}=n_h$, MQA 令 $n_{kv}=1$, GQA 则取介于两者之间的组数. 这三种结构都直接缓存投影完成的 K 和 V. MLA 改的是「缓存对象」: 保存能够重建二者的公共潜向量. 设当前层输入为 $h_t\in\mathbb R^d$, 联合下投影为
 
 $$
-c_t^{KV}=W^{DKV}h_t,qquad W^{DKV}\in\mathbb R^{d_c\times d},quad c_t^{KV}\in\mathbb R^{d_c}.
+c_t^{KV}=W^{DKV}h_t,\qquad W^{DKV}\in\mathbb R^{d_c\times d},\quad c_t^{KV}\in\mathbb R^{d_c}.
 $$
 
 然后分别上投影:
@@ -452,7 +452,7 @@ $$
 值误差走另一条路径. 在注意力权重暂时不变时, 输出误差为
 
 $$
-\delta o_t=\sum_s a_{t,s}e_s^V,qquad
+\delta o_t=\sum_s a_{t,s}e_s^V,\qquad
 \|\delta o_t\|_2\le\sum_s a_{t,s}\|e_s^V\|_2.
 $$
 
