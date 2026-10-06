@@ -654,3 +654,15 @@
 - **deepgemm-6** 从 SM90 扩展到 SM100 后，指令、scale 格式与调度路径均有变化；旧版 Hopper 结论不能直接视为 Blackwell kernel 的实现说明。求证结果：仓库版本演进包含大规模重构。
 - **deepgemm-7** Mega MoE 与通信重叠结果依赖专家并行拓扑、到达顺序和负载均衡，单 kernel 指标不能分离通信隐藏与 GEMM 优化的贡献。求证结果：缺少统一拓扑下的完整逐项消融。
 - **deepgemm-8** 仓库持续演进且通过 JIT 生成特化 kernel，固定提交上的数值与性能结论需要同时记录 GPU、CUDA、形状和配置。求证结果：不同版本曾移除 SASS 后处理并调整调度策略。
+### FlashMLA
+
+解析：`content/deepseek/04-开源仓库/flashmla/flashmla-analysis.md`。
+
+- **flashmla-1** FlashMLA 主分支已移除早期 Hopper 与 V3 系列支持，当前接口和 2025 年发布性能不能按同一提交理解。求证结果：仓库历史与 README 均记录了版本切换。
+- **flashmla-2** 早期性能数字只覆盖注意力 kernel，不包含 MLA 前后投影、矩阵吸收准备、KV 写入和请求调度。求证结果：公开接口范围限于注意力计算。
+- **flashmla-3** 576/512 维 MQA 形态依赖 V2/V3 的特定 $d_c=512$ 与 RoPE 维度 64，不能外推为一般 MLA 的固定接口。求证结果：模型配置改变会直接改变 kernel 形状。
+- **flashmla-4** “解码受计算限制”的交界点依赖 query head 数、张量并行、序列长度和数据类型，不能由单一阈值覆盖全部部署。求证结果：算术强度公式随本地 head 数变化。
+- **flashmla-5** FP8/FP4 KV 的局部数值对照不能证明长上下文端到端质量不变，softmax 对 logit 扰动的敏感度还受分数间隔影响。求证结果：仓库主要报告 kernel 正确性和性能。
+- **flashmla-6** seesaw 调度收益与 Hopper 寄存器容量、TMA 和 warpgroup 语义绑定，SM100 与昇腾实现不共享同一调度结论。求证结果：不同后端使用不同代码路径。
+- **flashmla-7** DSA top-k 的 kernel 加速以前置索引质量为条件，未被选中的 key 无法由 FlashMLA 恢复；稀疏注意力误差属于模型与索引器边界。求证结果：接口只消费 indices。
+- **flashmla-8** 变长 paged KV 的吞吐受长度分布、split 数和页面碎片共同影响，规则长度基准不能代表真实连续批处理。求证结果：公开基准使用有限预设形状。
