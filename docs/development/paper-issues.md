@@ -414,6 +414,19 @@
 - **deepseek-v3-1-terminus-3** BrowseComp 从 30.0 升到 38.5，但 BrowseComp-zh 从 49.2 降到 45.0，Search Agent 增益不具跨语言一致性. 求证结果:
 - **deepseek-v3-1-terminus-4** Codeforces 从 2091 降到 2046，Aider-Polyglot 从 76.3 降到 76.1，“across benchmarks 更稳定可靠”不能解释为所有指标单调上涨. 求证结果:
 
+### DeepSeekMath
+
+解析：`content/deepseek/01-模型技术报告/deepseek-math/deepseek-math-analysis.md`。
+
+- **deepseek-math-1** 120B 数学语料只公开了分类器迭代和领域比例，没有公开网页 URL 清单、各轮新增量与逐基准去污染结果，无法独立复建训练集。求证结果：论文只给出整体流水和抽样质量实验。
+- **deepseek-math-2** 1.3B 数据消融同时改变语料来源和继续预训练过程，不能把所有提升严格归因于数学网页质量。求证结果：缺少等 token、等训练步数的完整交叉对照。
+- **deepseek-math-3** SFT 混合英文、中文与工具调用三种解法，但没有公布逐类样本量、采样比例和单类消融，三类监督各自贡献无法分离。求证结果：方法段只披露合计 776K 样本。
+- **deepseek-math-4** GRPO 训练的组大小、训练总步数、KL 系数日程、奖励归一化稳定性与多次随机种子方差披露不完整。求证结果：论文给出目标函数和部分超参数，缺少完整训练轨迹。
+- **deepseek-math-5** 规则奖励覆盖有唯一答案的题型，开放证明题依赖奖励模型；两类奖励的错误率和冲突率没有系统报告。求证结果：论文只描述使用范围与最终消融。
+- **deepseek-math-6** RL 仅在 GSM8K 与 MATH 训练问题上开展，域外增长不能直接证明获得全新的数学能力，也可能来自既有能力的概率重排。求证结果：没有报告底座在极大采样预算下的能力并集。
+- **deepseek-math-7** pass@k、Maj@k 与单次准确率衡量不同性质，部分横向比较使用的采样数、温度和答案抽取规则不一致。求证结果：论文表格不能统一换算为等 token 或等计算预算。
+- **deepseek-math-8** 从 DeepSeekMath 的 7B GRPO 结果外推到 R1 的长推理能力存在底座、上下文长度、规则奖励和多阶段数据流程混杂。求证结果：两篇论文共享算法骨架，但训练设置并非单变量延伸。
+
 ### DeepSeekMath-V2
 
 解析：`content/deepseek/01-模型技术报告/deepseek-math-v2/deepseek-math-v2-analysis.md`。
