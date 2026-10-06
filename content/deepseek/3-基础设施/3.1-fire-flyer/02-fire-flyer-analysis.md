@@ -1,0 +1,653 @@
+---
+title: "Fire-Flyer 2 拆解: 一万张 PCIe A100 如何用一半成本接近 DGX-A100"
+category: "基础设施"
+tags: ["DeepSeek", "技术解析", "AI-HPC", "HFReduce", "3FS", "集群网络"]
+published: true
+excerpt: "按论文表格逐项复核 Fire-Flyer 2 的成本与能耗口径, 两区两层 Fat-Tree, HFReduce 的 CPU 规约, HaiScale 的并行优化, 3FS 与 HAI Platform, 以及一年的 Xid 与网络闪断统计."
+---
+
+# Fire-Flyer 2 拆解: 一万张 PCIe A100 如何用一半成本接近 DGX-A100
+
+来源: 论文 *Fire-Flyer AI-HPC: A Cost-Effective Software-Hardware Co-Design for Deep Learning* (arXiv 2408.14158, v2 发布于 2024-08-31, 收录于 SC24), 作者单位 DeepSeek-AI, 系统由幻方 (High-Flyer) 建设和运维. 相关开源代码有两个: 文件系统 [deepseek-ai/3FS](https://github.com/deepseek-ai/3FS) 和调度平台 [HFAiLab/hai-platform](https://github.com/HFAiLab/hai-platform). HFReduce 与 HaiScale 没有开源, 因而只能依据论文分析其实现与性能. 3FS 的代码层面另见 [3FS 仓库解析](../../4-%E5%BC%80%E6%BA%90%E4%BB%93%E5%BA%93/4.1-3fs/02-3fs-analysis.md), 论文逐段译文见 [Fire-Flyer AI-HPC 对照译稿](./01-fire-flyer-bi.md).
+
+## 1. 成本口径与节点设计
+
+**「一半成本, 八成性能」分别出自哪张表**
+
+摘要里的「成本减半, 能耗降 40%, 性能接近 DGX-A100」其实拼接了三种口径. 性能出自 Table II 的单卡 GEMM: TF32 是 107 对 131 TFLOPS, FP16 是 220 对 263 TFLOPS, 两者之比分别为 81.7% 和 83.7%, 表中统一记为 Relative Performance 83%. 正文 III-C 和结论里写的「80%」是对 83% 的取整. 这个 83% 只反映 PCIe 卡与 SXM 卡在功耗墙和频率上的差距, 没有包含互连. DGX-A100 的 NVSwitch 让 8 卡全互连, PCIe 方案在通信密集的负载上差距会大于 17%, 论文没有给出端到端训练吞吐的对比, 也没有给出 MFU.
+
+成本有两个数. Table II 的 Node Relative Price 是 60%, 只比较单台服务器. Table III 是整集群的相对价格 (单位文中没有给出): 我们的方案网络 350, 服务器 11250, 合计 11600; DGX 方案网络 4000, 服务器 19000, 合计 23000. $11600/23000 \approx 50.4\%$, 这才是「成本减半」的来源. 服务器一项 $11250/19000 \approx 59.2\%$, 与 Table II 的 60% 一致. 按 10,000 卡对应 1,250 台节点反推, Table III 的单位相当于每台 PCIe 节点 9 个单位, 每台 DGX 15.2 个单位. 也就是说「一半」里有约 10 个百分点来自网络: DGX 方案的网络占总价 17.4%, Fire-Flyer 2 只占 3.0%.
+
+Table II 末行 Cost-Performance Ratio 1.38 等于 $0.83/0.60$, 是单卡 GEMM 性能除以单节点价格. 如果改用整集群价格 50.4% 去除, 得到约 1.65, 论文没有用这个更高的数. 两个比值都没有计入 PCIe 方案为补通信短板而投入的软件研发成本. VIII-C1 对此只说「几十名自研开发人员的成本只占数千台 GPU 服务器的一小部分」, 没有给出金额.
+
+### 1.1. 单网卡八卡节点与 PCIe 拓扑
+
+Fire-Flyer 2 的计算节点 (Table I) 配 2 颗 32 核 EPYC Rome/Milan, 512GB 16 通道 DDR4-3200, 8 张 PCIe A100-40GB, 只有 1 张 200Gbps CX6 IB 网卡. 对照的 DGX-A100 配 2 颗 64 核 EPYC 7742, 2048GB 内存和 9 张 CX6 网卡. 两者差得最多的是网卡数量: DGX 每张 GPU 独享 200Gbps, Fire-Flyer 2 是 8 张 GPU 共享 200Gbps, 每卡平均只有 25Gbps. 论文 III-A 的理由是幻方当时的训练负载 (多为参数量 1B 以下的模型, Figure 3) 存储 IO 和通信加起来一张网卡就够.
+
+![](./images/p04-figure-4-in-node-architecture-8-pcie-gpus-and.jpg)
+> 图 1: Fire-Flyer 2 计算节点内部结构, 8 张 PCIe A100 与 1 张 IB 网卡直连两颗 CPU 的 root port, 成对 GPU 之间加装 NVLink Bridge, 原文 Figure 4.
+
+图 1 解析: 这是论文 Figure 4 的节点内部结构. GPU0 到 GPU3 挂在 CPU0 的 4 个 root port 上, GPU4 到 GPU7 和 IB 网卡挂在 CPU1 上, 没有 PCIe switch. 其中 GPU5 和 GPU6 共用一个 root port, IB 网卡独占一个. 绿色弧线是后加的 NVLink Bridge, 只连 (0,1), (2,3), (4,5), (6,7) 四对. 这张图决定了后面三件事: CPU0 侧的 4 张 GPU 访问网卡要跨插槽, 所以 VI-A3 要让 NCCL 只走同一 NUMA 的 GPU 和网卡; GPU5/6 共享 root port, 是 IV-D3 里 HFReduce 跑不满的直接原因; 每颗 CPU 下恰好 4 张 GPU, 对应 GDRCopy 一次读主机内存写 4 张卡的优化.
+
+不使用 PCIe switch 意味着 GPU 之间的 P2P 都要经过 CPU 的 root complex. IV-D2 给出 Rome 不支持 chained write, GPU 到网卡的 P2P 带宽只有约 9 GiB/s. 这一硬件事实决定了 HFReduce 绕开 GPU 直连网卡的路径, 让数据先进主机内存.
+
+**功耗与运营成本的口径**
+
+Table II 的功耗是 2500W 对 4200W, $2500/4200 \approx 59.5\%$, 即摘要里的「能耗降 40%」. VIII-C2 补充这是 ResNet 训练期间的平均功耗, 也就是单节点在一种负载下的实测值, 没有覆盖 LLM 训练. 对整集群, VIII-C2 只说总功耗不超过 4 MW, 约 3 MW 出头. 用 1,250 台节点乘 2500W 得 3.125 MW, 已经占满「3 MW 出头」的大部分. 180 台存储节点和 122 台交换机的功耗文中没有给出, 按常见的单台几百瓦到 1kW 估, 合计在 0.1 到 0.3 MW, 总量落在 3.2 到 3.5 MW, 与「不超过 4 MW」相容.
+
+运营成本 VIII-C3 只给了算法: 功耗乘机柜租金, 再乘节点数和 PUE. 论文没有给出任何一个具体数值. 所以论文能直接支撑的成本结论只有两条: 整集群采购价约为 DGX 方案的一半 (Table III), 单节点 ResNet 训练功耗约为 DGX 的六成 (Table II).
+
+**两区两层 Fat-Tree 与存算共网**
+
+**台交换机怎么数出来**
+
+III-B 选择 Fat-Tree 而非 Dragonfly, 理由是存算共网需要足够的二分带宽. 选 IB 而非 RoCE, 理由是建设时 RoCE 还不成熟. 交换机是 40 口 200Gbps 的 QM8700. 两层 Fat-Tree 用 20 台 spine 和 40 台 leaf, 每台 leaf 20 口上联, 20 口下联, 40 台 leaf 共 800 个下联端口, 即论文说的「800-port Fat-Tree」. 1,250 台 GPU 节点加近 200 台存储服务器超过了 800, 于是论文做了两个完整的两层 Fat-Tree (Zone A 和 Zone B), 再用少量交换机连起来.
+
+![](./images/p05-figure-5-network-topology-two-complete-two-layer-fat.jpg)
+> 图 2: 两个完整的两层 Fat-Tree (Zone A 与 Zone B) 经两台区间交换机相连, 存储节点双网卡分别接入两区, 原文 Figure 5.
+
+图 2 解析: 这是论文 Figure 5. 上下两个区各有 20 台 spine 和 40 台 leaf, 中间两台 40 口交换机各连两区的一部分 leaf. $(20+40) \times 2 + 2 = 122$, 与 Table III 的 Number of Switches 一致. 每台 leaf 下同时挂 GPU 节点和存储节点, 这是 VI-A2「把存储, 计算, 管理节点均匀分布到各 leaf」的物理形态. 每台存储服务器两张网卡分别进两个区, 所以两区的 GPU 节点读的是同一套 3FS.
+
+两区的端口余量很紧. 每区约 600 台 GPU 节点 (III-B), 再加 180 台存储节点各一个端口 (Table IV 与 VI-B2 的数字), 约 780 个端口, 与 800 的上限只差 20 左右, 还要接管理节点和连区间交换机. 正文说「近 200 台存储服务器」, 若真是 200 台, 每区就是 800 个端口, 一个都不剩. 论文没有给出每区的精确端口分配. 对照方案的数字是: DGX 集群要 10,000 个接入点的三层 Fat-Tree, 320 core 加 500 spine 加 500 leaf 共 1,320 台; 规模相当的 PCIe 三层 Fat-Tree 要 1,600 个接入点, 40 core 加 160 spine/leaf 共 200 台 (III-C). 网络价格 350 对 600, 节省 41.7%, 正文取整为「40%」.
+
+跨区代价由调度承担. 区间只有两台交换机, 带宽远低于区内. HAI Platform 保证同一时刻最多一个跨区任务, 而且 NCCL 和 HFReduce 都用双二叉树, 只有一对节点在区间通信 (III-B). 在双二叉树里, 两个区各自形成子树, 子树的根之间只需要一条连接, 区间流量就被压到一对节点的带宽. Figure 7b 把跨区测试单独画出, 128 到 1024 卡的跨区带宽为 9.27, 8.63, 8.06, 7.75 GB/s, 区内为 10.3, 9.66, 8.56, 7.99 GB/s, 跨区与区内之比依次为 90.0%, 89.3%, 94.2%, 97.0%, 损失在一成上下, 卡数越多差距越小, 说明这种布局对 allreduce 的损失不大. 对 all-to-all 一类需要全互连的通信, 论文没有给出跨区数据.
+
+### 1.2. 四类流量的隔离与静态路由
+
+存算共网的风险是存储读写和梯度同步抢同一条链路. VI-A1 把流量分成四类: HFReduce, NCCL, 3FS 存储和其他. 建连时给每类分配不同的 IB Service Level, 再把 SL 映射到不同的 Virtual Lane. VL 是 IB 交换机上的独立物理队列, 有各自的缓冲和 credit, 一个 VL 被堵住不会让其他 VL 发生队头阻塞. 各 VL 之间的带宽比例由仲裁表配置, 论文没有给出具体比例.
+
+VI-A2 讲的是路由. 存储场景天然有大量 incast (多个存储节点同时向一个客户端发数据), 开启自适应路由后拥塞反而扩散到更多链路, 所以改回静态路由. 静态路由下, 某个 leaf 上如果集中了大量存储节点, 它的上联链路会先被打满, 因此论文要求把存储, 计算, 管理节点均匀分布到各 leaf. 两区之间还挂着区间交换机, 拓扑并不完全对称, 静态路由表怎样生成, 是否用了子网管理器自带的 Fat-Tree 路由算法, 论文都没有交代.
+
+VI-A3 是 NCCL 的两项调整. 第一, 让 NCCL 拓扑只经过同一 NUMA 节点内的 GPU 和网卡, 避免 CPU0 侧的 GPU 跨插槽访问网卡 (对照图 1, 网卡在 CPU1 下). 第二, 打开 PCIe Relaxed Ordering, 允许 PCIe 事务乱序完成, 减少写操作之间的相互等待. 论文说这两项都「减少拥塞, 提高带宽」, 没有给出前后对比数字.
+
+**关掉 DCQCN 之后靠什么不拥塞**
+
+VIII-A 写明 Fire-Flyer 2 关闭了 IB 网卡的 DCQCN 拥塞控制, 原因是找不到一组参数同时适配 HFReduce 和 3FS 两类流量. HFReduce 是规整的大块双二叉树传输, 3FS 是大量并发小请求和突发的 incast, 两者对降速阈值和恢复速度的要求相反. 关掉之后, 网络依靠三层手段维持无拥塞: VL 隔离保证两类流量互不阻塞; 静态路由加均匀布点控制 leaf 上联的负载; 3FS 在应用层用 request-to-send 限制同时向一个客户端发送的服务端数量 (VI-B3).
+
+第三层手段在开源代码里可以对上. 3FS 存储服务的 batch read 在读完 SSD 后先调用 `applyTransmission` 向客户端申请发送许可, 再获取每块 IB 设备的并发 RDMA 写信号量, 获得许可后发送 RDMA Write. 客户端侧的 `RDMATransmissionLimiter` 默认 `max_concurrent_transmission` 为 64, 可以热更新. 这与 VI-B3「客户端限制并发发送方数量」一致, 代价是论文承认的端到端延迟增加.
+
+**HFReduce: 把 allreduce 的规约搬到 CPU**
+
+**三段流程与两段算法**
+
+HFReduce 要解决的成本是 PCIe 带宽. 在图 1 的节点里, GPU 之间没有 NVLink (加装 Bridge 之前), 也没有 PCIe switch, 任何 GPU 到 GPU 或 GPU 到网卡的数据都要穿过 CPU 的 root complex. 数据并行训练每一步都要对全部梯度做一次 allreduce, 论文 IV 的做法是不让 GPU 参与规约, 改由 CPU 在主机内存里做加法, 整个过程分三段: GPU 把梯度拷到主机内存 (D2H), CPU 先在节点内把 8 份梯度加成 1 份, 再与其他节点做 allreduce, 再把结果拷回每张 GPU (H2D).
+
+![](./images/p06-figure-6-hfreduce-schematic-1-do-intra-node-reduce.jpg)
+> 图 3: HFReduce 示意图, 节点内 8 张 GPU 的数据先汇到 CPU 规约, 节点之间经 IB 网卡按树形结构做 allreduce, 原文 Figure 6.
+
+图 3 解析: 橙色箭头是节点内的 PCIe 传输, 8 张 GPU 都只和本节点 CPU 交换数据, GPU 之间没有箭头; 蓝色双向箭头是节点间的 IB 传输, 画成一棵三层的树, 对应双二叉树里的一棵. 图里只画了一棵树, 双二叉树的第二棵 (把同一批节点的叶子和内部节点角色互换) 没有画出; 每个节点内部只画了一个 CPU, 没有区分两个 NUMA 节点, 所以从图上看不出 D2H 目标内存交错分布在两个 NUMA 上这一实现细节.
+
+Algorithm 1 是节点内部分. 梯度张量 $D_g$ 按 `Chunk_Size` 切块, 每块用 `cudaMemcpyAsync` 拷到主机内存 (小数据改用 GDRCopy, 由 CPU 直接经 BAR 映射读写显存), 8 张 GPU 的第 $i$ 块都到齐后, CPU 用 SIMD 指令把 8 份加到 $D_{c,i}$, 随即把这一块交给节点间算法. 按块流水的意义在于第 $i$ 块做节点间通信时, 第 $i+1$ 块的 D2H 和节点内加法可以同时进行. Algorithm 2 是节点间部分, 写成两遍: 第一遍沿树向根规约, 每个节点收到子节点的数据后加到本地块上再发给父节点; 第二遍从根往下广播已规约的结果, 收到后直接 `cudaMemcpyAsync` 给本节点的每张 GPU. 双二叉树 (原文引用 [65], 即 NCCL 2.4 采用的 double binary tree) 让每个节点在一棵树里是叶子, 在另一棵里是内部节点, 两棵树各承担一半数据, 每个节点的收发量因此对称.
+
+### 1.3. 与 NCCL 比 PCIe 流量与 kernel 占用
+
+IV-B 给出的第一条优势是 PCIe 流量. 设参与通信的 GPU 数为 $n$, 论文写 NCCL ring 的每单位数据要经过 $2n-1$ 次传输, 每次占用一张 GPU 的入向和另一张 GPU 的出向, 摊到每张 GPU 是 $\frac{2n-1}{n}$ 个单位的双向带宽; HFReduce 每单位数据只需一次 D2H 和一次 H2D, 即 1 个单位. 按标准的 ring allreduce (reduce-scatter 加 allgather), 每张 GPU 收发的数据量是 $\frac{2(n-1)}{n}$, 分子比论文少 1, 在 $n=8$ 时是 1.75 对 1.875, $n$ 大时两者都趋于 2. 无论用哪个式子, 结论都是 NCCL 在每条 PCIe 链路上的流量约为 HFReduce 的两倍. 这里的前提是 GPU 之间的每一跳都要过 PCIe; 加装 NVLink Bridge 后, 成对 GPU 之间的那一跳不再占 PCIe, 这个两倍关系会变小.
+
+第二条优势是不占 GPU 的 SM. D2H 和 H2D 都由 GPU 的 Copy Engine 完成, 不启动 kernel, 规约在 CPU 上做, 所以反向传播的计算 kernel 不会和通信 kernel 抢 SM. NCCL 的 allreduce 需要 kernel 执行, 会占用一部分 SM 并与计算 kernel 争抢. 论文据此说 HFReduce「complete asynchrony with no overhead」. 这句话只对 GPU 侧成立: CPU 侧要付出内存带宽 (3.3 节算出是原始数据量的 24 倍) 和 CPU 核, 这些资源与 dataloader 的解码和预处理共享, 论文没有给出 HFReduce 占用多少个 CPU 核, 也没有测它对数据加载的影响.
+
+![](./images/p07-a-hfrudce-and-nccl-allreduce-speed.jpg)
+> 图 4: 16 到 1440 张 GPU 上 HFReduce 与 NCCL 的节点间 allreduce 带宽, 数据量 186 MiB, 原文 Figure 7a.
+
+图 4 解析: 横轴是 GPU 数 (16 到 1440, 非等距), 纵轴是 GB/s. HFReduce 从 16 卡的 8.10 降到 1024 卡的 6.31, 1440 卡又回到 6.99; NCCL 在 16 到 512 卡之间是 3.73 到 4.83, 到 1024 和 1440 卡骤降到 1.63 和 1.65. 正文「HFReduce 6.3-8.1GB/s, NCCL 1.6-4.8GB/s」就是这两条曲线的最小值和最大值. 图里没有说明纵轴是 algbw (数据量除以耗时) 还是 NCCL 习惯的 busbw (algbw 再乘 $\frac{2(n-1)}{n}$), 两种口径在大 $n$ 下差约两倍; NCCL 在 1024 卡处骤降的原因论文也没有解释, 1024 卡是 128 台节点, 远小于单区的 600 台, 跨区不是原因.
+
+IV-D2 补充了 NCCL 慢的硬件根源. EPYC Rome 不支持 chained write, GPU 与 IB 网卡之间的 P2P 带宽最高约 9 GiB/s, NCCL 走 GPUDirect RDMA 时被这条路径卡住, 所以只有 4 GB/s 左右. HFReduce 让数据先落主机内存再由网卡读走, 绕开了 GPU 到网卡的 P2P. 这一条也说明 NCCL 与 HFReduce 的对比带有平台条件: 换到支持 chained write 的 CPU, 或者节点里有 PCIe switch, NCCL 的基线会高很多, 图 4 的差距不能直接外推到其他 PCIe 机型.
+
+**倍内存访问与 8 GB/s 的天花板**
+
+IV-D3 把 HFReduce 单节点的内存读写逐段加起来, 单位是 GPU 上原始梯度的大小. D2H 阶段 8 张 GPU 各写一份, 共 8 次写; 节点内规约读 8 份, 写 1 份结果; 节点间 allreduce 由 IB 发送读 2 次, 接收写 2 次, 再为规约加法读 1 次; H2D 阶段用 GDRCopy 读 2 次 (每个 NUMA 一次, 读进 CPU cache 后写给本 NUMA 的 4 张 GPU), 用 `cudaMemcpyAsync` 则要读 8 次. 合计:
+
+$$
+\underbrace{8}_{\text{D2H}} + \underbrace{8+1}_{\text{节点内规约}} + \underbrace{2+2+1}_{\text{节点间}} + \underbrace{2}_{\text{H2D}} = 24
+$$
+
+式中每一项的单位都是一份梯度大小的内存读或写. 节点间那一项的「发 2, 收 2」可以从双二叉树推出来: 两棵树各管一半数据, 节点在作内部节点的那棵树里, 规约阶段收 2 个子节点各 0.5, 发给父节点 0.5, 广播阶段收 0.5, 发给 2 个子节点各 0.5; 在作叶子的那棵树里收发各 0.5. 加起来发 2 收 2. H2D 若不用 GDRCopy, 总数变成 30, 理论上限从 13.3 GB/s 降到 $320/30 \approx 10.7$ GB/s, 这就是 GDRCopy 在 H2D 段的价值.
+
+16 通道 DDR4-3200 的实际访存速度按 320 GB/s 计, $320/24 \approx 13.3$ GB/s 是 HFReduce 的理论上限. 论文说计入 allreduce 算法和网络带宽后实际约 12 GB/s, 网络一侧的上限可以从「发 2 收 2」算出: 每个节点只有一张 200Gbps 网卡, 单向 25 GB/s, 每单位数据要发 2 个单位, 节点间 allreduce 的速度上限是 $25/2=12.5$ GB/s. 实测只有 8 GB/s 出头, 原因在图 1 里的 GPU5 和 GPU6: 两张卡共用一个 root port, Rome 与 Milan 的 root port 到 CPU 内部总线最多约 37.5 GB/s, 单卡 PCIe 4.0 x16 能跑 27 GB/s 以上, 两卡同时传就只剩约 37 GB/s, D2H 与 H2D 双向同时进行时还会更低. 节点内规约要等 8 张卡的同一块都到齐, 最慢的那对卡决定了整条流水的速度.
+
+**HFReduce with NVLink**
+
+IV-C 是加装 NVLink Bridge 之后的版本. 成对 GPU 先在 NVLink 上互相规约, 再把梯度交给 CPU; CPU 返回结果时把数据切开, 分别发给一对 GPU 中的两张, 两张卡再经 NVLink 做 allgather. 论文写 NVLink Bridge 提供 600 GB/s, NVIDIA 给 PCIe A100 双卡 Bridge 标的 600 GB/s 是双向合计, 远高于 PCIe 4.0 x16 的约 32 GB/s 单向. 这一版的内存访问次数文中没有给出. 按「先 reduce-scatter 到成对两卡, 每卡只拷一半」的读法重算: D2H 是 8 张卡各写 0.5, 共 4; 节点内规约读 4 写 1; 节点间不变, 仍是 5; H2D 每个 NUMA 只需把两个半份各读一次, 共 2. 合计 16, 理论上限 $320/16=20$ GB/s, 共享 root port 的 GPU5 和 GPU6 每张卡的 PCIe 流量也减半. 这只是按论文对流程的文字描述推出的数, 没有实测数据验证.
+
+![](./images/p07-b-hfreduce-with-nvlink-cross-fat-tree-zone.jpg)
+> 图 5: HFReduce with NVLink 在 16 到 1024 张 GPU 上的节点间带宽, 以及 128 卡以上跨两个 Fat-Tree 区的带宽, 原文 Figure 7b.
+
+图 5 解析: 橙线是区内, 16 卡 19.18, 32 卡 13, 64 卡 12.07, 128 卡 10.3, 256 卡 9.66, 512 卡 8.56, 1024 卡 7.99 GB/s; 蓝线是跨区, 128 到 1024 卡为 9.27 到 7.75 GB/s. 16 卡只有 2 台节点, 双二叉树退化为两点交换, 每个节点只需发 1 收 1, 网络上限是 25 GB/s 而非 12.5, 所以 19.18 不能当作稳态数字. 与图 4 同卡数相比, NVLink 版在 1024 卡上是 7.99 对 6.31, 提升约 27%; 128 卡是 10.3 对 7.78, 提升约 32%.
+
+正文「HFReduce with NVLink achieves inter-node bandwidths exceeding 10 GB/s」只在 128 卡及以下成立, 256 卡起就低于 10 GB/s, 1024 卡已降到 7.99. 图 5 也没有画到图 4 的 1440 卡. 卡数越多带宽越低的趋势, 符合双二叉树的树深随节点数按 $\log_2$ 增长, 流水线填充和排空的开销随之变大; chunk 大小文中没有给出, 无法从数据量和树深算出这部分开销.
+
+## 2. HaiScale, 3FS 与 HAI Platform
+
+**HaiScale DDP 与 FSDP 的弱扩展**
+
+HaiScale 是幻方自研的训练框架, 通信后端是 HFReduce. V-A 的 HaiScale DDP 与 PyTorch DDP 做法相同: 反向传播算出一个梯度桶就异步发起 allreduce, 让通信与剩余的反向计算重叠. 差别在于 HFReduce 不占 SM, 重叠时计算 kernel 不受通信 kernel 干扰. V-B3 的 HaiScale FSDP 与 PyTorch FSDP 同样基于 ZeRO Stage-3, 论文说的工程改进有三项: 针对模型调整的显存管理以减少碎片, 把 allgather 和 reduce-scatter 与前向, 反向计算重叠, 以及把优化器 step 拆开放进反向传播中间做. 三项各自的贡献没有消融实验.
+
+![](./images/p08-a-hfreduce-v-s-torch-ddp.jpg)
+> 图 6: 32 到 512 张 GPU 上训练 VGG16 的每步耗时, HFReduce 与 PyTorch DDP 的 NCCL 后端对比, 弱扩展设置, 原文 Figure 8a.
+
+图 6 解析: 弱扩展指每卡的 batch 固定, 卡数增加时总 batch 同比增加, 理想情况下每步耗时不变. HFReduce 从 32 卡的 0.13 秒涨到 512 卡的 0.15 秒, Torch DDP 从 0.27 涨到 0.288 秒. 正文「only half the time」对应 $0.15/0.288 \approx 52\%$; 「nearly 88% parallel scalability」对应 $0.13/0.15 \approx 86.7\%$, 比正文略低. 同一张图里 Torch DDP 的弱扩展效率是 $0.27/0.288 \approx 93.8\%$, 比 HFReduce 高, HFReduce 的优势在绝对耗时, 不在扩展效率. 图中没有给出每卡 batch 大小.
+
+![](./images/p08-figure-8-weak-scalability-a-training-vgg16-hfreduce-compared.jpg)
+> 图 7: 16 到 128 张 GPU 上训练 GPT2-Medium 的每步耗时, HaiScale FSDP 与 PyTorch FSDP 对比, 弱扩展设置, 原文 Figure 8b.
+
+图 7 解析: HaiScale 是 0.57, 0.58, 0.598, 0.595 秒, $0.57/0.595 \approx 95.8\%$, 与正文的 95% 一致. Torch FSDP 是 0.84, 0.985, 0.875, 0.99 秒, 在 32 卡和 128 卡上反而比 64 卡慢, 曲线不单调, 原因没有交代. 正文说 HaiScale「reduces training time by nearly half」, 按图中数字逐点算, 降幅分别是 32%, 41%, 32%, 40%, 最多四成, 不到一半.
+
+### 2.1. LLM 并行: NVLink 上的 TP, PP 错峰与强扩展
+
+V-B 的 LLM 训练优化有两项针对 PCIe 节点. 第一项是把 Tensor Parallelism 放在 NVLink Bridge 连接的一对 GPU 上, TP 的 allreduce 走 600 GB/s 的 NVLink, 不进 PCIe. Bridge 只连成对的两张卡, 要让 TP 的通信全部走 NVLink, TP 度最多为 2; 实际用的 TP 度文中没写. 第二项是 Pipeline Parallelism 的网卡争用: 8 张卡共用 1 张网卡, 如果同一节点的 8 张卡在同一时刻向下一级流水段发送激活, 就会挤在一张网卡上. HaiScale 让同一节点的 8 张卡属于不同的 DP rank, 不同 DP rank 的流水线调度在时间上错开, 发送时刻随之错开.
+
+![](./images/p08-chart.jpg)
+> 图 8: LLaMA-13B 在 64 到 512 张 GPU 上的强扩展, 序列长度 2048, batch size 4096, 流水并行度 4, 纵轴为每步秒数 (对数坐标), 原文 Figure 9a.
+
+图 8 解析: 强扩展指总 batch 固定, 卡数加倍时理想耗时减半, 图中灰色虚线就是理想线. 实测为 64 卡 64.118 秒, 128 卡 32.508 秒, 256 卡 17.448 秒, 512 卡 9.717 秒. 并行效率按 $E = \frac{T_{64} \times 64}{T_N \times N}$ 计算, 其中 $T_N$ 是 $N$ 卡时的每步耗时, 依次为 98.6%, 91.9%, 82.5%. 正文写的「从 64 卡扩到 512 卡效率 91%」与 512 卡的 82.5% 对不上, 91% 只与 256 卡吻合.
+
+![](./images/p08-figure-9-strong-scalability-a-train-llama-13b-with.jpg)
+> 图 9: DeepSeekMoE-16B 在 40 到 640 张 GPU 上的强扩展, 序列长度 4096, batch size 4608, 流水并行度 10, 纵轴为每步秒数 (对数坐标), 原文 Figure 9b.
+
+图 9 解析: 40 卡 79.615 秒, 80 卡 40.352 秒, 160 卡 20.784 秒, 320 卡 10.71 秒, 640 卡 6.535 秒. 用同一个效率式算出 98.6%, 95.8%, 92.9%, 76.1%, 正文的 92.92% 和 76.14% 与此吻合, 说明 DeepSeekMoE 一段用的确实是这个式子, 同一式子用在 LLaMA-13B 上得不到 91%. 640 卡处的效率下滑比 LLaMA 更陡, 原因文中没有分析; MoE 的 EP 需要 all-to-all, 在每卡 25Gbps 的网卡配额下比 DP 和 PP 更吃网络, 这也是 IX 把下一代节点改成 1:1 网卡的理由.
+
+论文没有给出 MFU. 用 $6N$ 近似每 token 的训练 FLOPs ($N$ 为参与计算的参数量, 忽略注意力的二次项), 并把 batch size 4096 理解为序列数: LLaMA-13B 每步 $4096 \times 2048 \approx 8.39\text{M}$ token, 64 卡 64.118 秒折合每卡每秒约 2044 token, 每卡约 $6 \times 13\text{B} \times 2044 \approx 159$ TFLOPS, 是 A100 BF16 峰值 312 TFLOPS 的约 51%, 512 卡时降到约 42%. DeepSeekMoE-16B 的激活参数为 2.8B, 每步 $4608 \times 4096 \approx 18.9\text{M}$ token, 40 卡时每卡约 100 TFLOPS (约 32%), 640 卡时约 76 TFLOPS (约 24%). 这些数依赖 batch size 的单位和 $6N$ 近似, 文中也没有可以直接验证的 token 吞吐; 如果 batch size 指的是 token 数, 算出的利用率会低三个数量级, 不合常理, 所以序列数的读法更可能成立.
+
+**FS: 论文给出的硬件与机制**
+
+VI-B 介绍 3FS 的篇幅不长, 给出的是硬件配置和四个机制要点. Table IV 的存储节点是 1 颗 64 核 EPYC 7742, 512GB 8 通道 DDR4-3200, 2 张 200Gbps CX6 网卡, 16 块 15.36TB PCIe 4.0 x4 NVMe. 一共 180 台, 网卡 360 张, 理论出向带宽 $360 \times 25 = 9000$ GB/s 即 9 TB/s, 实测总读吞吐 8 TB/s; 2880 块 SSD 以镜像冗余提供「20 PiB 以上」的空间. 镜像按两副本算, $2880 \times 15.36\text{TB} / 2 \approx 22.1$ PB, 合 19.6 PiB, 略低于 20 PiB; 写成 PB 才过 20.
+
+四个机制是: 集群管理 (cluster manager 主备选举, meta 与 storage 服务向它发心跳, 所有服务和客户端从它拉配置); 元数据存在分布式 KV 里, inode 表与目录项表分开, 目录项的键是 (父目录 inode, 文件名); 数据面用 CRAQ 链式复制, 写全部副本, 读任一副本, 文件按 stripe 大小 $k$ 从 chain table 的某个偏移开始分配到连续 $k$ 条链上; 拥塞控制用 request-to-send, 存储服务读完 SSD 后先请求客户端许可, 获准后以 RDMA WRITE 加 RDMA SEND 送出. 这些机制在开源代码里的实现, 包括 FoundationDB 上的表结构, 链状态机, USRBIO 客户端和 6.6 TiB/s 压测的口径, 见 [3FS 仓库解析](../../4-%E5%BC%80%E6%BA%90%E4%BB%93%E5%BA%93/4.1-3fs/02-3fs-analysis.md); 用 3FS 做中间数据的 GraySort 见 [smallpond 技术解析](../../4-%E5%BC%80%E6%BA%90%E4%BB%93%E5%BA%93/4.2-smallpond/02-smallpond-analysis.md).
+
+有两部分内容只出现在 Fire-Flyer 论文里, 开源文档没有覆盖. 一是 VI-B4 的 3FS-KV: 建在 3FS 之上的共享存储数据处理系统, 支持 key-value, 消息队列和对象存储三种模型, 支撑 DeepSeek 的硬盘 KV Context Caching, 论文称它把 LLM 服务成本降低一个数量级, 但没有给出 3FS-KV 的任何性能数字, 开源仓库里也没有名为 3FS-KV 的组件, 只有 KVCache 客户端的读吞吐图. 二是 3FS 与网络调优的配合: VI-A1 把 3FS 流量放进单独的 VL, VI-A2 的均匀布点让存储节点的上联流量分散到所有 leaf, request-to-send 在应用层限制 incast, 三者合起来才让 2.3 节里关掉 DCQCN 的网络保持不拥塞.
+
+**HAI Platform 的分时调度与 checkpoint manager**
+
+VI-C 的 HAI Platform 按分时原则管理集群: 用户提交的任务可以被平台按资源需求和集群忙闲打断, 再加载. 任务代码必须遵守平台约定, 依次是接收打断信号, 保存 checkpoint, 通知集群已打断, 下次从 checkpoint 恢复. 资源不做 GPU 池化, 以计算节点为基本单位, 按资源类型和网络区域打标签. 开源的 [HFAiLab/hai-platform](https://github.com/HFAiLab/hai-platform) 能对上这几点: 示例调度器 `FIFOAssigner` 以 `task.nodes` 为单位扣配额, 按 (用户, 优先级, group) 三元组维护配额, 再按 group 统计 Ready 节点并累加判断能否运行; 同一任务被打断后重提交会产生新 id, `first_id` 指向链头, 排队中的非链头任务状态标为 `SUSPENDED`. 打断信号由 `suspend_helper.py` 实现, 它用 zmq 收到打断指令后在一个 1 字节的 SysV 共享内存里写入标志位, 训练进程轮询这个标志位决定何时保存并退出.
+
+论文说 HAI Platform「facilitating 99% utilization」, 没有定义 utilization 的口径. hai-platform 的文档给出的是另一组数: 1500 多台计算节点, 日常节点占用率 95% 以上, 日常 GPU 利用率 75% 以上. 「占用」指节点被分配给任务, 「利用」指 GPU 实际在算, 两者差 20 个百分点, 99% 更接近占用率一类的口径.
+
+VII-A 的 checkpoint manager 服务于打断恢复和硬件故障. 参数与优化器状态先异步从 GPU 拷到主机内存, 再切块用 3FS 的 batch write 接口写出, 单节点超过 10 GiB/s, 一般每 5 分钟存一次; 保存时记录每个张量的索引和在文件内的偏移, 加载时用 batch read 一次定位. 论文的结论是故障时最多丢 5 分钟进度. 这个说法只计了训练进度, 没有计故障检测, 节点替换和重新加载的时间, 论文也没有给出一次恢复的总耗时.
+
+单节点 10 GiB/s 在全集群同时保存时达不到. 1250 台节点每台 10 GiB/s, 合计约 13.4 TB/s, 已超过存储侧 9 TB/s 的网卡上限; 镜像冗余下每份数据要写两个副本, CRAQ 的链式转发让存储网卡的入向流量翻倍, 全集群同时写时每台计算节点能分到的带宽约为 $9/2/1250 \approx 3.6$ GB/s. 以 LLaMA-13B 为例, 按 BF16 权重加 FP32 主权重和两份 Adam 状态每参数 14 字节, checkpoint 约 182 GB, 64 台节点各写约 2.8 GB, 按 10 GiB/s 不到 0.3 秒, 按 3.6 GB/s 不到 1 秒, 「数秒内完成」在这个规模上都成立. 所用模型的 checkpoint 大小文中没有给出.
+
+### 2.2. 稳定性统计与下一代架构
+
+**Validator 与 Xid 分类**
+
+VII-B 的 validator 是每周在节点上跑一遍的硬件自检, 不合格的节点从调度平台摘除. 检查项包括硬件频率与链路速率, CPU 压力与内存带宽, 逐字节写读显存, 占满显存跑 GEMM (同时检验芯片运算逻辑), 节点内 allreduce (从应用层测 NVLink 带宽), 以及存储带宽压测. 显存逐字节检查和满显存 GEMM 针对的是 VII-C 提到的 ECC 查不出的计算错误和显存错误, 这类错误在训练里表现为 gradnorm 尖峰, loss 爆炸甚至不收敛. 论文没有给出 validator 每周摘掉多少节点, 也没有给出它对静默错误的检出率.
+
+Table V 把 NVIDIA 驱动上报的 Xid 分成五类: 软件引起 (13, 31, 43, 45), NVLink 错误 (74), 显存 ECC (63, 64, 94, 95), 不可纠正故障 (44, 48, 61, 62, 69, 79), 以及 GSP 故障 (119). Table VI 是过去一年的计数, 合计 12970 条. 软件类合计 7114 条, 占 54.85%, 其中 Xid43 有 4342 条占 33.48%, Xid31 有 2487 条占 19.18%. 论文把 Xid43 称为非法内存访问; 按 NVIDIA 的 Xid 文档, 非法地址访问对应 Xid31 (GPU MMU 页错误), Xid43 是用户程序出错后 GPU 停止处理该通道, 两者常成对出现. Xid74 有 5521 条, 占 42.57%. 显存 ECC 四项合计 277 条, 占 2.14%, 与正文「about 2%」一致. 不可纠正故障六项合计 57 条, GSP 1 条. 去掉软件类, 硬件 Xid 共 5856 条, Xid74 占其中的 94.3%.
+
+Table V 写 Xid74 的出现率「比其他硬件故障高几个数量级」. 按 Table VI, Xid74 的 5521 条是显存 ECC 合计 277 条的约 20 倍, 是不可纠正故障 57 条的约 97 倍, 只差一到两个数量级. 另外 Xid 是驱动日志里的消息条数, 同一次故障可以连续上报多条, 是否去重也没有说明, 所以 Table VI 的计数不等于故障次数.
+
+**ECC 与网络闪断**
+
+![](./images/p11-figure-10-trends-of-memory-and-network-failures-from.jpg)
+> 图 10: 2023 年 10 月到 2024 年 3 月每月的 CPU 内存 ECC, IB 网络闪断与 GPU 相关 Xid 计数堆叠面积图, 原数据见附录 Table VII, 原文 Figure 10.
+
+图 10 解析: 横轴是 6 个月, 纵轴是月度计数, 自下而上依次堆叠 Main Memory, Network, Xid63, Xid64, Xid79, Xid94, Xid95. 每月总数在 42 到 54 之间, 10 月的 Network 层最厚. 图注说「xids」是与 GPU 显存 ECC 相关的错误, 但堆叠里包含 Xid79, 而 Table V 把 Xid79 归在不可纠正故障里, 不属于显存 ECC 类. 图里没有 Xid74, 所以它反映的是除 NVLink 以外的硬件故障.
+
+Table VII 的行列和都能对上: Main Memory 54, Network 89, Xid63 120, Xid64 1, Xid79 15, Xid94 7, Xid95 6, 六个月合计 292. 正文「IB link failures account for 30% of hardware faults excluding Xid74」是 $89/292 \approx 30.5\%$, 分母只含 Table VII 的七列, 不含 Xid61, Xid62 等其他不可纠正故障. GPU 侧 ECC 类 (Xid63, 64, 94, 95) 六个月 134 条, CPU 内存 ECC 54 条, 约 2.5 倍. 按容量折算差距更大: 10,000 张卡的显存共 400 TB, 1,250 台节点的主机内存共 640 TB. NVIDIA 的 Xid 文档把 Xid63 定义为行重映射 (row remapping) 的记录事件, 这是 A100 处理 ECC 的正常路径; Table V 也写明「多数情况下重置 GPU 即可」. 因此, 把 Xid63 与不可纠正错误放进同一组累计, 会高估真正需要人工处理的故障数.
+
+![](./images/p11-figure-11-trends-of-ib-network-failures-link-flash.jpg)
+> 图 11: 2023 年 4 月 19 日到 2024 年 3 月 31 日每日 IB 链路闪断次数, 原数据见附录 Table VIII, 原文 Figure 11.
+
+图 11 解析: 横轴是日期, 纵轴是当日闪断次数. 大多数日子为 0 或 1, 尖峰出现在 2023 年 5 月 27 日 (8 次) 和 28 日 (10 次), 7 月 7 日 (10 次), 7 月 12 日 (10 次), 8 月 31 日与 9 月 21 日 (各 7 次). 图中看不出单次闪断影响了多少条链路或多少个任务.
+
+Table VIII 共列出 101 个日期, 合计 213 次, 其中 2023 年 6 月 16 日一行记为 0, 不清楚为何列入. 次数不少于 5 的 9 天合计 67 次, 占全年 31%. 按月汇总是 4 月 (从 19 日起) 8, 5 月 30, 6 月 13, 7 月 39, 8 月 30, 9 月 20, 10 月 13, 11 月 8, 12 月 17, 2024 年 1 月 9, 2 月 12, 3 月 14. 前半年 (4 到 9 月) 140 次, 后半年 73 次, 少了将近一半, 正文说闪断「在整个运行期随机发生」, 但按月数据有明显下降和集中爆发. 每次闪断计的是一条链路还是一个事件, 也没有交代. 两区共约 1,600 条 leaf 到 spine 的上联, 加上约 1,430 台节点的接入链路, 链路总数在 3,000 条以上, 按这个数折算每条链路每年约 0.07 次.
+
+**与 NSDI 24 统计的比较口径**
+
+VIII-D 引用 [96] (NSDI 24, 上海 AI Lab 的数据中心 LLM 开发表征) 的数字: 103 次故障里 NVLink 相关 54 次, 论文写成 52.42%, $54/103$ 四舍五入应为 52.43%. 对比的另一边是 Fire-Flyer 2 的 Xid74 占 GPU 故障的 42.57%, 论文据此暗示 PCIe 加 Bridge 的 NVLink 故障占比并不比 SXM 机型高.
+
+两个百分比的分母不同. [96] 的 103 是故障次数, 分母里包含 CUDA 错误, 节点故障, ECC 和网络错误; Fire-Flyer 的 12970 是 Xid 消息条数, 分母里有 54.85% 是软件引起的 Xid, 不含网络闪断和 CPU 内存错误. 只看硬件 Xid, Xid74 的占比是 94.3%; 若按 [96] 的口径把网络闪断也算进分母, 需要同一时间窗的网络数据, Table VIII 是一年 213 次, Table VI 也是一年, 两表相加后 Xid74 占 $5521/(5856+213) \approx 91\%$. 无论按哪种口径, 都推不出「PCIe 方案的 NVLink 故障占比更低」.
+
+**下一代架构: 1:1 网卡与多平面网络**
+
+IX 的下一代 PCIe 节点面向 MoE 训练. MoE 的 EP 每层前向和反向各需要两次 all-to-all, 通信量随激活专家数增长, 且无法像 DP 的 allreduce 那样靠 CPU 规约减半 PCIe 流量. 下一代节点改为 GPU 与网卡 1:1, 与 DGX-H100/B100 相同, 每卡的网络配额从 25Gbps 提到一整张网卡. 网络上考虑多平面以降低成本, 并考虑用 RoCE 交换机替代 IB.
+
+![](./images/p12-figure-12-next-generation-pcie-node-architecture-with-multi.jpg)
+> 图 12: 下一代 PCIe 节点与多平面 Fat-Tree 网络示意, 每层是一个独立的两层 Fat-Tree 平面, 节点上编号相同的网卡接入同一平面, 原文 Figure 12.
+
+图 12 解析: 图上叠了四层网络, 每层都是 spine 加 leaf 的两层 Fat-Tree, 平面之间没有连线. 下方节点画了成对 GPU 之间的 NVLink, 以及 NIC0 到 NIC3, 每个编号的网卡只连本编号的平面. 图里没有画出跨平面的数据怎么走: 不同平面之间不互通, 两台节点上接在不同平面的 GPU 要通信, 只能先经节点内 (NVLink 或 PCIe) 转到同一平面的网卡, 这部分转发的开销没有讨论.
+
+32,768 这个数可以从交换机端口数推出. 128 口交换机组两层 Fat-Tree, leaf 64 口向下, 64 口向上, spine 的 128 个端口各连一台 leaf, 所以最多 128 台 leaf, 每个平面 $128 \times 64 = 8192$ 个端点, 4 个平面共 32,768 个网卡端口, 1:1 时就是 32,768 张 GPU. 后来 DeepSeek-V3 的硬件论文 (ISCA 2025, 见 [DeepSeek-V3 硬件与模型协同设计解析](../3.2-deepseek-v3-insights/02-deepseek-v3-insights-analysis.md)) 在 H800 集群上用的是八平面两层 Fat-Tree, 每对 GPU 与网卡接入一个平面, 交换机是 64 口 400G IB, 按同一算法每个平面 $64 \times 32 = 2048$ 个端点, 八平面 16,384 张 GPU. 两者的方向一致, 落地时选了 IB 而不是 Fire-Flyer 论文设想的 RoCE. V3 的 EP all-to-all 由 GPU 侧的通信库承担, 实现见 [DeepEP 解析](../../4-%E5%BC%80%E6%BA%90%E4%BB%93%E5%BA%93/4.3-deepep/02-deepep-analysis.md), 与 HFReduce 把规约放到 CPU 的路线不同.
+
+## 3. 数字复核
+
+**能对上的数字**
+
+下表把正文里反复引用的数字逐个放回它出处的表或图重算. 「复算」一列写的是用论文自己给出的量能得到的式子, 结果与论文一致的记为一致, 只差取整的也算一致.
+
+| 数字 | 出处 | 复算 | 结果 |
+| --- | --- | --- | --- |
+| 122 台交换机 | Table III, Figure 5 | $(20+40) \times 2 + 2$ | 一致 |
+| 成本一半 | Table III | $11600/23000 \approx 50.4\%$ | 一致 |
+| 性价比 1.38 | Table II | $0.83/0.60 \approx 1.38$ | 一致 |
+| 能耗降 40% | Table II | $2500/4200 \approx 59.5\%$ | 一致 |
+| HFReduce 上限 13.3 GB/s | IV-D3 | $320/24 \approx 13.3$ | 一致 |
+| 存储出向 9 TB/s | VI-B2, Table IV | $360 \times 25$ GB/s | 一致 |
+| 2880 块 SSD | VI-B2, Table IV | $180 \times 16$ | 一致 |
+| MoE 效率 92.92%, 76.14% | Figure 9b | $\frac{79.615 \times 40}{10.71 \times 320}$, $\frac{79.615 \times 40}{6.535 \times 640}$ | 一致 |
+| FSDP 弱扩展 95% | Figure 8b | $0.57/0.595 \approx 95.8\%$ | 一致 |
+| Xid74 占 42.57% | Table VI | $5521/12970$ | 一致 |
+| 显存 ECC 约 2% | Table VI | $277/12970 \approx 2.14\%$ | 一致 |
+| 网络闪断占 30% | Table VII | $89/292 \approx 30.5\%$ | 一致 |
+
+这些数字一致, 说明表与表之间的基础数据是自洽的: Table VI 十六行加起来正好是 12970, 每行百分比按 12970 重算到小数点后两位都对得上; Table VII 每一行和每一列的合计都对得上. 网络部分 Table III 的「PCIe 三层 Fat-Tree 200 台」与 III-C 的「40 core 加 160 spine 和 leaf」也一致, DGX 方案的 1,320 台按 III-C 拆成 320, 500, 500 也一致, 只是 320 台 core 的来历没有交代.
+
+一致的数字仍然带着口径. 「一半」是整集群采购价, 「83%」是单卡 GEMM, 「40%」是 ResNet 训练时的单节点平均功耗, 三个数分别来自集群, 单卡和单节点三个层面, 摘要把它们放进同一句话. 「13.3 GB/s」是按 320 GB/s 实际访存速度算的理论值, 不是测得的; 「30%」的分母只包含 Table VII 的七类故障.
+
+### 3.1. 前后矛盾与口径不一处
+
+扩展效率与带宽一类有四处. LLaMA-13B 从 64 卡到 512 卡, 按图 8 的耗时算效率是 82.5%, 正文写 91%, 91% 只与 256 卡的 91.9% 吻合; 同一段里 DeepSeekMoE 的两个效率用同一个式子都能复现, 说明式子没有换, 是 LLaMA 的数字写错了位置. HFReduce with NVLink「超过 10 GB/s」只在 128 卡及以下成立, 256 卡起是 9.66, 8.56, 7.99. HaiScale FSDP「训练时间减少近一半」, 图 7 逐点的降幅是 32% 到 41%. VGG16 的「近 88%」按图 6 是 86.7%, 而且 NCCL 后端自己的弱扩展效率 93.8% 更高, 「88% 的并行扩展性」不能当作 HFReduce 比 NCCL 扩展得更好的证据.
+
+成本一类有一处. III-C 同一段先写「60% 的 GPU 成本和能耗」, 后写「80% 的性能, 仅 60% 的成本」, V-C 和摘要写「一半的成本」. 60% 是 Table II 的单节点价格, 一半是 Table III 的整集群价格, 论文在不同段落里交替使用这两个数, 没有说明换了口径. III-C 的「60% 的能耗」与 Table II 的 59.5% 一致, 结论里写成「less than 60%」, 也一致.
+
+故障统计一类有四处. Table VII 的 2023 年 10 月 Network 一格是 29, 按 Table VIII 逐日加起来只有 13, 其余五个月两表完全相同, 差出的 16 次全在 10 月; 若以 Table VIII 为准, 正文的 30% 应为 $73/276 \approx 26.4\%$. Table V 说 Xid74 比其他硬件故障高「几个数量级」, Table VI 显示只高一到两个数量级. Figure 10 的图注把堆叠里的 Xid 都称作显存 ECC 相关, 其中的 Xid79 在 Table V 里属于不可纠正故障. VIII-D 引用 [96] 的 $54/103$ 写成 52.42%, 应为 52.43%, 而且拿故障次数的占比和 Xid 消息条数的占比相比, 分母不同.
+
+存储与公式一类有四处. 20 PiB 以上的镜像容量按 2880 块 15.36TB 两副本算是 19.6 PiB. III-B 写近 200 台存储服务器, Table IV 和 VI-B2 是 180 台. IV-B 的 ring 流量式 $\frac{2n-1}{n}$ 比标准 ring allreduce 的 $\frac{2(n-1)}{n}$ 多 $\frac{1}{n}$. GDRCopy 在 IV-A 用于 H2D, 在 IV-D1 第一条写成用于 D2H 的小数据加速, 两处都写「读主机内存减少三倍」, 按 IV-D3 的 8 次对 2 次, 减少的是四分之三, 读次数变为原来的四分之一.
+
+**论文没有给出的数**
+
+有几项数字是判断这套方案时最需要的, 论文都没有给出. 第一是端到端对比: 全文没有一次在 DGX-A100 集群上跑同一个训练任务的吞吐或 MFU 对比, 「接近 DGX-A100」只由单卡 GEMM 支撑; 4.2 节按 $6N$ 推出的 LLaMA-13B 约 42% 到 51% 的利用率, 依赖 batch size 单位的读法. 第二是通信细节: Figure 7 的带宽是 algbw 还是 busbw, HFReduce 的 chunk 大小, 占用几个 CPU 核, VL 之间的带宽比例, 静态路由表怎么生成. 第三是运维: 一次故障恢复的总耗时, validator 每周摘除的节点数, 运营成本的任何一个具体金额.
+
+这些缺口让论文的结论分成两层. 有表格直接支撑的结论是: 整集群采购价约为 DGX 方案的一半, 单节点 ResNet 功耗约六成, HFReduce 在 Rome 平台上的 allreduce 带宽约为 NCCL 的 1.5 到 4.2 倍 (图 4 同卡数逐点相除), 一年的硬件故障里 NVLink Bridge 是最大来源. 需要读者自己补条件的结论是: 「性能约为 DGX 的 80%」只在不受互连限制的负载上成立; HaiScale 的扩展效率只覆盖到 512 卡 (LLaMA) 和 640 卡 (DeepSeekMoE), 远小于 10,000 卡的集群规模; 99% 的利用率没有定义. Fire-Flyer 2 之后, DeepSeek 在 H800 集群上转向 1:1 网卡和多平面网络, 训练通信改由 GPU 侧的通信库承担, 见 [DeepSeek-V3 解析](../../1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.4-deepseek-v3/02-deepseek-v3-analysis.md) 与 5.4 节.
+
+**存算共网的资源模型**
+
+Fire-Flyer 2 把计算节点与 3FS 存储节点接到同一套两区两层 Fat-Tree. 这比给存储另建一张网络便宜, 也让任意训练节点以 RDMA 直接访问统一命名空间; 代价是训练集合通信、数据读取与 checkpoint 写入竞争同一批 leaf—spine 上行. 系统能成立, 依赖三类流量的时间尺度不同: allreduce 呈周期性大突发, 数据加载较平稳, checkpoint 间隔数分钟且可异步. 若三者峰值同时出现, 无阻塞拓扑也只能保证端口总带宽, 不能保证每个作业的尾延迟.
+
+设一个计算区有 $N_c$ 个节点, 每节点网卡带宽 $B_c$, 存储区有 $N_s$ 个节点, 每节点双向带宽 $B_s$. 训练流量平均占比为 $u_t$, 数据读取为 $u_r$, checkpoint 写入为 $u_w$, 共享上行的稳定条件可写成
+
+$$
+N_cB_c(u_t+u_r+u_w)\le B_{\rm fabric},
+$$
+
+但平均条件远远不够. 集合通信要求所有 rank 同步, 一次短拥塞便会拖慢整个 step; 数据加载有预取缓冲, 可以容忍更长抖动; checkpoint 通常能延后. 因此 Fire-Flyer 用 Virtual Lane 隔离流量、静态路由减少碰撞, 并在应用侧给存储限速. 调度目标是让同步敏感流量获得可预测时延, 并非让每类流量都长期跑满.
+
+两区设计也能写成故障域. 每区 20 台 spine、40 台 leaf, 再加两台核心交换机连接计算区与存储区. 区内训练流量尽量留在本区, 跨区主要承载存储访问和必要通信. 若作业跨两个区, 一条核心路径故障会影响整个作业; 若作业被装进单区, 最多使用约半个集群, 却能减少跨区依赖. 调度器要在规模、碎片与故障域之间取舍.
+
+存算共网的一个反例是全局同步 checkpoint. 1250 个计算节点若同时以 10 GiB/s 写, 源端需求超过 12 TiB/s; 3FS 两副本写放大后, 9 TB/s 存储网卡总量只能给源端约 4.5 TB/s, 还没扣训练通信. 单节点微基准的 10 GiB/s 无法乘节点数. 正确策略是错峰、分批和带宽整形, 或让 checkpoint manager 根据当前网络窗口触发写入.
+
+统一网络也使故障关联. 一台 leaf 交换机异常会同时影响训练 rank 与存储 target, 作业看到的症状可能是 allreduce 超时、数据读取停顿和 checkpoint 失败同时出现. 若监控只按服务拆开, 三个告警会被误判成独立故障. 拓扑感知的事件关联应以交换机、链路和 rail 为主键.
+
+**HFReduce 的代数与瓶颈迁移**
+
+Ring allreduce 对每个 rank 的逻辑网络字节约为 $2(n-1)S/n$, $S$ 是张量大小. PCIe 节点若由 GPU 直接做 ring, 每一段都需要 GPU 读写显存并穿过 PCIe, 同一数据在 reduce-scatter 与 allgather 中多次搬运. HFReduce 先把各 GPU 分片拉到主机内存, CPU 在内存中规约, 再把结果推回 GPU, 以主机内存带宽换 GPU kernel 与 PCIe 路径上的重复传输.
+
+对八卡节点, 朴素 CPU reduce 每个元素要读 8 份输入、写 1 份结果, 再为广播读结果并写回 8 卡. 若把 D2H、CPU 读写和 H2D 都折算到内存控制器流量, 论文给出的实现约产生 24 倍张量字节的主机内存访问. Rome 平台实测约 320 GB/s, 所以单节点聚合上界是 $320/24\approx13.3$ GB/s. 网络更快也无法突破这条内存屋顶.
+
+HFReduce 的优势来自重叠. GPU 计算第 $j+1$ 个 bucket 时, 第 $j$ 个 bucket 经 D2H 到主机、跨节点规约、再 H2D 返回. 设 bucket 计算时间为 $C$, 三段通信为 $p_1,p_2,p_3$, 稳态周期下界为
+
+$$
+T_{\rm bucket}\ge\max(C,p_1,p_2,p_3),
+$$
+
+前提是 PCIe 上行和下行、CPU 内存与网络能并行. 实际上 D2H/H2D 与网卡 DMA 都访问主机内存, $p_i$ 会互相膨胀. bucket 太大时无法被计算遮住, 太小时固定启动、同步和 cache miss 占比上升.
+
+HFReduce with NVLink 让相邻 GPU 先在卡间规约, 减少送入主机的副本数. 设每组 $g$ 张 GPU, CPU 只接收 $8/g$ 份部分和, 主机规约读流量近似缩小 $g$ 倍; 组内 NVLink 多出 reduce 与广播. 当 NVLink 带宽高于 PCIe 和 CPU 内存, 这是有利交换. 规模扩到 256 卡后论文曲线跌破 10 GB/s, 说明瓶颈已经从单节点内存转到跨节点网络、同步或拓扑冲突.
+
+它不适合所有并行. DP 梯度 allreduce 的操作是同形状求和, CPU 很容易接管; TP 的 allgather/reduce-scatter 位于每层关键路径, 张量到达后马上进入下一算子, 多一次 GPU—CPU 往返往往不可接受; MoE EP 是可变长 all-to-all, CPU 端还要做路由重排. 后来的 V3 训练栈把 EP 通信移回 GPU 并用 DeepEP 融合, 这反映通信模式已经变化.
+
+数值上也有边界. CPU 规约若使用 FP32 能降低 BF16/FP16 梯度求和误差, 却把传输字节扩大; 若传输低精度、CPU 解码后高精度累加, 又引入转换成本. 论文性能数字必须连同数据类型与压缩方式读取, 单说 GB/s 不能比较有效梯度信息量.
+
+### 3.2. HaiScale 的并行组合
+
+HaiScale DDP 沿用数据并行公式, 重点是把 HFReduce 的异步 bucket、梯度累积与计算时间线接进训练框架. 当模型在单卡放得下时, 每个 rank 保存完整参数, 全局 batch 随卡数增长, 理想弱扩展吞吐与卡数线性. 实际效率
+
+$$
+E_N=\frac{T_1}{T_N}
+$$
+
+用每卡 batch 固定时的 step 时间衡量. 若 $T_N=T_1$, 效率 100%; 通信未完全遮蔽时, $T_N=T_1+C_N$, 效率为 $1/(1+C_N/T_1)$.
+
+FSDP 把参数、梯度和优化器状态分片, 每层前向前 allgather 参数, 反向后 reduce-scatter 梯度. 显存从每卡 $O(P)$ 降到约 $O(P/N)$ 加当前层全参数, 通信总字节仍与参数量同阶. Fire-Flyer 图 8 的 FSDP 弱扩展约 95%, 说明大模型计算足以覆盖多数通信; 它不能推出小模型同样高效, 也不能推出强扩展到每卡 token 很少时仍成立.
+
+LLM 训练同时使用 TP、PP、DP. PCIe 节点内只有两两 GPU 通过 Bridge 连接, TP 需要频繁集合通信, 因此 TP 组应落在 NVLink 对内. 若 TP=2, 八卡节点可容纳四组; PP 把连续层分到不同组, DP 在节点间复制流水. 这种映射让高频 TP 留在最快链路, 低频 PP 点对点跨组, 梯度 DP 交给 HFReduce.
+
+设模型 $L$ 层、PP 阶段 $p$, micro-batch 数 $m$. 朴素流水气泡比例约
+
+$$
+\beta\approx\frac{p-1}{m+p-1}.
+$$
+
+增加 $m$ 可减气泡, 但每个 micro-batch 更小, GEMM 利用率下降、激活并发增多. HaiScale 的调度把 PP 通信与相邻 micro-batch 计算错峰, 只能隐藏链路时间, 无法消除 warm-up/drain 的依赖空洞. 论文展示到 512/640 卡的扩展结果, 与 10,000 卡集群容量之间仍有距离.
+
+强扩展的反例是固定 global batch. GPU 数翻倍后每卡 token 减半, 计算 $C$ 近似减半, 参数相关的 DP 字节却不变, 通信—计算比翻倍. 到某个规模后增加 GPU 只增加同步. DeepSeekMoE 图中的 320 到 640 卡效率下降, 就应按每卡 token、专家负载和网络关键路径解释, 不能只归于某一个库.
+
+并行组合还决定容错粒度. DP rank 丢失可以由同组副本替代, PP stage 与 TP shard 没有完整副本, 必须从 checkpoint 恢复. 调度器如果只找到数量足够的空闲 GPU, 却不能保持 NVLink 对和网络邻近性, 恢复后的性能会改变. 资源申请应描述拓扑形状, 不只是 GPU 数量.
+
+**HAI Platform 的分时与资源碎片**
+
+HAI Platform 面向多人共享万卡集群, 以任务为单位申请 GPU、CPU、内存、网络和存储. 分时调度的难点是训练任务长、资源形状刚性、checkpoint 昂贵. 高优先级任务抢占低优先级任务时, 被抢占任务先保存状态再释放节点; 若等待 checkpoint 完成才启动高优先级任务, 抢占延迟受存储影响; 若直接杀死, 最多损失一个 checkpoint 周期.
+
+设 checkpoint 间隔为 $I$, 故障或抢占随机落在区间内, 平均丢失计算约 $I/2$. 保存耗时为 $C$, 恢复耗时为 $R$, 故障率为每小时 $\lambda$, 单位时间开销近似
+
+$$
+\Omega(I)=\frac{C}{I}+\lambda\left(\frac I2+R\right).
+$$
+
+忽略 $R$ 对最优点的影响, $I^*=\sqrt{2C/\lambda}$. 论文采用约 5 分钟周期, 表示它在存储吞吐、故障频率和可接受损失之间取了经验点; 不同模型 checkpoint 大小不同, 固定五分钟未必都最优.
+
+资源碎片可分容量碎片与拓扑碎片. 集群剩余 64 张卡, 若散在 64 个节点各一张, 一个需要 8 个完整节点的任务仍无法启动. PCIe 节点中 NVLink 只连接固定 GPU 对, TP=2 任务还要求成对空闲. 调度器应把节点、NVLink 对、leaf 交换机和区域作为层级资源, 用整形装箱减少碎片.
+
+分时还会破坏缓存局部性. 任务重启到另一批节点后, 数据 loader 的 page cache、容器镜像和编译产物都要重新加载; 统一 3FS 保证数据可见, 不能消除冷启动流量. 若大量任务同时被抢占重启, 存算共网会出现恢复风暴. 调度策略需要限制并发恢复数, 并优先在原节点或同 leaf 内恢复.
+
+HAI Platform 的公开仓库展示管理进程、Kubernetes 资源和节点选择等实现, 论文的生产系统还包含内部调度策略与 checkpoint manager. 开源接口能证明任务级分时的基本形态, 不能从仓库默认配置推断论文集群全部策略. 谱系上, 它解决「谁在何时用哪批卡」; HaiScale 解决「拿到卡后怎样并行」; 3FS 解决「状态与数据放在哪里」.
+
+公平性也不能只看 GPU 时. 一个通信密集任务占用较少算力却压满网络, 会拖慢同 leaf 的其他作业; 一个 I/O 任务占 GPU 很少却压存储. 更合理的配额要统计 GPU 时间、网络字节、存储字节与稀缺拓扑块. 否则用户有动力把开销转移到未计费资源.
+
+**FS 的一致性、吞吐与恢复**
+
+3FS 将文件切成固定 chunk, 每个 chunk 的副本组成 CRAQ 链. 写入从链头依次传播到链尾, 链尾提交后确认沿链返回; 读取可从任一拥有已提交版本的副本完成. 「write-all, read-any」让全部 SSD 参与读吞吐, 代价是写入必须覆盖所有副本.
+
+设副本数为 $r$, 用户写入量为 $W$, 每份数据在链上复制 $r$ 份, 存储设备写放大至少为 $rW$, 网络跨服务传输近似也与 $r$ 成正比. 用户可见写带宽上界约为存储总入带宽除以 $r$. 读请求均匀分散时, 总读带宽可接近所有副本带宽之和. 训练数据读取远多于写入, 这正适合 CRAQ.
+
+每个 target 同时保留 committed 与 pending 版本. 写入期间普通读若撞到 pending, 3FS 实现可返回状态让客户端等待重试, 或在放宽语义下读 pending. 这避免每次读都查询链尾版本, 提高读吞吐; 热 chunk 持续写时, 重试会抬高尾延迟. checkpoint 文件通常写新文件后原子发布, 比原地频繁覆盖更适合这一协议.
+
+故障后 cluster manager 更新 chain table 与版本, 离线 target 移到链尾, 新副本进入 waiting/syncing. 若一个 SSD 的读流量全部转给固定搭档, 搭档会瞬间过载. 3FS 设计笔记把副本组合写成平衡不完全区组设计, 让任一 target 故障时, 流量分摊到尽量多的其他 target. 这是存储放置与故障负载的联合优化, 不只是随机选副本.
+
+可用性可以粗算. 单 target 在观察窗内不可用概率为 $p$, 三副本独立时 chunk 同时不可用概率约 $p^3$. 实际故障并不独立: 同节点电源、同 leaf 网络、固件和批次缺陷会造成相关失效. 副本必须跨节点、跨故障域放置; 只增加副本数却放在同一机架, $p^3$ 会严重低估风险.
+
+Fire-Flyer 论文中的 180 台、每台 16 块 SSD、双 200Gbps 网卡构成早期生产规模. 后续 3FS 开源资料报告相同规模集群在有训练背景流量时读压测约 6.6 TiB/s, 并把应用扩到数据处理、checkpoint 和推理 KV cache. 这条谱系说明 3FS 从训练共享存储演进成通用高吞吐层; Fire-Flyer 论文的 9 TB/s 是网卡线速合计, 不是用户读吞吐, 两个数字口径不同.
+
+计算存储分离带来的核心能力是位置无关访问. 数据无需预先复制到计算节点本地盘, 调度器可以把任务放到任意空闲节点; checkpoint 也不绑定故障机器. 代价是每次读取都依赖共享网络. 当模型训练进入超长上下文、checkpoint 或 KV cache 更大时, 存储流量会与训练通信耦合得更紧.
+
+## 4. 故障率与训练成功概率
+
+大作业只要任一关键 rank 故障便中断. 若单 GPU 每小时故障率为 $\lambda_g$, 作业使用 $G$ 张卡, 独立近似下作业故障率为 $G\lambda_g$, 平均无故障时间约
+
+$$
+\operatorname{MTTF}_{\rm job}\approx\frac{1}{G\lambda_g}.
+$$
+
+单卡可靠性很高时, 万卡乘数仍会把作业 MTTF 压到小时或天. 独立近似忽略交换机、供电和软件故障的相关性, 实际尾部可能更差.
+
+若训练时长为 $H$, 期间零故障完成概率约 $e^{-G\lambda_gH}$. 因此万卡长训不能依赖「一次跑完」, checkpoint 与自动恢复是正常路径. checkpoint 周期只控制丢失计算, 检测、隔离、重新分配和加载决定停机时间. 论文只给「最多丢五分钟」, 不等于五分钟内恢复.
+
+Xid 日志消息数也不能直接估 $\lambda_g$. 同一次根因可能产生多条 Xid31/43/74, 一次链路闪断可能影响多卡. 需要先按设备、时间窗和作业关联去重为 incident, 再统计暴露 GPU 小时. Fire-Flyer 表 VI 缺少去重规则与暴露时长, 适合比较错误类型的日志占比, 不足以计算单卡年故障率.
+
+Validator 每周扫频率、显存、GEMM、NVLink 与存储, 属于主动筛除潜在坏节点. 其收益取决于故障是否有可检测前兆. 对稳定降频、坏显存地址和持续链路降速有效; 对随机闪断、软件非法访问和无前兆芯片故障作用有限. 假阳性会减少集群容量, 假阴性会把坏节点送进大作业. 应报告 precision、recall 与被摘节点后真实维修结论, 论文未提供这些量.
+
+静默错误比显式崩溃更危险. ECC 能检测部分显存位翻转, 不能覆盖算术逻辑和所有链路错误. 满显存 GEMM 与结果校验可以发现稳定硬错误; 间歇性错误需要重复与多输入模式. 训练中 gradnorm spike 是症状, 也可能来自数据或优化器, 不能直接归因硬件.
+
+一个节点故障会引发恢复风暴: 作业释放其余健康节点、重新调度, 从 3FS 读 checkpoint, 再建立通信组. 多个作业共享故障域时可能同时恢复. 平台应做退避、限制并发加载并保留部分网络余量, 否则恢复流量会拖慢仍在运行的任务, 产生级联超时.
+
+### 4.1. 从 Fire-Flyer 到 V3/3FS 的技术谱系
+
+Fire-Flyer 2 的约束是低成本 PCIe A100 节点: 八卡共享一张 200Gbps 网卡, NVLink 只连接成对 GPU, CPU 内存带宽较强. HFReduce 利用 CPU 内存做 DP 规约, HaiScale 把高频 TP 放在 NVLink 对内, 存储与计算共用 IB. 这些设计围绕「用软件补节点互连」展开.
+
+DeepSeek-V3 的 H800 节点换成八卡八网卡, 每卡拥有独立 400Gbps CX7, NVLink 域覆盖节点. MoE 的主要通信从 DP allreduce 变为 EP all-to-all, CPU 规约失去适配性; DeepEP 在 GPU 上做 dispatch/combine, 节点限制路由与跨节点去重减少 IB 字节. 网络仍沿 Fire-Flyer 提出的多平面两层 Fat-Tree 方向, 但平面数从设想图的四个变成八个, 交换机选择 IB.
+
+训练调度也发生变化. Fire-Flyer/HaiScale 强调异步 allreduce 和普通 PP/TP 组合; V3 用 DualPipe 把前向、输入梯度与权重梯度拆开, 双向流水降低气泡. 两者共同原则是让通信落在计算窗口里, 具体调度由模型结构与节点能力决定.
+
+3FS 是谱系中最连续的一环. Fire-Flyer 论文已经给出计算存储分离、180 台存储、CRAQ、RDMA 原生接口和 checkpoint manager; 后续开源仓库补全 cluster manager、无状态 metadata service、FoundationDB 后端、USRBIO 与恢复状态机. 它从早期集群共享存储持续演化而来.
+
+HAI Platform 与后续 DeepSeek 训练栈的关系要分清. 前者是通用任务级资源与分时平台, 管理共享集群上的提交、抢占、恢复和配额; V3 技术报告公开的是单次超大模型训练的并行与内核. 通用平台可以承载训练作业, 不能据此推断 V3 的内部编排完全等同开源 HAI Platform.
+
+谱系也包含被替换的路线. HFReduce 仍适合 PCIe 节点上的大块 DP allreduce, 后续 MoE 栈却转向 GPU 发起网络; 共享存算网络节省成本, V3 集群则增加独立 3FS 存储平面网卡; Fire-Flyer 设想 RoCE 多平面, V3 实际采用 IB. 演进的主线是根据瓶颈重新分配工作, 不是把旧组件逐项保留.
+
+**反例与最小复现实验**
+
+成本反例是通信密集模型. 单卡 GEMM 达 DGX 的 83%, 不能推出端到端训练也有 80%. 若每 step 一半时间花在 TP/EP 通信, PCIe 节点通信慢两倍, 总时间会从 $0.5C+0.5D$ 变成约 $0.5C+1.0D$, 性能只剩三分之二. 应分别选择计算密集 CNN、DP 大模型、TP 大模型与 MoE, 画模型通信强度—相对 DGX 吞吐曲线.
+
+网络反例是存储突发与 allreduce 同时发生. 固定训练任务, 分别在无 I/O、平稳数据读、全局 checkpoint 三种背景下测 step P50/P99, 再切换 VL、静态路由和限速. 若平均吞吐不变而 P99 上升, 同步训练仍会被最慢 step 拉低. 还要读取交换机端口队列与 ECN/丢包计数, 防止把数据 loader 停顿误判成 GPU 抖动.
+
+HFReduce 最小实验应同时报 PCIe、主机内存和网络计数器. 扫 bucket 1MiB 到 1GiB、GPU 数 8 到 512、FP16/BF16/FP32, 比较 NCCL、HFReduce 与 HFReduce+NVLink. 对每点记录 CPU 核数、NUMA 绑定、GPU kernel 占用和与反向重叠后的 step, 单独带宽排名不代表训练排名.
+
+并行实验固定模型与 global batch, 扫 TP/PP/DP 组合. 每个组合先检查拓扑映射: TP 是否留在 NVLink 对, PP 是否跨最少交换层, DP 是否均匀跨 leaf. 输出计算时间、TP 通信、PP 气泡、DP 暴露时间与显存. 这样才能解释强扩展转折点.
+
+容错实验注入 GPU Xid、IB 链路闪断、存储 target 离线和进程卡死. 记录检测时间、隔离时间、调度等待、checkpoint 加载与恢复后首个有效 step. 对静默错误另做结果校验, 不能用进程退出测试替代. 注入频率要低于系统自然恢复能力, 再逐步提高观察是否发生恢复风暴.
+
+3FS 实验用顺序大读、随机小读、并行 checkpoint 和后台恢复四种负载. 单独测每种后再两两叠加, 记录用户带宽、副本网络写放大、pending 版本重试和尾延迟. 故障时让一个 target 离线, 检查平衡副本放置是否把重定向流量均匀摊开.
+
+证据验收按层进行: 论文表格证明当时硬件与微基准; 开源仓库证明公开实现的接口和状态机; 复现实验验证特定硬件上的行为. 三层对齐时才能把结论迁移到当前系统. Fire-Flyer 最有价值的地方正是把采购约束、拓扑、通信库、并行框架、存储和调度放进同一个资源模型, 而不是某一个孤立的带宽数字.
+
+**计算节点为何能比 DGX 便宜**
+
+Fire-Flyer 节点的成本差来自组件删减与商品化组合. DGX-A100 的八张 SXM A100 通过 NVSwitch 形成全带宽域, 配多张高速网卡和完整厂商系统; Fire-Flyer 使用八张 PCIe A100、双路 Rome CPU、一张 200Gbps IB 网卡, 最初只有固定 GPU 对之间加 NVLink Bridge. Table II 给出的节点价格比约 0.60, 单卡 GEMM 性能比约 0.83, 所以表内性价比是 $0.83/0.60\approx1.38$.
+
+这个比值隐含 workload 权重. 若作业时间中 GEMM 比例为 $f$, 通信与其他部分在 Fire-Flyer 上相对 DGX 慢 $r$ 倍, 相对吞吐可用 Amdahl 形式估算:
+
+$$
+P_{\rm rel}=\frac{1}{f/0.83+(1-f)r}.
+$$
+
+当 $f=0.9,r=2$ 时, $P_{\rm rel}\approx0.78$, 接近论文的八成叙事; 当 $f=0.5$ 时只剩约 0.62. 「接近 DGX」成立的条件是大部分时间在矩阵乘, 或软件把通信遮住. 模型结构一旦把 TP/EP 推到层级关键路径, 同一硬件的相对性能会下降.
+
+整集群采购价 11.6M 对 23M 美元的 50.4% 又包含网络方案差异. PCIe 集群使用 122 台交换机, DGX 对照需要更复杂的三层网络和 1320 台交换机. 这使集群价格比单节点 60% 更低. 若只把节点差异归因于 PCIe GPU, 会漏掉网络拓扑占据的另一大块成本.
+
+功耗同样受负载影响. Table II 的约 2.5kW 对 4.2kW 来自 ResNet 训练, PCIe 卡功率上限和 CPU/网络配置都不同. 通信等待较多时, Fire-Flyer 功耗更低可能只是 GPU 空闲; 比较能效应使用完成同一训练所需总能量
+
+$$
+E=P_{\rm avg}\times T_{\rm train},
+$$
+
+而非单节点瞬时功率. 若功率为 DGX 的 60%、训练时间为 1/0.8=1.25 倍, 总能量约为 75%, 节省约 25%, 小于「功耗低 40%」.
+
+CPU 不是免费配角. HFReduce 依赖双路 Rome 的内存通道、核心和 PCIe root complex; CPU 规格降低会直接压 allreduce. 商品节点节省 NVSwitch 与网卡, 同时把更多工作放到 CPU 与软件. 成本模型至少应加入 CPU、内存、研发、运维与更长作业占用时间.
+
+资源利用率也影响有效成本. 论文提到集群利用率很高, 但没有给定义. 若按已分配 GPU 时/可用 GPU 时计算, 一个通信等待严重的作业仍可贡献 100% 分配利用率; 若按 Tensor Core busy 或有效训练 FLOPs, 数字会低很多. 采购回报应使用完成任务数或有效 FLOPs, 不能只看卡是否被占用.
+
+### 4.2. 调度器的目标函数与拓扑约束
+
+设作业 $j$ 需要 $g_j$ 张 GPU、内存 $m_j$、持续时间估计 $t_j$, 拓扑形状 $q_j$. 调度变量 $x_{jn}$ 表示作业是否使用节点 $n$. 最简单的容量约束是
+
+$$
+\sum_j x_{jn}g_{jn}\le G_n,
+$$
+
+但 Fire-Flyer 还要满足 TP 的 NVLink 配对、PP 的网络邻近、同作业 rank 的区域限制与 checkpoint 带宽. $q_j$ 应描述为一棵「区域—leaf—节点—GPU 对」资源树.
+
+调度目标常同时含等待时间、抢占损失和碎片:
+
+$$
+\min \sum_j w_j C_j
++\alpha\sum_j L_j^{\rm preempt}
++\beta F_{\rm topology},
+$$
+
+$C_j$ 是完成时间, $w_j$ 是优先级, $L_j^{\rm preempt}$ 是抢占导致的保存与重算, $F$ 衡量留下的不可用碎片. 只最小化当前空闲卡数量会把完整节点拆散, 后续大任务饥饿; 只保留整块又会降低短期利用率.
+
+回填可以利用大作业等待期间的碎片. 若高优先级作业预计在 $t_0$ 获得完整资源, 调度器可启动预计在 $t_0$ 前结束的短作业; 估时错误会延迟高优先级任务. 深度学习运行时间受数据、故障和收敛提前停止影响, 预测不稳定. 分时 checkpoint 让超时作业可被抢占, 将估时错误成本从整段延迟降为一次保存恢复.
+
+拓扑退化还需要进入准入决策. 一个 8 卡作业既可占完整节点, 也可跨四个节点各取 NVLink 对; 前者减少跨节点 PP/DP, 后者可能填碎片. 对通信密集作业应预估两种映射的 step time, 用预计完成时间而非纯 GPU 数选择. 调度器若无性能模型, 很容易用更高分配率换来更低有效吞吐.
+
+存储是隐含资源. 多个大任务同时进入 checkpoint 周期时, 3FS 与网络峰值可能超过限制. 可以给每个作业分配 checkpoint 带宽 token, 保存开始前向调度器申请; 没拿到 token 的任务延后几秒. 这让存储峰值可控, 代价是某些作业的恢复点间隔变长.
+
+一个反例是严格优先级. 高优先级短任务不断到达, 低优先级长训练被频繁抢占, 每次都写 checkpoint、冷启动并重建通信组, 有效训练趋近零. 平台需要最小运行片段、抢占冷却或累计服务量提升优先级. 任务级分时解决资源共享, 也引入经典操作系统调度问题.
+
+**Checkpoint 的字节与时间模型**
+
+训练状态包括参数、主权重、梯度、优化器动量、学习率调度器、随机数状态与数据游标. 对 AdamW 混合精度, 每参数常见持久状态是 BF16 参数 2 字节、FP32 master 4 字节、两份 FP32 动量 8 字节, 合计 14 字节; 是否保存梯度取决于实现. 参数量 $P$ 的完整 checkpoint 约 $14P$ 字节.
+
+数据并行会复制参数, checkpoint manager 不应让每个 DP rank 都写一份完整副本. ZeRO/FSDP 分片时, 每个 rank 写自己的 shard, 总用户字节仍约完整状态大小; CRAQ 副本数 $r$ 再把存储物理写放大到 $rS$. 若模型 100B 参数, $S\approx1.4$ TB, 双副本物理写约 2.8 TB.
+
+设有 $N$ 个计算节点并行写, 单节点源带宽 $b_c$, 3FS 用户写上限 $B_s/r$, 网络共享剩余带宽 $B_f$, checkpoint 完成时间下界为
+
+$$
+T_{ckpt}\ge\max\left(\frac{S}{Nb_c},
+\frac{rS}{B_s},
+\frac{S}{B_f}\right).
+$$
+
+单节点 10 GiB/s 只影响第一项. 模型或节点数增大后, 存储侧与网络侧成为公共瓶颈, 增加 writer 不再缩短时间.
+
+异步保存还需要快照一致性. 参数在 step $t$ 保存, 优化器状态若在 step $t+1$ 才拷出, 恢复后两者不匹配. 常见做法是在 step 边界冻结一份主机快照, 训练继续使用 GPU 状态, 后台再把主机快照写 3FS. 这需要额外主机内存, D2H 拷贝仍会短暂占 PCIe 与内存带宽.
+
+分块索引允许并行写与随机读. 每个张量记录文件偏移, 恢复时不同 rank 可直接 batch read 所需 shard, 避免先由一个进程读全量再广播. 若并行布局改变, 例如恢复时 DP/PP 数不同, shard 需要重分布; 原始 checkpoint 若只按旧 rank 切分且缺全局张量元数据, 弹性恢复会很困难.
+
+增量 checkpoint 可只写变化块, 对优化器状态每步几乎全变, 收益有限; 参数低秩变化也不代表字节级块相同. 压缩可以减网络字节, 但会消耗 CPU 并延长快照窗口. Fire-Flyer 选择高带宽全量异步写, 与 3FS 顺序吞吐和五分钟周期匹配.
+
+校验不能只等文件写成功. 每块应有 checksum, metadata 原子发布应发生在全部 chunk 与副本提交之后. 恢复演练要定期抽取 checkpoint 实际加载并跑若干 step; 否则索引或版本错误可能到真正故障时才暴露.
+
+**故障相关性与容量预留**
+
+假设节点故障独立会低估共享组件. 可把故障拆成设备独立率 $\lambda_i$、节点公共率 $\lambda_n$、leaf 公共率 $\lambda_l$、区域公共率 $\lambda_z$. 一个跨 $N$ 节点、$L$ 个 leaf、$Z$ 个区域的作业故障率近似
+
+$$
+\lambda_{job}\approx N\lambda_i+N\lambda_n+L\lambda_l+Z\lambda_z.
+$$
+
+把更多 rank 塞进同一 leaf 会降低 $L$, 减少交换机故障暴露和跨 leaf 通信; 同时一台 leaf 故障会一次损失更多 rank. 对同步训练, 只要任一 rank 丢失作业都停, 前者通常更重要.
+
+备用容量决定恢复等待. 集群长期分配率 99% 时, 一个 512 卡作业故障后很难立刻找到另一组 512 卡同形资源. 若原健康节点必须全部释放再重排, 恢复可能等待数小时. 保留 1% 即约 100 卡, 仍不足以整体替换大作业. 更实用的是支持局部 rank 替换、弹性并行或维护同规模热备池, 每种都增加框架复杂度.
+
+链路闪断与永久故障的处理不同. 毫秒级闪断适合通信重试或路径切换; 立即重启整个作业会放大影响. 永久降速若只重试, 每个 step 都被拖慢. 监控需要区分瞬态丢包、持续 BER、端口 flap 和物理断链, 决策从重试、绕路到摘除逐级升级.
+
+Xid74 的高日志占比说明 NVLink/Bridge 值得重点监控, 不能直接等同大量独立 Bridge 损坏. 同一错误可能在多个 GPU 上重复上报. 事件归并可用节点、链路端点、时间窗与作业 ID: 两端在同秒报告 Xid74 应合并为一条链路 incident; 随后的通道停止消息归到同一根因.
+
+容量预留还应覆盖 validator. 每周自检若每节点耗时 $v$, 均匀摊开后平均离线节点约 $N v/(7\times24\mathrm h)$. 1250 节点、每次 1 小时意味着平均约 7.4 台处于检测, 约 0.6% 容量. 全部集中在维护窗口会一次抽走更多资源, 影响大作业调度.
+
+反例是错误相关于负载. 某类 Bridge 只有在持续满带宽时出错, 空闲 validator 或短 allreduce 测试无法复现; 某显存位只有高温时翻转, 冷机检测通过. 验证应覆盖长时间、满功耗与真实通信图, 同时避免把整个集群同时推到热极限.
+
+## 5. 利用率应如何拆开
+
+集群利用率至少有四个定义. 分配利用率是已分配 GPU 时除可用 GPU 时; 活跃利用率是 GPU 有 kernel 执行的时间比例; 算力利用率是实际 FLOPs 除峰值 FLOPs; 有效利用率只计算最终成功训练的有效 token, 扣除失败重跑和丢弃实验. 四者可以相差很大.
+
+设分配率为 $U_a$, 作业内平均 MFU 为 $U_m$, 成功保留比例为 $U_s$, 则有效峰值利用近似
+
+$$
+U_{eff}=U_aU_mU_s.
+$$
+
+例如 96% 卡时已分配、作业 MFU 45%、5% 计算因失败或无效实验丢弃, 有效利用率约 41%. 提高分配率一个百分点的收益远小于把 MFU 提高五个百分点.
+
+Fire-Flyer 的分时调度主要提高 $U_a$, HFReduce/HaiScale 提高 $U_m$, checkpoint 与 validator提高 $U_s$. 把它们放在同一公式里, 能解释软硬件协同的真实关系: 调度、通信和可靠性分别控制不同乘数, 任一项接近零都会吞掉其他优化.
+
+网络利用率也有物理与有效之分. 链路发送 100 GB, 其中副本、重传、协议头和中间转发可能占一半; 物理带宽很高, 用户有效字节不一定高. 3FS 两副本写的物理流量天然大于用户写入, HFReduce 的多次主机内存访问也属于必要放大. 优化目标应是单位有效 token 的网络与内存字节.
+
+作业级指标还需分 P50 与尾部. 同步训练的 step time 由最慢 rank 决定, 平均 GPU busy 无法发现少数慢卡. 每 step 记录 rank 最大值、均值与标准差, 再关联拓扑, 可以识别某 leaf 或 NUMA 域长期偏慢. 只看全局平均容易让 9999 张正常卡掩盖一张拖慢全作业的卡.
+
+成本最终应落到每有效 token 或每完成实验. 采购价低一半、单任务慢 20%、故障重跑多 5% 时, 单有效 token 成本比例约
+
+$$
+\frac{0.5}{0.8\times0.95}\approx0.66.
+$$
+
+仍有优势, 但不是简单的 0.5. 若软件研发与运维成本固定, 集群规模越大越容易摊薄; 小团队复制同一架构未必得到相同性价比.
+
+### 5.1. 严格的复算边界
+
+论文给出的 10,000 张 GPU 是集群规模, 图 8/9 的最大训练实验只有数百卡. 从数百卡扩到万卡需要更高层并行、更多独立作业或两者组合. 论文能够证明平台承载万卡、组件在数百卡扩展良好, 不能证明一个万卡单作业达到相同效率.
+
+「性能约 DGX 的 80%」主要由单卡 GEMM 与若干训练结果支撑, 缺少同模型、同卡数、同 batch 在 DGX 集群的端到端对照. 复算可以验证表内比值, 无法补出缺失对照. 更稳妥的结论是 PCIe 方案在计算占主导且通信被重叠的负载上接近该比例.
+
+HFReduce 的理论 13.3 GB/s 来自 320 GB/s 除 24 倍访问, 属于 roofline 上限. 实测受 NUMA、cache、线程绑定与网络影响. 论文曲线若超过或接近上限, 应先检查 GB 与 GiB、单向与双向、算法字节与物理字节口径, 不能直接宣称突破内存带宽.
+
+3FS 的 9 TB/s 来自 360 张 25 GB/s 网卡的出向合计, 6.6 TiB/s 是后续公开读压测, 两副本写上限又约减半. 三者分别是理论端口和、用户读实测和用户写上界. 把它们排成单条「性能提升」曲线会混淆方向、单位与副本开销.
+
+故障表的 12970 条 Xid 是消息, 292 与 213 是不同时间窗和分类的事件/计数. 任何 MTBF 计算都需要暴露小时与去重 incident, 原文未给. 能复算的是类别百分比和月度和, 不能从日志条数推出节点年故障概率.
+
+谱系判断也应以组件职责和官方材料为准. Fire-Flyer 提出的多平面方向后来出现在 V3 网络; 3FS 持续开源演进; HFReduce 的 CPU 规约没有成为 V3 EP 路径. 这说明哪些思想延续、哪些实现被替换. 时间相邻或团队相同不足以证明一个组件直接派生自另一个.
+
+最终可迁移的方法是资源守恒: 参数和激活决定计算/显存, 路由和副本决定物理字节, 拓扑决定共享瓶颈, 调度决定能否重叠, 故障与恢复决定有效产出. 每项都能单独计数, 也能在端到端时间线上重新相加. 只要这条链闭合, 换 GPU、网络或模型仍能重算; 只记住「一半成本、八成性能」便无法迁移.
+
+**数量级复算: 万卡集群每天能产出什么**
+
+若 10,000 张 A100 每张在训练中持续提供有效 $F$ TFLOPS, 一天有效计算量为
+
+$$
+C_{day}=10^4\times F\times10^{12}\times86400.
+$$
+
+取 $F=120$ TFLOPS, 得约 $1.04\times10^{23}$ FLOPs/天. 对参数量 $P$、token 数 $D$ 的稠密 Transformer, 训练计算粗估 $6PD$. 175B 模型每天可处理约
+
+$$
+D\approx\frac{1.04\times10^{23}}{6\times175\times10^9}
+\approx99\ \text{B token}.
+$$
+
+这个数字只用于数量级: MoE 激活参数、注意力、重算、数据并行与实际 MFU都会改变结果. 它说明万卡容量主要靠并行多个实验或训练超大模型消化, 调度与数据供给和 GPU 本身同样关键.
+
+网络侧, 每个计算节点 200Gbps 即 25GB/s, 1250 节点端口和为 31.25TB/s 单向. 122 台交换机的上行只能在设计流量矩阵下提供接近该能力; 全部节点同时跨区发满会受核心链路限制. HFReduce 把节点间字节压到网络可承受范围, 同时把节点内压力移到约 320GB/s 主机内存.
+
+存储侧原始 SSD 容量为 $2880\times15.36$ TB=44.24PB 十进制, 约 40.2PiB. 两副本后约 20.1PiB, 与论文「20PiB 以上」吻合. 每台 16 SSD 若单盘顺序读 7GB/s, 设备和约112GB/s, 但双 200Gbps 网卡合计只有50GB/s, 单节点读由网络限制; 集群理论出向约9TB/s对应每节点50GB/s. 后续6.6TiB/s实测约为理论十进制9TB/s的79%, 还含训练背景流量.
+
+checkpoint 以100B参数、14字节状态估算1.4TB. 用户写上限按双副本4.5TB/s, 理论传输只需0.31秒; 实际还有D2H、文件切块、元数据、SSD落盘和并发整形. 若每五分钟一次, 平均用户写流量约4.7GB/s, 对全存储很小; 峰值短而高, 需要调度避免与同步通信相撞.
+
+网络闪断全年213次, 若粗略均匀分布, 平均约41小时一次. 这个数是事件表计数, 未知影响范围. 对持续数周的大作业, 即使多数闪断可自动恢复, 通信库也必须把短暂链路异常视为常态. 每次都重启作业会造成巨量损失.
+
+**计算存储分离的收益与代价**
+
+本地盘架构中, 调度器必须把任务放到已有数据的节点, 或先复制数据; 共享3FS使计算位置与数据位置解耦. 设数据集大小 $D$, 本地复制带宽 $b$, 作业运行时间 $T$, 若每次调度都复制, 启动开销 $D/b$; 共享存储把它摊到运行期读取. 对短实验、大数据集, 省启动时间尤其明显.
+
+分离也提高容量池化. 每个计算节点配固定本地盘时, 节点间数据量不均会产生空间碎片; 集中存储让所有SSD服务所有作业. 但网络成为新的共享失效域和成本项. 数据每读一次都穿网络, 热数据不能自动享受本地NVMe带宽, 除非加客户端缓存.
+
+随机样本读取对共享文件系统更苛刻. 小而不对齐的读取无法跑满SSD和RDMA, FUSE路径还有内核切换与拷贝. 3FS后续提供异步零拷贝原生接口与batch read, 将一批样本请求聚合. 训练loader应按样本索引批量提交, 而不是逐文件同步读取.
+
+一致性简化上层. checkpoint发布、数据管线中间结果与多进程共享文件需要明确可见顺序. CRAQ的强一致与事务元数据让应用不用自行处理对象最终一致. 代价是写入链和元数据事务; 对一次写、多次读的训练数据合适, 对高频原地小写不一定理想.
+
+恢复期间的流量平衡体现分离架构的另一面. 一个SSD离线, 任意客户端仍可从副本读, 调度无需搬训练作业; 副本同步与重定向却会占共享网络. 平衡链表把额外读取摊给多个target, 调度器还应限制恢复速率, 防止修复吞吐压垮前台训练.
+
+与后续KV cache用途相比,训练数据读取更能容忍毫秒尾延迟,decode KV读取直接进入token生成关键路径. 同一3FS服务两种负载时,需要不同优先级和SLO. 这也延续Fire-Flyer存算共网的核心问题:吞吐池化带来效率,同步敏感流量要求隔离.
+
+### 5.2. 一套能证伪结论的验收矩阵
+
+「PCIe节点达到DGX八成性能」用四类模型验收:纯DP、TP密集、PP密集、MoE EP. 固定GPU数、模型、batch和精度,比较每卡token/s、MFU、网络暴露时间与能耗. 若只有纯DP接近八成,结论就应限定在HFReduce擅长的负载.
+
+「HFReduce优于NCCL」需要固定CPU、NUMA、消息大小和重叠方式. 同时给裸allreduce延迟、带宽与端到端step. 若裸通信更快但step不变,收益已被计算遮住; 若CPU规约抢占data loader,端到端可能反而下降.
+
+「存算共网无拥塞」用交叉负载验证. 训练allreduce强度、3FS读取、checkpoint写入各设低中高三档,形成组合矩阵. 每点测step P99、数据等待、交换机队列和重传. 静态路由只对已知集合通信有效,随机存储目的地仍需应用限流.
+
+「五分钟checkpoint最多丢五分钟」再加三列:故障检测、重新调度、状态读取. 注入故障后从最近一次成功step计时,直到恢复后首个有效step. 训练进度损失上限是五分钟,服务中断可能更久;两者不能合并.
+
+「故障以NVLink为主」先把Xid消息聚合成incident,再按GPU小时归一. 同一次Xid31/43/74链只算一个根因,网络闪断和CPU ECC纳入共同分母. 若归一后Bridge incident仍最多,才支持硬件主张.
+
+「3FS读吞吐可线性扩展」应扫客户端数与存储节点数,同时报告单target热点和均匀分布. 顺序大读达到数TiB/s不能代表随机小样本;后台副本恢复还要单独一条曲线. 结果按用户字节、物理字节和副本放大分别报告.
+
+「高利用率」同时给分配率、GPU busy、MFU和有效token比例. 抢占与故障重跑从有效比例中扣除. 四个指标并列后,调度平台、通信优化与容错的贡献才不会互相冒领.
+
+验收矩阵的价值在于每个强结论都有可能失败. 失败后结论缩到真实适用范围,例如「DP大bucket、Rome双路、固定NUMA绑定下优于NCCL」. 这种限定比跨硬件的口号更能指导后续V3、3FS与新集群设计.
+
+**两区网络的路径与过载上界**
+
+两区各有独立 leaf/spine, 核心交换机承担跨区和计算—存储互访. 若作业全部 rank 位于同一区, DP allreduce 可留在区内; 数据读取仍要跨核心到存储区. 若作业一半 rank 在每区, 集合通信会产生跨区割流量. 对均匀 all-to-all, 两边各 $N/2$ 个端点, 每个端点约一半流量跨割, 核心总单向需求约 $NB/2$. 核心容量低于该值时, 端点网卡再快也会过载.
+
+Ring allreduce 的跨区流量取决于 rank 排列. 若 ring 先遍历区A再遍历区B, 每轮只有两条边跨区; 若rank交替排列, 几乎每条边都跨区. 同样的节点集合可有数量级不同的核心负载. 静态路由之前要先做拓扑感知rank排序, 把高频边留在区内.
+
+Tree allreduce也受根与分支放置影响. 双二叉树可让每个rank发送接收量均衡, 若两棵树都在同一核心链路汇合, 仍会形成热点. 路由表应联合collective拓扑生成, 只按源目的最短路无法保证两棵树分散.
+
+存储读取的目的节点很多, 流量比collective更随机. 假设每个loader从180台存储均匀取样, 单个客户端流量能分散; 数千客户端同时随机时总体平滑, 但热门数据集与checkpoint会打破均匀性. 3FS的locality-oblivious接口让应用无需知道target, 负载均衡责任转移到chunk放置与客户端选择.
+
+Virtual Lane只能隔离队列,不能创造带宽. 给训练高优先级可保护step尾延迟,存储请求会积压并在训练间隙集中释放;若loader预取深度不足,稍后仍会让GPU饿死. 优先级设计需要端到端反馈:当数据buffer接近空时临时抬高读取,checkpoint始终保持较低优先级.
+
+关闭DCQCN依赖受控流量. 通用RoCE里无拥塞控制可能造成PFC暂停传播、丢包与重传;Fire-Flyer通过静态路由、VL隔离和应用限速把网络维持在安全区. 一旦引入未知租户、动态EP all-to-all或流量矩阵突变,原假设会失效. 后续V3硬件思考重新讨论AR、VOQ与可编程拥塞控制,正是模型通信从规则collective走向动态路由后的变化.
+
+路径故障时,静态路由需要重算或回退. 重算期间若所有流同时迁到同一备份链路,短时过载比原故障更严重. 应预留备用路径容量并分批切换,同时让通信库区分可重试传输与作业级错误. 网络可用性来自拓扑冗余、路由收敛和上层重试三层,交换机数量本身不保证训练连续.
+
+一个可复算的压力点是checkpoint与跨区allreduce叠加. 设核心单向容量$B_c$,训练已用$uB_c$,checkpoint写入需求$W$. 不影响训练的条件是$W\le(1-u)B_c$;超过后,即便checkpoint低优先级,它的排队缓存也可能引发head-of-line blocking. 应用限速应直接用$(1-u)B_c$动态计算,而非固定每客户端上限.
+
+这套推导说明122台交换机回答的是「端口如何连」,性能还取决于rank映射、流量矩阵、队列和故障路径. Fire-Flyer的软件工作恰好补齐这些层,所以硬件成本比较不能把网络只当交换机采购清单.
+
+**软件硬件协同到底协同了什么**
+
+Fire-Flyer 的硬件约束不是等软件完成后才暴露. 单网卡八卡、PCIe root complex、双路CPU内存和两区网络先给出资源上限;HFReduce选择CPU规约、HaiScale选择NVLink对内TP、3FS选择RDMA共享存储、平台选择异步checkpoint,都在改变哪类字节经过哪条链路.
+
+这种协同可写成映射问题. 算子集合$O$产生计算量$F_o$和通信量$V_o$,硬件资源$R$有吞吐$C_r$与带宽$B_r$,调度要选择映射$x_{or}$使关键路径最短:
+
+$$
+\min_x\max_{p\in\mathcal P}\sum_{o\in p}
+\left(\frac{F_ox_{or}}{C_r}+\frac{V_ox_{or}}{B_r}\right).
+$$
+
+HFReduce把规约从GPU映到CPU,牺牲主机内存带宽换回GPU计算窗口;NVLink预规约又把部分工作移回GPU对. 这些方案不存在脱离拓扑的统一最优点.
+
+协同还包括把限制暴露给上层. 调度器知道NVLink配对,通信库知道NUMA和rail,checkpoint manager知道3FS带宽,validator知道训练依赖的链路. 若每层只看到抽象的「8张GPU」「一个文件系统」「一个网络」,就无法做论文中的优化.
+
+反面是软硬件绑定. 为Rome内存、A100 PCIe和特定IB拓扑写的HFReduce,换成大NVLink域或每卡独立NIC后优势会改变;静态路由适合可预测collective,遇到动态MoE路由便需要AR与拥塞控制. 协同设计必须允许瓶颈变化后替换组件.
+
+Fire-Flyer到V3的连续性正在这一层:都先计算字节、链路和并行临界路径,再决定由CPU、GPU、网卡或交换机承担. 具体组件从HFReduce转为DeepEP、从普通流水转为DualPipe,方法没有变. 这比把两代系统概括成同一套软件栈更准确.
+
+同样的方法也解释了3FS为何保留下来. 数据、checkpoint和后来的KV cache都需要容量远大于GPU显存的共享层,它们的访问模式虽不同,却都能从RDMA、全闪存和统一命名空间受益. 3FS继续扩展客户端与负载类型,而训练通信库随模型结构替换. 一个组件能否跨代延续,取决于它解决的资源矛盾是否仍存在,并不取决于它在早期系统里是否显眼.
+
+这也给后来者一个直接判断标准: 先列出当前机器最稀缺的资源, 再检查每项优化究竟减少了哪条链路上的字节、等待或副本. 若一项方案只提高局部微基准, 却把负担转移到已经饱和的共享资源, 端到端系统不会受益. Fire-Flyer 的经验可以迁移, 具体硬件配方则需要重新计算.
+
+**参考文献**
+
+- W. An et al. *Fire-Flyer AI-HPC: A Cost-Effective Software-Hardware Co-Design for Deep Learning*. SC24, arXiv:2408.14158, 2024. <https://arxiv.org/abs/2408.14158>
+- DeepSeek-AI. 3FS: Fire-Flyer File System. <https://github.com/deepseek-ai/3FS>
+- HFAiLab. HAI Platform. <https://github.com/HFAiLab/hai-platform>
+- NVIDIA. Massively Scale Your Deep Learning Training with NCCL 2.4 (double binary tree). <https://developer.nvidia.com/blog/massively-scale-deep-learning-training-nccl-2-4/>
+- NVIDIA. GDRCopy. <https://github.com/NVIDIA/gdrcopy>
+- NVIDIA. Xid Errors. <https://docs.nvidia.com/deploy/xid-errors/index.html>
+- Q. Hu et al. *Characterization of Large Language Model Development in the Datacenter*. NSDI 24. <https://arxiv.org/abs/2403.07648>
+- C. Zhao et al. *Insights into DeepSeek-V3: Scaling Challenges and Reflections on Hardware for AI Architectures*. ISCA 2025, arXiv:2505.09343. <https://arxiv.org/abs/2505.09343>
+- 幻方 AI. 模型并行训练工具 hfreduce. <https://www.high-flyer.cn/blog/hf-reduce/>
+- 幻方 AI. 在减少网络拥塞上, 我们的一点实践 (一). <https://www.high-flyer.cn/blog/network-1/>

@@ -12,7 +12,7 @@
 
 ### DeepSeekMoE (arXiv 2401.06066)
 
-解析: `content/deepseek/01-模型技术报告/deepseek-moe/deepseek-moe-analysis.md` §5.2. 复算口径: 嵌入与输出头不共享, 词表 102400, 注意力每层 $4d^2$, SwiGLU 为 $3\,d\,d_{\mathrm{ff}}$, 首层稠密; FLOPs 取每 token 6 倍非嵌入激活参数加 $12\,n_{\mathrm{layer}}\,d\,l_{\mathrm{seq}}$, 再乘 4096.
+解析: `content/deepseek/1-模型技术报告/1.2-deepseek-moe/02-deepseek-moe-analysis.md` §5.2. 复算口径: 嵌入与输出头不共享, 词表 102400, 注意力每层 $4d^2$, SwiGLU 为 $3\,d\,d_{\mathrm{ff}}$, 首层稠密; FLOPs 取每 token 6 倍非嵌入激活参数加 $12\,n_{\mathrm{layer}}\,d\,l_{\mathrm{seq}}$, 再乘 4096.
 
 - **moe-1** §7.2, Table 6: 142B 半激活档激活参数写 12.2B. 按配置复算为 13.61B, 同一行 FLOPs 374.6T 与 13.6B 自洽 (12.2B 对应约 340T). 求证结果:
 - **moe-2** §5.1.2, Table 3: 16B 的每 4K token FLOPs 写 74.4T, 复算 75.9T, 高 2.0%. 总参数 16.38B 与论文 16.4B 吻合, 偏差只在 FLOPs. 同口径算 DeepSeek 7B 和 LLaMA2 7B 只差约 0.5%. 交接文档里「16B 参数量差约 2%」应改为「FLOPs 差约 2%」. 求证结果:
@@ -27,7 +27,7 @@
 
 ### DeepSeek-VL (arXiv 2403.05525)
 
-解析: `content/deepseek/01-模型技术报告/deepseek-vl/deepseek-vl-analysis.md`.
+解析: `content/deepseek/1-模型技术报告/1.18-deepseek-vl/02-deepseek-vl-analysis.md`.
 
 - **vl-1** Figure 4 题注: 写 multimodal:language = 70%:30%. §3.2.2 写语言与多模态约 7:3, Table 1 纯文本 70.0%, §4.4 目标比例 0.7, 三处一致, 题注方向相反. 图中也没有 70:30 曲线, §4.4 消融用的是 60:40. 求证结果:
 - **vl-2** §4.4 与 Figure 8/9: projector 扩数据的结果写「见 Figure 8」, 实为 Table 8. Figure 8 题注首句讲模态预热, 图里比的是模态分组. Figure 8 有分组曲线与 Figure 9 无预热曲线逐点相同. Figure 9 题注说预热「始终持平或更好」, 前 5000 步 MMBench 不支持. 求证结果:
@@ -40,7 +40,7 @@
 
 ### DeepSeek-GRM (arXiv 2504.02495)
 
-解析: `content/deepseek/02-架构与算法/deepseek-grm/deepseek-grm-analysis.md`.
+解析: `content/deepseek/2-架构与算法/2.7-deepseek-grm/02-deepseek-grm-analysis.md`.
 
 - **grm-1** Table 8: BTRM 与 PairRM 子集平均分别是 87.1 和 81.65, 表中总分写 81.7 和 87.1, 两行像互换. CLoud 贪心一行子集与 LLM-as-a-Judge 一行逐位相同, 平均 83.45, 却写 82.0. 求证结果:
 - **grm-2** Figure 4(b) 对附录 C.1: 671B 画在 RL 曲线上, C.1 说大于 27B 的模型没做 RL, 只做 50K 条 RFT. 236B 在 Table 8 写成 230B. 求证结果:
@@ -52,7 +52,7 @@
 
 ### Insights into DeepSeek-V3 (ISCA 2025, arXiv 2505.09343)
 
-解析: `content/deepseek/03-基础设施/deepseek-v3-insights/deepseek-v3-insights-analysis.md` §3-§5.
+解析: `content/deepseek/3-基础设施/3.2-deepseek-v3-insights/02-deepseek-v3-insights-analysis.md` §3-§5.
 
 - **v3i-1** §5.1.1: 说两层比三层胖树延迟低「实验已证明」. 2048 卡单平面 MRFT 也只要两层, Figure 5/6, Table 4 比的都是两种两层网络, 没有三层数据. 求证结果:
 - **v3i-2** Table 3: 没给单价. 用 FT2, FT3 两列联立解得交换机约 8.3 万美元, 链路约 500 美元, 代回 SF 列吻合, DF 列偏 2%. MPFT 每端点成本与 FT2 相同 (8 张 FT2 并列); 比 Slim Fly 只便宜约 1%. V3 部署两千多卡按胖树公式只需 96 台交换机, 与单平面 FT2 相同, 成本优势要超过 2048 卡才出现. 求证结果:
@@ -65,7 +65,7 @@
 
 ### Fire-Flyer AI-HPC (SC24, arXiv 2408.14158)
 
-解析: `content/deepseek/03-基础设施/fire-flyer/fire-flyer-analysis.md` §6.2.
+解析: `content/deepseek/3-基础设施/3.1-fire-flyer/02-fire-flyer-analysis.md` §6.2.
 
 - **ff-1** §V-B2, Figure 9a: LLaMA-13B 从 64 卡到 512 卡写 91%, 按图中耗时算是 82.5%; 91% 只对得上 256 卡的 91.9%. 同段 DeepSeekMoE 的 92.92% 和 76.14% 能按同式复现. 求证结果:
 - **ff-2** §IV-C: HFReduce with NVLink「超过 10 GB/s」只在 128 卡及以下成立, 256/512/1024 卡为 9.66, 8.56, 7.99 GB/s. 求证结果:
@@ -81,7 +81,7 @@
 
 ### DSec (DeepSeek Elastic Compute)
 
-解析: `content/deepseek/03-基础设施/dsec/dsec-analysis.md` §6.
+解析: `content/deepseek/3-基础设施/3.4-dsec/02-dsec-analysis.md` §6.
 
 - **dsec-1** §1 对 §4.3: 单节点 800 microVM / 3,200 容器, §1 说「最多」, §4.3 说「至少」稳定运行过. 求证结果:
 - **dsec-2** §2.2 对 §3.3: 前者说容器共享宿主机内核, 后者说容器跑在 QEMU/libvirt 虚拟机里. 求证结果:
@@ -95,8 +95,8 @@
 
 ### 交接文档里已知的条目
 
-- **nsa-1** NSA (arXiv 2502.11089) 式 (9): 下标有误. 详见 `content/deepseek/02-架构与算法/nsa/nsa-analysis.md`. 求证结果:
-- **engram-1** Engram: 摘要写 MMLU +3.4, 表中为 +3.0. 详见 `content/deepseek/02-架构与算法/engram/engram-analysis.md`. 求证结果:
+- **nsa-1** NSA (arXiv 2502.11089) 式 (9): 下标有误. 详见 `content/deepseek/2-架构与算法/2.3-nsa/02-nsa-analysis.md`. 求证结果:
+- **engram-1** Engram: 摘要写 MMLU +3.4, 表中为 +3.0. 详见 `content/deepseek/2-架构与算法/2.4-engram/02-engram-analysis.md`. 求证结果:
 - **janusflow-1** JanusFlow (arXiv 2411.07975): Table 6 FID 用 MJHQ-10k, CFG 7.5; 附录 Figure 2 纵轴标 FID-30k. 求证结果:
 - **vl2-1** DeepSeek-VL2 (arXiv 2412.10302): 代码选分辨率是最大化有效像素, 论文写最小化填充. 求证结果:
 
@@ -120,21 +120,21 @@
 
 ### OLMo 1 (arXiv 2402.00838)
 
-解析: `content/olmo/01-模型技术报告/olmo-1/olmo-1-bi.md`.
+解析: `content/olmo/1-模型技术报告/1.3-olmo-1/01-olmo-1-bi.md`.
 
 - **olmo-1-1** Table 1 把 7B 隐藏维度 D 写成 4086, 附录 Table 5 的 Dimension 为 4096. 两张表数字不一致. 求证结果:
 - **olmo-1-2** Table 6 按 LUMI 官方可再生能源口径把 MI250X 排放记为 0, A100-40GB 行约为 70 tCO₂eq; Appendix B 报告总预训练排放约 69.78 tCO₂eq, 并给出采用水电强度 0.024 时 LUMI 一侧约 3.54 tCO₂eq. 引用排放数字时必须同时注明电力强度假设. 求证结果:
 
 ### OLMoE (arXiv 2409.02060)
 
-解析: `content/olmo/01-模型技术报告/olmoe/olmoe-bi.md`.
+解析: `content/olmo/1-模型技术报告/1.7-olmoe/01-olmoe-bi.md`.
 
 - **olmoe-1** Figure 6 正文称比较 「single shared and single routed」 与两个路由专家, 但题注, 组合数 $\binom{32}{4}$ 对 $\binom{31}{3}$, 以及官方配置都对应 31 个路由专家中激活 3 个再加 1 个共享专家. 正文的专家数量描述与实验设定不一致. 求证结果:
 - **olmoe-2** Figure 21 题注称展示共激活最高的 32 个专家, 每张热力图坐标轴实际只列出 16 个专家 ID. 式 (6) 以 $N_{E_i}$ 为分母, 共激活矩阵也并不对称. 求证结果:
 
 ### Molmo2 (arXiv 2601.10611)
 
-解析: `content/olmo/02-多模态与OCR/molmo2/molmo2-bi.md`.
+解析: `content/olmo/2-多模态与OCR/2.2-molmo2/01-molmo2-bi.md`.
 
 - **molmo2-1** 摘要称发布 7 个视频数据集和 2 个多图数据集, §1 与 §2 的具体清单却是 6 个视频数据集和 3 个多图数据集, 总数均为 9. 求证结果:
 - **molmo2-2** 摘要把 Gemini 3 Pro 的视频跟踪结果写成 41.1 J&F, Table 4 与 Table 5 的 Gemini 3 Pro 行均无此数字; Table 5 的 Overall 为 44.6, 41.1 出现在 SAM 3 的 Animals 分项. 求证结果:
@@ -145,7 +145,7 @@
 
 ### FlexOlmo (arXiv 2507.07024)
 
-解析: `content/olmo/01-模型技术报告/flexolmo/flexolmo-analysis.md`.
+解析: `content/olmo/1-模型技术报告/1.2-flexolmo/02-flexolmo-analysis.md`.
 
 - **flexolmo-1** 摘要/§1/§5.1: 比公共模型平均相对提升 41%. 表 1 Avg 47.8 vs 36.9, 表 2 52.4 vs 42.4. 47.8/36.9-1=29.5%, 52.4/42.4-1=23.6%; 逐类均值 279%/189%, 几何均值 95%/67%, 都不是 41%. 求证结果:
 - **flexolmo-2** §5.3 脚注 4: 数学是最小的封闭集, 训了 3 epoch. 图 5 里 Reddit 9.9B < Math 20.3B, 50/20.3≈2.46 epoch. 求证结果:
@@ -170,7 +170,7 @@
 
 ### Bolmo (arXiv 2512.15586)
 
-解析: `content/olmo/01-模型技术报告/bolmo/bolmo-analysis.md`.
+解析: `content/olmo/1-模型技术报告/1.1-bolmo/02-bolmo-analysis.md`.
 
 - **bolmo-1** §5 Bolmo 1B 段: 写「+3.3% on CoQA」. 表 2 中 Bolmo 1B 是 81.7, OLMo 2 1B 是 77.4, 81.7−77.4=4.3, v1 和 v2 都写成 3.3. 求证结果:
 - **bolmo-2** 附录 A: 「fused non-causal boundary prediction of the patch end is best」. 表 3 的 Avg: NC(S) 在 oracle 下 58.2, 学到边界下 55.7 (加粗), NC(F) 分别是 57.9 和 55.6. NC(F) 只在成本上占优: L/G 为 8.8 对 9.8. 求证结果:
@@ -188,20 +188,20 @@
 
 ### OLMoTrace (arXiv 2504.07096)
 
-解析: `content/olmo/04-数据与评测/olmotrace/olmotrace-analysis.md`.
+解析: `content/olmo/4-数据与评测/4.7-olmotrace/02-olmotrace-analysis.md`.
 
 - **olmotrace-1** 相关性评测口径: 人工评分 1.90/1.43 来自较早超参数，最终系统的 1.82/1.50 来自 GPT-4o 裁判；两组并非同一设置和同一评审者，不能直接横向比较，也不能用最终自动裁判分数证明人类相关性感受改善. 求证结果:
 - **olmotrace-2** 延迟口径: 4.46 秒是特定 64 vCPU/40 TB SSD 环境下，98 段平均 458 token 会话中步骤 1–3 的平均值；论文未报告 P95、并发压力或长尾，因此不能外推为完整线上请求的稳定延迟. 求证结果:
 
 ### OLMo-core 仓库
 
-解析: `content/olmo/05-开源仓库/olmo-core/olmo-core-analysis.md`.
+解析: `content/olmo/5-开源仓库/5.3-olmo-core/02-olmo-core-analysis.md`.
 
 - **olmo-core-repo-1** README 的论文徽章链接与显示文字冲突: `href` 指向 arXiv `2501.00656`，徽章文字却显示 `arxiv-2402.00838`；在上游修正或说明前，不能仅凭该徽章确定它意图引用的论文版本. 求证结果:
 
 ### DataDecide (arXiv 2504.11393)
 
-解析: `content/olmo/04-数据与评测/datadecide/datadecide-analysis.md`.
+解析: `content/olmo/4-数据与评测/4.1-datadecide/02-datadecide-analysis.md`.
 
 - **datadecide-1** 缩放律符号冲突: 主文 §2.3 在 FLOPs = 6ND 中定义 N 为参数量、D 为 token 数；附录 C 的五参数 (N,D) 拟合却反过来写 N 为 token 数、D 为参数量，导致同文符号含义前后不一致. 求证结果:
 - **datadecide-2** 附录表 2 题注写所有模型的 sequence length 均为 2024；该数值非常规且论文未解释，需要对照发布配置确认是作者有意设置还是排版笔误. 求证结果:
@@ -209,7 +209,7 @@
 
 ### Fluid Benchmarking (arXiv 2509.11106)
 
-解析: `content/olmo/04-数据与评测/fluid-benchmarking/fluid-benchmarking-analysis.md`.
+解析: `content/olmo/4-数据与评测/4.3-fluid-benchmarking/02-fluid-benchmarking-analysis.md`.
 
 - **fluid-benchmarking-1** 饱和指标使用检查点序列与表现之间 Spearman 相关系数的绝对值；按该定义，表现持续下降也会获得较高“单调性”，指标没有表达期望的改进方向. 求证结果:
 - **fluid-benchmarking-2** 有效性把两个被认为测量相同能力的基准之间的模型排名距离当作代理真值；如果两套基准共享偏差，高一致性并不等于对真实能力的高有效性. 求证结果:
@@ -218,7 +218,7 @@
 
 ### open-instruct 仓库
 
-解析: `content/olmo/05-开源仓库/open-instruct/open-instruct-analysis.md`.
+解析: `content/olmo/5-开源仓库/5.5-open-instruct/02-open-instruct-analysis.md`.
 
 - **open-instruct-repo-1** `docs/olmo3.md` 明确记录 OLMo 3 7B Think 阶段交接时存在轻微 chat template 不一致；复现实验需要固定模板文件和 tokenizer revision，不能只记录模型名. 求证结果:
 - **open-instruct-repo-2** 文档记录过 `<think>` 首 token 被错误当作 prompt 掩蔽的问题，旧 tokenizer revision 会回退到 prefix labeling；旧实验与现版本的损失掩码可能不等价. 求证结果:
@@ -228,7 +228,7 @@
 
 ### Infini-gram (arXiv 2401.17377)
 
-解析: `content/olmo/04-数据与评测/infini-gram/infini-gram-analysis.md`.
+解析: `content/olmo/4-数据与评测/4.4-infini-gram/02-infini-gram-analysis.md`.
 
 - **infini-gram-1** 摘要的 47% next-token accuracy 高度依赖测试文本与 5T token 索引的重叠、tokenizer 和去污染设置，不能外推为任意新领域的普遍准确率. 求证结果:
 - **infini-gram-2** `<20 ms`、`40 ms`、`200 ms` 是 RedPajama 与特定优化环境下的平均延迟；论文没有证明 5T 组合索引、P95 或高并发条件下仍保持同一延迟. 求证结果:
@@ -239,7 +239,7 @@
 
 ### Dolma 仓库
 
-解析: `content/olmo/05-开源仓库/dolma/dolma-analysis.md`.
+解析: `content/olmo/5-开源仓库/5.1-dolma/02-dolma-analysis.md`.
 
 - **dolma-repo-1** `docs/data-format.md` 的文档格式示例在 `created` 字段后缺少逗号，按 JSON 语法该示例无效. 求证结果:
 - **dolma-repo-2** `docs/data-format.md` 结尾残留编辑草稿文字 `how does your signals data look?` 及孤立的 `}`，不能作为稳定格式规范解读. 求证结果:
@@ -249,7 +249,7 @@
 
 ### OLMES 仓库
 
-解析: `content/olmo/05-开源仓库/olmes/olmes-analysis.md`.
+解析: `content/olmo/5-开源仓库/5.2-olmes/02-olmes-analysis.md`.
 
 - **olmes-repo-1** README 的 OLMo 3 结果条目仍保留 `TBD Title ([TBD Citation](...))` 占位文本，不能据此恢复正式论文题名或引用. 求证结果:
 - **olmes-repo-2** safety 命令使用 `OPEN_API_KEY`，而前文 instruct 评测使用 `OPENAI_API_KEY`；环境变量名称不一致，疑为文档笔误或未说明的不同接口. 求证结果:
@@ -259,7 +259,7 @@
 
 ### Signal and Noise (arXiv 2507.13659)
 
-解析: `content/olmo/04-数据与评测/signal-and-noise/signal-and-noise-analysis.md`.
+解析: `content/olmo/4-数据与评测/4.9-signal-and-noise/02-signal-and-noise-analysis.md`.
 
 - **signal-and-noise-1** signal 用全体模型最大值与最小值的极差定义；单个离群或失败模型会显著抬高 SNR，即使大多数候选仍近乎并列. 求证结果:
 - **signal-and-noise-2** noise 的相对标准差以均值作分母，均值接近零时不稳定；末期窗口内尚存的真实趋势也会被计入噪声. 求证结果:
@@ -269,7 +269,7 @@
 
 ### olmOCR 仓库
 
-解析: `content/olmo/05-开源仓库/olmocr/olmocr-analysis.md`.
+解析: `content/olmo/5-开源仓库/5.4-olmocr/02-olmocr-analysis.md`.
 
 - **olmocr-repo-1** README 的 demo 地址前文为 `olmocr.allenai.org`，Usage 段却写成 `olmocr.allen.ai`，域名不一致，疑为文档笔误. 求证结果:
 - **olmocr-repo-2** license badge 链接指向 `allenai/OLMo` 仓库的 LICENSE，而不是 olmOCR 本仓库的 LICENSE，需要确认是有意共用还是链接错误. 求证结果:
@@ -279,7 +279,7 @@
 
 ### Paloma (arXiv 2312.10523)
 
-解析: `content/olmo/04-数据与评测/paloma/paloma-analysis.md`.
+解析: `content/olmo/4-数据与评测/4.8-paloma/02-paloma-analysis.md`.
 
 - **paloma-1** 代码来源数据明确未做去污染，因此相关结果不能直接解释为严格未见样本上的泛化能力. 求证结果:
 - **paloma-2** 精确段落匹配会漏掉改写、格式差异和短段落；整篇删除又可能让不同训练语料被不均匀移除，去污染前后比较包含数据分布变化. 求证结果:
@@ -289,7 +289,7 @@
 
 ### DR Tulu
 
-解析: `content/olmo/03-后训练与奖励模型/dr-tulu/dr-tulu-analysis.md`.
+解析: `content/olmo/3-后训练与奖励模型/3.1-dr-tulu/02-dr-tulu-analysis.md`.
 
 - **dr-tulu-1** 训练奖励最高不必然对应最佳下游表现；论文把差异归因于任务、细则和评审设置错位，因此训练奖励不能直接作为部署质量代理. 求证结果:
 - **dr-tulu-2** 演化细则只能发现当前 rollout 之间暴露的差异；所有回答共同遗漏的知识可能无法由对比生成捕捉. 求证结果:
@@ -304,7 +304,7 @@
 
 ### Dolma (arXiv 2402.00159)
 
-解析: `content/olmo/04-数据与评测/dolma/dolma-analysis.md`.
+解析: `content/olmo/4-数据与评测/4.2-dolma/02-dolma-analysis.md`.
 
 - **dolma-1** 表 1 把 Reddit 记为 89B Llama tokens，而第 7 节标题和正文写 80B tokens；版本或取整口径未明确统一. 求证结果:
 - **dolma-2** 论文主体对应 Dolma v1.6，却同时介绍后续 v1.7 的改进；v1.7 结论不能倒灌为 v1.6 的组成和处理统计. 求证结果:
@@ -333,7 +333,7 @@
 
 ### OLMES（arXiv 2406.08446）
 
-解析：`content/olmo/04-数据与评测/olmes/olmes-analysis.md`。
+解析：`content/olmo/4-数据与评测/4.6-olmes/02-olmes-analysis.md`。
 
 - **olmes-paper-1** 提示稳健性实验只覆盖少量轻微措辞变体，表 5 又仅含 5 个模型与 3 个任务，证据不足以支持广泛的跨提示稳健性结论. 求证结果:
 - **olmes-paper-2** “不足 1% 的提升不值得约 4 倍计算量”属于成本效益判断，依赖具体硬件、预算与用途，不能当作普遍阈值. 求证结果:
@@ -347,7 +347,7 @@
 
 ### RewardBench（arXiv 2403.13787）
 
-解析：`content/olmo/03-后训练与奖励模型/rewardbench/rewardbench-analysis.md`。
+解析：`content/olmo/3-后训练与奖励模型/3.2-rewardbench/02-rewardbench-analysis.md`。
 
 - **rewardbench-1** 论文明确将基准分数与 RLHF 下游收益的关系留作开放问题；静态成对准确率不能直接解释为 PPO 或其他闭环训练的改进保证. 求证结果:
 - **rewardbench-2** Prior Sets 的若干旧偏好集标注一致率较低，且部分被评模型使用过相应训练划分；该分区同时受标签噪声与同源分布优势影响，不能作为独立未见真值集解读. 求证结果:
@@ -356,7 +356,7 @@
 
 ### RewardBench 2（arXiv 2506.01937）
 
-解析：`content/olmo/03-后训练与奖励模型/rewardbench-2/rewardbench-2-analysis.md`。
+解析：`content/olmo/3-后训练与奖励模型/3.3-rewardbench-2/02-rewardbench-2-analysis.md`。
 
 - **rewardbench-2-1** Factuality 先由 GPT-4o 判断、再由 Claude Sonnet 3.7 复核，并删除约 30% 裁判不一致样本；最终集合偏向两类裁判已有共识的事实，不能覆盖全部细微或争议性事实判断. 求证结果:
 - **rewardbench-2-2** 六域采用等权宏平均，但样本数从 Ties 的 102 到 Focus 的 495 不等；小域单题对总分影响更大且抽样方差更高，细小总分差异需要题级区间支持. 求证结果:
@@ -365,7 +365,7 @@
 
 ### Tülu 2（arXiv 2311.10702）
 
-解析：`content/olmo/03-后训练与奖励模型/tulu-2/tulu-2-analysis.md`。
+解析：`content/olmo/3-后训练与奖励模型/3.4-tulu-2/02-tulu-2-analysis.md`。
 
 - **tulu-2-1** DPO 使用的 UltraFeedback 含 TruthfulQA 提示，论文因此在相关模型比较中移除 TruthfulQA；该模型在此评测上的结果不能解释为严格未见泛化. 求证结果:
 - **tulu-2-2** AlpacaEval 与平均回答长度的相关系数达到 0.96，DPO 后分数提升同时伴随回答变长；现有实验没有用等长人评完全分离内容质量与长度偏好. 求证结果:
@@ -374,7 +374,7 @@
 
 ### Tülu 3（arXiv 2411.15124）
 
-解析：`content/olmo/03-后训练与奖励模型/tulu-3/tulu-3-analysis.md`。
+解析：`content/olmo/3-后训练与奖励模型/3.5-tulu-3/02-tulu-3-analysis.md`。
 
 - **tulu-3-1** 附录表格含 `base-adpted`、`GSM8KP::chat-v2`、`Rationale/Rational`、`separatedby`、`parantheses` 与 “higher than than” 等明显文字或命名错误，复现实验时不能照抄. 求证结果:
 - **tulu-3-2** 实际使用场景并非严格受控实验；部分模型在 DROP 或 GSM8K 上反而下降，汇总提升不能替代逐任务检查. 求证结果:
@@ -400,7 +400,7 @@
 
 ### DeepSeek-Coder 系列
 
-解析：`content/deepseek/01-模型技术报告/deepseek-coder/deepseek-coder-analysis.md` 与 `content/deepseek/01-模型技术报告/deepseek-coder-v2/deepseek-coder-v2-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.10-deepseek-coder/02-deepseek-coder-analysis.md` 与 `content/deepseek/1-模型技术报告/1.11-deepseek-coder-v2/02-deepseek-coder-v2-analysis.md`。
 
 - **deepseek-coder-1** DeepSeek-Coder 的主体规模写作 33B，但一处示例使用“34B”，模型规模口径前后不一致. 求证结果:
 - **deepseek-coder-2** LeetCode 7–8 月题目的分数偏高，作者明确承认不能排除数据污染，因此该结果不能作为严格未见题泛化的单独证据. 求证结果:
@@ -413,7 +413,7 @@
 
 ### DeepSeek-V3.1 系列
 
-解析：`content/deepseek/01-模型技术报告/deepseek-v3-1/deepseek-v3-1-analysis.md` 与 `content/deepseek/01-模型技术报告/deepseek-v3-1-terminus/deepseek-v3-1-terminus-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.5-deepseek-v3-1/02-deepseek-v3-1-analysis.md` 与 `content/deepseek/1-模型技术报告/1.6-deepseek-v3-1-terminus/02-deepseek-v3-1-terminus-analysis.md`。
 
 - **deepseek-v3-1-1** V3.1 只有发布说明而没有完整技术报告，网络改动、840B token 数据构成、双模式配比、CoT 压缩目标、Agent 轨迹来源和后训练算法均未披露. 求证结果:
 - **deepseek-v3-1-2** Agent 评测表缺少框架、步数、采样参数和工具实现；HLE 在带工具与无工具协议下分别为 29.8 和 15.9，引用时必须注明协议. 求证结果:
@@ -425,7 +425,7 @@
 
 ### DeepSeekMath
 
-解析：`content/deepseek/01-模型技术报告/deepseek-math/deepseek-math-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.12-deepseek-math/02-deepseek-math-analysis.md`。
 
 - **deepseek-math-1** 120B 数学语料只公开了分类器迭代和领域比例，没有公开网页 URL 清单、各轮新增量与逐基准去污染结果，无法独立复建训练集。求证结果：论文只给出整体流水和抽样质量实验。
 - **deepseek-math-2** 1.3B 数据消融同时改变语料来源和继续预训练过程，不能把所有提升严格归因于数学网页质量。求证结果：缺少等 token、等训练步数的完整交叉对照。
@@ -438,7 +438,7 @@
 
 ### DeepSeekMath-V2
 
-解析：`content/deepseek/01-模型技术报告/deepseek-math-v2/deepseek-math-v2-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.14-deepseek-math-v2/02-deepseek-math-v2-analysis.md`。
 
 - **deepseek-math-v2-1** 自动标注流程中的 $n$、$m$、$k$ 没有公开，难以复算数据生成规模和筛选强度. 求证结果:
 - **deepseek-math-v2-2** meta-verifier 质量从 0.85 升到 0.96 是模型裁判评价，不是形式化正确性保证. 求证结果:
@@ -450,7 +450,7 @@
 
 ### JanusFlow
 
-解析：`content/deepseek/01-模型技术报告/deepseek-janusflow/deepseek-janusflow-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.21-deepseek-janusflow/02-deepseek-janusflow-analysis.md`。
 
 - **janusflow-1** §4.5 `Impact of Decoupling Visual Encoders` 后出现残句 `e efficacy...`，句首在 PDF 中已经缺失，无法从源文可靠恢复. 求证结果:
 - **janusflow-2** 表 5 转成 Markdown 后多个模型及整列数字挤入单个单元格，逐行对应关系丢失，具体成绩必须回看 PDF. 求证结果:
@@ -465,7 +465,7 @@
 
 ### Janus-Pro
 
-解析：`content/deepseek/01-模型技术报告/deepseek-janus-pro/deepseek-janus-pro-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.22-deepseek-janus-pro/02-deepseek-janus-pro-analysis.md`。
 
 - **janus-pro-1** 论文没有公开 7200 万合成美学图所用的生成模型、采样参数与过滤流程，生成数据无法独立复现. 求证结果:
 - **janus-pro-2** 阶段 II 计划 360K 步但在 270K 步早停，论文没有给出早停指标、验证曲线或 checkpoint 选择规则. 求证结果:
@@ -478,7 +478,7 @@
 
 ### DeepSeek-Prover
 
-解析：`content/deepseek/01-模型技术报告/deepseek-prover/deepseek-prover-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.15-deepseek-prover/02-deepseek-prover-analysis.md`。
 - **deepseek-prover-1** 论文没有公开 869,659 道网络竞赛题的具体来源、清洗规则与题面级去污染结果；这些来源与 miniF2F 的 AMC、AIME、IMO 题源可能重合。求证结果：正文仅给出题目总量和宽泛类别。
 - **deepseek-prover-2** miniF2F-valid 样例进入形式命题质量评分提示，同时 valid 分数仍作为实验结果报告，因此该分区不能视为完全未参与开发。求证结果：评分提示与结果表均见论文正文及附录。
 - **deepseek-prover-3** 假设否决只检查声明外层前提能否推出 `False`，不能覆盖结论内部蕴含前件或量词结构中的空虚真；附录成功样例中可以找到此类退化命题。求证结果：按附录 Lean 声明代入具体值可导出内部前件矛盾。
@@ -491,7 +491,7 @@
 
 ### DeepSeek-Prover-V1.5
 
-解析：`content/deepseek/01-模型技术报告/deepseek-prover-v1-5/deepseek-prover-v1-5-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.16-deepseek-prover-v1-5/02-deepseek-prover-v1-5-analysis.md`。
 
 - **deepseek-prover-v1-5-1** 继续预训练没有公开 token 数、学习率、数据配比及 Lean/Isabelle/Metamath 各自占比，Base 增益无法按语料来源归因. 求证结果:
 - **deepseek-prover-v1-5-2** CoT 注释由 DeepSeek-Coder-V2 236B 事后生成，Lean 只验证代码而不验证注释，论文没有报告注释与证明步骤的一致率. 求证结果:
@@ -506,7 +506,7 @@
 
 ### DeepSeek-Prover-V2
 
-解析：`content/deepseek/01-模型技术报告/deepseek-prover-v2/deepseek-prover-v2-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.17-deepseek-prover-v2/02-deepseek-prover-v2-analysis.md`。
 
 - **deepseek-prover-v2-1** 初版 Putnam 结果受 Lean 4.9.0 `apply?` UI bug 影响，7B 模型还利用 `Cardinal.toNat` 与 `natCast_inj` 形成 reward hacking. 求证结果:
 - **deepseek-prover-v2-2** Putnam 初报 49 题中有 2 题 statement 错构，最终修正为 47 题. 求证结果:
@@ -521,7 +521,7 @@
 
 ### DeepSeek-OCR
 
-解析：`content/deepseek/01-模型技术报告/deepseek-ocr/deepseek-ocr-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.23-deepseek-ocr/02-deepseek-ocr-analysis.md`。
 
 - **deepseek-ocr-1** 表 3 的指标均为 edit distance 而不是 accuracy，引用时不能把数值直接称为准确率. 求证结果:
 - **deepseek-ocr-2** 表 4 把 `Gundam-M` 拼成 `Guandam-M`，疑似模型名称笔误. 求证结果:
@@ -532,7 +532,7 @@
 
 ### DeepSeek-OCR 2
 
-解析：`content/deepseek/01-模型技术报告/deepseek-ocr-2/deepseek-ocr-2-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.24-deepseek-ocr-2/02-deepseek-ocr-2-analysis.md`。
 
 - **deepseek-ocr-2-1** 新旧模型除 encoder 外还改变了 OCR 1.0 的 3:1:1 采样和 layout 标签合并，3.73 的增益不能严格全部归因于 causal flow. 求证结果:
 - **deepseek-ocr-2-2** encoder 从约 300M 参数的 CLIP 换成约 500M 参数的 Qwen2，参数量与预训练差异也是混杂变量. 求证结果:
@@ -546,7 +546,7 @@
 
 ### DeepSeek-VL2
 
-解析：`content/deepseek/01-模型技术报告/deepseek-vl2/deepseek-vl2-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.19-deepseek-vl2/02-deepseek-vl2-analysis.md`。
 
 - **deepseek-vl2-1** 论文缺少动态切图、pixel shuffle、MLA、MoE 与数据扩充的完整组件消融，无法独立分离各项贡献. 求证结果:
 - **deepseek-vl2-2** 内部数据的分项规模、人工抽检率和污染检查没有公开，训练集无法严格复现. 求证结果:
@@ -556,7 +556,7 @@
 
 ### Harness Composability
 
-解析：`content/deepseek/03-基础设施/harness-composability/harness-composability-analysis.md`。
+解析：`content/deepseek/3-基础设施/3.5-harness-composability/02-harness-composability-analysis.md`。
 
 - **harness-composability-1** runtime 不验证 inverse 的正确性、coeffect 交换律或 confinement，形式性质依赖实现者满足前提. 求证结果:
 - **harness-composability-2** 论文没有性能基准，也没有 notification 在大规模依赖图上的扩展性评测. 求证结果:
@@ -575,7 +575,7 @@
 
 ### Smallpond
 
-解析：`content/deepseek/04-开源仓库/smallpond/smallpond-analysis.md`。
+解析：`content/deepseek/4-开源仓库/4.2-smallpond/02-smallpond-analysis.md`。
 
 - **smallpond-1** 入门文档使用 `repartition(3, by_row=True)`，源码参数名是 `by_rows`，示例原样运行会因多余关键字参数失败. 求证结果: 对照官方仓库 `main` 分支的 DataFrame 接口确认.
 - **smallpond-2** 低层 API 示例没有向 `Driver` 传入必需的 `mode` 位置参数，示例还缺少 `List` 导入；任务文档构造 `RuntimeContext` 时缺少 `job_time`. 求证结果: 对照官方仓库对应构造函数签名确认.
@@ -584,7 +584,7 @@
 - **smallpond-5** GraySort 命令行默认值与 `gray_sort_benchmark` 函数默认值不一致，包括排序引擎以及 shuffle CPU 设置；公开材料也没有给出 110.5 TiB 运行所用的完整命令与参数. 求证结果: 对照官方 benchmark 脚本与 README 确认.
 ### DSpark
 
-解析：`content/deepseek/02-架构与算法/dspark/dspark-analysis.md`。
+解析：`content/deepseek/2-架构与算法/2.8-dspark/02-dspark-analysis.md`。
 
 - **dspark-1** Gemma4-12B 上 Eagle3 的平均接受长度高于 DFlash，与正文用草稿容量解释并行模型优势的叙述方向相反；论文没有提供该模型的逐位置接受率。求证结果：表 1 可直接复算。
 - **dspark-2** 论文的位置损失写为按块长 $\gamma$ 衰减，公开 Qwen3 配置却使用 `loss_decay_gamma=4.0` 且块长为 7，末位置权重相差近一倍。求证结果：论文公式与 DeepSpec 配置、损失实现不一致。
@@ -596,7 +596,7 @@
 - **dspark-8** 早停对无偏调度是必要条件，但公开训练仓库与生产服务实现的调度代码边界不同，论文没有发布完整线上调度器。求证结果：DeepSpec 主要覆盖训练与离线评测。
 ### mHC
 
-解析：`content/deepseek/02-架构与算法/mhc/mhc-analysis.md`。
+解析：`content/deepseek/2-架构与算法/2.5-mhc/02-mhc-analysis.md`。
 
 - **mhc-1** Amax Gain Magnitude 只测复合矩阵行和与列和，不能替代谱范数或完整 Jacobian 的奇异值分析。求证结果：论文指标定义只覆盖各残差流取相同信号的方向。
 - **mhc-2** 表 1 缺少 pre/post 动态而 residual mixing 固定为单位阵的组合，无法单独判断跨流混合是否为主要增益来源。求证结果：公开消融没有这一行。
@@ -608,7 +608,7 @@
 - **mhc-8** 深层复合映射趋向均匀平均可能削弱残差流分工，论文没有用流间互信息、有效秩或干预实验验证表示是否坍缩。求证结果：图 8 只展示矩阵可视化与行列结构。
 ### Engram
 
-解析：`content/deepseek/02-架构与算法/engram/engram-analysis.md`。
+解析：`content/deepseek/2-架构与算法/2.4-engram/02-engram-analysis.md`。
 
 - **engram-2** 多头哈希在同一 N-gram 阶共享 64 位 mix，只改变素数模数，因此各头并非独立哈希；论文没有报告 mix 碰撞率。求证结果：官方演示代码可直接确认共享中间值。
 - **engram-3** 词表压缩报告 23.43% 缩减，却没有给出压缩前后 N-gram 频率、语义误合并率和损失消融。求证结果：附录只列总体压缩比例。
@@ -620,7 +620,7 @@
 - **engram-9** 官方仓库只有演示寻址与融合的最小脚本，没有训练代码、权重和完整数据配方，论文的大规模结果尚不能独立复现。求证结果：官方仓库当前公开范围如此。
 ### CodeI/O
 
-解析：`content/deepseek/02-架构与算法/codeio/codeio-analysis.md`。
+解析：`content/deepseek/2-架构与算法/2.6-codeio/02-codeio-analysis.md`。
 
 - **codeio-1** 810.5K 原始 Python 文件只有 454.9K 进入数据集，论文没有按失败原因分解约 44% 的损耗。求证结果：只公开输入输出格式和总体漏斗。
 - **codeio-2** 自然语言 CoT 不能由执行器逐步验证，执行反馈只检查最终 JSON 中的输入或输出。求证结果：官方验证代码只执行候选答案并比较结果。
@@ -632,7 +632,7 @@
 - **codeio-8** CodeI/O 的迁移结果来自 Qwen Coder 与 LLaMA 底座，不能据此把 DSec 纳入 DeepSeek 代码模型路线；DSec 的研究对象是安全。求证结果：CodeI/O 论文没有把 DSec 当作代码底座或后续版本。
 ### DeepSeek-VL
 
-解析：`content/deepseek/01-模型技术报告/deepseek-vl/deepseek-vl-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.18-deepseek-vl/02-deepseek-vl-analysis.md`。
 
 - **deepseek-vl-1** 摘要与架构段容易让人以为两档模型都使用 SigLIP+SAM 混合编码器，实际 1.3B 发布配置只有 SigLIP。求证结果：官方配置与表格均可确认。
 - **deepseek-vl-2** 官方代码的 SAM 支路包含跨层可学习 $\alpha$ 融合，论文架构公式没有描述这一项。求证结果：代码实现与论文正文存在缺口。
@@ -644,7 +644,7 @@
 - **deepseek-vl-8** VL2 同时更换动态切图、pixel shuffle、MoE 语言模型和训练数据，后续成绩不能单独证明 VL 固定 576-token 混合编码路线的不足。求证结果：版本间存在多项混杂变量。
 ### DeepGEMM
 
-解析：`content/deepseek/04-开源仓库/deepgemm/deepgemm-analysis.md`。
+解析：`content/deepseek/4-开源仓库/4.4-deepgemm/02-deepgemm-analysis.md`。
 
 - **deepgemm-1** README 性能表主要报告 kernel 区间，没有把上游 FP8 cast、转置和 scale 重排统一计入端到端时间。求证结果：仓库明确要求调用方融合这些步骤。
 - **deepgemm-2** Hopper FP8 tensor core 的低精度累加通过 CUDA core 二级累加缓解，但公开材料没有给出跨完整训练过程的逐组件误差归因。求证结果：仓库测试以局部数值对照为主。
@@ -656,7 +656,7 @@
 - **deepgemm-8** 仓库持续演进且通过 JIT 生成特化 kernel，固定提交上的数值与性能结论需要同时记录 GPU、CUDA、形状和配置。求证结果：不同版本曾移除 SASS 后处理并调整调度策略。
 ### FlashMLA
 
-解析：`content/deepseek/04-开源仓库/flashmla/flashmla-analysis.md`。
+解析：`content/deepseek/4-开源仓库/4.5-flashmla/02-flashmla-analysis.md`。
 
 - **flashmla-1** FlashMLA 主分支已移除早期 Hopper 与 V3 系列支持，当前接口和 2025 年发布性能不能按同一提交理解。求证结果：仓库历史与 README 均记录了版本切换。
 - **flashmla-2** 早期性能数字只覆盖注意力 kernel，不包含 MLA 前后投影、矩阵吸收准备、KV 写入和请求调度。求证结果：公开接口范围限于注意力计算。
@@ -668,7 +668,7 @@
 - **flashmla-8** 变长 paged KV 的吞吐受长度分布、split 数和页面碎片共同影响，规则长度基准不能代表真实连续批处理。求证结果：公开基准使用有限预设形状。
 ### Janus
 
-解析：`content/deepseek/01-模型技术报告/deepseek-janus/deepseek-janus-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.20-deepseek-janus/02-deepseek-janus-analysis.md`。
 
 - **janus-1** 解耦视觉编码的主消融同时改变 tokenizer 设计和训练设置，无法完全分离“分开编码”与具体 SigLIP/VQ 选型的贡献。求证结果：Table 5 缺少等容量单变量组合。
 - **janus-2** 理解分支的连续特征与生成分支的离散码没有跨路径一致性目标，独立基准不能证明理解属性能稳定约束生成。求证结果：训练目标只在各自序列上做 next-token prediction。
@@ -680,7 +680,7 @@
 - **janus-8** Janus-Pro 同时扩大模型、数据和训练步数，后续提升不能单独证明 Janus 架构中的某一组件不足。求证结果：两代之间存在多项混杂变量。
 ### DeepSeek-V3.2
 
-解析：`content/deepseek/01-模型技术报告/deepseek-v3-2/deepseek-v3-2-analysis.md`。
+解析：`content/deepseek/1-模型技术报告/1.7-deepseek-v3-2/02-deepseek-v3-2-analysis.md`。
 
 - **deepseek-v3-2-1** 报告称 V3.2 与 V3.2-Exp 结构相同，但稀疏继续训练数据的来源、重复率与 V3.1-Terminus 128K 数据的关系未披露。求证结果：只说明数据分布对齐。
 - **deepseek-v3-2-2** 对等性评测同时受继续训练 token 和稀疏结构影响，缺少同样继续训练预算的稠密 V3.1-Terminus 对照。求证结果：无法完全分离结构与额外训练贡献。
@@ -692,7 +692,7 @@
 - **deepseek-v3-2-8** 搜索 Agent 的串行上下文扩展同时增加搜索调用、token 和墙钟时间，收益不能只解释为上下文管理策略。求证结果：缺少等工具调用与等 token 对照。
 ### DeepEP
 
-解析：`content/deepseek/04-开源仓库/deepep/deepep-analysis.md`。
+解析：`content/deepseek/4-开源仓库/4.3-deepep/02-deepep-analysis.md`。
 
 - **deepep-1** V2.5 主分支删除了 V1 代码和文档，normal/low-latency、NVSHMEM、IBGDA 与 hook 的经典说明必须绑定历史提交。求证结果：当前 main 不能直接复现 V1 接口。
 - **deepep-2** README 的“瓶颈带宽”按有效载荷和理论瓶颈链路计算，不等同于网卡或 NVLink 的原始计数器带宽。求证结果：性能表公式可复算。

@@ -75,15 +75,15 @@ DeepSeek 的论文有一条贯穿三年的主线: 把计算或存储做稀疏, �
 
 ### 3.1 按主线读
 
-第一次读这个库, 建议沿 MoE 主线按时间读: [DeepSeekMoE](./01-模型技术报告/deepseek-moe/deepseek-moe-analysis.md) → [DeepSeek-V2](./01-模型技术报告/deepseek-v2/deepseek-v2-analysis.md) → [DeepSeek-V3](./01-模型技术报告/deepseek-v3/deepseek-v3-analysis.md) → [DeepSeek-V3.2](./01-模型技术报告/deepseek-v3-2/deepseek-v3-2-analysis.md) → [DeepSeek-V4](./01-模型技术报告/deepseek-v4/deepseek-v4-analysis.md). 每读完一篇, 去第二章找它引入的机制对应的方法论文, 再去第四章找对应的仓库.
+第一次读这个库, 建议沿 MoE 主线按时间读: [DeepSeekMoE](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.2-deepseek-moe/02-deepseek-moe-analysis.md) → [DeepSeek-V2](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.3-deepseek-v2/02-deepseek-v2-analysis.md) → [DeepSeek-V3](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.4-deepseek-v3/02-deepseek-v3-analysis.md) → [DeepSeek-V3.2](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.7-deepseek-v3-2/02-deepseek-v3-2-analysis.md) → [DeepSeek-V4](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.8-deepseek-v4/02-deepseek-v4-analysis.md). 每读完一篇, 去第二章找它引入的机制对应的方法论文, 再去第四章找对应的仓库.
 
-关心 RL 与推理模型的读者, 从 [DeepSeekMath](./01-模型技术报告/deepseek-math/deepseek-math-analysis.md) 的 GRPO 开始, 接 [DeepSeek-R1](./01-模型技术报告/deepseek-r1/deepseek-r1-analysis.md), 再读第二章的 GRM 和第一章的 Math-V2 与 Prover 系列.
+关心 RL 与推理模型的读者, 从 [DeepSeekMath](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.12-deepseek-math/02-deepseek-math-analysis.md) 的 GRPO 开始, 接 [DeepSeek-R1](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.13-deepseek-r1/02-deepseek-r1-analysis.md), 再读第二章的 GRM 和第一章的 Math-V2 与 Prover 系列.
 
 ### 3.2 按问题查
 
 数字旁会标出表号和实验设置; 同目录的 bi 稿保留原文措辞, 页标记 `<!-- page k of N -->` 对应 PDF 页码. 第四章各仓库的解析则把机制落到具体源码文件和接口.
 
-各章的完整清单见章首页: [模型技术报告](./01-模型技术报告/01-模型技术报告.md), [架构与算法](./02-架构与算法/02-架构与算法.md), [基础设施](./03-基础设施/03-基础设施.md), [开源仓库](./04-开源仓库/04-开源仓库.md).
+各章的完整清单见章首页: [模型技术报告](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A.md), [架构与算法](./2-%E6%9E%B6%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/2-%E6%9E%B6%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95.md), [基础设施](./3-%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD/3-%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD.md), [开源仓库](./4-%E5%BC%80%E6%BA%90%E4%BB%93%E5%BA%93/4-%E5%BC%80%E6%BA%90%E4%BB%93%E5%BA%93.md).
 
 ### 3.3 从论文走到实现
 
