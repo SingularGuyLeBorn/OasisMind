@@ -23,7 +23,9 @@ excerpt: "面经范文：公式一律用 $…$ / $$…$$（KaTeX），禁止 √
 
 ---
 
-## 1. Self-Attention 为什么除以 $\sqrt{d_k}$？（数学推导 + 几何解释）
+## Attention、位置编码与高效计算
+
+### 1. Self-Attention 为什么除以 $\sqrt{d_k}$？（数学推导 + 几何解释）
 
 - **元数据**：`{topic: "算法·数学推导", subtopic: "Attention机制", source: "图解大模型200问+掘金", quality: 5, year: "经典题·持续有效", difficulty: mid}`
 
@@ -61,7 +63,7 @@ $$
 
 ---
 
-## 2. RoPE 位置编码的核心公式推导
+### 2. RoPE 位置编码的核心公式推导
 
 - **元数据**：`{topic: "算法·位置编码", subtopic: "RoPE推导", source: "图解大模型200问+小林笔记", quality: 5, year: "经典题·持续有效", difficulty: senior}`
 
@@ -93,7 +95,7 @@ $$
 
 ---
 
-## 3. FlashAttention 的分块策略与 IO 复杂度分析
+### 3. FlashAttention 的分块策略与 IO 复杂度分析
 
 - **元数据**：`{topic: "算法·工程优化", subtopic: "FlashAttention", source: "图解大模型200问+vLLM文档", quality: 5, year: "2025-2026", difficulty: senior}`
 
@@ -119,7 +121,9 @@ $$
 
 ---
 
-## 4. MoE 门控网络与负载均衡 Loss
+## 模型结构与训练目标
+
+### 4. MoE 门控网络与负载均衡 Loss
 
 - **元数据**：`{topic: "算法·架构", subtopic: "MoE", source: "图解大模型200问+DeepSeek技术报告", quality: 5, year: "2025-2026", difficulty: senior}`
 
@@ -149,7 +153,7 @@ $$
 
 ---
 
-## 5. PPO 的 Clip 目标函数推导
+### 5. PPO 的 Clip 目标函数推导
 
 - **元数据**：`{topic: "算法·强化学习", subtopic: "PPO-Clip", source: "图解大模型200问+掘金+PPO论文", quality: 5, year: "2025-2026", difficulty: senior}`
 
@@ -180,7 +184,9 @@ $$
 
 ---
 
-## 6. Top-p / Top-k 采样原理
+## 采样与解码
+
+### 6. Top-p / Top-k 采样原理
 
 - **元数据**：`{topic: "算法·解码策略", subtopic: "采样方法", source: "图解大模型200问+KK笔记", quality: 4, year: "经典题·持续有效", difficulty: junior}`
 
@@ -196,7 +202,7 @@ $$
 
 ---
 
-## 7. 解码策略：Greedy vs Beam vs 采样
+### 7. 解码策略：Greedy vs Beam vs 采样
 
 - **元数据**：`{topic: "算法·解码策略", subtopic: "序列生成", source: "图解大模型200问+小林笔记", quality: 4, year: "经典题·持续有效", difficulty: mid}`
 
@@ -212,7 +218,9 @@ $$
 
 ---
 
-## 8. 激活函数：ReLU vs GELU vs SwiGLU
+## 激活函数
+
+### 8. 激活函数：ReLU vs GELU vs SwiGLU
 
 - **元数据**：`{topic: "算法·架构", subtopic: "激活函数", source: "图解大模型200问", quality: 4, year: "2024-2026", difficulty: mid}`
 

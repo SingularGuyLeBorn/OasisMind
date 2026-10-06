@@ -22,7 +22,9 @@ excerpt: null
 
 ---
 
-## 1. 预训练 → SFT → RLHF 三阶段的关系与区别
+## 训练、推理与能力形成
+
+### 1. 预训练 → SFT → RLHF 三阶段的关系与区别
 
 - **元数据**：`{topic: "原理·训练流程", subtopic: "三阶段", source: "图解大模型200问+掘金", quality: 5, year: "经典题·持续有效", difficulty: mid}`
 
@@ -41,7 +43,7 @@ excerpt: null
 
 ---
 
-## 2. KV Cache 为什么能加速推理？Q 为什么不能 cache？
+### 2. KV Cache 为什么能加速推理？Q 为什么不能 cache？
 
 - **元数据**：`{topic: "原理·推理优化", subtopic: "KV Cache", source: "图解大模型200问+AgentGuide", quality: 5, year: "经典题·持续有效", difficulty: mid}`
 
@@ -59,7 +61,7 @@ excerpt: null
 
 ---
 
-## 3. 反转诅咒（Reversal Curse）是什么？扩散模型为什么免疫？
+### 3. 反转诅咒（Reversal Curse）是什么？扩散模型为什么免疫？
 
 - **元数据**：`{topic: "原理·模型缺陷", subtopic: "Reversal Curse", source: "论文+知乎面经", quality: 4, year: "2025-2026", difficulty: senior}`
 
@@ -76,7 +78,7 @@ excerpt: null
 
 ---
 
-## 4. 涌现能力的产生原因与 Scaling Law
+### 4. 涌现能力的产生原因与 Scaling Law
 
 - **元数据**：`{topic: "原理·理论", subtopic: "涌现与Scaling", source: "图解大模型200问+掘金", quality: 4, year: "2024-2026", difficulty: mid}`
 
@@ -99,7 +101,9 @@ excerpt: null
 
 ---
 
-## 5. Agent = LLM + Planning + Tool + Memory 框架解析
+## Agent 与对齐
+
+### 5. Agent = LLM + Planning + Tool + Memory 框架解析
 
 - **元数据**：`{topic: "原理·Agent框架", subtopic: "Agent架构", source: "AgentGuide+菜鸟教程+知乎", quality: 5, year: "2025-2026", difficulty: mid}`
 
@@ -124,7 +128,7 @@ User Input → Thought → Action → Observation → Thought → ... → Final 
 
 ---
 
-## 6. 大模型为什么需要对齐？RLHF 与 DPO 的本质区别
+### 6. 大模型为什么需要对齐？RLHF 与 DPO 的本质区别
 
 - **元数据**：`{topic: "原理·对齐", subtopic: "RLHF vs DPO", source: "图解大模型200问+DeepSeek报告", quality: 5, year: "2025-2026", difficulty: senior}`
 
@@ -152,7 +156,9 @@ L_DPO = -E[log σ(β·log(π_θ(y_w|x)/π_ref(y_w|x)) - β·log(π_θ(y_l|x)/π_
 
 ---
 
-## 7. GQA 和 MLA 如何解决 MHA 的推理瓶颈？
+## 注意力架构优化
+
+### 7. GQA 和 MLA 如何解决 MHA 的推理瓶颈？
 
 - **元数据**：`{topic: "原理·注意力机制", subtopic: "GQA vs MLA", source: "图解大模型200问+DeepSeek报告", quality: 5, year: "2025-2026", difficulty: senior}`
 

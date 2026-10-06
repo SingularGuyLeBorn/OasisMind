@@ -47,7 +47,7 @@ The decoder has both those layers, but between them is an attention layer that h
 
 ![Image 6](https://jalammar.github.io/images/t/Transformer_decoder.png)
 
-## Bringing The Tensors Into The Picture
+### Bringing The Tensors Into The Picture
 
 Now that we’ve seen the major components of the model, let’s start to look at the various vectors/tensors and how they flow between these components to turn the input of a trained model into an output.
 
@@ -67,7 +67,7 @@ Here we begin to see one key property of the Transformer, which is that the word
 
 Next, we’ll switch up the example to a shorter sentence and we’ll look at what happens in each sub-layer of the encoder.
 
-## Now We’re Encoding!
+### Now We’re Encoding!
 
 As we’ve mentioned already, an encoder receives a list of vectors as input. It processes this list by passing these vectors into a ‘self-attention’ layer, then into a feed-forward neural network, then sends out the output upwards to the next encoder.
 
@@ -97,7 +97,7 @@ If you’re familiar with RNNs, think of how maintaining a hidden state allows a
 
 Be sure to check out the [Tensor2Tensor notebook](https://colab.research.google.com/github/tensorflow/tensor2tensor/blob/master/tensor2tensor/notebooks/hello_t2t.ipynb) where you can load a Transformer model, and examine it using this interactive visualization.
 
-## Self-Attention in Detail
+### Self-Attention in Detail
 
 Let’s first look at how to calculate self-attention using vectors, then proceed to look at how it’s actually implemented – using matrices.
 
@@ -133,7 +133,7 @@ The **sixth step** is to sum up the weighted value vectors. This produces the ou
 
 That concludes the self-attention calculation. The resulting vector is one we can send along to the feed-forward neural network. In the actual implementation, however, this calculation is done in matrix form for faster processing. So let’s look at that now that we’ve seen the intuition of the calculation on the word level.
 
-## Matrix Calculation of Self-Attention
+### Matrix Calculation of Self-Attention
 
 **The first step** is to calculate the Query, Key, and Value matrices. We do that by packing our embeddings into a matrix X, and multiplying it by the weight matrices we’ve trained (WQ, WK, WV).
 
@@ -147,7 +147,7 @@ That concludes the self-attention calculation. The resulting vector is one we ca
 
  The self-attention calculation in matrix form
 
-## The Beast With Many Heads
+### The Beast With Many Heads
 
 The paper further refined the self-attention layer by adding a mechanism called “multi-headed” attention. This improves the performance of the attention layer in two ways:
 
@@ -183,7 +183,7 @@ If we add all the attention heads to the picture, however, things can be harder 
 
 ![Image 22](https://jalammar.github.io/images/t/transformer_self-attention_visualization_3.png)
 
-## Representing The Order of The Sequence Using Positional Encoding
+### Representing The Order of The Sequence Using Positional Encoding
 
 One thing that’s missing from the model as we have described it so far is a way to account for the order of the words in the input sequence.
 
@@ -213,7 +213,9 @@ The formula for positional encoding is described in the paper (section 3.5). You
 
 ![Image 26](https://jalammar.github.io/images/t/attention-is-all-you-need-positional-encoding.png)
 
-## The Residuals
+## The Rest of the Transformer Architecture
+
+### The Residuals
 
 One detail in the architecture of the encoder that we need to mention before moving on, is that each sub-layer (self-attention, ffnn) in each encoder has a residual connection around it, and is followed by a [layer-normalization](https://arxiv.org/abs/1607.06450) step.
 
@@ -227,7 +229,7 @@ This goes for the sub-layers of the decoder as well. If we’re to think of a Tr
 
 ![Image 29](https://jalammar.github.io/images/t/transformer_resideual_layer_norm_3.png)
 
-## The Decoder Side
+### The Decoder Side
 
 Now that we’ve covered most of the concepts on the encoder side, we basically know how the components of decoders work as well. But let’s take a look at how they work together.
 
@@ -247,7 +249,7 @@ In the decoder, the self-attention layer is only allowed to attend to earlier po
 
 The “Encoder-Decoder Attention” layer works just like multiheaded self-attention, except it creates its Queries matrix from the layer below it, and takes the Keys and Values matrix from the output of the encoder stack.
 
-## The Final Linear and Softmax Layer
+### The Final Linear and Softmax Layer
 
 The decoder stack outputs a vector of floats. How do we turn that into a word? That’s the job of the final Linear layer which is followed by a Softmax Layer.
 
@@ -281,7 +283,7 @@ Once we define our output vocabulary, we can use a vector of the same width to i
 
 Following this recap, let’s discuss the model’s loss function – the metric we are optimizing during the training phase to lead up to a trained and hopefully amazingly accurate model.
 
-## The Loss Function
+### The Loss Function
 
 Say we are training our model. Say it’s our first step in the training phase, and we’re training it on a simple example – translating “merci” into “thanks”.
 
@@ -333,7 +335,7 @@ Follow-up works:
 *   [Fast Decoding in Sequence Models using Discrete Latent Variables](https://arxiv.org/abs/1803.03382)
 *   [Adafactor: Adaptive Learning Rates with Sublinear Memory Cost](https://arxiv.org/abs/1804.04235)
 
-## Acknowledgements
+### Acknowledgements
 
 Thanks to [Illia Polosukhin](https://twitter.com/ilblackdragon), [Jakob Uszkoreit](http://jakob.uszkoreit.net/), [Llion Jones](https://www.linkedin.com/in/llion-jones-9ab3064b), [Lukasz Kaiser](https://ai.google/research/people/LukaszKaiser), [Niki Parmar](https://twitter.com/nikiparmar09), and [Noam Shazeer](https://dblp.org/pers/hd/s/Shazeer:Noam) for providing feedback on earlier versions of this post.
 
