@@ -345,6 +345,15 @@
 - **olmes-paper-8** 五样本示例的人工挑选、顺序与标签平衡规则可能引入选择偏差；论文只测试有限顺序，不能排除内容敏感性. 求证结果:
 - **olmes-paper-9** CF 与 MCF 对比同时改变输出形式、打分空间和校准方式，单个示例不能证明性能差异只来自格式稳健性. 求证结果:
 
+### RewardBench 2（arXiv 2506.01937）
+
+解析：`content/olmo/03-后训练与奖励模型/rewardbench-2/rewardbench-2-analysis.md`。
+
+- **rewardbench-2-1** Factuality 先由 GPT-4o 判断、再由 Claude Sonnet 3.7 复核，并删除约 30% 裁判不一致样本；最终集合偏向两类裁判已有共识的事实，不能覆盖全部细微或争议性事实判断. 求证结果:
+- **rewardbench-2-2** 六域采用等权宏平均，但样本数从 Ties 的 102 到 Focus 的 495 不等；小域单题对总分影响更大且抽样方差更高，细小总分差异需要题级区间支持. 求证结果:
+- **rewardbench-2-3** RewardBench 2 与 BoN 的 0.87 Pearson 相关绑定固定生成器、N=16 候选和所选下游任务；生成器过强时论文已观察到候选区分度与相关性下降，不能把 0.87 外推为固定常数. 求证结果:
+- **rewardbench-2-4** PPO 表中使用多组超参数里的最佳中间 checkpoint；若 checkpoint 选择与最终九项评测未严格隔离，点估计可能含选择偏差，且不代表最终 checkpoint 的稳定表现. 求证结果:
+
 ### Tülu 2（arXiv 2311.10702）
 
 解析：`content/olmo/03-后训练与奖励模型/tulu-2/tulu-2-analysis.md`。
