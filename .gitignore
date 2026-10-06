@@ -166,6 +166,13 @@ config/agents/你是*.md
 # Runtime generated workspaces (root only)
 /workspaces/
 
+# 本地研究材料与抓取缓存（不属于知识库事实源）
+/work/
+/blobs/
+
+# SQLite 初始化失败时保留的诊断副本
+apps/server/prisma/*.failed-init-*
+
 # Stray shell artifact
 /^
 

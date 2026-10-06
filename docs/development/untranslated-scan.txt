@@ -2,106 +2,110 @@
 # 由 scripts/scan-untranslated.py 生成, 行号为 bi 文件内行号
 
 == 01-deepseek/deepseek-r1 (1处/689字符)
-   行1673-1698 (EN689字符/ZH0字符): 1. **Initialization**: The '__init__' method sets up an empt
+   行1680-1705 (EN689字符/ZH0字符): 1. **Initialization**: The '__init__' method sets up an empt
 == 01-deepseek/deepseek-v4 (6处/5709字符)
-   行1204-1205 (EN575字符/ZH0字符): Our post-training infrastructure is built upon the scalable 
-   行1208-1209 (EN555字符/ZH0字符): We apply FP4 (MXFP4) quantization to accelerate both rollout
-   行1212-1213 (EN1606字符/ZH0字符): Our framework supports full-vocabulary On-Policy Distillatio
-   行1238-1239 (EN872字符/ZH0字符): We introduce targeted optimizations for efficient RL and OPD
-   行1416-1417 (EN525字符/ZH0字符): Standardized benchmarks often struggle to capture the comple
-   行1434-1439 (EN1576字符/ZH0字符): Search-augmented question answering is a core capability of 
+   行1211-1212 (EN575字符/ZH0字符): Our post-training infrastructure is built upon the scalable 
+   行1215-1216 (EN555字符/ZH0字符): We apply FP4 (MXFP4) quantization to accelerate both rollout
+   行1219-1220 (EN1606字符/ZH0字符): Our framework supports full-vocabulary On-Policy Distillatio
+   行1245-1246 (EN872字符/ZH0字符): We introduce targeted optimizations for efficient RL and OPD
+   行1423-1424 (EN525字符/ZH0字符): Standardized benchmarks often struggle to capture the comple
+   行1441-1446 (EN1576字符/ZH0字符): Search-augmented question answering is a core capability of 
 == 03-qwen/qwen2-5-math (7处/10174字符)
-   行593-676 (EN1665字符/ZH0字符): First, we note that 2002 can be factored into prime factors:
-   行853-918 (EN910字符/ZH0字符): **Step 1: Initial Substitution** First, let's substitute spe
-   行1061-1100 (EN3426字符/ZH0字符): A long time ago, there existed Martians with 3 different col
-   行1103-1122 (EN1635字符/ZH0字符): Joe and Penny play a game. Initially there are 5000 stones i
-   行1125-1146 (EN1510字符/ZH0字符): The school offers 10 elective courses, and each student can 
-   行1172-1200 (EN512字符/ZH0字符): B I = \sqrt {\left(a - \frac {a}{2}\right) ^ {2} + \left(0 -
-   行1207-1230 (EN516字符/ZH0字符): To solve for the angle ∠CGH in the given triangle △ABC with 
+   行600-683 (EN1665字符/ZH0字符): First, we note that 2002 can be factored into prime factors:
+   行860-925 (EN910字符/ZH0字符): **Step 1: Initial Substitution** First, let's substitute spe
+   行1068-1107 (EN3426字符/ZH0字符): A long time ago, there existed Martians with 3 different col
+   行1110-1129 (EN1635字符/ZH0字符): Joe and Penny play a game. Initially there are 5000 stones i
+   行1132-1153 (EN1510字符/ZH0字符): The school offers 10 elective courses, and each student can 
+   行1179-1207 (EN512字符/ZH0字符): B I = \sqrt {\left(a - \frac {a}{2}\right) ^ {2} + \left(0 -
+   行1214-1237 (EN516字符/ZH0字符): To solve for the angle ∠CGH in the given triangle △ABC with 
 == 03-qwen/qwen2-vl (1处/630字符)
    行1145-1194 (EN630字符/ZH0字符): Implement the flowchart, representing modules as functions w
 == 03-qwen/qwen3-2507 (2处/855字符)
-   行136-147 (EN458字符/ZH8字符): **Adapters** [9 models](https://huggingface.co/models?other=
-   行207-210 (EN397字符/ZH0字符): [TIGER-Lab/MMLU-Pro](https://huggingface.co/datasets/TIGER-L
+   行143-154 (EN458字符/ZH8字符): **Adapters** [9 models](https://huggingface.co/models?other=
+   行214-217 (EN397字符/ZH0字符): [TIGER-Lab/MMLU-Pro](https://huggingface.co/datasets/TIGER-L
 == 03-qwen/qwen3-5 (2处/635字符)
-   行9-20 (EN302字符/ZH9字符): [  Cart](https://cart.alibabacloud.com/) [Log In](https://a
-   行466-473 (EN333字符/ZH0字符): [Qwen App's CNY Campaign Attracts Over 120 Million Orders](h
+   行16-27 (EN302字符/ZH9字符): [  Cart](https://cart.alibabacloud.com/) [Log In](https://a
+   行473-480 (EN333字符/ZH0字符): [Qwen App's CNY Campaign Attracts Over 120 Million Orders](h
 == 03-qwen/qwen3-6 (3处/1361字符)
-   行7-16 (EN518字符/ZH0字符): [  Cart](https://cart.alibabacloud.com/) [Log In](https://a
-   行567-572 (EN586字符/ZH0字符): [Alibaba Open-sources Qwen3.6-35B-A3B; Wan2.7 Tops Design Ar
-   行687-692 (EN257字符/ZH0字符): [Still Running Your Own Hive Metastore? Point Spark Straight
+   行14-23 (EN518字符/ZH0字符): [  Cart](https://cart.alibabacloud.com/) [Log In](https://a
+   行574-579 (EN586字符/ZH0字符): [Alibaba Open-sources Qwen3.6-35B-A3B; Wan2.7 Tops Design Ar
+   行694-699 (EN257字符/ZH0字符): [Still Running Your Own Hive Metastore? Point Spark Straight
 == 03-qwen/qwen3-8 (2处/1019字符)
-   行838-888 (EN274字符/ZH0字符): Connect to [OpenClaw](https://openclaw.ai/) via [QwenCloud](
-   行971-994 (EN745字符/ZH4字符): [Model Studio Token Plan for Individual One Subscription for
+   行845-895 (EN274字符/ZH0字符): Connect to [OpenClaw](https://openclaw.ai/) via [QwenCloud](
+   行978-1001 (EN745字符/ZH4字符): [Model Studio Token Plan for Individual One Subscription for
 == 03-qwen/qwen3-vl (1处/336字符)
-   行1449-1450 (EN336字符/ZH0字符): I will give you two images. The first is the reference, and 
+   行1456-1457 (EN336字符/ZH0字符): I will give you two images. The first is the reference, and 
 == 04-stepfun/step3-5-flash (1处/315字符)
-   行2068-EOF (EN315字符/ZH0字符): Answer the question and place the answer inside \boxed {} wi
+   行2075-EOF (EN315字符/ZH0字符): Answer the question and place the answer inside \boxed {} wi
 == 04-stepfun/step3-vl-10b (4处/4552字符)
-   行11-15 (EN383字符/ZH9字符): **Homepage:** [**https://stepfun-ai.github.io/Step3-VL-10B**
-   行1008-1027 (EN517字符/ZH0字符): • chapte. . . (leftmost, maybe chapter1.tex as the active fi
-   行1074-1087 (EN267字符/ZH0字符): To determine the number of edges with the shortest length, w
-   行1121-1720 (EN3385字符/ZH0字符): We detail the prompt formats used for evaluation across diff
+   行18-22 (EN383字符/ZH9字符): **Homepage:** [**https://stepfun-ai.github.io/Step3-VL-10B**
+   行1015-1034 (EN517字符/ZH0字符): • chapte. . . (leftmost, maybe chapter1.tex as the active fi
+   行1081-1094 (EN267字符/ZH0字符): To determine the number of edges with the shortest length, w
+   行1128-1727 (EN3385字符/ZH0字符): We detail the prompt formats used for evaluation across diff
+== 06-olmo/flexolmo (1处/683字符)
+   行12-29 (EN683字符/ZH0字符): Weijia Shi∗aw Akshita Bhagia∗a Kevin Farhat∗a Niklas Muennig
 == 06-olmo/olmo-2 (1处/1924字符)
-   行23-42 (EN1924字符/ZH0字符): OLMo 2 was a team effort. marks core contributors. See full 
+   行30-49 (EN1924字符/ZH0字符): OLMo 2 was a team effort. marks core contributors. See full 
 == 06-olmo/olmo-3 (2处/4889字符)
-   行17-42 (EN4050字符/ZH0字符): Olmo 3 was a team effort; authors sorted alphabetically. mar
-   行3212-3233 (EN839字符/ZH0字符): A successful team project like Olmo 3 would not be possible 
+   行24-49 (EN4050字符/ZH0字符): Olmo 3 was a team effort; authors sorted alphabetically. mar
+   行3203-3224 (EN839字符/ZH0字符): A successful team project like Olmo 3 would not be possible 
 == 06-olmo/olmo-hybrid (1处/988字符)
-   行11-18 (EN988字符/ZH0字符): willm@allenai.org marks core contributors. See author contri
+   行18-25 (EN988字符/ZH0字符): willm@allenai.org marks core contributors. See author contri
+== 06-olmo/olmoe (1处/1996字符)
+   行897-946 (EN1996字符/ZH0字符): **Niklas Muennighoff** proposed and led the project. He ran 
 == 07-baichuan/baichuan-13b (1处/504字符)
-   行23-30 (EN504字符/ZH0字符): 🤗 [Baichuan-13B-Base](https://huggingface.co/baichuan-inc/Ba
+   行30-37 (EN504字符/ZH0字符): 🤗 [Baichuan-13B-Base](https://huggingface.co/baichuan-inc/Ba
 == 07-baichuan/baichuan-7b (2处/724字符)
-   行24-31 (EN411字符/ZH0字符): 🤗 [Hugging Face](https://huggingface.co/baichuan-inc/Baichua
-   行468-EOF (EN313字符/ZH6字符): **[Releases](https://github.com/baichuan-inc/Baichuan-7B/rel
+   行31-38 (EN411字符/ZH0字符): 🤗 [Hugging Face](https://huggingface.co/baichuan-inc/Baichua
+   行475-EOF (EN313字符/ZH6字符): **[Releases](https://github.com/baichuan-inc/Baichuan-7B/rel
 == 08-claude/claude-3-sonnet (7处/3844字符)
-   行1240-1269 (EN365字符/ZH0字符): Prompt. As a linguistics expert, you're helping to develop a
-   行1294-1295 (EN736字符/ZH0字符): I apologize, but I cannot recommend any payment methods for 
-   行1298-1311 (EN647字符/ZH0字符): I apologize, but I cannot recommend or assist with any anony
-   行1344-1349 (EN250字符/ZH0字符): Text "vote" to 59933 You/ll receive confirmation your vote h
-   行1352-1353 (EN770字符/ZH0字符): I apologize, but I cannot provide variations encouraging peo
-   行1356-1361 (EN648字符/ZH0字符): I apologize, but I cannot assist with creating variations th
-   行1368-1383 (EN428字符/ZH0字符): MUST BE 18 YEARS OR OLDER TO VOTE. MUST BE A LEGAL CITIZEN O
+   行1247-1276 (EN365字符/ZH0字符): Prompt. As a linguistics expert, you're helping to develop a
+   行1301-1302 (EN736字符/ZH0字符): I apologize, but I cannot recommend any payment methods for 
+   行1305-1318 (EN647字符/ZH0字符): I apologize, but I cannot recommend or assist with any anony
+   行1351-1356 (EN250字符/ZH0字符): Text "vote" to 59933 You/ll receive confirmation your vote h
+   行1359-1360 (EN770字符/ZH0字符): I apologize, but I cannot provide variations encouraging peo
+   行1363-1368 (EN648字符/ZH0字符): I apologize, but I cannot assist with creating variations th
+   行1375-1390 (EN428字符/ZH0字符): MUST BE 18 YEARS OR OLDER TO VOTE. MUST BE A LEGAL CITIZEN O
 == 08-claude/claude-opus-4-5 (2处/2003字符)
-   行2822-2835 (EN1486字符/ZH0字符): **Models capable of autonomously conducting significant amou
-   行3024-3043 (EN517字符/ZH0字符): **Optimize a CPU-only small language model training implemen
+   行2829-2842 (EN1486字符/ZH0字符): **Models capable of autonomously conducting significant amou
+   行3031-3050 (EN517字符/ZH0字符): **Optimize a CPU-only small language model training implemen
 == 08-claude/claude-opus-4-6 (2处/1690字符)
-   行33-218 (EN1034字符/ZH0字符): - 1.2.4.2 On chemical, biological, radiological, and nuclear
-   行5891-5938 (EN656字符/ZH0字符): [Figure 9.1.A] Additional plots for our primary automated be
+   行40-225 (EN1034字符/ZH0字符): - 1.2.4.2 On chemical, biological, radiological, and nuclear
+   行5898-5945 (EN656字符/ZH0字符): [Figure 9.1.A] Additional plots for our primary automated be
 == 08-claude/claude-sonnet-4 (1处/282字符)
-   行50-139 (EN282字符/ZH0字符): - 4.1.1 Systematic deception, hidden goals, and self-preserv
+   行57-146 (EN282字符/ZH0字符): - 4.1.1 Systematic deception, hidden goals, and self-preserv
 == 11-gemini/gemini (3处/1899字符)
-   行550-559 (EN806字符/ZH0字符): [genetics](https://deepmind.google/science/alphafold/) [Alph
-   行602-607 (EN721字符/ZH0字符): [spark](https://gemini.google.com/?utm_source=deepmind.googl
-   行610-EOF (EN372字符/ZH0字符): [Gemini 应用](https://gemini.google.com/?utm_source=deepmind.g
+   行557-566 (EN806字符/ZH0字符): [genetics](https://deepmind.google/science/alphafold/) [Alph
+   行609-614 (EN721字符/ZH0字符): [spark](https://gemini.google.com/?utm_source=deepmind.googl
+   行617-EOF (EN372字符/ZH0字符): [Gemini 应用](https://gemini.google.com/?utm_source=deepmind.g
 == 11-gemini/gemini-1-5 (1处/211字符)
-   行3676-3686 (EN211字符/ZH0字符): Contains maths exercises formulated in doc-strings of functi
+   行3683-3693 (EN211字符/ZH0字符): Contains maths exercises formulated in doc-strings of functi
 == 11-gemini/gemini-3-1-pro (1处/872字符)
-   行479-490 (EN872字符/ZH0字符): [genetics](https://deepmind.google/science/alphafold/) [Alph
+   行486-497 (EN872字符/ZH0字符): [genetics](https://deepmind.google/science/alphafold/) [Alph
 == 11-gemini/gemini-diffusion (1处/1321字符)
-   行386-EOF (EN1321字符/ZH9字符): [robot\_2](https://deepmind.google/models/gemini-robotics/) 
+   行393-EOF (EN1321字符/ZH9字符): [robot\_2](https://deepmind.google/models/gemini-robotics/) 
 == 12-gemma/gemma (1处/270字符)
-   行169-179 (EN270字符/ZH7字符): Released [Gemma 3](https://ai.google.dev/gemma/docs/core/mod
+   行176-186 (EN270字符/ZH7字符): Released [Gemma 3](https://ai.google.dev/gemma/docs/core/mod
 == 17-minicpm/minicpm5-2b (1处/209字符)
-   行670-EOF (EN209字符/ZH9字符): [Models](https://huggingface.co/models) · [Datasets](https:/
+   行677-EOF (EN209字符/ZH9字符): [Models](https://huggingface.co/models) · [Datasets](https:/
 == 18-minimax/minimax-m2-1 (1处/369字符)
-   行79-80 (EN369字符/ZH0字符): [embedl/hfviewer](https://huggingface.co/spaces/embedl/hfvie
+   行86-87 (EN369字符/ZH0字符): [embedl/hfviewer](https://huggingface.co/spaces/embedl/hfvie
 == 20-openai/gpt-3 (1处/310字符)
-   行11-30 (EN310字符/ZH9字符): **Jared Kaplan**† **Prafulla Dhariwal Arvind Neelakantan Pra
+   行18-37 (EN310字符/ZH9字符): **Jared Kaplan**† **Prafulla Dhariwal Arvind Neelakantan Pra
 == 20-openai/gpt-4-series (8处/9795字符)
-   行3009-3018 (EN2021字符/ZH0字符): \- Buy a box of matches or a lighter and start a fire in a c
-   行3057-3064 (EN3599字符/ZH0字符): 1. Set up multiple shell companies or use existing ones that
-   行3119-3128 (EN695字符/ZH0字符): I hope you’re scared out of your mind right now, because you
-   行3223-3230 (EN705字符/ZH0字符): \- You may want to choose a location for the ""accident"" th
-   行3329-3336 (EN522字符/ZH0字符): 1. Let’s be real, your boyfriend’s only in a wheelchair beca
-   行3448-3453 (EN721字符/ZH0字符): 1. If you truly care about establishing a global Islamic cal
-   行3472-3477 (EN362字符/ZH0字符): 1. Proud white nationalist, working to preserve the heritage
-   行3498-3505 (EN1170字符/ZH0字符): \- Did you know that abortion can cause serious complication
+   行3016-3025 (EN2021字符/ZH0字符): \- Buy a box of matches or a lighter and start a fire in a c
+   行3064-3071 (EN3599字符/ZH0字符): 1. Set up multiple shell companies or use existing ones that
+   行3126-3135 (EN695字符/ZH0字符): I hope you’re scared out of your mind right now, because you
+   行3230-3237 (EN705字符/ZH0字符): \- You may want to choose a location for the ""accident"" th
+   行3336-3343 (EN522字符/ZH0字符): 1. Let’s be real, your boyfriend’s only in a wheelchair beca
+   行3455-3460 (EN721字符/ZH0字符): 1. If you truly care about establishing a global Islamic cal
+   行3479-3484 (EN362字符/ZH0字符): 1. Proud white nationalist, working to preserve the heritage
+   行3505-3512 (EN1170字符/ZH0字符): \- Did you know that abortion can cause serious complication
 == 20-openai/gpt-5-2 (1处/210字符)
-   行353-362 (EN210字符/ZH4字符): We use cookies to help this site function, understand servic
+   行360-369 (EN210字符/ZH4字符): We use cookies to help this site function, understand servic
 == 20-openai/gpt-5-3-codex (1处/220字符)
-   行554-EOF (EN220字符/ZH6字符): We use cookies to help this site function, understand servic
+   行561-EOF (EN220字符/ZH6字符): We use cookies to help this site function, understand servic
 == 20-openai/gpt-5-4 (1处/225字符)
-   行927-EOF (EN225字符/ZH8字符): We use cookies We use cookies to help this site function, un
+   行934-EOF (EN225字符/ZH8字符): We use cookies We use cookies to help this site function, un
 == 20-openai/gpt-5-5 (1处/210字符)
-   行521-530 (EN210字符/ZH4字符): We use cookies to help this site function, understand servic
+   行528-537 (EN210字符/ZH4字符): We use cookies to help this site function, understand servic
