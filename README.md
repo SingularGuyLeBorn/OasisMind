@@ -32,6 +32,28 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 
 ---
 
+## 知识库地图
+
+见微不只有博客程序，`content/` 里还维护着一组彼此交叉引用的技术知识库。它们不是把论文按标题堆在一起：综合库负责建立基础坐标，专题库沿一条研究路线向下挖，实验室库则把同一团队公开的模型、数据、训练方法与基础设施串起来。
+
+| 入口 | 主要回答什么 | 适合怎样读 |
+| --- | --- | --- |
+| [`llm-guide`](content/llm-guide/llm-guide.md) | 大模型从基础原理、架构、预训练、后训练到系统与 Agent 的完整主干 | 第一次建立全局认识时从这里开始；遇到专题再跳到下列知识库 |
+| [`cs336`](content/cs336/_garden.md) · [`classic-papers`](content/classic-papers/_garden.md) | 一套从 tokenizer、数据和 Transformer 走到训练系统的课程，以及各方向的奠基论文 | 想补基础、跟课程动手，或者寻找一个领域最值得先读的论文 |
+| [`model-library`](content/model-library/_garden.md) | 主流模型家族、版本关系、技术报告与官方资料 | 查某个模型“用了什么”；机制本身仍回到综合库或专题库理解 |
+| [`deepseek`](content/deepseek/_garden.md) · [`olmo`](content/olmo/_garden.md) | 两条不同的开放路线：模型与基础设施密集创新，以及训练数据、代码、检查点和评测的完整开放 | 按团队纵向阅读，观察一项技术怎样跨版本演化并进入真实训练流程 |
+| [`rl`](content/rl/_garden.md) · [`opd`](content/opd/_garden.md) | 从 MDP、策略梯度和偏好优化走到 RLVR，以及 on-policy 蒸馏怎样提供学生状态上的稠密监督 | 先统一状态、动作、采样策略和目标分布，再比较具体算法缩写 |
+| [`sparse-attention`](content/sparse-attention/_garden.md) · [`diffusion-llm`](content/diffusion-llm/_garden.md) | 两条仍在快速变化的模型路线：长上下文中的选择性计算，以及非自回归语言生成 | 先读首页的路线地图，再进入论文、公式、内核与评测专题 |
+| [`continual-learning`](content/continual-learning/_garden.md) · [`rsi`](content/rsi/_garden.md) | 模型怎样持续适应，以及系统怎样搜索、修改并验证自己的改进 | 区分参数更新、测试时适应、上下文或 Harness 改进，避免把它们都叫作“自我进化” |
+| [`llm-infra`](content/llm-infra/_garden.md) · [`longhorizon`](content/longhorizon/_garden.md) | 训练与推理系统如何支撑模型，以及 Agent 为什么能在很长的任务里保持目标、状态与反馈 | 一个从系统资源读，一个从任务闭环读；两边在调度、观测和故障恢复处汇合 |
+| [`llm-interview`](content/llm-interview/_garden.md) | 把理论知识压到工程、业务与面试中的具体问题 | 学完一个主题后用于自测，不把背答案当成学习路线 |
+
+有数学基础、但尚未形成大模型全局认识的读者，可以按 `llm-guide → cs336 → 具体专题` 前进。已经熟悉基本概念、想把模糊印象变成可推导知识时，可以直接进入 RL、OPD、稀疏注意力、持续学习等专题，再沿文中的交叉链接回补前置机制。查模型报告时先去 `model-library`，需要理解团队长期路线时再进入 DeepSeek 或 OLMo。
+
+每个知识库以 `_garden.md` 为入口。叶子文章可以直接位于父目录；一个节点只要继续包含子主题，就使用“同名目录 + 同名首页”，让文件树、站内树形导航和读者看到的知识层级保持一致。正文不强套统一模板：总览页负责给地图，算法页讲清动机、公式与比较，论文精读保留实验和来源细节，团队库则突出版本之间的连续性。写作与目录规范见 [`docs/writing-spec.md`](docs/writing-spec.md)。
+
+---
+
 ## 核心能力
 
 
@@ -243,8 +265,8 @@ L1 ~ L5 已全部落地，项目处于**功能完备、持续打磨**阶段。�
 
 - **数字花园体验（完整版）**：附件按 `uploads/{garden}/{slug}/` 分目录；Milkdown 上传占位；编辑器选区 AI 润色 / 精简 / 扩写；阅读页相关笔记（`post.related`）；Chat → 知识库落库（`post.createFromChat` 新建 / 覆盖 / 追加）；中栏派工条（进行中 / 待消费 / 同步子任务）
 - **本地推理**：Ollama / llama.cpp / LM Studio / vLLM（OpenAI 兼容）；Chat 模型菜单「本地模型」动态探测；会话 id 形如 `ollama/llama3.2`
-- **工程纪律**：Chat Store 不变量有 Vitest 锁定（`chatStoreInvariants.test.ts`）；实验模块时间盒见 [`docs/development/experiments.md`](docs/development/experiments.md)；`pnpm setup:dev` 降低换机摩擦
-- **v8 ~ v10**：全局任务池、投递可靠性、可重入与续跑
+- **工程纪律**：Chat Store 不变量有 Vitest 锁定（`chatStoreInvariants.test.ts`）；高风险实验先缩小范围、限定时间，再决定是否进入主路径；`pnpm setup:dev` 降低换机摩擦
+- **v8 ~ v10**：全局任务池、异步结果投递可靠性与会话手动恢复；服务重启后的僵尸任务统一标记失败，不自动重跑，避免重复写文件、重复发请求或重复扣费
 - **W1 ~ W16**：会话树、心跳决策层、审批 scope、context 钩子、compaction 切割、stream 内核不变量、Web Chat store 不变量
 - **Chat UI**：Kimi 风格模型菜单、思考时间线、回到底部按钮、刷新不丢回复
 - **记忆系统**：三层 scope（global / workspace / agent）、按类型差异化衰减、被调用重置衰减
@@ -331,7 +353,7 @@ pnpm dev:ngrok          # 自动：ngrok 起固定域名 → 完整 dev → serv
 
 ### 方案 B：Cloudflare Tunnel（需 Cloudflare 账号 + 域名）
 
-适合已有 Cloudflare 域名的用户，详见 [docs/development/cloudflare-tunnel.md](docs/development/cloudflare-tunnel.md)。
+适合已有 Cloudflare 域名的用户。示例配置见 [`cloudflare/config.example.yml`](cloudflare/config.example.yml)，启动逻辑见 [`scripts/remote.mjs`](scripts/remote.mjs)。
 
 ```bash
 pnpm remote              # dev + 临时隧道（URL 每次重启变，不推荐用于邮件 webhook）
@@ -379,7 +401,7 @@ ask_user：resolveAskUserFromMail → 注入答复给 Agent 续轮
 - `.env` 被 `.gitignore` 忽略，不得提交。`.env.example` 仅含占位值。
 - `CREDENTIAL_MASTER_KEY` 用于 AES-256-GCM 加密 Credential 表，丢失后已加密凭据无法解密。
 - 默认 `AUTH_MODE=none` 无鉴权，仅适合本地。暴露公网必须启用鉴权。
-- 用隧道把本机暴露到公网（无需开端口）：**ngrok 固定域名**（`pnpm dev:ngrok`，见上方「远程访问与邮件 webhook」）或 Cloudflare Tunnel（见 [docs/development/cloudflare-tunnel.md](docs/development/cloudflare-tunnel.md)，`pnpm remote` / `pnpm remote --named`）。
+- 用隧道把本机暴露到公网（无需开端口）：**ngrok 固定域名**（`pnpm dev:ngrok`，见上方「远程访问与邮件 webhook」）或 Cloudflare Tunnel（`pnpm remote` / `pnpm remote --named`；配置见 [`cloudflare/config.example.yml`](cloudflare/config.example.yml)）。
 - `apps/server/prisma/dev.db` 不进 Git；数据持久化依赖 `content/` 下的 Markdown 源文件。
 
 ---
