@@ -489,3 +489,13 @@
 解析：`content/rl/01-基础/01.04-reinforce/01.04-reinforce.md`。
 
 - **reinforce-1** 仓库旧附件标注为 arXiv `1807.04077`，实际对应一篇心脏异常检测论文，并非 REINFORCE 原论文。REINFORCE 的一手来源是 Ronald J. Williams 1992 年发表于 *Machine Learning* 的 *Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning*，DOI `10.1007/BF00992696`. 求证结果: 正文已改用正确论文链接，旧附件不再作为来源。
+
+### Smallpond
+
+解析：`content/deepseek/04-开源仓库/smallpond/smallpond-analysis.md`。
+
+- **smallpond-1** 入门文档使用 `repartition(3, by_row=True)`，源码参数名是 `by_rows`，示例原样运行会因多余关键字参数失败. 求证结果: 对照官方仓库 `main` 分支的 DataFrame 接口确认.
+- **smallpond-2** 低层 API 示例没有向 `Driver` 传入必需的 `mode` 位置参数，示例还缺少 `List` 导入；任务文档构造 `RuntimeContext` 时缺少 `job_time`. 求证结果: 对照官方仓库对应构造函数签名确认.
+- **smallpond-3** `DataFrame.is_computed` 使用优化前节点查询任务映射，按当前实现会持续得到 `False`. 求证结果: 对照 `dataframe.py` 与会话中的节点到任务映射路径确认.
+- **smallpond-4** 3FS 快速递归删除仅以 `/hf3fs` 路径前缀识别挂载点，按 3FS 开源部署示例挂载到其他路径时会退回逐文件删除. 求证结果: 对照 `smallpond/io/filesystem.py` 的路径判断确认.
+- **smallpond-5** GraySort 命令行默认值与 `gray_sort_benchmark` 函数默认值不一致，包括排序引擎以及 shuffle CPU 设置；公开材料也没有给出 110.5 TiB 运行所用的完整命令与参数. 求证结果: 对照官方 benchmark 脚本与 README 确认.
