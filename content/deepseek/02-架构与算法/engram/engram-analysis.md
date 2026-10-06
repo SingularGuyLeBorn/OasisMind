@@ -182,7 +182,6 @@ Table 4 刻意选了稠密骨干, 理由是避开 MoE 专家并行的通信. 但
 - Engram 仓库 issue 讨论 (#9 学习率与权重衰减, #12 Table 2 加粗, #20 稠密骨干复现, #21 表大小). <https://github.com/deepseek-ai/Engram/issues>
 - SemiAnalysis (Bryan Shan 等). *Engrams Embedding Entendre: Codesign for Efficient DRAM/SSD Offloading*, 2026-09. <https://newsletter.semianalysis.com/p/engrams-embedding-entendre-codesign>
 - Tao Lin. *A Collision-Free Hot-Tier Extension for Engram-Style Conditional Memory*. arXiv:2601.16531, 2026. <https://arxiv.org/abs/2601.16531>
-- 知乎专栏. DeepSeek V4 最大的遗憾. <https://zhuanlan.zhihu.com/p/2034232780020770031>
 - llm-guide: 条件记忆与 Engram, Engram: 从 N-gram 到可扩展查找, DeepSeek-MoE
 
 
