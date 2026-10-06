@@ -275,6 +275,482 @@ Adam 下没有统一的指数. 报告把学习率写成 $\eta(B)=\eta_\infty/(1+
 
 §23 Table 39 按四个维度对比同类系统. Megatron-Core 用分布式优化器常驻本地权重, dispatch 作为可选后端, 矩用 BF16, 重叠依赖足够的独立工作并划出专门的 SM; PyTorch FSDP 全重分片时每次前向反向前 gather 权重; DeepSpeed-MoE 结合 ZeRO 与 EP; DeepSeek-V3 和 DeepEP 用 ZeRO-1 保留完整本地权重, 主权重和累积梯度 FP32, AdamW 矩 BF16, 显式分配通信 SM. Olmo-core 3 的组合是常驻本地权重, 固定容量的路由索引式逐行搬运, FP32 主权重和优化器状态为权威, 默认阶段串行. 报告也承认, 现有测量没有把常驻权重和专家放置的作用分开, 不能据此说它在墙钟或显存上普遍优于全重分片 FSDP. 更完整的系统分类见 [6.1.8 MoE 系统与并行](../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md), 容量与负载均衡的通用推导见 [MoE 负载均衡与容量](../../../llm-guide/2-核心原理与架构/2.6-MoE/03-MoE负载均衡与容量/03-MoE负载均衡与容量.md).
 
+## 7. 从模型规格反推一组能运行的并行配置
+
+### 7.1. 先算常驻状态, 再谈算力利用率
+
+一组 MoE 配置能否启动, 首先由每张卡的常驻状态决定. 设稠密参数为 $P_D$, 路由专家参数为 $P_E$, 数据并行度为 $D$, 专家模型并行度为 $M_E$, 流水线并行度为 $P$, 每张卡可用于模型的显存预算为 $M_{GPU}$. 暂时假设所有张量都能整除相应并行度, 每个流水线 stage 层数相同, 则第 2.2 节的逐参数字节数可以合成
+
+$$
+M_{persistent}\approx \frac{1}{P}\left[P_D\left(6+\frac{12}{D}\right)+P_E\left(\frac{6}{M_E}+\frac{12}{D_EM_E}\right)\right]+M_{cache}+M_{buffer}. \tag{87}
+$$
+
+这里 $D=D_EM_E$; 6 字节由 BF16 计算权重和 FP32 梯度组成, 12 字节是 FP32 主权重与 AdamW 两个矩. $M_{cache}$ 包括 MXFP8 派生权重, $M_{buffer}$ 包括通信缓冲, 梯度桶和框架常驻区. 式 (87) 没算激活, 因而只是「能不能装下参数状态」的第一道筛选. 它揭示了两个不对称关系: 增大 $D$ 只能继续压缩优化器侧的 12 字节, 不能压缩每个副本持有的计算权重; 增大 $M_E$ 同时压缩专家计算权重和专家梯度, 却会把 token 交换扩到更多 rank. 前者遇到显存下限, 后者遇到通信下限.
+
+以报告 Ultra-128E 的 58.36B 激活参数和 1.200T 总参数为例, 不能直接用 $1.2\times10^{12}\times18$ 字节再除以 512, 因为稠密参数, 专家参数和优化器状态沿不同轴切分. 朴素的 18 字节估算约为 21.6 TB 十进制字节; 即使平均除到 512 张卡也只是约 42.2 GB/卡, 这个数掩盖了计算权重必须按 EP 与 PP 放置、激活在流水线中同时存活、对称缓冲按容量预留等约束. 「总字节除以总卡数」只给理论平均值, 不保证任何一个 rank 的峰值低于显存容量.
+
+更稳妥的做法是把显存写成
+
+$$
+M_{peak}=M_{persistent}+H_sM_{act}^{(s)}+L_sM_{lease}^{(s)}+M_{temp}^{(s)}, \tag{88}
+$$
+
+$H_s$ 是 stage $s$ 在调度中同时存活的激活份数, $L_s$ 是 rowwise dispatch lease 的高水位, $M_{temp}^{(s)}$ 是算子临时区. 1F1B-V 把各 rank 的激活份数从 11, 9, 7, 5 拉到相同的 6, 影响的是式 (88) 第二项; EP 和分布式优化器主要改第一项; 重算主要改第二项; MXFP8 同时改第一项中的派生缓存、第二项的保存激活以及第三项的传输载荷. 这些技术不能用一个「节省百分比」相加, 因为它们碰到的是相互重叠的字节集合.
+
+一个反例能说明这种重叠. 假设峰值由 62 GiB 常驻状态和 41 GiB 激活构成, 总计 103 GiB. 重算把激活压到 15 GiB, 峰值成为 77 GiB. 若某种低精度方案把原始激活再减半, 不能在 77 GiB 上继续减去 $41/2=20.5$ GiB; 它只能处理重算后仍保存的那 15 GiB 中可量化的部分. 报告 Figure 62 的 62.2 GiB 常驻区几乎不受 block recompute 影响, 正好给出了这个分解的实测版本.
+
+### 7.2. 四条并行轴分别约束什么
+
+把世界大小写成 $W=PDC=P D_EM_E$, 仍然不够, 因为同一个乘积分解可以对应完全不同的瓶颈. 对每张卡的局部 token 数记为 $T$, hidden size 为 $d$, top-$K$ 路由, 元素字节数为 $b_a$. 忽略协议常数时, 四条轴的主要流量可以写成:
+
+$$
+V_{DDP}\sim \frac{2(D-1)}{D}\frac{P_{grad}}{P},\qquad
+V_{EP}\sim 2TKd\,b_a,\qquad
+V_{PP}\sim 2T d\,b_a,\qquad
+V_{CP}\sim c_{attn}Td\,b_a. \tag{89}
+$$
+
+第一式是一次优化器步的梯度 reduce-scatter 与权重重建的量级, 会被多个 microbatch 摊薄; EP 的系数 2 对应 dispatch 与 combine, 每个 MoE block、每个 microbatch、前后向都会出现; PP 在 stage 边界搬隐藏状态; CP 的常数取决于注意力实现与 all-to-all 的次数. 式 (89) 区分了「每步一次」和「每层每微批一次」. 若一个优化器步累积 $m$ 个 microbatch, 每 token 分摊的 DDP 流量大致随 $1/m$ 下降, EP 流量不会因此下降.
+
+由此可以解释硬件放置顺序. EP-MP 组放在 NVLink 域内, 因为它的消息频繁且位于每个路由 block 的关键路径; DDP 可以跨较慢链路, 因为梯度桶只在步边界归约, 还能和反向后段重叠. 但这条经验有边界: 若模型的稠密参数极大、累积步数很少, DDP 梯度通信也可能成为主项; 若 top-$K$ 很小且本地 token 很多, EP 的每次消息更接近大带宽传输, 对延迟的敏感度会降低. 配置应由式 (89) 中的频率和载荷共同决定, 不能只按单次字节数排序.
+
+EP 度也不是越大越好. 均匀路由下, 每个本地专家收到的行数约为
+
+$$
+M_e\approx \frac{TKM_E}{N}, \tag{90}
+$$
+
+其中 $N$ 是全局路由专家数, 每个 rank 持有 $N/M_E$ 个专家. 增大 $M_E$ 会减少每卡持有的专家数, 却不一定减少单个专家的行数: rank 收到来自 $M_E$ 个源的 token, 两个效应在均匀情形下抵消. 真正变化的是远端比例、通信参与者数量和每卡专家权重. 若 $N$ 固定而 $M_E$ 增大, 本地命中概率大致从较高值降向 $1/M_E$; 权重显存下降, 跨卡路线增加. 这正是 EP 用容量换 token 搬运的含义.
+
+### 7.3. 从 batch 约束得到 microbatch
+
+设全局 batch 为 $B_{global}$ token, 数据并行副本数为 $D$, 梯度累积 microbatch 数为 $m$, 每个副本每个 microbatch 的 token 数为 $T$. 在没有序列打包损失时,
+
+$$
+B_{global}=D m T. \tag{91}
+$$
+
+因此固定 $B_{global}$ 和 $D$ 后, 增加 $m$ 会让 $T$ 反比下降. PP 希望 $m$ 足够大来填满流水线, grouped GEMM 和 attention 希望 $T$ 足够大来跨过效率拐点, host 提交也希望单次工作不要太碎. 这三个要求通过式 (91) 正面冲突. 以 $P$ 个物理 stage 的普通 1F1B 粗略估算, bubble 比例约为
+
+$$
+\beta_{pipe}\approx \frac{P-1}{m+P-1}. \tag{92}
+$$
+
+把 $m$ 从 $P$ 增到 $4P$ 可以显著降低 bubble, 但 $T$ 同时缩成四分之一. 若专家 GEMM 原本恰好在算术强度的转折点, 后者可能吃掉全部流水线收益. 报告选择 interleaved 1F1B 并给最后一个 stage 少放一层, 本质上是在调整式 (92) 未表示的 stage 不均衡项, 而非追求符号上的零 bubble.
+
+完整的每步时间可以写成
+
+$$
+T_{step}\approx (1+\beta_{pipe})\max_s T_s(m,T)+T_{DDP}(m)+T_{unhidden}, \tag{93}
+$$
+
+$T_s$ 包含该 stage 的 attention、专家 GEMM、EP 通信和重算, $T_{unhidden}$ 是由于资源争用、host 空洞和依赖关系没有被隐藏的部分. two-batch overlap 的实验表明, 把通信 kernel 摆到计算旁边并不保证 $T_{unhidden}$ 下降: 当两者争用 SM、HBM 或网络注入资源时, 各自的执行时间会变长. 只看时间线里彩色区块的重叠面积会高估收益, 应比较整个 GPU busy 区间的并集和端到端 token 速率.
+
+## 8. 路由目标怎样变成实际执行的 token
+
+### 8.1. soft score、hard route 与容量裁剪是三张不同的图
+
+router 对 token $t$ 产生 logits $z_{t,e}$, 经 softmax 得到 $p_{t,e}$. top-$K$ 指示量记为 $a_{t,e}\in\{0,1\}$, 满足 $\sum_ea_{t,e}=K$. 若容量策略丢掉一条路线, 再引入接受量 $q_{t,e}\in\{0,1\}$, 且 $q_{t,e}\le a_{t,e}$. 真正进入专家 $e$ 的 token 数是
+
+$$
+n_e=\sum_tq_{t,e}, \tag{94}
+$$
+
+而 router 请求的 hard load 是 $\tilde n_e=\sum_ta_{t,e}$, soft mass 是 $m_e=\sum_tp_{t,e}$. 三者回答不同问题: $m_e$ 对 logits 可导, $\tilde n_e$ 描述 router 的离散选择, $n_e$ 决定 grouped GEMM 和通信的实际工作. 如果容量裁剪发生在请求之后, 即使 $n_e$ 很均匀, $\tilde n_e$ 仍可能严重拥挤, 丢弃率也可能很高.
+
+常见负载均衡损失把 hard fraction 与 soft fraction 相乘. 令 token 数为 $T$, 则
+
+$$
+f_e=\frac{1}{TK}\sum_ta_{t,e},\qquad
+P_e=\frac1T\sum_tp_{t,e},\qquad
+L_{LBL}=N\sum_{e=1}^N f_eP_e. \tag{95}
+$$
+
+均匀时 $f_e=P_e=1/N$, 所以 $L_{LBL}=1$. 容易误读的一点是: 标量等于 1 不足以证明两组边际各自均匀. 写成中心化形式,
+
+$$
+L_{LBL}=1+N\sum_e\left(f_e-\frac1N\right)\left(P_e-\frac1N\right). \tag{96}
+$$
+
+它惩罚的是 hard load 偏差与 soft mass 偏差的正相关. 如果一个专家的 hard load 偏高, 模型可以把它的 soft mass 压低; 另一个专家 hard load 偏低, soft mass反而抬高, 交叉项就可能互相抵消. 这就是 Token Gerrymandering 的代数核心. 目标看到的是两个边际的内积, 系统承受的是 hard route 的最大值和直方图.
+
+### 8.2. 六个 token 的反例为什么能扩展
+
+考虑 $N=3$, top-1, 六个 token. hard fraction 取
+
+$$
+f=\left(\frac12,\frac13,\frac16\right), \tag{97}
+$$
+
+明显偏离均匀分配. 只要构造一个合法的平均 soft mass $P$ 使 $(f-\frac13\mathbf1)^\top(P-\frac13\mathbf1)=0$, 式 (96) 仍给出 $L_{LBL}=1$. 例如令偏差 $u=f-\frac13\mathbf1=(\frac16,0,-\frac16)$, 选择与它正交且和为零的 $v=(a,-2a,a)$, 取足够小的 $a$ 保证 $P=\frac13\mathbf1+v$ 非负. 此时第一与第三个专家拥有相同 soft mass, hard load 却相差三倍, LBL 的交叉项仍为零.
+
+这个构造不依赖三个专家. 对 $N>2$, 满足元素和为零的偏差空间有 $N-1$ 维; 给定非零 hard 偏差 $u$, 与它正交的 soft 偏差仍有至少 $N-2$ 维. 专家越多, 能让内积保持不变的方向越多. 扩大统计 scope 会降低小样本噪声, 却不改变式 (96) 只约束一个内积的事实. 因而把 LBL 从 microbatch 统计改成全局 batch 统计, 可以稳定估计, 不能从数学上消除代理目标的退化方向.
+
+为什么梯度还能把模型带到这种状态? 对一个 token 的 logit $z_{t,j}$,
+
+$$
+\frac{\partial P_e}{\partial z_{t,j}}=\frac1T p_{t,e}(\mathbf1[e=j]-p_{t,j}), \tag{98}
+$$
+
+在 top-$K$ 选择不跨边界的小邻域内, $f_e$ 被当作常数, 因此
+
+$$
+\frac{\partial L_{LBL}}{\partial z_{t,j}}
+=\frac{N}{T}p_{t,j}\left(f_j-\sum_ep_{t,e}f_e\right). \tag{99}
+$$
+
+若专家 $j$ 的 hard fraction 高于该 token 概率加权的平均 hard fraction, 梯度下降会压低 $p_{t,j}$. 但只要 $j$ 仍留在 top-$K$ 内, hard 选择暂时不变, 于是出现「概率下降而路线没换」的区间. 很多 token 同时处在这个区间时, soft mass 已经补偿了 LBL, hard load 尚未搬走. top-$K$ 的不连续边界让 soft 控制器与执行负载之间出现迟滞.
+
+### 8.3. 容量是安全阀, 不是平衡器
+
+若每个 rank 的本地 token 数为 $T$, top-$K$, rank 级容量因子为 $c$, 则该 rank 给所有本地专家预留的总行数可写为
+
+$$
+C_{rank}=\lceil cTK\rceil. \tag{100}
+$$
+
+专家级容量则常写成 $C_e=\lceil cTK/N_{local}\rceil$, 总和约等于 $C_{rank}$. 两者预算相近, 接受集合却不同. 专家级容量给每个专家固定份额, 一个专家空着的槽不能借给另一个热点专家; rank 级共享容量允许热点专家占用空闲槽, 所以在相同总预算下不会比逐专家匹配预算丢掉更多路线. 代价是 grouped GEMM 的各专家行数更不规则, 最大专家负载仍可能很高.
+
+容量因子存在两端失效. $c$ 太小, 路由丢弃使某些 token 少走专家, 模型输出的有效 top-$K$ 变成可变值, router 梯度和主任务梯度也会改变; $c$ 太大, 固定缓冲按最坏情况膨胀, 显存和对称内存占用上升, 尾部空槽浪费. 若训练使用丢弃, 评估却提高容量到几乎不丢, 两个阶段执行的是不同函数. 若训练完全不丢, 最坏负载又可能让某个 rank 成为拖尾者. 容量需要和丢弃率、最大负载、每专家行数分布一起记录.
+
+### 8.4. 无辅助损失控制器与 LBL 的差别
+
+偏置式控制器在路由选择前给专家 $e$ 加一个偏置 $b_e$, 根据观察到的 hard load 更新它. 一个简化写法是
+
+$$
+\hat z_{t,e}=z_{t,e}+b_e,\qquad
+b_e\leftarrow b_e-\eta_b\left(\frac{\tilde n_e}{TK}-\frac1N\right). \tag{101}
+$$
+
+这里偏置影响 top-$K$ 选择, 但主模型输出的混合权重仍可由原始 $z$ 计算. 它与 LBL 的差别在控制信号: 式 (101) 直接看 hard count, LBL 通过可导 soft mass 把梯度传回 router 参数. 前者能对执行负载闭环, 后者把均衡偏好纳入训练目标. 偏置控制器也有超参数: $\eta_b$ 太小会追不上路由漂移, 太大会在专家之间振荡; 统计窗口太短受 batch 噪声影响, 太长又反应迟缓.
+
+两者可以组合, 但不能假定效果相加. LBL 改变表征学习和 router logits, 偏置又改变 hard 路线; 当 LBL 已让 soft score接近某种补偿结构, 偏置更新可能不断跨越 top-$K$ 边界. 报告的价值在于把 hard histogram、soft mass、请求路线、保留路线和实际 kernel 行数分开记录. 只盯一个 LBL 标量, 连故障发生在哪一层都无法定位.
+
+## 9. 精度系统: 权威状态、派生状态与误差传播
+
+### 9.1. 为什么 FP32 主权重仍是更新的中心
+
+混合精度训练需要区分三类对象: 用于优化器更新的 FP32 主权重 $w^{32}$, 用于常规计算的 BF16 权重 $w^{16}$, 用于 MXFP8 GEMM 的量化权重 $(q,s)$. 一次 AdamW 更新可以写成
+
+$$
+m_t=\beta_1m_{t-1}+(1-\beta_1)g_t,
+\quad
+v_t=\beta_2v_{t-1}+(1-\beta_2)g_t^2, \tag{102}
+$$
+
+$$
+w_t^{32}=(1-\eta\lambda)w_{t-1}^{32}
+-\eta\frac{\hat m_t}{\sqrt{\hat v_t}+\epsilon},
+\quad
+w_t^{16}=\operatorname{cast}_{BF16}(w_t^{32}),
+\quad
+(q_t,s_t)=Q_{MXFP8}(w_t^{32}). \tag{103}
+$$
+
+后两份都是从第一份重建的派生表示. 若直接把低精度权重作为连续更新的唯一状态, 小于该格式量化间隔的增量可能反复舍入为零; FP32 主权重可以积累这些小更新, 到足够大时再反映到计算副本. checkpoint 只保存权威状态和优化器矩, 加载后重建 BF16 与 MXFP8, 因而既减少文件内容, 也允许换并行拓扑.
+
+分布式优化器给这一过程增加了集合关系. 每个 rank 只拥有 $w^{32}$ 的一段和对应的 $m,v$, 完成本地更新后必须重建各计算副本所需的完整 BF16 权重. 专家权重的复制组与稠密权重不同, 所以重建集合不能统一假设为全局 DP 组. `MultiGroupDistributedDataParallel` 按参数绑定复制组, 防止专家梯度在错误的 rank 集合上归约. 一旦组定义错了, 数值仍可能有限、loss 也可能下降, 但不同副本会悄悄更新成不同模型; 这类错误比立刻出现 NaN 更难发现.
+
+### 9.2. MXFP8 块缩放的误差从哪里来
+
+对一个含 32 个元素的块 $x$, MXFP8 用共享尺度 $s$ 和 E4M3 元素 $q_i$ 表示
+
+$$
+q_i=\operatorname{clip}_{E4M3}\left(\operatorname{round}_{E4M3}(x_i/s)\right),
+\qquad \hat x_i=sq_i. \tag{104}
+$$
+
+共享尺度让 scale 元数据只占每 32 元素一份, 也让同一块中的离群值支配其他元素的有效精度. 若块最大绝对值是 $a$, rceil 规则选择足够大的 2 的幂尺度避免 $a$ 超过 448; floor 规则可能选择小一档尺度, 让最大值截断. 取 $a=500$, floor 的 $s=1$ 使 500 被截为 448, 单点绝对误差至少 52; rceil 的 $s=2$ 可覆盖到 896, 最大值不截断, 但其余小值的量化步距随尺度变粗. 两者是在「离群点截断」和「主体分辨率」之间取舍.
+
+量化误差进入线性层时, 令 $\hat X=X+\Delta X$, $\hat W=W+\Delta W$, 则
+
+$$
+\hat X\hat W-XW=X\Delta W+\Delta XW+\Delta X\Delta W. \tag{105}
+$$
+
+前两项是一阶误差, 最后一项通常较小, 但训练中它们会经过非线性、残差与反向累计. 只看单次 GEMM 的相对误差不能推出长程优化是否稳定. 报告用同一 checkpoint 分叉 BF16、rceil 和 floor, 让三支共享此前的训练轨迹, 观察后续约 11B token 的 loss 与梯度范数. rceil 与 BF16 接近, floor 的 loss 差和梯度范数偏差明显更大, 说明尺度规则属于训练配方, 并非等价的实现细节.
+
+为什么 Wgrad 仍走 BF16? 前向把激活沿适合 Tensor Core 的维度分成 32 元素块, Wgrad 计算 $X^\top dY$ 时归约维变成 token 维, 原 scale 排布无法直接匹配新的矩阵方向. 若为了 Wgrad 重新 swizzle 和重新量化, 转换成本会落在每个 block 的反向关键路径. Table 33 的对照显示, 保持不合适排布的 MXFP8 Wgrad 比反量化后 BF16 grouped GEMM 慢数倍. 「格式位宽更低」只减少理论载荷; 排布和转换不匹配时, 低精度可以更慢.
+
+### 9.3. 归一化与初始化在这份报告里的真实位置
+
+Olmo-core 3 没有提出新的 Transformer 归一化层, 也没有发布一套随系统报告训练完成的新模型架构. 它讨论的「尺度」主要落在三个接口: 主权重到 BF16/MXFP8 派生权重的转换, 共享专家与路由专家输出的合并, 以及 batch 改变时学习率的调整. 因而不能从这份报告推出 RMSNorm、QK-Norm 或某种残差缩放优于其他方案.
+
+报告确实给出一个初始化尺度推导. 设每个路由专家中间宽度为 $d_r$, 共享专家宽度为 $d_s$, 选中 $K$ 个专家, 路由权重 $p_i$ 在选中集合上和为 1. 若各分支近似独立、单个中间单元贡献方差相同, Olmo 的 $Kp_i$ 恢复系数下, 路由与共享输出总方差比例由
+
+$$
+R_{var}\approx\frac{d_rK^2\sum_{i=1}^Kp_i^2+d_s}{Kd_r+d_s} \tag{106}
+$$
+
+控制. 均匀路由 $p_i=1/K$ 时, 分子成为 $d_rK+d_s$, 恰好与分母相同, $R_{var}=1$. 这说明恢复系数把均匀 top-$K$ 的初始尺度对齐到把稠密中间层切成 $K$ 份的参照. 若权重集中到一个专家, $\sum_i p_i^2$ 接近 1, 路由项放大约 $K$ 倍; 所以等价只在初始化附近和相应独立假设下成立, 训练后的相关性会改变方差.
+
+反向尺度也随系数改变. 对路由专家输出 $f_i(x)$,
+
+$$
+\frac{\partial y}{\partial f_i}=Kp_i. \tag{107}
+$$
+
+均匀时该系数为 1; 若直接使用和为 1 的 $p_i$, 均匀 top-4 的系数是 0.25, down projection 梯度随之缩小四倍. 这个选择和有效学习率直接耦合. 将系数从 $p_i$ 改为 $Kp_i$ 后仍沿用同一学习率, 等于恢复了分块稠密 MLP 的梯度尺度参照.
+
+### 9.4. 学习率随 batch 扩展的局部推导
+
+设单样本梯度均值为 $G$, 协方差为 $\Sigma$, batch 平均梯度为 $\hat G_B$. 有 $E[\hat G_B]=G$ 与 $\operatorname{Cov}(\hat G_B)=\Sigma/B$. 在当前位置对损失做二阶展开,
+
+$$
+E[L(\theta-\eta\hat G_B)]\approx L(\theta)-\eta\lVert G\rVert^2
++\frac{\eta^2}{2}\left(G^\top HG+\frac{\operatorname{tr}(H\Sigma)}{B}\right). \tag{108}
+$$
+
+对 $\eta$ 求导并令零, 得到局部最优步长
+
+$$
+\eta_B^*=\frac{\lVert G\rVert^2}{G^\top HG+\operatorname{tr}(H\Sigma)/B}. \tag{109}
+$$
+
+小 batch 时分母中的噪声项占主导, $\eta_B^*$ 近似正比于 $B$; 大 batch 时曲率项占主导, 步长趋于上限. 所以线性规则和饱和规则分别是两端近似. Adam 又对每个坐标用历史二阶矩归一化, 常见的平方根缩放也只是某一统计区间的近似. 报告采用指数 0.53, 是特定模型和 batch 日程下使过渡更平滑的经验值, 并非由式 (109) 唯一推出.
+
+专家只看到部分 token, 也不意味着专家学习率必须乘 $\sqrt{K/N}$. 一个专家的更新频率下降, 但被选中时收到的梯度条件分布、router 的选择偏差、Adam 矩的时间尺度都会改变. 若稀疏出现频率为 $r$, 简化成独立 Bernoulli mask $I_t$, 梯度是 $I_tg_t$, 则一阶矩期望随 $r$ 缩小, 二阶矩期望也随 $r$ 缩小; Adam 的比值在稳态下近似带有 $\sqrt r$ 与 $r$ 的抵消, 不能照搬 SGD 的缩放. 报告扫参没有观察到 $\sqrt{K/N}$ 规则获益, 与这个推断一致.
+
+## 10. 长上下文、上下文并行与训练阶段的关系
+
+### 10.1. 序列变长时, MoE 与 attention 的缩放方向不同
+
+设序列长度为 $S$, microbatch 中序列条数为 $B_s$, 则 token 数 $T=B_sS$. 一个标准 attention block 的主要算术量含 $O(B_sS^2d)$ 项, MoE 专家 MLP 约为 $O(TKdh)=O(B_sSKdh)$. 序列从 $S$ 增至 $rS$, 若保持序列条数不变, attention 的二次项放大 $r^2$, 专家计算和 EP token 载荷约放大 $r$; 若为了显存把 $B_s$ 降成原来的 $1/r$, 保持 $T$ 不变, 专家工作近似不变, attention 二次项仍放大 $r$.
+
+因此「下一代 Olmo 上下文更长」不能只靠 MoE 栈的吞吐结果外推. 长序列首先把压力推向 attention 激活和计算; CP 用序列切分缓解单卡激活, 但会引入 attention 前后的通信. MoE 看到的仍是 token 行, 对序列边界本身不敏感, 可是 CP 与 EP 争用同一批 rank 和网络. Olmo-core 3 用 parallel folding 把稠密视图的 $D\times C$ 重新解释为 MoE 视图的 $D_E\times M_E$, 满足
+
+$$
+DC=D_EM_E. \tag{110}
+$$
+
+它在 attention 与 MoE block 之间改变同一组 rank 的逻辑坐标, 总卡数没有增加. 稠密 attention 阶段按 CP 交换序列片段, 到 MoE 阶段再按 EP 交换 token 行.
+
+### 10.2. parallel folding 的一个四卡手算
+
+取一个 stage 内四张卡. attention 视图选择 $D=2,C=2$: rank 0、1 构成第一个 DP 副本的两个 CP 分片, rank 2、3 构成第二个. 进入 MoE block 后改成 $D_E=1,M_E=4$, 四张卡共同持有一套专家分片. 式 (110) 两边都是 4. 此时没有专家副本, 专家梯度无需在 EP-DP 维归约, 但每个 token 可能发往四张卡中的任意一张.
+
+若改成 $D_E=2,M_E=2$, 则每两张卡构成一套专家模型分片, 两套之间是专家数据并行副本. 专家权重每卡比 $M_E=4$ 多一倍, token 交换组从四卡缩到两卡, 随后专家梯度要在两个副本间归约. 两种分解的总卡数相同, 前者偏向显存容量, 后者偏向较小的 EP 通信域. 最优点取决于专家参数能否放下、节点拓扑和本地 token 数.
+
+folding 也有布局成本. attention 输出按 CP 的序列分片留在各 rank, MoE router 在每个 rank 的本地 token 上工作, rowwise dispatch 可以直接从这些局部行出发; 不需要先把完整序列 gather 回来. 但下一层 attention 仍要求正确的 CP 视图, combine 必须把每个源 rank 的 token 行送回原位置. route map 因而不仅记录专家, 还承担了从 MoE 视图回到原 token 布局的逆映射. 丢失或错误复用这份元数据会破坏梯度的转置路径.
+
+### 10.3. 上下文扩展会改变 microbatch 临界点
+
+固定每卡 token 数 $T$ 时, 序列越长, 序列条数越少. attention kernel 的形状变长, 可能提高某些大矩阵的效率, 也会增加二次 attention 的占比; 专家 grouped GEMM 只看路由后的总行数与直方图, 对 token 来自几条序列不敏感. host 提交路径的 kernel 数量更多取决于 block 数、专家数和 microbatch 次数. 因此长上下文可能让 GPU 单次工作变重, 缓解 CPU 提交落后, 同时又把显存推到需要更小 $T$ 或更多重算的位置.
+
+设显存允许的每卡 token 上限近似为
+
+$$
+T_{max}(S)\approx \frac{M_{free}}{a_0+a_1S}, \tag{111}
+$$
+
+$a_0T$ 表示 MLP、残差和路由相关的线性激活, $a_1TS$ 表示未采用更省内存 attention 时的二次保存量. 当 $S$ 增大, $T_{max}$ 下降, grouped GEMM 的每专家行数 $TK/N$ 也下降, 可能从计算受限区退到带宽或启动受限区. CP 和重算降低式 (111) 的有效系数, 代价分别是通信和重复计算. 长上下文配方需要重新测 grouped GEMM 交叉点, 不能沿用短序列下的 microbatch.
+
+### 10.4. 训练阶段改变时, 系统口径也要改变
+
+预训练通常以所有输入 token 的 loss 为主, 监督微调只在回复 token 上计损失. 设一批总 token 为 $T$, 有监督标签的 token 为 $T_y$, 则训练系统仍为 $T$ 个 token 执行 attention、router、dispatch 和专家 GEMM, 有效监督吞吐却是
+
+$$
+R_{sup}=R_{token}\frac{T_y}{T}. \tag{112}
+$$
+
+两个系统若总 token 吞吐相同, prompt 更长、回复更短的那一个 $T_y/T$ 更小, 每秒完成的监督目标更少. 这解释了为什么预训练的 token/s 不能直接代表 SFT 数据处理效率.
+
+DPO 把 chosen 和 rejected 都送入策略模型, 还需要参考 log-prob. 若不复用公共前缀, 两条序列的 prompt 部分会重复执行路由和专家计算. 预先离线计算参考模型 log-prob 能省参考模型前向, 不能省策略模型的两条分支. RLVR 再加入生成侧与训练侧的异步差异: rollout 关注 decode 延迟和 KV cache, learner 关注大 batch 前反向与专家并行. Olmo-core 3 的训练栈可承担 learner, 但报告中的预训练吞吐没有覆盖生成、验证器、样本过滤和权重同步.
+
+upcycling 也是阶段选择. 从稠密 checkpoint 复制出多个专家, 初始时专家高度相似, router 分化需要时间; 好处是复用稠密训练形成的表征. 从头训练让专家分化贯穿整个预训练, 初期 loss 可能落后, 长配方里可能追平并反超. OLMoE 的对照在约 500B token 追平、600B 左右反超, 只支持目标训练远长于这一交叉点时的选择. 若剩余预算只有几十或几百 B token, 已有稠密 checkpoint 仍可能更经济.
+
+## 11. 怎样阅读这些实验数字
+
+### 11.1. 吞吐、TFLOP/s 与 MFU 各自省略了什么
+
+token/s/GPU 是端到端速率, 能直接反映一次运行在给定 batch、序列和拓扑下处理数据的速度, 但不同激活参数量的模型不能只凭 token/s 比训练效率. TFLOP/s/GPU 需要先定义「模型 FLOPs」: MoE 通常只数被激活专家的 GEMM, router、通信、量化和布局转换未必计入分子. MFU 再除以硬件理论峰值,
+
+$$
+\operatorname{MFU}=\frac{F_{model/token}\,R_{token/GPU}}{F_{peak/GPU}}. \tag{113}
+$$
+
+若 MXFP8 运行仍用 BF16 峰值 2250 TFLOP/s 作分母, 得到的是统一 BF16 口径下的利用率, 不是 FP8 Tensor Core 峰值的占用比例. 它便于表内比较, 却不能说明硬件 FP8 单元用了百分之多少. 同样, 重算增加的第二次前向若不计入「有用模型 FLOPs」, MFU 会下降; 若把所有实际执行 FLOPs 都计入, 又可能掩盖为了省显存重复计算的代价.
+
+因此应至少同时看三列: token/s/GPU 说明墙钟速率, 峰值显存说明可行性, 模型规模与激活规模说明每 token 做了多少目标计算. kernel 级 TFLOP/s 用于诊断矩阵效率, 不能代替端到端吞吐. 报告把 1.2T/58B Ultra-128E 的 858 TFLOP/s 与较小模型放在同一表中, 合理的读法是「各自工作点可达到的实测范围」, 不能当作严格的规模扩展曲线, 因为 batch、PP、精度和重算同时变化.
+
+### 11.2. 消融必须固定哪些变量
+
+要判断某个后端是否更快, 至少要固定模型形状、路由直方图、输入与权重数值分布、精度、warmup、编译状态、并行拓扑和计时区间. 第 6.3 节的 GEMM 事故说明「形状相同」还不够: 全零、常数和正态权重在同一硬件上出现显著时间差. 若一个实现用已初始化权重, 另一个读 `torch.empty()` 的残留值, 速度差可能来自功耗和频率状态, 与算法无关.
+
+路由后端还要固定请求路线和容量策略. 随机均匀路由给每个专家接近相同行数, grouped GEMM 形状规整, 也减少拖尾; 学习后的 router 会产生偏斜与时间变化. 报告 production 表中的随机路由适合测系统上限和可运行规模, B.10 的学习路由对照显示 Small 配置可从 841 降到 768 TFLOP/s/GPU, 约 9%. 因而随机路由结果不能直接当作完整训练配方的持续吞吐.
+
+FSDP 与 DDP 的对照同样受配置限定. 报告里的 FSDP 使用 full reshard, 每个 microbatch 都重新 gather; FSDP2 若在梯度累积窗口内保留权重, 行为会接近「常驻计算权重加分片优化器」. Figure 8 证明的是报告所测配置中, full-reshard FSDP 随专家容量增长出现额外通信, 不足以推出所有 FSDP 配置都劣于 DDP.
+
+### 11.3. 局部优化为什么常在完整步里消失
+
+设原始一步由计算 $C$、通信 $N$、host 空洞 $H$ 和其他开销 $O$ 组成. 某优化把可见通信中的比例 $r$ 与计算重叠, 理想时间是
+
+$$
+T_{ideal}=C+(1-r)N+H+O. \tag{114}
+$$
+
+实际重叠会让计算和通信分别膨胀 $\delta_C,\delta_N$, 还可能增加启动开销 $\delta_H$, 则
+
+$$
+T_{real}=(1+\delta_C)C+(1-r)(1+\delta_N)N+H+\delta_H+O. \tag{115}
+$$
+
+只有 $rN>\delta_CC+(1-r)\delta_NN+\delta_H$ 才有净收益. two-batch overlap 虽覆盖了大量通信区间, EP 传输时长几乎翻倍, GEMM 与 attention 也变慢, 最终只快约 1%. 式 (115) 右侧的资源争用超过了被藏住的时间.
+
+同理, CPU activation offload 的局部目标是减少 GPU 激活显存, 完整约束却包含 D2H/H2D 带宽、主机内存带宽和回传时机. 如果一层在 10.3 ms 内产生 3.96 GB 候选数据, 要完全隐藏 D2H 就需要约 384 GB/s; 实测链路约 53 GB/s 时, 最多只能转移一小部分. 省下来的 GPU 字节若换来关键路径等待, 配置虽然能装下, 墙钟可能失去实用性.
+
+### 11.4. 开放产物为什么影响结论的可迁移性
+
+这份报告把论文、对照译稿、代码路径、实验配置和指标定义放在同一条证据链上. 论文给出算法和测量, OLMo-core 仓库给出复制组、rowwise 后端、lease 池、MXFP8 缓存与 checkpoint 视图的具体接口. 对系统论文来说, 代码并非附属品: 诸如「默认 rceil」「wave 后端标为实验性」「派生 FP8 权重不写 checkpoint」都由实现决定, 只读吞吐表无法恢复这些条件.
+
+开放仍不自动等于可复现. 报告的主要硬件是 B300、NVL8 与每卡一条 800G XDR InfiniBand, 部分软件依赖特定 CUDA、NVSHMEM、DeepEP 和编译器版本; 生产表还选取多次运行中的最高速率. 换到 H100、PCIe 节点或较弱的跨节点网络, grouped GEMM 交叉点、EP 后端选择和 offload 上限都会变化. 可迁移的是分解方法: 先分 capacity tax 与 runtime tax, 再按状态、频率、拓扑和调度测量; 具体工作点需要在目标硬件重新取得.
+
+**Olmo-core 3 的开放产物提供了一套能逐项追问的系统边界: 哪份状态由谁持有, 哪条路线实际执行, 哪个数留在 GPU, 哪段通信按什么频率重复, 哪种精度表示才是权威状态.** 这些问题一旦都有可检查的对象, 1.2T 参数的结果才能被拆开复算.
+
+## 12. 从前向路由到反向梯度: 一条路线的完整生命周期
+
+### 12.1. dispatch 与 combine 必须互为转置
+
+把一个 microbatch 的 token 矩阵写成 $X\in\mathbb R^{T\times d}$. top-$K$ 路由展开后共有至多 $R=TK$ 条路线. 用稀疏二元矩阵 $A\in\{0,1\}^{R\times T}$ 表示复制与排列: $A$ 的每一行只在来源 token 的位置取 1. 容量裁剪删除某些行后得到 $A_q$. dispatch 可以抽象为
+
+$$
+X_E=A_qX, \tag{116}
+$$
+
+$X_E$ 已按目标专家的容量槽排列. 专家网络逐段作用得到 $Y_E=F(X_E;W)$, combine 再用路线权重对同一来源 token 求和. 令 $R_p$ 是以选中概率为非零值的稀疏矩阵, 则
+
+$$
+Y=R_p^\top Y_E. \tag{117}
+$$
+
+反向传播严格要求
+
+$$
+\nabla_{Y_E}L=R_p\nabla_YL,
+\qquad
+\nabla_XL=A_q^\top\nabla_{X_E}L. \tag{118}
+$$
+
+因此前向 combine 的反向是按路线把 token 梯度再次发往专家, 前向 dispatch 的反向是把专家输入梯度送回来源 token 并累加. Table 8 的 PUT/GET 方向交换正是式 (118) 的物理实现. 前向 dispatch 由来源 rank PUT 到专家 rank, 其反向由来源 rank GET 回对应行; 前向 combine 由来源 rank GET 专家输出, 其反向由来源 rank PUT 输出梯度.
+
+route map 必须在整个 autograd 生命周期中保持一致. 若重算时重新执行 router, 浮点扰动或随机性让 top-$K$ 路线变化, 反向使用的新 $A_q$ 就不再是原前向的线性算子, 式 (118) 失效. 报告的实现保存路线元数据, 并让路由指标只在原始前向累计. 重算负责恢复可重算的张量值, 不应重新定义已经执行过的离散路线.
+
+### 12.2. router 权重的梯度来自哪里
+
+对 token $t$, 先忽略容量丢弃, 输出为
+
+$$
+y_t=\sum_{i\in S_t}r_{t,i}f_i(x_t). \tag{119}
+$$
+
+上游梯度记为 $g_t=\partial L/\partial y_t$, 则混合权重的梯度是
+
+$$
+\frac{\partial L}{\partial r_{t,i}}=g_t^\top f_i(x_t). \tag{120}
+$$
+
+这解释了为什么 combine 的 autograd 除了 route map, 还要能取得各条被接受路线的专家输出. 只保存最终求和后的 $y_t$ 不够: 不同专家输出在求和中混在一起, 无法由一个向量恢复每个 $g_t^\top f_i(x_t)$. rowwise 路径在 token 来源 rank 单独捕获用于 router 梯度的 gather 结果, 专家输出主缓冲则可在 combine 完成后复用.
+
+若选中权重由 top-$K$ 后的 L1 归一化得到,
+
+$$
+r_i=K\frac{p_i}{\sum_{j\in S}p_j},\quad i\in S, \tag{121}
+$$
+
+那么对选中集合内的 $p_j$,
+
+$$
+\frac{\partial r_i}{\partial p_j}
+=\frac{K}{Z}\left(\mathbf1[i=j]-\frac{p_i}{Z}\right),
+\qquad Z=\sum_{k\in S}p_k. \tag{122}
+$$
+
+式 (122) 表明选中专家之间存在竞争: 提高一个 $p_j$ 会抬高自己的系数并压低其他系数, 且所有 $r_i$ 之和固定为 $K$. top-$K$ 集合之外的专家在这个局部区域没有主任务混合梯度, 只可能通过 softmax 的完整 logits 关系或辅助路由目标获得信号. 当某个专家长期选不中时, 主任务很难直接把它拉回来, 这也是负载控制需要观察 hard route 的原因.
+
+容量丢弃进一步改变梯度. 若路线 $i$ 被拒绝, 它不进入式 (119), 主任务对该路线的专家输出和混合权重梯度均为零; router 仍可能通过 LBL 收到梯度. 训练目标此时包含一条隐含的不连续反馈: 越拥挤的专家越可能丢路线, 被丢 token 的主任务梯度又无法通过该专家更新. 提高容量因子会减少这种截断, 同时增大缓冲和最坏工作量.
+
+### 12.3. lease 解决的是值的生命周期
+
+对第 $\ell$ 个 MoE block 和第 $u$ 个 microbatch, 记其 dispatch 缓冲为 $B_{\ell,u}$. 前向专家 up projection 读取它, Wgrad 在对应反向中还要用输入重建权重梯度:
+
+$$
+\nabla_WL=X_E^\top\nabla_{X_EW}L. \tag{123}
+$$
+
+所以 $X_E$ 不能在前向 GEMM 启动后立刻释放. 普通张量由 autograd 引用计数维持生命周期; 对称内存缓冲却来自跨 rank 共同分配的池, 地址固定且容量有限, 需要显式 lease 把「这个槽仍被某次反向持有」编码进分配器.
+
+设调度时刻 $\tau$ 之前, stage $s$ 已完成 $F_s(\tau)$ 次前向和 $B_s(\tau)$ 次相应反向, 至少需要的 dispatch 槽数下界为
+
+$$
+L_s^{min}=\max_\tau\left(F_s(\tau)-B_s(\tau)\right). \tag{124}
+$$
+
+GPipe 先跑完所有前向再反向, $L_s^{min}$ 接近 microbatch 数; 1F1B 在预热后交替前反向, 高水位较低; virtual stage 的放置会改变每个物理 rank 上多个 stage 的高水位之和. 因而 lease 池大小是流水线调度的函数, 并非单个 MoE block 的常数.
+
+专家输出缓冲的生命周期较短. 前向 combine 已把专家结果取回来源 rank, 反向 combine 依靠保存的 route map 和 token 梯度重新构造专家输出梯度; router 权重梯度需要的专家输出另有捕获. 主专家输出对称缓冲完成传输后即可归还. 把 dispatch 与专家输出一概按最长生命周期保留会浪费显存, 一概立即复用又会破坏式 (123).
+
+一个容易漏掉的故障发生在异常路线数为零时. 某个本地专家在当前 microbatch 没收到 token, 它的 grouped GEMM 区间为空, 但参数仍属于训练图和 DDP 桶. 若实现直接跳过参数的 autograd 路径, 该 rank 可能不产生对应梯度 hook, 集合通信参与顺序便与其他 rank 不同. Olmo-core 在最后一个 microbatch 以固定顺序发起剩余桶归约, 并保留窗口前段出现过的专家梯度, 使「本批没路由到」不会变成分布式死锁或悄然漏归约.
+
+### 12.4. 一次失败应当从哪组观测量定位
+
+训练 loss 突然上升时, 至少有四类互相独立的原因. 第一类是模型目标变化, 可看主任务 loss、LBL、router z-loss 与梯度范数; 第二类是执行路线变化, 可看每专家请求数、保留数、丢弃率、最大负载和 soft mass; 第三类是数值表示变化, 可看量化饱和率、scale 分布、BF16 分支差值和非有限值; 第四类是系统时序变化, 可看 GPU 空洞、host 同步、各 stage 时长、通信区间与 lease 高水位.
+
+这些指标需要按因果顺序对齐. 假设 LBL 下降而最大 hard load 上升, 式 (96) 提示 router 可能进入交叉项抵消结构; 若请求负载平稳、保留路线骤降, 更可能是容量或 route map 问题; 若路线统计不变而梯度范数在切换 floor scale 后抬升, 应先查量化截断; 若数值与路线都稳定、token/s 周期性下降, 再查 PP stage 拖尾和 host 队列.
+
+吞吐下降也能用相同分层处理. grouped GEMM 时间变长时先核对行数直方图和操作数分布; dispatch 变长时看远端比例、载荷字节数和网络路径; GPU 出现空白时区分 CPU 提交不足与 device-to-host 同步; 某个 stage 持续最慢时再看层分配、LM head、重算和路由偏斜. 直接把所有下降归因于「通信」会错过形状、功耗降频和 host 提交这三类来源.
+
+路由系统的最低验收集合可以写成一个守恒关系. 对所有 token 的请求路线总数,
+
+$$
+\sum_e\tilde n_e=TK,\qquad
+\sum_en_e=TK-N_{drop}. \tag{125}
+$$
+
+dispatch 发送行数、专家端有效行数与 combine 接受行数都应等于第二式右侧; 每个来源 token 的 combine 权重只对被接受路线求和. 若三处计数不相等, 问题位于 route map、容量裁剪或通信, 尚未进入模型质量层面. 这类守恒检查比只等待 loss 异常更早暴露错误.
+
+## 13. checkpoint 如何跨拓扑保持同一个模型
+
+### 13.1. 参数身份不能由当前 rank 决定
+
+训练时的本地张量只是全局参数的一张视图. 设全局专家权重为 $W\in\mathbb R^{N\times d\times h}$, 当前运行使用 $M_E$ 路专家并行和 $D_E$ 路专家数据并行. 某 rank 可能只持有连续的 $N/M_E$ 个专家, 其 FP32 主权重又沿元素轴被 $D_E$ 个副本切分. 若 checkpoint 直接以「rank 17 的本地内存」命名, 改成另一组 $M_E',D_E'$ 后便不知道这一段属于哪个专家、哪个元素区间.
+
+拓扑无关保存给每个张量一个稳定的全局身份, 并记录本地 shard 到全局坐标的映射. 对专家 $e$ 的权重, 可以把局部片段抽象为
+
+$$
+W_e[a:b,\,:]\longleftrightarrow
+(\text{name},e,[a,b),\text{dtype}). \tag{126}
+$$
+
+保存器按全局坐标写入; 加载到新拓扑时, 每个 rank 根据新的专家区间与优化器分片区间读取交集. 旧运行的 rank 编号不进入参数语义. PP 改变时同样如此: 某层从 stage 2 搬到 stage 5, 层名与参数坐标没变, 只改变加载它的 rank 集合.
+
+低显存在线转换的关键是避免先 gather 完整专家张量. 若一个专家矩阵有 $Q$ 个元素, 在单 rank 上聚合完整 FP32 主权重需要额外 $4Q$ 字节; 多个大专家同时聚合会抹掉分片优化器节省的显存. Olmo-core 让 checkpoint 扁平视图别名到现有优化器存储, 各 shard 直接写自己的全局区间. 「视图」在这里没有复制数值, 只是提供 checkpoint 所需的连续索引解释.
+
+这种方案依赖一个严格条件: 所有 shard 对同一参数的全局形状、顺序和 dtype 元数据必须一致. 若专家编号在某次启动中由配置文件顺序决定, 另一次由字典遍历顺序决定, 文件仍能读满, 专家身份却会交换. 若共享专家被误计入路由专家编号, shape 也可能吻合而语义错误. 因而恢复检查除了字节完整性, 还要比较参数名、全局 shape、专家 ID、切片覆盖和重复区间.
+
+### 13.2. 优化器状态决定能否真正续训
+
+只加载模型权重可以继续前向, 不等于恢复同一条训练轨迹. AdamW 的下一步依赖 $m_t,v_t$ 和步数 $t$. 若只保留 $w_t$ 而把两个矩清零, 下一步近似变成重新预热的优化器; bias correction 中的 $1-\beta_1^t$ 与 $1-\beta_2^t$ 也会改变. 拓扑转换必须让主权重、两个矩和每参数步数使用相同的全局切片映射.
+
+对第 $i$ 个参数坐标, 完整可续训状态可写为
+
+$$
+S_i=(w_i^{32},m_i,v_i,t,\mathcal H), \tag{127}
+$$
+
+$\mathcal H$ 还包括学习率日程位置、全局 token 计数、随机数状态和数据迭代位置. 报告的拓扑无关 tensor 解决 $w,m,v$ 的摆放; 精确复现实验还依赖其余训练元数据. 若 global batch 或 world size 随拓扑一起变化, 即使状态完整, 后续样本顺序和梯度平均也可能不同. 「能从 checkpoint 启动」与「逐位复现原轨迹」是两个验收级别.
+
+MXFP8 权重缓存不属于式 (127) 的权威状态. 加载后从 $w^{32}$ 重新量化, 结果由 scale 规则和量化实现决定. 若保存前使用 floor、加载后默认变成 rceil, 模型第一步的计算副本已经变化; 主权重完全相同也无法维持数值连续. checkpoint 元数据应记录量化配方版本, 或由训练配置锁定重建方式.
+
+### 13.3. 从小规模验证到大规模恢复
+
+跨拓扑恢复可以用守恒检查逐层验证. 第一层是覆盖: 每个全局参数坐标恰好由预期数量的 shard 覆盖, 无空洞、无重叠. 第二层是值: 在小模型上把旧拓扑 shard 聚合成 CPU 参考张量, 与新拓扑重新聚合后的张量逐元素比较. 第三层是计算: 固定同一输入与随机状态, 比较一次前向输出、loss 和梯度. 第四层是更新: 两边各跑一步优化器, 再比较 FP32 主权重与矩.
+
+MoE 还要固定路线. 若比较时 router 存在随机扰动或容量丢弃依赖 rank 内 token 顺序, 两个拓扑可能选择不同专家, 从而把路由变化误判为 checkpoint 错误. 可以先用固定 route map 检查专家参数映射, 再打开真实 router 检查端到端等价. PP 切分变化则要确保 dropout RNG 按全局层和 token 派生, 否则同一层换 rank 后会取得不同随机序列.
+
+一次成功的单步比较仍不足以覆盖流水线与缓冲生命周期. 新拓扑应跑过至少一个完整的预热、稳态、收尾和 checkpoint 再保存周期, 让每个虚拟 stage、每类专家副本组和空专家路径都出现. 随后再从新 checkpoint 加载一次, 验证转换不是单向的. 这套过程比直接启动长训练便宜, 能在损失曲线出现迟发分叉之前发现映射错误.
+
+大规模作业还应保留一份参数清单摘要: 每个全局张量的元素数、分片数、覆盖区间哈希与恢复后的数值摘要. 总元素数相等只能排除缺失, 不能排除两个等长分片互换; 全局校验和相等也可能掩盖排列错误. 按参数身份分别计算摘要, 再对少量坐标做确定性抽查, 才能把「文件完整」推进到「模型语义完整」. 对 1.2T 参数配置而言, 这种元数据检查远比训练数百步后凭 loss 判断便宜.
+
 ## 参考文献
 
 - Ai2. *Supercharging Olmo-core for Efficient and Scalable MoE Training*. 2026. <https://allenai.org/papers/olmocore3>
