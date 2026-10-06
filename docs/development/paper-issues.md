@@ -454,6 +454,21 @@
 - **janus-pro-7** 论文只给 GPU 节点数与墙钟天数，没有 token 吞吐、packing 利用率、训练 FLOPs 或阶段级资源统计，1B/7B 的等算力效率无法比较. 求证结果:
 - **janus-pro-8** 论文承认 384 分辨率限制 OCR 和小脸细节，但理解表没有 OCR 专项结果，生成表也没有按对象尺度或文字渲染分项. 求证结果:
 
+### DeepSeek-Prover-V1.5
+
+解析：`content/deepseek/01-模型技术报告/deepseek-prover-v1-5/deepseek-prover-v1-5-analysis.md`。
+
+- **deepseek-prover-v1-5-1** 继续预训练没有公开 token 数、学习率、数据配比及 Lean/Isabelle/Metamath 各自占比，Base 增益无法按语料来源归因. 求证结果:
+- **deepseek-prover-v1-5-2** CoT 注释由 DeepSeek-Coder-V2 236B 事后生成，Lean 只验证代码而不验证注释，论文没有报告注释与证明步骤的一致率. 求证结果:
+- **deepseek-prover-v1-5-3** RLPAF 没有公开训练步数、总 GPU 时间、reward/entropy/KL 曲线及组内全对全错比例，RL 成本与收敛过程无法复算. 求证结果:
+- **deepseek-prover-v1-5-4** 论文没有完整说明如何禁止 `sorry`、不安全公理等验证逃逸，也没有发布 theorem statement 与 Lean 3→4 手工转换的逐题语义审计. 求证结果:
+- **deepseek-prover-v1-5-5** RMaxTS 的状态等价键、前缀合并细节和 $γ=0.99$ 灵敏度没有完整消融，新状态奖励对伪新奇的敏感度不明. 求证结果:
+- **deepseek-prover-v1-5-6** 搜索预算主要按生成次数统计，没有报告生成 token、Lean 调用、CPU 核时、GPU 时与墙钟，整证、逐步和 CoT 模式无法等成本比较. 求证结果:
+- **deepseek-prover-v1-5-7** miniF2F 的 Lean 环境与 V1 不同，ProofNet Base 的 few-shot 示例又来自 V1.5-RL 正确证明，跨模型行并非完全相同评测条件. 求证结果:
+- **deepseek-prover-v1-5-8** ProofNet 某些预算下 RL 低于 SFT，miniF2F 上“RL 提升基础能力”的结论不能直接外推到本科数学分布. 求证结果:
+- **deepseek-prover-v1-5-9** 表 3 中 SFT 的 non-CoT/CoT 混合 `(2+2)×6400`，单遍与 RMaxTS 两行同为 `56.1%±0.8%`，连标准差都相同，可能是巧合或表格抄录问题，论文没有说明. 求证结果:
+- **deepseek-prover-v1-5-10** 主结果 63.5% 使用 CoT/non-CoT 混合与约 204800 次每题生成，且缺少同总预算纯 CoT 32×6400 对照，提示互补与额外预算贡献无法分离. 求证结果:
+
 ### DeepSeek-Prover-V2
 
 解析：`content/deepseek/01-模型技术报告/deepseek-prover-v2/deepseek-prover-v2-analysis.md`。
