@@ -8,7 +8,7 @@ excerpt: "Engram 把后缀 2-gram 和 3-gram 哈希成表索引, 每层每 token
 
 # Engram: 用哈希 N-gram 查表给 MoE 加一条记忆轴
 
-论文 *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models* 由北京大学与 DeepSeek-AI 合作完成, arXiv 编号 2601.07372, v1 发布于 2026 年 1 月, 当前 v2 日期为 2026-07-12, 正文加附录共 35 页. 官方代码在 [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram), 只有一个约 400 行的演示脚本 `engram_demo_v1.py`; 骨干的注意力和 MoE 用恒等函数占位, 训练代码与权重尚未发布. Engram 的机制推导可参阅 llm-guide 的 [条件记忆与 Engram](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/2.8.3-条件记忆与Engram.md) 和 [Engram: 从 N-gram 到可扩展查找](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md). 论文给出了完整实验设置和公式, 演示代码则只覆盖寻址与融合的最小路径, 因而公开材料足以检查机制, 尚不足以复现训练结果.
+论文 *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models* 由北京大学与 DeepSeek-AI 合作完成, arXiv 编号 2601.07372, v1 发布于 2026 年 1 月, 当前 v2 日期为 2026-07-12, 正文加附录共 35 页. 官方代码在 [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram), 只有一个约 400 行的演示脚本 `engram_demo_v1.py`; 骨干的注意力和 MoE 用恒等函数占位, 训练代码与权重尚未发布. Engram 的机制推导可参阅 llm-guide 的 条件记忆与 Engram 和 Engram: 从 N-gram 到可扩展查找. 论文给出了完整实验设置和公式, 演示代码则只覆盖寻址与融合的最小路径, 因而公开材料足以检查机制, 尚不足以复现训练结果.
 
 论文的主张分三层. 结构层: 给 Transformer 加一个按局部 token 序列查表的模块, 查表的地址只由输入 token 决定. 预算层: 在总参数和激活参数都固定时, 把 MoE 专家的一部分参数挪给查表模块, 验证损失随分配比例呈 U 形, 最优点在专家占 75% 到 80% 附近. 系统层: 因为地址在前向之前就能算出, 嵌入表可以放在主机内存里异步预取, 100B 参数的表只让吞吐下降不到 3%. 寻址规则决定能存什么知识, 参数分配决定查表与计算的容量比例, 预取命中率则决定这部分容量能否以可接受的吞吐运行.
 
@@ -44,7 +44,7 @@ $$
 
 $h_t$ 是该层的输入隐状态. 门是一个标量, 作用在整个值向量上: 隐状态和查到的键方向一致时接近 1, 方向相反时接近 0. 这一步承担去噪职责: 哈希冲突或多义 N-gram 查到的向量与当前上下文不符时, 门控把它压下去. 演示代码在 sigmoid 之前多了一步带符号开方, 即 $s \mapsto \mathrm{sign}(s)\sqrt{|s|}$, 公式 (4) 里没有. 它压缩点积的动态范围: $s = 4$ 时 $\sigma(4) = 0.982$, 开方后 $\sigma(2) = 0.881$; $s = 0.25$ 时 $\sigma(0.25) = 0.562$, 开方后 $\sigma(0.5) = 0.622$. 大点积不易把门推到饱和, 小点积的梯度也更大. 论文训练的模型是否用了这一步, 文中没有给出.
 
-门控之后是因果深度卷积: $Y = \mathrm{SiLU}(\mathrm{Conv1D}(\mathrm{RMSNorm}(\tilde V))) + \tilde V$, 核宽 $w = 4$, 膨胀 $\delta$ 等于最大 N-gram 阶 3. 感受野为 $(w-1)\delta + 1 = 10$ 个位置, 实际读取 $t, t-3, t-6, t-9$ 四个位置的门控输出, 每个通道独立. 论文说卷积权重零初始化, 训练开始时 Engram 只是门控后的值直接加回残差; 演示代码用 `nn.Conv1d` 默认初始化, 没有置零. 最终输出加到该层的残差流, 位置在注意力和 MoE 之前. 门控如何在 mHC 多分支上展开, 以及门控公式的推导, 见 llm-guide 的 [Engram 子文章](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md) 与 [mHC 文章](../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md).
+门控之后是因果深度卷积: $Y = \mathrm{SiLU}(\mathrm{Conv1D}(\mathrm{RMSNorm}(\tilde V))) + \tilde V$, 核宽 $w = 4$, 膨胀 $\delta$ 等于最大 N-gram 阶 3. 感受野为 $(w-1)\delta + 1 = 10$ 个位置, 实际读取 $t, t-3, t-6, t-9$ 四个位置的门控输出, 每个通道独立. 论文说卷积权重零初始化, 训练开始时 Engram 只是门控后的值直接加回残差; 演示代码用 `nn.Conv1d` 默认初始化, 没有置零. 最终输出加到该层的残差流, 位置在注意力和 MoE 之前. 门控如何在 mHC 多分支上展开, 以及门控公式的推导, 见 llm-guide 的 Engram 子文章 与 mHC 文章.
 
 ![](images/p03-figure-1-the-engram-architecture-the-module-augments-the.jpg)
 
@@ -142,7 +142,7 @@ CKA 的台阶形状正好对应上面的第二种读法: 若浅层真的「更�
 图注: 原文 Figure 5, 左侧深蓝曲线是单层插入的层号扫描, 横轴层号 1 到 12, 纵轴验证损失; 顶部虚线是 MoE 基线 1.808. 右侧的散点是在参考配置上去掉或加上单个部件后的损失.
 图 4 解析: 原文 Figure 5, 左侧深蓝曲线是单层插入的层号扫描, 横轴层号 1 到 12, 纵轴验证损失; 顶部虚线是 MoE 基线 1.808. 右侧的散点是在参考配置上去掉或加上单个部件后的损失. 所有散点和曲线都位于基线下方很远处, 部件之间的差距在 0.001 到 0.006 之间, 与 Figure 3 左图里相邻点的起伏同一量级.
 
-从图上读各部件的贡献: 去掉多分支融合约 1.7745 (比参考高 0.006), 去掉分词压缩约 1.7739 (高 0.0055), 去掉门控约 1.7728 (高 0.0044), 加 4-gram 约 1.7695 (高 0.001), 去掉短卷积约 1.7688 (只高 0.0004). 论文据此把多分支, 门控, 分词压缩列为三项关键部件, 结论方向可以接受, 但每个点只有一次训练, 0.001 级的差距无法区分; 单层第 2 层的 1.770 与双层的 1.768 只差 0.002, 「双层更好」也落在这一范围内. 短卷积的贡献最小, V4.1-Flash 采用 Engram 时正是去掉了短卷积, 并把阶数扩到 {2, 3, 4}, 见 [V4.1-Flash 解析](../../01-模型技术报告/deepseek-v4-1-flash/deepseek-v4-1-flash-analysis.md) 的 3.2 节.
+从图上读各部件的贡献: 去掉多分支融合约 1.7745 (比参考高 0.006), 去掉分词压缩约 1.7739 (高 0.0055), 去掉门控约 1.7728 (高 0.0044), 加 4-gram 约 1.7695 (高 0.001), 去掉短卷积约 1.7688 (只高 0.0004). 论文据此把多分支, 门控, 分词压缩列为三项关键部件, 结论方向可以接受, 但每个点只有一次训练, 0.001 级的差距无法区分; 单层第 2 层的 1.770 与双层的 1.768 只差 0.002, 「双层更好」也落在这一范围内. 短卷积的贡献最小, V4.1-Flash 采用 Engram 时正是去掉了短卷积, 并把阶数扩到 {2, 3, 4}, 见 V4.1-Flash 解析 的 3.2 节.
 
 ### 4.3. 关表实验: 依赖程度与知识存储
 
@@ -161,7 +161,7 @@ CKA 的台阶形状正好对应上面的第二种读法: 若浅层真的「更�
 
 训练时嵌入表按行切分到各 GPU, 前向用 All-to-All 收集每个 token 需要的行, 反向用同样的通信把梯度发回. 每 token 每层的通信量是 16 行, 与表的总大小无关, 这是 Engram 能把表做到 GPU 显存之外的基础. 论文没有给出训练吞吐相对 MoE-27B 的变化, 也没有说明 All-to-All 是否与前一层的计算重叠.
 
-优化器状态是另一项成本. 嵌入表用 Adam, 每个参数要两份状态, Engram-27B 的 5.79B 参数需要额外约 11.6B 个状态值, Engram-40B 的 18.5B 需要约 37B. 论文对这一项只字未提. 后续的 V4.1-Flash 把 Engram 做到 196B, 就把嵌入表的优化器换成了动量加 Sinkhorn 行列均衡, 理由正是 Adam 状态太占显存, 同时保留了 5 倍学习率, 见 [V4.1-Flash 解析](../../01-模型技术报告/deepseek-v4-1-flash/deepseek-v4-1-flash-analysis.md) 的 3.2 节与第 3 节的优化器部分. 这说明 Engram 论文的训练设置在百 B 级表上不能原样沿用.
+优化器状态是另一项成本. 嵌入表用 Adam, 每个参数要两份状态, Engram-27B 的 5.79B 参数需要额外约 11.6B 个状态值, Engram-40B 的 18.5B 需要约 37B. 论文对这一项只字未提. 后续的 V4.1-Flash 把 Engram 做到 196B, 就把嵌入表的优化器换成了动量加 Sinkhorn 行列均衡, 理由正是 Adam 状态太占显存, 同时保留了 5 倍学习率, 见 V4.1-Flash 解析 的 3.2 节与第 3 节的优化器部分. 这说明 Engram 论文的训练设置在百 B 级表上不能原样沿用.
 
 ### 5.2. 推理: 预取窗口与 Table 4
 
@@ -175,7 +175,7 @@ Table 4 刻意选了稠密骨干, 理由是避开 MoE 专家并行的通信. 但
 
 插入层的选择也受系统约束. 预取窗口等于插入层之前的计算时间, 插得越深窗口越大, 但 4.2 节显示插得越浅损失越低. 论文在 27B 上选第 2 和第 15 层 (演示代码写 [1, 15], 按从 0 计数应是同一组), 第一层 Engram 只有 1 到 2 个块可用来掩盖传输. V4.1-Flash 把两个模块放在第 1 和第 14 层 (从 0 计数), 理由写的是平衡训练流水线各阶段的显存, 推理时的预取则改走后台 RDMA. 两份材料都说明, 插入层位置在实践中由建模收益, 预取窗口和流水线显存三者共同决定, 论文的消融只覆盖了第一项.
 
-## 参考文献
+### 参考文献
 
 - Xin Cheng, Rui Tian, Wangding Zeng 等. *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models*. arXiv:2601.07372, 2026. <https://arxiv.org/abs/2601.07372>
 - DeepSeek-AI. Engram 官方代码 (演示实现). <https://github.com/deepseek-ai/Engram>
@@ -183,4 +183,901 @@ Table 4 刻意选了稠密骨干, 理由是避开 MoE 专家并行的通信. 但
 - SemiAnalysis (Bryan Shan 等). *Engrams Embedding Entendre: Codesign for Efficient DRAM/SSD Offloading*, 2026-09. <https://newsletter.semianalysis.com/p/engrams-embedding-entendre-codesign>
 - Tao Lin. *A Collision-Free Hot-Tier Extension for Engram-Style Conditional Memory*. arXiv:2601.16531, 2026. <https://arxiv.org/abs/2601.16531>
 - 知乎专栏. DeepSeek V4 最大的遗憾. <https://zhuanlan.zhihu.com/p/2034232780020770031>
-- llm-guide: [条件记忆与 Engram](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/2.8.3-条件记忆与Engram.md), [Engram: 从 N-gram 到可扩展查找](../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.3-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md), [DeepSeek-MoE](../../../llm-guide/2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md)
+- llm-guide: 条件记忆与 Engram, Engram: 从 N-gram 到可扩展查找, DeepSeek-MoE
+
+
+## 6. 条件记忆的建模位置与失效边界
+
+Engram 把模型容量拆成可计算的条件分支与可寻址的静态表。下面从经典 N-gram、FFN 的键值记忆解释、MoE 路由和外部检索四条线比较它的数学对象，再讨论哈希冲突、门控饱和与分布迁移会在什么条件下削弱收益。
+
+
+
+语言建模同时在做两件事. 一件是组合式推理, 需要深度和动态计算; 另一件是取回高度刻板的局部模式, 比如多 token 的专名, 公式化短语, 成语. 后者在经典 $n$-gram 语言模型里就是查一张频次表. Transformer 没有按 token 串查表的算子, 只能在早期层用注意力和 FFN 把相邻 token 攒成一个条目. Engram 论文借 PatchScope 复述了一个例子: 模型对 "Diana, Princess of Wales" 最后一个 token 的解读, 第 1 到 2 层是「英国的一个国家」, 到第 6 层才拼出完整人物.
+
+这一小节的专篇是 01 Engram: 从 n-gram 到可扩展查找, 材料是 DeepSeek 的 Cheng 等人 (2026) 的论文和 Qwen3.8-Flash-Next 的技术报告. 下文的数字没有另注出处的, 都取自这篇.
+
+### 1. 记忆和计算分开稀疏
+
+#### 1.1 稀疏的对象不同
+
+2.6 MoE 按当前隐藏态 $h_t$ 选少数专家做矩阵乘, 稀疏的是计算, 论文称之为条件计算. Engram 稀疏的是表行: 用当前 token 和它前面几个 token 组成的后缀 $N$-gram 做哈希, 从大嵌入表里取出常数条向量, 称为条件记忆. 两者的地址来源不同. MoE 的路由要等这一层的隐藏态算出来才知道访问哪个专家, 专家通常要常驻 HBM; Engram 的下标只依赖输入 token ID, 在进入网络之前就能算出来.
+
+这一差别决定了两件事. 第一, 加表不加每 token FLOPs: Engram 每个 token 只做 $K\cdot(N-1)$ 次查行和一次小投影与门控, 表变大只增加存储. 第二, 表可以放在 Host 内存里, 按预先算好的地址经 PCIe 异步搬运, 和前面层的计算重叠. 现有的其他做法补不上这一块: kNN-LM 的近邻检索延迟随库长增长, 做不到层内 $\mathcal O(1)$ 查行; KV cache 存的是本序列已经算过的 Key 和 Value, 和参数表里的静态短语是两个对象.
+
+#### 1.2 一笔预算, 两种用法
+
+记号沿用论文 §3.1. 去掉词表嵌入和 LM head, $P_{\mathrm{tot}}$ 是可训练总参数, $P_{\mathrm{act}}$ 是每 token 激活参数, 两者之差 $P_{\mathrm{sparse}}=P_{\mathrm{tot}}-P_{\mathrm{act}}$ 是未被激活的容量, 即没选中的专家或没取到的表行. 分配比 $\rho\in[0,1]$ 表示把这部分划给 MoE 专家的比例:
+
+$$
+P_{\mathrm{MoE}}^{(\mathrm{sparse})}=\rho\,P_{\mathrm{sparse}},\qquad P_{\mathrm{Engram}}=(1-\rho)\,P_{\mathrm{sparse}}. \tag{1}
+$$
+
+$\rho=1$ 是纯 MoE. 在 $2\times10^{20}$ 和 $6\times10^{20}$ FLOPs 两个预算上, 稀疏比都保持约 10, 只改路由专家数和表的槽数, 验证损失随 $\rho$ 呈 U 形. 最优点大约把 20% 到 25% 的 $P_{\mathrm{sparse}}$ 给表; 10B 档纯 MoE 损失 1.7248, $\rho\approx80\%$ 时降到 1.7109. 两端都会变差: 没有表时早期层继续重建套话, 专家太少时动态计算不够. 另一组实验固定一个 3B 总参, 568M 激活的 MoE 骨干, 只往上加表, 槽数从 $2.58\times10^5$ 扫到 $10^7$, 验证损失随槽数在对数坐标下近似一条直线.
+
+### 2. 一次查表
+
+#### 2.1 钥匙: 压缩, 多头哈希
+
+钥匙的构造分两步. 子词分词器优先保证可逆, `Apple` 和 `␣apple` 往往是两个 ID. Engram 先用一个满射 $\mathcal P:V\to V'$ 按 NFKC 正规化和小写化把等价文本压到同一个规范 ID, 128k 词表压缩了 23.43%, 合并最多的是空白变体, 大小写, 前导空格和带变音符号的字母. 压缩只改钥匙, 不改 Transformer 的输入嵌入和 LM head. 压缩后位置 $t$ 的后缀 $n$-gram 记为 $g_{t,n}=(x'_{t-n+1},\dots,x'_t)$.
+
+128k 词表的 3-gram 有 $2\times10^{15}$ 种组合, 不可能每种开一行. 对每个阶 $n$ 准备 $K$ 个独立的乘法异或哈希, 第 $k$ 个把 $g_{t,n}$ 映到素数大小 $M_{n,k}$ 的表 $E_{n,k}$ 里的一行, 各阶各头取出的行拼接成记忆向量 $e_t\in\mathbb R^{d_{\mathrm{mem}}}$. Engram-27B 取 $N=3$ (只用 2-gram 和 3-gram), $K=8$, $d_{\mathrm{mem}}=1280$. 碰撞不可避免, 多头是用 $K$ 次独立探测降低全部撞车的概率; 在固定预算下分一部分给 4-gram 略差, 论文猜测是稀释了更常见的 2-gram 和 3-gram.
+
+#### 2.2 门控, 卷积, 进残差
+
+$e_t$ 与上下文无关, 哈希碰撞和多义词都会让它变成噪声. Engram 用当前隐藏态 $h_t$ 当 query, 由 $e_t$ 生成 $k_t=W_Ke_t$ 和 $v_t=W_Ve_t$, 标量门为
+
+$$
+\alpha_t=\sigma\!\left(\frac{\mathrm{RMSNorm}(h_t)^\top\mathrm{RMSNorm}(k_t)}{\sqrt d}\right). \tag{2}
+$$
+
+门对整条 $v_t$ 统一缩放, $e_t$ 和 $h_t$ 对不上时趋向 0. 缩放后的向量再过一个核宽 4, 零初始化的 depthwise 因果卷积, 以残差形式加进这一层, 然后才是注意力和 MoE. 骨干用 mHC, 残差流扩成 4 条分支, 表和 $W_V$ 跨分支共享, 每条分支有自己的 $W_K$, 这些投影可以拼成一次 FP8 矩阵乘. 门的可视化显示它在专名和套话结束处升高, 例如 "Alexander the Great", "By the way", "四大发明".
+
+#### 2.3 插在第几层
+
+层号的选择受建模和系统两边约束. 12 层, 3B MoE 加 1.6B 表的层扫描里, 单点最优是第 2 层, 验证损失 1.770, 纯 MoE 是 1.808. 插在第 1 层时门控的 query 还没经过一轮注意力, 全局上下文太弱; 插得太深, 局部模式已经被前几层用计算重建过, 查表来晚了. 同一预算拆到第 2 和第 6 层略好 (1.768). Engram-27B 用 30 层骨干, 插在第 2 和第 15 层.
+
+系统侧希望插得越深越好, 前面层的计算越长, 越容易把 PCIe 传输藏进去. OverEncoding, SCONE 一类把 $n$-gram 嵌入放在输入层的做法, 访存和计算串在一起, 延迟藏不住. 第 2 层是两边都能接受的折中: 第 1 层的注意力和 FFN 正好挡住查表延迟. 100B 参数的表全部放在 DRAM, 插进稠密骨干的第 2 个 block, H800 上 8B 骨干的吞吐只降 2.8%, 4B 骨干降 1.9%; 这还是所有访问都走 PCIe, 没把高频行缓存进 HBM 的保守设置.
+
+### 3. 对照与证据
+
+#### 3.1 与相近机制的对照
+
+| 机制 | 地址从哪来 | 取出来的东西 | 能否层前预取 | 每 token 成本随表增长 |
+|---|---|---|---|---|
+| MoE (条件计算) | 当前隐藏态 $h_t$ | $k$ 个专家的 FFN 计算 | 否 | 专家数增加不增, 激活专家数增加则增 |
+| Hash Layers | token ID 的哈希 | 由哪个专家 FFN 来算 | 是 | 不增 |
+| PEER, PKM | 隐藏态 product-key | 大量小专家或值向量 | 否 | 不增 |
+| kNN-LM, RETRO | 隐藏态近邻或块检索 | 外部库里的分布或文本 | 否 | 检索开销随库长 |
+| OverEncoding | 输入 token 的哈希 $n$-gram | 加在第 0 层的嵌入 | 是, 但与计算串行 | 不增 |
+| Engram | 压缩后缀 $n$-gram 的多头哈希 | 层内嵌入, 经门控进残差 | 是, 与前层计算重叠 | 不增 |
+
+这张表按两列区分 Engram 和它的邻居. 第一列决定能不能预取: 地址依赖 $h_t$ 的方法 (MoE, PEER, kNN-LM) 都要等这一层算到才知道读什么. 第二列决定取出的是计算还是数据: Hash Layers 的地址同样来自 token ID, 但它选的是由哪个专家做矩阵乘, 属于无参路由. OverEncoding 取的也是 $n$-gram 嵌入, 区别在位置; 论文写它在 MoE 骨干上没有公平设定下的收益, 同样记忆预算下 Engram 的损失降得更多.
+
+最后一列说明 Engram 和 MoE 在扩容方式上的差别. 增加专家总数不增加每 token 计算, 但专家仍要常驻 HBM; 增加 Engram 的槽数既不增加计算, 也不占 GPU 显存, 通信量只和激活的槽数成正比. $n$-gram 的频率服从 Zipf 分布, 热行可以留在 HBM 或 DRAM, 长尾落到 NVMe, 论文画了这种多级缓存, 实验本身没有测 SSD.
+
+#### 3.2 27B 对照与长上下文
+
+四个模型用同一 262B token 课表, 激活都是 3.8B. MoE-27B 有 2 个共享专家和 72 个路由专家; Engram-27B 把路由专家减到 55 个, 腾出的 5.7B 做表 ($\rho=74.3\%$), 总参数相同. Engram-27B 相对 MoE-27B 在 MMLU 上 +3.0, BBH +5.0, ARC-Challenge +3.7, HumanEval +3.0, MATH +2.4, 中文古诗匹配 CCPM +7.5; 事实问答 TriviaQA 只 +1.9, PopQA +0.2. 推理和代码的增幅反而大于事实问答, 论文的解释是早期层不再重建套话, 有效深度让了出来. CKA 分析里 Engram-27B 第 5 层的表示最接近 MoE 约第 12 层.
+
+长上下文的结果支持同一解释. 用 YaRN 延续到 32k 后, Multi-Query NIAH 从 MoE-27B 的 84.2 升到 97.0, RULER 的变量追踪从 77.0 升到 89.0. 为了排除底座更强的影响, 论文取 Engram-27B 第 46k 步, 预训练损失与满训 MoE 相同的检查点做对照, NIAH 仍是 97.0. 推理时把表的输出置零, 事实类基准只剩原来的 29% 到 44%, 阅读理解还能留 81% 到 93%: 表主要承担参数化事实, 读懂段落主要靠骨干的注意力. 这个实验造成训练与推理不一致, 论文只报告了两端.
+
+### 4. 落地与边界
+
+#### 4.1 Qwen3.8-Flash-Next
+
+Qwen3.8-Flash-Next 是公开权重里第一个把这类 $n$-gram 表放进 100B 以上主模型的: 主干 125B 总参数, 每 token 激活 6B, 另加 51B 的 N-gram Embedding. 模型卡写明 2000 万行 bigram 和 trigram, 放在第 2 层, 隐藏维 2560, $2\times10^7\times2560\approx5.12\times10^{10}$. 51B 不进每 token 激活量, 也不进矩阵乘预算, 但仍占存储和 Host 到 GPU 的带宽. 技术报告引用了 Cheng 等人 (2026), 阿里云博文点名 DeepSeek Engram, 官方的模块名是 N-gram Embedding.
+
+它和 Engram-27B 有三处差别. 层扫描覆盖第 1, 2, 3, 4, 10, 15, 25 层和两种双层组合, 单层第 2 层最好, 多层分摊同一预算没有稳定好处, 所以只放一层. 固定总参数加表减专家时, 损失在约 25% 参数比处最低, 与 Engram 的分配甜点一致, 下游分数却没有对纯 MoE 形成清晰优势, 最终改成 MoE 预算固定, 表往上加. tokenizer 压缩试过, 没有稳定收益. DeepSeek 自己的 V3 和 V4 发布权重里没有这个模块, V4 技术报告把更稀疏的嵌入模块写在未来工作里.
+
+#### 4.2 失效模式与未证实的部分
+
+失效模式和两条约束对应. $\rho$ 取两端都会让损失回升, 前面已经说过; 只插在第 0 层, 访存与计算串行, 藏不住 PCIe; 插得太深, 局部模式已经被算过. 哈希碰撞和多义只靠多头和门控 $\alpha_t$ 抑制, 并没有无碰撞的完美哈希. Engram-40B 把表加到 18.5B, 验证损失从 1.622 降到 1.610, 多数基准继续涨, 但 HumanEval 从 40.8 回落到 38.4, MBPP 和 C3 也回落, 作者归因于 token 预算不够.
+
+门控可视化只说明部分分支在套话结束处升高, 8 个门里只有一部分呈现可解释的模式. 把 Engram 理解成可以按 key 改写的知识库, 目前没有论文级的支持. 跟进工作 (Tiny-Engram, Memory Grafting, CXL 内存池) 引用了这篇, 讨论的是参数高效微调, 离线记忆和内存系统, 还没有第二个公开的百 B 级出厂模型.
+
+### 5. 读法
+
+#### 5.1 按建模顺序读
+
+想弄清这个模块本身的读者, 按 01 Engram 的章节顺序读即可. 第 2 节从经典 $n$-gram 的计数比讲到 FastText 和 hash embeddings, 再到 Engram 的压缩与多头哈希; 第 3 节给出 U 形分配曲线和门控的公式.
+
+第 4.1 节的层扫描列出了逐项去掉组件后的回退, 最大的三项是按分支门控, 上下文门控和 tokenizer 压缩; 第 4.2 节的 LogitLens 和 CKA 是「有效深度」这一说法的全部证据. 门控部分用到 mHC 的多分支残差, 公式见 Hyper-Connections 与 mHC.
+
+#### 5.2 按系统与选型读
+
+关心部署和选型的读者先读专篇第 4.3 节的 Host 预取和吞吐表, 再读第 6 节 Qwen3.8-Flash-Next 与 Engram-27B 的差别. 条件计算一侧的路由, 负载均衡和专家并行在 2.6 MoE.
+
+同属本章的其他架构方向, 例如把同一组层重复执行以增加有效深度的做法, 见 2.8 节首页 和 2.8.4 循环 Transformer. 两者都想用更少的激活参数换更多的有效深度, 一个靠查表, 一个靠复用权重.
+
+### 参考文献
+
+1. Cheng, X., et al. (2026). [Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models](https://arxiv.org/abs/2601.07372). arXiv:2601.07372. 代码: [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram).
+2. Qwen Team. (2026). [Qwen3.8-Next 技术报告](https://arxiv.org/abs/2608.30320). arXiv:2608.30320.
+3. Khandelwal, U., et al. (2020). [Generalization through Memorization: Nearest Neighbor Language Models](https://arxiv.org/abs/1911.00172). ICLR 2020.
+4. Roller, S., et al. (2021). [Hash Layers For Large Sparse Models](https://arxiv.org/abs/2106.04426). NeurIPS 2021.
+5. He, X. O. (2024). [Mixture of A Million Experts](https://arxiv.org/abs/2407.04153). arXiv:2407.04153.
+
+
+
+
+标准 Transformer 没有原生的知识查找算子. 像「Alexander the Great」这类**静态局部模式**, 早期层必须用 Attention 和 FFN 一层层把实体拼出来, 等于在运行时重建一张本该查出来的表, 把宝贵的深度花在套话上. Engram (Cheng et al., 2026, [arXiv: 2601.07372](https://arxiv.org/abs/2601.07372)) 把这条轴叫**条件记忆**: 用经典 $N$-gram 当钥匙, 对一张大嵌入表做 $\mathcal{O}(1)$ 哈希查找, 再经上下文门控并入残差.
+
+条件计算 (MoE) 的路由与专家在 2.6. 下文先讲查表本身, 再把它插进整机: 和 Attention / FFN / MoE 怎么分工, 地址为何能 prefetch, 表为什么可以放 Host.
+
+### 1. 问题与来历
+
+#### 1.1 卡住的问题: 静态局部模式还要靠早期层重建
+
+语言建模其实在同时做两件不同的事. 一件是组合式推理, 必须吃深度, 吃动态计算. 另一件是检索高度刻板的局部模式: 多 token 专名, 公式化短语, 成语. 后者在经典 $N$-gram 语言模型里本来就是**查频次表**. Transformer 把两件事都塞进同一套权重之后, 早期层被迫扮演「现场拼表」的角色.
+
+论文 Table 3 借 PatchScope 复述了一个实体解析例子: 要在隐藏态里得到 "Diana, Princess of Wales", 模型对最后一个 token「Wales」的解读逐层变化: 第 1–2 层是「英国的一个国家」, 第 3 层是「欧洲的一个国家」, 第 4–5 层变成泛指的「Princess of Wales」头衔, 到第 6 层才拼出完整人物. 这几层 Attention 和 FFN 并没有在做长程推理, 只是在把相邻 token 攒成一个静态条目. Ghandeharioun et al. (2024) 与 Jin et al. (2025) 把这类现象写成「概念深度」: 浅层在做局部聚合, 深层才做难的事. Engram 的动机是, 局部聚合不该占用那么多层.
+
+#### 1.2 MoE, kNN-LM 与 KV cache 为什么替代不了查表
+
+把局部聚合从早期层卸掉, MoE 帮不了这个忙. 路由器看的是当前隐藏态, 专家做的是矩阵乘: 它放大的是**条件计算**. 你仍然没有一张可以按 token 串直接索引的表.
+
+kNN-LM 走另一条极端: 把训练语料的隐藏态整库存下来做近邻, 插值 next-token 分布. 那是非参数检索, 延迟随库长走, 查的是近邻, 做不到层内 $\mathcal{O}(1)$ 查行. KV cache 存的是**本序列已经算过的** Key/Value, 随生成长度涨, 与参数表里的静态短语记忆是两个对象.
+
+### 2. 从 n-gram 到哈希表
+
+#### 2.1 经典 n-gram: 条件概率就是一张表
+
+Shannon (1948) 之后, 统计语言模型长期用局部历史预测下一个词. $n$ 阶 Markov 假设下, 下一个 token 的条件概率就是计数比:
+
+$$
+P(w_t \mid w_{t-n+1}^{t-1})
+=
+\frac{C(w_{t-n+1}^{t})}{C(w_{t-n+1}^{t-1})}
+\tag{1}
+$$
+
+$C(\cdot)$ 是语料里该 $n$-gram 的出现次数. 表的键是离散符号串, 值是一个标量 (概率或平滑后的概率). Katz (1987), Kneser and Ney (1995) 处理的是稀疏: 多数 $n$-gram 从未出现, 必须回退, 插值. Brants et al. (2007) 把这种表做到机器翻译里仍然有用, 说明**局部共现本身就携带可查的信息**, 不必每次用深度网络重新发现.
+
+FastText (Bojanowski et al., 2017) 把「查表」从标量概率换成向量: 子词 $n$-gram 各有一条嵌入, 词向量是它们的和. 键还是离散串, 值变成 $\mathbb{R}^{d}$. Engram 沿这条线走: 不再估计式 (1) 的概率, 而是把后缀 $N$-gram 当成钥匙, 取出一条可学习的嵌入, 再交给后面的门控决定用不用. Infini-gram (Liu et al., 2024b) 证明无界 $n$-gram 计数可以做到万亿 token; Engram 不走计数, 走**可训练的哈希嵌入表**, 并且把表插进 Transformer 层中间, 不只放在输入层.
+
+#### 2.2 哈希: 组合爆炸改成 $\mathcal{O}(1)$ 查槽
+
+直接为每个可能的 $N$-gram 开一行参数, 词表 $V$ 上是 $V^{n}$ 行, 存不下. 128k 词表的 2-gram 已有 $1.6\times10^{10}$ 种组合, 3-gram 到 $2\times10^{15}$, 而语料里真正出现过的只占极小一部分. 所以表的行数必须与组合数脱钩, 只和预算挂钩: 给定 $M$ 行, 用一个确定的函数把任意键映到 $[0, M)$.
+
+Tito Svenstrup et al. (2017, [arXiv: 1709.03933](https://arxiv.org/abs/1709.03933)) 的 hash embeddings 已经把「组合键 → 有限槽」写成哈希: 每个键用 $k$ 个哈希函数从共享向量池里取 $k$ 条向量, 再按可学习的重要性权重加权求和, 用多次探测降低两个键完全撞在一起的概率. Engram 保留「多次独立探测」这一点, 把加权求和换成拼接, 并在哈希之前加了一步 tokenizer 压缩, 让同一段文本的不同写法先落到同一个键上.
+
+#### 2.3 Tokenizer 压缩
+
+子词分词器优先保证可逆, 不保证语义合一: `Apple` 和 `␣apple` 往往是两个 ID. Engram 预计算一个满射 $\mathcal{P}:V\to V'$, 按 NFKC 正规化, 小写等把等价文本压成规范 ID. 论文 Appendix C Table 6 给出的压缩率是 **23.43%** (128k 词表). 合并最多的五个规范 token: 空白 `␣` 吸收了 163 个原始 token (`\t`, `\n`, `\r`, 多个空格, `\n\n` 等); `a` 吸收 54 个 (`A`, `␣a`, `á`, `ä`, `ą` 等); `o` 吸收 40 个, `e` 35 个, `i` 30 个. 合并的主要是空白变体, 大小写, 前导空格和带变音符号的字母. 位置 $t$ 的原始 ID $x_t$ 变成
+
+$$
+x'_t = \mathcal{P}(x_t),\qquad
+g_{t,n} = (x'_{t-n+1},\ldots,x'_t)
+\tag{2}
+$$
+
+$g_{t,n}$ 是压缩后的后缀 $n$-gram. 压缩只改钥匙, 不改 Transformer 的输入嵌入; $V$ 上的 token embedding 与 LM head 保持不动.
+
+#### 2.4 多头哈希
+
+对每个阶 $n$ 准备 $K$ 个独立哈希头. 头 $k$ 把 $g_{t,n}$ 映到素数大小 $M_{n,k}$ 的表 $E_{n,k}$ 上的一个下标 (素数是为了乘法哈希的周期更干净):
+
+$$
+z_{t,n,k} \triangleq \varphi_{n,k}(g_{t,n}),
+\qquad
+e_{t,n,k} = E_{n,k}[z_{t,n,k}]
+\tag{3}
+$$
+
+$\varphi_{n,k}$ 是轻量 multiplicative-XOR, **只看 token ID, 不看隐藏态**. 最终记忆向量是各阶, 各头取出的行拼接:
+
+$$
+e_t \triangleq \big\|_{n=2}^{N}\big\|_{k=1}^{K} e_{t,n,k} \in \mathbb{R}^{d_{\mathrm{mem}}}
+\tag{4}
+$$
+
+Engram-27B / 40B 取 $N=3$ (只用 2-gram 与 3-gram), $K=8$, $d_{\mathrm{mem}}=1280$. 消融里在固定 1.6B 预算下把容量分给 4-gram 略差, 论文猜测是稀释了更常见的 2/3-gram; 不排除更大表上高阶会有用.
+
+碰撞不可避免: 不同 $n$-gram 可能落到同一行. 多头是在用 $K$ 次独立探测换「单次哈希全错」的概率. 这仍然是静态先验, 3.3 节用门控处理多义和撞车.
+
+### 3. 与 MoE 分预算, 经门控进主干
+
+#### 3.1 条件记忆 vs 条件计算
+
+把稀疏预算拆成两堆, 记号跟论文 §3.1 走. 去掉词表嵌入和 LM head 之后:
+
+- $P_{\mathrm{tot}}$: 可训练总参数.
+- $P_{\mathrm{act}}$: 每 token 激活参数, 决定训练 FLOPs.
+- $P_{\mathrm{sparse}} \triangleq P_{\mathrm{tot}}-P_{\mathrm{act}}$: 未激活的「免费」容量 (没选中的专家, 或没取到的嵌入行).
+
+分配比 $\rho\in[0,1]$ 是把这笔免费容量划给 MoE 专家的比例:
+
+$$
+P_{\mathrm{MoE}}^{\mathrm{(sparse)}} = \rho\, P_{\mathrm{sparse}},
+\qquad
+P_{\mathrm{Engram}} = (1-\rho)\, P_{\mathrm{sparse}}
+\tag{5}
+$$
+
+$\rho=1$ 是纯 MoE; $\rho$ 下降则减少路由专家, 把腾出来的参数做成 Engram 槽. MoE 侧 $P_{\mathrm{act}}$ 由 top-$k$ 专家决定; Engram 侧每 token 只取常数个槽, **加槽不加每 token FLOPs**.
+
+这就是「条件记忆」和「条件计算」的正交性:
+
+| | 条件计算 (MoE) | 条件记忆 (Engram) |
+|--|-----------------|-------------------|
+| 稀疏对象 | 专家里的矩阵乘 | 嵌入表里的行 |
+| 地址从哪来 | 当前隐藏态 $h_t$ (要等层算到) | 输入 token ID (层前已知) |
+| 每 token 成本 | $k$ 个专家的 FFN | $K\cdot(N-1)$ 次查行 + 一次小投影/门控 |
+| 表能否放 Host | 路由依赖 $h_t$, 专家通常常驻 HBM | 可以 prefetch, 表可放 DRAM |
+
+二者互补. $\rho\to 1$: 没有专用静态表, 还是得用深度重建套话. $\rho\to 0$: 条件计算不够, 动态推理会伤, 记忆替代不了计算.
+
+#### 3.2 U 形分配曲线与无限记忆区间
+
+实验协议 (论文 §3.1): 两个计算预算, 稀疏比 $P_{\mathrm{tot}}/P_{\mathrm{act}}$ 都保持在约 10.
+
+| 预算 $C$ | $P_{\mathrm{tot}}$ | $P_{\mathrm{act}}$ | 纯 MoE ($\rho=1$) 专家总数 |
+|---|---|---|---|
+| $2\times 10^{20}$ FLOPs | 约 5.7B | 568M | 106 |
+| $6\times 10^{20}$ FLOPs | 约 9.9B | 993M | 99 |
+
+不同 $\rho$ 只改路由专家数和 Engram 槽数, 训练流程与优化超参完全相同. 验证损失随 $\rho$ 呈 **U 形**. 把 MoE 份额压到 $\rho\approx 40\%$ (5.7B 档只剩 46 个专家, 9.9B 档 43 个) 时, 损失仍与纯 MoE 相当. 最优大约把 **20%–25%** 的 $P_{\mathrm{sparse}}$ 给 Engram (即 $\rho\approx 75\%\text{–}80\%$). 10B 档 ($6\times 10^{20}$ FLOPs) 上, 纯 MoE 验证损失 1.7248, 最优点附近 $\rho\approx 80\%$ 降到 1.7109($\Delta=0.0139$). Engram-27B 落地用 $\rho=74.3\%$: 路由专家 $72\to 55$, 腾出 5.7B 做表.
+
+**无限记忆区间 (论文 §3.2).** 另一组实验放开参数预算: 固定一个 $P_{\mathrm{tot}}\approx 3$B, $P_{\mathrm{act}}=568$M 的 MoE 骨干, 训 100B token, 在上面挂 Engram 表, 槽数 $M$ 从 $2.58\times10^{5}$ 扫到 $1.0\times10^{7}$, 最多增加约 13B 参数. 按每槽 $d_{\mathrm{mem}}=1280$ 维估算, $10^{7}\times 1280=1.28\times10^{10}$, 与「约 13B」一致. 验证损失随槽数在对数坐标下近似一条直线, 即幂律. 对照组 OverEncoding 把 $N$-gram 嵌入与词表嵌入取平均, 也随表变大而改善, 但同样的记忆预算下 Engram 降得更多. SCONE 需要额外的 f-gram 模型和训练 FLOPs, 不满足等计算约束, 没有纳入对照.
+
+#### 3.3 门控并入残差: 查到的先验怎么进主干
+
+$e_t$ 是与上下文无关的先验. 哈希碰撞和多义词会把它变成噪声. Engram 用当前隐藏态 $h_t$ 当 Query (前面的 Attention 已经聚合过全局信息), 从 $e_t$ 生成 Key / Value:
+
+$$
+k_t = W_K e_t,\qquad v_t = W_V e_t
+\tag{6}
+$$
+
+标量门 $\alpha_t\in(0,1)$ 是 RMSNorm 之后的缩放点积再过 sigmoid (论文式 (4)):
+
+$$
+\alpha_t
+=
+\sigma\!\left(
+\frac{\mathrm{RMSNorm}(h_t)^{\top}\mathrm{RMSNorm}(k_t)}{\sqrt{d}}
+\right)
+\tag{7}
+$$
+
+Query 和 Key 先过 RMSNorm, 论文给的理由是梯度稳定, 引用的是 ViT-22B (Dehghani et al., 2023) 对注意力 logit 做归一化的做法. 门是一个标量, 对整条 $v_t$ 统一缩放, 不做逐维选择. $\tilde{v}_t=\alpha_t\cdot v_t$. $e_t$ 和 $h_t$ 语义对不上时, 门趋向 0. 随后做短的 depthwise 因果卷积: 核宽 $w=4$, 膨胀 $\delta=$ 最大 $N$-gram 阶, SiLU, 再残差回去:
+
+$$
+Y = \mathrm{SiLU}\big(\mathrm{Conv1D}(\mathrm{RMSNorm}(\tilde{V}))\big) + \tilde{V}
+\tag{8}
+$$
+
+卷积零初始化, 训练起点是恒等. 并入方式是残差加法, 然后才是该层的 Attention 和 MoE:
+
+$$
+H^{(\ell)} \leftarrow H^{(\ell)} + Y
+\quad\text{再}\quad
+\mathrm{Attention}\ \to\ \mathrm{MoE}
+\tag{9}
+$$
+
+默认骨干用 mHC, 残差流扩成 $M=4$ 条分支 (公式见 01 mHC). 表 $E$ 和 $W_V$ **跨分支共享**, 每条分支自己的 $W_K^{(m)}$ 负责各门各的:
+
+$$
+\alpha_t^{(m)}
+=
+\sigma\!\left(
+\frac{\mathrm{RMSNorm}(h_t^{(m)})^{\top}\mathrm{RMSNorm}(W_K^{(m)} e_t)}{\sqrt{d}}
+\right)
+\tag{10}
+$$
+
+$$
+u_t^{(m)} = \alpha_t^{(m)}\cdot (W_V e_t)
+\tag{11}
+$$
+
+共享 $W_V$ 加 $M$ 个独立 $W_K^{(m)}$, 这 $M+1$ 个线性投影可以拼成一次稠密 FP8 矩阵乘, 论文把这作为参数共享方案的效率理由 (§2.4).
+
+一层 $M=4$, 两处插入, 每个 token 会算出 8 个门. 论文 Figure 7 只展示和语义模式最相关的那路: 门在专名, 套话结束处升高 ("Alexander the Great", "the Milky Way", "By the way", "四大发明", "张仲景"). 因为查的是后缀 $N$-gram ($N=3$), 位置 $t$ 门值高, 表示以 $x_t$ 结尾的那段短语被当成了静态模式. 论文注明 8 个门里只有部分分支呈现可解释的模式.
+
+### 4. 整机插槽与系统
+
+#### 4.1 插在哪一层
+
+Engram 只插在少数几层. 词表嵌入和 un-embedding 保持原样. 27B / 40B 实验: 30 层, 隐藏维 2560, MLA 32 头, mHC 扩张 4, Muon 训骨干; Engram 插在 **第 2 层和第 15 层**. 每层内部顺序按式 (9): **Engram → Attention → MoE**.
+
+Appendix A Table 5 的其余设置: MoE 模型第 1 层是稠密层, 负载均衡用 loss-free 方法; RoPE $\theta=10000$; 序列长 4096, batch 1280 条, 共 50000 步, 合计 $4096\times1280\times50000\approx 2.62\times10^{11}$, 即 262B token. 骨干用 Muon, 基础学习率 4e-4, 阶梯衰减, weight decay 0.1. Engram 嵌入表单独用 Adam, 学习率乘 5, weight decay 为 0; 卷积零初始化. 表的槽数 Engram-27B 为 2,262,400, Engram-40B 为 7,239,680. 槽数乘 $d_{\mathrm{mem}}=1280$ 再乘两个插入层: $2262400\times1280\times2\approx 5.79\times10^{9}$, $7239680\times1280\times2\approx 1.85\times10^{10}$, 分别对应正文的 5.7B 和 18.5B.
+
+第 2 层的位置要和第 0 层 (只在输入处加) 及更深的层比较. 12 层 3B MoE + 1.6B 表的层扫描 (论文 Figure 5) 给出权衡:
+
+- 插太早 (第 1 层): 门控的 Query 还没有做过一轮 Attention, 全局上下文弱, 多流也还没分化.
+- 插太深: 静态局部模式已经被前几层用计算重建过了, 查表来晚了, 深度节省没了.
+- **单点最优是第 2 层** (Val Loss 1.770 vs 纯 MoE 1.808). 一轮 Attention 够给 $h_t$ 当 Query, 又足够早, 能替底层做局部聚合.
+- 同一 1.6B 拆成两块 (做法是把每块的 $d_{\mathrm{mem}}$ 减半), 放在第 2 和第 6 层, 比单点第 2 层再好一点 (1.768). 大模型把第二块放到第 15 层, 兼顾早期卸载和中层再查.
+
+这组消融的骨干是 12 层, 3B 总参, 0.56B 激活的 MoE, 训 100B token. 参考配置用 $\{2,3\}$-gram, 插第 2 和第 6 层, 验证损失 1.768, 比纯 MoE 的 1.808 低 0.04. 在参考配置上逐项去掉组件 (表预算不变), Figure 5 中回退最大的三项是: 多分支下按分支门控, 上下文门控, tokenizer 压缩. 其中「去掉多分支」的做法是保留 mHC 骨干, 只在 mHC 的 pre-mapping $\mathcal{H}^{\mathrm{pre}}$ 之后的隐藏态上做一次单路融合. 去掉 depthwise 卷积只带来轻微回退. 把预算分一部分给 4-gram 略差.
+
+系统侧还有第二条约束: 插得越深, 前面层的计算窗口越长, 越容易把 Host→GPU 的 PCIe 传输藏进去. 建模想要早, 系统想要晚, 第 2 层是两边都能接受的折中: 第 1 层的 Attention/FFN 刚好挡住查表延迟.
+
+#### 4.2 和邻居怎么分工, 以及表示层面的证据
+
+和相邻模块的分工可以写成三条数据流:
+
+1. **Attention / MLA**: 管位置之间的动态对齐, 长程指代, 提示聚焦. 局部套话不再占用注意力头, 5.2 节的 NIAH 结果与此对应.
+2. **MoE / FFN**: 管需要计算的变换. DeepSeekMoE 的共享专家 + 细粒度路由仍在每层跑; Engram-27B 只是把路由专家从 72 减到 55 (仍 top-6, 2 个共享专家), 把腾出的参数做成表, 激活量仍是 3.8B.
+3. **Engram**: 只提供当前位置局部 token 串对应的表向量. 表向量与上下文不符时 $\alpha_t\to 0$, 这一路的残差增量接近 0.
+
+LogitLens: 把每层隐藏态直接过最终 LM head, 算它与最终输出分布的 KL. Engram 两个变体的 KL 都系统性更低, 差距在前几层最大, 预测更早就绪.
+
+CKA (论文 §6.1.2) 用线性核的 Gram 矩阵 $K=XX^{\top}$, $L=YY^{\top}$:
+
+$$
+\mathrm{CKA}(K,L)=\frac{\mathrm{HSIC}(K,L)}{\sqrt{\mathrm{HSIC}(K,K)\,\mathrm{HSIC}(L,L)}}
+\tag{12}
+$$
+
+HSIC 用无偏的 minibatch 估计, 数据是 Few-NERD 中命名实体最后一个 token 的隐藏态. 得到 MoE 第 $i$ 层与 Engram 第 $j$ 层的相似度矩阵 $S$ 之后, 取与第 $j$ 层最相似的 top-$k$ ($k=5$) 个 MoE 层, 按相似度加权求层号重心:
+
+$$
+a_j=\frac{\sum_{i\in\mathcal{I}_j}S_{i,j}\cdot i}{\sum_{i\in\mathcal{I}_j}S_{i,j}},\qquad
+\mathcal{I}_j=\operatorname{argtop}k_i\,(S_{i,j})
+\tag{13}
+$$
+
+$a_j$ 是 Engram 第 $j$ 层对应的「等效 MoE 深度」. 热图上 $a_j>j$ 在大范围层上成立, 例如 Engram-27B 第 5 层最接近 MoE 约第 12 层. 论文据此认为查表增加了模型的有效深度. 关掉表做推理时, 事实类基准只剩 29–44% (TriviaQA 29%), 阅读理解还能留 81–93% (C3 93%). 表主要扛参数化事实; 读懂段落主要靠骨干注意力. 这个实验是推理时把 Engram 输出整个置零, 骨干不动, 会造成训练与推理不一致, 在混合能力的任务上噪声大, 所以论文 §6.3 只报告事实知识和阅读理解这两端.
+
+#### 4.3 地址能 prefetch, 表能放 Host
+
+MoE 路由依赖 $h_t$, 专家权重的访问模式要等到该层前向算完才知道, 所以专家通常得常驻 HBM. Engram 的下标 $z_{t,n,k}$ **在看到第一个隐藏态之前就定了**. 训练和推理因此可以走完全不同的存储层次.
+
+训练: 表按行切到各 GPU, All-to-All 只搜集本步用到的行, 反向再把梯度打回去. 表容量随卡数线性涨.
+
+推理: 整张表放 Host DRAM. 根据 token ID 在 Host 上算地址, 经 PCIe 异步把行搬进 GPU, 和前面层的计算重叠. 论文把 100B 参数的 Engram 插进稠密骨干的**第 2 个 Transformer block**, 表全部在 DRAM 里, 用 nano-vLLM 原型在 H800 上测 (512 条序列, 长度 $\mathrm{Uniform}(100,1024)$). 选稠密骨干 (Dense-4B / 8B) 是为了避开 MoE 专家并行自身的通信, 得到干净的延迟基线; PCIe 传输与第 1 个 block 的计算重叠:
+
+| 骨干 | 配置 | 吞吐 (tok/s) | 相对跌幅 |
+|------|------|--------------|----------|
+| 4B-Dense | Baseline | 9,031.62 | — |
+| 4B-Dense | +100B Engram (CPU offload) | 8,858.28 | 1.9% |
+| 8B-Dense | Baseline | 6,315.52 | — |
+| 8B-Dense | +100B Engram (CPU offload) | 6,140.02 | **2.8%** |
+
+正文口径: 100B 表 offload 到 host memory, 惩罚可忽略, 8B 骨干上到顶 **2.8%** (引言写 $<3\%$). 这是保守基线: 所有访问都走 PCIe, 没有把高频 $n$-gram 缓进 HBM. 通信体积跟**激活槽数**成正比, 跟表的总行数不成正比. $n$-gram 服从 Zipf, 论文因此还画了多层缓存: 热行可留 HBM/DRAM, 长尾可以落到 NVMe; Table 4 本身没有测 SSD.
+
+OverEncoding, SCONE 一类把 $n$-gram 嵌在**输入层 (Layer 0)** 的做法, 会把访存和计算串起来, 藏不住延迟. Engram 把模块往里插, 第 1 层的计算才能与查表传输重叠.
+
+### 5. 实验
+
+#### 5.1 27B 对照: 与等参等 FLOPs 的 MoE 比较
+
+四套模型, 同一 262B token 课表, DeepSeek-V3 词表 (约 128k / 表里写 129280), 激活都是 3.8B:
+
+| | Dense-4B | MoE-27B | Engram-27B | Engram-40B |
+|--|----------|---------|------------|------------|
+| 总参 (不含 token embed) | 4.1B | 26.7B | 26.7B | 39.5B |
+| 激活 | 3.8B | 3.8B | 3.8B | 3.8B |
+| 专家 (共享+路由, top-$k$) | — | 2+72 (top-6) | 2+55 (top-6) | 2+55 (top-6) |
+| Engram 参数 | — | — | 5.7B | 18.5B |
+| 表槽 (Appendix Table 5) | — | — | 2,262,400 | 7,239,680 |
+| 插入层 | — | — | [2, 15] | [2, 15] |
+
+Table 1 节选如下. 摘要写 MMLU +3.4, Table 1 中是 60.4 对 57.4, 即 +3.0, 正文增量与表一致.
+
+| 基准 | Dense-4B | MoE-27B | Engram-27B | Δ vs MoE |
+|------|----------|---------|------------|----------|
+| MMLU 5-shot | 48.6 | 57.4 | 60.4 | +3.0 (摘要写 +3.4) |
+| CMMLU 5-shot | 47.9 | 57.9 | 61.9 | +4.0 |
+| BBH 3-shot | 42.8 | 50.9 | 55.9 | +5.0 |
+| ARC-Challenge 25-shot | 59.3 | 70.1 | 73.8 | +3.7 |
+| HumanEval 0-shot | 26.8 | 37.8 | 40.8 | +3.0 |
+| MATH 4-shot | 15.2 | 28.3 | 30.7 | +2.4 |
+| DROP 1-shot | 41.6 | 55.7 | 59.0 | +3.3 |
+| GSM8K 8-shot | 35.5 | 58.4 | 60.6 | +2.2 |
+| Pile loss | 2.091 | 1.960 | 1.950 | −0.010 |
+| 验证集 loss | 1.768 | 1.634 | 1.622 | −0.012 |
+| MMLU-Pro 5-shot | 21.1 | 28.3 | 30.1 | +1.8 |
+| CCPM 0-shot | 72.2 | 79.6 | 87.1 | +7.5 |
+| TriviaQA 5-shot | 33.0 | 48.8 | 50.7 | +1.9 |
+| PopQA 15-shot | 15.1 | 19.2 | 19.4 | +0.2 |
+| C3 0-shot | 57.7 | 60.1 | 63.6 | +3.5 |
+| MBPP 3-shot | 35.4 | 46.6 | 48.2 | +1.6 |
+
+表中增幅最大的是中文古诗匹配 CCPM (+7.5). 事实问答 TriviaQA 和 PopQA 的增幅反而小于 BBH 和 ARC-Challenge. 知识类有收益, 推理和代码/数学的差更大. 论文解释: 早期层不再重建套话, 有效深度和注意力容量让出来了. Engram-40B 把表加到 18.5B, 多数基准继续涨, 但没有在每个任务上压过 27B (HumanEval 40B 反而是 38.4). 作者归因于 token 预算不够, 训练后期 40B 的 loss 缺口还在拉开.
+
+40B 相对 27B 涨得多的几项: AGIEval 41.8 → 45.9, CruxEval-i 32.2 → 36.2, MGSM 49.4 → 52.4, ARC-Challenge 73.8 → 76.4. 回落的几项: HumanEval 40.8 → 38.4, MBPP 48.2 → 46.2, C3 63.6 → 61.8, MATH 30.7 → 30.6. 两档的验证集 loss 分别是 1.622 和 1.610, 语言建模指标上 40B 仍在改善.
+
+#### 5.2 长上下文: 局部查表把注意力还给全局
+
+预训练之后用 YaRN 做 32k 上下文延续 (5k step / 30B token, 超参 $\mathrm{scale}=10$, $\alpha=1$, $\beta=32$, 缩放 $0.707$). Table 2 的 Multi-Query NIAH:
+
+| 模型 (预训练步数, loss) | MQ NIAH | VT |
+|--------------------------|---------|-----|
+| MoE-27B (50k, 1.63) | 84.2 | 77.0 |
+| Engram-27B (46k, 1.63) iso-loss | **97.0** | 87.2 |
+| Engram-27B (50k, 1.62) iso-FLOPs | **97.0** | **89.0** |
+
+摘要写的 $84.2\to 97.0$, 对应 iso-loss 与 iso-FLOPs 两行的 MQ 列. iso-loss 的意思是: Engram-27B 第 46k 步的预训练 loss 与满训 MoE-27B (50k) 相同, 用它做长上下文延续, 可以排除「底座更强」这个混杂因素. 论文观察到同一架构从 41k 到 50k, 长上下文分数随预训练进度单调上升, 所以只对齐步数不够, 要对齐 loss.
+
+Table 2 其余列 (MoE-27B 对 Engram-27B 50k): LongPPL 的 Book 4.38 对 4.14, Paper 2.91 对 2.82, Code 2.49 对 2.44, 长 CoT 轨迹 14.16 对 13.41; RULER 的 FWE 73.0 对 99.3, QA 34.5 对 40.5; CWE 两者都只有个位数 (4.5 对 5.9). 41k 早停 (约 82% 预训练 FLOPs) 的 LongPPL 与满训 MoE 基本持平 (Book 4.37 对 4.38), RULER 的 MQ 仍有 89.5. 局部依赖交给查表之后, 注意力能更多用于针检索和变量追踪.
+
+### 6. 采用者, 相近机制与失效
+
+#### 6.1 Qwen3.8-Flash-Next: 公开权重里的 51B 级 n-gram 表
+
+Qwen3.8-Flash-Next (权重 2026-08-26) 把主干写成 **125B 总 / 6B 每 token 激活**, 另外加 **51B n-gram 嵌入**. 51B **不进入**每 token 激活 6B, 也不进矩阵乘预算. 官方 Hugging Face 卡片: 词表嵌入 248320; **N-gram Embedding 20,000,000 (bigram/trigram, 第 2 层)**; 48 层; 隐藏维 2560. 两个数对得上: $2\times10^7$ 行乘 2560 维是 $5.12\times10^{10}$, 即约 51B. 博文与报告口径一致: 表可放 Host, 地址预先算, 和计算异步 prefetch; **只在网络靠前放一层**.
+
+三个数字含义不同: 125B 是主模型参数, 51B 是额外的 N-gram 表, 6B 是每 token 激活参数. 51B 仍占存储容量和 Host↔GPU 带宽, 只是通过分片, 缓存和预取移出了 GPU 常驻显存与主矩阵乘路径.
+
+**有没有点名 2601.07372 / Engram.** 技术报告 PDF (*On the Design of Qwen3.8-Next Architecture*, 28 页) 正文写 `Cheng et al., 2026`, 参考文献条目是 Xin Cheng 等, 题目 *Conditional memory via scalable lookup: A new axis of sparsity for large language models*, 会议写成 ACL 2026, 即 2601.07372. PDF 正文没有出现字符串 `Engram` 或 `2601.07372`. 阿里云博文则写 "Inspired by Per-Layer Embedding in Gemma 3n and works such as **DeepSeek Engram**". 报告引用了该文 (Cheng 2026 / 条件记忆), 博文点名 Engram.
+
+和 Engram-27B 的差别 (以 Qwen 报告为准):
+
+- **一层 vs 两层.** Qwen Table 7 扫了第 1/2/3/4/10/15/25 层以及 2+15, 2+25. 单层第 2 层综合最好; 多层分摊同一预算没有稳定好处. 最终放 Layer 2, 让 prefetch 和第 1 层重叠, 和 Engram 层扫描的结论同方向.
+- **固定总参下的 U 形.** Table 8 把 n-gram 槽加大同时减专家, loss 在 10× 词表 (约 25% 参数比) 最低, 报告写这与 Cheng et al. (2026) 的分配甜点一致; 下游分数却没有对 MoE-only 形成清晰优势. 于是他们改成 **MoE 预算固定, 表往上加** (Table 9).
+- **Tokenizer 压缩.** 报告写尝试了 Cheng et al. (2026) 的 token normalization 等, **没有稳定收益**.
+- **残差.** Qwen 用 Gated Residual($n_r=4$), 不是 mHC 的双随机混合. 查表仍是「加进靠前层的残差流」.
+
+截至 2026-09-02 的公开模型, 论文和技术报告中, Qwen3.8-Flash-Next 是第一个明确把 Engram 类 N-gram 条件记忆放进 100B+ 主模型的模型; Qwen 官方把模块命名为 N-gram Embedding. Gemma 3n 的 Per-Layer Embedding, RWKV DeepEmbed 也用大表扩容, 但机制与 Engram 的哈希 N-gram 条件记忆不同.
+
+型号配置见 Qwen3.8-Flash-Next 型号页.
+
+#### 6.2 其他采用者与相近机制
+
+**出厂型号.** 截至 2026-08-30, 公开材料里把「确定性 $n$-gram 大表 + Host prefetch」捆进可下载权重的, 是 Qwen3.8-Flash-Next. DeepSeek 自己的 Engram-27B / 40B 是论文实验体, 代码在 [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram), V3/V4 的发布权重里没有这个模块.
+
+**DeepSeek-V4.** 技术报告把 Cheng et al. (2026) 写在未来工作: 将探索「更稀疏的嵌入模块」, 参考文献列出 2601.07372. 这是路线图, V4 本身没有使用 Engram.
+
+**跟进论文.** Tiny-Engram ([arXiv: 2605.20309](https://arxiv.org/abs/2605.20309)) 把触发式概念表当 PEFT; *User as Engram* ([arXiv: 2606.19172](https://arxiv.org/abs/2606.19172)) 把人均记忆写成局部参数编辑; Memory Grafting ([arXiv: 2605.20948](https://arxiv.org/abs/2605.20948)) 用冻结模型的隐状态做离线 $n$-gram 记忆; CXL pooling ([arXiv: 2603.10087](https://arxiv.org/abs/2603.10087)) 讨论条件记忆的内存池. 它们引用 2601.07372, 没有构成第二个公开百 B 出厂件.
+
+**Engram 相关工作点了名的.** PEER (He, 2024, [arXiv: 2407.04153](https://arxiv.org/abs/2407.04153)), PKM, RETRO, OverEncoding, SCONE, BLT, Gemma 3n PLE. 论文 §7 的归类是: SuperBPE 把多词表达合并成「超词」token, SCONE 用辅助编码模型处理高频模式, OverEncoding 和 BLT 分别在 token 级和字节级用哈希 $N$-gram 嵌入; PKM, PEER, UltraMem 属于参数化记忆, 把大规模稀疏键值存储放进层内; REALM, RETRO 属于非参数记忆, 外部库可编辑. 论文没有讨论 kNN-LM 与 Hash Layers, 下表这两行是按各自原文做的机制对比.
+
+| 机制 | 一手 | 地址 | 取出来的东西 | 为何不是 Engram |
+|------|------|------|--------------|-----------------|
+| kNN-LM | Khandelwal et al., [1911.00172](https://arxiv.org/abs/1911.00172) | 当前隐藏态的近邻 | 邻居的 next-token 分布, 再 $\lambda$ 插值 | 非参数库, 检索不是 $\mathcal{O}(1)$ 哈希行; 通常不改残差流 |
+| Hash Layers | Roller et al., [2106.04426](https://arxiv.org/abs/2106.04426) | token ID 的哈希 | **哪一个专家 FFN 来算** | 条件计算的无参路由; 算的是矩阵乘, 不是静态嵌入 |
+| PEER | He, 2024, [2407.04153](https://arxiv.org/abs/2407.04153) | 隐藏态 product-key | 海量小专家 | 查询依赖 $h_t$, 不能层前 prefetch |
+| RETRO / REALM | Borgeaud et al. 2022 等 | 块级检索 | 外部可编辑文本 | 非参数, 可换库; Engram 行是训练出来的参数 |
+| OverEncoding / 输入层 $n$-gram | Huang et al. 2025 等 | 同样可哈希 | 加在 Layer 0 | Engram 强调插进深层才能重叠通信; 论文写 OverEncoding 在 MoE 骨干上没有公平设定下的收益 |
+
+#### 6.3 失效模式
+
+| 现象 | 原因 | 说明 |
+|------|------|------|
+| 哈希碰撞 / 多义 | 不同短语共用一行 | 靠多头 + $\alpha_t$ 抑制; 不是无碰撞完美哈希 |
+| $\rho$ 太小 | 专家太少 | U 形左支: 记忆替不了动态计算 |
+| $\rho=1$ | 没有表 | U 形右支: 早期层继续重建套话 |
+| 只插第 0 层 | 访存与计算串行 | 藏不住 PCIe; 也失去「第 1 层当缓冲」 |
+| 插太深 | 局部模式已被算过 | Figure 5 层扫描: 越深越差 |
+| 推理时关掉表 | 训练–推理不一致 | 事实类崩, 阅读理解还在; 不能当「表没用」 |
+门控可视化只说明「有些分支在套话结束处升高」, 不证明每条记忆都可编辑, 可干预. 把 Engram 理解成可按 key 改写的知识库, 目前没有论文级支持.
+
+节地图: 2.8.3 条件记忆与 Engram. MoE 对照: 2.6.
+
+### 参考文献
+
+1. Xin Cheng et al. (2026). [Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models](https://arxiv.org/abs/2601.07372). arXiv: 2601.07372. HTML: https://arxiv.org/html/2601.07372 . 代码: https://github.com/deepseek-ai/Engram . 公式 (3)–(11) 对应论文 (1)–(7), (12)–(13) 对应论文 (8)–(9); Table 1 / 2 / 4 / 5 / 6 数字取自对应表.
+2. Qwen Team (2026). [*On the Design of Qwen3.8-Next Architecture*](https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf) (引用 Cheng et al., 2026; 未写 Engram 三字). [阿里云博文](https://www.alibabacloud.com/blog/qwen3-8-flash-next-a-new-architecture-towards-ultimate-cost-efficiency_603501) (点名 DeepSeek Engram). HF: https://huggingface.co/Qwen/Qwen3.8-Flash-Next .
+3. Qwen Team (2026). Qwen3.8-Next 技术报告 https://arxiv.org/abs/2608.30320 ; 官方博客 https://qwen.ai/blog?id=qwen3.8-flash-next ; NVIDIA NeMo 架构说明 https://docs.nvidia.com/nemo/automodel/model-coverage/large-language-models/qwen/qwen3-8-flash-next .
+4. DeepSeek-AI (2026). DeepSeek-V4 技术报告 (未来工作一节引用 Cheng et al. 2026).
+5. kNN-LM: https://arxiv.org/abs/1911.00172 ; Hash Layers: https://arxiv.org/abs/2106.04426 ; PEER: https://arxiv.org/abs/2407.04153 .
+
+
+### 6.15. 按原始公式核对训练信号与消融
+
+以下内容重新串联论文的查表、门控、预算分配和表示分析。重点是区分由结构直接决定的性质、由训练学到的行为和只在有限实验规模上成立的观察。
+
+
+### 2.1. Overview · 概述
+
+
+如 Figure 1 所示, Engram 是一个条件记忆模块, 通过在结构上把静态模式存储与动态计算分开来增强 Transformer 骨干. 形式上, 给定输入序列 $X=(x_1,\cdots,x_T)$ 和第 $\ell$ 层的隐藏状态 $\mathbf{H}^{(\ell)}\in\mathbb{R}^{T\times d}$, 模块对每个位置 $t$ 分两个阶段处理: **检索与融合**. 首先 (第 2.2 节), 抽取并压缩后缀 $N$-gram, 通过哈希确定性地取回静态嵌入向量. 然后 (第 2.3 节), 用当前隐藏状态动态调制取回的嵌入, 再经一个轻量卷积细化. 最后讨论与多分支结构的结合 (第 2.4 节) 和系统层面的设计 (第 2.5 节).
+
+### 2.2. Sparse Retrieval via Hashed 𝑁-grams · 基于哈希 N-gram 的稀疏检索
+
+
+第一阶段把局部上下文映射到静态记忆条目, 包括 tokenizer 压缩和通过确定性哈希取回嵌入两步.
+
+
+
+**Tokenizer 压缩.** $N$-gram 模型通常直接作用于 tokenizer 的输出, 但标准子词 tokenizer 优先保证无损重建, 经常给语义等价的词分配不同 ID (如 Apple 与 ␣apple) (Kudo and Richardson, 2018; Li et al., 2023b). 为了提高语义密度, 我们实现了一个词表投影层. 具体做法是预先计算一个满射 $\mathcal{P}:V\to V'$, 按规范化后的文本等价关系 (NFKC (Whistler, 2025), 转小写等) 把原始 token ID 折叠成规范 ID. 实际中, 对 128k 的 tokenizer, 有效词表规模减少 23% (见 Appendix C). 形式上, 对位置 $t$ 的 token, 把原始 ID $x_t$ 映射为规范 ID $x'_t=\mathcal{P}(x_t)$, 组成后缀 $N$-gram $g_{t,n}=(x'_{t-n+1},\cdots,x'_t)$.
+
+
+**多头哈希.** 直接为所有可能 $N$-gram 的组合空间开参数是不可行的. 我们沿用 Tito Svenstrup et al. (2017) 的哈希方案. 为了减轻碰撞, 对每个 $N$-gram 阶数 $n$ 使用 $K$ 个不同的哈希头. 每个头 $k$ 通过确定性函数 $\varphi_{n,k}$ 把压缩后的上下文映射为嵌入表 $\mathbf{E}_{n,k}$ (大小 $M_{n,k}$ 取素数) 中的一个下标:
+
+$$
+z _ {t, n, k} \triangleq \varphi_ {n, k} (g _ {t, n}), \quad \mathbf {e} _ {t, n, k} = \mathbf {E} _ {n, k} [ z _ {t, n, k} ].\tag{1}
+$$
+
+
+实际中 $\varphi_{n,k}$ 用一个轻量的乘法异或 (multiplicative-XOR) 哈希实现. 把取回的所有嵌入拼接起来, 得到最终的记忆向量 $\mathbf{e}_t\in\mathbb{R}^{d_{\mathrm{mem}}}$:
+
+$$
+\mathbf {e} _ {t} \triangleq \prod_ {n = 2} ^ {N} \prod_ {k = 1} ^ {K} \mathbf {e} _ {t, n, k}.\tag{2}
+$$
+
+> **拆开:** 式 (1) 说每阶有 $K$ 个「不同的」哈希头, 这 $K$ 个头彼此独立吗? 碰撞到底能有多严重?
+> 答: 官方代码 `engram_demo_v1.py` 里不独立. 每层每阶只算一个混合值 $\mathrm{mix}=x'_t m_0 \oplus x'_{t-1}m_1\oplus\cdots$ ($m_i$ 是按层种子生成的随机奇数, 运算在 int64 上溢出回绕), 8 个头只是对同一个 mix 取不同的素数模 $p_k$. 两个 mix 不同的 $N$-gram 在第 $k$ 头碰撞, 当且仅当 mix 之差能被 $p_k$ 整除. 按 Appendix A 的 Engram Vocab Size, Engram-27B 每头的表约 $2.26\times10^6$ 行, 任取 4 个这样的素数, 乘积约 $2.6\times10^{25}$, 远大于 int64 差值的上界 $2^{64}\approx1.8\times10^{19}$, 所以两个 mix 不同的 $N$-gram 最多在 3 个头上同时碰撞, 至少 5 个头取到不同的行. 真正全头相同只发生在 mix 本身相同时, 包括 tokenizer 压缩有意合并的写法. 式 (2) 把 16 行拼成 $\mathbf{e}_t$, 所以一次碰撞只污染 $\mathbf{e}_t$ 中 1/16 的分量, 剩下的交给第 2.3 节的门和后面的投影去分辨.
+
+### 2.3. Context-aware Gating · 上下文感知门控
+
+
+取回的嵌入 $\mathbf{e}_t$ 是与上下文无关的先验. 它们是静态的, 缺少对上下文的适应能力, 还可能因哈希碰撞或一词多义 (Haber and Poesio, 2024) 带来噪声. 为了增强表达力并消除这种歧义, 我们借鉴注意力 (Bahdanau et al., 2015; Vaswani et al., 2017), 采用上下文感知的门控. 具体做法是把当前隐藏状态 $\mathbf{h}_t$ (它已经通过前面的注意力层聚合了全局上下文) 当作动态 Query, 而取回的记忆 $\mathbf{e}_t$ 同时作为 Key 和 Value 投影的来源:
+
+$$
+\mathbf {k} _ {t} = \mathbf {W} _ {K} \mathbf {e} _ {t}, \quad \mathbf {v} _ {t} = \mathbf {W} _ {V} \mathbf {e} _ {t}\tag{3}
+$$
+
+
+其中 $\mathbf{W}_K, \mathbf{W}_V$ 是可学习的投影矩阵. 为了保证梯度稳定 (Dehghani et al., 2023), 在计算标量门 $\alpha_t\in(0,1)$ 之前对 Query 和 Key 做 RMSNorm (Zhang and Sennrich, 2019):
+
+$$
+\left| \alpha_ {t} = \sigma \left(\frac {\operatorname{RMSNorm} \left(\mathbf {h} _ {t}\right) ^ {\top} \operatorname{RMSNorm} \left(\mathbf {k} _ {t}\right)}{\sqrt {d}}\right). \right.\tag{4}
+$$
+
+
+门控后的输出定义为 $\tilde{\mathbf{v}}_t=\alpha_t\cdot\mathbf{v}_t$. 这一设计强制语义对齐: 如果取回的记忆 $\mathbf{e}_t$ 与当前上下文 $\mathbf{h}_t$ 相矛盾, 门 $\alpha_t$ 趋向 0, 噪声就被抑制.
+
+> **核对:** 官方代码里的门和式 (4) 一样吗?
+> 答: 不完全一样. `engram_demo_v1.py` 先算 $s=\mathrm{RMSNorm}(\mathbf{h}_t)^\top\mathrm{RMSNorm}(\mathbf{k}_t)/\sqrt{d}$, 再做一步带符号的开方 $s\leftarrow\mathrm{sign}(s)\sqrt{\max(|s|,10^{-6})}$, 最后才过 sigmoid. 这一步压缩了 $s$ 的幅度: $s=4$ 时式 (4) 给出 $\sigma(4)\approx0.982$, 代码给出 $\sigma(2)\approx0.881$; $s=0.25$ 时两者分别是 $0.562$ 和 $0.622$. 大分数被压小, 小分数被放大, 门不容易饱和在 0 或 1, 在 0 附近的梯度也更大. 文中没有提这一步, 也没有给有无这一步的消融. 代码里每条 mHC 分支各有一组 RMSNorm 和 $\mathbf{W}_K^{(m)}$, 与式 (6) 一致.
+
+
+最后, 为了扩大感受野并增强非线性, 我们引入一个短的 depthwise 因果卷积 (Gu et al., 2022; Peng et al., 2023). 设 $\tilde{\mathbf{V}}\in\mathbb{R}^{T\times d}$ 为门控后数值组成的序列. 取核宽 $w$ (设为 4), 膨胀 $\delta$ (设为最大 $N$-gram 阶数) 和 SiLU 激活 (Elfwing et al., 2018), 最终输出 $\mathbf{Y}$ 为:
+
+$$
+\mathbf {Y} = \text {SiLU} \left(\text {Conv1D(RMSNorm} (\tilde {\mathbf {V}})\right) + \tilde {\mathbf {V}},\tag{5}
+$$
+
+
+
+
+
+Engram 模块通过残差连接并入骨干: $\mathbf{H}^{(\ell)}\leftarrow\mathbf{H}^{(\ell)}+\mathbf{Y}$, 之后是标准的注意力与 MoE. 关键在于, Engram 并非每层都加; 插入位置要在建模效果与第 2.5 节所述的系统延迟约束之间权衡后确定.
+
+### 2.4. Integration with Multi-branch Architecture · 与多分支结构的结合
+
+
+本文没有采用标准的单流连接 (He et al., 2016), 而是以更先进的多分支结构为默认骨干, 因为它的建模能力更强 (Larsson et al., 2017; Szegedy et al., 2015; Xie et al., 2025; Zhu et al., 2025). 这种结构的特点是把残差流扩成 $M$ 条并行分支, 信息流由可学习的连接权重调节.
+
+
+Engram 模块本身与拓扑无关, 但适配多分支框架时需要做结构优化, 以兼顾效率与表达力. 具体来说, 我们采用参数共享: 所有 $M$ 条分支共享一张稀疏嵌入表和一个 Value 投影矩阵 $\mathbf{W}_V$, 同时使用 $M$ 个不同的 Key 投影矩阵 $\{\mathbf{W}_K^{(m)}\}_{m=1}^{M}$, 让每条分支有自己的门控行为. 对隐藏状态为 $\mathbf{h}_t^{(m)}$ 的第 $m$ 条分支, 其门控信号为:
+
+$$
+\alpha_ {t} ^ {(m)} = \sigma \left(\frac {\mathrm{RMSNorm} (\mathbf {h} _ {t} ^ {(m)}) ^ {\top} \mathrm{RMSNorm} (\mathbf {W} _ {K} ^ {(m)} \mathbf {e} _ {t})}{\sqrt {d}}\right).\tag{6}
+$$
+
+
+
+取回的记忆再由这些独立的门作用在共享的 value 向量上: $\mathbf{u}_t^{(m)}=\alpha_t^{(m)}\cdot(\mathbf{W}_V\mathbf{e}_t)$. 这样一个 $\mathbf{W}_V$ 和 $M$ 个不同的 $\mathbf{W}_K^{(m)}$ 可以融合成一次稠密的 FP8 矩阵乘, 充分利用现代 GPU 的算力. 除非另有说明, 所有实验都采用这种与 Manifold-Constrained Hyper-Connections (mHC, $M=4$) (Xie et al., 2025) 的结合方式.
+
+### 2.5. System Efficiency: Decoupling Compute and Memory · 系统效率: 计算与存储解耦
+
+
+模型参数的扩张常受限于 GPU 高带宽显存 (HBM) 的容量. 但与依赖运行时隐藏状态做动态路由的 MoE 不同, Engram 的检索只取决于输入 token ID, 是确定性的, 天然地把参数存储与计算解耦. 这种可预测性让训练和推理都能用上专门的优化策略, 如 Figure 2 所示.
+
+
+训练时, 为了容纳大规模嵌入表, 我们采用标准的模型并行, 把表切分到所有可用的 GPU 上. 前向用 All-to-All 通信收集被激活的行, 反向再把梯度分发回去, 这样总记忆容量随加速器数量线性增长.
+
+
+推理时, 确定性让预取与重叠的策略成为可能. 由于记忆下标在前向开始前就已知, 系统可以经 PCIe 从容量充足的主机内存异步取回嵌入. 为了有效掩盖通信延迟, Engram 模块放在骨干的特定层, 用前面层的计算作缓冲, 避免 GPU 停等. 这要求软硬件协同设计: 把 Engram 放得越深, 可用于掩盖延迟的计算窗口越长; 但第 6.2 节的消融表明, 建模效果偏好早介入, 以便尽早卸掉局部模式的重建. 所以最优位置必须同时满足建模与系统延迟两方面的约束.
+
+
+此外, 自然语言的 $N$-gram 天然服从 Zipf 分布 (Chao and Zipf, 1950; Piantadosi, 2014), 少量模式占了绝大多数的访问. 这一统计特性引出多级缓存层次: 高频访问的嵌入可以缓存在更快的存储层 (如 GPU HBM 或主机 DRAM), 长尾的罕见模式放在更慢但容量大的介质 (如 NVMe SSD) 上. 这种分层让 Engram 可以扩展到海量记忆容量, 而对有效延迟的影响很小.
+
+### 3. Scaling Laws and Sparsity Allocation · Scaling Law 与稀疏分配
+
+
+Engram 作为条件记忆的一种实现, 在结构上与 MoE 专家提供的条件计算互补. 本节研究这种二元性的扩展性质, 以及如何最优地分配稀疏容量. 具体由两个问题驱动:
+
+
+1. **有限约束下的分配.** 总参数和训练计算都固定 (等参数且等 FLOPs) 时, 稀疏容量应如何在 MoE 专家与 Engram 嵌入之间划分?
+
+
+2. **无限记忆区间.** 考虑到 Engram 的 $O(1)$ 开销不随表规模增长, 如果放宽或激进地扩大记忆预算, Engram 自身呈现怎样的扩展行为?
+
+
+
+
+图注: Engram 稀疏预算分配与缩放规律：左图显示 MoE/Engram 混合比例的验证损失呈 U 形且优于纯 MoE，右图显示无限内存设定下损失随嵌入槽数量呈近似对数线性下降。
+
+
+### 3.1. Optimal Allocation Ratio Between MoE and Engram · MoE 与 Engram 的最优分配比
+
+
+**计算匹配的形式化.** 我们用三个参数量来分析这一权衡:
+
+
+$P_{\mathrm{tot}}$: 可训练总参数, 不含词表嵌入和 LM head.
+
+
+$P_{\mathrm{act}}$: 每 token 激活的参数. 它决定训练成本 (FLOPs).
+
+
+$P_{\mathrm{sparse}}\triangleq P_{\mathrm{tot}}-P_{\mathrm{act}}$: 未激活的参数, 即不增加计算成本就能用来扩大模型的「免费」参数预算 (如未被选中的专家或未被取回的嵌入).
+
+
+在每个 FLOPs 预算内, 我们固定 $P_{\mathrm{tot}}$ 和 $P_{\mathrm{act}}$, 使各模型参数量相同, 每 token FLOPs 也相同. 对 MoE, $P_{\mathrm{act}}$ 由 top-$k$ 选中的专家决定, 未选中专家的参数计入 $P_{\mathrm{sparse}}$. 对 Engram, 每个 token 只取回常数个槽, 所以增加嵌入槽数会增加 $P_{\mathrm{tot}}$ 而不增加每 token FLOPs.
+
+
+**分配比.** 定义分配比 $\rho\in[0,1]$ 为未激活参数预算中分给 MoE 专家容量的比例:
+
+$$
+P _ {\mathrm{MoE}} ^ {(\mathrm{sparse})} = \rho P _ {\mathrm{sparse}}, \qquad P _ {\mathrm{Engram}} = (1 - \rho) P _ {\mathrm{sparse}}.\tag{7}
+$$
+
+
+直观上:
+
+
+$\rho=1$ 对应纯 MoE 模型 (所有未激活参数都是路由专家).
+
+
+$\rho<1$ 减少路由专家的数量, 把腾出的参数重新分给 Engram 的嵌入槽.
+
+
+**实验协议.** 我们在两个计算规模上评估这一权衡, 两者的稀疏比都保持 $P_{\mathrm{tot}}/P_{\mathrm{act}}\approx10$:
+
+
+$C=2\times10^{20}$ FLOPs: $P_{\mathrm{tot}}\approx5.7\mathrm{B}$, $P_{\mathrm{act}}=568\mathrm{M}$. 基线 ($\rho=1$) 共有 106 个专家.
+
+
+$C=6\times10^{20}$ FLOPs: $P_{\mathrm{tot}}\approx9.9\mathrm{B}$, $P_{\mathrm{act}}=993\mathrm{M}$. 基线 ($\rho=1$) 共有 99 个专家.
+
+
+
+对不同的 $\rho$, 我们只通过调整路由专家数和 Engram 嵌入槽数来构造对应模型. 所有运行使用完全相同的训练流程和优化超参数.
+
+
+**结果与分析.** Figure 3 (左) 显示验证损失与分配比 $\rho$ 之间稳定的 U 形关系. 值得一提的是, 即使把 MoE 的份额降到 $\rho\approx40\%$ (即 5.7B 模型共 46 个专家, 9.9B 模型共 43 个专家), Engram 模型的表现仍与纯 MoE 基线 ($\rho=100\%$) 相当. 而且纯 MoE 基线并非最优: 把大约 20% 到 25% 的稀疏参数预算分给 Engram 效果最好. 定量地看, 在 10B 规模 ($C=6\times10^{20}$) 上, 验证损失从 1.7248 ($\rho=100\%$) 降到最优点 $\rho\approx80\%$ 附近的 1.7109 ($\Delta=0.0139$). 关键是, 最优点的位置在两个规模上是稳定的 ($\rho\approx75\%$ 到 $80\%$), 说明在所考察的规模上 (稀疏比固定时) 存在稳健的分配偏好. 观察到的 U 形证实了两个模块在结构上的互补:
+
+> **对一下:** 「46 个专家对应 $\rho\approx40\%$」和第 4.1 节 Engram-27B 的 $\rho=74.3\%$ 能从式 (7) 复算出来吗?
+> 答: 能. 若每 token 激活 6 个路由专家 (与 MoE-27B 的 top-6 相同), 未激活的专家参数与 $E-6$ 成正比, $E$ 是路由专家总数. 5.7B 档 $(46-6)/(106-6)=0.400$, 9.9B 档 $(43-6)/(99-6)=0.398$, 都是 40%. 对 27B 模型, 文中没有给出专家中间维, 若取 1536 (SwiGLU 三个矩阵, 每专家 $3\times2560\times1536\approx1.18\times10^7$ 参数), 29 个 MoE 层 (30 层减去 1 个前置稠密层) 上去掉 17 个专家是 $17\times29\times1.18\times10^7\approx5.82\mathrm{B}$, 与 Engram 的 5.79B 对上; 未激活参数 $P_{\mathrm{sparse}}\approx66\times29\times1.18\times10^7\approx22.58\mathrm{B}$, $\rho=1-5.79/22.58\approx0.743$, 正是 74.3%. 中间维 1536 是从这两个数反推的, 文中没有写.
+
+
+• **MoE 主导** ($\rho\to100\%$): 模型缺少存放静态模式的专用记忆, 只能用深度和计算低效地重建它们.
+
+
+• **Engram 主导** ($\rho\to0\%$): 模型失去条件计算容量, 损害需要动态, 依赖上下文推理的任务; 在这一区间记忆无法替代计算.
+
+### 3.2. Engram under Infinite Memory Regime · 无限记忆区间下的 Engram
+
+
+第 3.1 节在固定参数预算下优化分配. 现在考察互补的设定: 激进地扩大记忆. 这一研究的动机是第 2.5 节所述的 Engram 独有的存储与计算解耦能力.
+
+
+**实验协议.** 我们使用一个固定的 MoE 骨干, $P_{\mathrm{tot}}\approx3\mathrm{B}$, $P_{\mathrm{act}}=568\mathrm{M}$, 训练 100B token 以保证收敛. 在这个骨干上挂一张 Engram 表, 槽数 $M$ 从 $2.58\times10^5$ 扫到 $1.0\times10^7$ (最多增加约 130 亿参数). 基线方面, 我们与 OverEncoding (Huang et al., 2025a) 比较, 它把 $N$-gram 嵌入与词表嵌入取平均后并入模型. 需要说明, SCONE (Yu et al., 2025) 等工作也研究大规模嵌入, 但它主要面向推理, 带有额外模块 (f-gram 模型) 并增加训练 FLOPs, 与本研究严格的等计算约束不兼容.
+
+
+**结果.** Figure 3 (右) 表明, 增加记忆槽数带来验证损失清晰而稳定的改善. 在所考察的范围内, 曲线严格服从幂律 (在对数坐标下是直线), 说明 Engram 提供了一个可预测的扩展旋钮: 更大的记忆持续带来收益, 且不需要额外计算. 关于扩展效率, 关键在于: OverEncoding 的直接平均方式虽然也受益于更大的记忆表, 但同样的记忆预算下 Engram 释放出大得多的扩展潜力. 结合第 3.1 节的分配规律, 这些结果证实了条件记忆是一条独立, 可扩展的稀疏容量轴, 与 MoE 的条件计算互补.
+
+
+### 4. Large Scale Pre-training · 大规模预训练
+
+
+
+有了 Engram 结构和经验得到的分配规律, 我们把 Engram 扩展到数十亿参数, 以验证它在真实语言模型预训练中的效果. 具体训练四个模型: (1) **Dense-4B** (总参数 4.1B), (2) **MoE-27B** (总参数 26.7B), (3) **Engram-27B** (总参数 26.7B), (4) **Engram-40B** (总参数 39.5B). 所有模型使用相同的数据课程 (相同的 token 预算和顺序), 激活参数严格对齐.
+
+
+### 4.1. Experimental Setup · 实验设置
+
+
+**训练数据与模型配置.** 所有模型在 2620 亿 token 的语料上预训练, 使用 DeepSeek-V3 (Liu et al., 2024a) 的 tokenizer, 词表大小 128k. 为了保证对照可控, 除非特别说明, 所有模型采用一致的默认设置. 骨干是 30 个块的 Transformer, 隐藏维 2560. 每个块包含一个 32 头的 MLA (DeepSeek-AI, 2024), 通过扩张率为 4 的 mHC (Xie et al., 2025) 与 FFN 相连. 所有模型用 Muon (Jordan et al., 2024; Liu et al., 2025b) 优化, 详细超参见 Appendix A. 我们构造了四个模型:
+
+
+• **Dense-4B** 是基线模型. 它使用上述骨干, 每个块都是标准稠密 FFN.
+
+
+• **MoE-27B** 把标准稠密 FFN 换成 DeepSeekMoE 模块 (Dai et al., 2024). 配置 72 个路由专家和 2 个共享专家 (每 token 激活 top-$k=6$ 个路由专家), 总参数扩到 26.7B, 激活参数与 Dense-4B 相同.
+
+
+• **Engram-27B** 严格从 **MoE-27B** 派生, 以保证公平比较. 我们把路由专家从 72 个减到 55 个, 把腾出的参数分给一个 5.7B 参数的嵌入模块 ($\rho=74.3\%$), 总规模保持 26.7B 不变. Engram 的配置是: 在第 2 层和第 15 层实例化模块, 最大 $N$-gram 阶数设为 3, 头数 8, 维度 1280. 优化方面, 嵌入参数用 Adam (Kingma, 2014) 更新, 学习率乘 5, 不加 weight decay; 卷积参数初始化为 0, 使训练开始时严格保持恒等映射.
+
+
+• **Engram-40B** 保持与 Engram-27B 相同的骨干和计算预算, 但把稀疏嵌入模块扩到 18.5B 参数 (总计 39.5B). 这个模型用于考察 Engram 的扩展性质.
+
+
+**评测协议.** 我们在覆盖语言建模, 知识, 推理, 阅读理解和代码/数学的一组基准上评测. 每个基准都按标准的提示协议和评测指标进行.
+
+
+• **语言建模:** 报告 The Pile (Gao et al., 2020) 测试集上的损失, 以及一个与训练数据同分布的验证集上的损失.
+
+
+**知识与推理:** MMLU, MMLU-Redux, MMLU-Pro, CMMLU, C-Eval, AGIEval, ARC-Easy/Challenge, TriviaQA, TriviaQA-ZH (内部), PopQA, CCPM, BBH, HellaSwag, PIQA, WinoGrande.
+
+
+• **阅读理解:** DROP, RACE (Middle/High) 和 C3.
+
+
+• **代码与数学:** HumanEval, MBPP, CruxEval, GSM8K, MGSM 和 MATH.
+
+
+
+### 4.2. Experimental Results · 实验结果
+
+
+Table 1 汇总了主要结果. 首先, 与已有文献 (Borgeaud et al., 2022; He, 2024; Shazeer et al., 2017) 一致, 稀疏结构比稠密模型有更好的 Scaling Law. 在相同训练计算预算下, 三个稀疏变体 (MoE-27B, Engram-27B/40B) 在所有基准上都明显超过等 FLOPs 的 Dense-4B 基线.
+
+
+更重要的是, Engram-27B 稳定地优于等参数, 等 FLOPs 的 MoE-27B 基线. 有意思的是, 提升不限于知识密集型任务 (如 MMLU +3.0, MMLU-Pro +1.8, CMMLU +4.0), 这些任务从直觉上就受益于记忆容量. 通用推理 (如 BBH +5.0, ARC-Challenge +3.7, DROP +3.3) 以及代码和数学推理 (如 HumanEval +3.0, MBPP +1.6, GSM8K +2.2, MATH +2.4) 的提升更显著. 为了减少基准噪声的影响并展示训练动态, Appendix B 给出了预训练过程中完整的基准轨迹. 这些结果支持我们的假设: 引入专门的知识查找原语, 能把表示效率提升到把全部稀疏预算都给条件计算所达不到的水平.
+
+> **看表:** 摘要和引言都写 MMLU +3.4, 这里写 +3.0, 哪个对?
+> 答: Table 1 中 MoE-27B 的 MMLU 是 57.4, Engram-27B 是 60.4, 差 3.0, 第 4.2 节与表一致. 摘要和第 1 节的 +3.4 在 Table 1 里找不到对应的两个数 (MMLU-Redux 是 60.6 对 64.0, 差正好是 3.4, 可能是两列混了, 文中没有说明). 其余几项 (CMMLU +4.0, BBH +5.0, ARC-Challenge +3.7, HumanEval +3.0, MATH +2.4) 摘要与表一致. 另外, Appendix B 的 Figure 8 显示 HumanEval 在最后 10k 步里两条曲线都有约 5 个点的起伏, MoE 与 Engram 还交叉过, +3.0 落在这一起伏范围内; MMLU, CMMLU, CCPM, BBH 的差在整段曲线上都保持住了.
+
+
+最后, 扩展到 Engram-40B 进一步降低了预训练损失, 并在多数基准上提升了表现. 它还没有在每个任务上都严格超过 Engram-27B, 这很可能是训练不足造成的. 我们观察到, 训练接近结束时, Engram-40B 与基线之间的训练损失差距仍在拉大, 说明扩大的记忆容量在当前 token 预算下尚未饱和.
+
+### 5. Long Context Training · 长上下文训练
+
+
+把局部依赖建模卸给静态查表之后, Engram 结构为管理全局上下文保留了宝贵的注意力容量. 本节通过长上下文扩展训练 (Gao et al., 2025; Peng et al., 2024) 实证检验这一结构优势. 借助一套能把结构贡献与基座能力分开的严格评测协议, 我们表明 Engram 在长程检索与推理任务上带来显著提升.
+
+
+### 5.1. Experimental Setup · 实验设置
+
+
+**训练细节.** 为了获得长上下文能力, 我们采用 DeepSeek-V3 (Liu et al., 2024a) 的上下文扩展策略. 预训练之后, 用 YaRN (Peng et al., 2024) 在 32768 token 的上下文上训练 5000 步 (300 亿 token 的高质量长上下文数据) 来扩展窗口. 超参为 scale $s=10$, $\alpha=1$, $\beta=32$, 缩放因子 $f=0.707$.
+
+
+**模型配置.** 我们比较四种配置的上下文扩展. MoE-27B 和 Engram-27B 都使用最终的预训练检查点 (50k 步). 另外, 为了严格衡量结构效率, 我们为 Engram-27B 额外选了两个中间检查点: 41k 步和 46k 步. 尽管起点不同, 所有变体都经过完全相同的上下文扩展训练流程. 关键在于, 选 Engram-27B (46k) 是因为它的预训练损失与满训的 MoE-27B (50k) 相同. 这构成一个受控的「等损失」(Iso-Loss) 设置, 确保上下文扩展期间出现的任何差异都可归因于结构, 而不是模型的起点质量.
+
+
+**评测基准.** 我们用 LongPPL (Fang et al.) 和 RULER (Hsieh et al.) 评估长上下文性能. LongPPL 的评测集覆盖四类: 长书籍, 研究论文, 代码仓库和长 CoT 轨迹. RULER 评测 14 个子集, 归为 8 类: 单针 (S), 多键 (MK), 多值 (MV) 和多查询 (MQ) 的大海捞针; 多跳变量追踪 (VT), 常见词抽取 (CWE), 高频词抽取 (FWE) 和问答 (QA).
+
+### 5.2. Experimental Results · 实验结果
+
+
+评测结果汇总在 Table 2. 为了准确评估 Engram 结构的贡献, 分析分两步: 先把基座能力的影响与结构设计分开, 再做受控分析.
+
+
+**1. 长上下文能力不只由注意力机制决定.** 注意力机制和位置编码为上下文处理提供了结构基础 (Press et al., 2022; Su et al., 2024; Xiao et al., 2024; Yang et al., 2025), 但我们的结果表明, 长上下文性能并不只由结构先验决定. 观察 Engram 从 41k 到 50k 的轨迹可以发现, 即使模型结构相同, 上下文扩展阶段的计算预算固定, 长上下文性能也随预训练进度单调提升. 这说明长上下文性能与基座模型的通用建模能力内在相关. 因此, 严格的结构比较必须控制这个混杂变量, 对齐基座损失, 而不只是对齐训练步数.
+
+
+**2. 受控设置下的结构优势.** 按上述原则, 我们把 Engram 与 MoE 基线对比. 控制基座能力之后, Engram 模块的效率优势就很明显:
+
+
+
+
+
+
+
+
+• **等损失设置 (46k 对基线):** 这一设置严格隔离结构效率. 把 Engram-27B (46k) 与满训的 MoE-27B (50k) 对比, 两者预训练损失对齐, Engram 仍有显著提升. 具体来说, 它在复杂检索任务上超过基线 (如 Multi-Query NIAH 97.0 对 84.2; VT 87.2 对 77.0).
+
+
+• **等 FLOPs 设置 (50k 对基线):** 在标准的等计算预算下, Engram-27B (50k) 进一步拉大差距, 整体上取得最好的表现.
+
+
+• **极端设置 (约 82% 计算):** 即使是提前停止的 Engram-27B (41k), 与满训的 MoE-27B (50k) 相比仍有很强的竞争力. 它在 LongPPL 上与基线持平, 在 RULER 上超过基线, 突出了 Engram 结构的内在优势.
+
+> **再看:** Table 2 能支撑「Engram-27B (50k) 全面最好」和「41k 在 RULER 上超过基线」吗?
+> 答: 大部分能, 有几格例外. 单针 S-NIAH 上 MoE-27B 是 100.0, Engram 三个检查点是 99.6, 97.6, 99.3, 都不如基线; 41k 的 CWE 是 3.8, 低于基线的 4.5, LongPPL 的长 CoT 一列 14.26 也略差于 14.16. 差距最大的是 FWE (73.0 对 98.6 到 99.6) 和 MQ (84.2 对 97.0). 46k 与 50k 在 MQ 上都是 97.0, 说明从等损失到等 FLOPs, MQ 已经不再提升. 这些例外不推翻「多查询检索和变量追踪明显变好」的结论, 但「全面最好」的说法要打折扣.
+
+### 6. Analysis · 分析
+
+
+本节研究 Engram 的内部机制, 包括有效深度 (第 6.1 节), 核心模块设计 (第 6.2 节) 和参数敏感性 (第 6.3 节). 此外还评估卸载情况下的推理吞吐 (第 6.4 节), 最后给出一个案例研究 (第 6.5 节).
+
+### 6.1. Is Engram functionally equivalent to increasing the model’s depth? · Engram 在功能上是否等价于加深模型?
+
+
+当前的 LLM 缺少专门的知识查找原语, 只能靠计算模拟记忆召回. 如 Table 3 所示, 要识别实体「Diana, Princess of Wales」, LLM 必须消耗多层注意力和 FFN 逐步组合特征 (Ghandeharioun et al., 2024; Jin et al., 2025; Li and Subramani, 2025), 而这一过程理论上用一次知识查找就能完成.
+
+
+据此我们假设: 给模型配备显式的知识查找能力后, Engram 免去了特征组合的早期阶段, 效果上相当于增加模型深度. 为了验证这一假设, 我们使用两种机制可解释性工具: LogitLens (Belrose et al., 2023; nostalgebraist, 2020) 和中心化核对齐分析 (CKA) (Davari et al., 2023; Kornblith et al., 2019).
+
+
+
+### 6.1.1. Accelerated Prediction Convergence · 预测更早收敛
+
+
+我们先用 LogitLens (nostalgebraist, 2020) 分析预测随层数的演化. 把每个中间层的隐藏状态用最终的 LM Head 投影, 计算中间输出分布与模型最终输出分布之间的 KL 散度 (Kullback and Leibler, 1951). 这一指标衡量一个潜在表示离「可以直接用于预测」还有多远 (Belrose et al., 2023; Csordás et al., 2025).
+
+
+Figure 4 (a) 给出逐层 KL 散度. 与 MoE 基线相比, 两个 Engram 变体的 KL 散度系统性地更小, 差距在前面的块里最明显. Engram 曲线下降更陡, 说明模型更快地完成了特征组合. 这一观察与我们的假设一致: 通过显式访问外部知识, Engram 减少了所需的计算步数, 在网络层次中更早得到高置信度的有效预测.
+
+### 6.1.2. Representational Alignment and Effective Depth · 表示对齐与有效深度
+
+
+为了进一步检验 Engram 的层在语义上是否对应基线更深的层, 我们使用中心化核对齐 (CKA), 这是比较表示结构的常用指标 (Kornblith et al., 2019; Kriegeskorte et al., 2008). 给定两组表示 $X$ 和 $Y$ (如不同模型或不同层的激活), CKA 定义为:
+
+$$
+\mathrm{CKA} (K, L) = \frac {\mathrm{HSIC} (K , L)}{\sqrt {\mathrm{HSIC} (K , K) \mathrm{HSIC} (L , L)}}\tag{8}
+$$
+
+
+
+
+
+
+其中 $K=XX^\top$ 和 $L=YY^\top$ 是 Gram 矩阵 (使用线性核), HSIC 是 Hilbert-Schmidt 独立性准则 (Gretton et al., 2005). 我们采用 minibatch 实现和 HSIC 的无偏估计 (Davari et al., 2023), 在 Few-NERD 数据集 (Ding et al., 2021) 上评估, 抽取命名实体最后一个 token 对应的隐藏状态.
+
+
+为了严格量化层与层的对应关系, 我们先计算两两 CKA 相似度矩阵 $S\in[0,1]^{L\times L}$, $L$ 是层数. 然后引入软对齐指数 $a_j$, 定义为与 Engram 第 $j$ 层最相似的 top-$k$ 个 MoE 层的加权重心:
+
+$$
+a _ {j} = \frac {\sum_ {i \in \mathcal {I} _ {j}} S _ {i , j} \cdot i}{\sum_ {i \in \mathcal {I} _ {j}} S _ {i , j}}, \quad \text {where} \mathcal {I} _ {j} = \underset {i} {\operatorname{argtop}} k (S _ {i, j}).\tag{9}
+$$
+
+
+这里 $S_{i,j}$ 是 MoE 第 $i$ 层与 Engram 第 $j$ 层之间的相似度. 指数 $a_j$ 作为 Engram 第 $j$ 层所对应「有效 MoE 深度」的稳健代理, 用 top-$k$ 过滤 ($k=5$) 减少低相似度噪声.
+
+
+Figure 4 (b) 到 (c) 给出叠加了软对齐曲线 (白色虚线) 的相似度热图. 可以看到曲线明显向对角线上方偏移, 即在很大范围的层上 $a_j>j$. 例如, Engram-27B 第 5 层形成的表示, 与 MoE 基线约第 12 层的表示最接近.
+
+
+这一持续的离对角线偏移与 LogitLens 结果 (第 6.1.1 节) 一致, 证实 Engram 在更早的层得到了更深的表示. 这验证了我们的核心假设: 通过显式查找绕过早期的特征组合, Engram 在功能上等价于增加模型的有效深度.
+
+### 6.2. Structural Ablation and Layer Sensitivity · 结构消融与层敏感性
+
+
+本节在受控设置下对 Engram 做消融, 考察每项关键模块设计的作用. 除非另有说明, 骨干是一个 12 层, 3B 参数 (激活 0.56B) 的 MoE 模型, 训练 100B token. Figure 5 报告验证损失.
+
+
+
+橙色虚线表示 3B MoE 基线 (验证损失 1.808).
+
+
+**参考配置.** 我们给骨干加上固定 1.6B 参数的 Engram 记忆. 参考模型使用 {2, 3}-gram, 把 Engram 插在第 2 层和第 6 层, 验证损失 1.768, 比 MoE 基线有可观改善 ($\Delta=0.04$). 下面所有结构消融都相对这一参考配置定义.
+
+
+**记忆应该注入在哪里?** 为了研究深度敏感性, 我们保持 Engram 预算不变 (1.6B), 但把它合并成单个 Engram 模块, 插入层从 1 扫到 12 (Figure 5 中深蓝色的「Layer Sweep」曲线). 这个实验暴露出 Engram 放置的内在权衡.
+
+
+**放置的权衡.** 早注入 Engram, 可以在骨干消耗计算深度之前就卸掉局部模式的重建, 符合骨干天然的层次化处理 (Ghandeharioun et al., 2024; Jin et al., 2025; Li and Subramani, 2025; Tenney et al., 2019). 但这会损失门控精度: 早期隐藏状态还没通过注意力聚合足够的全局上下文, 并行分支也缺少细粒度调制所需的表示差异 (Xie et al., 2025; Zhu et al., 2025). 因此最优位置需要平衡两点: (i) 尽早卸掉静态局部模式, (ii) 在更靠后的位置利用更强的上下文 query 做门控.
+
+
+扫描结果显示, 第 2 层取得最好的单层表现 (验证损失 1.770), 优于第 1 层, 插入点越深效果越差. 这说明一轮注意力就足以给门控提供有意义的上下文化 $\mathbf{h}_t$, 同时第 2 层又足够早, 能替代骨干底层的局部聚合.
+
+
+第 2 层在单次注入约束下最优, 但我们发现把同样的 1.6B 记忆拆成两个较小的模块 (通过减小嵌入维 $d_{\mathrm{mem}}$), 分别放在第 2 层和第 6 层, 效果更好 (验证损失 1.768). 这种分层设计兼顾了早介入与后段更丰富的上下文门控, 化解了上述权衡. 更重要的是, 分层插入还带来实际的系统优势, 能更好地利用第 2.5 节讨论的存储层次.
+
+> **停一下:** 1.770 和 1.768 这样的差, 以及「越深越差」, 在 Figure 5 的噪声水平下站得住吗?
+> 答: 文中没有给重复运行的方差. 可参考的是 Figure 3 (左): 同一条 U 形曲线上相邻 $\rho$ 的点围绕拟合线上下跳动约 0.001 到 0.002, 所以单层第 2 层 (1.770) 与双层 (1.768) 之差 0.002 落在这一量级内. 层扫描的整体趋势比较可靠: 第 2 层约 1.7705, 第 11 层约 1.783, 相差 0.0125, 远大于跳动; 但第 5 层 (约 1.779) 比第 6 层 (约 1.778) 还差, 曲线不单调. 另外, 插在最差的第 11 层时损失也比基线 1.808 低约 0.025, 即 0.04 的总收益里约六成与插在哪层无关, 位置只决定剩下的约四成.
+
+
+**哪些组件重要?** 从参考配置出发, 我们在保持 Engram 参数预算不变的前提下逐项消融设计选择. 结果用 Figure 5 中的标记表示. 我们发现三个组件带来的收益最大: (i) 多分支骨干中按分支的融合, (ii) 上下文感知门控, (iii) tokenizer 压缩. 去掉其中任何一个都会造成最大的验证损失回退. 具体地, 「w/o multi branch」消融保留 mHC 骨干结构, 但把按分支的门控换成在 pre-mapping $\mathcal{H}^{pre}$ (Xie et al., 2025) 之后的隐藏状态上做一次单路 Engram 融合.
+
+
+其他改动影响较小: 去掉轻量 depthwise 卷积只带来轻微退化. 在固定 1.6B 预算下给 4-gram 分配容量略差, 可能是因为它稀释了更高频的 2/3-gram 模式的容量; 不过我们不排除高阶 $N$-gram 在更大记忆规模上变得有益.
+
+
+
+
+### 6.3. Sensitivity Analysis · 敏感性分析
+
+
+为了刻画 Engram 模块的功能贡献, 我们在推理时完全屏蔽稀疏嵌入的输出, 骨干保持不变, 再评估模型. 需要强调, 这种事后消融会造成**训练与推理不一致**, 在复杂的混合能力任务上可能引入噪声. 因此我们优先分析事实知识和阅读理解这两类任务, 它们位于敏感度谱的两端, 在这种压力测试下信噪比最高.
+
+
+如 Figure 6 所示, 结果呈现鲜明的功能二分. 事实知识类基准出现崩溃式下跌, 只保留原性能的 29% 到 44% (如 TriviaQA 只剩 29%), 证实 Engram 模块是参数化知识的主要存放处. 相反, 阅读理解任务很稳健, 保留 81% 到 93% (如 C3 保留 93%), 说明依赖上下文的任务主要靠骨干的注意力机制, 而不是 Engram.
+
+> **问:** Figure 6 里只有事实知识掉到 29% 到 44% 吗?
+> 答: 不是. 同一张图上 MATH 只保留 36%, MGSM 44%, GSM8K 62%, BBH 67%, 算法推理类的 MATH 比 PopQA 和 TriviaQA-ZH (都是 44%) 掉得还多. 第 6.3 节以训练与推理不一致为由只讨论两端, 但图中数据说明关掉 Engram 后受伤最重的并不只是事实类. 还要注意这个实验衡量的是「训练好的 Engram-27B 有多依赖表」, 不是有没有表的差: Engram-27B 的 TriviaQA 是 50.7, 只剩 29% 约为 14.7, 远低于从未有表的 MoE-27B (48.8) 甚至 Dense-4B (33.0). 也就是说, 有表的模型把事实放进了表里, 而没有表的模型本可以把它们存在专家里; 这一图不能单独证明表让模型多记住了多少事实.
+
+### 6.4. System Efficiency · 系统效率
+
+
+与基于路由的 MoE 相比, Engram 的一项关键系统优势是它的稀疏激活由显式, 静态的哈希 ID 寻址. 这带来严格确定的访存模式: 只要 token 序列已知, 下一次 Engram 查找的下标就是固定的, 可以在对应层执行之前算出来.
+
+
+**实验设置.** 我们基于 nano-vLLM<sup>1</sup> (业界标准 vLLM 引擎 (Kwon et al., 2023) 的精简原型) 实现了一套推理测试框架. 为了得到不受 MoE 专家并行通信模式干扰的干净延迟基线, 我们在两个稠密骨干 (Dense-4B 和 Dense-8B) 上测试. 在第二个 Transformer 块中插入一个 100B 参数的 Engram 层, 整张嵌入表驻留在主机 DRAM 中. 推理时系统异步预取 Engram 层所需的嵌入, 让 PCIe 传输与第一个块的计算重叠.
+
+
+
+
+
+**结果.** 如 Table 4 所示, 卸载 100B 参数的嵌入表带来的吞吐损失可以忽略, 最高只有 8B 骨干上的 2.8%. 这证实了早期稠密块的计算强度足以提供掩盖检索延迟的时间窗口. 关键在于, 每步的有效通信量与激活的槽数成正比, 而不是与嵌入表总大小成正比.
+
+
+需要强调, 这个实验是一个保守的基线. 第 2.5 节的分层设计利用 Zipf 局部性把高频条目缓存在 HBM 中, 而我们的实验设置强制所有检索都经 PCIe 从主机内存读取. 这种基础检索策略的开销已经很小, 强烈说明一个完全优化, 考虑局部性的实现带来的吞吐损失可以忽略.
+
+### 6.5. Case Study: Gating Visualization · 案例研究: 门控可视化
+
+
+第 2.3 节介绍了上下文感知门控, 它用来动态调节取回的静态记忆并入骨干的程度. 为了实证检验 Engram 是否按设计工作, 我们在 Figure 7 中可视化了 Engram-27B<sup>2</sup> 在多个样本上的门控标量 $\alpha_t$.
+
+The results demonstrate a distinct pattern of selectivity. The gating mechanism consistently activates (shown in red) upon completing local, static patterns. In English, we observe strong activations on multi-token named entities (e.g., “Alexander the Great”, “the Milky Way”) and formulaic phrases (e.g., “By the way”, “Princess of Wales”). This behavior generalizes effectively across languages. In the Chinese examples, Engram identifies and retrieves distinct idiomatic expressions and historical entities, such as “Four Great Inventions” (四**大发**明) and “Zhang Zhongjing” (张仲景). These qualitative results confirm that Engram successfully identifies and handles stereotyped linguistic dependencies, effectively relieving the Transformer backbone from memorizing these static associations.
+
+结果呈现出明显的选择性. 门在一个局部静态模式完成时稳定激活 (红色). 在英文中, 多 token 命名实体 (如「Alexander the Great」「the Milky Way」) 和公式化短语 (如「By the way」「Princess of Wales」) 上激活很强. 这种行为能很好地推广到其他语言. 在中文样例里, Engram 识别并取回了成语式表达和历史实体, 如「四大发明」和「张仲景」. 这些定性结果证实 Engram 能识别并处理刻板的语言依赖, 有效地让 Transformer 骨干不必记忆这些静态关联.
+
+
+<sup>2</sup>如架构设置所述, 该模型使用 mHC ($M=4$), Engram 模块插在第 2 层和第 15 层. 因此对任一 token, 模型共计算 8 个不同的门控标量. 我们观察到并非每条分支都呈现可解释的激活模式. 为了可视化清晰, 我们挑选并展示与语义模式匹配相关性最强的门控值.
+
+
+
+
+### 7. Related Work · 相关工作
