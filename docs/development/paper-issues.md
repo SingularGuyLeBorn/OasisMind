@@ -642,3 +642,15 @@
 - **deepseek-vl-6** grounding 数据与人工评测的样本构成、标注一致率及置信区间披露不足，小幅横向差异不能稳健归因于结构。求证结果：论文只报告汇总分数。
 - **deepseek-vl-7** GPT-4V 评审同时受提示模板、答案长度和参考答案质量影响，不能视为客观的人类偏好替代。求证结果：论文没有报告评审器偏差校准。
 - **deepseek-vl-8** VL2 同时更换动态切图、pixel shuffle、MoE 语言模型和训练数据，后续成绩不能单独证明 VL 固定 576-token 混合编码路线的不足。求证结果：版本间存在多项混杂变量。
+### DeepGEMM
+
+解析：`content/deepseek/04-开源仓库/deepgemm/deepgemm-analysis.md`。
+
+- **deepgemm-1** README 性能表主要报告 kernel 区间，没有把上游 FP8 cast、转置和 scale 重排统一计入端到端时间。求证结果：仓库明确要求调用方融合这些步骤。
+- **deepgemm-2** Hopper FP8 tensor core 的低精度累加通过 CUDA core 二级累加缓解，但公开材料没有给出跨完整训练过程的逐组件误差归因。求证结果：仓库测试以局部数值对照为主。
+- **deepgemm-3** 论文式或文档中的缩放粒度与实际 UE8M0 打包、MN-major 对齐存在硬件相关约束，不能把逻辑 block scale 直接等同于物理存储布局。求证结果：官方 scaling-format 文档区分两者。
+- **deepgemm-4** grouped GEMM 的平均吞吐会隐藏专家 token 数不均、空专家和尾 tile 浪费，仓库没有公开 V3 真实路由直方图对应的完整性能分布。求证结果：基准使用预设形状。
+- **deepgemm-5** masked grouped GEMM 为 decode 设计，但小 batch、小 $M$ 下的性能高度依赖调度和 launch 开销，不能由大矩阵 TFLOPS 外推。求证结果：不同形状基准差异明显。
+- **deepgemm-6** 从 SM90 扩展到 SM100 后，指令、scale 格式与调度路径均有变化；旧版 Hopper 结论不能直接视为 Blackwell kernel 的实现说明。求证结果：仓库版本演进包含大规模重构。
+- **deepgemm-7** Mega MoE 与通信重叠结果依赖专家并行拓扑、到达顺序和负载均衡，单 kernel 指标不能分离通信隐藏与 GEMM 优化的贡献。求证结果：缺少统一拓扑下的完整逐项消融。
+- **deepgemm-8** 仓库持续演进且通过 JIT 生成特化 kernel，固定提交上的数值与性能结论需要同时记录 GPU、CUDA、形状和配置。求证结果：不同版本曾移除 SASS 后处理并调整调度策略。
