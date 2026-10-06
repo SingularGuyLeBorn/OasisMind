@@ -1161,27 +1161,27 @@
 - 原第 246 行 `./images/redrawn-transition-contribution-v3.png`：单个 Transition 的目标贡献（离散计算）
 - 原第 264 行 `./images/redrawn-clipped-objective-v2.png`：PPO裁剪目标函数（离散情形）
 
-## `content/rl/02-偏好优化/02.02-dpo/02.02-dpo.md`
+## `content/rl/02-偏好优化/02.02-直接偏好优化/01-DPO/01-DPO.md`
 
 - 原第 66 行 `./images/redrawn-dpo-pipeline-v2.png`：DPO 从偏好数据到损失
 - 原第 271 行 `./images/redrawn-dpo-batch-v2.png`：DPO一个 Batch 的训练流程
 
-## `content/rl/02-偏好优化/02.03-ipo/02.03-ipo.md`
+## `content/rl/02-偏好优化/02.02-直接偏好优化/02-IPO/02-IPO.md`
 
 - 原第 32 行 `./images/redrawn-ipo-computation-v3.png`：IPO偏好对的前向计算与平方损失
 - 原第 89 行 `./images/redrawn-ipo-identity-policy-v3.png`：Identity均匀参考下不同beta的解析策略
 - 原第 133 行 `./images/redrawn-ipo-finite-target-v3.png`：IPO有限目标的离散更新方向与DPO对比
 
-## `content/rl/02-偏好优化/02.04-orpo/02.04-orpo.md`
+## `content/rl/02-偏好优化/02.02-直接偏好优化/03-ORPO/03-ORPO.md`
 
 - 原第 122 行 `./images/redrawn-odds-ratio-v2.png`：ORPO 从长度平均分数计算 odds 偏好损失，并与 chosen NLL 加权合成总目标
 
-## `content/rl/02-偏好优化/02.05-simpo/02.05-simpo.md`
+## `content/rl/02-偏好优化/02.02-直接偏好优化/04-SimPO/04-SimPO.md`
 
 - 原第 76 行 `./images/redrawn-length-normalization-v2.png`：SimPO 长度归一化（离散数值卡）
 - 原第 90 行 `./images/redrawn-target-margin-v2.png`：SimPO Target Margin（离散数值卡）
 
-## `content/rl/02-偏好优化/02.06-kto/02.06-kto.md`
+## `content/rl/02-偏好优化/02.02-直接偏好优化/05-KTO/05-KTO.md`
 
 - 原第 46 行 `./images/redrawn-kto-loss-flow-v2.png`：KTO 非成对反馈、参考点与双分支损失
   - 图注：图 1: 每条训练记录都是独立的 $(x,y,label)$.策略与参考模型先给出同一响应的序列 log-prob,形成 $r_\theta$;随后 $r_\theta$ 与停止梯度的 $z_0$ 共同生成 desirable / undesirable 两个方向相反的 margin,再按 label 选择对应损失.
