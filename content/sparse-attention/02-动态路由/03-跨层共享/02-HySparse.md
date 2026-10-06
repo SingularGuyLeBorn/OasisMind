@@ -405,6 +405,406 @@ Prefix共享还要区分只读历史与可变会话状态. 多个分支可以引
 
 最终生成token可能因argmax margin大而暂时一致, 也可能因很小的logit变化立即分叉. 它适合端到端回归, 不适合定位. 层级记录只在离线测试保存, 线上则聚合候选页数、oracle年龄、组尾覆盖抽样和各模式时间, 避免记录用户内容.
 
+## 8. Oracle 分数究竟提供了什么
+
+### 8.1. Oracle 只对产生它的那一层精确
+
+Full layer 已经计算了自己的 query-key logits 与 softmax，因此从这张注意力图提取重要位置时，没有代理 indexer 的拟合误差。这里的“oracle”有严格边界：它准确描述 Full layer 当前 heads 的注意力分布，却不知道后续 sparse layer 的 query 会如何变化。后续层复用 indices 的依据是层间重要位置具有统计稳定性，而非数学恒等。
+
+设 Full layer 的聚合分数为 $s_j^{(0)}$，第 $l$ 个 sparse layer 若独立运行 full attention，其教师分数为 $s_j^{(l)}$。共享集合 $S^{(0)}$ 对第 $l$ 层的概率质量覆盖为
+
+$$
+M_l=\sum_{j\in S^{(0)}}p_j^{(l)}. \tag{9}
+$$
+
+$M_0$ 很高是 top-k 构造的直接结果，$M_l$ 才决定 oracle 能否跨层使用。随着层距增加，residual stream 改写 query，Full 层的高分块可能逐渐失去相关性。实验要按组内位置画 $M_l$，不能只报告 Full 层自身召回。
+
+Oracle 还有教师偏差。Attention 权重高表示当前层大量读取某位置，不保证该读取对最终预测具有因果作用；某些 sink tokens 会持续获得高权重，却不承载任务证据。训练能够让模型适应这种选择，但“来自真实 attention”仍不等于“来自真实任务重要性”。对候选做屏蔽干预、观察目标 logit，才能区分相关性与作用。
+
+### 8.2. Block max 的召回偏好
+
+HySparse 将一个 block 内的 token attention 取最大值。若块中存在单个尖锐峰值，max 能让整块进入候选，适合 needle、实体和代码定义。若证据由许多中等权重 token 共同组成，单个最大值不突出，块可能落后于包含偶然尖峰的干扰块。Max 聚合优化的是“块里有没有一个很强位置”，并不衡量块的总贡献。
+
+考虑两个 64-token blocks。A 中一个 token 权重为0.04，其余接近0；B 中16个 token各为0.01，总质量0.16。Max score让A以0.04排在B的0.01之前，尽管B的总概率质量更高。若任务要复制单个 token，A可能更有价值；若任务依赖段落语义，B更重要。选择聚合与信息形态存在匹配关系。
+
+可以同时保存 max 与 sum 的低维统计，再由小函数组合；也可以取 top-r token质量，兼顾尖峰和分布。额外统计会增加 FlashAttention tile 的归约状态与写出带宽。HySparse 选择 max 的价值在于简单、可从 tile 最大值自然导出，并与 block sparse kernel 对齐；它不是所有任务下唯一合理的 oracle。
+
+### 8.3. Softmax 后分数与 logit 分数
+
+Softmax 权重受整行归一化影响。相同局部 logit 在短上下文可能占据较高概率，长度增长、干扰项增加后概率下降。直接使用 logits 排序时，行内 top-k 次序与 softmax一致；跨heads或跨query聚合时，尺度与温度不同又会影响组合。HySparse从实际attention统计中得到分数，天然继承主层的归一化口径。
+
+对GQA head group取最大值，能保护任一 query head 的强需求，但也会让一个高方差 head 支配整个组。平均值更平滑，却可能淹没专门负责远程检索的 head。应按 head 统计覆盖，检查共享 block集合是否长期服务少数尖锐heads，并让其他heads只能在不相关候选中重排。
+
+量化或近似 softmax还会在 block cutoff 附近改变顺序。由于indices在多个后续层复用，一次边界翻转会传播整个hybrid block。测试既要比较block score数值，也要看第 $k/B$ 名与下一名的margin；margin很小时，精度变化比平均误差更重要。
+
+## 9. 从 FlashAttention 提取候选
+
+### 9.1. 在线 softmax 中的 block 统计
+
+FlashAttention按query tile与key tile流式计算。对一行query，它维护当前最大logit $m$、归一化和 $\ell$ 与输出累积量。处理新tile时先更新 $m$，再按 $e^{m_{old}-m_{new}}$ 重标定旧累积。若要输出最终softmax意义下的block max，tile统计同样要经过最终行最大值与分母校准。
+
+设block $b$ 的最大logit为 $u_b=\max_{j\in b}z_j$，整行softmax分母为 $Z=\sum_j e^{z_j}$. 对应block max probability为
+
+$$
+s_b=\frac{e^{u_b}}{Z}. \tag{10}
+$$
+
+同一query行内按 $s_b$ 排序与按 $u_b$ 排序完全一致，因此若indices只在行内选择，可以跳过除以 $Z$。跨heads聚合概率时则未必，因为每个head有自己的 $Z_h$。实现必须与论文的group聚合口径一致。
+
+### 9.2. 不能物化完整 block-score 矩阵
+
+长度 $n$、块长 $B$ 时，score矩阵有约 $n^2/B$ 个元素。$n=1{,}048{,}576$、$B=64$ 时，每个query对应16384个blocks，全矩阵超过170亿项。即使用FP16也无法作为普通中间张量长期保存。候选提取必须tile化、分批top-k或只为当前Decode query保留一行。
+
+Prefill可以在处理每个key tile时更新局部top-k，随后归并各tile候选。若block与FlashAttention key tile对齐，block max无需额外读取logits；不对齐时要跨tile合并同一block统计。局部top-k大小至少覆盖最终block数，否则某tile内部提前裁剪可能丢掉全局候选。
+
+分层归并的临时空间约随query tile数与局部候选数增长，远小于完整矩阵，仍要计入峰值显存。Full layer已经是周期性重计算点，如果候选提取迫使attention输出落盘再二次扫描，所谓“免费oracle”就不成立。融合程度要由profile确认。
+
+### 9.3. Top-k 与主输出的同步
+
+Full attention输出和oracle indices来自同一次计算，两者必须对应相同mask、RoPE、head grouping与精度。若为候选另跑一遍简化QK，任何配置差异都会让indices不再代表实际Full输出。最可靠接口是在Full kernel完成一行时同时提交attention output和block候选。
+
+异步流水可能让indices生成滞后。后续sparse层只有拿到当前query的集合才能执行，候选归并会成为层间依赖。把top-k放在CPU或单独小kernel可能增加launch与同步；融合过深又增加register和shared memory压力。算法只规定数据依赖，最优切分依硬件而定。
+
+确定性同样重要。相同block分数并列时，不同归并顺序可能返回不同indices。训练重算、tensor parallel和prefix cache恢复都需要一致tie规则，通常以block ID作为次关键字。否则候选抖动会表现成难以复现的数值噪声。
+
+## 10. Block 选择的表示能力
+
+### 10.1. 连续读取为何对硬件友好
+
+选择一个64-token block后，KV地址连续，GPU可以合并内存事务，并用规则tile完成QK与PV。Token-level top-k的1024个位置可能散落到1024个pages，逻辑FLOPs相同，物理延迟却更高。Block稀疏牺牲部分候选精度，换取规整读取与kernel利用率。
+
+有效利用率可定义为选中token中真正位于token级教师top-k的比例。若16个blocks只各含一个重要token，1024个读取中只有16个有效，算法利用率1.56%；但连续kernel仍可能比随机读取1024个token更快。质量利用率与硬件利用率方向可能相反，比较时两者都要给出。
+
+候选blocks若相邻，还能合并成更长连续段，进一步减少地址元数据。若分散，block ID虽少，页面事务仍多。记录唯一page数、连续段数与平均段长，比单纯报告16 blocks更能解释延迟。
+
+### 10.2. 块边界会制造不连续性
+
+两个相邻重要token若恰好跨block边界，会占用两个候选blocks；同样两个token落在同一block只占一个。将序列整体平移一位，理论内容不变，选择预算却可能变化。这种相位敏感性在固定分块方法中无法彻底消除。
+
+重叠blocks、交错两套分区或让边界对齐文档结构可以缓解。重叠会重复KV与计算；双分区增加oracle统计；语义边界长度不规则，kernel规整性下降。更简单的训练增强是随机改变packing offset，让模型见过不同相位，但它只能提高鲁棒性，不能消除容量差异。
+
+测试应把单点证据放在块首、块中与块尾，把双证据放在同块和跨块，并保持其他内容一致。若跨边界质量显著下降，增加block预算可能有效；若任何位置都失败，问题更可能在跨层oracle或共享KV。
+
+### 10.3. Block size 的三方权衡
+
+减小 $B$ 提高选择粒度，block score数量与indices开销增加，连续kernel tile也更小。增大 $B$ 降低元数据、提高连续读取，却带入更多无关token。固定总token预算 $k$ 时，选中block数为 $k/B$，更小B还需要更大的top-k归并。
+
+Full layer候选提取成本约与 $n/B$ 个block统计相关，Sparse Attention实际QK仍处理k个token。B主要改变oracle元数据和有效候选构成，不直接改变固定k下的理论主attention FLOPs。物理吞吐则会随tile形状变化。
+
+合理B应在目标硬件上扫描，并同时报告任务质量、候选有效率、top-k时间和Sparse kernel时间。论文默认64是具体模型与kernel的选择，不能视为跨硬件常数。
+
+## 11. 双分支为何比简单并集更有表达力
+
+### 11.1. 两次 softmax 表示两种归一化空间
+
+HySparse的global sparse branch与local SWA branch各自softmax，再经sigmoid gate相加。Global分支的概率只在选中blocks内归一化，local分支只在最近窗口内归一化。即使同一token同时出现于两边，它会以两套key/value表示和两种分母贡献。
+
+若把两组候选简单并集后做一次softmax，global高logit可能压低全部local权重，反之亦然。双分支门控让模型分别计算“从远程候选取什么”和“从局部上下文取什么”，再决定通道强度。它增加投影、cache与融合成本，也保留了层自己的局部表达。
+
+式 (4)的sigmoid gates不要求两者和为1，因此输出可以同时放大或同时抑制。若改用二元softmax gate，强制竞争会改变表达。复现时必须确认gate形式、维度和初始化，不能把所有混合attention都写成凸组合。
+
+### 11.2. 独立 local KV 补偿共享 global KV
+
+Sparse layer的query来自当前层，而global KV来自上游Full层。共享历史表示节省cache，却可能缺少当前层刚形成的局部特征。独立SWA KV由当前层输入投影，保留最近token的层特异表示，给每层一条更新鲜的读路径。
+
+这种设计把长期与短期记忆采用不同生命周期：global KV每个hybrid block写一次并服务多层，local KV每层写入但只保存窗口。长期容量随Full层数和序列增长，短期容量随Sparse层数与固定窗口增长。长上下文下后者相对较小，却对表达力重要。
+
+消融local分支后质量下降，不能简单归因于少了128个token，因为同时失去了独立投影和单独归一化。可做三步对照：并入recent tokens但仍读共享KV；为recent tokens保留独立KV却统一softmax；完整双分支。三者才能拆出地址、表示与门控的贡献。
+
+### 11.3. Gate 如何暴露分工
+
+按层、位置和任务统计gate能观察模型是否形成预期分工。普通续写可能local gate较高，远程问答在答案位置global gate升高；代码闭括号依赖局部，跨文件定义依赖global。只看全局平均会把这些条件行为抹平。
+
+Gate饱和也可能是警报。某层global gate长期接近0，说明共享候选或KV没有被使用；长期接近1而local gate低，独立SWA成本可能没有转化为能力。训练早期的饱和会阻断另一分支梯度，可通过初始化与正则避免，但是否需要干预应由任务消融决定。
+
+候选漏选时，local分支只能救回窗口内信息。远程关键位置不在oracle blocks，gate再高也无效。把gate当成selector容错器会夸大它的能力；它解决的是通道组合，不扩展global候选集合。
+
+## 12. KV Reuse 的跨层几何
+
+### 12.1. Query 与旧 KV 怎样保持可比
+
+第 $l$ 个Sparse layer生成 $q^{(l)}$，读取Full层的 $K^{(f)},V^{(f)}$。训练必须让 $q^{(l)}$ 落在能解释 $K^{(f)}$ 的空间。普通Transformer每层独立投影，跨层QK没有理由天然对齐；HySparse的原生训练会共同调整这些投影。
+
+可以把共享KV视为层组的外部memory接口。Full层定义memory格式，后续层query学习读协议。若直接把普通checkpoint改成共享指针，query与memory格式错位，即使indices正确也会产生无意义logits。迁移至少需要继续训练query投影、归一化和残差通路。
+
+评估几何对齐可固定相同indices，比较共享KV输出与该层独立KV教师输出。再用线性探针或CCA观察 $K^{(f)}$ 与 $K^{(l)}$ 的子空间关系。候选重合高而输出差，通常指向KV格式而非selector。
+
+### 12.2. Value 陈旧与 Key 陈旧要分开
+
+共享Key决定候选内精确权重，共享Value决定读出的内容。Key陈旧会让当前query在正确候选内仍排错；Value陈旧会在权重正确时提供旧层表示。两者可用交叉实验分离：当前层K配共享V、共享K配当前层V、两者都共享。
+
+若共享K足够稳定而V差异大，可以只复用K、为Sparse层保留较窄V；反之亦然。这样会改变cache结构与kernel，未必比完整共享划算，但消融能说明信息损失来自哪里。论文结构选择完整global KV reuse，是容量与训练效果的整体结果。
+
+Value误差还会经residual累积。某层读到近似信息，后续层可能修正；多个Sparse层反复读取同一陈旧V，也可能强化偏差。组尾hidden-state差异比单层attention输出更能反映累计作用。
+
+### 12.3. 组长存在能力上限
+
+Full与Sparse比例从1:3扩到1:11，大幅减少全长KV副本和Full计算频率，同时要求一份memory服务更多层。组长越大，层功能变化、候选漂移和Value陈旧都更明显。增加训练量能让模型重新组织功能，却不能让固定容量memory表达无限多层的独立需求。
+
+设组内第l层对Full候选的质量覆盖为 $M_l$，共享KV替换误差为 $E_l$. 可把满足 $M_l\ge\tau_M$ 且 $E_l\le\tau_E$ 的最长前缀视为该模型的可复用深度。阈值由任务质量标定，提供比固定层数更可解释的设计依据。
+
+不同层组的上限可能不同。浅层表征变化快，适合短组；中层形成稳定语义memory，可以长组；输出附近任务特异性增强，又需刷新。静态均匀比例实现简单，非均匀层表可能以相同Full层数获得更好质量，代价是训练和部署复杂度。
+
+## 13. HySparse2 的两段计算图
+
+### 13.1. KV Bridging 改写了 Prefill 依赖
+
+普通decoder第l层KV必须由第l层hidden states投影，因此Prefill要依次跑完所有层。HySparse2让cross-decoder Full KV直接由self-decoder对应hidden states桥接，切断了“先跑cross第l-1层，才能得到cross第l层输入”的历史KV生成链。Prompt部分可在self-decoder结束后批量构造memory。
+
+这不是让cross-decoder消失。生成第一个输出token时仍需运行cross-decoder query路径，读取桥接的prompt memory；之后每个新token也要经过两段网络。被省掉的是prompt上cross-decoder各层的全序列hidden-state变换，收益随prompt长度显著增长。
+
+将self-decoder层数记为 $L_s$，cross-decoder为 $L_c$。传统Prefill主体约处理 $(L_s+L_c)n$ 个layer-tokens；早退主干约为 $L_sn$，另加bridge投影 $C_b(n)$. 当n很短时固定launch和投影占比高，当n很长时跳过 $L_cn$ 的收益更明显。
+
+### 13.2. Bridge 不是普通 Cache 复制
+
+Self hidden states与cross Full KV维度、head布局和位置处理可能不同，bridge需要学习投影。它生成的是另一段decoder可读的memory格式，不是把上游KV地址直接别名。投影参数按Full层独立还是共享，会影响容量与计算，应以论文配置为准。
+
+桥接状态的因果性来自self-decoder。Prompt位置t的hidden state只能包含其左侧信息，投影后仍可作为causal memory。Cross query在生成阶段可以读取全部prompt；若cross-decoder也参与prompt位置计算，mask还需限制每个位置，早退路径则省去了这部分。
+
+量化bridge KV时，误差会被一个Full层之后的多个Sparse层共同使用。精度分配应按共享范围考虑，而非只看单次投影。Bridge hidden states、投影输出和最终cache在哪一步量化，会产生不同误差。
+
+### 13.3. Prefill 早退与首 Token 延迟
+
+批量生成bridge KV可放在self-decoder Prefill末尾，TTFT包含全部投影和cache写入；也可惰性生成某些层memory，将工作推到cross-decoder首次使用。前者峰值工作大但路径规则，后者降低早期写入却可能让首token各层间歇停顿。
+
+评测必须明确TTFT终点：cache准备完成、首token logits产生，还是首token发给用户。只测self-decoder结束会漏掉bridge与cross query。HySparse2的核心收益仍然成立，但不同物化策略会改变时间分布。
+
+Agent场景中长observation与短action交替，prefix cache可让相同历史的bridge memory复用。若每轮追加少量token，只更新尾部self状态与对应bridge entries，收益更大。会话分叉、工具返回修改历史或speculative rollback时，所有两段状态必须同步失效。
+
+## 14. 从 Block 到 Token 的代价交换
+
+### 14.1. Token 选择提高预算利用率
+
+HySparse每选中一个重要位置就读取整块，HySparse2的token级选择能把槽位分给更分散的证据。若1024个教师token均匀落在1024个不同blocks，block方案理论上需读取65536 tokens才能全覆盖，固定1024预算只能选16个blocks；token方案可直接覆盖1024个位置。
+
+真实attention有局部聚集，差距通常小于极端例子。可以统计教师top-k的block occupancy：占用多少blocks、每块平均多少教师token、最大集中度。Occupancy高表示token选择潜力大；教师本就集中时，block连续读取更划算。
+
+Token selector的索引元数据也更大。16个block IDs与1024个token IDs相差64倍；若每层组跨层复用，indices仍比KV小，但Prefill所有queries的临时状态不可忽略。压缩索引、delta编码与按page分组能降低开销，也增加解码步骤。
+
+### 14.2. Recent Window 合并后的概率竞争
+
+HySparse2把recent window强制并入全局候选后，只做一次softmax。局部token与远程token在同一分母中竞争，模型可以直接比较二者相关性；同时也失去HySparse双分支独立归一化与gate。训练必须重新校准logit尺度，让局部位置不会因数量或位置偏置淹没远程证据。
+
+若global top-k已包含recent token，并集要去重。去重后候选数少于 $k_g+w$，可以选择补足新的global token，也可以接受变长集合。补足保持计算规则，却改变top-k定义；不补足让每个query工作量不同。实现与训练必须采用同一约定。
+
+窗口大小w仍是重要参数。w太小，短语和局部代码依赖参与global竞争；w太大，固定成本增加，远程候选在softmax中面对更多局部项。应与global k联合扫描，而非单独复用HySparse的128。
+
+### 14.3. 随机 Gather 与 Page 聚合
+
+Token indices可先按物理page排序再gather，计算完后无需恢复原顺序，因为attention对key排列置换不敏感，只要K、V和mask同步。排序提高连续访问，但top-k分数和位置bias仍需同行。若使用因果mask，所有候选本来都应早于query，排序不会改变可见性。
+
+可以在token top-k后扩展少量邻居，形成短连续segments。这样介于纯token与block之间：重要token精确决定中心，邻居提升带宽利用并提供局部上下文。总预算固定时，扩邻居会减少独立中心数。是否有益取决于教师候选聚集和kernel事务大小。
+
+系统比较应固定实际HBM读取字节，而不只固定逻辑k。Block方案读1024 tokens但事务连续，token方案逻辑也读1024，物理page与cache-line可能更多。相同延迟下token方案可以采用较小k，其质量仍可能更高；需要画质量—延迟前沿判断。
+
+## 15. 训练、迁移与验证闭环
+
+### 15.1. 原生训练解决三种适配
+
+第一种是oracle适配：后续层学会让重要位置与前一Full层尽量一致，同时保留层特异计算。第二种是memory适配：Sparse query学会读取上游共享KV。第三种是分支适配：模型在global与local通道间分配信息。HySparse2还增加self/cross桥接与单一候选softmax适配。
+
+这些变化互相作用。若共享KV表达不足，后续层可能把更多信息留在local branch；若oracle集合容量不足，Full层可能学习把多个事实汇总到少数锚点；若bridge承担更多prompt记忆，self-decoder会形成适合cross读取的状态。结果来自整体训练，无法由推理时替换模块完整复现。
+
+从现有checkpoint迁移可以分阶段：先引入共享KV并保留较高Full频率；再启用oracle indices与Sparse计算；随后延长组长；最后加入bridge和目标量化。每阶段固定探针比较教师质量与任务恢复。具体顺序需要实验支持，核心原则是一次隔离一种大规模信息通路变化。
+
+### 15.2. 一组因果消融
+
+固定Full layer输出，先给Sparse层独立全域attention，得到当前共享KV下的上界；再使用Full oracle blocks，得到indices复用损失；加入独立SWA，观察局部通道补偿；最后与普通每层独立KV比较，分离memory格式损失。
+
+HySparse2则先关闭Prefill早退、让cross-decoder真实运行prompt，比较bridge memory；再固定bridge，比较block与token indices；随后比较独立SWA和recent并集；最后启用完整早退。每次只改变一个环节，才能把速度与质量归因到具体结构。
+
+对oracle还可做反事实：用后续层独立full attention生成教师indices。若质量显著恢复，跨层偏好漂移是瓶颈；若仍无改善，共享KV或候选预算更可疑。教师路径很昂贵，只需在小规模评测运行。
+
+### 15.3. 最终验收矩阵
+
+质量至少覆盖精确检索、多证据、长代码、全文聚合和多轮更新。每类改变长度、证据数量、block offset与干扰相似度。HySparse重点观察跨层block oracle与双分支gate；HySparse2重点观察token候选、recent竞争和bridge memory。
+
+系统指标拆为Full attention、oracle统计、top-k、Sparse gather、SWA或recent分支、bridge投影和cache写入。Prefill报告TTFT与工作区，Decode报告TPOT、HBM读字节和周期性Full层尖峰。Cache容量分别列global KV、local KV、bridge KV、indices和scale。
+
+状态测试覆盖prefix命中、请求分叉、speculative rollback、左截断、变长batch与未满page。HySparse2有self/cross两套生命周期，一边回滚而另一边保留会造成静默污染。所有状态应绑定模型revision、层组配置、位置范围与量化格式。
+
+最终配置通过两条标准：质量—延迟位于可接受Pareto前沿，尾部失败能够定位到oracle、共享KV、局部通道或bridge中的具体一步。平均加速很高而无法解释少数长程错误，不足以证明结构已经完成。
+
+## 16. 跨层 Oracle 的误差怎样传播
+
+把第 $l$ 层理想全注意力分布记为 $p^{(l)}$，Full层给出的block集合展开成token集合 $S$. 若固定共享KV并只考虑集合裁剪，候选外概率质量为
+
+$$
+\epsilon_l=1-\sum_{j\in S}p_j^{(l)}. \tag{11}
+$$
+
+在候选内重新归一化后，保留token的概率整体除以 $1-\epsilon_l$. 当value范数有界为V时，稀疏输出与全候选输出的差可由约 $2\epsilon_lV$ 的粗界控制。这个界忽略共享KV替换与双分支，只说明概率质量比block Jaccard更接近输出误差。
+
+Block集合重合高也可能有大 $\epsilon_l$. Full层和Sparse教师都选中15个普通blocks，只在最后一个block不同，Jaccard约0.88；若不同block包含第l层几乎全部远程概率，输出仍会大幅改变。反过来，集合重合一般但共同覆盖高概率峰值，实际影响可能很小。报告indices overlap时应同时给dense mass。
+
+共享KV加入第二项误差。令当前层独立KV在集合S上的输出为 $o_S^{(l)}$，读取Full KV的输出为 $\hat o_S^{(l)}$. 总差可分解为
+
+$$
+\|o_{full}^{(l)}-\hat o_S^{(l)}\|\le
+\|o_{full}^{(l)}-o_S^{(l)}\|+
+\|o_S^{(l)}-\hat o_S^{(l)}\|. \tag{12}
+$$
+
+第一项来自oracle候选，第二项来自跨层memory。实验中分别替换indices与KV即可近似测量。若第一项随组深增长而第二项稳定，应缩短indices复用；若第二项占主导，增加Full候选无济于事。
+
+双分支又提供局部修正。设local输出为 $o_L$，global误差为 $e_G$，门控后的误差不超过global gate对 $e_G$ 的缩放再加local自身误差。对于窗口内证据，local分支可绕过global漏选；对于远程证据，local没有相应value，误差仍完整保留。按证据距离分桶能看到门控究竟修复了哪部分。
+
+误差在层间经过residual传播。若每层映射局部Lipschitz常数为 $L_l$，第r层注入误差 $e_r$ 对最终层的上界会乘后续 $\prod_{l>r}(1+L_l)$. 真实网络含归一化与非线性，这个界很松，却揭示早期组错误可能被后续放大。只比较每个Sparse attention输出，可能低估最终logit影响。
+
+共享同一oracle还让误差相关。若组内11层都漏掉同一远程block，后续层没有重新发现机会；逐层独立top-k即使单层 $\epsilon$ 相同，也可能在其他层读回证据。信息能否通过一次读取写入residual，取决于哪一层需要它。对多步推理，证据可能只有在深层query形成后才重要，早期Full oracle尚未给它高分。
+
+这种“需求晚于选择”的样本是跨层复用的核心压力测试。可以构造两跳任务：第一跳在浅层定位实体A，第二跳才知道要检索与A关联的定义B。若Full层只看见问题表面，B不进blocks；Sparse层即使形成正确query也无法访问。增加组长会加重，缩短组或让Full层训练成面向后续需求的预取器可以缓解。
+
+Full oracle因此兼有attention记录和预测性cache prefetch两种角色。它不仅复用自己已经使用的位置，还要提前纳入后续层将要使用的位置。训练中的下游梯度能推动这种预取行为，纯粹从冻结稠密模型提取当前层top-k则做不到。分析原生训练结构时，这一点比“oracle无需训练”更准确：没有额外selector，不代表选择策略无需通过主模型训练适应。
+
+Group-wise maximum进一步扩大预取范围。任一head强关注的block都能进入共享集合，有利于保护稀有需求；容量固定时，一个head的尖峰也会挤出多个heads共同需要的中等block。可统计每个入选block由哪个head触发、被多少heads实际使用。如果大量候选只服务单head且对任务无贡献，聚合过于激进；若稀有head错误显著减少，这种容量使用就是合理的。
+
+Oracle误差的最低限度报告应包含组首到组尾的概率质量、关键证据block召回、共享KV替换输出差和最终任务变化。四项分别对应选择、关键路径、memory与功能。只有它们同时稳定，才能说明1:N布局在目标长度上成立。
+
+## 17. 两级共享的内存账
+
+普通decoder的全长KV字节近似为
+
+$$
+M_{base}=2BLnH_{kv}d_hb, \tag{13}
+$$
+
+B为batch，L为层数，n为历史长度，$H_{kv}d_h$为每token单边KV宽度，b为元素字节。HySparse把全长global KV只保留在 $L_f$ 个Full层，另为 $L_s$ 个Sparse层保存w长度local KV：
+
+$$
+M_{Hy}\approx2BH_{kv}d_hb(L_fn+L_sw)+M_{idx}. \tag{14}
+$$
+
+当 $n\gg w$，主项比例接近 $L_f/L$；短上下文或w较大时，local项不能忽略。
+
+$M_{idx}$ 取决于query状态保存策略。Decode当前query的16个block IDs非常小，但prefix cache若要保存每个历史query的indices供某些重算或复用，可能随n增长。常规自回归每个新query只需即时消费indices，历史query的attention输出已经写入residual，无须长期保存全部矩阵。Prefill工作区与持久Decode cache应分开统计。
+
+HySparse2移除每Sparse层独立local KV，recent tokens从共享global KV读取。内层cache进一步接近仅Full层副本加indices。外层KV Bridging又让cross-decoder Full KV由self states生成；长期仍需保存供Decode读取的cross memory，节省重点是跨层副本和Prefill计算，并不意味着cross memory字节为零。
+
+两段结构的总状态至少包括self-decoder KV或SWA状态、用于bridge的Full hidden states或其派生表示、cross Full KV、oracle indices、量化scale和分页元数据。如果bridge KV可以从已保存self states按需重建，就能以计算换显存；若每步低延迟优先，通常预先物化cross KV。报告必须说明采用哪种策略。
+
+以49层、5个Full层为例，忽略local与元数据，全长global副本从49降到5，比例约10.2%。加入44层各128-token local cache后，额外量相当于5632 token-layers；当n=32768时，Full主项为163840 token-layers，local约占3.4%。当n=2048时，Full主项10240，local已超过其一半。长上下文中的“近10倍”不能原样外推到短请求。
+
+Batch与prefix共享会改变物理账。多个请求共用长prefix时，Full global KV可被页级复用，local tail与当前generation仍各自保存。普通逐层KV也能prefix共享，所以比较要让两种模型采用相同命中率。HySparse每个prefix的层数少，单份共享对象更小，但命中机制本身不是其独有收益。
+
+量化按状态类型分配。Global KV生命周期长、被多层重复读取，量化误差影响范围大，却也是显存主体；local KV短且每层独立，可用另一精度；indices通常整数无量化；block score只在生成候选时短暂存在。把所有状态统一写成“KV采用FP8”会掩盖真正口径。
+
+Page大小决定内部碎片。Global KV按Full层和序列页组织，最后一页未满会浪费；local环形cache固定w，适合紧凑布局；bridge KV若按对应Full层生成，也可与内层组共置。请求频繁创建销毁时，allocator保留与理论tensor大小不同，峰值应从实际服务进程测量。
+
+Tensor parallel还可能复制indices与scale。KV按heads分片时，每个rank只存局部head数据；group-wise oracle若需要跨rank聚合max，需通信后得到共享block IDs。Indices很小，复制常比让每rank选择不同集合更简单，但通信延迟要算在Full层。若不同rank独立top-k，后续全局候选并集可能扩大读取。
+
+Pipeline parallel对HySparse2更敏感。Self与对应cross Full层若分居不同stage，bridge hidden states要跨stage传输；内层Full及其Sparse组被切开，共享KV也要远程访问或复制。合理切分通常让共享组共置，层数平衡却可能变差。模型的逻辑cache下降不保证多卡每rank显存均衡。
+
+SSD或主存offload只改变存放层级。Full global KV较少，热状态更容易留在HBM；超长prefix仍可能分层。Oracle blocks告诉系统将要读取哪些pages，可以用于预取，这是潜在协同；候选产生于Full attention已经扫描历史之后，对当前Full层读取帮助有限，主要服务随后Sparse层。预取时机和带宽需要实际实现验证。
+
+最终内存表应按“持久HBM、可重建HBM、主存/SSD、Prefill峰值工作区、每step临时量”五列展开。理论cache比例只覆盖第一列中的主要tensor。把每个状态的所有者、生命周期和恢复方式写清楚，才能判断两级共享在真实服务中省下多少。
+
+## 18. 四类典型失败样本
+
+第一类是块内孤立证据。某个64-token block只有一个四位数字与问题相关，Full head对它有中等权重；另一个干扰block含格式分隔符，出现更尖锐attention峰。Max聚合让干扰块入选，数字块落选。增加总token预算有效但昂贵，减小B或改聚合能提高精度；local分支因数字很远无法补救。
+
+可将数字分别放在块内不同offset，并复制相同干扰内容。若结果随offset变化，边界和tile实现参与了错误；若所有offset都被尖峰压制，聚合目标更可疑。再强制加入正确block，若答案立即恢复，shared KV仍保存了数字，问题锁定在oracle选择。
+
+第二类是层间需求漂移。问题先要求识别某个函数，后续推理才需要其调用者中的边界检查。Full层集中于函数定义，Sparse深层query开始关注调用点，却被固定blocks限制。组首输出接近教师，组尾概率质量快速下降。缩短Full间隔、扩大blocks或让训练促使Full预取调用点均可能改善。
+
+区分候选与KV的方法是使用深层教师blocks但仍读取Full KV。若恢复，oracle漂移主导；若仍差，调用点在Full V中的表示不足。后者需要改善memory格式或保留层特异通路，单纯刷新indices无效。
+
+第三类是局部与远程竞争。HySparse双分支中，两边独立归一化，gate可同时保留最近语法与远程定义；HySparse2统一候选后，最近窗口含大量高logit token，远程定义概率被稀释。Indices中远程token仍存在，attention输出却不再使用它。此时候选recall看起来完美，任务仍失败。
+
+检查候选内logits与softmax质量可发现竞争。缩小窗口、调整位置bias、训练校准或为远程候选保留分组归一化都是可能方向。哪种合理取决于统一softmax是否是目标结构的一部分；不能看到recall高就继续扩大k，那会加入更多竞争项。
+
+第四类是bridge信息不足。Self-decoder为prompt生成hidden states，cross Full KV由其投影。若self阶段没有保留某个细节，cross所有层都无法从bridge恢复。即使oracle token位置正确，value内容已经丢失。这与CSA压缩类似，但压缩轴从相邻token聚合变成decoder阶段变换。
+
+对照运行完整cross Prefill，让cross各层从真实prompt hidden states生成KV。如果完整路径恢复而bridge路径失败，问题落在外层桥接；若都失败，再看内层oracle或模型能力。进一步固定cross query，用真实KV与bridge KV交叉，能分离Key排序与Value内容。
+
+多轮更新会放大bridge状态错误。用户先给事实A，后面纠正为B；prefix cache若复用了旧bridge页、只追加新token，cross可能同时看到冲突状态。逻辑上追加式decoder允许同时保留A与纠正B，模型应凭后文覆盖；若cache键误把修改后的历史当成相同prefix，才是系统错误。测试必须区分正常语义冲突与状态污染。
+
+Speculative decoding提供更隐蔽的例子。草稿token触发Full层生成oracle blocks并更新bridge tail，随后被目标模型拒绝。若只回滚token计数而未回滚派生indices或未满page，新query会读取不存在的分支。错误通常只在拒绝发生于block/page边界时出现，需要用高拒绝率和边界长度专门测试。
+
+还有一类性能失败：token-level选择提高逻辑精度，却让1024个候选分散到数百pages，Sparse kernel受内存事务限制，比读取16个连续blocks更慢。质量表显示HySparse2更好，算术量也相近，端到端TPOT反而退化。按page排序、邻居扩展或较小k可能恢复前沿；只优化top-k计算找不到瓶颈。
+
+失败归因可以沿固定顺序：验证状态版本和causal映射；强制正确候选；替换独立KV；恢复双分支或完整cross Prefill；最后再增加训练。前四步都是反事实定位，能避免把实现问题和结构容量混入训练结果。
+
+## 19. 怎样比较 HySparse、HySparse2 与其他路线
+
+比较首先固定“谁支付Full attention”。HySparse每个hybrid block有周期性Full层，它既产生模型输出又充当oracle；HySparse2保留内层思想，并通过两段decoder减少prompt在cross部分的执行。DSA/CSA使用轻量indexer，避免用主Full attention产生候选。前者选择信号更真实但锚点昂贵，后者代理便宜但需要训练召回。
+
+第二个坐标是主读取粒度。HySparse读完整blocks，HySparse2读tokens，CSA读compressed entries，HISA用block粗筛后可回到token精排。相同k没有可比性：1024 tokens、16个64-token blocks和1024个4-token compressed entries对应不同信息量、KV字节与地址规则。应换算实际读取元素、原token覆盖与物理事务。
+
+第三个坐标是共享范围。HySparse在一个Full+Sparse组内共享global KV和indices；CSA2区分Full/Reindex/Reuse，允许池内刷新；HySparse2再跨self/cross桥接memory；YOCO类结构强调cross-decoder共享。共享层数越多，cache副本越少，对memory格式和候选稳定性的要求越高。
+
+第四个坐标是局部通路。HySparse有每层独立SWA KV与双门控，HySparse2把recent window并入统一token集合，许多DSA方案也会保留固定窗口。局部预算、表示是否独立、softmax是否分开，都会影响质量与cache。只写“都带滑窗”会遗漏关键结构差异。
+
+在相同质量下比较效率，需要为每条路线扫描其主要旋钮。HySparse扫Full比例、B、block数和w；HySparse2再扫token k、recent window、自/交叉decoder深度与bridge精度；DSA扫indexer宽度和k；CSA2还扫压缩率、pool与Reindex频率。只取各论文默认点，结果混入模型规模、训练量和硬件差异。
+
+训练成本也不同。Oracle路线没有独立selector loss，却必须在训练中运行周期性Full attention，并让后续层适应共享KV。Indexer路线支付蒸馏或对齐训练，推理可不设Full锚点。讨论“无需训练索引器”时，应同时列出Full层训练与推理成本，避免把一个模块的缺席理解成选择免费。
+
+质量比较至少对齐训练token、上下文长度、参数量与数据。HySparse论文中的7B和80B-A3B结果证明结构可以原生训练，不能直接作为同规模普通Transformer的纯架构消融，除非训练配方匹配。HySparse2增加两段decoder后，收益也包含整体重构与训练适应。
+
+系统比较应分Prefill和Decode。HySparse2的bridge主要改变长prompt Prefill依赖，HySparse内层reuse主要降低cache与Sparse层读取；DSA的indexer在Decode每步扫描全历史，HISA/MISA试图压缩这个扫描。一个方案TTFT领先、另一个TPOT领先完全可能，不能用单一tokens/s排序。
+
+对agent负载还要加入prefix命中和输入输出比。工具返回带来长Prefill、短Decode时，HySparse2早退价值大；长时间自由生成时，cross-decoder每步仍运行，收益结构不同。代码补全短prompt长输出、文档问答长prompt短输出，会选择不同Pareto点。
+
+公开证据的层级也要统一。论文给出的结构与消融可以支持算法结论，官方代码能确认shape和默认配置，模型卡支持checkpoint口径，第三方kernel只说明某个实现性能。不同来源的倍数不能直接拼接。缺少生产kernel细节时，列出算法读写量与待测指标即可。
+
+一个实用比较表可以包含：候选信号、选择粒度、全域扫描频率、KV来源、indices刷新频率、局部通路、Prefill执行深度、每token长期状态、主kernel访问形状、训练方式。填完这些字段，HySparse系列的独特位置很清楚：它以周期性Full层产生oracle，用跨层共享换cache，以局部通路保表达，再在第二代用桥接减少Prefill深度并把选择细化到token。
+
+路线选择最终回到瓶颈。若质量被代理indexer限制，oracle Full层有吸引力；若Full层周期性带宽已成为瓶颈，轻量indexer或层级搜索更合适；若cache容量最紧，跨层KV reuse价值最大；若TTFT来自深层Prompt计算，KV Bridging直接命中问题。没有一个名称同时解决所有四项，混合设计也必须明确每项成本转移到哪里。
+
+取一个1M token的Decode状态做数量级核算。假设49层模型有5个Full层，其余44层为Sparse，每个Full层保存全长global KV，HySparse每个Sparse层另存128-token local KV。用“token-layer”计容量，global为 $5\times1{,}048{,}576=5{,}242{,}880$，local为 $44\times128=5632$，后者只占约0.107%。此时长期容量几乎完全由5份global memory决定，独立SWA对超长上下文容量影响很小。
+
+同一模型在2048 token上下文中，global token-layers为10240，local仍为5632，local占global的55%。结构没有变化，缓存构成却完全不同。服务若混合短长请求，按1M口径宣称“local可以忽略”会低估短请求显存；按2K口径又会低估超长场景中global压缩的主导作用。调度器可按长度分池，内存模型也应分段。
+
+再看每步读取。每个Full层要读约1M历史KV，五层合计约5M条目；每个Sparse层若读1024个global token加128 local，44层合计50688条目。忽略维度与cache命中，Full读取量仍高出Sparse组约两个数量级。KV Reuse大幅降低容量，Decode带宽却被少数Full层支配。这就是周期性oracle路线的明确交换。
+
+Block连续读取让Sparse的50688条目更容易达到高带宽，Full扫描也规则；主要不规则部分是16个block IDs及其gather起点。HySparse2改成token-level后，逻辑条目可保持1024，地址分散度上升。若每个token落在独立cache line，物理传输可能远高于元素大小；若候选集中或经过page重排，差距缩小。候选位置分布必须加入性能报告。
+
+假设KV每token每Full层为16KiB，这只是便于算数的示例，不代表论文配置。五份1M global KV约80GiB，显然需要张量并行、量化或offload；44层128-token local约88MiB。把元素精度从BF16降到8bit，main tensor理想减半，scale与对齐会让实际比例略高。这个例子说明层数压缩与低比特量化可以乘法叠加，但最终字节必须从真实layout重算。
+
+HySparse2的桥接若仍物化五份cross Full KV，global cache数量级并未因Prefill早退自动消失；它省掉cross prompt逐层计算，并让memory来源集中。若只保存self hidden states、按需投影cross KV，80GiB中的部分可换成更小上游状态与计算，首token延迟会增加。论文结构与服务物化策略要分开描述。
+
+现在推演一个两跳样本。Prompt前部给出“项目赤霄的负责人是林越”，中部给出“林越使用的加密参数为Q7-391”，末尾问题只问“赤霄项目的加密参数是什么”。Full层浅层query可能因词面匹配选中项目定义，却没有选中参数句；第一个Sparse层从项目定义得到负责人，深层query才开始寻找林越。参数所在block不在oracle集合，第二跳被截断。
+
+若Full层的attention在原生训练后学会同时预取项目定义和负责人相关句，两个blocks都进入集合，后续Sparse层可以完成推理。这里Full oracle并非只忠实记录自身即时需求，它通过端到端训练学会为组内后续层准备memory。把Full层冻结、只训练Sparse层，会限制这种协同形成。
+
+将两个事实放在同一个64-token block，任务突然变容易，因为第一跳命中的block顺带带入第二跳证据。把参数句移动到相邻block，又需要第二个槽位。内容语义没变，block布局改变了可达图。这类布局敏感不能只用随机needle发现，需要控制事实间block距离。
+
+HySparse2的token选择不会因两个事实同block自动免费带入第二条，它必须分别选中相关token；好处是槽位不浪费在62个无关邻居上。若oracle仍在第一步没有给参数token分数，细粒度无法解决跨层需求漂移。粒度优化提高集合容量利用率，不替代面向未来层的选择训练。
+
+Recent window也可能改变推演。如果参数句恰好靠近问题，强制窗口直接包含它，global oracle失败被掩盖；把证据移远后才暴露。长上下文评测应分别报告窗口内、刚出窗口和远距离证据，避免模型靠local路径完成本应检验global选择的任务。
+
+对这个样本做四次反事实就能完成归因。第一次强制加入参数block，确认候选瓶颈；第二次用深层独立KV读取同一block，测共享memory；第三次让该深层独立full attention，得到结构上界；第四次保持原配置但换成同义名字，测训练先验。每次只变一个变量，答案从哪一步恢复一目了然。
+
+多证据任务可将上述链条复制m次。若每条链需要两个不同blocks，16-block预算最多容纳8条且没有干扰余量；实际还要保留问题、分隔符和其他heads需求。随着m增加，失败可能来自纯集合容量，即使oracle排序完全正确。此时增加训练数据只能学会更聪明地压缩或中继信息，无法让固定集合直接容纳更多独立地址。
+
+Residual中继提供另一条路。早层读取多个事实后将它们汇总到少数锚点，后续层只需读取锚点，候选地址需求下降。这是稀疏模型可能通过原生训练形成的算法。验证时屏蔽锚点、追踪hidden state中的事实可解码性，能判断模型是否真的在做中继，而不是评测样本恰好简单。
+
+算例最后回到Pareto前沿。增加Full频率能降低跨层需求漂移，却把1M扫描次数从5次提高；扩大blocks提高多证据容量，增加Sparse读取；减小B提高粒度，增加索引和随机访问；HySparse2 bridge降低Prefill深度，不降低所有Decode Full扫描。每个旋钮改善的环节不同，最佳配置取决于输入输出比、任务证据结构和硬件带宽。
+
+因此实验表至少需要两组横轴。算法横轴包含Full比例、B、global预算、window与bridge层数；负载横轴包含上下文长度、输出长度、证据数、证据距离和候选分散度。只在单一长度、单一needle上比较，无法说明结构在真实长上下文中的边界。
+
+当一份实现同时给出按层时间、实际读字节、各级候选覆盖、共享KV输出差和任务尾部结果，HySparse系列的收益才能闭环：Full attention提供高质量选择信号，KV Reuse降低长期副本，SWA或recent window守住局部能力，KV Bridging减少prompt深层计算；相应代价也清楚地落在周期性Full扫描、跨层候选陈旧、memory格式和状态管理上。
+
+还可以从训练梯度观察这条闭环。Full层同时承担普通attention输出和候选生产，其参数收到当前层语言建模梯度，也间接影响随后多层的可访问集合。某个block落在top-k外时，离散选择会切断后续Sparse路径的任务梯度；训练若只依赖硬top-k，Full层很难知道被淘汰block对深层有用。可通过较大训练候选、软选择蒸馏或周期性教师路径提供信号，具体方法需要与论文实现区分。
+
+共享KV也会汇集多层梯度。一个Full value同时被多个Sparse层读取，反向传播将这些消费者的梯度累加到同一memory投影。它可能促使Full KV形成更通用的表示，也可能出现不同层需求冲突。记录来自组内各层的梯度范数与方向相似度，可以判断一份memory是否承担过多互斥功能。
+
+双分支结构提供梯度旁路。训练早期global候选尚不稳定时，local SWA仍能完成大量语言建模，避免整体loss崩溃；同时也可能让模型过度依赖local，global gate长期学不起来。长距离训练样本与gate统计需要配合，确保global通路真正收到任务信号。HySparse2删除独立local分支后，统一候选会改变这种优化动力学。
+
+Bridge训练存在类似问题。Cross-decoder若能从当前生成token的局部状态解决任务，可能忽略self memory；若训练样本缺少长prompt依赖，bridge投影没有压力保存细节。扩大上下文长度不等于增加有效长依赖，数据必须让答案确实需要prompt远处信息。否则早退结构在训练loss上正常，真正长程任务才暴露记忆缺口。
+
+一个可执行的训练监控面板应包含Full block分数熵、cutoff margin、组内dense mass、global/local gate、共享KV替换差、bridge与完整Prefill差，以及这些量随序列长度的变化。Loss只告诉模型总体是否学习，无法指出哪条memory通路正在退化。监控项不必每步全算，可在固定长样本上周期运行。
+
+当margin持续很小，indices容易受精度和数据扰动翻转；当分数熵很低而候选总集中在少数sink blocks，预算可能被热点占用；当组尾dense mass下降而组首稳定，Full间隔过长；当indices稳定但共享KV差扩大，memory格式承载不足；当bridge差只随长度增长，self阶段的长期状态需要检查。每种信号都对应明确后续实验。
+
+线上监控不能运行独立full教师，可以使用训练中建立的代理指标：候选距离分布、不同heads对blocks的投票集中度、page分散度、gate饱和比例与Full层耗时。少量影子流量在隐私允许时跑更保守配置，对比输出与任务成功率。指标漂移先触发扩大预算或降低复用的安全档，再决定是否重新训练。
+
+结构性回退也应提前设计。某些请求需要多证据或精确代码时，可以提高block数、缩短组长，或选择更保守checkpoint；通用请求走默认配置。层表通常固化在训练中，推理时随意切换会产生分布外计算，因此真正的多档服务最好在训练阶段就采样多个预算，并分别验证。
+
+最终，oracle路线最值得保留的思想是利用模型已经支付的Full attention产生后续可复用信息。它把一次昂贵计算的结果同时用于输出、检索和memory布局，让成本在层组内摊销。这个摊销是否划算，由后续层对同一候选和同一KV的可复用程度决定；所有训练、评测和kernel工作都围绕这一个条件展开。
+
+因此，组内复用率应成为核心观测量：同一block被多少后续层真正赋予有效概率，同一份Value对多少层产生可测的输出贡献。候选重合只说明地址相同，实际使用率才能说明Full层付出的扫描与缓存是否被充分摊销。若多数候选只服务Full层自身，oracle机制在该负载上没有形成预期复用。
+
 ## 参考资料
 
 - [HySparse: A Hybrid Sparse Attention Architecture with Oracle Token Selection and KV Cache Sharing](https://arxiv.org/abs/2602.03560)
