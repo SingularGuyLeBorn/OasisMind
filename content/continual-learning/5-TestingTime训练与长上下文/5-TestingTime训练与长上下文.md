@@ -7,7 +7,7 @@ tags: ["continual-learning", "test-time-training", "long-context", "fast-weights
 ---
 # 05 · TestingTime 训练与长上下文
 
-第 4 章的推理阶段更新面对的是分布偏移, 每个样本是一张图. 这一章面对的是长上下文: 输入是一条上万到上百万 token 的序列, 模型要一边读一边把前文压进一个状态. 全注意力保留全部 KV, 每个 token 的开销随长度增长; 线性 RNN 把历史压进一个固定大小的矩阵, 开销与长度无关, 但装得下的东西有限. TTT 这一支的做法是让状态本身是一个模型的权重, 让「读一段上下文」等于「在这段上下文上训练一步」. 本章三篇: [5.1 TTT layers 与 fast weights](./5.1-TTT-layers与fast-weights/5.1-TTT-layers与fast-weights.md) 给出这种层的定义和它与注意力的等价关系, [5.2 LaCT 与 TTT-E2E](./5.2-LaCT与TTT-E2E/5.2-LaCT与TTT-E2E.md) 讲之后两条改进, [5.3 与 attention, SSM, RWKV, Titans 的边界](./5.3-与attention-SSM-RWKV-Titans的边界/5.3-与attention-SSM-RWKV-Titans的边界.md) 把这些方法和线性注意力一族放进同一张表.
+第 4 章的推理阶段更新面对的是分布偏移, 每个样本是一张图. 这一章面对的是长上下文: 输入是一条上万到上百万 token 的序列, 模型要一边读一边把前文压进一个状态. 全注意力保留全部 KV, 每个 token 的开销随长度增长; 线性 RNN 把历史压进一个固定大小的矩阵, 开销与长度无关, 但装得下的东西有限. TTT 这一支的做法是让状态本身是一个模型的权重, 让「读一段上下文」等于「在这段上下文上训练一步」. 本章三篇: [5.1 TTT layers 与 fast weights](./5.1-TTT-layers与fast-weights.md) 给出这种层的定义和它与注意力的等价关系, [5.2 LaCT 与 TTT-E2E](./5.2-LaCT与TTT-E2E.md) 讲之后两条改进, [5.3 与 attention, SSM, RWKV, Titans 的边界](./5.3-与attention-SSM-RWKV-Titans的边界.md) 把这些方法和线性注意力一族放进同一张表.
 
 ## 1 三篇怎样衔接
 
@@ -120,4 +120,4 @@ TTT-E2E 则移动了训练位置. KVB 路线先人为设计键值重建目标，
 
 5.1 建立本章共用的更新式: TTT-Linear 的一步更新可以写成 delta rule, mini-batch 又把状态变化分成块内无擦除与块间覆盖. 5.2 沿着两个缺口继续推进, LaCT 处理大块更新的硬件效率, TTT-E2E 则让快速权重直接承受语言模型损失. 两者仍共同面对精确检索和训练成本问题. 5.3 把这些设计放回线性注意力, Mamba 与 DeltaNet 的坐标中, 用状态生命周期解释它们为何相近, 又为何不能简单互换.
 
-这个生命周期也是本章与 [04 · TestingTime 适应](../04-TestingTime适应/04-TestingTime适应.md) 的分界. 长上下文 TTT 的快速权重服务于一条序列, 通常随序列结束而复位; 持续 TestingTime 适应的状态沿测试流积累, 必须处理跨样本泄漏, 隔离与何时重置. 如果把序列内状态延长到跨请求, 问题就从长上下文记忆滑向了持续适应, 第 4 章的约束也会随之出现.
+这个生命周期也是本章与 [04 · TestingTime 适应](../4-TestingTime适应/4-TestingTime适应.md) 的分界. 长上下文 TTT 的快速权重服务于一条序列, 通常随序列结束而复位; 持续 TestingTime 适应的状态沿测试流积累, 必须处理跨样本泄漏, 隔离与何时重置. 如果把序列内状态延长到跨请求, 问题就从长上下文记忆滑向了持续适应, 第 4 章的约束也会随之出现.
