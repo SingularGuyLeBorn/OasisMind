@@ -29,7 +29,7 @@ published: true
 
 2025 年 2 月公开的 [NSA](https://arxiv.org/abs/2502.11089) 把压缩、选择、滑窗做成三个原生训练分支。Prompt进入某层后，压缩分支把重叠 token 块变成少量 compressed KV，并用这条分支已经算出的分数给原始连续块排名；selection分支回读 top blocks 的原始 KV；window分支单独处理最近 token，三路各做attention再门控相加。它省在训练、Prefill与Decode都不必算完整 $n^2$，代价是三套分支、block 粗粒度和离散选择。后来这篇工作拿下了 [ACL 2025 Best Paper](https://2025.aclweb.org/program/awards/)，也算是这一轮稀疏注意力热潮里相当醒目的一个节点。
 
-同在 2025 年 2 月的 [MoBA](https://arxiv.org/abs/2502.13189) 把历史切成 blocks。每个 query 先用块表示路由，再只对 top-k blocks 内的原始 K/V 做attention，并保留因果局部块。它可以把 $k$ 放大到全部blocks退化回full attention，训练迁移更平滑；代价是路由要准确，block越大越容易把无关邻居一起读进来，block越小又越难把GPU喂饱。
+同在 2025 年 2 月的 [MoBA](./02-动态路由/04-训练原生稀疏/02-MoBA.md) 把历史切成 blocks。每个 query 先用块表示路由，再只对 top-k blocks 内的原始 K/V 做attention，并保留因果局部块。它可以把 $k$ 放大到全部blocks退化回full attention，训练迁移更平滑；代价是路由要准确，block越大越容易把无关邻居一起读进来，block越小又越难把GPU喂饱。
 
 2025 年 9 月发布实验版本、12 月报告完整模型的 [DeepSeek-V3.2 / DSA](https://arxiv.org/abs/2512.02556) 又换了一种数据流：每层当前hidden state仍生成自己的主attention query与MLA KV，同时用轻量 Lightning Indexer 扫描历史 index keys，选出 token级top-k，再去主KV中gather。别把“轻量索引”理解成免费，它仍要全历史扫描低维状态；它省的是昂贵主KV的QK与读取，代价是索引器训练、top-k和随机gather。
 
