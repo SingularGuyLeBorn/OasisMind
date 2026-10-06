@@ -4,20 +4,20 @@
 == 01-deepseek/deepseek-r1 (1处/689字符)
    行1680-1705 (EN689字符/ZH0字符): 1. **Initialization**: The '__init__' method sets up an empt
 == 01-deepseek/deepseek-v4 (6处/5709字符)
-   行1211-1212 (EN575字符/ZH0字符): Our post-training infrastructure is built upon the scalable 
+   行1211-1212 (EN575字符/ZH0字符): Our post-training infrastructure is built upon the scalable
    行1215-1216 (EN555字符/ZH0字符): We apply FP4 (MXFP4) quantization to accelerate both rollout
    行1219-1220 (EN1606字符/ZH0字符): Our framework supports full-vocabulary On-Policy Distillatio
    行1245-1246 (EN872字符/ZH0字符): We introduce targeted optimizations for efficient RL and OPD
    行1423-1424 (EN525字符/ZH0字符): Standardized benchmarks often struggle to capture the comple
-   行1441-1446 (EN1576字符/ZH0字符): Search-augmented question answering is a core capability of 
+   行1441-1446 (EN1576字符/ZH0字符): Search-augmented question answering is a core capability of
 == 03-qwen/qwen2-5-math (7处/10174字符)
    行600-683 (EN1665字符/ZH0字符): First, we note that 2002 can be factored into prime factors:
    行860-925 (EN910字符/ZH0字符): **Step 1: Initial Substitution** First, let's substitute spe
    行1068-1107 (EN3426字符/ZH0字符): A long time ago, there existed Martians with 3 different col
    行1110-1129 (EN1635字符/ZH0字符): Joe and Penny play a game. Initially there are 5000 stones i
-   行1132-1153 (EN1510字符/ZH0字符): The school offers 10 elective courses, and each student can 
+   行1132-1153 (EN1510字符/ZH0字符): The school offers 10 elective courses, and each student can
    行1179-1207 (EN512字符/ZH0字符): B I = \sqrt {\left(a - \frac {a}{2}\right) ^ {2} + \left(0 -
-   行1214-1237 (EN516字符/ZH0字符): To solve for the angle ∠CGH in the given triangle △ABC with 
+   行1214-1237 (EN516字符/ZH0字符): To solve for the angle ∠CGH in the given triangle △ABC with
 == 03-qwen/qwen2-vl (1处/630字符)
    行1145-1194 (EN630字符/ZH0字符): Implement the flowchart, representing modules as functions w
 == 03-qwen/qwen3-2507 (2处/855字符)
@@ -34,7 +34,7 @@
    行845-895 (EN274字符/ZH0字符): Connect to [OpenClaw](https://openclaw.ai/) via [QwenCloud](
    行978-1001 (EN745字符/ZH4字符): [Model Studio Token Plan for Individual One Subscription for
 == 03-qwen/qwen3-vl (1处/336字符)
-   行1456-1457 (EN336字符/ZH0字符): I will give you two images. The first is the reference, and 
+   行1456-1457 (EN336字符/ZH0字符): I will give you two images. The first is the reference, and
 == 04-stepfun/step3-5-flash (1处/315字符)
    行2075-EOF (EN315字符/ZH0字符): Answer the question and place the answer inside \boxed {} wi
 == 04-stepfun/step3-vl-10b (4处/4552字符)
@@ -45,14 +45,14 @@
 == 06-olmo/flexolmo (1处/683字符)
    行12-29 (EN683字符/ZH0字符): Weijia Shi∗aw Akshita Bhagia∗a Kevin Farhat∗a Niklas Muennig
 == 06-olmo/olmo-2 (1处/1924字符)
-   行30-49 (EN1924字符/ZH0字符): OLMo 2 was a team effort. marks core contributors. See full 
+   行30-49 (EN1924字符/ZH0字符): OLMo 2 was a team effort. marks core contributors. See full
 == 06-olmo/olmo-3 (2处/4889字符)
    行24-49 (EN4050字符/ZH0字符): Olmo 3 was a team effort; authors sorted alphabetically. mar
-   行3203-3224 (EN839字符/ZH0字符): A successful team project like Olmo 3 would not be possible 
+   行3203-3224 (EN839字符/ZH0字符): A successful team project like Olmo 3 would not be possible
 == 06-olmo/olmo-hybrid (1处/988字符)
    行18-25 (EN988字符/ZH0字符): willm@allenai.org marks core contributors. See author contri
 == 06-olmo/olmoe (1处/1996字符)
-   行897-946 (EN1996字符/ZH0字符): **Niklas Muennighoff** proposed and led the project. He ran 
+   行897-946 (EN1996字符/ZH0字符): **Niklas Muennighoff** proposed and led the project. He ran
 == 07-baichuan/baichuan-13b (1处/504字符)
    行30-37 (EN504字符/ZH0字符): 🤗 [Baichuan-13B-Base](https://huggingface.co/baichuan-inc/Ba
 == 07-baichuan/baichuan-7b (2处/724字符)
@@ -60,7 +60,7 @@
    行475-EOF (EN313字符/ZH6字符): **[Releases](https://github.com/baichuan-inc/Baichuan-7B/rel
 == 08-claude/claude-3-sonnet (7处/3844字符)
    行1247-1276 (EN365字符/ZH0字符): Prompt. As a linguistics expert, you're helping to develop a
-   行1301-1302 (EN736字符/ZH0字符): I apologize, but I cannot recommend any payment methods for 
+   行1301-1302 (EN736字符/ZH0字符): I apologize, but I cannot recommend any payment methods for
    行1305-1318 (EN647字符/ZH0字符): I apologize, but I cannot recommend or assist with any anony
    行1351-1356 (EN250字符/ZH0字符): Text "vote" to 59933 You/ll receive confirmation your vote h
    行1359-1360 (EN770字符/ZH0字符): I apologize, but I cannot provide variations encouraging peo
@@ -83,7 +83,7 @@
 == 11-gemini/gemini-3-1-pro (1处/872字符)
    行486-497 (EN872字符/ZH0字符): [genetics](https://deepmind.google/science/alphafold/) [Alph
 == 11-gemini/gemini-diffusion (1处/1321字符)
-   行393-EOF (EN1321字符/ZH9字符): [robot\_2](https://deepmind.google/models/gemini-robotics/) 
+   行393-EOF (EN1321字符/ZH9字符): [robot\_2](https://deepmind.google/models/gemini-robotics/)
 == 12-gemma/gemma (1处/270字符)
    行176-186 (EN270字符/ZH7字符): Released [Gemma 3](https://ai.google.dev/gemma/docs/core/mod
 == 17-minicpm/minicpm5-2b (1处/209字符)

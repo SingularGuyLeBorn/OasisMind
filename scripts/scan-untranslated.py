@@ -74,7 +74,7 @@ for k, v in sorted(report.items()):
     total = sum(g[2] for g in v)
     lines.append(f'== {k} ({len(v)}处/{total}字符)')
     for s, e, en, zh, first in v:
-        lines.append(f'   行{s}-{e} (EN{en}字符/ZH{zh}字符): {first}')
+        lines.append(f'   行{s}-{e} (EN{en}字符/ZH{zh}字符): {first.rstrip()}')
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 open(OUT, 'w', encoding='utf-8').write('# 正文散文未翻译扫描 (判定: EN积累>200字符且之后中文<max(50,6%))\n# 由 scripts/scan-untranslated.py 生成, 行号为 bi 文件内行号\n\n' + '\n'.join(lines) + '\n')
 total = sum(sum(g[2] for g in v) for v in report.values())
