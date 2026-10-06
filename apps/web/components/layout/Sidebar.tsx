@@ -34,8 +34,8 @@ import {
   Kanban,
 } from "lucide-react";
 import { navItemAllowed, PACKS_FULL, type PackFlags } from "@oasismind/shared";
+import { OasisMindLogo } from "@oasismind/brand";
 import { cn } from "@/lib/utils";
-import { OasisMindLogo } from "@/lib/icons";
 import { useNativeCapabilities } from "@/lib/hooks";
 
 interface SidebarProps {

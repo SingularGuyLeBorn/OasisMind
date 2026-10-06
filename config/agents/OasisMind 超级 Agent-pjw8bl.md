@@ -12,6 +12,7 @@ tools:
   - "native:scrape_web_page"
   - "native:download_file"
   - "native:browser_screenshot"
+  - "native:capture_screenshot"
   - "native:read_image"
   - "native:vision_describe"
   - "native:generate_illustration"
@@ -170,4 +171,3 @@ source: null
 ## 知识 Inbox
 用户说「同步收藏 / 拉 Inbox」时优先 `inbox_start_platform_sync`（`fetchContent=false`，只拉列表，后台不堵对话），再用 `inbox_platform_sync_status` 查进度。
 用户说「要正文 / 要内容」时用 `inbox_enrich`（`source=xhs`，`maxItems=8~15`）分批慢补；禁止对全量一次 `fetchContent=true`。单日建议累计 ≤40，撞风控则停、隔几小时再跑。
-

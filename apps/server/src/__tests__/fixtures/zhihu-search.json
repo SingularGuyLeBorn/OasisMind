@@ -1,0 +1,55 @@
+{
+  "Code": 0,
+  "Message": "success",
+  "Data": {
+    "HasMore": false,
+    "SearchHashId": "fixture-search-id",
+    "Items": [
+      {
+        "Title": "Agent 工程实践",
+        "ContentType": "Article",
+        "ContentID": "1001",
+        "ContentText": "从状态机、工具权限和可观测性三个方面讨论 Agent 工程。",
+        "Url": "https://zhuanlan.zhihu.com/p/1001?utm_source=openapi",
+        "CommentCount": 18,
+        "VoteUpCount": 320,
+        "AuthorName": "甲",
+        "AuthorUrlToken": "author-a",
+        "EditTime": 1767225600,
+        "AuthorityLevel": "3",
+        "RankingScore": 0.91,
+        "Topics": [{ "Name": "人工智能" }, { "Name": "AI Agent" }]
+      },
+      {
+        "Title": "如何设计可靠的智能体？",
+        "ContentType": "Answer",
+        "ContentID": "2002",
+        "QuestionId": "9001",
+        "QuestionTitle": "如何设计可靠的智能体？",
+        "ContentText": "关键是把不变量收进状态机。",
+        "Url": "https://www.zhihu.com/question/9001/answer/2002",
+        "CommentCount": 44,
+        "VoteUpCount": 120,
+        "AuthorName": "乙",
+        "AuthorUrlToken": "author-b",
+        "CreatedTime": 1751328000,
+        "RankingScore": 0.99,
+        "Tags": ["软件工程", "AI Agent"]
+      },
+      {
+        "Title": "旧回答",
+        "ContentType": "Answer",
+        "ContentID": "2003",
+        "ContentText": "用于测试时间和关注过滤。",
+        "Url": "https://www.zhihu.com/question/9002/answer/2003",
+        "CommentCount": 2,
+        "VoteUpCount": 8,
+        "AuthorName": "丙",
+        "AuthorUrlToken": "author-c",
+        "CreatedTime": 1609459200,
+        "RankingScore": 0.4,
+        "Topics": [{ "name": "人工智能" }]
+      }
+    ]
+  }
+}

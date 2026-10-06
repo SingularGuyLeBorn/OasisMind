@@ -19,20 +19,21 @@ test.describe("Chat 工具时间线摘要", () => {
     const fixture = await createSessionWithToolHints();
 
     await page.goto(`/chat?sessionId=${fixture.sessionId}`);
-    await expect(page.getByRole("heading", { name: "Agent 对话" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: fixture.title })).toBeVisible({ timeout: 30_000 });
 
     const hint = page.getByTestId("tool-timing-hint").first();
     await expect(hint).toBeVisible({ timeout: 15_000 });
     await expect(hint).toContainText("88ms");
     await expect(hint).toContainText("tavily");
-    await expect(page.getByTestId("tool-pill").filter({ hasText: "web_search" })).toBeVisible();
+    // 展示名已经产品化为 WebSearch；用工具协议名属性锁定节点，避免 UI 文案耦合。
+    await expect(page.locator('[data-testid="tool-pill"][data-tool="web_search"]')).toBeVisible();
   });
 
   test("历史会话：web_search infoSource-scoped 显示信息源数量", async ({ page }) => {
     const fixture = await createSessionWithInfoSourceScopedHint();
 
     await page.goto(`/chat?sessionId=${fixture.sessionId}`);
-    await expect(page.getByRole("heading", { name: "Agent 对话" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: fixture.title })).toBeVisible({ timeout: 30_000 });
 
     const hint = page.getByTestId("tool-timing-hint").first();
     await expect(hint).toBeVisible({ timeout: 15_000 });
@@ -45,7 +46,7 @@ test.describe("Chat 工具时间线摘要", () => {
     const fixture = await createSessionWithReadArticleHint();
 
     await page.goto(`/chat?sessionId=${fixture.sessionId}`);
-    await expect(page.getByRole("heading", { name: "Agent 对话" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: fixture.title })).toBeVisible({ timeout: 30_000 });
 
     const hint = page.getByTestId("tool-timing-hint").first();
     await expect(hint).toBeVisible({ timeout: 15_000 });
@@ -58,7 +59,7 @@ test.describe("Chat 工具时间线摘要", () => {
     const fixture = await createSessionWithShortArticleHint();
 
     await page.goto(`/chat?sessionId=${fixture.sessionId}`);
-    await expect(page.getByRole("heading", { name: "Agent 对话" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: fixture.title })).toBeVisible({ timeout: 30_000 });
 
     const hint = page.getByTestId("tool-timing-hint").first();
     await expect(hint).toBeVisible({ timeout: 15_000 });
@@ -72,7 +73,7 @@ test.describe("Chat 工具时间线摘要", () => {
     const fixture = await createSessionWithScrapeHint();
 
     await page.goto(`/chat?sessionId=${fixture.sessionId}`);
-    await expect(page.getByRole("heading", { name: "Agent 对话" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: fixture.title })).toBeVisible({ timeout: 30_000 });
 
     const hint = page.getByTestId("tool-timing-hint").first();
     await expect(hint).toBeVisible({ timeout: 15_000 });
@@ -85,7 +86,7 @@ test.describe("Chat 工具时间线摘要", () => {
     const fixture = await createSessionWithFailedToolHint();
 
     await page.goto(`/chat?sessionId=${fixture.sessionId}`);
-    await expect(page.getByRole("heading", { name: "Agent 对话" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: fixture.title })).toBeVisible({ timeout: 30_000 });
 
     const hint = page.getByTestId("tool-timing-hint").first();
     await expect(hint).toBeVisible({ timeout: 15_000 });

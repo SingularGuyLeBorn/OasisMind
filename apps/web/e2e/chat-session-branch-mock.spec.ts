@@ -1815,7 +1815,7 @@ test.describe("Chat Mock — 对话分支", () => {
   });
 
   test("另写仍是同一会话，不是 session.fork 复制", async ({ page }) => {
-    const sessionId = await seedGreetingSearchFork(page);
+    await seedGreetingSearchFork(page);
     await expectSessionIdUnchanged(page, sessionId);
     await expectNotACopiedSession(sessionId);
     await expect(
@@ -2984,7 +2984,7 @@ test.describe("Chat Mock — 对话分支", () => {
 
   test("压缩后再发：LLM 上下文不含搜索枝", async ({ page }) => {
     test.setTimeout(120_000);
-    const sessionId = await seedGreetingSearchFork(page);
+    await seedGreetingSearchFork(page);
     await page.locator('[data-testid="chat-tree-branch-btn"][data-active="false"]').click();
     await expect(page.getByTestId("assistant-message-bubble").filter({ hasText: GREETING })).toBeVisible({
       timeout: 15_000,

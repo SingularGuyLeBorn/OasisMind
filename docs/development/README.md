@@ -106,7 +106,7 @@ OasisMind/
 
 ## 3. 实体与 CRUD
 
-业务 CRUD 实体约 **22 个 Service**（Prisma schema ~30 model，含支撑表）。每个业务实体在后端有完整的 `create / getById / list / update / delete`，多数有对应管理页。部分低耦合 Service 已拆至 `infra/entityServices/`。
+业务 CRUD 实体约 **21 个 Service**（Prisma schema ~30 model，含支撑表）。每个业务实体在后端有完整的 `create / getById / list / update / delete`，多数有对应管理页。部分低耦合 Service 已拆至 `infra/entityServices/`。
 
 | # | 实体 | 管理页面 | 完整 CRUD | 数据源文件 |
 | --- | --- | --- | --- | --- |
@@ -131,7 +131,6 @@ OasisMind/
 | 19 | Credential | `/credentials` | ✅ | DB |
 | 20 | Garden | `/gardens` | ✅ | `content/{gardenId}/_garden.md` |
 | 21 | InboxItem | `/inbox` | ✅ | DB + 平台同步 |
-| 22 | Comment | 文章页留言 | ✅ | DB |
 
 ### 3.1 列表接口统一格式
 
@@ -267,6 +266,8 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 | `pnpm dev:server` | 只启动后端 |
 | `pnpm db:sync` | Markdown/YAML ↔ SQLite 同步 |
 | `pnpm db:backup` | 备份 `dev.db` |
+| `pnpm channel:probe` | 检查 QQ / 微信本地配置；加 `-- --live` 做无消息发送的真实平台探测 |
+| `pnpm zhihu -- --help` | 知乎只读 CLI；搜索、热榜、问题回答、关注过滤、正文、评论与本地保存 |
 | `pnpm build` | 构建前端 |
 | `pnpm lint` | 全仓库 lint |
 | `pnpm test` | 全仓库 Vitest |
@@ -285,5 +286,7 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 - 想看 Swarm / 队列 / P0 架构决策：`design-decisions.md`；落地 PR 拆分：`p0-agent-arch-pr-split.md`。
 - 2026-08 Swarm 出处合同 + RSI 经验门 + 模块全景：`swarm-rsi-session-2026-08.md`。
 - 算法可视化（Remotion Code Motion Explainer）：`algo-viz.md`。
+- QQ / 微信多模态、截图回传与故障排查：`channel-operations.md`。
+- 知乎开放平台、登录态与完整 CLI：`zhihu-cli.md`。
 - 可执行规格（状态×事件表，按行写测）：`prd-chat-stop.md`、`prd-chat-queue.md`、`prd-inbox-distill.md`、`prd-approval.md`、`prd-cron.md`、`prd-runs.md`、`prd-chat-goal.md`、`prd-ask-user.md`。
 - 测试分层与满分标准：`testing.md`。施工 Goal：`prompts/test-suite-perfect-goal-prompt.md`。

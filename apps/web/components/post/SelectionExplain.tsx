@@ -14,7 +14,7 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { Loader2, Sparkles, X } from "lucide-react";
+import { Highlighter, Loader2, MessageSquareText, Sparkles, Underline, Waves, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { PostContent } from "@/components/post/PostContent";
@@ -38,6 +38,8 @@ export interface SelectionExplainProps {
   garden: string;
   /** 保活实例隐藏时置 false：摘 document 级监听并收起浮层，避免多实例重复触发 */
   enabled?: boolean;
+  /** 阅读态选区动作统一收在同一工具条，避免 AI 解释与私人批注互相遮挡。 */
+  onCreateAnnotation?: (range: Range, style: "highlight" | "underline" | "wavy") => void;
 }
 
 export function SelectionExplain({
@@ -46,6 +48,7 @@ export function SelectionExplain({
   slug,
   garden,
   enabled = true,
+  onCreateAnnotation,
 }: SelectionExplainProps) {
   const panelId = useId();
   const [quote, setQuote] = useState("");
@@ -55,9 +58,10 @@ export function SelectionExplain({
   const [panelOpen, setPanelOpen] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const btnRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const rangeRectRef = useRef<DOMRect | null>(null);
+  const rangeRef = useRef<Range | null>(null);
 
   const explainMut = trpc.post.explainSelection.useMutation();
 
@@ -70,6 +74,7 @@ export function SelectionExplain({
     setExplanation(null);
     setError(null);
     rangeRectRef.current = null;
+    rangeRef.current = null;
   }, []);
 
   const placeNearSelection = useCallback((rect: DOMRect, width: number): AnchorPos => {
@@ -96,10 +101,11 @@ export function SelectionExplain({
       return;
     }
     rangeRectRef.current = rect;
+    rangeRef.current = range.cloneRange();
     setQuote(text);
     setSurrounding(readSurrounding(range));
-    setBtnPos(placeNearSelection(rect, 88));
-  }, [containerRef, panelOpen, placeNearSelection]);
+    setBtnPos(placeNearSelection(rect, onCreateAnnotation ? 312 : 88));
+  }, [containerRef, onCreateAnnotation, panelOpen, placeNearSelection]);
 
   // 保活实例被隐藏时收起浮层/按钮：渲染期调整（eslint 禁止 effect 内同步 setState）。
   // 不调 clearUi——它写 rangeRectRef，渲染期禁碰 ref；rect 会在下次划线时被覆盖。
@@ -196,6 +202,13 @@ export function SelectionExplain({
       });
   };
 
+  const runAnnotation = (style: "highlight" | "underline" | "wavy") => {
+    const range = rangeRef.current;
+    if (!range || !onCreateAnnotation) return;
+    onCreateAnnotation(range.cloneRange(), style);
+    setBtnPos(null);
+  };
+
   const btnStyle: CSSProperties | undefined = btnPos
     ? {
         position: "fixed",
@@ -223,22 +236,61 @@ export function SelectionExplain({
   return createPortal(
     <>
       {btnPos && !panelOpen && (
-        <button
+        <div
           ref={btnRef}
-          type="button"
           style={btnStyle}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={runExplain}
           className={cn(
-            "om-selection-explain inline-flex items-center gap-1 rounded-full border border-[var(--om-divider)]",
-            "bg-[var(--om-bg)] px-2.5 py-1 text-xs font-medium text-[var(--om-brand-deep)] shadow-md",
-            "transition hover:border-[var(--om-brand)]/50 hover:bg-[var(--om-brand-soft)]/50",
+            "om-selection-explain inline-flex items-center gap-0.5 rounded-xl border border-[var(--om-divider)]",
+            "bg-[var(--om-bg)] p-1 text-xs font-medium text-[var(--om-brand-deep)] shadow-lg",
           )}
           data-testid="selection-explain-btn"
         >
-          <Sparkles className="h-3.5 w-3.5" />
-          解释
-        </button>
+          {onCreateAnnotation && (
+            <>
+              <button
+                type="button"
+                onClick={() => runAnnotation("highlight")}
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 transition hover:bg-amber-50"
+                title="高亮并写批注"
+              >
+                <Highlighter className="h-3.5 w-3.5 text-amber-500" />
+                高亮
+              </button>
+              <button
+                type="button"
+                onClick={() => runAnnotation("underline")}
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 transition hover:bg-blue-50"
+                title="下划线并写批注"
+              >
+                <Underline className="h-3.5 w-3.5 text-blue-600" />
+                下划线
+              </button>
+              <button
+                type="button"
+                onClick={() => runAnnotation("wavy")}
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 transition hover:bg-rose-50"
+                title="波浪线并写批注"
+              >
+                <Waves className="h-3.5 w-3.5 text-rose-500" />
+                波浪线
+              </button>
+              <span className="mx-0.5 h-5 w-px bg-[var(--om-divider)]" />
+            </>
+          )}
+          <button
+            type="button"
+            onClick={runExplain}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 transition hover:bg-[var(--om-brand-soft)]/60"
+          >
+            {onCreateAnnotation ? (
+              <MessageSquareText className="h-3.5 w-3.5" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            AI 解释
+          </button>
+        </div>
       )}
 
       {panelOpen && panelPos && (

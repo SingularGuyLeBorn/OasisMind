@@ -6,6 +6,7 @@
  * DB 唯一键：(garden, slug)；slug 仍是该根下相对路径。
  */
 
+import fs from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
 import { getAppConfig } from "../../infra/config.js";
@@ -24,6 +25,19 @@ interface PostData {
   published: boolean;
   category: string | null;
   tags: string;
+}
+
+/**
+ * YAML 已损坏时只剥离最外层 frontmatter 包装，不读取其中任何字段。
+ * 这不是发布状态的容错解析：published 会在调用方被无条件锁成 false。
+ */
+function stripBrokenFrontmatterEnvelope(raw: string): string {
+  const normalized = raw.replace(/^\uFEFF/, "");
+  const lines = normalized.split(/\r?\n/);
+  if (lines[0]?.trim() !== "---") return normalized;
+  const closingIndex = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
+  if (closingIndex < 0) return normalized;
+  return lines.slice(closingIndex + 1).join("\n").replace(/^\n+/, "");
 }
 
 export function createPostGardenSyncer(garden: string): Syncer<PostData> {
@@ -47,15 +61,26 @@ export function createPostGardenSyncer(garden: string): Syncer<PostData> {
     },
 
     async scanFile(filePath: string, contentDir: string): Promise<SyncRecord<PostData> | null> {
+      let slug: string;
+      let mtime: Date;
       try {
-        const slug = filePathToSlug(contentDir, filePath);
-        const mtime = getFileMtime(filePath);
+        slug = filePathToSlug(contentDir, filePath);
+        mtime = getFileMtime(filePath);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`  ❌ [Post:${garden} 文件不可读] ${filePath}:`, msg);
+        return null;
+      }
+
+      try {
         const { data, content } = parseMarkdownFile(filePath);
 
         const title = typeof data.title === "string" ? data.title : slug;
         const category = typeof data.category === "string" ? data.category : null;
         const excerpt = typeof data.excerpt === "string" ? data.excerpt : null;
-        const published = typeof data.published === "boolean" ? data.published : true;
+        // 磁盘文章发布采用 fail-closed：仅 YAML 布尔值 true 可公开。
+        // 缺失、字符串 "true"、数字 1 等都保持草稿，避免旧文或损坏 frontmatter 意外泄露。
+        const published = data.published === true;
 
         let tags = "";
         if (Array.isArray(data.tags)) {
@@ -71,8 +96,30 @@ export function createPostGardenSyncer(garden: string): Syncer<PostData> {
         };
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        console.error(`  ❌ [Post:${garden} 解析失败] ${filePath}:`, msg);
-        return null;
+        try {
+          const raw = fs.readFileSync(filePath, "utf8");
+          // [OM-FREEPLAY] 用户只规定损坏 YAML 必须保持未发布；缓存中的标题和分类无法可信读取，
+          // 因此用 slug 作标题、其余元数据置空，正文仅做分隔符级剥离，避免旧 published=true 残留。
+          console.warn(`  ⚠️ [Post:${garden} frontmatter 损坏，已按未发布同步] ${filePath}:`, msg);
+          return {
+            slug,
+            mtime,
+            data: {
+              garden,
+              slug,
+              title: slug,
+              content: stripBrokenFrontmatterEnvelope(raw),
+              excerpt: null,
+              published: false,
+              category: null,
+              tags: "",
+            },
+          };
+        } catch (readError: unknown) {
+          const readMessage = readError instanceof Error ? readError.message : String(readError);
+          console.error(`  ❌ [Post:${garden} 解析失败且无法安全读取] ${filePath}:`, readMessage);
+          return null;
+        }
       }
     },
 

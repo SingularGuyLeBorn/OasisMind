@@ -15,7 +15,7 @@ import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Ban, Check, ChevronDown, FileText, ImageOff, Loader2, RefreshCw, X } from "lucide-react";
+import { Ban, Check, ChevronDown, FileText, ImageOff, Loader2, Paperclip, RefreshCw, X } from "lucide-react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import {
   buildChatTimeline,
@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import {
   isChatImageAttachment,
   isChatPostAttachment,
+  isChannelAttachment,
   type ChatAttachment,
   type ChatMessage,
 } from "@oasismind/shared";
@@ -101,6 +102,45 @@ function UserAttachmentChips({
                 </span>
               </span>
             </Link>
+          );
+        }
+        if (isChannelAttachment(att)) {
+          if (att.kind === "image" && att.previewUrl) {
+            return (
+              <div
+                key={att.id}
+                className="relative overflow-hidden rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] shadow-sm"
+                title={`${att.fileName} · ${att.mimeType}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={att.previewUrl}
+                  alt={att.fileName}
+                  loading="lazy"
+                  className="max-h-40 max-w-[min(100%,16rem)] object-contain"
+                />
+              </div>
+            );
+          }
+          return (
+            <div
+              key={att.id}
+              className={cn(
+                "inline-flex max-w-[min(100%,20rem)] items-start gap-2 rounded-xl border px-2.5 py-1.5 text-left shadow-sm",
+                att.status === "failed"
+                  ? "border-red-300 bg-red-50 text-red-700"
+                  : "border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] text-[var(--om-text-1)]",
+              )}
+              title={att.error || att.localPath || att.remoteUrl}
+            >
+              <Paperclip className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-medium">{att.fileName}</span>
+                <span className="block truncate text-[10px] opacity-70">
+                  {att.kind} · {att.status === "failed" ? att.error : `${att.mimeType} · ${att.size ?? 0} B`}
+                </span>
+              </span>
+            </div>
           );
         }
         if (!isChatImageAttachment(att)) return null;

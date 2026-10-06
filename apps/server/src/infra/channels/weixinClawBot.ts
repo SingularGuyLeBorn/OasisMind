@@ -5,16 +5,19 @@
  * 官方 openclaw-weixin-cli 只装 OpenClaw，这里直连 iLink。
  */
 
-import fs from "node:fs";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
+import type { ChannelAttachment } from "@oasismind/shared";
 import { bootDetail } from "../bootLog.js";
-import type { ChannelAdapter, ChannelReplyChunk, UnifiedMessage } from "../messageGateway.js";
+import { getAppConfig } from "../config.js";
+import type {
+  ChannelAdapter,
+  ChannelReplyChunk,
+  ChannelSendTarget,
+  UnifiedMessage,
+} from "../messageGateway.js";
 import { handleIncomingMessage } from "../messageGateway.js";
 import { planImReply } from "./imReplyText.js";
 import {
-  WEIXIN_ILINK_DEFAULT_BASE,
-  type WeixinIlinkSession,
   type WeixinMediaKind,
   extractWeixinText,
   fetchWeixinQr,
@@ -31,19 +34,27 @@ import {
   splitWeixinText,
 } from "./weixinIlink.js";
 import {
+  createTextChannelAttachment,
+  materializeReplyChannelReference,
+} from "./channelAttachment.js";
+import { createMultimodalChannelCapabilities } from "./channelCapabilities.js";
+import {
+  deriveChannelIdempotencyKey,
+  sendChannelAttachment,
+} from "./channelTransfer.js";
+import {
   composeWeixinUserText,
   extraOutboundMedia,
   loadWeixinMediaBytes,
   materializeWeixinInboundMedia,
   sendWeixinLocalMedia,
 } from "./weixinMedia.js";
-
-export type WeixinClawBotConfig = {
-  enabled: boolean;
-  allowedUserIds: string[];
-  baseUrl: string;
-  sessionDir: string;
-};
+import {
+  deleteWeixinClawBotSession,
+  readWeixinClawBotSession,
+  writeWeixinClawBotSession,
+  type WeixinClawBotConfig,
+} from "./weixinSession.js";
 
 type ReplyCtx = {
   toUserId: string;
@@ -73,48 +84,6 @@ export function __resetWeixinClawBotControllerForTests(): void {
   controller = null;
 }
 
-export function loadWeixinClawBotConfigFromEnv(dataDir?: string): WeixinClawBotConfig {
-  const yamlOff = process.env.WEIXIN_CLAWBOT_ENABLED === "false";
-  const allowed = (process.env.WEIXIN_CLAWBOT_ALLOWED_USER_IDS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const baseUrl = (process.env.WEIXIN_CLAWBOT_API_BASE || WEIXIN_ILINK_DEFAULT_BASE).trim();
-  const root = dataDir || process.env.OM_DATA_DIR || path.join(process.cwd(), "data");
-  return {
-    enabled: !yamlOff,
-    allowedUserIds: allowed,
-    baseUrl,
-    sessionDir: path.join(root, "weixin-clawbot"),
-  };
-}
-
-function sessionFile(dir: string): string {
-  return path.join(dir, "session.json");
-}
-
-function readSession(dir: string): WeixinIlinkSession | null {
-  try {
-    const raw = fs.readFileSync(sessionFile(dir), "utf8");
-    const parsed = JSON.parse(raw) as Partial<WeixinIlinkSession>;
-    if (!parsed.botToken) return null;
-    return {
-      botToken: String(parsed.botToken),
-      baseUrl: String(parsed.baseUrl || WEIXIN_ILINK_DEFAULT_BASE),
-      getUpdatesBuf: String(parsed.getUpdatesBuf || ""),
-      boundUserId: String(parsed.boundUserId || ""),
-      accountId: String(parsed.accountId || ""),
-      lastContextToken: String(parsed.lastContextToken || ""),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(dir: string, session: WeixinIlinkSession): void {
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(sessionFile(dir), JSON.stringify(session), { encoding: "utf8", mode: 0o600 });
-}
 
 export const WEIXIN_POLL_GAP_MS = 400;
 export const WEIXIN_POLL_GAP_MAX_MS = 8000;
@@ -123,14 +92,6 @@ export const WEIXIN_POLL_GAP_MAX_MS = 8000;
 export function nextWeixinPollGap(ok: boolean, prevMs: number): number {
   if (ok) return WEIXIN_POLL_GAP_MS;
   return Math.min(WEIXIN_POLL_GAP_MAX_MS, Math.max(prevMs, WEIXIN_POLL_GAP_MS) * 2);
-}
-
-function deleteSession(dir: string): void {
-  try {
-    fs.unlinkSync(sessionFile(dir));
-  } catch {
-    /* ignore */
-  }
 }
 
 async function toImageDataUrl(payload: string): Promise<string> {
@@ -155,7 +116,7 @@ export function createWeixinClawBotAdapter(
   let running = false;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let qrPollTimer: ReturnType<typeof setTimeout> | null = null;
-  let session = readSession(cfg.sessionDir);
+  let session = readWeixinClawBotSession(cfg.sessionDir);
   const replyCtx = new Map<string, ReplyCtx>();
   const lastContextByUser = new Map<string, string>();
   let lastPersisted = session ? JSON.stringify(session) : "";
@@ -166,7 +127,7 @@ export function createWeixinClawBotAdapter(
     const json = JSON.stringify(session);
     if (json === lastPersisted) return;
     lastPersisted = json;
-    writeSession(cfg.sessionDir, session);
+    writeWeixinClawBotSession(cfg.sessionDir, session);
   };
 
   const stopTimers = () => {
@@ -211,9 +172,11 @@ export function createWeixinClawBotAdapter(
     }
     const mediaItems = parseWeixinMediaItems(msg);
     const media =
-      mediaItems.length > 0 ? await materializeWeixinInboundMedia(mediaItems, fetchImpl) : { mediaLines: [], chatAttachments: [] };
+      mediaItems.length > 0
+        ? await materializeWeixinInboundMedia(mediaItems, fetchImpl)
+        : { mediaLines: [], attachments: [] };
     const text = composeWeixinUserText({ text: rawText, mediaLines: media.mediaLines });
-    if (!text && media.chatAttachments.length === 0) return;
+    if (!text && media.attachments.length === 0) return;
     rememberContext(fromUserId, contextToken);
     replyCtx.set(eventId, { toUserId: fromUserId, contextToken });
     handleIncomingMessage({
@@ -225,7 +188,7 @@ export function createWeixinClawBotAdapter(
       },
       payload: {
         text: text || "（请查看附件）",
-        attachments: media.chatAttachments.length ? media.chatAttachments : undefined,
+        attachments: media.attachments.length ? media.attachments : undefined,
       },
       meta: { eventId, replyTo: eventId },
     }).catch((err) => {
@@ -313,7 +276,9 @@ export function createWeixinClawBotAdapter(
         tick().catch(() => {});
       }, 1500);
     };
-    void tick();
+    tick().catch((err) => {
+      lastError = err instanceof Error ? err.message : String(err);
+    });
     return { qrcode: qr.qrcode, imageDataUrl };
   };
 
@@ -321,17 +286,69 @@ export function createWeixinClawBotAdapter(
     running = false;
     stopTimers();
     session = null;
-    deleteSession(cfg.sessionDir);
+    deleteWeixinClawBotSession(cfg.sessionDir);
     replyCtx.clear();
     loginPhase = "idle";
     state = "disconnected";
     lastError = undefined;
   };
 
+  const sendAttachment = async (
+    target: ChannelSendTarget,
+    attachment: ChannelAttachment,
+  ): Promise<unknown> => {
+    if (!session?.botToken) throw new Error("微信 ClawBot 尚未登录");
+    if (target.chatId) throw new Error("微信 ClawBot 当前不支持主动向群聊发送附件");
+    if (target.mentionPeerIds?.length) throw new Error("微信 ClawBot 不支持成员艾特");
+    const contextToken = lastContextByUser.get(target.peerId) || session.lastContextToken || "";
+    if (!contextToken) throw new Error("微信缺少 context_token；请先由该用户向 ClawBot 发一条消息");
+
+    if (attachment.kind === "text") {
+      const text = attachment.caption?.trim() || "";
+      if (!text) throw new Error("微信文本附件正文为空");
+      for (const part of splitWeixinText(text)) {
+        await sendWeixinText({
+          session,
+          toUserId: target.peerId,
+          contextToken,
+          text: part,
+          fetchImpl,
+        });
+      }
+      return { parts: splitWeixinText(text).length };
+    }
+
+    const source = attachment.localPath || attachment.remoteUrl || "";
+    if (!source) throw new Error("微信附件没有可发送的受控路径");
+    const loaded = await loadWeixinMediaBytes(source, fetchImpl);
+    if (!loaded) throw new Error(`微信附件无法读取或超过大小上限：${attachment.fileName}`);
+    const kind: WeixinMediaKind = attachment.kind === "audio" ? "voice" : attachment.kind;
+    await sendWeixinLocalMedia({
+      session,
+      toUserId: target.peerId,
+      contextToken,
+      kind,
+      bytes: loaded.bytes,
+      fileName: attachment.fileName || loaded.fileName,
+      fetchImpl,
+    });
+    if (attachment.caption?.trim()) {
+      await sendWeixinText({
+        session,
+        toUserId: target.peerId,
+        contextToken,
+        text: attachment.caption.trim(),
+        fetchImpl,
+      });
+    }
+    return { fileName: attachment.fileName, kind };
+  };
+
   const adapter: ChannelAdapter & WeixinClawBotController = {
     channel: "weixin",
     name: "微信 ClawBot",
     enabled: cfg.enabled,
+    capabilities: createMultimodalChannelCapabilities({ supportsQuote: false }),
     getStatus: () => ({
       state: cfg.enabled ? state : "disconnected",
       detail: session?.boundUserId ? `user=${session.boundUserId}` : loginPhase,
@@ -343,7 +360,7 @@ export function createWeixinClawBotAdapter(
         state = "disconnected";
         return;
       }
-      session = readSession(cfg.sessionDir);
+      session = readWeixinClawBotSession(cfg.sessionDir);
       lastPersisted = session ? JSON.stringify(session) : "";
       if (session?.botToken) {
         startPolling();
@@ -378,45 +395,61 @@ export function createWeixinClawBotAdapter(
         reasoning: chunk.reasoning,
         answer,
       });
-      const sendLocal = async (kind: WeixinMediaKind, url: string) => {
-        const loaded = await loadWeixinMediaBytes(url, fetchImpl);
-        if (!loaded) {
-          console.error("[weixin-clawbot] media not found:", kind, url);
-          return;
+      const target = { peerId: toUserId };
+      const sendTracked = async (attachment: ChannelAttachment, suffix: string) => {
+        if (attachment.status !== "ready") {
+          throw new Error(attachment.error || `附件 ${attachment.fileName} 校验失败`);
         }
-        await sendWeixinLocalMedia({
-          session: live,
-          toUserId,
-          contextToken,
-          kind,
-          bytes: loaded.bytes,
-          fileName: loaded.fileName,
-          fetchImpl,
+        const transfer = await sendChannelAttachment({
+          dataDir: getAppConfig().dataDir,
+          channel: "weixin",
+          target,
+          attachment,
+          idempotencyKey: deriveChannelIdempotencyKey({
+            channel: "weixin",
+            target,
+            sourceTurnId: `${msg.meta.eventId}:${suffix}`,
+            attachment,
+          }),
         });
+        if (transfer.record.status !== "sent") {
+          throw new Error(transfer.record.error || `微信传输状态 ${transfer.record.status}`);
+        }
       };
       try {
-        for (const plan of plans) {
+        for (const [planIndex, plan] of plans.entries()) {
           if (plan.kind === "thinking_text") {
-            await sendWeixinText({ session: live, toUserId, contextToken, text: plan.text, fetchImpl });
+            await sendTracked(
+              createTextChannelAttachment({ text: plan.text }),
+              `plan-${planIndex}-thinking`,
+            );
           } else if (plan.kind === "thinking_file") {
             const preview = plan.content.slice(0, 1800);
-            await sendWeixinText({
-              session: live,
-              toUserId,
-              contextToken,
-              text: `【思考过程】\n${preview}${plan.content.length > 1800 ? "\n…" : ""}`,
-              fetchImpl,
-            });
+            await sendTracked(
+              createTextChannelAttachment({
+                text: `【思考过程】\n${preview}${plan.content.length > 1800 ? "\n…" : ""}`,
+              }),
+              `plan-${planIndex}-thinking-preview`,
+            );
           } else {
-            for (const part of splitWeixinText(plan.text)) {
-              await sendWeixinText({ session: live, toUserId, contextToken, text: part, fetchImpl });
+            await sendTracked(
+              createTextChannelAttachment({ text: plan.text }),
+              `plan-${planIndex}-answer`,
+            );
+            for (const [imageIndex, image] of plan.imageUrls.entries()) {
+              const attachment = await materializeReplyChannelReference({
+                reference: image,
+                kind: "image",
+              });
+              await sendTracked(attachment, `plan-${planIndex}-image-${imageIndex}`);
             }
-            for (const img of plan.imageUrls) {
-              await sendLocal("image", img);
-            }
-            for (const extra of extras) {
+            for (const [extraIndex, extra] of extras.entries()) {
               if (plan.imageUrls.includes(extra.url)) continue;
-              await sendLocal(extra.kind, extra.url);
+              const attachment = await materializeReplyChannelReference({
+                reference: extra.url,
+                kind: extra.kind === "voice" ? "audio" : extra.kind,
+              });
+              await sendTracked(attachment, `plan-${planIndex}-extra-${extraIndex}`);
             }
           }
         }
@@ -428,6 +461,7 @@ export function createWeixinClawBotAdapter(
         replyCtx.delete(msg.meta.eventId);
       }
     },
+    sendAttachment,
     startQrLogin,
     logout,
     getLoginSnapshot: () => ({

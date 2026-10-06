@@ -9,6 +9,7 @@
 import { router } from "./trpc/trpc.js";
 import { gardenRouter } from "./infra/trpcRouters/gardenRouter.js";
 import { postRouter } from "./infra/trpcRouters/postRouter.js";
+import { postAnnotationRouter } from "./infra/trpcRouters/postAnnotationRouter.js";
 import { agentRouter } from "./infra/trpcRouters/agentRouter.js";
 import { skillRouter } from "./infra/trpcRouters/skillRouter.js";
 import { sessionRouter } from "./infra/trpcRouters/sessionRouter.js";
@@ -31,8 +32,6 @@ import { workspaceRouter } from "./infra/trpcRouters/workspaceRouter.js";
 import { triggerRouter } from "./infra/trpcRouters/triggerRouter.js";
 import { agentCronRouter } from "./infra/trpcRouters/agentCronRouter.js";
 import { approvalRouter } from "./infra/trpcRouters/approvalRouter.js";
-import { commentRouter } from "./infra/trpcRouters/commentRouter.js";
-import { blogRouter } from "./infra/trpcRouters/blogRouter.js";
 import { askUserRouter } from "./infra/trpcRouters/askUserRouter.js";
 import { toolRouter } from "./infra/trpcRouters/toolRouter.js";
 import { runRouter } from "./infra/trpcRouters/runRouter.js";
@@ -47,6 +46,7 @@ import { briefingRouter } from "./infra/trpcRouters/briefingRouter.js";
 export const appRouter = router({
   garden: gardenRouter,
   post: postRouter,
+  postAnnotation: postAnnotationRouter,
   agent: agentRouter,
   skill: skillRouter,
   session: sessionRouter,
@@ -69,8 +69,6 @@ export const appRouter = router({
   trigger: triggerRouter,
   agentCron: agentCronRouter,
   approval: approvalRouter,
-  comment: commentRouter,
-  blog: blogRouter,
   askUser: askUserRouter,
   tool: toolRouter,
   run: runRouter,

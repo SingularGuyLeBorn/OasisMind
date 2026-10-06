@@ -39,7 +39,7 @@ export const NATIVE_TOOL_GROUPS: NativeToolGroup[] = [
 
 export function groupIdForNativeTool(name: string): NativeToolGroupId {
   if (
-    /^(web_|read_article|dokobot_|webbridge_|scrape_|rss_|browser_|scroll_screenshot|save_webpage|download_file|vision_describe|generate_illustration|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
+    /^(web_|read_article|dokobot_|webbridge_|scrape_|rss_|browser_|capture_screenshot|scroll_screenshot|save_webpage|download_file|vision_describe|generate_illustration|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
       name,
     )
   ) {
@@ -96,6 +96,7 @@ export const NATIVE_LABELS: Record<string, string> = {
   webbridge_command: "WebBridge 浏览器操作",
   scrape_web_page: "采集网页",
   browser_screenshot: "网页截图",
+  capture_screenshot: "统一截图",
   scroll_screenshot: "滚动截图",
   save_webpage: "保存网页到本地",
   download_file: "下载文件到本地",
@@ -294,6 +295,13 @@ export const NATIVE_LABELS: Record<string, string> = {
   send_qq_file: "发 QQ 文件",
   send_qq_voice: "发 QQ 语音",
   delete_qq_message: "撤回 QQ 消息",
+  send_weixin_text: "发微信文本",
+  send_weixin_image: "发微信图片",
+  send_weixin_video: "发微信视频",
+  send_weixin_file: "发微信文件",
+  send_weixin_voice: "发微信语音",
+  channel_transfer_status: "查看通道传输",
+  channel_transfer_retry: "重试通道传输",
   zhihu_openapi_search: "知乎开放平台搜索",
   zhihu_openapi_hot_list: "知乎热榜",
   zhihu_openapi_ask: "知乎直答",

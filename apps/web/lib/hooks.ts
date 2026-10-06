@@ -17,9 +17,8 @@ import type {
   CreateGardenInput, UpdateGardenInput, ListGardensInput, Garden,
   Agent, Skill, McpServer, Memory, InfoSource, InboxItem,
   ChatSession, ChatMessage, FileMeta, GitRepo,
-  Task, Workspace, Trigger, Approval, Comment,
+  Task, Workspace, Trigger, Approval,
   Tool, Prompt, Credential, Run,
-  CreateCommentInput, UpdateCommentInput, ListCommentsInput,
 } from "@oasismind/shared";
 
 export { mergeMutationOptions } from "@/lib/mergeMutationOptions";
@@ -318,9 +317,6 @@ export const useTask = () => {
 };
 export const useWorkspace = () => useCRUDApi<any, any, any, Workspace>("workspace");
 export const useTrigger = () => useCRUDApi<any, any, any, Trigger>("trigger");
-export const useComment = () =>
-  useCRUDApi<CreateCommentInput, UpdateCommentInput & { id: string }, ListCommentsInput, Comment>("comment");
-
 export const useApproval = () => {
   const crud = useCRUDApi<any, any, any, Approval>("approval");
   return {

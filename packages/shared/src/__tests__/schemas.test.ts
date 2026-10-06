@@ -8,7 +8,125 @@ import {
   rerunSessionSchema,
   createTaskSchema,
   updateTaskSchema,
+  createPostSchema,
+  createPostFromChatSchema,
+  createPostFromToolResultSchema,
+  createPostAnnotationSchema,
+  updatePostAnnotationSchema,
+  channelAttachmentSchema,
 } from "../schemas.js";
+
+describe("统一通道附件 Schema", () => {
+  const ready = {
+    type: "channel" as const,
+    id: "c4c462d4-f660-4a7e-a95a-823555673ed7",
+    kind: "file" as const,
+    fileName: "report.pdf",
+    mimeType: "application/pdf",
+    size: 128,
+    sha256: "a".repeat(64),
+    source: "qq" as const,
+    localPath: "content/uploads/channels/qq/report.pdf",
+    status: "ready" as const,
+  };
+
+  it("接受带大小、哈希、来源和位置的就绪附件", () => {
+    expect(channelAttachmentSchema.parse(ready)).toMatchObject(ready);
+  });
+
+  it.each([
+    ["text", "note.txt", "text/plain"],
+    ["image", "photo.png", "image/png"],
+    ["video", "clip.mp4", "video/mp4"],
+    ["audio", "voice.mp3", "audio/mpeg"],
+    ["file", "report.pdf", "application/pdf"],
+  ] as const)("统一接受 %s 附件", (kind, fileName, mimeType) => {
+    expect(channelAttachmentSchema.parse({ ...ready, kind, fileName, mimeType })).toMatchObject({
+      type: "channel",
+      kind,
+      fileName,
+      mimeType,
+    });
+  });
+
+  it("失败必须有 error；就绪必须有位置与哈希", () => {
+    expect(channelAttachmentSchema.safeParse({ ...ready, status: "failed", error: undefined }).success).toBe(false);
+    expect(channelAttachmentSchema.safeParse({ ...ready, localPath: undefined }).success).toBe(false);
+    expect(channelAttachmentSchema.safeParse({ ...ready, sha256: null }).success).toBe(false);
+  });
+
+  it("文本附件以 caption 承载正文，不要求伪造文件位置", () => {
+    expect(
+      channelAttachmentSchema.safeParse({
+        ...ready,
+        kind: "text",
+        fileName: "message.txt",
+        mimeType: "text/plain; charset=utf-8",
+        localPath: undefined,
+        caption: "你好",
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe("私人批注 Schema", () => {
+  const locator = { garden: "notes", slug: "chapter/one" };
+
+  it("补齐本地批注的保守默认值", () => {
+    const parsed = createPostAnnotationSchema.parse({
+      ...locator,
+      anchor: { exact: "重点", startOffset: 2, endOffset: 4 },
+    });
+    expect(parsed.style).toBe("highlight");
+    expect(parsed.comment).toBe("");
+    expect(parsed.anchor.prefix).toBe("");
+    expect(parsed.anchor.suffix).toBe("");
+  });
+
+  it("拒绝反向文本区间和非 UUID 批注 id", () => {
+    expect(createPostAnnotationSchema.safeParse({
+      ...locator,
+      anchor: { exact: "重点", startOffset: 4, endOffset: 2 },
+    }).success).toBe(false);
+    expect(updatePostAnnotationSchema.safeParse({ ...locator, id: "../escape", comment: "x" }).success).toBe(false);
+  });
+});
+
+describe("文章发布默认值", () => {
+  it("所有文章创建入口在未显式发布时都保持草稿", () => {
+    const direct = createPostSchema.parse({ title: "本地草稿" });
+    const fromChat = createPostFromChatSchema.parse({
+      sessionId: "clx12345678901234567890123",
+      messageId: "clx12345678901234567890124",
+    });
+    const fromTool = createPostFromToolResultSchema.parse({ path: "data/tool-results/post.md" });
+
+    expect(direct.published).toBe(false);
+    expect(fromChat.published).toBe(false);
+    expect(fromTool.published).toBe(false);
+  });
+
+  it("业主显式传 published=true 时仍允许发布", () => {
+    expect(createPostSchema.parse({ title: "公开文章", published: true }).published).toBe(true);
+  });
+
+  it("Chat 覆盖或追加已有文章时，不凭空改变原发布状态", () => {
+    const shared = {
+      sessionId: "clx12345678901234567890123",
+      messageId: "clx12345678901234567890124",
+      targetPostId: "clx12345678901234567890125",
+    };
+    expect(createPostFromChatSchema.parse({ ...shared, mode: "update" }).published).toBeUndefined();
+    expect(createPostFromChatSchema.parse({ ...shared, mode: "append" }).published).toBeUndefined();
+    expect(
+      createPostFromToolResultSchema.parse({
+        path: "data/tool-results/post.md",
+        mode: "append",
+        targetPostId: shared.targetPostId,
+      }).published,
+    ).toBeUndefined();
+  });
+});
 
 describe("createGitRepoSchema path 校验", () => {
   it("接受 Windows 绝对路径", () => {

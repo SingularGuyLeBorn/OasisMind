@@ -211,7 +211,9 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
       garden,
       slug: finalSlug,
       content: stripLeadingMarkdownFrontmatter(input.content ?? ""),
-      published: input.published ?? true,
+      // 发布采用 fail-closed：即使某个内部调用绕过共享 Schema，缺省值也只能是草稿。
+      // 这一层是领域不变量的最后防线，不能依赖前端是否记得传 published=false。
+      published: input.published ?? false,
       excerpt: input.excerpt,
       coverImage: input.coverImage,
       category: input.category,
@@ -942,7 +944,8 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
           garden: input.garden,
           category: input.category ?? null,
           tags: input.tags,
-          published: input.published ?? true,
+          // Chat 落库文章先进入草稿；只有业主显式传 true 才公开。
+          published: input.published ?? false,
           excerpt: body.replace(/\s+/g, " ").trim().slice(0, 160),
         });
       }
@@ -1047,7 +1050,8 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
         garden: input.garden,
         category: input.category ?? null,
         tags: input.tags,
-        published: input.published ?? true,
+        // 工具产物可能包含未经复核的模型输出，因此创建时必须默认草稿。
+        published: input.published ?? false,
         excerpt: body.replace(/\s+/g, " ").trim().slice(0, 160),
       });
     }

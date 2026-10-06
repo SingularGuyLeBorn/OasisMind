@@ -5,8 +5,7 @@ import { test, expect } from "@playwright/test";
  */
 
 const ADMIN_PAGES: Array<{ path: string; heading: string }> = [
-  { path: "/chat", heading: "Agent 对话" },
-  { path: "/agents", heading: "我的 Agents" },
+  { path: "/agents", heading: "我的 { Agents }" },
   { path: "/subagents", heading: "子 Agent 任务" },
   { path: "/skills", heading: "Skills 专属动作库" },
   { path: "/mcp", heading: "MCP 服务器接入" },
@@ -51,10 +50,17 @@ test.describe("管理控制台冒烟", () => {
     });
   }
 
+  test("/chat 应正常渲染", async ({ page }) => {
+    await page.goto("/chat");
+    // Chat 的一级标题就是当前会话名，不再使用固定的「Agent 对话」。
+    await expect(page.getByTestId("chat-input")).toBeEnabled({ timeout: 30_000 });
+    await expect(page.locator("main h1")).toBeVisible({ timeout: 30_000 });
+  });
+
   test("/about 应正常渲染 profile", async ({ page }) => {
     await page.goto("/about");
-    await expect(page.getByText("About Me")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("link", { name: "开始对话" })).toBeVisible({ timeout: 30_000 });
   });
 
   test("/tools 展示原生运行时能力面板", async ({ page }) => {
@@ -72,7 +78,7 @@ test.describe("管理控制台冒烟", () => {
       timeout: 30_000,
     });
     await expect(page.getByTestId("native-capabilities-panel")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("web_search 与 read_article")).toBeVisible();
+    await expect(page.getByText("WebSearch 与 ReadArticle")).toBeVisible();
     await expect(page.getByText(/信息源 \d+/)).toBeVisible();
   });
 

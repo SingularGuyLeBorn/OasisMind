@@ -43,6 +43,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   platform_login: "弹浏览器登录平台并保存登录态",
   browser_login_status: "检查各平台登录态",
   browser_screenshot: "浏览器截图",
+  capture_screenshot: "统一截图",
   web_search: "网页搜索",
   ask_user: "向用户提问澄清",
 };

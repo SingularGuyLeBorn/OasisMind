@@ -19,9 +19,9 @@ export type UiStateNotifyKind =
   | "goal_updated"
   | "session_tree_updated"
   | "daily_flow_updated"
-  | "comment_updated"
   | "inbox_updated"
   | "dead_letter_updated"
+  | "channel_transfer_updated"
   | "workspace_stages_updated";
 
 /** 会话树换叶后推到该会话（消息列表按活跃路径再水合） */
@@ -203,16 +203,6 @@ export async function notifyPostListChanged(
   await notifyAllMainSessionsUi(prisma, {
     type: "post_list_changed",
     reason,
-  });
-}
-
-export async function notifyCommentUpdated(
-  prisma: PrismaClient,
-  postId?: string,
-): Promise<void> {
-  await notifyAllMainSessionsUi(prisma, {
-    type: "comment_updated",
-    postId,
   });
 }
 

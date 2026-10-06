@@ -37,11 +37,11 @@ import {
   Wand2,
 } from "lucide-react";
 import type { AboutProfile } from "@oasismind/shared";
+import { OasisMindLogo } from "@oasismind/brand";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/magicui/scroll-reveal";
 import { HeroSection } from "@/components/about/HeroSection";
 import { ThreeTheories } from "@/components/about/ThreeTheories";
-import { OasisMindLogo } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const SolarSystemScene = dynamic(
@@ -641,7 +641,7 @@ function ProjectCard({
   const iconDef = projectIcon(project.name);
   const iconNode =
     iconDef.type === "logo" ? (
-      <OasisMindLogo size={18} variant="ink-seed" />
+      <OasisMindLogo size={18} />
     ) : (
       <iconDef.Icon className="h-4 w-4" />
     );

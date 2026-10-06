@@ -5,13 +5,11 @@
  * 引用事件里被引用附件在 msg_elements[].attachments（或本条 attachments）。
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
-import type { ChatAttachment } from "@oasismind/shared";
-import { getAppConfig } from "../config.js";
-
-const MAX_BYTES = 25 * 1024 * 1024;
+import type { ChannelAttachment } from "@oasismind/shared";
+import {
+  formatInboundChannelAttachment,
+  materializeRemoteChannelAttachment,
+} from "./channelAttachment.js";
 
 export type QqRawAttachment = {
   url: string;
@@ -23,10 +21,10 @@ export type QqRawAttachment = {
 };
 
 export type QqInboundMediaResult = {
-  /** 拼进用户文案的附件说明（视频/文件路径等） */
+  /** 用户可见的附件摘要；结构化事实仍在 attachments 中。 */
   mediaLines: string[];
-  /** 图片 → Chat 附件（data URL，供 vision；非 vision 靠 mediaLines + 工具） */
-  chatAttachments: ChatAttachment[];
+  /** 五类媒体统一进入消息附件；图片附带 previewUrl 时可直送 vision。 */
+  attachments: ChannelAttachment[];
   /** 引用原文（若有） */
   quotedText: string;
 };
@@ -40,18 +38,6 @@ function normalizeUrl(raw: string): string {
   if (!u) return "";
   if (/^https?:\/\//i.test(u)) return u;
   return `https://${u.replace(/^\/+/, "")}`;
-}
-
-function extFromMime(mime: string, fallback: string): string {
-  const m = mime.toLowerCase();
-  if (m.includes("jpeg") || m.includes("jpg")) return ".jpg";
-  if (m.includes("png")) return ".png";
-  if (m.includes("gif")) return ".gif";
-  if (m.includes("webp")) return ".webp";
-  if (m.includes("mp4")) return ".mp4";
-  if (m.includes("wav")) return ".wav";
-  if (m.includes("silk") || m === "voice") return ".silk";
-  return fallback;
 }
 
 /** 从事件体收集本条 + 引用元素中的附件（递归 msg_elements） */
@@ -132,115 +118,40 @@ export function extractQqQuotedText(d: Record<string, unknown>): string {
   return "";
 }
 
-async function downloadOne(
-  att: QqRawAttachment,
-  destDir: string,
-): Promise<{ relPath: string; absPath: string; mime: string; kind: "image" | "video" | "file"; bytes: Buffer } | null> {
-  try {
-    const res = await fetch(att.url, {
-      headers: { "User-Agent": "OasisMind-QQBot/1.0" },
-    });
-    if (!res.ok) {
-      console.warn(`[qq-media] 下载失败 HTTP ${res.status}: ${att.url.slice(0, 120)}`);
-      return null;
-    }
-    const ab = await res.arrayBuffer();
-    if (ab.byteLength <= 0 || ab.byteLength > MAX_BYTES) {
-      console.warn(`[qq-media] 跳过异常大小 ${ab.byteLength}: ${att.url.slice(0, 80)}`);
-      return null;
-    }
-    const bytes = Buffer.from(ab);
-    const headerMime = (res.headers.get("content-type") || "").split(";")[0]!.trim();
-    const nameLower = (att.filename || "").toLowerCase();
-    const guessFromName =
-      /\.(jpe?g|png|gif|webp)$/i.test(nameLower)
-        ? "image/jpeg"
-        : /\.(mp4|mov|webm)$/i.test(nameLower)
-          ? "video/mp4"
-          : "";
-    const mime = (att.contentType || headerMime || guessFromName || "application/octet-stream").toLowerCase();
-    let kind: "image" | "video" | "file" = "file";
-    if (mime.startsWith("image/") || mime === "image" || /\.(jpe?g|png|gif|webp)$/i.test(nameLower)) {
-      kind = "image";
-    } else if (mime.startsWith("video/") || mime === "video/mp4" || /\.(mp4|mov|webm)$/i.test(nameLower)) {
-      kind = "video";
-    } else if (mime === "voice" || mime.startsWith("audio/")) {
-      kind = "file";
-    }
-
-    const baseName = (att.filename || `qq-${Date.now().toString(36)}`).replace(/[^\w.\-()+]+/g, "_");
-    const ext =
-      path.extname(baseName) ||
-      extFromMime(mime, kind === "image" ? ".jpg" : kind === "video" ? ".mp4" : ".bin");
-    const fileName = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}${ext}`;
-    const absPath = path.join(destDir, fileName);
-    fs.writeFileSync(absPath, bytes);
-    return {
-      relPath: `content/uploads/qq/${fileName}`,
-      absPath,
-      mime: mime.startsWith("image/") || mime.startsWith("video/") || mime.startsWith("audio/")
-        ? mime
-        : kind === "image"
-          ? "image/jpeg"
-          : kind === "video"
-            ? "video/mp4"
-            : mime,
-      kind,
-      bytes,
-    };
-  } catch (err) {
-    console.warn(
-      `[qq-media] 下载异常:`,
-      err instanceof Error ? err.message : err,
-    );
-    return null;
-  }
+function inferQqAttachmentKind(attachment: QqRawAttachment): ChannelAttachment["kind"] {
+  const probe = `${attachment.contentType || ""} ${attachment.filename || ""}`.toLowerCase();
+  if (/image|\.(?:jpe?g|png|gif|webp|bmp)\b/.test(probe)) return "image";
+  if (/video|\.(?:mp4|mov|webm|mkv|m4v)\b/.test(probe)) return "video";
+  if (/audio|voice|\.(?:silk|slk|amr|wav|mp3|m4a|aac|ogg)\b/.test(probe)) return "audio";
+  return "file";
 }
 
-/**
- * 下载入站/引用附件，生成 ChatAttachment（图片）与文案说明（视频/文件）。
- */
+/** 下载入站/引用附件，并统一生成可落库的 ChannelAttachment。 */
 export async function materializeQqInboundMedia(
   d: Record<string, unknown>,
 ): Promise<QqInboundMediaResult> {
   const quotedText = extractQqQuotedText(d);
   const raws = collectQqRawAttachments(d);
   if (raws.length === 0) {
-    return { mediaLines: [], chatAttachments: [], quotedText };
+    return { mediaLines: [], attachments: [], quotedText };
   }
-
-  const config = getAppConfig();
-  const destDir = path.join(config.contentPaths.uploads, "qq");
-  fs.mkdirSync(destDir, { recursive: true });
 
   const mediaLines: string[] = [];
-  const chatAttachments: ChatAttachment[] = [];
+  const attachments: ChannelAttachment[] = [];
 
   for (const raw of raws) {
-    const saved = await downloadOne(raw, destDir);
-    if (!saved) {
-      mediaLines.push(`（附件下载失败：${raw.filename || raw.url.slice(0, 60)}）`);
-      continue;
-    }
-    if (saved.kind === "image") {
-      const dataUrl = `data:${saved.mime};base64,${saved.bytes.toString("base64")}`;
-      chatAttachments.push({
-        type: "image",
-        name: path.basename(saved.relPath),
-        mimeType: saved.mime,
-        previewUrl: dataUrl,
-        extractedText: `图片已保存到 ${saved.relPath}（也可用 read_image / vision_describe）`,
-        source: "user",
-      });
-      mediaLines.push(`图片: ${saved.relPath}`);
-    } else if (saved.kind === "video") {
-      mediaLines.push(`视频: ${saved.relPath}（可用相关工具分析；不能当图片 OCR）`);
-    } else {
-      mediaLines.push(`文件: ${saved.relPath}（mime=${saved.mime}）`);
-    }
+    const attachment = await materializeRemoteChannelAttachment({
+      source: "qq",
+      remoteUrl: raw.url,
+      fileName: raw.filename,
+      declaredMime: raw.contentType,
+      hintedKind: inferQqAttachmentKind(raw),
+    });
+    attachments.push(attachment);
+    mediaLines.push(formatInboundChannelAttachment(attachment));
   }
 
-  return { mediaLines, chatAttachments, quotedText };
+  return { mediaLines, attachments, quotedText };
 }
 
 /** 把引用原文 + 附件说明拼进用户可见文案 */

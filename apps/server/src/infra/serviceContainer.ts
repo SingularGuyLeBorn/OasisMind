@@ -12,12 +12,12 @@ import type { AppConfig } from "./config.js";
 // Service imports
 import { GardenService } from "./entityServices/gardenService.js";
 import { ApprovalService } from "./entityServices/approvalService.js";
-import { CommentService } from "./entityServices/commentService.js";
 import { InboxService } from "./entityServices/inboxService.js";
 import { SessionQueueItemService } from "./entityServices/sessionQueueItemService.js";
 import { MessageService } from "./entityServices/messageService.js";
 import { SessionService } from "./entityServices/sessionService.js";
 import { PostService } from "./entityServices/postService.js";
+import { PostAnnotationService } from "./entityServices/postAnnotationService.js";
 import { AgentService } from "./entityServices/agentService.js";
 import { CredentialService } from "./entityServices/credentialService.js";
 import { LogService } from "./entityServices/logService.js";
@@ -39,6 +39,7 @@ export class ServiceContainer {
   readonly config: AppConfig;
   readonly garden: GardenService;
   readonly post: PostService;
+  readonly postAnnotation: PostAnnotationService;
   readonly agent: AgentService;
   readonly skill: SkillService;
   readonly mcp: McpService;
@@ -53,7 +54,6 @@ export class ServiceContainer {
   readonly workspace: WorkspaceService;
   readonly trigger: TriggerService;
   readonly approval: ApprovalService;
-  readonly comment: CommentService;
   readonly tool: ToolService;
   readonly run: RunService;
   readonly prompt: PromptService;
@@ -66,6 +66,7 @@ export class ServiceContainer {
     this.config = config;
     this.garden = new GardenService(prisma, eventBus, config);
     this.post = new PostService(prisma, eventBus, config);
+    this.postAnnotation = new PostAnnotationService(prisma, config);
     this.agent = new AgentService(prisma, eventBus, config);
     this.skill = new SkillService(prisma, eventBus, config);
     this.mcp = new McpService(prisma, eventBus, config);
@@ -80,7 +81,6 @@ export class ServiceContainer {
     this.workspace = new WorkspaceService(prisma, eventBus, config);
     this.trigger = new TriggerService(prisma, eventBus, config);
     this.approval = new ApprovalService(prisma, eventBus, config);
-    this.comment = new CommentService(prisma, eventBus, config);
     this.tool = new ToolService(prisma, eventBus, config);
     this.run = new RunService(prisma, eventBus, config);
     this.prompt = new PromptService(prisma, eventBus, config);

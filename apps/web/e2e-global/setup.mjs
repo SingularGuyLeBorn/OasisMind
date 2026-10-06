@@ -544,10 +544,33 @@ export default async function globalSetup() {
   if (!prismaCli) {
     throw new Error("[e2e globalSetup] 找不到 prisma CLI 入口");
   }
+  const schemaSqlFile = path.join(TEST_DATA_DIR, "schema-e2e.sql");
   try {
+    // [OM-FREEPLAY] Prisma 6.9 的 `db push` 在 Node 24 + Windows 下会让 schema engine
+    // 无诊断退出。E2E 每轮都是空库，因此用同一 Prisma schema 生成完整建库 SQL 后执行，
+    // 语义仍是“把空库同步为当前 schema”，同时避开不稳定的 RPC 路径。
     execFileSync(
       process.execPath,
-      [prismaCli, "db", "push", "--skip-generate", "--accept-data-loss"],
+      [
+        prismaCli,
+        "migrate",
+        "diff",
+        "--from-empty",
+        "--to-schema-datamodel",
+        "prisma/schema.prisma",
+        "--script",
+        "--output",
+        schemaSqlFile,
+      ],
+      {
+        cwd: serverDir,
+        env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+        stdio: "pipe",
+      },
+    );
+    execFileSync(
+      process.execPath,
+      [prismaCli, "db", "execute", "--file", schemaSqlFile, "--schema", "prisma/schema.prisma"],
       {
         cwd: serverDir,
         env: { ...process.env, DATABASE_URL: TEST_DB_URL },
@@ -555,8 +578,14 @@ export default async function globalSetup() {
       },
     );
   } catch (err) {
-    console.error("[e2e globalSetup] prisma db push 失败:", err instanceof Error ? err.message : err);
+    console.error("[e2e globalSetup] Prisma 测试库建表失败:", err instanceof Error ? err.message : err);
     throw err;
+  } finally {
+    try {
+      fs.rmSync(schemaSqlFile, { force: true });
+    } catch {
+      /* 临时 SQL 清理失败不影响测试库本身 */
+    }
   }
   try {
     execFileSync(
@@ -577,7 +606,7 @@ export default async function globalSetup() {
     );
   }
 
-  // 6.5 播种示例文章（blog-smoke 等 spec 依赖 welcome-to-oasismind；seed 幂等 upsert）
+  // 6.5 播种示例文章（post-smoke 等 spec 依赖 welcome-to-oasismind；seed 幂等 upsert）
   const tsxCliForSeed = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
   execFileSync(process.execPath, [tsxCliForSeed, "prisma/seed.ts"], {
     cwd: serverDir,

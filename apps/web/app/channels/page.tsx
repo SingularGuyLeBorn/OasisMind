@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Radio, Trash2 } from "lucide-react";
+import { Radio, RefreshCw, Trash2 } from "lucide-react";
 import { AdminPage, EmptyState } from "@/components/shared";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 
 function chatHref(sessionId: string, agentId?: string | null) {
   const params = new URLSearchParams();
@@ -18,6 +19,9 @@ function chatHref(sessionId: string, agentId?: string | null) {
 export default function ChannelsPage() {
   const statusQ = trpc.channel.status.useQuery(undefined, { refetchInterval: 5_000 });
   const bindingsQ = trpc.channel.listBindings.useQuery(undefined, { refetchInterval: 10_000 });
+  const transfersQ = trpc.channel.listTransfers.useQuery({ limit: 30 }, { refetchInterval: 10_000 });
+  const refetchChannelStatus = statusQ.refetch;
+  const refetchChannelTransfers = transfersQ.refetch;
   const deleteMut = trpc.channel.deleteBinding.useMutation({
     onSuccess: () => {
       bindingsQ.refetch().catch(catchUnlessCancelled("channel.bindings.refetch"));
@@ -42,6 +46,11 @@ export default function ChannelsPage() {
       statusQ.refetch().catch(catchUnlessCancelled("channel.status.refetch"));
     },
   });
+  const retryTransferMut = trpc.channel.retryTransfer.useMutation({
+    onSuccess: () => {
+      transfersQ.refetch().catch(catchUnlessCancelled("channel.transfers.refetch"));
+    },
+  });
   const [peerId, setPeerId] = useState("debug-user");
   const [text, setText] = useState("你好，这是一条模拟 QQ 消息");
   const channel = "qq" as const;
@@ -51,6 +60,17 @@ export default function ChannelsPage() {
   const defaultQqAgent = statusQ.data?.defaultQqAgent ?? null;
   const defaultWeixinAgent = statusQ.data?.defaultWeixinAgent ?? null;
   const latestQq = bindings.find((b) => b.channel === "qq") ?? null;
+  const transfers = transfersQ.data?.items ?? [];
+
+  useEffect(
+    () =>
+      subscribeUiState((message) => {
+        if (message.type !== "channel_transfer_updated") return;
+        refetchChannelTransfers().catch(catchUnlessCancelled("channel.transfers.push-refetch"));
+        refetchChannelStatus().catch(catchUnlessCancelled("channel.status.push-refetch"));
+      }),
+    [refetchChannelStatus, refetchChannelTransfers],
+  );
 
   return (
     <AdminPage>
@@ -239,6 +259,80 @@ export default function ChannelsPage() {
         {adapters.length === 0 ? (
           <EmptyState title="通道未启动" description="重启 server 后此处显示 QQ 适配器状态。" />
         ) : null}
+      </div>
+
+      <div className="mb-6 overflow-hidden rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)]">
+        <div className="border-b border-[var(--om-border)] px-4 py-3">
+          <p className="text-sm font-semibold text-[var(--om-text-1)]">通道能力矩阵</p>
+          <p className="mt-1 text-xs text-[var(--om-text-3)]">来自适配器真实声明，不根据界面文案推测。</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-xs">
+            <thead className="bg-[var(--om-bg-mute)] text-[var(--om-text-3)]">
+              <tr>
+                <th className="px-4 py-2 font-medium">通道</th>
+                <th className="px-4 py-2 font-medium">入站</th>
+                <th className="px-4 py-2 font-medium">出站</th>
+                <th className="px-4 py-2 font-medium">上限</th>
+                <th className="px-4 py-2 font-medium">说明 / 引用</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--om-border)]">
+              {adapters.map((adapter) => (
+                <tr key={`cap-${adapter.channel}`}>
+                  <td className="px-4 py-2 font-medium text-[var(--om-text-1)]">{adapter.name}</td>
+                  <td className="px-4 py-2">{adapter.capabilities?.inbound.join(" · ") || "未声明"}</td>
+                  <td className="px-4 py-2">{adapter.capabilities?.outbound.join(" · ") || "未声明"}</td>
+                  <td className="px-4 py-2">
+                    {adapter.capabilities ? `${Math.round(adapter.capabilities.maxBytes / 1024 / 1024)} MB` : "—"}
+                  </td>
+                  <td className="px-4 py-2">
+                    {adapter.capabilities?.supportsCaption ? "说明" : "无说明"} · {adapter.capabilities?.supportsQuote ? "引用" : "无引用"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="mb-6 overflow-hidden rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)]">
+        <div className="border-b border-[var(--om-border)] px-4 py-3">
+          <p className="text-sm font-semibold text-[var(--om-text-1)]">最近出站传输</p>
+          <p className="mt-1 text-xs text-[var(--om-text-3)]">
+            sent 不会重复发送；uncertain 需先去平台核对；只有 retrySafe 的 failed 可安全重试。
+          </p>
+        </div>
+        {transfers.length ? (
+          <ul className="divide-y divide-[var(--om-border)]">
+            {transfers.map((transfer) => (
+              <li key={transfer.id} className="flex items-center justify-between gap-3 px-4 py-3 text-xs">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-[var(--om-text-1)]">
+                    {transfer.channel} · {transfer.attachment.kind} · {transfer.attachment.fileName}
+                  </p>
+                  <p className="mt-0.5 truncate text-[var(--om-text-3)]">
+                    {transfer.status} · 尝试 {transfer.attempts} 次 · {new Date(transfer.updatedAt).toLocaleString()}
+                    {transfer.error ? ` · ${transfer.error}` : ""}
+                  </p>
+                </div>
+                {transfer.status === "failed" && transfer.retrySafe ? (
+                  <button
+                    type="button"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--om-border)] px-2 py-1 text-[var(--om-text-2)] disabled:opacity-50"
+                    disabled={retryTransferMut.isPending}
+                    onClick={() => retryTransferMut.mutate({ id: transfer.id })}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    安全重试
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="p-4 text-xs text-[var(--om-text-3)]">尚无出站传输记录。</div>
+        )}
       </div>
 
       <div className="mb-6 rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-4">

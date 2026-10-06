@@ -5,15 +5,18 @@ import { usePathname, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { getAuthToken } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/", "/about", "/blog", "/posts", "/categories", "/tags"];
+/**
+ * 完整工作台只属于业主。公开阅读已经迁移到独立的 apps/site，
+ * 因此密码模式下这里不再给任何内容页留下匿名旁路。
+ */
+const PUBLIC_PATHS = ["/login"];
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
-  if (pathname.startsWith("/posts/") && !pathname.startsWith("/posts/page")) return true;
   return false;
 }
 
-/** 控制台路由鉴权守卫（博客公开页不受影响） */
+/** 完整工作台路由鉴权守卫；公开站不装载此组件。 */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();

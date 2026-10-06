@@ -142,4 +142,18 @@ describe("zhihuOpenApi", () => {
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.data.Items?.[0]?.UrlToken).toBe("zhang-san");
   });
+
+  it("支持注入 fetch，超时错误不会包含 Access Secret", async () => {
+    const fetchImpl = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      await new Promise<never>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+      });
+      throw new Error("unreachable");
+    }) as unknown as typeof fetch;
+
+    await expect(
+      zhihuSearch("do-not-print-this-secret", "人工智能", 3, { fetchImpl, timeoutMs: 5 }),
+    ).rejects.toThrow("请求超时（5ms）");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
 });

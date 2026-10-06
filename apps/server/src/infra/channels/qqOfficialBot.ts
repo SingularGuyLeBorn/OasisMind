@@ -8,13 +8,16 @@
 
 import WebSocket from "ws";
 import { randomUUID } from "node:crypto";
+import type { ChannelAttachment } from "@oasismind/shared";
 import type {
   ChannelAdapter,
   ChannelReplyChunk,
+  ChannelSendTarget,
   UnifiedMessage,
 } from "../messageGateway.js";
 import { handleIncomingMessage } from "../messageGateway.js";
 import { bootDetail } from "../bootLog.js";
+import { getAppConfig } from "../config.js";
 import {
   mdToPlain,
   planImReply,
@@ -34,6 +37,19 @@ import {
   pushQqGroupHistory,
   takeQqGroupHistory,
 } from "./qqGroupContext.js";
+import {
+  createTextChannelAttachment,
+  materializeReplyChannelReference,
+} from "./channelAttachment.js";
+import { createMultimodalChannelCapabilities } from "./channelCapabilities.js";
+import {
+  deriveChannelIdempotencyKey,
+  sendChannelAttachment,
+} from "./channelTransfer.js";
+import {
+  resolveQqNumberForOpenId,
+  type QqBotConfig,
+} from "./qqBotConfig.js";
 
 const API_BASE = "https://api.sgroup.qq.com";
 
@@ -43,21 +59,6 @@ const API_BASE = "https://api.sgroup.qq.com";
  * - GROUP_MESSAGE_CREATE（需手机 QQ 群设置「机器人可获取的群聊消息范围」= 获取群内全部消息）
  */
 export const QQ_GROUP_AND_C2C_INTENT = 1 << 25;
-
-export type QqBotConfig = {
-  appId: string;
-  secret: string;
-  enabled: boolean;
-  /** 用户 openid 白名单；空=拒所有人；*=全开 */
-  allowedOpenIds: string[];
-  /**
-   * 群 openid 白名单（仅群聊生效）。
-   * 空=拒绝一切群消息；*=任意群；列表=仅这些群。
-   * @ 触发仍须发送者在 allowedOpenIds；未 @ 的 GROUP_MESSAGE_CREATE 只按群白名单累计上下文。
-   */
-  allowedGroups: string[];
-  useWs: boolean;
-};
 
 /** 纯函数：单聊/群聊入站是否放行（供单测） */
 export function isQqInboundAllowed(
@@ -85,59 +86,6 @@ export function isQqInboundAllowed(
   return { ok: true };
 }
 
-function parseCsvEnv(raw: string | undefined): string[] {
-  return (raw || "")
-    .split("#")[0]!
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-/** 同一 QQ 号可对应多串 openid（私聊 user_openid 与群 member_openid 常不同） */
-export function splitMappedOpenIds(mapped: string | undefined): string[] {
-  if (!mapped) return [];
-  return [...new Set(mapped.split("|").map((s) => s.trim()).filter(Boolean))];
-}
-
-/**
- * 数字号 → 平台 openid 映射（官方事件只有 openid）。
- * 用户：`2251061018=14A17D73...`；群：`1098299609=2FE7E775...`
- * 同一号多 openid：`2251061018=私聊openid|群openid`，或重复写两遍 `号=A,号=B`。
- * 多项用逗号或分号分隔。
- */
-export function parseQqIdOpenIdMap(raw: string | undefined): Map<string, string> {
-  const map = new Map<string, string>();
-  const body = (raw || "").split("#")[0] || "";
-  for (const part of body.split(/[,;]/)) {
-    const s = part.trim();
-    if (!s) continue;
-    const eq = s.indexOf("=");
-    if (eq <= 0) continue;
-    const id = s.slice(0, eq).trim();
-    const openid = s.slice(eq + 1).trim();
-    if (!/^\d{5,12}$/.test(id) || !openid) continue;
-    const prev = map.get(id);
-    map.set(id, splitMappedOpenIds(prev ? `${prev}|${openid}` : openid).join("|"));
-  }
-  return map;
-}
-
-/** @deprecated 用 parseQqIdOpenIdMap */
-export const parseQqOpenIdMap = parseQqIdOpenIdMap;
-
-/** openid → 数字 QQ 号（依赖 QQ_BOT_QQ_OPENID_MAP 反查；官方事件本身不给 QQ 号） */
-export function resolveQqNumberForOpenId(
-  openid: string,
-  idToOpenId: Map<string, string> = parseQqIdOpenIdMap(process.env.QQ_BOT_QQ_OPENID_MAP),
-): string | undefined {
-  const oid = openid.trim();
-  if (!oid) return undefined;
-  for (const [qq, mapped] of idToOpenId) {
-    if (mapped === oid || splitMappedOpenIds(mapped).includes(oid)) return qq;
-  }
-  return undefined;
-}
-
 /** 是否应起 Agent（未 @ 的全量群消息只累计） */
 export function shouldDispatchQqInbound(parsed: {
   groupOpenid?: string;
@@ -158,54 +106,6 @@ function detectMentionsBot(d: Record<string, unknown>): boolean {
     const o = m as Record<string, unknown>;
     return o.bot === true || o.bot === 1;
   });
-}
-
-/**
- * 把白名单里的数字 QQ/群号展开为 openid；已是 openid / * 的原样保留。
- * 未映射的纯数字项会 warn 并丢弃（避免误以为数字号能直接匹配事件）。
- */
-export function expandAllowedIds(
-  entries: string[],
-  idToOpenId: Map<string, string>,
-  label: string,
-): string[] {
-  const out = new Set<string>();
-  for (const e of entries) {
-    if (e === "*") {
-      out.add("*");
-      continue;
-    }
-    if (/^\d{5,12}$/.test(e)) {
-      const mapped = idToOpenId.get(e);
-      const oids = splitMappedOpenIds(mapped);
-      if (oids.length > 0) {
-        for (const oid of oids) out.add(oid);
-        out.add(e); // 若平台偶发带数字 group_id 也放行
-      } else {
-        console.warn(
-          `[qq] ${label} 含数字号 ${e}，但无对应 OPENID_MAP（官方事件多为 openid）`,
-        );
-        out.add(e); // 仍保留：平台若直接推数字 id 可命中
-      }
-      continue;
-    }
-    out.add(e);
-  }
-  for (const [id, openid] of idToOpenId) {
-    const oids = splitMappedOpenIds(openid);
-    if (entries.includes(id) || oids.some((o) => entries.includes(o)) || entries.includes("*")) {
-      for (const oid of oids) out.add(oid);
-      out.add(id);
-    }
-  }
-  return [...out];
-}
-
-export function expandAllowedOpenIds(
-  entries: string[],
-  qqToOpenId: Map<string, string>,
-): string[] {
-  return expandAllowedIds(entries, qqToOpenId, "QQ_BOT_ALLOWED_OPENIDS");
 }
 
 type TokenState = { accessToken: string; expiresAt: number };
@@ -441,7 +341,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       return;
     }
 
-    void (async () => {
+    (async () => {
       try {
         const { composeQqUserText, materializeQqInboundMedia } = await import(
           "./qqInboundMedia.js"
@@ -452,7 +352,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
           quotedText: media.quotedText,
           mediaLines: media.mediaLines,
         });
-        if (!text.trim() && media.chatAttachments.length === 0) return;
+        if (!text.trim() && media.attachments.length === 0) return;
 
         if (parsed.groupOpenid) {
           const hist = takeQqGroupHistory(parsed.groupOpenid);
@@ -481,7 +381,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
           },
           payload: {
             text: text || "（见附件）",
-            attachments: media.chatAttachments.length ? media.chatAttachments : undefined,
+            attachments: media.attachments.length ? media.attachments : undefined,
           },
           meta: {
             eventId: parsed.msgId,
@@ -503,7 +403,9 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       } catch (err) {
         console.warn(`[qq] 入站异常:`, err instanceof Error ? err.message : err);
       }
-    })();
+    })().catch((err) => {
+      console.warn(`[qq] 入站异步处理异常:`, err instanceof Error ? err.message : err);
+    });
   };
 
   /** 供 Express webhook / WS 共用 */
@@ -531,7 +433,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       }`,
     );
     reconnectTimer = setTimeout(() => {
-      void startWs().catch((e) => {
+      startWs().catch((e) => {
         lastError = e instanceof Error ? e.message : String(e);
         state = "error";
         scheduleReconnect(lastError);
@@ -539,7 +441,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
     }, delay);
   };
 
-  const startHeartbeat = (intervalMs: number, accessToken: string) => {
+  const startHeartbeat = (intervalMs: number) => {
     clearHeartbeat();
     const ms = Math.max(5_000, intervalMs);
     heartbeatTimer = setInterval(() => {
@@ -551,8 +453,6 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
         lastError = err instanceof Error ? err.message : String(err);
       }
     }, ms);
-    // Identify / Resume 后立即发一拍心跳（accessToken 仅用于日志对齐）
-    void accessToken;
   };
 
   const startWs = async () => {
@@ -614,7 +514,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
             } else {
               ws?.send(JSON.stringify(buildQqIdentifyPayload(accessToken)));
             }
-            startHeartbeat(interval, accessToken);
+            startHeartbeat(interval);
             return;
           }
 
@@ -709,10 +609,72 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
     return parts.join(" · ");
   };
 
+  const sendAttachment = async (
+    target: ChannelSendTarget,
+    attachment: ChannelAttachment,
+  ): Promise<unknown> => {
+    const accessToken = await ensureToken();
+    const groupOpenid = target.chatId || undefined;
+    const quoteOpts =
+      target.quote && target.replyTo
+        ? {
+            msgId: target.replyTo,
+            messageReference: { messageId: target.replyTo },
+          }
+        : {};
+    const mentions = groupOpenid
+      ? [...new Set((target.mentionPeerIds ?? []).map((id) => id.trim()).filter(Boolean))]
+      : [];
+    const mentionPrefix = mentions.map((id) => `<@!${id}>`).join(" ");
+    const withMentions = (text: string) =>
+      mentionPrefix ? `${mentionPrefix}${text.trim() ? ` ${text.trim()}` : ""}` : text.trim();
+
+    if (attachment.kind === "text") {
+      const text = withMentions(attachment.caption || "");
+      if (!text) throw new Error("QQ 文本附件正文为空");
+      return sendQqOfficialText({
+        openid: target.peerId,
+        groupOpenid,
+        text,
+        accessToken,
+        ...quoteOpts,
+      });
+    }
+
+    const file = attachment.localPath
+      ? resolveProjectMediaPath(attachment.localPath)
+      : attachment.remoteUrl || "";
+    if (!file) throw new Error("QQ 附件没有可发送的受控路径");
+    const kind = attachment.kind === "audio" ? "voice" : attachment.kind;
+    if (kind !== "image" && kind !== "video" && kind !== "voice" && kind !== "file") {
+      throw new Error(`QQ 不支持附件类型 ${attachment.kind}`);
+    }
+    const mediaResult = await sendQqOfficialMedia({
+      openid: target.peerId,
+      groupOpenid,
+      kind,
+      file,
+      fileName: attachment.fileName,
+      accessToken,
+      ...quoteOpts,
+    });
+    const caption = withMentions(attachment.caption || "");
+    const captionResult = caption
+      ? await sendQqOfficialText({
+          openid: target.peerId,
+          groupOpenid,
+          text: caption,
+          accessToken,
+        })
+      : undefined;
+    return { media: mediaResult, caption: captionResult };
+  };
+
   const adapter: ChannelAdapter & { ingestWebhookPayload: typeof ingestWebhookPayload } = {
     channel: "qq",
     name: "QQ 官方机器人",
     enabled: cfg.enabled,
+    capabilities: createMultimodalChannelCapabilities({ supportsQuote: true }),
     getStatus: () => ({
       state: cfg.enabled ? state : "disconnected",
       detail: statusDetail(),
@@ -764,77 +726,29 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       // 按本条入站时刻算被动窗；超时改主动消息，绝不需要重启服务
       const passiveFresh = Date.now() - ctx.inboundAt < platformTtl;
 
-      const sendActiveText = async (plain: string) => {
-        await sendQqOfficialText({
-          openid,
-          groupOpenid,
-          text: plain,
-          accessToken,
-        });
-      };
-
-      const sendPlainText = async (text: string) => {
-        const plain = qqReplyPlainText(text);
-        // 优先主动；被动窗过期时绝不再带 msg_id
-        try {
-          await sendActiveText(plain);
-          return;
-        } catch (err) {
-          if (!passiveFresh) {
-            lastError = err instanceof Error ? err.message : String(err);
-            throw err;
-          }
-          console.warn(
-            "[qq] 主动回发失败，尝试仍新鲜的被动窗口:",
-            err instanceof Error ? err.message : err,
-          );
-        }
-        try {
-          await sendQqOfficialText({
-            openid,
-            groupOpenid,
-            text: plain,
-            msgId: ctx.msgId,
-            msgSeq: ctx.nextMsgSeq++,
-            accessToken,
-          });
-        } catch (err) {
-          lastError = err instanceof Error ? err.message : String(err);
-          // 被动失败再主动一次（额度/瞬断）
-          await sendActiveText(plain);
-        }
-      };
-
-      const sendQuotedText = async (text: string) => {
-        const plain = qqReplyPlainText(text);
-        if (!passiveFresh) {
-          // 窗口已过：引用做不到，普通主动气泡照发（不重启也能回）
-          await sendActiveText(plain);
-          return;
-        }
-        const seq = ctx.nextMsgSeq++;
-        try {
-          await sendQqOfficialText({
-            openid,
-            groupOpenid,
-            text: plain,
-            msgId: ctx.msgId,
-            msgSeq: seq,
-            messageReference: { messageId: ctx.msgId },
-            accessToken,
-          });
-        } catch (err) {
-          console.warn(
-            "[qq] 带引用回发失败，降级主动普通气泡:",
-            err instanceof Error ? err.message : err,
-          );
-          await sendActiveText(plain);
-        }
-      };
-
       const sendText = async (text: string) => {
-        if (wantQuote) await sendQuotedText(text);
-        else await sendPlainText(text);
+        const attachment = createTextChannelAttachment({ text: qqReplyPlainText(text) });
+        const target = {
+          peerId: openid,
+          chatId: groupOpenid,
+          replyTo: wantQuote && passiveFresh ? ctx.msgId : undefined,
+          quote: wantQuote && passiveFresh,
+        };
+        const transfer = await sendChannelAttachment({
+          dataDir: getAppConfig().dataDir,
+          channel: "qq",
+          target,
+          attachment,
+          idempotencyKey: deriveChannelIdempotencyKey({
+            channel: "qq",
+            target,
+            sourceTurnId: msg.meta.eventId,
+            attachment,
+          }),
+        });
+        if (transfer.record.status !== "sent") {
+          throw new Error(transfer.record.error || `QQ 传输状态 ${transfer.record.status}`);
+        }
       };
 
       // 状态条：排队 / 开始处理（非 token 流；官方无同气泡编辑）
@@ -863,62 +777,35 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       const sendMediaFile = async (
         file: string,
         kind: "image" | "video" | "voice" | "file",
-        fileName?: string,
+        _fileName?: string,
       ) => {
-        const sendActiveMedia = () =>
-          sendQqOfficialMedia({
-            openid,
-            groupOpenid,
-            kind,
-            file,
-            fileName,
-            accessToken,
-          });
-        try {
-          if (wantQuote && passiveFresh) {
-            try {
-              await sendQqOfficialMedia({
-                openid,
-                groupOpenid,
-                kind,
-                file,
-                fileName,
-                msgId: ctx.msgId,
-                msgSeq: ctx.nextMsgSeq++,
-                messageReference: { messageId: ctx.msgId },
-                accessToken,
-              });
-              return;
-            } catch (err) {
-              console.warn(
-                "[qq] 带引用富媒体失败，降级主动:",
-                err instanceof Error ? err.message : err,
-              );
-            }
-          }
-          try {
-            await sendActiveMedia();
-            return;
-          } catch (err) {
-            if (!passiveFresh) throw err;
-            console.warn(
-              "[qq] 主动发媒体失败，尝试仍新鲜的被动窗口:",
-              err instanceof Error ? err.message : err,
-            );
-          }
-          await sendQqOfficialMedia({
-            openid,
-            groupOpenid,
-            kind,
-            file,
-            fileName,
-            msgId: ctx.msgId,
-            msgSeq: ctx.nextMsgSeq++,
-            accessToken,
-          });
-        } catch (err) {
-          lastError = err instanceof Error ? err.message : String(err);
-          throw err;
+        const attachment = await materializeReplyChannelReference({
+          reference: file,
+          kind: kind === "voice" ? "audio" : kind,
+        });
+        if (attachment.status !== "ready") {
+          throw new Error(attachment.error || `附件 ${attachment.fileName} 校验失败`);
+        }
+        const target = {
+          peerId: openid,
+          chatId: groupOpenid,
+          replyTo: wantQuote && passiveFresh ? ctx.msgId : undefined,
+          quote: wantQuote && passiveFresh,
+        };
+        const transfer = await sendChannelAttachment({
+          dataDir: getAppConfig().dataDir,
+          channel: "qq",
+          target,
+          attachment,
+          idempotencyKey: deriveChannelIdempotencyKey({
+            channel: "qq",
+            target,
+            sourceTurnId: msg.meta.eventId,
+            attachment,
+          }),
+        });
+        if (transfer.record.status !== "sent") {
+          throw new Error(transfer.record.error || `QQ 传输状态 ${transfer.record.status}`);
         }
       };
 
@@ -933,7 +820,6 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
         ...plans.filter((p) => p.kind !== "answer"),
       ];
 
-      let answerSent = false;
       for (const plan of ordered) {
         try {
           if (plan.kind === "thinking_text") {
@@ -954,11 +840,9 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
             }
           } else {
             await sendText(plan.text);
-            answerSent = true;
             for (const img of plan.imageUrls) {
               try {
-                const local = resolveProjectMediaPath(img);
-                await sendMediaFile(local || img, "image");
+                await sendMediaFile(img, "image");
               } catch (err) {
                 console.warn(
                   "[qq] 回复配图发送失败:",
@@ -975,56 +859,16 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
             err instanceof Error ? err.message : err,
           );
           lastError = err instanceof Error ? err.message : String(err);
-          if (plan.kind === "answer" && !answerSent) {
-            // 被动窗口过期时强制主动群消息再试一次
-            try {
-              await sendQqOfficialText({
-                openid,
-                groupOpenid,
-                text: qqReplyPlainText(plan.text).slice(0, 3500),
-                accessToken,
-              });
-              answerSent = true;
-            } catch (err2) {
-              console.warn(
-                "[qq] 主动兜底回发仍失败:",
-                err2 instanceof Error ? err2.message : err2,
-              );
-              await sendQqOfficialText({
-                openid,
-                groupOpenid,
-                text: "任务已完成，完整回复请打开见微 /chat 查看（QQ 回发失败）。",
-                accessToken,
-              }).catch(() => {});
-            }
-          }
         }
       }
 
       replyCtx.delete(msg.meta.eventId);
     },
+    sendAttachment,
     ingestWebhookPayload,
   };
 
   return adapter;
-}
-
-export function loadQqBotConfigFromEnv(): QqBotConfig {
-  const appId = (process.env.QQ_BOT_APP_ID || "").trim();
-  const secret = (process.env.QQ_BOT_SECRET || "").trim();
-  const yamlOff = process.env.QQ_BOT_ENABLED === "false";
-  const qqMap = parseQqIdOpenIdMap(process.env.QQ_BOT_QQ_OPENID_MAP);
-  const groupMap = parseQqIdOpenIdMap(process.env.QQ_BOT_GROUP_OPENID_MAP);
-  const allowedUsers = parseCsvEnv(process.env.QQ_BOT_ALLOWED_OPENIDS);
-  const allowedGroups = parseCsvEnv(process.env.QQ_BOT_ALLOWED_GROUPS);
-  return {
-    appId,
-    secret,
-    enabled: Boolean(appId && secret) && !yamlOff,
-    allowedOpenIds: expandAllowedIds(allowedUsers, qqMap, "QQ_BOT_ALLOWED_OPENIDS"),
-    allowedGroups: expandAllowedIds(allowedGroups, groupMap, "QQ_BOT_ALLOWED_GROUPS"),
-    useWs: process.env.QQ_BOT_WS === "1" || process.env.QQ_BOT_WS === "true",
-  };
 }
 
 export function getQqAdapterIngest(

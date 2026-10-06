@@ -486,7 +486,8 @@ export async function articleImportTool(args: Record<string, unknown>, ctx: Nati
   const slug = args.slug ? String(args.slug) : slugify(title);
   const excerpt = String(args.excerpt || previewContent.slice(0, 200).replace(/\s+/g, " ").trim());
   const tags = Array.isArray(args.tags) ? args.tags.map(String) : ["转载"];
-  const published = args.published !== false;
+  // 外部文章抓取结果仍需业主核对版权、正文和图片，因此默认只创建草稿。
+  const published = args.published === true;
 
   const createResult = await ctx.services.post.create({
     title,

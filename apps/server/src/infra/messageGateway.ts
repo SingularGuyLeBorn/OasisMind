@@ -8,7 +8,11 @@
  */
 
 import type { PrismaClient } from "@prisma/client";
-import type { ChatAttachment } from "@oasismind/shared";
+import {
+  chatAttachmentSchema,
+  type ChannelAttachment,
+  type ChatAttachment,
+} from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { claimWebhookEvent } from "./webhookIdempotency.js";
@@ -23,7 +27,7 @@ import {
   clearChannelOutbound,
   shouldSkipChannelFallback,
 } from "./channelOutboundLedger.js";
-import { notifySessionListChanged } from "./uiStateNotify.js";
+import { notifyAllMainSessionsUi, notifySessionListChanged } from "./uiStateNotify.js";
 import { IM_SLASH_HELP_TEXT, parseImSlashCommand } from "./imSlashCommands.js";
 
 /**
@@ -93,6 +97,25 @@ export type ChannelReplyChunk = {
   imQuote?: boolean;
 };
 
+/** Agent 主动出站与自动回复共用的目标；敏感平台 token 不进入该结构。 */
+export type ChannelSendTarget = {
+  peerId: string;
+  chatId?: string;
+  /** 最近入站事件 id；仅在 quote=true 时作为平台引用依据。 */
+  replyTo?: string;
+  quote?: boolean;
+  /** 仅支持成员提及的平台使用；正文不再自行猜目标。 */
+  mentionPeerIds?: string[];
+};
+
+export type ChannelCapability = {
+  inbound: Array<ChannelAttachment["kind"]>;
+  outbound: Array<ChannelAttachment["kind"]>;
+  maxBytes: number;
+  supportsCaption: boolean;
+  supportsQuote: boolean;
+};
+
 /** SessionQueueItem.attachments 中的 IM 入站元数据（drain 回发 / 引用依赖） */
 export type ImInboundQueueMeta = {
   v: 1;
@@ -101,31 +124,19 @@ export type ImInboundQueueMeta = {
   chatId?: string;
   eventId: string;
   replyTo: string;
-  /** 入站图片等（排队后 drain 原样喂 chatAgentStream） */
-  chatAttachments?: ChatAttachment[];
+  /** 入站统一附件（排队后 drain 原样喂 chatAgentStream） */
+  attachments?: ChatAttachment[];
 };
 
 export const IM_INBOUND_QUEUE_KIND = "im_inbound" as const;
 
-function sanitizeQueuedChatAttachments(raw: unknown): ChatAttachment[] | undefined {
+function sanitizeQueuedAttachments(raw: unknown): ChatAttachment[] | undefined {
   if (!Array.isArray(raw) || raw.length === 0) return undefined;
   const out: ChatAttachment[] = [];
   for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const a = item as Record<string, unknown>;
-    if (a.type === "post") continue; // IM 入站不排队文章引用
-    const name = typeof a.name === "string" ? a.name : "";
-    const mimeType = typeof a.mimeType === "string" ? a.mimeType : "";
-    const previewUrl = typeof a.previewUrl === "string" ? a.previewUrl : "";
-    if (!name || !mimeType || !previewUrl) continue;
-    out.push({
-      type: "image",
-      name,
-      mimeType,
-      previewUrl,
-      extractedText: typeof a.extractedText === "string" ? a.extractedText : undefined,
-      source: a.source === "ocr" || a.source === "vision" || a.source === "user" ? a.source : "user",
-    });
+    const parsed = chatAttachmentSchema.safeParse(item);
+    if (!parsed.success || parsed.data.type === "post") continue;
+    out.push(parsed.data);
   }
   return out.length ? out : undefined;
 }
@@ -138,7 +149,7 @@ export function buildImInboundAttachment(msg: UnifiedMessage): ImInboundQueueMet
     chatId: msg.envelope.chatId,
     eventId: msg.meta.eventId,
     replyTo: msg.meta.replyTo || msg.meta.eventId,
-    chatAttachments: msg.payload.attachments?.length ? msg.payload.attachments : undefined,
+    attachments: msg.payload.attachments?.length ? msg.payload.attachments : undefined,
   };
 }
 
@@ -159,7 +170,7 @@ export function parseImInboundAttachment(raw: unknown): ImInboundQueueMeta | nul
     chatId: typeof o.chatId === "string" && o.chatId ? o.chatId : undefined,
     eventId,
     replyTo: typeof o.replyTo === "string" && o.replyTo ? o.replyTo : eventId,
-    chatAttachments: sanitizeQueuedChatAttachments(o.chatAttachments),
+    attachments: sanitizeQueuedAttachments(o.attachments),
   };
 }
 
@@ -176,7 +187,7 @@ export function unifiedMessageFromImInbound(
     },
     payload: {
       text: content,
-      attachments: meta.chatAttachments,
+      attachments: meta.attachments,
     },
     meta: {
       eventId: meta.eventId,
@@ -196,6 +207,10 @@ export interface ChannelAdapter {
   stop(): Promise<void>;
   /** 向原渠道回发（流式分片或终稿） */
   reply(msg: UnifiedMessage, chunk: ChannelReplyChunk): Promise<void>;
+  /** 发送一份已经校验并落盘的统一附件；用于 Agent 工具与安全重试。 */
+  sendAttachment?(target: ChannelSendTarget, attachment: ChannelAttachment): Promise<unknown>;
+  /** 管理页据此展示真实能力，禁止用文案猜平台支持范围。 */
+  readonly capabilities?: ChannelCapability;
 }
 
 export type GatewayHandleResult =
@@ -234,6 +249,19 @@ export function getMessageGatewayStats() {
   return { ...stats, channels: Object.fromEntries(
     [...adapters.entries()].map(([k, a]) => [k, { enabled: a.enabled, ...a.getStatus() }]),
   ) };
+}
+
+/** 出站台账写点后的 PUSH 半边；/channels 另保留轮询作为 PULL 兜底。 */
+export async function notifyChannelTransferUpdated(event: {
+  transferId: string;
+  channel: string;
+  status: string;
+}): Promise<void> {
+  if (!deps) return;
+  await notifyAllMainSessionsUi(deps.prisma, {
+    type: "channel_transfer_updated",
+    ...event,
+  });
 }
 
 export function initMessageGateway(next: GatewayDeps): void {
@@ -535,9 +563,9 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
       }
       const queuePos = imPending + 1;
       const { enqueueImChannelDrain } = await import("./imChannelDrain.js");
-      void enqueueImChannelDrain(binding.sessionId).catch(() => {});
+      enqueueImChannelDrain(binding.sessionId).catch(() => {});
       if (adapter) {
-        void adapter
+        adapter
           .reply(msg, {
             text: `已排队（第 ${queuePos} 条），上一条结束后会继续回复。`,
             finish: false,
@@ -559,7 +587,7 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
     }
     stats.started += 1;
     if (adapter) {
-      void adapter
+      adapter
         .reply(msg, {
           text: "收到，正在处理…",
           finish: false,
@@ -569,7 +597,7 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
         .catch(() => {});
     }
     const { enqueueImChannelDrain } = await import("./imChannelDrain.js");
-    void enqueueImChannelDrain(binding.sessionId).catch(() => {});
+    enqueueImChannelDrain(binding.sessionId).catch(() => {});
     return { ok: true, sessionId: binding.sessionId };
   } catch (err) {
     stats.failed += 1;

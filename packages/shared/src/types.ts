@@ -42,6 +42,27 @@ export interface Post {
 }
 
 /** AI Agent 实体 */
+/** 文本引用锚点；offset 是渲染后文章纯文本中的 UTF-16 偏移。 */
+export interface PostAnnotationAnchor {
+  exact: string;
+  prefix: string;
+  suffix: string;
+  startOffset: number;
+  endOffset: number;
+}
+
+/** 仅保存在本机 content/.private 的业主批注，不进入公开内容生成产物。 */
+export interface PostAnnotation {
+  id: string;
+  garden: string;
+  slug: string;
+  anchor: PostAnnotationAnchor;
+  style: "highlight" | "underline" | "wavy";
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -314,7 +335,7 @@ export interface ChatMessage {
   label?: string | null;
   /** null=普通；branch_summary=分支摘要（默认不进 LLM 上下文） */
   kind?: string | null;
-  /** 图片 | 文章引用（见 schemas.chatAttachmentSchema） */
+  /** 编辑器图片、文章引用或 IM 通道附件（见 schemas.chatAttachmentSchema） */
   attachments?: import("./schemas.js").ChatAttachment[];
   toolCalls: any;
   toolResults: any;
@@ -415,17 +436,6 @@ export interface Approval {
   decisionScope?: string | null;
   /** W3：上次 gate 通知时间 */
   lastNotifiedAt?: string | Date | null;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-}
-
-/** 文章轻留言 */
-export interface Comment {
-  id: string;
-  postId: string;
-  authorName: string;
-  content: string;
-  status: "approved" | "hidden";
   createdAt: string | Date;
   updatedAt: string | Date;
 }

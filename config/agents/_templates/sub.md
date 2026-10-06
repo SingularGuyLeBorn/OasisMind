@@ -39,6 +39,7 @@ tools:
   - "native:literature_get"
   - "native:document_to_markdown"
   - "native:browser_screenshot"
+  - "native:capture_screenshot"
   - "native:read_image"
   - "native:vision_describe"
   - "native:generate_illustration"

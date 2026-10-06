@@ -8,6 +8,7 @@
  */
 
 import { z } from "zod";
+import type { ChannelAttachment } from "@oasismind/shared";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
 import { zodParams } from "./zodParams.js";
 import { registerNativeDomain } from "./registerDomain.js";
@@ -17,6 +18,16 @@ import {
   TOOL_CORRECT_EXAMPLES,
 } from "./agentToolError.js";
 import { cosyVoiceSynthZodFields } from "./integration/voice.js";
+import { resolveAgentFsPath } from "../../writePolicy.js";
+import {
+  createTextChannelAttachment,
+  materializeLocalChannelAttachment,
+  materializeRemoteChannelAttachment,
+} from "../../channels/channelAttachment.js";
+import {
+  deriveChannelIdempotencyKey,
+  sendChannelAttachment,
+} from "../../channels/channelTransfer.js";
 
 /** 非参数类错误（通道/能力）；参数类请用 agentParamError 附带正确示例 */
 function agentErr(error: string, extra?: Record<string, unknown>) {
@@ -56,6 +67,12 @@ const targetFields = {
       "progress=过程进度（不抑制系统终稿兜底）；answer=正式回复（发成功后系统不再自动回发）。" +
         "默认 answer。长任务进度必须显式 progress。",
     )
+    .optional(),
+  idempotencyKey: z
+    .string()
+    .min(8)
+    .max(200)
+    .describe("可选，调用方自己的幂等键；同一发送重试时必须复用。普通对话会自动按当前用户消息生成。")
     .optional(),
 };
 
@@ -106,6 +123,56 @@ async function noteQqOutbound(
 ): Promise<void> {
   const { markChannelOutbound } = await import("../../channelOutboundLedger.js");
   markChannelOutbound(ctx.sessionId, "qq", outboundKind(args), textForMatch);
+}
+
+async function resolveOutboundSourceTurnId(
+  args: Record<string, unknown>,
+  ctx: NativeToolContext,
+  attachment: ChannelAttachment,
+): Promise<string> {
+  const explicit = String(args.idempotencyKey ?? "").trim();
+  if (explicit) return `explicit:${explicit}`;
+  if (ctx.prisma && ctx.sessionId) {
+    const latestUser = await ctx.prisma.chatMessage.findFirst({
+      where: { sessionId: ctx.sessionId, role: "user" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    if (latestUser?.id) return `message:${latestUser.id}`;
+  }
+  // [OM-FREEPLAY] 无会话的直接工具调用没有“同一用户消息”可绑定；用附件 id 仅隔离本次调用，
+  // 避免把不同时间发送的同一文件永久去重。需要跨调用去重时由调用方传 idempotencyKey。
+  return `manual:${ctx.sessionId || "no-session"}:${attachment.id}`;
+}
+
+async function sendQqAttachmentTransfer(opts: {
+  args: Record<string, unknown>;
+  ctx: NativeToolContext;
+  target: OfficialTarget;
+  attachment: ChannelAttachment;
+  quoteReplyTo?: string;
+  mentionPeerIds?: string[];
+}) {
+  const channelTarget = {
+    peerId: opts.target.openid,
+    chatId: opts.target.groupOpenid,
+    replyTo: opts.quoteReplyTo,
+    quote: Boolean(opts.quoteReplyTo),
+    mentionPeerIds: opts.mentionPeerIds,
+  };
+  const sourceTurnId = await resolveOutboundSourceTurnId(opts.args, opts.ctx, opts.attachment);
+  return sendChannelAttachment({
+    dataDir: opts.ctx.config.dataDir,
+    channel: "qq",
+    target: channelTarget,
+    attachment: opts.attachment,
+    idempotencyKey: deriveChannelIdempotencyKey({
+      channel: "qq",
+      target: channelTarget,
+      sourceTurnId,
+      attachment: opts.attachment,
+    }),
+  });
 }
 
 /**
@@ -363,7 +430,7 @@ function wrapOutboundFailure(
   } else if (/403|频控|rate|quota/i.test(detail)) {
     hint = "判定为平台频控：稍后再发，不要连打本工具。";
   }
-  return agentErr(`${action}失败：${hint}`, { detail, ...extra });
+  return agentErr(`${action}失败：${detail}。${hint}`, { detail, ...extra });
 }
 
 const sendQqText: NativeToolHandler = async (args, ctx) => {
@@ -380,7 +447,6 @@ const sendQqText: NativeToolHandler = async (args, ctx) => {
   if ("error" in target) return target;
 
   try {
-    const { sendQqOfficialText } = await import("../../channels/qqOfficialMedia.js");
     const quoteOpts = await applyQuoteOpts(args, target);
     const mentionIds = resolveMentionOpenIds(args, target.openid);
     const body = mentionIds.length ? text : stripQqAtTags(text);
@@ -388,22 +454,31 @@ const sendQqText: NativeToolHandler = async (args, ctx) => {
       openids: mentionIds,
       groupOpenid: target.groupOpenid,
     });
-    const result = await sendQqOfficialText({
-      openid: target.openid,
-      groupOpenid: target.groupOpenid,
-      text: outboundText,
-      ...quoteOpts,
+    const attachment = createTextChannelAttachment({ text: body });
+    const transfer = await sendQqAttachmentTransfer({
+      args,
+      ctx,
+      target,
+      attachment,
+      quoteReplyTo: quoteOpts.msgId,
+      mentionPeerIds: mentionIds,
     });
+    if (transfer.record.status !== "sent") {
+      throw new Error(transfer.record.error || `传输状态 ${transfer.record.status}`);
+    }
     await noteQqOutbound(ctx, args, outboundText);
     return {
       ok: true,
       type: "text",
+      attachment: transfer.record.attachment,
+      transfer: transfer.record,
+      duplicate: transfer.duplicate,
       quote: effectiveQuote(args) && Boolean(quoteOpts.msgId),
       at: mentionIds.length > 0,
       atOpenIds: mentionIds,
       kind: outboundKind(args),
       ...target,
-      result,
+      result: transfer.record.platformResult,
     };
   } catch (err) {
     return wrapOutboundFailure("发送 QQ 官方文本", err, { ...target });
@@ -499,70 +574,67 @@ async function sendMedia(
   const target = await resolveTarget(args, ctx);
   if ("error" in target) return target;
 
-  const kind =
-    type === "image" ? "image" : type === "video" ? "video" : type === "file" ? "file" : "voice";
+  const attachmentKind: ChannelAttachment["kind"] =
+    type === "image" ? "image" : type === "video" ? "video" : type === "file" ? "file" : "audio";
   try {
-    const { sendQqOfficialMedia, sendQqOfficialText } = await import(
-      "../../channels/qqOfficialMedia.js"
-    );
-    const quoteOpts = await applyQuoteOpts(args, target);
-    const result = await sendQqOfficialMedia({
-      openid: target.openid,
-      groupOpenid: target.groupOpenid,
-      kind,
-      file,
-      fileName: args.name ? String(args.name) : undefined,
-      ...quoteOpts,
-    });
-    // 富媒体 content 常被忽略：at 只作用在 image/video 的 caption 文本上
     const captionRaw = args.caption ? String(args.caption).trim() : "";
     const mentionIds = target.groupOpenid
       ? resolveMentionOpenIds(args, target.openid)
       : [];
     const captionBody = mentionIds.length ? captionRaw : stripQqAtTags(captionRaw);
-    let captionSent = "";
-    if ((type === "image" || type === "video") && (captionBody || mentionIds.length)) {
-      const caption = withQqAtMention(captionBody || "（见图）", {
-        openids: mentionIds,
-        groupOpenid: target.groupOpenid,
+    let attachment: ChannelAttachment;
+    if (/^https?:\/\//i.test(file)) {
+      attachment = await materializeRemoteChannelAttachment({
+        source: "remote",
+        remoteUrl: file,
+        fileName: args.name ? String(args.name) : undefined,
+        hintedKind: attachmentKind,
+        caption: captionBody || undefined,
       });
-      try {
-        await sendQqOfficialText({
-          openid: target.openid,
-          groupOpenid: target.groupOpenid,
-          text: caption,
-          // 说明文字跟在媒体后，不再重复引用
-        });
-        captionSent = caption;
-      } catch (capErr) {
-        await noteQqOutbound(ctx, args, captionBody || file);
-        return {
-          ok: true,
-          type,
-          file,
-          at: mentionIds.length > 0,
-          atOpenIds: mentionIds,
-          kind: outboundKind(args),
-          ...target,
-          result,
-          captionWarning:
-            `媒体已发出，说明文字失败：${capErr instanceof Error ? capErr.message : String(capErr)}。` +
-            "不要重发媒体；补说明请再调 send_qq_text。",
-        };
-      }
+    } else {
+      const resolved = await resolveAgentFsPath(ctx, file, "read");
+      attachment = materializeLocalChannelAttachment({
+        absPath: resolved.abs,
+        source: "agent",
+        fileName: args.name ? String(args.name) : undefined,
+        hintedKind: attachmentKind,
+        caption: captionBody || undefined,
+      });
+    }
+    if (attachment.status !== "ready") {
+      return agentErr(`发送前附件校验失败：${attachment.error || "未知原因"}`, {
+        type,
+        file,
+        attachment,
+      });
+    }
+    const quoteOpts = await applyQuoteOpts(args, target);
+    const transfer = await sendQqAttachmentTransfer({
+      args,
+      ctx,
+      target,
+      attachment,
+      quoteReplyTo: quoteOpts.msgId,
+      mentionPeerIds: mentionIds,
+    });
+    if (transfer.record.status !== "sent") {
+      throw new Error(transfer.record.error || `传输状态 ${transfer.record.status}`);
     }
     // 有 caption 用 caption 比对终稿；纯媒体用路径（难匹配文本终稿 → 仍会系统兜底文字，符合预期）
-    await noteQqOutbound(ctx, args, captionSent || captionBody || file);
+    await noteQqOutbound(ctx, args, captionBody || file);
     return {
       ok: true,
       type,
       file,
+      attachment: transfer.record.attachment,
+      transfer: transfer.record,
+      duplicate: transfer.duplicate,
       at: mentionIds.length > 0,
       atOpenIds: mentionIds,
       quote: effectiveQuote(args) && Boolean(quoteOpts.msgId),
       kind: outboundKind(args),
       ...target,
-      result,
+      result: transfer.record.platformResult,
     };
   } catch (err) {
     return wrapOutboundFailure(`发送 QQ 官方${MEDIA_TYPE_CN[type]}`, err, {

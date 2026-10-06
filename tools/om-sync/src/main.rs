@@ -144,7 +144,9 @@ fn parse_markdown_file(content_dir: &Path, file_path: &Path) -> Result<Option<Sy
     let published = data
         .get("published")
         .and_then(|v| v.as_bool())
-        .unwrap_or(true);
+        // 发布必须 fail-closed：字段缺失或类型错误时保持草稿。
+        // Rust 全量扫描器与 TypeScript 增量扫描器必须共享这一语义。
+        .unwrap_or(false);
 
     let tags = match data.get("tags") {
         Some(serde_json::Value::Array(arr)) => arr
@@ -299,6 +301,36 @@ mod tests {
         assert_eq!(record.data.content, "Hello world");
         assert_eq!(record.data.tags, "rust,sync");
         assert!(record.data.published);
+        Ok(())
+    }
+
+    #[test]
+    fn test_missing_or_invalid_published_stays_draft() -> Result<()> {
+        let temp_dir = tempfile::tempdir()?;
+
+        let missing = temp_dir.path().join("missing.md");
+        fs::write(&missing, "---\ntitle: Missing\n---\nBody")?;
+        let missing_record = parse_markdown_file(temp_dir.path(), &missing)?.unwrap();
+        assert!(!missing_record.data.published);
+
+        let invalid = temp_dir.path().join("invalid.md");
+        fs::write(
+            &invalid,
+            "---\ntitle: Invalid\npublished: \"true\"\n---\nBody",
+        )?;
+        let invalid_record = parse_markdown_file(temp_dir.path(), &invalid)?.unwrap();
+        assert!(!invalid_record.data.published);
+
+        let numeric = temp_dir.path().join("numeric.md");
+        fs::write(&numeric, "---\ntitle: Numeric\npublished: 1\n---\nBody")?;
+        let numeric_record = parse_markdown_file(temp_dir.path(), &numeric)?.unwrap();
+        assert!(!numeric_record.data.published);
+
+        let broken = temp_dir.path().join("broken.md");
+        fs::write(&broken, "---\ntitle: [broken\npublished: true\n---\nBody")?;
+        let broken_record = parse_markdown_file(temp_dir.path(), &broken)?.unwrap();
+        assert!(!broken_record.data.published);
+
         Ok(())
     }
 

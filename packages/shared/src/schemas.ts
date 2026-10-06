@@ -114,7 +114,14 @@ export const createPostSchema = z.object({
   coverImage: z.string().url().optional().nullable(),
   category: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
-  published: z.boolean().optional(),
+  /**
+   * 新文章必须默认留在本地草稿态。
+   *
+   * 这里使用 default(false)，而不是交给各个创建入口自行猜测，确保编辑器、
+   * Chat 落库和 Agent 工具最终得到相同的发布语义。调用方只有显式传 true
+   * 才能把文章标记为公开。
+   */
+  published: z.boolean().default(false),
   /** 创建文件夹首页：slug 为 a/b 时生成 a/b/index.md，使该文件夹节点本身成为文档 */
   createFolderIndex: z.boolean().optional(),
 });
@@ -185,33 +192,83 @@ export const relatedPostsSchema = z.object({
  * - append：在已有文章末尾追加（可选二级标题）
  * 正文以服务端 messageId 为准，防前端篡改。
  */
-export const createPostFromToolResultSchema = z.object({
-  path: z.string().min(1).max(500),
+const postFromExistingContentShape = {
   mode: z.enum(["create", "update", "append"]).default("create"),
   garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
   title: z.string().min(1).max(200).optional(),
   targetPostId: z.string().cuid().optional(),
   category: z.string().max(100).optional().nullable(),
   tags: z.array(z.string().max(40)).max(20).optional(),
-  published: z.boolean().default(true),
+  published: z.boolean().optional(),
   appendHeading: z.string().max(200).optional(),
+} as const;
+
+/**
+ * 只有 create 模式补出 published=false；update/append 未传时必须保留 undefined，
+ * 否则“追加一段对话”会顺带把原文章改成草稿。发布默认值属于创建不变量，
+ * 不是更新已有文章时应被强塞的字段。
+ */
+function withCreateDraftDefault<T extends z.ZodRawShape>(sourceShape: T) {
+  return z
+    .object({ ...sourceShape, ...postFromExistingContentShape })
+    .transform((input) => ({
+      ...input,
+      published: input.mode === "create" ? input.published ?? false : input.published,
+    }));
+}
+
+export const createPostFromToolResultSchema = withCreateDraftDefault({
+  path: z.string().min(1).max(500),
 });
 
 export const inspectSessionTurnSchema = z.object({
   sessionId: z.string().cuid(),
 });
 
-export const createPostFromChatSchema = z.object({
+export const createPostFromChatSchema = withCreateDraftDefault({
   sessionId: z.string().cuid(),
   messageId: z.string().cuid(),
-  mode: z.enum(["create", "update", "append"]).default("create"),
-  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
-  title: z.string().min(1).max(200).optional(),
-  targetPostId: z.string().cuid().optional(),
-  category: z.string().max(100).optional().nullable(),
-  tags: z.array(z.string().max(40)).max(20).optional(),
-  published: z.boolean().default(true),
-  appendHeading: z.string().max(200).optional(),
+});
+
+/* ────────────────────────────────────────────────
+   PostAnnotation（业主本地私人批注）
+   ──────────────────────────────────────────────── */
+
+/** 批注锚点同时保存精确引文和两侧上下文，正文轻微改动后仍可重新定位。 */
+export const postAnnotationAnchorSchema = z.object({
+  exact: z.string().trim().min(1).max(2_000),
+  prefix: z.string().max(500).default(""),
+  suffix: z.string().max(500).default(""),
+  startOffset: z.number().int().min(0),
+  endOffset: z.number().int().min(1),
+}).refine((anchor) => anchor.endOffset > anchor.startOffset, {
+  message: "批注结束位置必须晚于开始位置",
+  path: ["endOffset"],
+});
+
+export const postAnnotationStyleSchema = z.enum(["highlight", "underline", "wavy"]);
+
+export const postAnnotationLocatorSchema = z.object({
+  garden: gardenIdSchema,
+  slug: safeEntitySlugSchema,
+});
+
+export const listPostAnnotationsSchema = postAnnotationLocatorSchema;
+
+export const createPostAnnotationSchema = postAnnotationLocatorSchema.extend({
+  anchor: postAnnotationAnchorSchema,
+  style: postAnnotationStyleSchema.default("highlight"),
+  comment: z.string().trim().max(5_000).default(""),
+});
+
+export const updatePostAnnotationSchema = postAnnotationLocatorSchema.extend({
+  id: z.string().uuid(),
+  style: postAnnotationStyleSchema.optional(),
+  comment: z.string().trim().max(5_000).optional(),
+});
+
+export const deletePostAnnotationSchema = postAnnotationLocatorSchema.extend({
+  id: z.string().uuid(),
 });
 
 /** 按花园 + slug 取文 */
@@ -484,11 +541,81 @@ export const chatPostAttachmentSchema = z.object({
   contentSnippet: z.string().optional(),
 });
 
-/** 图片 | 文章引用（post 须带 type:"post"；无 type 视为图片，兼容旧数据） */
-export const chatAttachmentSchema = z.union([chatPostAttachmentSchema, chatImageAttachmentSchema]);
+/**
+ * IM 通道统一附件。
+ *
+ * 这份结构是 QQ、微信与 Agent 之间的唯一传输事实：正文不再用一行本机路径
+ * 冒充文件。`localPath` 只允许指向受控落盘目录或 hostAccess 已授权文件；
+ * `status=failed` 必须同时给出 error，调用方才能把失败原因明确回给用户。
+ */
+export const channelAttachmentSchema = z
+  .object({
+    type: z.literal("channel"),
+    id: z.string().uuid(),
+    kind: z.enum(["text", "image", "video", "audio", "file"]),
+    fileName: z.string().min(1).max(255),
+    mimeType: z.string().min(1).max(255),
+    size: z.number().int().nonnegative().nullable(),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/i).nullable(),
+    source: z.enum(["qq", "weixin", "agent", "local", "remote"]),
+    localPath: z.string().optional(),
+    storageKey: z.string().optional(),
+    remoteUrl: z.string().url().optional(),
+    remoteId: z.string().optional(),
+    caption: z.string().optional(),
+    status: z.enum(["pending", "downloading", "ready", "uploading", "sent", "failed"]),
+    error: z.string().optional(),
+    /** 图片可内嵌给视觉模型；大图只保留 localPath，避免挤爆上下文。 */
+    previewUrl: z.string().optional(),
+    /** 语音识别、OCR 或适配器补充的可检索文本。 */
+    extractedText: z.string().optional(),
+    createdAt: z.string().datetime().optional(),
+    updatedAt: z.string().datetime().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.status === "failed" && !value.error?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["error"],
+        message: "失败附件必须记录 error",
+      });
+    }
+    if (
+      value.status === "ready" &&
+      value.kind !== "text" &&
+      !value.localPath &&
+      !value.storageKey &&
+      !value.remoteUrl
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["localPath"],
+        message: "非文本就绪附件必须有 localPath、storageKey 或 remoteUrl",
+      });
+    }
+    if ((value.status === "ready" || value.status === "sent") && (!value.sha256 || value.size === null)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sha256"],
+        message: "就绪或已发送附件必须记录 size 与 sha256",
+      });
+    }
+  });
+
+/** Chat 可携带编辑器图片、文章引用或 IM 通道附件。 */
+export const chatAttachmentSchema = z.union([
+  chatPostAttachmentSchema,
+  chatImageAttachmentSchema,
+  channelAttachmentSchema,
+]);
 
 export type ChatPostAttachment = z.infer<typeof chatPostAttachmentSchema>;
+export type ChannelAttachment = z.infer<typeof channelAttachmentSchema>;
 export type ChatAttachment = z.infer<typeof chatAttachmentSchema>;
+
+export function isChannelAttachment(a: unknown): a is ChannelAttachment {
+  return channelAttachmentSchema.safeParse(a).success;
+}
 
 export function isChatPostAttachment(a: unknown): a is ChatPostAttachment {
   return (
@@ -510,6 +637,35 @@ export function isChatImageAttachment(a: unknown): a is z.infer<typeof chatImage
     typeof (a as { mimeType?: unknown }).mimeType === "string" &&
     typeof (a as { previewUrl?: unknown }).previewUrl === "string"
   );
+}
+
+/** IM 图片转换为现有视觉管线需要的轻量视图。 */
+export function channelImageAsChatImage(
+  attachment: ChannelAttachment,
+): z.infer<typeof chatImageAttachmentSchema> | null {
+  if (attachment.kind !== "image" || !attachment.previewUrl) return null;
+  return {
+    type: "image",
+    name: attachment.fileName,
+    mimeType: attachment.mimeType,
+    previewUrl: attachment.previewUrl,
+    extractedText: attachment.extractedText,
+    source: "user",
+  };
+}
+
+/** 非图片附件也以结构化文字进入模型上下文，避免文件悄悄消失。 */
+export function formatChannelAttachmentForLlm(attachment: ChannelAttachment): string {
+  const location = attachment.localPath || attachment.storageKey || attachment.remoteUrl || "无可用位置";
+  const lines = [
+    `[通道附件 · ${attachment.kind} · ${attachment.fileName}]`,
+    `状态: ${attachment.status}; MIME: ${attachment.mimeType}; 大小: ${attachment.size ?? "未知"}; SHA-256: ${attachment.sha256 ?? "未知"}`,
+    `位置: ${location}`,
+  ];
+  if (attachment.caption?.trim()) lines.push(`说明: ${attachment.caption.trim()}`);
+  if (attachment.extractedText?.trim()) lines.push(`识别文本: ${attachment.extractedText.trim()}`);
+  if (attachment.error?.trim()) lines.push(`传输错误: ${attachment.error.trim()}`);
+  return lines.join("\n");
 }
 
 /** 文章引用 → 注入 LLM 的文本块 */
@@ -1640,48 +1796,6 @@ export const listApprovalsSchema = z.object({
 });
 
 /* ═══════════════════════════════════════════════════════
-   Comment (文章轻留言)
-   ═══════════════════════════════════════════════════════ */
-
-export const createCommentSchema = z.object({
-  postId: z.string().cuid(),
-  authorName: z.string().trim().min(1, "请填写昵称").max(40, "昵称最多 40 字"),
-  content: z.string().trim().min(1, "请填写留言").max(2000, "留言最多 2000 字"),
-});
-
-export const updateCommentSchema = z.object({
-  id: z.string().cuid(),
-  status: z.enum(["approved", "hidden"]),
-});
-
-export const listCommentsSchema = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(100).default(20),
-  postId: z.string().cuid().optional(),
-  status: z.enum(["approved", "hidden"]).optional(),
-});
-
-export const listCommentsForPostSchema = z.object({
-  postId: z.string().cuid(),
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(50).default(50),
-});
-
-export const listBlogPostsSchema = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(50).default(10),
-  keyword: z.string().max(200).optional(),
-  garden: gardenIdSchema.optional(),
-  tag: z.string().max(64).optional(),
-  category: z.string().max(64).optional(),
-});
-
-export const getBlogPostBySlugSchema = z.object({
-  slug: safeEntitySlugSchema,
-  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
-});
-
-/* ═══════════════════════════════════════════════════════
    Tool (工具注册表)
    ═══════════════════════════════════════════════════════ */
 
@@ -2099,13 +2213,6 @@ export type CreateApprovalInput = z.infer<typeof createApprovalSchema>;
 export type UpdateApprovalInput = z.infer<typeof updateApprovalSchema>;
 export type ListApprovalsInput = z.infer<typeof listApprovalsSchema>;
 
-export type CreateCommentInput = z.infer<typeof createCommentSchema>;
-export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
-export type ListCommentsInput = z.infer<typeof listCommentsSchema>;
-export type ListCommentsForPostInput = z.infer<typeof listCommentsForPostSchema>;
-export type ListBlogPostsInput = z.infer<typeof listBlogPostsSchema>;
-export type GetBlogPostBySlugInput = z.infer<typeof getBlogPostBySlugSchema>;
-
 export type CreateToolInput = z.infer<typeof createToolSchema>;
 export type UpdateToolInput = z.infer<typeof updateToolSchema>;
 export type ListToolsInput = z.infer<typeof listToolsSchema>;
@@ -2128,4 +2235,3 @@ export type CreateDailyFlowItemInput = z.infer<typeof createDailyFlowItemSchema>
 export type UpdateDailyFlowItemInput = z.infer<typeof updateDailyFlowItemSchema>;
 export type MoveDailyFlowItemInput = z.infer<typeof moveDailyFlowItemSchema>;
 export type DailyFlowDayReportInput = z.infer<typeof dailyFlowDayReportSchema>;
-

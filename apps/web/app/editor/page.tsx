@@ -29,6 +29,7 @@ function NewPostPageContent() {
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
   const [garden, setGarden] = useState(gardenFromUrl);
+  const [published, setPublished] = useState(false);
   const [createFolderIndex, setCreateFolderIndex] = useState(false);
   /** 新建页稳定草稿键：附件落 uploads/{garden}/_draft/{draftKey}/，与 slug 解耦 */
   const [draftKey] = useState(() =>
@@ -42,7 +43,7 @@ function NewPostPageContent() {
     content,
     category,
     tags,
-    published: true,
+    published,
     enabled: true,
     onRestored: (draft) => {
       setTitle(draft.title);
@@ -73,7 +74,7 @@ function NewPostPageContent() {
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
-        published: true,
+        published,
         createFolderIndex,
       },
       {
@@ -163,6 +164,15 @@ function NewPostPageContent() {
             placeholder="标签，用逗号分隔"
             className="rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-1.5 text-sm text-[var(--om-text-1)] outline-none placeholder:text-[var(--om-text-3)]"
           />
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--om-text-2)]">
+            <input
+              type="checkbox"
+              checked={published}
+              onChange={(event) => setPublished(event.target.checked)}
+              className="h-4 w-4 rounded border-[var(--om-divider)] bg-[var(--om-bg)] text-[var(--om-brand-deep)]"
+            />
+            创建后发布到公开站
+          </label>
           <div className="flex flex-col gap-1">
             <input
               value={slugInput}

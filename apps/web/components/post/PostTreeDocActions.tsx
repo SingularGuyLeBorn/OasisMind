@@ -105,7 +105,7 @@ export function PostTreeDocActions({
       slug: childSlug,
       garden,
       content: "",
-      published: true,
+      published: false,
     });
   };
 

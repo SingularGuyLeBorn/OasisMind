@@ -9,14 +9,15 @@ export interface PostExportInput {
   excerpt?: string | null;
   category?: string | null;
   tags?: string[];
-  published?: boolean;
+  /** 导出必须保留事实源中的真实发布状态，禁止缺失时猜成公开。 */
+  published: boolean;
 }
 
 const MD_IMAGE_RE = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 const HTML_IMG_RE = /<img[^>]+src=["']([^"']+)["']/gi;
 const EXTERNAL_SRC_RE = /^([a-z][a-z0-9+.-]*:|\/\/)/i;
 
-function serializePostMarkdown(post: PostExportInput): string {
+export function serializePostMarkdown(post: PostExportInput): string {
   const tagsYaml =
     post.tags && post.tags.length > 0
       ? `\ntags:\n${post.tags.map((tag) => `  - "${tag.replace(/"/g, '\\"')}"`).join("\n")}`
@@ -24,7 +25,7 @@ function serializePostMarkdown(post: PostExportInput): string {
   return `---
 title: "${post.title.replace(/"/g, '\\"')}"
 category: ${post.category ? `"${post.category.replace(/"/g, '\\"')}"` : "null"}${tagsYaml}
-published: ${post.published ?? true}
+published: ${post.published}
 excerpt: ${post.excerpt ? `"${post.excerpt.replace(/"/g, '\\"')}"` : "null"}
 ---
 ${post.content}

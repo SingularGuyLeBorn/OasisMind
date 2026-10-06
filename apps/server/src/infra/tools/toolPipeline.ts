@@ -312,8 +312,8 @@ export async function runNativePipeline(
   let coop: Awaited<ReturnType<typeof runCooperative<unknown>>>;
   try {
     const screenshotBudget = Number(
-      name === "browser_screenshot" || name === "scroll_screenshot"
-        ? frozen.timeoutMs
+      name === "browser_screenshot" || name === "scroll_screenshot" || name === "capture_screenshot"
+        ? (frozen.timeout ?? frozen.timeoutMs)
         : NaN,
     );
     const coopTimeoutMs =

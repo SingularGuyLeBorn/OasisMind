@@ -40,7 +40,6 @@ export type AgentStreamEvent =
   | { type: "session_tree_updated"; sessionId: string; activeLeafId?: string | null }
   | { type: "daily_flow_updated"; dayKey: string }
   | { type: "post_list_changed"; reason?: string }
-  | { type: "comment_updated"; postId?: string }
   | { type: "inbox_updated"; reason?: string }
   | { type: "dead_letter_updated" }
   | { type: "message_upserted"; sessionId: string; message: { id: string; role: string; content: string; parentId?: string | null; label?: string | null; kind?: string | null; toolCalls?: unknown; toolResults?: unknown; tokenUsage?: unknown; attachments?: unknown; source?: string | null; finishReason?: string | null; createdAt: string } }
@@ -52,7 +51,8 @@ export type AgentStreamEvent =
   | { type: "artifact_created"; sessionId: string; artifactKind: string; title?: string; path: string; mime?: string; toolCallId: string; toolName: string }
   | { type: "ask_user_resolved"; sessionId: string; askId: string; outcome: "answered" | "expired" | "aborted"; answer?: string }
   | { type: "swarm_task_update"; sessionId: string; jobId: string; origin: string; taskLabel: string; status: "queued" | "running" | "duplicate" | "completed" | "failed"; error?: string; subagentSessionId?: string }
-  | { type: "workspace_stages_updated"; sessionId: string; workspaceId?: string; stage?: string };
+  | { type: "workspace_stages_updated"; sessionId: string; workspaceId?: string; stage?: string }
+  | { type: "channel_transfer_updated"; transferId: string; channel: string; status: string };
 
 export function createTrackingEmit(
   sessionId: string,

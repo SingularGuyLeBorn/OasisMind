@@ -265,6 +265,11 @@ const QQ_TOOL_GUIDE = `## QQ 官方 Bot
 - **群被动窗≈5分钟**：长任务必须先 \`send_qq_text({ kind:"progress", text:"…" })\` 丢 1～3 条极短进度（勿刷屏）；能拆就拆短、先交一小步请主人再 @，避免闷头超时导致终稿发不回群。
 - 绑定会话省略目标；目标=openid。QQ 不渲染 Markdown；大图 <1.5MB。`;
 
+const WEIXIN_TOOL_GUIDE = `## 微信 ClawBot
+- 绑定会话可省略 userId；主动发文字、图片、视频、语音和文件分别用 \`send_weixin_*\`。
+- 本机路径必须来自当前 Workspace、content/uploads 或 hostAccess 已授权目录；不要把路径文字当作已经发送。
+- 工具返回 transfer.status=sent 才算送达；失败先用 \`channel_transfer_status\` 查看。只有 retrySafe=true 的 failed 才能用 \`channel_transfer_retry\`，uncertain 必须先到微信核对，禁止盲重发。`;
+
 const SESSION_HISTORY_GUIDE = `## 会话压缩与历史召回
 - session_compact 只缩小**模型视野**（摘要 + 边界后消息），**不删除** ChatMessage；UI 历史仍在。
 - 压缩后摘要丢细节 ≠ 数据丢失。用 **session_search(keyword)** 在本会话原文检索；命中 inLlmContext=false 再用 **session_message_get(messageId)** 拉片段。
@@ -382,6 +387,16 @@ export function buildAgentToolGuide(
       has("delete_qq_message"))
   ) {
     parts.push(QQ_TOOL_GUIDE);
+  }
+  if (
+    want("qq") &&
+    (has("send_weixin_text") ||
+      has("send_weixin_image") ||
+      has("send_weixin_video") ||
+      has("send_weixin_file") ||
+      has("send_weixin_voice"))
+  ) {
+    parts.push(WEIXIN_TOOL_GUIDE);
   }
   if (
     want("session") &&

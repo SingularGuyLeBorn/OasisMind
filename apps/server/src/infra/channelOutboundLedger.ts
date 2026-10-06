@@ -85,15 +85,6 @@ export function shouldSkipChannelFallback(
   return isSameChannelFinal(sent, finalText);
 }
 
-/** @deprecated 用 shouldSkipChannelFallback；保留给旧测试迁移期 */
-export function hasChannelAnswerOutbound(
-  sessionId: string | undefined | null,
-  channel: string,
-): boolean {
-  if (!sessionId?.trim()) return false;
-  return bySession.get(sessionId)?.lastAnswerTextByChannel.has(channel) === true;
-}
-
 export function __resetChannelOutboundLedgerForTests(): void {
   bySession.clear();
 }

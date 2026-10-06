@@ -304,21 +304,6 @@ export function useChatSseSubscriptions({
         utils.post.tags.invalidate().catch(logQueryCatch);
         postUiState({ type: "post_list_changed" });
       });
-      register("comment_updated", (ev) => {
-        let postId: string | undefined;
-        try {
-          const data = JSON.parse(ev.data) as { postId?: string };
-          postId = data.postId;
-        } catch {
-          /* ignore */
-        }
-        if (postId) {
-          utils.comment.listForPost.invalidate({ postId }).catch(logQueryCatch);
-        } else {
-          utils.comment.listForPost.invalidate().catch(logQueryCatch);
-        }
-        postUiState({ type: "comment_updated", postId });
-      });
       register("inbox_updated", () => {
         utils.inbox.list.invalidate().catch(logQueryCatch);
         utils.inbox.stats.invalidate().catch(logQueryCatch);
@@ -329,6 +314,11 @@ export function useChatSseSubscriptions({
       register("dead_letter_updated", () => {
         utils.deadLetter.list.invalidate().catch(logQueryCatch);
         postUiState({ type: "dead_letter_updated" });
+      });
+      register("channel_transfer_updated", () => {
+        utils.channel.listTransfers.invalidate().catch(logQueryCatch);
+        utils.channel.status.invalidate().catch(logQueryCatch);
+        postUiState({ type: "channel_transfer_updated" });
       });
       register("workspace_stages_updated", (ev) => {
         utils.workspace.listStages.invalidate().catch(logQueryCatch);
@@ -550,14 +540,6 @@ export function useChatSseSubscriptions({
         utils.post.tree.invalidate().catch(logQueryCatch);
         utils.post.categories.invalidate().catch(logQueryCatch);
         utils.post.tags.invalidate().catch(logQueryCatch);
-      }
-      if (t === "comment_updated") {
-        const postId =
-          data && typeof data === "object" && "postId" in data && typeof (data as { postId?: unknown }).postId === "string"
-            ? (data as { postId: string }).postId
-            : undefined;
-        if (postId) utils.comment.listForPost.invalidate({ postId }).catch(logQueryCatch);
-        else utils.comment.listForPost.invalidate().catch(logQueryCatch);
       }
       if (t === "inbox_updated") {
         utils.inbox.list.invalidate().catch(logQueryCatch);

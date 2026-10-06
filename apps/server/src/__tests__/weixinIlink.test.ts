@@ -14,9 +14,13 @@ import {
   decryptWeixinAesEcb,
   encryptWeixinAesEcb,
   extraOutboundMedia,
-  weixinChatImageAttachment,
-  WEIXIN_VISION_INLINE_MAX_BYTES,
+  materializeWeixinInboundMedia,
+  sendWeixinLocalMedia,
 } from "../infra/channels/weixinMedia.js";
+import {
+  CHANNEL_IMAGE_INLINE_MAX_BYTES,
+  materializeChannelAttachmentBytes,
+} from "../infra/channels/channelAttachment.js";
 import { nextWeixinPollGap, WEIXIN_POLL_GAP_MS } from "../infra/channels/weixinClawBot.js";
 
 describe("weixinIlink helpers", () => {
@@ -149,12 +153,137 @@ describe("weixinMedia crypto", () => {
     ]);
   });
 
-  it("weixinChatImageAttachment skips oversized buffers", () => {
+  it("统一附件对小图内嵌预览，大图只保留受控路径", () => {
     const tiny = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
-    const att = weixinChatImageAttachment({ fileName: "a.jpg", relPath: "content/uploads/weixin/a.jpg", bytes: tiny });
-    expect(att && att.type !== "post" && att.previewUrl.startsWith("data:image/jpeg")).toBe(true);
-    const huge = Buffer.alloc(WEIXIN_VISION_INLINE_MAX_BYTES + 1, 1);
-    expect(weixinChatImageAttachment({ fileName: "b.jpg", relPath: "x", bytes: huge })).toBeNull();
+    const att = materializeChannelAttachmentBytes({
+      source: "weixin",
+      bytes: tiny,
+      fileName: "a.jpg",
+      declaredMime: "image/jpeg",
+      hintedKind: "image",
+    });
+    expect(att.previewUrl?.startsWith("data:image/jpeg")).toBe(true);
+    const huge = Buffer.concat([
+      tiny,
+      Buffer.alloc(CHANNEL_IMAGE_INLINE_MAX_BYTES + 1 - tiny.length, 1),
+    ]);
+    const large = materializeChannelAttachmentBytes({
+      source: "weixin",
+      bytes: huge,
+      fileName: "b.jpg",
+      declaredMime: "image/jpeg",
+      hintedKind: "image",
+    });
+    expect(large.status).toBe("ready");
+    expect(large.previewUrl).toBeUndefined();
+    expect(large.localPath).toContain("content/uploads/channels/weixin/");
+  });
+
+  it("微信入站图片/视频/语音/文件经过统一校验后落盘", async () => {
+    const fixtures = new Map<string, Buffer>([
+      ["tiny.jpg", Buffer.from([0xff, 0xd8, 0xff, 0xd9])],
+      [
+        "clip.mp4",
+        Buffer.from([0, 0, 0, 16, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]),
+      ],
+      ["voice.mp3", Buffer.from("ID3voice-fixture")],
+      ["report.pdf", Buffer.from("%PDF-1.7 fixture")],
+    ]);
+    const fetchImpl = vi.fn(async (url: string | URL) => {
+      const name = new URL(String(url)).pathname.split("/").pop() ?? "";
+      const bytes = fixtures.get(name);
+      if (!bytes) throw new Error(`微信入站测试出现未知附件：${name}`);
+      return new Response(bytes, { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const result = await materializeWeixinInboundMedia(
+      [
+        { kind: "image", url: "https://cdn.example/tiny.jpg", fileName: "tiny.jpg" },
+        { kind: "video", url: "https://cdn.example/clip.mp4", fileName: "clip.mp4" },
+        { kind: "voice", url: "https://cdn.example/voice.mp3", fileName: "voice.mp3" },
+        { kind: "file", url: "https://cdn.example/report.pdf", fileName: "report.pdf" },
+      ],
+      fetchImpl,
+    );
+
+    expect(result.attachments).toHaveLength(4);
+    expect(result.attachments.map((attachment) => attachment.kind)).toEqual([
+      "image",
+      "video",
+      "audio",
+      "file",
+    ]);
+    expect(result.attachments.map((attachment) => attachment.mimeType)).toEqual([
+      "image/jpeg",
+      "video/mp4",
+      "audio/mpeg",
+      "application/pdf",
+    ]);
+    for (const attachment of result.attachments) {
+      expect(attachment).toMatchObject({
+        type: "channel",
+        source: "weixin",
+        status: "ready",
+      });
+      expect(attachment.localPath).toContain("content/uploads/channels/weixin/");
+      expect(attachment.sha256).toMatch(/^[a-f0-9]{64}$/);
+    }
+  });
+
+  it("微信出站文件严格走取上传地址、加密上传和 sendmessage 三步", async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    const fetchImpl = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const target = String(url);
+      calls.push({ url: target, body: init?.body });
+      if (target.includes("getuploadurl")) {
+        return new Response(JSON.stringify({ ret: 0, upload_param: "upload-token" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (target.includes("/upload?")) {
+        expect(init?.method).toBe("POST");
+        expect(init?.body).toBeInstanceOf(Uint8Array);
+        return new Response("", {
+          status: 200,
+          headers: { "x-encrypted-param": "encrypted-file-ref" },
+        });
+      }
+      if (target.includes("sendmessage")) {
+        return new Response(JSON.stringify({ ret: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("not found", { status: 404 });
+    }) as unknown as typeof fetch;
+
+    await sendWeixinLocalMedia({
+      session: {
+        botToken: "token",
+        baseUrl: "https://ilink.example",
+        getUpdatesBuf: "",
+        boundUserId: "wx-u1",
+        accountId: "a1",
+      },
+      toUserId: "wx-u1",
+      contextToken: "ctx-1",
+      kind: "file",
+      bytes: Buffer.from("report"),
+      fileName: "report.txt",
+      fetchImpl,
+    });
+
+    expect(calls.map((call) => call.url)).toEqual([
+      expect.stringContaining("getuploadurl"),
+      expect.stringContaining("/upload?"),
+      expect.stringContaining("sendmessage"),
+    ]);
+    const sendCall = calls.find((call) => call.url.includes("sendmessage"));
+    const sendBody = JSON.parse(String(sendCall?.body ?? "{}")) as {
+      msg?: { item_list?: Array<{ file_item?: { file_name?: string } }> };
+    };
+    expect(sendBody.msg?.item_list?.[0]?.file_item?.file_name).toBe("report.txt");
   });
 });
 

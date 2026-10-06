@@ -6,7 +6,9 @@ node_modules/
 # Build output
 dist/
 .next/
+*.tsbuildinfo
 out/
+apps/site/public/api/v1/
 
 # Environment
 .env
@@ -73,6 +75,7 @@ content/uploads/qq-text/
 content/uploads/tts/
 content/uploads/qq-img/
 content/uploads/qq/
+content/uploads/channels/
 *.bak-before-cleanup
 .env.bak*
 # 视频抽帧临时目录（工具运行时产物）
@@ -120,6 +123,8 @@ config/memories/*.md
 
 # 花园内软删回收站（勿入库）
 content/**/.trash/
+# 业主私人批注：本地永久保存，但公开仓库与公开内容生成器均不得收录。
+content/.private/
 # 免费 API Key 本地兜底文件（含真实 key，不入库）
 content/free-keys-readme.md
 

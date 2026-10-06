@@ -53,15 +53,16 @@ async function resolveFollowing(
   ref: ZhihuContentRef,
   stats: { authorUrlToken?: string; question?: { id: string } },
   cookie: string | null | undefined,
+  timeoutMs?: number,
 ): Promise<{ author: boolean | null; question?: boolean | null; meUrlToken?: string; error?: string }> {
   const out: { author: boolean | null; question?: boolean | null; meUrlToken?: string; error?: string } =
     { author: null };
   try {
-    const me = await fetchZhihuMe(cookie);
+    const me = await fetchZhihuMe(cookie, { timeoutMs });
     out.meUrlToken = me.urlToken;
     if (stats.authorUrlToken) {
       try {
-        out.author = await isFollowingZhihuMember(stats.authorUrlToken, me.urlToken, cookie);
+        out.author = await isFollowingZhihuMember(stats.authorUrlToken, me.urlToken, cookie, { timeoutMs });
       } catch (err) {
         out.error = `作者关注查询失败: ${err instanceof Error ? err.message : String(err)}`;
       }
@@ -69,7 +70,7 @@ async function resolveFollowing(
     const questionId = ref.kind === "question" ? ref.id : stats.question?.id;
     if (questionId) {
       try {
-        out.question = await isFollowingZhihuQuestion(questionId, me.urlToken, cookie);
+        out.question = await isFollowingZhihuQuestion(questionId, me.urlToken, cookie, { timeoutMs });
       } catch (err) {
         out.error = `问题关注查询失败: ${err instanceof Error ? err.message : String(err)}`;
       }
@@ -93,7 +94,7 @@ async function readContent(
       : undefined;
   const parsed = await parsePlatformUrl({
     url: rawUrl,
-    timeout: 45_000,
+    timeout: typeof args.timeout === "number" ? args.timeout : 45_000,
     embedOcr: false,
     fetchImageFiles: false,
     ...(maxAnswers ? { maxAnswers } : {}),
@@ -119,7 +120,8 @@ async function readContent(
 async function zhihuGet(args: Record<string, unknown>, _ctx: NativeToolContext) {
   const rawUrl = String(args.url ?? "").trim();
   const ref = refFromUrl(rawUrl);
-  const stats = await fetchZhihuContentStats(ref);
+  const timeoutMs = typeof args.timeout === "number" ? args.timeout : 30_000;
+  const stats = await fetchZhihuContentStats(ref, undefined, { timeoutMs });
 
   const withContent = args.withContent !== false;
   const withComments = args.withComments === true;
@@ -129,7 +131,7 @@ async function zhihuGet(args: Record<string, unknown>, _ctx: NativeToolContext) 
 
   // undefined = 自动解析（env ZHIHU_COOKIE / platform_login 落盘的 jar）
   const cookie = undefined;
-  const following = await resolveFollowing(ref, stats, cookie);
+  const following = await resolveFollowing(ref, stats, cookie, timeoutMs);
 
   let content: Awaited<ReturnType<typeof readContent>> | undefined;
   let contentError: string | undefined;
@@ -145,7 +147,7 @@ async function zhihuGet(args: Record<string, unknown>, _ctx: NativeToolContext) 
   let commentsError: string | undefined;
   if (withComments) {
     try {
-      comments = await fetchZhihuComments(ref, { order: commentOrder, maxComments, cookie });
+      comments = await fetchZhihuComments(ref, { order: commentOrder, maxComments, cookie, timeoutMs });
     } catch (err) {
       commentsError = err instanceof Error ? err.message : String(err);
     }
@@ -171,7 +173,8 @@ async function zhihuComments(args: Record<string, unknown>, _ctx: NativeToolCont
   const ref = refFromUrl(rawUrl);
   const order = parseOrder(args.order ?? args.commentOrder);
   const maxComments = parseMaxComments(args.maxComments, 200);
-  const result = await fetchZhihuComments(ref, { order, maxComments });
+  const timeoutMs = typeof args.timeout === "number" ? args.timeout : 30_000;
+  const result = await fetchZhihuComments(ref, { order, maxComments, timeoutMs });
   return {
     ok: true,
     url: rawUrl,
@@ -255,7 +258,8 @@ async function zhihuSave(args: Record<string, unknown>, ctx: NativeToolContext) 
   if (!ctx.config) throw new Error("zhihu_save 需要应用配置上下文");
   const rawUrl = String(args.url ?? "").trim();
   const ref = refFromUrl(rawUrl);
-  const stats = await fetchZhihuContentStats(ref);
+  const timeoutMs = typeof args.timeout === "number" ? args.timeout : 30_000;
+  const stats = await fetchZhihuContentStats(ref, undefined, { timeoutMs });
   // undefined = 自动解析（env ZHIHU_COOKIE / platform_login 落盘的 jar）
   const cookie = undefined;
 
@@ -264,7 +268,7 @@ async function zhihuSave(args: Record<string, unknown>, ctx: NativeToolContext) 
   const maxComments = parseMaxComments(args.maxComments, 200);
   const maxChars = parseMaxComments(args.maxChars, 80_000);
 
-  const following = await resolveFollowing(ref, stats, cookie);
+  const following = await resolveFollowing(ref, stats, cookie, timeoutMs);
 
   let content: Awaited<ReturnType<typeof readContent>> | undefined;
   let contentError: string | undefined;
@@ -278,7 +282,7 @@ async function zhihuSave(args: Record<string, unknown>, ctx: NativeToolContext) 
   let commentsError: string | undefined;
   if (withComments) {
     try {
-      comments = await fetchZhihuComments(ref, { order: commentOrder, maxComments, cookie });
+      comments = await fetchZhihuComments(ref, { order: commentOrder, maxComments, cookie, timeoutMs });
     } catch (err) {
       commentsError = err instanceof Error ? err.message : String(err);
     }

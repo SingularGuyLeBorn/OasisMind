@@ -6,6 +6,7 @@ import { executeNativeTool } from "../infra/nativeTools.js";
 import { stripQqAtTags, withQqAtMention } from "../infra/tools/native/qq.js";
 import { createNativeCtx, createTempProjectDir } from "./helpers/toolTestFixtures.js";
 import fs from "fs";
+import path from "node:path";
 
 const SAMPLE_OPENID = "14A17D731DD2B1A0CC57FC8EDBFFC50B";
 const SAMPLE_GROUP = "B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5";
@@ -66,6 +67,19 @@ describe("qq native tools", () => {
     expect(result.error).toMatch(/不接受网络 URL|download_file/);
     expect(result.error).toContain("正确示例");
     expect(result.correctExample?.file).toMatch(/^content\//);
+  });
+
+  it("send_qq_file 不再绕过 Workspace/hostAccess 读取任意绝对路径", async () => {
+    root = createTempProjectDir();
+    const ctx = createNativeCtx(root);
+    const outside = path.join(root, "outside.pdf");
+    fs.writeFileSync(outside, "%PDF-test", "utf8");
+    const result = (await executeNativeTool(
+      "send_qq_file",
+      { file: outside, userId: SAMPLE_OPENID },
+      ctx,
+    )) as { error?: string };
+    expect(result.error).toMatch(/绝对路径|hostAccess|读取/);
   });
 
   it("delete_qq_message 缺少 messageId 时返回来源说明与示例", async () => {
