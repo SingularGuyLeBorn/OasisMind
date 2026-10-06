@@ -45,10 +45,11 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 | [`rl`](content/rl/_garden.md) · [`opd`](content/opd/_garden.md) | 从 MDP、策略梯度和偏好优化走到 RLVR，以及 on-policy 蒸馏怎样提供学生状态上的稠密监督 | 先统一状态、动作、采样策略和目标分布，再比较具体算法缩写 |
 | [`sparse-attention`](content/sparse-attention/_garden.md) · [`diffusion-llm`](content/diffusion-llm/_garden.md) | 两条仍在快速变化的模型路线：长上下文中的选择性计算，以及非自回归语言生成 | 先读首页的路线地图，再进入论文、公式、内核与评测专题 |
 | [`continual-learning`](content/continual-learning/_garden.md) · [`rsi`](content/rsi/_garden.md) | 模型怎样持续适应，以及系统怎样搜索、修改并验证自己的改进 | 区分参数更新、测试时适应、上下文或 Harness 改进，避免把它们都叫作“自我进化” |
+| [`rag`](content/rag/_garden.md) · [`agent`](content/agent/_garden.md) | 外部证据怎样经过检索、选择与引用进入回答，以及模型怎样在工具和环境反馈中形成可验证的行动闭环 | 需要知识问答链路时读 RAG；需要工具调用、记忆、规划、Harness 与 Agent 训练时读 Agent |
 | [`llm-infra`](content/llm-infra/_garden.md) · [`longhorizon`](content/longhorizon/_garden.md) | 训练与推理系统如何支撑模型，以及 Agent 为什么能在很长的任务里保持目标、状态与反馈 | 一个从系统资源读，一个从任务闭环读；两边在调度、观测和故障恢复处汇合 |
 | [`llm-interview`](content/llm-interview/_garden.md) | 把理论知识压到工程、业务与面试中的具体问题 | 学完一个主题后用于自测，不把背答案当成学习路线 |
 
-有数学基础、但尚未形成大模型全局认识的读者，可以按 `llm-guide → cs336 → 具体专题` 前进。已经熟悉基本概念、想把模糊印象变成可推导知识时，可以直接进入 RL、OPD、稀疏注意力、持续学习等专题，再沿文中的交叉链接回补前置机制。查模型报告时先去 `model-library`，需要理解团队长期路线时再进入 DeepSeek 或 OLMo。
+有数学基础、但尚未形成大模型全局认识的读者，可以按 `llm-guide → cs336 → 具体专题` 前进。已经熟悉基本概念、想把模糊印象变成可推导知识时，可以直接进入 RL、OPD、稀疏注意力、持续学习等专题，再沿文中的交叉链接回补前置机制。做知识型应用时从 RAG 进入，做能调用工具并依据环境反馈继续行动的系统时从 Agent 进入。查模型报告时先去 `model-library`，需要理解团队长期路线时再进入 DeepSeek 或 OLMo。
 
 每个知识库以 `_garden.md` 为入口。叶子文章可以直接位于父目录；一个节点只要继续包含子主题，就使用“同名目录 + 同名首页”，让文件树、站内树形导航和读者看到的知识层级保持一致。正文不强套统一模板：总览页负责给地图，算法页讲清动机、公式与比较，论文精读保留实验和来源细节，团队库则突出版本之间的连续性。写作与目录规范见 [`docs/writing-spec.md`](docs/writing-spec.md)。
 
