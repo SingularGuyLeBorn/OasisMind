@@ -6,7 +6,7 @@ published: true
 
 # NSA: 压缩、选择与滑窗的训练原生稀疏 attention
 
-Native Sparse Attention(NSA)从预训练开始就采用稀疏attention结构, 无法当作推理插件直接追加到稠密checkpoint上. 它把历史信息分到压缩、选择和滑窗三条并行分支: 压缩分支低成本覆盖全局, 选择分支从重要连续块恢复细节, 滑窗分支稳定处理局部依赖. 三个分支分别softmax, 再由可学习gate合并输出.
+Native Sparse Attention(NSA)从预训练开始就采用稀疏attention结构, 无法当作推理插件直接追加到稠密checkpoint上. **它把历史信息分到压缩、选择和滑窗三条并行分支。** 压缩分支负责「全局摘要」, 选择分支恢复「远距细节」, 滑窗分支维持「局部依赖」. 三个分支分别softmax, 再由可学习gate合并输出.
 
 论文的目标同时包含算法与硬件. Prefill和训练通常受算力限制, 需要减少实际QK与AV运算并支持反向传播; Decode通常受KV读取带宽限制, 需要让同一GQA组的query heads共享连续KV块. NSA的block设计让候选单位、GQA共享和kernel tile从训练开始对齐, 与token级top-k的物理执行不同.
 
@@ -334,9 +334,9 @@ Selection只读固定数量原始blocks，未选历史仍可通过compression br
 
 压缩率由stride而非block长度单独决定。减小d增加entries和全局读取，降低信息间隔；增大l但保持d会让每个entry看到更宽上下文，构造更贵、局部信息竞争更强。$l$ 与 $d$ 是表示范围和采样密度两个旋钮，不能只报告“16倍压缩”。
 
-## 8. Selection 分数的空间映射
+### 8. Selection 分数的空间映射
 
-### 8.1. 重叠覆盖形成一张线性映射
+#### 8.1. 重叠覆盖形成一张线性映射
 
 将query t的compressed probabilities写成向量 $p_t\in\mathbb R^{N_c}$，selection block importance可写成
 
@@ -350,7 +350,7 @@ $$
 
 若A只含0/1，block得分与被多少compression windows覆盖相关。内部selection block通常接收更多完整窗口，边界block较少。归一化每列覆盖数可消除这种先验，却改变论文算法。复现应先严格一致，再通过受控实验判断边界偏置。
 
-### 8.2. Top-n 之前还要处理固定块
+#### 8.2. Top-n 之前还要处理固定块
 
 首块与局部blocks固定激活，为attention sink、开头指令和最近上下文提供保底。若它们计入总n，动态槽位减少；若在动态top-n之外追加，总token预算增加。短序列中固定集合大量重叠，去重时机也会改变最终数量。
 
@@ -358,7 +358,7 @@ $$
 
 固定首块还可能形成捷径。模型知道它永远可见，倾向把全局摘要写入BOS附近；这能提高稳定性，也让所谓动态检索的一部分能力来自sink中继。屏蔽首块或打乱其内容可以测量依赖程度，但部署结构若固定保留它，不必追求完全消除。
 
-### 8.3. 离散集合的容量冲突
+#### 8.3. 离散集合的容量冲突
 
 同一query可能需要多个语义独立blocks。固定n限制可访问地址数，即使ranking完全正确也无法覆盖超过n个分散证据。Block长度64还意味着每条证据带入邻居，真正用于独立地址的容量至多n。
 
@@ -372,9 +372,9 @@ $$
 
 动态n可依据importance margin或累计质量调整，训练与kernel会面对变长形状。实际系统可只允许8、16、32几个档位。模型若只用固定16训练，推理时扩大集合会改变softmax分母，质量也未必严格单调，动态预算应进入训练分布。
 
-## 9. GQA 共享选择是一道集合优化
+### 9. GQA 共享选择是一道集合优化
 
-### 9.1. 求和分数优化平均覆盖
+#### 9.1. 求和分数优化平均覆盖
 
 同组H个query heads对block j的importance为 $r_{hj}$，NSA用聚合分数 $R_j=\sum_h r_{hj}$ 排序。选定集合S最大化
 
@@ -386,7 +386,7 @@ $$
 
 因此要同时报告平均和最差head覆盖。若最差head承担远程复制或代码符号，少数失败会在特定任务集中出现。增加n、按head子组选择或给稀有head加权都能缓解，读取并集与元数据同步增加。
 
-### 9.2. 独立 Top-k 的并集是质量上界
+#### 9.2. 独立 Top-k 的并集是质量上界
 
 让每个head独立选n个blocks，再取并集，提供不受共享预算约束的候选上界。并集大小介于n与Hn之间，实际值反映head需求重合。若并集接近n，共享几乎免费；若接近Hn，固定共享集合必然牺牲专属性。
 
@@ -394,7 +394,7 @@ $$
 
 独立集合不一定是部署候选，因为随机读取和排序开销可能很高。它主要作为诊断：共享质量下降来自容量冲突，还是compressed importance本身没有找到教师blocks。
 
-### 9.3. 共享读取怎样转化成带宽收益
+#### 9.3. 共享读取怎样转化成带宽收益
 
 同一GQA组共享KV，本就希望一次加载供多个query heads使用。若heads选不同blocks，KV cache物理仍只有一份，但kernel需要加载并集，再为各head应用不同mask；片上复用下降，控制流更复杂。共享S让所有heads使用规则矩阵tile。
 
@@ -454,9 +454,9 @@ Top-n集合在排序不变的小邻域内是常数。Selection attention对选�
 
 Checkpoint还要保存所有分支投影、压缩位置参数与gate。只转换主attention权重会丢失路由能力。配置中的l、d、l'、n、w与GQA grouping同样属于权重语义，修改后应继续训练并重新评测。
 
-## 12. Prefill 的二维稀疏图
+### 12. Prefill 的二维稀疏图
 
-### 12.1. 每个 Query 拥有不同 Blocks
+#### 12.1. 每个 Query 拥有不同 Blocks
 
 Prefill中n个queries分别生成selection集合，稀疏图是query-block二部图。即使每行恰好16 blocks，整张图的block模式可能高度不规则。Kernel需把相同或相近模式的query tiles分组，才能复用KV。
 
@@ -464,7 +464,7 @@ Prefill中n个queries分别生成selection集合，稀疏图是query-block二部
 
 全Prefill索引若物化为 $n\times16$ 个block IDs，1M长度、32位索引约64MiB，尚可但不含中间importance。真正大的部分是compressed score或归约工作区，应tile化边算边消费。
 
-### 12.2. 因果边界块的特殊处理
+#### 12.2. 因果边界块的特殊处理
 
 Query位于selection block中间时，固定局部block可能包含未来token。物理上可加载完整64-token tile，逻辑mask必须将未来位置设为 $-\infty$. 计算量会包含无效项，序列很短或大量query靠近边界时比例明显。
 
@@ -472,7 +472,7 @@ Compression重叠窗口也有类似问题。只使用完整历史窗口最简单
 
 显式小例子应覆盖query在每个offset。比较朴素逐位置mask与kernel，不只检查输出，还检查未来token梯度严格为零。任何边界泄漏在语言模型训练中都会造成虚假低loss。
 
-### 12.3. Prefill 的排序成本
+#### 12.3. Prefill 的排序成本
 
 每个query对约n/d个compressed entries打分，这是NSA保留的 $O(n^2/d)$ 项；selection与window分别为 $O(nnl')$ 和 $O(nw)$. 当上下文继续增长，compression attention最终主导，NSA并未把总体变成严格线性。
 
@@ -480,9 +480,9 @@ Compression重叠窗口也有类似问题。只使用完整历史窗口最简单
 
 如果目标上下文远超训练长度，压缩平方项仍可能不可接受，需再叠加层级索引或状态化全局分支。那会形成新架构，质量结论需要重新验证。
 
-## 13. Decode 的状态机
+### 13. Decode 的状态机
 
-### 13.1. 新 Token 如何更新三套状态
+#### 13.1. 新 Token 如何更新三套状态
 
 每步生成后，原始selection KV追加一个位置，window环形cache追加并淘汰，compression压缩器更新当前重叠窗口。Stride为16意味着不是每步都完成新entry；系统需保留最近31个原始输入或等价增量状态。
 
@@ -490,7 +490,7 @@ Compression重叠窗口也有类似问题。只使用完整历史窗口最简单
 
 状态版本必须一起回滚。Speculative token被拒绝时，selection/window KV、未满compression buffer、已完成entry与位置计数都要恢复。只截断原始KV会留下包含拒绝token的compressed memory。
 
-### 13.2. 读取量随长度怎样变化
+#### 13.2. 读取量随长度怎样变化
 
 单步逻辑读取约为 $t/d+w+nl'$. 在配置16、512、16、64下，t=8192时为2048；t=65536时为5632；t=1M时约67072。极长上下文下compression全扫重新成为大项，固定selection与window占比下降。
 
@@ -498,7 +498,7 @@ Compression重叠窗口也有类似问题。只使用完整历史窗口最简单
 
 长度分段策略可以在短序列用Full或简化kernel，超过交叉点再启用NSA。若模型权重原生依赖三分支，直接切Full并不等价；可以只切执行方式，保持数学计算，或训练支持多个模式。
 
-### 13.3. Page 布局与连续 Blocks
+#### 13.3. Page 布局与连续 Blocks
 
 Selection block最好与KV page边界对齐。若page为16 token，64-token block跨4页且地址规则；若page为128，一个block只占半页，两个相邻block共享页。请求的逻辑block起点还受packing offset影响。
 
@@ -532,9 +532,9 @@ Gate极端饱和提供线索，不直接定罪。某分支gate低可能因输出
 
 线上无法运行稠密教师时，可监控cutoff margin、compressed score熵、候选距离、不同heads投票分歧和page分散度。低margin与高分歧请求可走更大n的安全档，前提是模型训练见过该预算。
 
-## 15. 与硬件共同设计的真实含义
+### 15. 与硬件共同设计的真实含义
 
-### 15.1. 算法单位就是 Kernel 单位
+#### 15.1. 算法单位就是 Kernel 单位
 
 NSA选择64-token连续block，因为这同时是语义候选和矩阵tile。算法若改成任意token top-k，理论有效位置增加，原kernel的数据复用和规则shape消失。选择规则从一开始就包含了硬件约束。
 
@@ -542,7 +542,7 @@ GQA共享集合也一样。它从算法层限制每组heads访问相同blocks，
 
 Window与compression都是规则分支，selection承担有限不规则性。三者组合把大部分工作映射到成熟dense/block kernels，只把top-n与gather留作控制。评价实现时应分别看规则路径是否达到硬件峰值，以及不规则控制占多少。
 
-### 15.2. 理论稀疏率为何不能直接变成速度
+#### 15.2. 理论稀疏率为何不能直接变成速度
 
 Attention只占模型一部分；三分支有独立投影、softmax和gate；top-n可能同步；selected blocks分散；训练反向还要scatter梯度。Amdahl定律决定总加速低于attention非零元素缩减比。
 
@@ -550,7 +550,7 @@ Attention只占模型一部分；三分支有独立投影、softmax和gate；top
 
 功耗与显存带宽也可成为约束。Decode减少HBM读取通常同时降低能耗；Prefill增加top-k控制可能降低Tensor Core占用。完整评测包含吞吐、延迟、峰值显存和能量，业务侧再选择权重。
 
-### 15.3. 下一代硬件会改变最优点
+#### 15.3. 下一代硬件会改变最优点
 
 更大的片上存储允许缓存更多blocks或多个GQA heads，随机gather代价下降时更细粒度选择可能占优；带宽相对算力继续变紧时，GQA共享与连续读取更重要。Block=64是某代硬件和模型shape上的解，不是NSA定义不可改变的常数。
 
@@ -598,9 +598,9 @@ Decode还要写入新状态。Selection原始KV与window KV每步追加，compre
 
 这些交叉点随batch、dtype和硬件移动。Prefill矩阵化程度高，Decode受带宽限制，不能共享同一长度阈值。基准要分别扫描，不用一个“长上下文加速”数字概括。
 
-## 17. 三分支如何组成跨层信息流
+### 17. 三分支如何组成跨层信息流
 
-### 17.1. Compression 提供粗定位
+#### 17.1. Compression 提供粗定位
 
 Compression branch每层都能看到整个历史的低分辨率表示。它可以把“哪篇文档可能相关”“前面是否出现某实体”等粗信息写入residual。下一层query据此变化，再由该层自己的compression分数选择更合适的原始blocks。逐层重新路由给模型形成搜索过程的机会。
 
@@ -608,7 +608,7 @@ Compression branch每层都能看到整个历史的低分辨率表示。它可�
 
 若compression表示已经丢掉区分两个相似blocks的特征，下一层仍无法正确路由。Selection读回的原始细节可更新query，形成“粗定位—精读—再定位”的迭代，但第一步至少要把相关区域送入候选。
 
-### 17.2. Selection 把细节写入 Residual
+#### 17.2. Selection 把细节写入 Residual
 
 一旦某个原始block被选中，其value通过selection输出进入当前位置residual。后续层无需再次选同一block，也可能使用已经写入的信息。这让逐层top-n集合不必完全重合，多个层可以依次读取不同证据。
 
@@ -616,7 +616,7 @@ Compression branch每层都能看到整个历史的低分辨率表示。它可�
 
 固定首块可作为共享工作台：不同位置把摘要写入sink，再被后续query读取。它提高信息传播效率，也可能让模型对特殊token过度依赖。屏蔽实验要注意分布外影响，最好比较训练过的有/无固定首块变体。
 
-### 17.3. Window 保持局部计算不断链
+#### 17.3. Window 保持局部计算不断链
 
 语言模型每层都需要相邻token交互。若局部依赖也参与top-n竞争，远程blocks增多时可能挤掉最近上下文；反过来，最近token通常高分，又会占满selection。独立window把局部图固定下来，让selection预算专注长程。
 
@@ -624,9 +624,9 @@ Window还是压缩尾部的补偿。新的32-token压缩窗口尚未完整时，
 
 w层层堆叠后，局部感受野可以跨越多于w的距离：上一层在窗口边缘写入信息，下一层继续传播。理论可达距离约随层数增长，实际信号会衰减。局部扩散不能替代精确远程检索，却解释了某些中距离任务不依赖selection。
 
-## 18. 数据分布决定稀疏图学成什么
+### 18. 数据分布决定稀疏图学成什么
 
-### 18.1. 短样本会弱化 Selection 监督
+#### 18.1. 短样本会弱化 Selection 监督
 
 当历史短到固定首块、局部blocks和window覆盖大部分序列，动态top-n几乎没有竞争。模型可以依赖window与固定blocks完成训练，compressed routing质量不受压力。训练token很多，若绝大部分来自短序列，有效长程监督仍然不足。
 
@@ -634,7 +634,7 @@ w层层堆叠后，局部感受野可以跨越多于w的距离：上一层在窗
 
 课程从8K扩到32K时，compressed entries与干扰blocks增加，原有分数尺度和固定16预算面临新分布。继续训练需要足够多远程依赖，让模型重新校准，而非仅把短文随机拼长。
 
-### 18.2. Hard Negatives 决定路由分辨率
+#### 18.2. Hard Negatives 决定路由分辨率
 
 随机无关文档容易由主题区分，compressed summary足以路由；同主题文档、重复模板和相似代码函数更难，需要细节特征。若训练缺少hard negatives，长上下文needle可以成功，真实仓库或多文档问答仍会选错block。
 
@@ -642,7 +642,7 @@ w层层堆叠后，局部感受野可以跨越多于w的距离：上一层在窗
 
 压缩器的双重职责在hard negatives上最紧张：全局语义相近，路由需要保留微小差异；entry容量不足时，增加训练未必解决。降低stride、增加压缩宽度或让selection有独立特征才改变容量。
 
-### 18.3. 多语言、代码与数字需要分桶
+#### 18.3. 多语言、代码与数字需要分桶
 
 不同数据类型的证据形态不同。自然语言常以短语和段落聚集，64-token block较合适；代码定义可能短而分散，block带入大量无关行；数字与ID对词法精确度敏感，压缩摘要容易丢失。统一平均会隐藏结构偏好。
 

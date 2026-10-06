@@ -380,7 +380,7 @@ Slash 聚合的边界修正：位移 $d$ 在长度为 $n$ 的矩阵中只有 $n-
 
 用全矩阵离线求最佳同预算模式，得到几何 oracle；再用在线采样索引比较。两者差距衡量采样估计，几何 oracle与dense top-k差距衡量模式族限制。分开后才知道该增加采样还是换模式。
 
-## 9. 离线搜索选择 head 的模式与预算
+### 9. 离线搜索选择 head 的模式与预算
 
 不同 layer-head 的注意力几何差异大。MInference 在校准集上离线决定每个 head使用哪类模式及参数，部署时配置固定，输入相关索引仍可动态生成。
 
@@ -388,7 +388,7 @@ Slash 聚合的边界修正：位移 $d$ 在长度为 $n$ 的矩阵中只有 $n-
 
 模式搜索可以最小化 attention输出误差，或在误差阈值下最小化实测时间。只最小化逻辑边数会偏向碎片模式，GPU 上未必最快。只最小化单层误差，也未必对应最终任务质量。
 
-### 9.2. Head 配置的校准泛化
+#### 9.2. Head 配置的校准泛化
 
 校准文本若全是长文问答，代码 head或多语 head模式可能估计不足。配置随模型权重固定，却要覆盖部署输入域。按领域留出验证集，观察每个 head模式胜率和误差尾部。
 
@@ -398,7 +398,7 @@ Slash 聚合的边界修正：位移 $d$ 在长度为 $n$ 的矩阵中只有 $n-
 
 Head重要性也会被后续输出投影缩放。只在 attention概率空间比较，忽略 value和 $W_O$；输出向量误差更接近层函数，最终 logits或任务指标更昂贵。多级校准先用便宜指标筛选，再用端到端验证。
 
-### 9.4. GQA/MQA 的配置映射
+#### 9.4. GQA/MQA 的配置映射
 
 多个 query head共享 KV head，不表示它们的 attention模式相同。每个 query head的 Q不同，可选择独立 vertical/slash索引；物理读取同一 K/V 的候选并集可能扩大。
 
@@ -408,11 +408,11 @@ Head重要性也会被后续输出投影缩放。只在 attention概率空间比
 
 逐层替换实验能估计边际误差：只稀疏某一层，测最终 loss变化。把预算优先给敏感层，再联合微调配置。由于层间误差非线性，边际相加只是近似，最终仍需整模验证。
 
-## 10. Tile 扩张决定物理稀疏率
+### 10. Tile 扩张决定物理稀疏率
 
 逻辑 vertical是一列 token pair，GPU kernel往往以 $B_q\times B_k$ tile执行。官方实现与讨论显示 slash可能映射为较大的方块、vertical映射为窄列块。逻辑非零与实际乘法数量存在膨胀。
 
-### 10.1. Vertical 的块覆盖
+#### 10.1. Vertical 的块覆盖
 
 选中一个 key位置 $j$，若 key tile宽 $B_k$，物理上会读取包含 $j$ 的整块 $[\lfloor j/B_k\rfloor B_k,\ldots]$。同一块内多个 vertical列重叠，只发射一次tile；分散列各自触发块。
 
@@ -422,7 +422,7 @@ Slash 的阶梯边界：一条斜线穿过多个二维tile。若 tile为 $64\tim
 
 将位移先量化到 block offset，去重后生成tile带，可以提高规则性；精确位移误差扩大到块内。论文图中的稀疏率与kernel实际发射率应分别报告。
 
-### 10.3. Block-Sparse 的对角块
+#### 10.3. Block-Sparse 的对角块
 
 Causal对角块只有下三角一半合法，普通块全满。专用kernel可以在对角块跳过上三角，朴素GEMM则计算后mask。末尾不足整块也产生padding。
 
@@ -438,7 +438,7 @@ $\mathcal T$ 是去重后的tile集合。利用率 $\rho=E_{logical}/E_{phys}$ �
 
 若重复tile被执行两次，同一key概率重复进入分母。索引转换阶段应去重，或kernel给tile唯一所有权。分支各自softmax再相加会人为给小分支过高总质量。
 
-### 10.5. 低利用率可能仍有收益
+#### 10.5. 低利用率可能仍有收益
 
 物理tile内多算不等于方法失败。相对完整 $n^2$，即使逻辑稀疏膨胀数倍仍可能节省巨大；规则tile还获得更高吞吐。关键比较是总kernel时间，不追求逻辑利用率单项最大。
 
@@ -480,7 +480,7 @@ Oracle pattern 分离模式与估计：给定模式族和预算，用完整dense
 
 某层换回dense后质量大幅恢复，说明该层模式或预算是瓶颈；所有单层影响小、全稀疏影响大，说明误差累积。可以只给少数敏感层更大预算，保持整体速度。
 
-## 12. MInference 的阶段边界
+### 12. MInference 的阶段边界
 
 原始目标是加速长prompt Prefill并生成KV cache。Decode每步只有一个query，完整历史K/V仍保留；Prefill稀疏没有自动压缩后续cache或Decode读取。
 
@@ -488,7 +488,7 @@ Prefill 稀疏计算仍生成完整 KV：每个token每层的K/V由线性投影�
 
 将MInference与Quest、SnapKV等KV选择/压缩组合，是第二项机制。质量误差与成本要分开归因：Prefill近似影响hidden state，KV压缩影响Decode可见历史。
 
-### 12.2. Chunked Prefill 改变索引视野
+#### 12.2. Chunked Prefill 改变索引视野
 
 服务可能把长prompt分chunk处理。若每chunk独立从其末尾采样，索引只看当前块或已有历史的接口取决于实现；完整MInference索引基于整段Q/K，语义可能不同。官方README对某些vLLM路径给出chunked prefill配置限制，部署应核对版本。
 
@@ -498,19 +498,19 @@ Decode 动态索引的成本结构不同：单query无法用大量采样行估�
 
 因此Prefill加速结论不能直接外推TPOT。端到端请求prompt很长、输出短时收益明显；prompt短、输出长时Decode主导。报告TTFT、TPOT和总时延三项。
 
-### 12.4. KV 生命周期保持dense语义
+#### 12.4. KV 生命周期保持dense语义
 
 只要未来Decode仍可能读取任意旧KV，就不能因Prefill某层没选中它而删除。当前prompt中低权重不代表未来query低权重。用MInference候选推断KV淘汰会把一次性计算稀疏误当成永久无用。
 
 若另加动态KV压缩，需要明确未来查询近似与恢复路径。两套索引可能采用不同统计，候选交集过小会累积质量损失。
 
-## 13. 六个可复算反例
+### 13. 六个可复算反例
 
 移动标题破坏固定 vertical：校准文档标题总在位置0，某head配置为A-shape开头64列。部署模板在前面加入100 token系统提示，标题移到位置100。固定开头列只覆盖系统提示，标题不再可见。
 
 动态vertical若从末尾query概率选列，可以找到位置100；静态A-shape无法适应。这个反例区分固定模式参数与输入相关索引。
 
-### 13.2. 章节间距变化破坏 slash
+#### 13.2. 章节间距变化破坏 slash
 
 训练文本每章长度1024，query常关注上一章同一相对位置，slash位移1024。部署章节长度在800—1400波动，固定斜线偏离。Block-Sparse或多个邻近slash增加覆盖，成本上升。
 
@@ -520,7 +520,7 @@ Decode 动态索引的成本结构不同：单query无法用大量采样行估�
 
 使用列最大值能保留尖峰，容易被噪声异常值干扰。和、最大值与分位数对应不同风险偏好。问答任务可提高最后query权重。
 
-### 13.4. Block均值漏掉块内唯一token
+#### 13.4. Block均值漏掉块内唯一token
 
 Block索引用块平均Q/K估计相关性。一个key block有63个无关token和1个与query高度相似token，均值稀释该方向，整块未选中。Dense top-k会准确找到唯一token。
 
@@ -530,7 +530,7 @@ Block索引用块平均Q/K估计相关性。一个key block有63个无关token�
 
 配置搜索若只按slash数约束，无法控制真实时间。用转换后的唯一tile集合评估，才能与kernel一致。
 
-### 13.6. 高 captured mass 仍漏符号复制
+#### 13.6. 高 captured mass 仍漏符号复制
 
 候选捕获99%概率质量，遗漏的1%恰好指向包含随机密码的value；其他99%是背景。输出投影和后续层可能需要这条小概率通道完成精确复制。平均向量误差小，任务答案错误。
 
@@ -574,7 +574,7 @@ Vertical和slash数量固定时，稀疏率随 $n$下降；block预算若按比�
 
 静态pattern在训练域很好、部署域下降，优先重新校准而非直接否定模式族。若动态索引也下降，注意力几何本身可能变化，需扩大预算或回退dense。
 
-## 15. Kernel 的正确性不等于数值逐位一致
+### 15. Kernel 的正确性不等于数值逐位一致
 
 稀疏attention改变候选，结果本就不同于dense；在同一候选集合上，kernel还会因tile顺序、FP32累加和近似指数产生浮点差异。验收要分模型近似与数值实现。
 
@@ -582,7 +582,7 @@ Vertical和slash数量固定时，稀疏率随 $n$下降；block预算若按比�
 
 直接拿优化kernel对完整dense，差异同时包含候选删边与数值顺序，无法定位。小尺寸金样应打印每行唯一key集合和物理tile。
 
-### 15.2. Online softmax 的块合并
+#### 15.2. Online softmax 的块合并
 
 处理新tile时，旧最大值 $m$、和 $l$、输出累积 $o$ 与新tile最大 $m'$ 合并。总最大 $m_{new}=\max(m,m')$，旧量乘 $e^{m-m_{new}}$，新量乘 $e^{m'-m_{new}}$。遗漏重缩放会在tile分数尺度不同时产生大误差。
 
@@ -592,7 +592,7 @@ Vertical和slash数量固定时，稀疏率随 $n$下降；block预算若按比�
 
 对角block的上三角被mask后，每行有效数不同。行最大与指数和不能让无效元素进入。末块padding同理。
 
-### 15.4. 重复tile与重复token
+#### 15.4. 重复tile与重复token
 
 Vertical与slash可能映射同一tile，两个slash也可能重叠。Tile级去重后，块内token候选是集合；若token级mask在两个路径重复散射，仍要确保只出现一次。
 
@@ -632,7 +632,7 @@ Prompt 模板移动固定锚点：系统提示长度变化、加入few-shot、�
 
 漂移集中少数head时，只提高它们预算或改模式；全局增大预算浪费。配置热更新要带版本，已有请求最好保持同一配置，避免prompt中途函数变化。
 
-## 17. 与其他稀疏路线的接口边界
+### 17. 与其他稀疏路线的接口边界
 
 MInference按已有head几何做免训练Prefill近似，与训练原生NSA、动态block路由MoBA、细粒度indexer和KV压缩解决的问题不同。组合时每阶段职责要清楚。
 
@@ -640,7 +640,7 @@ MInference按已有head几何做免训练Prefill近似，与训练原生NSA、�
 
 把MInference用于已训练稀疏模型，要确认dense参考和pattern含义。若模型训练mask已删边，再做第二次近似，候选交集可能过窄。
 
-### 17.2. 与细粒度 indexer
+#### 17.2. 与细粒度 indexer
 
 Indexer按query预测重要key，适应内容更强；MInference的vertical/slash在多个query间共享结构，更规则。可以先用MInference选tile，再由indexer在tile内选token，或反过来由粗indexer选区域。
 
@@ -650,7 +650,7 @@ Indexer按query预测重要key，适应内容更强；MInference的vertical/slas
 
 质量消融包含densePrefill+denseKV、稀疏Prefill+denseKV、densePrefill+压缩KV、两者组合四项。组合下降超过单项和，说明误差相互放大。
 
-### 17.4. 与 FlashAttention
+#### 17.4. 与 FlashAttention
 
 FlashAttention是精确dense IO-aware kernel，MInference是近似稀疏候选加专用kernel。短序列或pattern不稀疏时，成熟dense kernel可能更快。比较应以当前硬件最佳dense实现为基线。
 
@@ -660,11 +660,11 @@ Sparse kernel同样采用分块与online softmax思想。算法节省tile，kern
 
 任务需要原token精确值时，MInference候选命中后保持高分辨率；线性状态存在压缩干扰。流式无限生成时，线性state资源更稳定，MInference本身不解决长期KV增长。
 
-## 18. 一套完整配置的手算
+### 18. 一套完整配置的手算
 
 取 causal 长度 $n=16384$，head dimension 128。某head选择vertical $v=64$、slash $s=128$，采样最后 $m=64$ 个query，tile为 $64\times64$。
 
-### 18.1. 索引成本
+#### 18.1. 索引成本
 
 采样QK需要约 $mn=1{,}048{,}576$ 个点积，每个维度128。Dense整头需要约 $n(n+1)/2\approx134.2$M个点积。代理点积约为dense的0.78%，还需列/对角归约与top-k。
 
@@ -674,7 +674,7 @@ Sparse kernel同样采用分块与online softmax思想。算法节省tile，kern
 
 若另保留局部窗口256，候选上界变448，重复更多。统一softmax的候选集合必须去重。
 
-### 18.3. Tile 膨胀
+#### 18.3. Tile 膨胀
 
 64个vertical token最坏分散到64个key block，每个query block发射64个vertical tile；若聚集在16个block，只需16个。128条slash映射到多少tile带取决于offset量化，接近offset大量重叠。
 
@@ -684,7 +684,7 @@ Sparse kernel同样采用分块与online softmax思想。算法节省tile，kern
 
 若Block-Sparse oracle在这些query达到98%，应将相关head换模式；若所有同预算oracle都低，增加预算或保留dense。全局把192增到256可能浪费在本已99.9%的head。
 
-### 18.5. 端到端上限
+#### 18.5. 端到端上限
 
 假设原Prefill中attention占80%，其余投影与MLP占20%；attention连同索引加速8倍，端到端理想加速
 
