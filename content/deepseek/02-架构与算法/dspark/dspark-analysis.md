@@ -27,9 +27,7 @@ DSpark 来自 DeepSeek-AI 与北京大学 2026 年 7 月发布的论文 *DSpark:
 
 ### 1.3. 容量解释的边界
 
-论文用「位置 1 的容量差」解释为什么并行 drafter 整体胜过自回归 drafter. 这个解释在 Qwen3 三个规模上成立: 表 1 的 9 个基准平均接受长度, Qwen3-4B 上 Eagle3, DFlash, DSpark 分别是 3.611, 4.064, 4.727, DSpark 相对两者的提升 30.9% 与 16.3% 正是这三个均值之比. 8B 上是 3.798, 4.067, 4.813, 14B 上是 3.676, 4.039, 4.779, 与正文的 26.7%/18.4% 和 30.0%/18.3% 一致.
-
-Gemma4-12B 一行给出了反例. 这一行 Eagle3 均值 4.376, 高于 DFlash 的 4.018, DSpark 为 4.663, 相对 Eagle3 只高 6.6%, 相对 DFlash 高 16.1%. 正文只说增益「跨模型家族成立」, 没有给出 Gemma 的百分比, 也没有讨论为什么在这个目标模型上 1 层的 Eagle3 能胜过 5 层的 DFlash. 如果位置 1 的容量差是主因, 这一行应当和 Qwen3 同向. 一个可能的解释是 Gemma 的输出分布更集中, 后缀衰减对 DFlash 的伤害更大, 但文中没有给出 Gemma 的逐位置曲线, 这个解释无法从论文数据验证.
+论文用「位置 1 的容量差」解释为什么并行 drafter 整体胜过自回归 drafter. 这个解释在 Qwen3 三个规模上成立: 表 1 的 9 个基准平均接受长度, Qwen3-4B 上 Eagle3, DFlash, DSpark 分别是 3.611, 4.064, 4.727, DSpark 相对两者的提升 30.9% 与 16.3% 正是这三个均值之比. 8B 上是 3.798, 4.067, 4.813, 14B 上是 3.676, 4.039, 4.779, 与正文的 26.7%/18.4% 和 30.0%/18.3% 一致. Gemma4-12B 一行给出了反例. 这一行 Eagle3 均值 4.376, 高于 DFlash 的 4.018, DSpark 为 4.663, 相对 Eagle3 只高 6.6%, 相对 DFlash 高 16.1%. 正文只说增益「跨模型家族成立」, 没有给出 Gemma 的百分比, 也没有讨论为什么在这个目标模型上 1 层的 Eagle3 能胜过 5 层的 DFlash. 如果位置 1 的容量差是主因, 这一行应当和 Qwen3 同向. 一个可能的解释是 Gemma 的输出分布更集中, 后缀衰减对 DFlash 的伤害更大, 但文中没有给出 Gemma 的逐位置曲线, 这个解释无法从论文数据验证.
 
 ## 2. 半自回归怎样补回 token 间的依赖
 
@@ -43,9 +41,7 @@ DSpark 保留 DFlash 的并行主干: 目标模型若干层的隐状态经 KV �
 
 ### 2.2. 接口改动: anchor 当第一个预测槽
 
-DFlash 的输入块是 anchor 加 $\gamma$ 个 mask, anchor 所在槽不出预测. DSpark 在 3.1 节把 anchor 本身当成第一个预测槽, $\gamma$ 个输入 (anchor 加 $\gamma-1$ 个 mask) 产出 $\gamma$ 个 logits. DeepSpec 里的对应写法是 `label_offsets = arange(1, block_size+1)`: 槽 $i$ 预测 anchor 之后第 $i$ 个 token. Qwen3 配置的 `block_size=7`, 一次前向得到 7 个草稿 token, 加上 anchor 送去验证的是 8 个 token.
-
-这个约定决定了怎么读 4.3.2 节. 那里的「草稿长度 ($\gamma$ 加一个 anchor) 取 {4, 8, 12, 16}」数的是验证宽度, 对应 $\gamma\in\{3,7,11,15\}$; 正文举的 $\gamma=7$ 与 $\gamma=15$ 正是第二档和第四档. 接受长度含 bonus token, 上限是 $\gamma+1$. 这个约定在社区实现里造成过实际问题. vLLM speculators 项目训练的 DSpark 检查点沿用 DFlash 的槽位约定, 槽 $j$ 预测 anchor 之后第 $j$ 个 token, 槽 0 不监督; 按 DeepSpec 约定去服务, 每个槽位都读早一位, 接受长度掉到 1.1 左右, 平移一位后回到 4.05 (speculators issue #753). 同一个「block size」在两种约定下分别对应 $\gamma$ 与 $\gamma-1$ 个草稿, 读接受长度数字之前要先确认是哪一种.
+DFlash 的输入块是 anchor 加 $\gamma$ 个 mask, anchor 所在槽不出预测. DSpark 在 3.1 节把 anchor 本身当成第一个预测槽, $\gamma$ 个输入 (anchor 加 $\gamma-1$ 个 mask) 产出 $\gamma$ 个 logits. DeepSpec 里的对应写法是 `label_offsets = arange(1, block_size+1)`: 槽 $i$ 预测 anchor 之后第 $i$ 个 token. Qwen3 配置的 `block_size=7`, 一次前向得到 7 个草稿 token, 加上 anchor 送去验证的是 8 个 token. 这个约定决定了怎么读 4.3.2 节. 那里的「草稿长度 ($\gamma$ 加一个 anchor) 取 {4, 8, 12, 16}」数的是验证宽度, 对应 $\gamma\in\{3,7,11,15\}$; 正文举的 $\gamma=7$ 与 $\gamma=15$ 正是第二档和第四档. 接受长度含 bonus token, 上限是 $\gamma+1$. 这个约定在社区实现里造成过实际问题. vLLM speculators 项目训练的 DSpark 检查点沿用 DFlash 的槽位约定, 槽 $j$ 预测 anchor 之后第 $j$ 个 token, 槽 0 不监督; 按 DeepSpec 约定去服务, 每个槽位都读早一位, 接受长度掉到 1.1 左右, 平移一位后回到 4.05 (speculators issue #753). 同一个「block size」在两种约定下分别对应 $\gamma$ 与 $\gamma-1$ 个草稿, 读接受长度数字之前要先确认是哪一种.
 
 ### 2.3. 深度, 长度与延迟
 
@@ -80,9 +76,7 @@ $\gamma=7$ 的三个百分比可以用表 1 复核. Qwen3-4B 在数学, 代码, 
 ![](images/p15-figure-6-the-reliability-diagram-on-alpaca-dataset-while.jpg)
 
 图注: 这是 Alpaca 数据上的可靠性图, 横轴是预测的存活概率分箱, 纵轴是实际存活频率. 原始曲线落在对角线下方, 预测值系统性偏高; STS 之后曲线贴近对角线.
-图 6 解析: 这是 Alpaca 数据上的可靠性图, 横轴是预测的存活概率分箱, 纵轴是实际存活频率. 原始曲线落在对角线下方, 预测值系统性偏高; STS 之后曲线贴近对角线. 图中同时标出各位置的 AUC 与 ECE.
-
-DeepSpec 仓库的评测部分只有 ECE 与 AUC 的计算, 以及一个静态阈值的早停函数 `_confident_prefix_length`, 没有 STS 和第 5 节调度器的代码. 换句话说, 离线部分能复现图 5 和图 6 的原始曲线, 校准和线上调度只能按论文描述自行实现.
+图 6 解析: 这是 Alpaca 数据上的可靠性图, 横轴是预测的存活概率分箱, 纵轴是实际存活频率. 原始曲线落在对角线下方, 预测值系统性偏高; STS 之后曲线贴近对角线. 图中同时标出各位置的 AUC 与 ECE. DeepSpec 仓库的评测部分只有 ECE 与 AUC 的计算, 以及一个静态阈值的早停函数 `_confident_prefix_length`, 没有 STS 和第 5 节调度器的代码. 换句话说, 离线部分能复现图 5 和图 6 的原始曲线, 校准和线上调度只能按论文描述自行实现.
 
 ### 3.2. 静态阈值只能做诊断
 
@@ -95,9 +89,7 @@ DeepSpec 仓库的评测部分只有 ECE 与 AUC 的计算, 以及一个静态�
 
 ### 3.3. Algorithm 1 的准入门槛
 
-Algorithm 1 把所有请求的候选 $(r,j)$ 按 $a_{r,j}$ 全局降序排好, 依次尝试接纳. 当前 batch 的验证 token 总数 $B=\sum_r(1+\ell_r)$, 期望接受数 $\tau=\sum_r(1+\sum_{j\le\ell_r}a_{r,j})$, 系统吞吐 $\Theta=\tau\cdot\mathrm{SPS}(B)$, 其中 $\mathrm{SPS}(B)$ 是离线测得的「batch 为 $B$ 时每秒能跑几步」. 接纳一个候选后若 $\Theta$ 不再上升, 立即 break. 同一请求内 $a_{r,j}$ 随 $j$ 单调不增, 全局排序自动保证每个请求接纳的是一个前缀.
-
-把 break 条件展开, 就得到每个 token 的准入门槛. 接纳前为 $(B,\tau)$, 接纳后为 $(B+1,\tau+a)$, 继续的条件 $(\tau+a)\,\mathrm{SPS}(B+1)>\tau\,\mathrm{SPS}(B)$ 等价于
+Algorithm 1 把所有请求的候选 $(r,j)$ 按 $a_{r,j}$ 全局降序排好, 依次尝试接纳. 当前 batch 的验证 token 总数 $B=\sum_r(1+\ell_r)$, 期望接受数 $\tau=\sum_r(1+\sum_{j\le\ell_r}a_{r,j})$, 系统吞吐 $\Theta=\tau\cdot\mathrm{SPS}(B)$, 其中 $\mathrm{SPS}(B)$ 是离线测得的「batch 为 $B$ 时每秒能跑几步」. 接纳一个候选后若 $\Theta$ 不再上升, 立即 break. 同一请求内 $a_{r,j}$ 随 $j$ 单调不增, 全局排序自动保证每个请求接纳的是一个前缀. 把 break 条件展开, 就得到每个 token 的准入门槛. 接纳前为 $(B,\tau)$, 接纳后为 $(B+1,\tau+a)$, 继续的条件 $(\tau+a)\,\mathrm{SPS}(B+1)>\tau\,\mathrm{SPS}(B)$ 等价于
 
 $$
 a>\tau\left(\frac{\mathrm{SPS}(B)}{\mathrm{SPS}(B+1)}-1\right).
@@ -138,13 +130,7 @@ break 不只是省计算. 附录 A 的反例说明, 去掉 break 做全局搜索
 
 ## 5. 从拒绝采样到调度最优化
 
-前四节沿论文实验解释了 DSpark 的组件，这一节把数学链条从目标分布、接受概率、半自回归条件分解一直推到硬件容量约束。公式的作用是说明哪些性质由拒绝采样保证，哪些提升来自草稿质量与调度策略。
-
-
-
-DSpark 在 DFlash 式并行草稿主干之后增加一条很短的顺序链:重型 Transformer 一次算完整块,轻量 Markov 或 RNN head 再用已选前驱 token 修正后续位置.它同时训练置信度头,估计每个草稿前缀通过目标验证的概率;服务调度器根据这些概率和 GPU 的实测吞吐曲线,为不同请求选择不同验证长度.
-
-这两个改动分别作用于草稿质量和验证成本.半自回归 head 缓解块尾接受率衰减,置信度调度减少高并发下低价值的目标验证 token.
+前四节沿论文实验解释了 DSpark 的组件，这一节把数学链条从目标分布、接受概率、半自回归条件分解一直推到硬件容量约束。公式的作用是说明哪些性质由拒绝采样保证，哪些提升来自草稿质量与调度策略。 DSpark 在 DFlash 式并行草稿主干之后增加一条很短的顺序链:重型 Transformer 一次算完整块,轻量 Markov 或 RNN head 再用已选前驱 token 修正后续位置.它同时训练置信度头,估计每个草稿前缀通过目标验证的概率;服务调度器根据这些概率和 GPU 的实测吞吐曲线,为不同请求选择不同验证长度. 这两个改动分别作用于草稿质量和验证成本.半自回归 head 缓解块尾接受率衰减,置信度调度减少高并发下低价值的目标验证 token.
 
 ### 1. 用"我爱"建立完整计算链
 
@@ -155,9 +141,7 @@ DSpark 在 DFlash 式并行草稿主干之后增加一条很短的顺序链:重�
 目标:人 工 智 能 , 因 为 它 能  帮  助  我  的  生  活  .
 ```
 
-并行主干一次产生隐藏状态 $h_1,\ldots,h_{16}$ 与基础 logits $U_1,\ldots,U_{16}$.每个 $U_k\in\mathbb R^V$ 已经具有当前草稿位置的 token 预测语义;这个语义来自训练标签对齐,而非后面的 Markov head.
-
-在第六个位置,基础 logits 可能把"它"排在"因"之前.下列 logits 仅用于展示 Markov 修正的计算:
+并行主干一次产生隐藏状态 $h_1,\ldots,h_{16}$ 与基础 logits $U_1,\ldots,U_{16}$.每个 $U_k\in\mathbb R^V$ 已经具有当前草稿位置的 token 预测语义;这个语义来自训练标签对齐,而非后面的 Markov head. 在第六个位置,基础 logits 可能把"它"排在"因"之前.下列 logits 仅用于展示 Markov 修正的计算:
 
 ```text
 U6["它"] = 3.10
@@ -165,9 +149,7 @@ U6["因"] = 2.90
 U6["但"] = 1.20
 ```
 
-第五个位置已经选出逗号后,Markov head 根据前驱 token","生成一份全词表修正量,使"因"超过"它".第六个位置选出"因"后,它又为第七个位置的"为"加分.重型主干仍只运行一次,顺序发生在低秩查表,投影和 token 选择中.
-
-同一轮中,confidence head 还会给每个位置输出条件接受概率.假设 x6 的原始 confidence 为 $c_6=0.80$,独立校准集为第六个位置拟合出温度 $T_6=1.25$,则校准值为
+第五个位置已经选出逗号后,Markov head 根据前驱 token","生成一份全词表修正量,使"因"超过"它".第六个位置选出"因"后,它又为第七个位置的"为"加分.重型主干仍只运行一次,顺序发生在低秩查表,投影和 token 选择中. 同一轮中,confidence head 还会给每个位置输出条件接受概率.假设 x6 的原始 confidence 为 $c_6=0.80$,独立校准集为第六个位置拟合出温度 $T_6=1.25$,则校准值为
 
 $$
 \tilde c_6
@@ -182,9 +164,7 @@ a_6=0.94\times0.91\times0.88\times0.84\times0.80\times0.752
 \approx0.38.
 $$
 
-调度器不会只看 x6 的单点置信度,而是比较 $a_1,a_2,\ldots$ 带来的期望推进量与目标模型的实测 step-per-second 曲线.低负载时,增加验证 token 对步频影响较小,可以保留更长前缀;处于 CUDA Graph 容量台阶附近时,多加入一个低存活率位置可能显著降低步频,调度器会选择较短前缀.这样,"我爱"的例子从并行 logits,Markov 选词,STS 校准一直连接到实际验证长度.
-
-以下数值用于展示单请求在三个候选验证长度之间的目标计算,此时目标模型的输入 token 数为 $B=1+\ell$.设前八个位置的累计存活率为
+调度器不会只看 x6 的单点置信度,而是比较 $a_1,a_2,\ldots$ 带来的期望推进量与目标模型的实测 step-per-second 曲线.低负载时,增加验证 token 对步频影响较小,可以保留更长前缀;处于 CUDA Graph 容量台阶附近时,多加入一个低存活率位置可能显著降低步频,调度器会选择较短前缀.这样,"我爱"的例子从并行 logits,Markov 选词,STS 校准一直连接到实际验证长度. 以下数值用于展示单请求在三个候选验证长度之间的目标计算,此时目标模型的输入 token 数为 $B=1+\ell$.设前八个位置的累计存活率为
 
 $$
 (a_1,\ldots,a_8)
@@ -203,9 +183,7 @@ $$
 
 ### 2. 为什么并行草稿还需要一小段自回归
 
-纯自回归草稿器能显式读取块内前序 token,但生成 $\gamma$ 个候选通常需要 $\gamma$ 次草稿前向.纯并行草稿器一次产生整块,后部位置却只能基于 mask 隐藏状态和目标上下文,无法读取块内刚选出的前驱 token.当上下文存在多种合理延续时,各位置独立取边缘分布容易拼出不连贯组合.
-
-DSpark 把总草稿时间拆为
+纯自回归草稿器能显式读取块内前序 token,但生成 $\gamma$ 个候选通常需要 $\gamma$ 次草稿前向.纯并行草稿器一次产生整块,后部位置却只能基于 mask 隐藏状态和目标上下文,无法读取块内刚选出的前驱 token.当上下文存在多种合理延续时,各位置独立取边缘分布容易拼出不连贯组合. DSpark 把总草稿时间拆为
 
 $$
 T_{\mathrm{draft}}
@@ -228,9 +206,7 @@ $$
 \tag{2}
 $$
 
-这里共有 $\gamma$ 个输入位置:一个 anchor 加 $\gamma-1$ 个 mask,输出 $\gamma$ 份草稿 logits.训练标签随接口对齐,使 $U_k$ 直接预测第 $k$ 个草稿 token.Markov head 随后在这份全词表 logits 上叠加前驱偏好.
-
-对"我 爱"例子,$x_0$ 是"爱",$U_1$ 预测"人".完成第一个顺序选择后,$x_1=\text{人}$ 再参与 $U_2$ 的修正.
+这里共有 $\gamma$ 个输入位置:一个 anchor 加 $\gamma-1$ 个 mask,输出 $\gamma$ 份草稿 logits.训练标签随接口对齐,使 $U_k$ 直接预测第 $k$ 个草稿 token.Markov head 随后在这份全词表 logits 上叠加前驱偏好. 对"我 爱"例子,$x_0$ 是"爱",$U_1$ 预测"人".完成第一个顺序选择后,$x_1=\text{人}$ 再参与 $U_2$ 的修正.
 
 ### 4. Markov head 如何修正全词表 logits
 
@@ -258,9 +234,7 @@ P(X\mid x_0)
 \tag{5}
 $$
 
-在",→因→为"的局部片段中,$W_1[\text{,}]W_2$ 可以提高"因"的 logit;选出"因"后,$W_1[\text{因}]W_2$ 再提高"为".每一步都要等前一个 token 被选出,所以 Markov 修正不是完全并行;它避免的是重复运行 Draft Transformer.
-
-论文还给出可选 RNN head.RNN 状态汇总块内完整前缀,并结合前驱 embedding 与并行主干隐藏状态生成修正量.它比一阶 Markov head 表达力强,计算与集成也更复杂.论文在长草稿块上观察到的额外收益有限,因此默认使用 Markov head.
+在",→因→为"的局部片段中,$W_1[\text{,}]W_2$ 可以提高"因"的 logit;选出"因"后,$W_1[\text{因}]W_2$ 再提高"为".每一步都要等前一个 token 被选出,所以 Markov 修正不是完全并行;它避免的是重复运行 Draft Transformer. 论文还给出可选 RNN head.RNN 状态汇总块内完整前缀,并结合前驱 embedding 与并行主干隐藏状态生成修正量.它比一阶 Markov head 表达力强,计算与集成也更复杂.论文在长草稿块上观察到的额外收益有限,因此默认使用 Markov head.
 
 ### 5. 置信度头预测什么
 
@@ -299,18 +273,14 @@ $$
 
 ### 6. STS 为什么按位置校准
 
-调度器使用 $a_j$ 估算一整段前缀的收益.即使每个 $c_k$ 只有小幅高估,连乘也会显著高估长前缀存活率.排序正确不足以支持吞吐计算,概率的绝对刻度也需要准确.
-
-Sequential Temperature Scaling(STS)在独立校准集上从左到右拟合每个位置的温度:
+调度器使用 $a_j$ 估算一整段前缀的收益.即使每个 $c_k$ 只有小幅高估,连乘也会显著高估长前缀存活率.排序正确不足以支持吞吐计算,概率的绝对刻度也需要准确. Sequential Temperature Scaling(STS)在独立校准集上从左到右拟合每个位置的温度:
 
 $$
 \tilde c_k
 =\sigma\!\left(\frac{\operatorname{logit}(c_k)}{T_k}\right).
 $$
 
-处理第 $k$ 个位置时,前面位置的温度保持固定,并以累积概率的 Expected Calibration Error 为目标做一维搜索.温度缩放保留同一位置内不同样本的置信排序,同时让经验存活率与 $\prod_{i\le k}\tilde c_i$ 更接近.
-
-更换目标权重,草稿 checkpoint,采样模式或数据域会改变 $p^d$ 与 $p^t$ 的重叠,原有温度也可能失效.STS 参数属于模型与流量分布的一部分.
+处理第 $k$ 个位置时,前面位置的温度保持固定,并以累积概率的 Expected Calibration Error 为目标做一维搜索.温度缩放保留同一位置内不同样本的置信排序,同时让经验存活率与 $\prod_{i\le k}\tilde c_i$ 更接近. 更换目标权重,草稿 checkpoint,采样模式或数据域会改变 $p^d$ 与 $p^t$ 的重叠,原有温度也可能失效.STS 参数属于模型与流量分布的一部分.
 
 ### 7. 硬件感知前缀调度
 
@@ -337,9 +307,7 @@ $$
 \tag{12}
 $$
 
-算法把所有候选前缀扩展 $(r,j)$ 按 $a_{r,j}$ 从高到低排序,并逐个加入验证 batch.固定 $B$ 时,这个顺序优先保留期望回报最高的 token;加入新 token 后,式(12)同时反映期望推进量增加与引擎步频下降.
-
-同步算法沿贪心扩展序列逐步增加验证 token,并在目标函数 $\Theta$ 首次不再上升时停止;这一提前停止要求 $\Theta$ 沿该序列呈单峰.真实 GPU 的 CUDA Graph bucket,并行通信和调度会让 SPS 曲线出现台阶或局部谷值,进而使 $\Theta$ 不再单峰.
+算法把所有候选前缀扩展 $(r,j)$ 按 $a_{r,j}$ 从高到低排序,并逐个加入验证 batch.固定 $B$ 时,这个顺序优先保留期望回报最高的 token;加入新 token 后,式(12)同时反映期望推进量增加与引擎步频下降. 同步算法沿贪心扩展序列逐步增加验证 token,并在目标函数 $\Theta$ 首次不再上升时停止;这一提前停止要求 $\Theta$ 沿该序列呈单峰.真实 GPU 的 CUDA Graph bucket,并行通信和调度会让 SPS 曲线出现台阶或局部谷值,进而使 $\Theta$ 不再单峰.
 
 生产异步版本把"决定容量"和"选择当前候选"分开:两步之前可用的 confidence 用于确定本轮动态 top-$K$ 容量,最新的累积 confidence 仍用于给当前候选排序.搜索不再在第一次下降时提前停止,而是在台阶状 SPS 曲线上比较完整候选容量.两步因果隔离使容量 $K$ 与当前 token realization 分离,避免用 $x_{r,k}$ 自身决定是否验证位置 $k$.
 
@@ -377,9 +345,7 @@ $$
 \tag{15}
 $$
 
-论文默认 $(\alpha_{\mathrm{ce}},\alpha_{\mathrm{tv}},\alpha_{\mathrm{conf}})=(0.1,0.9,1.0)$.交叉熵学习真实 token,TV 项直接拉近草稿与目标分布,置信 BCE 学习式(7)的软接受率.式(15)的 $\mathcal L_{\mathrm{tv}}$ 使用未乘 $1/2$ 的 $L_1$ 距离;严格的总变差距离是它的一半,两者在损失中只差一个常数因子.
-
-论文记号把位置衰减写成式(13).当前 DeepSpec 的 Qwen3-4B 配置将 `block_size` 设为 7,同时把独立参数 `loss_decay_gamma` 设为 4.0,代码实际使用 $\exp(-\mathrm{position}/4)$;三个损失项分别按加权有效 token 数归一化,再以 $0.1/0.9/1.0$ 合并.复现实验时需要同时读取块长与损失衰减参数,不能默认二者相等.
+论文默认 $(\alpha_{\mathrm{ce}},\alpha_{\mathrm{tv}},\alpha_{\mathrm{conf}})=(0.1,0.9,1.0)$.交叉熵学习真实 token,TV 项直接拉近草稿与目标分布,置信 BCE 学习式(7)的软接受率.式(15)的 $\mathcal L_{\mathrm{tv}}$ 使用未乘 $1/2$ 的 $L_1$ 距离;严格的总变差距离是它的一半,两者在损失中只差一个常数因子. 论文记号把位置衰减写成式(13).当前 DeepSpec 的 Qwen3-4B 配置将 `block_size` 设为 7,同时把独立参数 `loss_decay_gamma` 设为 4.0,代码实际使用 $\exp(-\mathrm{position}/4)$;三个损失项分别按加权有效 token 数归一化,再以 $0.1/0.9/1.0$ 合并.复现实验时需要同时读取块长与损失衰减参数,不能默认二者相等.
 
 DeepSpec 提供数据准备,目标隐藏状态缓存,DSpark/DFlash/Eagle3 训练和接受长度评估.已发布配置覆盖 Qwen3 与 Gemma4 的若干规模.仓库给出的 Qwen3-4B 默认数据流程约需 38 TB 目标隐藏状态缓存;完整目标 logits 在草稿 worker 的采样位置由共享 LM head 本地投影.实际容量随数据量,序列长度,隐藏维度与捕获层数变化.领域,thinking 模式或目标模型变化通常需要重新生成数据并适配草稿器.
 
@@ -392,17 +358,11 @@ $$
 \tag{16}
 $$
 
-首次拒绝时,从 $[p_k^t-p_k^d]_+$ 的归一化分布采样 correction.动态前缀长度还要满足 non-anticipating 条件:事件 $\ell_r\ge k$ 必须由采样 $x_{r,k}$ 之前可见的信息决定,可以依赖 $x_{r,<k}$,不能依赖 $x_{r,k}$ 本身.满足这一条件时,缩短验证前缀只改变计算预算,不改变目标输出分布.
-
-完整的分布证明还需要同时处理 EOS、bonus token 与 KV 回滚；这些边界不会改变接受—残差采样的核心等式。
+首次拒绝时,从 $[p_k^t-p_k^d]_+$ 的归一化分布采样 correction.动态前缀长度还要满足 non-anticipating 条件:事件 $\ell_r\ge k$ 必须由采样 $x_{r,k}$ 之前可见的信息决定,可以依赖 $x_{r,<k}$,不能依赖 $x_{r,k}$ 本身.满足这一条件时,缩短验证前缀只改变计算预算,不改变目标输出分布. 完整的分布证明还需要同时处理 EOS、bonus token 与 KV 回滚；这些边界不会改变接受—残差采样的核心等式。
 
 ### 10. 论文结果与适用范围
 
-论文在 Qwen3-4B/8B/14B 与 Gemma4-12B 上,用统一训练框架比较 DSpark,DFlash 与 Eagle3.主结果采用 block size 7,temperature 1.0,non-thinking,并关闭 confidence scheduler;accepted length 包含 bonus token.对三个 Qwen3 目标模型,DSpark 的宏平均接受长度相对 Eagle3 分别提高 30.9%,26.7%,30.0%,相对 DFlash 分别提高 16.3%,18.4%,18.3%.
-
-论文还测量 Qwen3-4B 在 batch 128,上下文长度 512/1024/2048/4096 下的草稿周期.图中的总草稿输入长度为 4,8,12,16,包含一个 anchor,对应 proposal length $\gamma=3,7,11,15$;DSpark 相对 DFlash 的整轮时延增加约 0.2%–1.3%.这项结果说明轻量顺序 head 在该硬件与配置中的额外成本较小,不能直接外推到其他词表,kernel 或并发.
-
-DSpark 论文报告其部署在 DeepSeek-V4 Preview 服务系统中.与先前 MTP-1 基线在匹配总吞吐容量下比较,论文给出的每用户生成速度提升为 V4-Flash 60%–85%,V4-Pro 57%–78%.更严格 SLA 下的高比例结果对应基线接近容量悬崖的区域,表示服务 Pareto 前沿扩展,不是单请求固定倍数.
+论文在 Qwen3-4B/8B/14B 与 Gemma4-12B 上,用统一训练框架比较 DSpark,DFlash 与 Eagle3.主结果采用 block size 7,temperature 1.0,non-thinking,并关闭 confidence scheduler;accepted length 包含 bonus token.对三个 Qwen3 目标模型,DSpark 的宏平均接受长度相对 Eagle3 分别提高 30.9%,26.7%,30.0%,相对 DFlash 分别提高 16.3%,18.4%,18.3%. 论文还测量 Qwen3-4B 在 batch 128,上下文长度 512/1024/2048/4096 下的草稿周期.图中的总草稿输入长度为 4,8,12,16,包含一个 anchor,对应 proposal length $\gamma=3,7,11,15$;DSpark 相对 DFlash 的整轮时延增加约 0.2%–1.3%.这项结果说明轻量顺序 head 在该硬件与配置中的额外成本较小,不能直接外推到其他词表,kernel 或并发. DSpark 论文报告其部署在 DeepSeek-V4 Preview 服务系统中.与先前 MTP-1 基线在匹配总吞吐容量下比较,论文给出的每用户生成速度提升为 V4-Flash 60%–85%,V4-Pro 57%–78%.更严格 SLA 下的高比例结果对应基线接近容量悬崖的区域,表示服务 Pareto 前沿扩展,不是单请求固定倍数.
 
 DeepSpec 开源了数据,训练与评估流程,但没有包含论文生产服务栈中的全部 HAI-LLM,异步调度与定制 kernel;线上速度区间因此不能由公开仓库直接复现.
 
@@ -426,9 +386,6 @@ DFlash2 采用另一条路线:局部卷积改善候选生成,top-$K$ selector �
 3. DeepSpec, [Qwen3-4B DSpark 配置](https://github.com/deepseek-ai/DeepSpec/blob/main/config/dspark/dspark_qwen3_4b.py) 与 [损失实现](https://github.com/deepseek-ai/DeepSpec/blob/main/deepspec/modeling/dspark/loss.py).
 4. DeepSpec, [训练数据与目标隐藏状态缓存说明](https://github.com/deepseek-ai/DeepSpec/blob/main/scripts/data/README.md).
 5. DeepSeek, [DeepSeek-V4 Preview: Entering the Era of Affordable Million-Token Context](https://deepseek.com/en/news/v4-preview/), 2026-04-24.
-
-
-
 
 > **论文**：*DSpark: Confidence-Scheduled Speculative Decoding with Semi-Autoregressive Generation*（DeepSeek-AI + 北京大学，arXiv:2607.05147，2026-07）
 > **开源**：训练框架 DeepSpec（MIT 协议，预设支持 Qwen3 / Gemma4，不绑定 DeepSeek 自家模型）
@@ -603,9 +560,7 @@ $$
 
 固定验证长度会踩中两个坑：
 - **低负载时**：验证太少，浪费并行验证能力；
-- **高负载时**：验证太多，把 GPU 吞吐拖垮（这正是生产基线 MTP-1 在高并发下性能悬崖的原因）。
-
-DSpark 把验证长度选择形式化为**全局吞吐最大化问题**。设当前有 $R$ 个活跃请求，请求 $r$ 的每位置置信度为 $c_{r,1}, \ldots, c_{r,\gamma}$，调度验证长度 $\ell_r \in \{0, \ldots, \gamma\}$。系统吞吐（每秒产出 token 数）可写成：
+- **高负载时**：验证太多，把 GPU 吞吐拖垮（这正是生产基线 MTP-1 在高并发下性能悬崖的原因）。 DSpark 把验证长度选择形式化为**全局吞吐最大化问题**。设当前有 $R$ 个活跃请求，请求 $r$ 的每位置置信度为 $c_{r,1}, \ldots, c_{r,\gamma}$，调度验证长度 $\ell_r \in \{0, \ldots, \gamma\}$。系统吞吐（每秒产出 token 数）可写成：
 
 $$
 \mathrm{Throughput}(\ell_1, \ldots, \ell_R) = \frac{\sum_{r=1}^{R} \mathbb{E}[\tau_r(\ell_r)]}{T_{\mathrm{cycle}}(\ell_1, \ldots, \ell_R)}
@@ -665,52 +620,29 @@ $$
 
 *本文基于 DSpark 论文（arXiv:2607.05147）摘要、方法与多篇深度解析整理推导；公式均按 LaTeX 规范书写，KaTeX 渲染。*
 
-
-
 ### 5.13. 用论文公式复核完整方法链
 
 下面把背景分布、KV 注入、半自回归分解、置信度标签和训练目标连起来。重点是核对每个数学量在训练与推理时的来源，并据此判断无损性、选择偏差和调度收益分别由什么保证。
-
 
 #### 2. Background · 背景
 
 #### 2.1. Speculative Decoding · 投机解码
 
-
-自回归语言模型每次前向生成一个 token, 推理延迟与输出长度成正比. 投机解码 (Chen et al., 2023; Ge et al., 2022; Leviathan et al., 2023) 用一个轻量草稿模型 $M_d$ 加速目标模型 $M_t$ 的推理. 每个解码周期里, 草稿模型提出 $\gamma$ 个候选 token $x_1, \ldots, x_\gamma$. 目标模型在一次前向里验证全部候选, 接受与自身分布一致的最长前缀.
-
-
-具体地, 在每个草稿位置 $k$, 目标模型算出自己的分布 $p_k^t$, 与草稿分布 $p_k^d$ 比较. token $x_k$ 以概率 $\min(1, p_k^t(x_k)/p_k^d(x_k))$ 被接受. 验证从左到右进行: 第一次在位置 $k$ 拒绝后, 之后的 $x_{k+1}, \cdots, x_\gamma$ 全部丢弃, 不论它们本身质量如何.
-
-
-记 $\tau$ 为每个周期接受的 token 数, $T_{\mathrm{draft}}$ 与 $T_{\mathrm{verify}}$ 分别为起草与验证前向的墙钟时间. 每个生成 token 的平均延迟为:
+自回归语言模型每次前向生成一个 token, 推理延迟与输出长度成正比. 投机解码 (Chen et al., 2023; Ge et al., 2022; Leviathan et al., 2023) 用一个轻量草稿模型 $M_d$ 加速目标模型 $M_t$ 的推理. 每个解码周期里, 草稿模型提出 $\gamma$ 个候选 token $x_1, \ldots, x_\gamma$. 目标模型在一次前向里验证全部候选, 接受与自身分布一致的最长前缀. 具体地, 在每个草稿位置 $k$, 目标模型算出自己的分布 $p_k^t$, 与草稿分布 $p_k^d$ 比较. token $x_k$ 以概率 $\min(1, p_k^t(x_k)/p_k^d(x_k))$ 被接受. 验证从左到右进行: 第一次在位置 $k$ 拒绝后, 之后的 $x_{k+1}, \cdots, x_\gamma$ 全部丢弃, 不论它们本身质量如何. 记 $\tau$ 为每个周期接受的 token 数, $T_{\mathrm{draft}}$ 与 $T_{\mathrm{verify}}$ 分别为起草与验证前向的墙钟时间. 每个生成 token 的平均延迟为:
 
 $$
 L = \frac {T _ {\mathrm{draft}} + T _ {\mathrm{verify}}}{\tau}.\tag{1}
 $$
 
-
 因此提速归结为三个杠杆: 降低 $T_{\mathrm{draft}}$ (起草更快), 提高 $\tau$ (起草更准), 或降低有效的 $T_{\mathrm{verify}}$ (验证更聪明).
 
 #### 2.2. Drafter Architectures · Drafter 架构
 
-
-草稿模型的设计决定 $T_{\mathrm{draft}}$ 与 $\tau$ 如何取舍. 现有方法分两类.
-
-
-
-**自回归 drafter.** 自回归 drafter 顺序生成草稿 token, 每个位置以之前采样出的 token 为条件 (DeepSeek-AI, 2024; Li et al., 2024b,c, 2026b; Zhang et al., 2025). 显式依赖带来强建模能力, 但起草成本随块长线性增长: $T_{\mathrm{draft}} \propto \gamma$, 迫使自回归 drafter 用小 $\gamma$ 和浅架构压低 $T_{\mathrm{draft}}$. 为弥补块短, 基于树的验证 (Miao et al., 2024) 把候选展开成树, 用树注意力同时验证多条路径, 但大量验证 token 会降低整体服务吞吐.
-
-
-**并行 drafter.** 并行 drafter 在一次前向里产出全部 $\gamma$ 个草稿 token, $T_{\mathrm{draft}}$ 几乎与块长无关 (Cai et al., 2024; Chen et al., 2026; Li et al., 2025a; Liu et al., 2026a; Sandler et al., 2026). 这允许用大得多的块 (例如 $\gamma=16$), 延迟却不按比例增长.
-
-
-其中, DFlash (Chen et al., 2026) 是最先进的并行 drafter, 它让草稿模型以从目标模型抽取的丰富上下文特征为条件 (KV 注入). prefill 阶段, 一组目标层 $\{l_1, \cdots, l_m\}$ 的隐状态被拼接, 再投影到草稿隐空间:
+草稿模型的设计决定 $T_{\mathrm{draft}}$ 与 $\tau$ 如何取舍. 现有方法分两类. **自回归 drafter.** 自回归 drafter 顺序生成草稿 token, 每个位置以之前采样出的 token 为条件 (DeepSeek-AI, 2024; Li et al., 2024b,c, 2026b; Zhang et al., 2025). 显式依赖带来强建模能力, 但起草成本随块长线性增长: $T_{\mathrm{draft}} \propto \gamma$, 迫使自回归 drafter 用小 $\gamma$ 和浅架构压低 $T_{\mathrm{draft}}$. 为弥补块短, 基于树的验证 (Miao et al., 2024) 把候选展开成树, 用树注意力同时验证多条路径, 但大量验证 token 会降低整体服务吞吐. **并行 drafter.** 并行 drafter 在一次前向里产出全部 $\gamma$ 个草稿 token, $T_{\mathrm{draft}}$ 几乎与块长无关 (Cai et al., 2024; Chen et al., 2026; Li et al., 2025a; Liu et al., 2026a; Sandler et al., 2026). 这允许用大得多的块 (例如 $\gamma=16$), 延迟却不按比例增长. 其中, DFlash (Chen et al., 2026) 是最先进的并行 drafter, 它让草稿模型以从目标模型抽取的丰富上下文特征为条件 (KV 注入). prefill 阶段, 一组目标层 $\{l_1, \cdots, l_m\}$ 的隐状态被拼接, 再投影到草稿隐空间:
 
 $$
 H _ {\mathrm{ctx}} = \operatorname{RMSNorm} \bigl (W _ {c} \left[ H ^ {(l _ {1})}; \dots ; H ^ {(l _ {m})} \right] \bigr),\tag{2}
 $$
-
 
 其中 $W_c \in \mathbb{R}^{d \times md}$ 是共享投影. 这些上下文特征注入每个草稿层: 沿 key 与 value 的序列维, 与草稿块表示拼接:
 
@@ -718,38 +650,17 @@ $$
 K _ {i} = [ W _ {i} ^ {K} H _ {\mathrm{ctx}}; W _ {i} ^ {K} H _ {d} ], \quad V _ {i} = [ W _ {i} ^ {V} H _ {\mathrm{ctx}}; W _ {i} ^ {V} H _ {d} ].\tag{3}
 $$
 
-
-块内所有位置彼此双向注意, 同时注意注入的目标上下文.
-
-
-草稿模型共享目标模型的 embedding 层与语言模型头 (两者都冻结). 它的输入是一个 anchor token<sup>1</sup> 的 embedding 加 $\gamma$ 个 mask token 的 embedding, 一次前向产出所有 mask 位置的 logits. 无论块多长, 起草都只需一次前向, 因此在相同延迟预算下, DFlash 能用比自回归 drafter 更深的架构和更大的块.
+块内所有位置彼此双向注意, 同时注意注入的目标上下文. 草稿模型共享目标模型的 embedding 层与语言模型头 (两者都冻结). 它的输入是一个 anchor token<sup>1</sup> 的 embedding 加 $\gamma$ 个 mask token 的 embedding, 一次前向产出所有 mask 位置的 logits. 无论块多长, 起草都只需一次前向, 因此在相同延迟预算下, DFlash 能用比自回归 drafter 更深的架构和更大的块.
 
 #### 3. Architecture · 架构
 
-
-DSpark 的总览见图 1. 回顾式 (1), 投机解码的每 token 延迟为 $L = (T_{\mathrm{draft}} + T_{\mathrm{verify}})/\tau$. 自回归 drafter 的 $\tau$ 高, 但要付出 $T_{\mathrm{draft}} \propto \gamma$; 并行 drafter 把 $T_{\mathrm{draft}}$ 压到一次前向, 却因为每个位置独立预测而牺牲 $\tau$. 同时, 定长验证把 $T_{\mathrm{verify}}$ 浪费在几乎必被拒绝的低置信度后缀 token 上. DSpark 用两个互补组件处理这些限制:
-
-
-• **半自回归生成** (3.1 节). 并行主干承担草稿计算的大头, 使 $T_{\mathrm{draft}}$ 几乎与 $\gamma$ 无关. 之后一个轻量顺序模块在草稿 token 之间注入依赖, 以极小的额外延迟提高 $\tau$.
-
-
-• **置信度调度验证** (3.2 节). 置信度头估计逐位置的接受概率, 硬件感知调度器据此剪掉低置信度的后缀 token, 省下不必要的验证计算.
-
+DSpark 的总览见图 1. 回顾式 (1), 投机解码的每 token 延迟为 $L = (T_{\mathrm{draft}} + T_{\mathrm{verify}})/\tau$. 自回归 drafter 的 $\tau$ 高, 但要付出 $T_{\mathrm{draft}} \propto \gamma$; 并行 drafter 把 $T_{\mathrm{draft}}$ 压到一次前向, 却因为每个位置独立预测而牺牲 $\tau$. 同时, 定长验证把 $T_{\mathrm{verify}}$ 浪费在几乎必被拒绝的低置信度后缀 token 上. DSpark 用两个互补组件处理这些限制: • **半自回归生成** (3.1 节). 并行主干承担草稿计算的大头, 使 $T_{\mathrm{draft}}$ 几乎与 $\gamma$ 无关. 之后一个轻量顺序模块在草稿 token 之间注入依赖, 以极小的额外延迟提高 $\tau$. • **置信度调度验证** (3.2 节). 置信度头估计逐位置的接受概率, 硬件感知调度器据此剪掉低置信度的后缀 token, 省下不必要的验证计算.
 
 <sup>1</sup>本文中 anchor token 与 bonus token 两个说法混用, 都指上一轮由目标模型生成的最后一个 token.
 
-
-
-
 #### 3.1. Semi-Autoregressive Generation · 半自回归生成
 
-
-并行 drafter 一次前向产出全部 $\gamma$ 个草稿 logits, 所以每个预测都无法以块内其他位置采样出的 token 为条件. 当上下文允许多种合理续写时, 例如「of course」与「no problem」, 并行 drafter 可能拼出「of problem」或「no course」这种不连贯的组合: 每个位置对所有可能的前驱做边缘化, 没有以实际采样出的那一个为条件 (Gu et al., 2018; Huang et al., 2022a). 接受率因此沿块快速衰减, 草稿与验证计算都被浪费. 为此我们采用**半自回归**结构, 把草稿生成拆成两个阶段:
-
-
-**并行阶段.** 并行主干 (我们的实例是 DFlash (Chen et al., 2026)) 对整个块跑一次前向, 产出隐状态 $h_1, \ldots, h_\gamma$ 和基础 logits $U_1, \ldots, U_\gamma$. 我们对原始 DFlash 主干只做一处小改动: 原版输入 anchor token 加 $\gamma$ 个 mask token, 只预测 mask 位置; 我们把 anchor 自身当作第一个预测位置, 于是 $\gamma$ 个输入 token (anchor 加 $\gamma-1$ 个 mask) 产出 $\gamma$ 个草稿 logits. 这减少了草稿计算, 草稿质量基本不变.
-
-
+并行 drafter 一次前向产出全部 $\gamma$ 个草稿 logits, 所以每个预测都无法以块内其他位置采样出的 token 为条件. 当上下文允许多种合理续写时, 例如「of course」与「no problem」, 并行 drafter 可能拼出「of problem」或「no course」这种不连贯的组合: 每个位置对所有可能的前驱做边缘化, 没有以实际采样出的那一个为条件 (Gu et al., 2018; Huang et al., 2022a). 接受率因此沿块快速衰减, 草稿与验证计算都被浪费. 为此我们采用**半自回归**结构, 把草稿生成拆成两个阶段: **并行阶段.** 并行主干 (我们的实例是 DFlash (Chen et al., 2026)) 对整个块跑一次前向, 产出隐状态 $h_1, \ldots, h_\gamma$ 和基础 logits $U_1, \ldots, U_\gamma$. 我们对原始 DFlash 主干只做一处小改动: 原版输入 anchor token 加 $\gamma$ 个 mask token, 只预测 mask 位置; 我们把 anchor 自身当作第一个预测位置, 于是 $\gamma$ 个输入 token (anchor 加 $\gamma-1$ 个 mask) 产出 $\gamma$ 个草稿 logits. 这减少了草稿计算, 草稿质量基本不变.
 
 **顺序阶段.** 顺序阶段给基础 logits 补上一个依赖前缀的转移偏置 $B_k(x_0, x_{<k}, x_k)$, 让每个草稿位置能以块内之前采样出的 token 为条件. 顺序阶段不定义全局归一化的能量模型, 而是通过自回归分解诱导出一个因果的块分布:
 
@@ -757,44 +668,27 @@ $$
 P (X \mid x _ {0}) = \prod_ {k = 1} ^ {\gamma} p _ {k} \left(x _ {k} \mid x _ {0}, x _ {<   k}\right), \quad p _ {k} (\nu \mid x _ {0}, x _ {<   k}) = \frac {\exp \left(U _ {k} (\nu) + B _ {k} \left(x _ {0} , x _ {<   k} , \nu\right)\right)}{\sum_ {u \in \mathcal {V}} \exp \left(U _ {k} (u) + B _ {k} \left(x _ {0} , x _ {<   k} , u\right)\right)}.\tag{4}
 $$
 
-
-其中 $x_0$ 是上一个验证周期留下的 anchor token, $U_k$ 是并行主干在位置 $k$ 产出的基础 logit 向量, $\mathcal{V}$ 是词表. 推理时, 顺序模块按 $p_k(\cdot \mid x_0, x_{<k})$ 从左到右采样. 采样过程本质上是串行的, 所以这个模块必须计算轻量 ($T_{\mathrm{sequential}} \ll T_{\mathrm{parallel}}$), 使整体起草延迟仍由并行阶段主导. 下面介绍顺序模块的两种实例.
-
-
-• **Markov head.** 最简单的实例把 $B_k$ 限制为只依赖紧邻的前一个 token, 退化为一阶转移 $B(x_{k-1}, x_k)$. 原则上这是一个完整的 $V \times V$ 矩阵 $B$; 我们用低秩分解 $B = W_1 W_2$ 近似, 其中 $W_1 \in \mathbb{R}^{V \times r}$, $W_2 \in \mathbb{R}^{r \times V}$. 给定前一个 token $x_{k-1}$, 位置 $k$ 的转移偏置为:
+其中 $x_0$ 是上一个验证周期留下的 anchor token, $U_k$ 是并行主干在位置 $k$ 产出的基础 logit 向量, $\mathcal{V}$ 是词表. 推理时, 顺序模块按 $p_k(\cdot \mid x_0, x_{<k})$ 从左到右采样. 采样过程本质上是串行的, 所以这个模块必须计算轻量 ($T_{\mathrm{sequential}} \ll T_{\mathrm{parallel}}$), 使整体起草延迟仍由并行阶段主导. 下面介绍顺序模块的两种实例. • **Markov head.** 最简单的实例把 $B_k$ 限制为只依赖紧邻的前一个 token, 退化为一阶转移 $B(x_{k-1}, x_k)$. 原则上这是一个完整的 $V \times V$ 矩阵 $B$; 我们用低秩分解 $B = W_1 W_2$ 近似, 其中 $W_1 \in \mathbb{R}^{V \times r}$, $W_2 \in \mathbb{R}^{r \times V}$. 给定前一个 token $x_{k-1}$, 位置 $k$ 的转移偏置为:
 
 $$
 B (x _ {k - 1}, \cdot) = W _ {1} [ x _ {k - 1} ] W _ {2} \in \mathbb {R} ^ {V},\tag{5}
 $$
 
-
-其中 $W_1$ 充当 embedding 查找表, $W_2$ 充当 logit 投影. 低秩分解 (默认 $r=256$) 让存储和每步计算都很小, 即使词表很大, 顺序循环也高效. 回到前面的例子: 位置 1 一旦采样出「of」, Markov head 就在位置 2 抬高「course」, 压低「problem」, 缓解跨模态碰撞.
-
-
-• **RNN head.** Markov head 只记一步, 位置 $k$ 看不到 $x_{k-1}$ 之前的 token. RNN head 放宽这一点: 维护一个递归状态 $s_k$, 累积块内完整的前缀历史. 每一步, 模块把当前状态 $s_{k-1} \in \mathbb{R}^r$, 前一个 token 的 embedding $W_1[x_{k-1}] \in \mathbb{R}^r$, 主干隐状态 $h_k \in \mathbb{R}^d$ 拼成输入向量 $z_k = [s_{k-1}; W_1[x_{k-1}]; h_k] \in \mathbb{R}^{2r+d}$, 再做一次门控更新:
+其中 $W_1$ 充当 embedding 查找表, $W_2$ 充当 logit 投影. 低秩分解 (默认 $r=256$) 让存储和每步计算都很小, 即使词表很大, 顺序循环也高效. 回到前面的例子: 位置 1 一旦采样出「of」, Markov head 就在位置 2 抬高「course」, 压低「problem」, 缓解跨模态碰撞. • **RNN head.** Markov head 只记一步, 位置 $k$ 看不到 $x_{k-1}$ 之前的 token. RNN head 放宽这一点: 维护一个递归状态 $s_k$, 累积块内完整的前缀历史. 每一步, 模块把当前状态 $s_{k-1} \in \mathbb{R}^r$, 前一个 token 的 embedding $W_1[x_{k-1}] \in \mathbb{R}^r$, 主干隐状态 $h_k \in \mathbb{R}^d$ 拼成输入向量 $z_k = [s_{k-1}; W_1[x_{k-1}]; h_k] \in \mathbb{R}^{2r+d}$, 再做一次门控更新:
 
 $$
 \left| \begin{array}{c} s _ {k} = \sigma (W _ {g} z _ {k}) \odot s _ {k - 1} + \big (1 - \sigma (W _ {g} z _ {k}) \big) \odot \operatorname{tanh} (W _ {c} z _ {k}), \\ B _ {k} (x _ {<   k}, \cdot) = W _ {2} ^ {\top} \operatorname{tanh} (W _ {o} z _ {k}), \end{array} \right.\tag{6}
 $$
 
-
 其中 $W_g, W_c, W_o \in \mathbb{R}^{r \times (2r+d)}$ 由同一个线性投影联合参数化, 拆成门, 候选, 输出三部分. 状态 $s_0$ 初始化为零.
 
 #### 3.2. Confidence-Scheduled Verification · 置信度调度验证
 
-
-半自回归架构让 DSpark 能高效生成大草稿块. 但多产出草稿 token 并不自动转化为更高的端到端加速. 不加区分地验证整个草稿块, 反而可能拖低整体系统吞吐, 高并发场景尤其如此 (Hu et al., 2026b; Liu et al., 2024c).
-
-
-
-
-这个性能瓶颈来自两个相互作用的因素. 第一, 数据侧, 草稿接受率天然因领域而异: 代码这类结构化文本接受率高, 开放式对话明显更低 (Abramovich et al., 2026; Xia et al., 2024). 第二, 系统侧, 多验证一个 token 的实际成本严格取决于引擎负载. 系统负载轻时, 多一次验证即使被拒绝, 代价也很小. 但在高并发部署下, 每一次不必要的验证都占用目标模型的 batch 容量, 这部分容量本可服务其他活跃请求 (Liu et al., 2024b; Wu et al., 2025).
-
+半自回归架构让 DSpark 能高效生成大草稿块. 但多产出草稿 token 并不自动转化为更高的端到端加速. 不加区分地验证整个草稿块, 反而可能拖低整体系统吞吐, 高并发场景尤其如此 (Hu et al., 2026b; Liu et al., 2024c). 这个性能瓶颈来自两个相互作用的因素. 第一, 数据侧, 草稿接受率天然因领域而异: 代码这类结构化文本接受率高, 开放式对话明显更低 (Abramovich et al., 2026; Xia et al., 2024). 第二, 系统侧, 多验证一个 token 的实际成本严格取决于引擎负载. 系统负载轻时, 多一次验证即使被拒绝, 代价也很小. 但在高并发部署下, 每一次不必要的验证都占用目标模型的 batch 容量, 这部分容量本可服务其他活跃请求 (Liu et al., 2024b; Wu et al., 2025).
 
 因此, 要完全释放大草稿块的潜力, 需要一个统一机制, 只把目标模型算力投向期望回报为正的 token. DSpark 的做法是耦合两部分: 预测前缀存活概率的**置信度头** (3.2.1 节), 以及依据当前系统负载动态决定最优验证长度的**硬件感知前缀调度器** (3.2.2 节).
 
 #### 3.2.1. Confidence Head · 置信度头
-
 
 受 Huang et al. (2024); Wang et al. (2026b) 启发, 置信度头为每个草稿位置 $k$ 输出一个标量 $c_k \in (0,1)$. 关键在于, $c_k$ 建模的是条件概率: 在块内之前所有 token 都已被接受的前提下, 位置 $k$ 的草稿 token 通过目标验证的概率. 结构是一个轻量线性投影加 sigmoid:
 
@@ -802,48 +696,27 @@ $$
 c _ {k} = \sigma \big (w ^ {\top} [ h _ {k}; W _ {1} [ x _ {k - 1} ] ] \big),\tag{7}
 $$
 
-
 其中 $h_k$ 是主干隐状态, $W_1[x_{k-1}]$ 是前一个草稿 token 的 Markov embedding. 我们用解析的逐步接受率 $c_k^*$ 监督 $c_k$, 它由草稿分布 $p_k^d$ 与目标分布 $p_k^t$ 的全变差距离决定:
 
 $$
 c _ {k} ^ {*} = 1 - \frac {1}{2} \| p _ {k} ^ {d} - p _ {k} ^ {t} \| _ {1}.\tag{8}
 $$
 
-
 **事后校准.** 基于阈值的验证启发式 (Huang et al., 2024; Li et al., 2024b; Zhang et al., 2026b) 只要求置信度正确地给草稿 token 质量排序. 我们的硬件感知调度 (详见 3.2.2 节) 则需要累积接受概率的绝对数值, 才能算出期望接受长度 $\tau$. 神经网络的置信度估计常常过度自信 (Guo et al., 2017; Ovadia et al., 2019), 直接用原始分数会扭曲吞吐估计, 导致次优调度.
-
 
 为此我们提出**顺序温度缩放 (Sequential Temperature Scaling, STS)**. 每个 $c_i$ 建模一个条件概率, 由链式法则, 草稿前缀被接受的联合概率分解为累积乘积 $\prod_{i \leqslant k} c_i$. STS 在留出验证集上从左到右逐位置校准这个联合概率. 具体地, 在每个位置 $k \in \{1, \cdots, \gamma\}$, 我们做一次简单的一维网格搜索, 找到使累积乘积的期望校准误差 (ECE) (Naeini et al., 2015) 最小的温度标量, 同时固定之前所有位置已校准的分数. 关键在于, 温度缩放是保序变换: 它把预测概率修正到与经验接受率一致, 不打乱置信度头学到的草稿 token 相对排序.
 
 #### 3.2.2. Hardware-Aware Prefix Scheduler · 硬件感知前缀调度器
 
-
-已有方法 (Huang et al., 2024; Li et al., 2024b) 通常对置信度施加一个静态阈值来决定验证长度. 在孤立的单请求假设下这很有效, 但在高并发生产系统里, 验证一个草稿 token 的效用强烈依赖当前系统负载, 静态阈值就可能次优.
-
-
-
-
-为此, 我们把验证长度选择表述为一个全局吞吐最大化问题 (Algorithm 1). 考虑一个含 $R$ 条活跃请求的 batch. 对请求 $r$, 记 $c_{r,1}, \ldots, c_{r,\gamma}$ 为逐位置置信度估计, $\ell_r \in \{0, \cdots, \gamma\}$ 为调度的验证长度. 投机解码只以连续前缀的形式接受草稿 token, 所以位置 $j$ 处 token 的存活概率是累积乘积 $a_{r,j} = \prod_{i \leqslant j} c_{r,i}$.
-
+已有方法 (Huang et al., 2024; Li et al., 2024b) 通常对置信度施加一个静态阈值来决定验证长度. 在孤立的单请求假设下这很有效, 但在高并发生产系统里, 验证一个草稿 token 的效用强烈依赖当前系统负载, 静态阈值就可能次优. 为此, 我们把验证长度选择表述为一个全局吞吐最大化问题 (Algorithm 1). 考虑一个含 $R$ 条活跃请求的 batch. 对请求 $r$, 记 $c_{r,1}, \ldots, c_{r,\gamma}$ 为逐位置置信度估计, $\ell_r \in \{0, \cdots, \gamma\}$ 为调度的验证长度. 投机解码只以连续前缀的形式接受草稿 token, 所以位置 $j$ 处 token 的存活概率是累积乘积 $a_{r,j} = \prod_{i \leqslant j} c_{r,i}$.
 
 在一次验证步中, 送入目标模型的总 batch 大小 (按 token 计) 为 $B = \sum_{r=1}^{R}(1+\ell_r)$, 期望成功接受的 token 数为 $\tau = \sum_{r=1}^{R}\bigl(1+\sum_{j=1}^{\ell_r} a_{r,j}\bigr)$. 在一个简化假设<sup>2</sup>下, 记 $\mathrm{SPS}(B)$ 为前向 batch 大小为 $B$ 时的引擎吞吐, 单位是每秒步数. 关键在于, 这条容量曲线只在引擎初始化时测一次, 存成一张轻量代价表. 调度器的目标是通过动态选择验证长度 $\ell_1, \dots, \ell_R$, 最大化期望的系统级 token 吞吐 $\Theta = \tau \cdot \mathrm{SPS}(B)$.
 
-
-求 $\Theta$ 的全局最大值看似是组合搜索, 但目标函数的结构允许高效的贪心解. 因为 $a_{r,j}$ 关于 $j$ 单调不增 (即 $a_{r,j} \leq a_{r,j-1}$), 把请求 $r$ 的验证长度从 $j-1$ 延长到 $j$ 带来的期望接受 token 增量恰好是 $a_{r,j}$. 单调性保证了按 $a_{r,j}$ 全局排序候选 token 时, 自然满足块内的前缀依赖. 因此, 如果总验证 batch 大小 $B$ 固定, 最优分配 $\{\ell_r\}$ 就是从全体 $\{a_{r,j}\}$ 组成的全局池中贪心挑选存活概率最高的草稿 token.
-
-
-基于这一观察, 优化可以沿这条贪心接纳路径求值.
-
+求 $\Theta$ 的全局最大值看似是组合搜索, 但目标函数的结构允许高效的贪心解. 因为 $a_{r,j}$ 关于 $j$ 单调不增 (即 $a_{r,j} \leq a_{r,j-1}$), 把请求 $r$ 的验证长度从 $j-1$ 延长到 $j$ 带来的期望接受 token 增量恰好是 $a_{r,j}$. 单调性保证了按 $a_{r,j}$ 全局排序候选 token 时, 自然满足块内的前缀依赖. 因此, 如果总验证 batch 大小 $B$ 固定, 最优分配 $\{\ell_r\}$ 就是从全体 $\{a_{r,j}\}$ 组成的全局池中贪心挑选存活概率最高的草稿 token. 基于这一观察, 优化可以沿这条贪心接纳路径求值.
 
 <sup>2</sup>实际服务场景中, 平均上下文长度远低于极端值 (例如 1M token), 对 DeepSeek-V4 这类高度优化的架构而言, 它对 decode 延迟的影响很小. 此外, 在 prefill-decode 分离的部署中, decode 负载均衡器会让各数据并行 (DP) rank 上的请求数和总上下文长度大致均衡. 这会摊平序列长度的方差, 因而可以近似假设引擎吞吐主要取决于验证 batch 大小 $B$.
 
-
-
-我们先把所有合法的前缀扩展按存活概率降序全局排序. 为了动态确定最优的目标 batch 大小 $B$, 我们从排好序的池里逐个接纳 token, 每接纳一个就查代价表更新期望吞吐 $\Theta$.
-
-
-无损投机解码严格要求非预见性 (non-anticipating): 接纳决策不能依赖未来的候选 token (Chen et al., 2023; Leviathan et al., 2023). 我们的置信度头依赖前一个采样 token 的 Markov 特征, 计算下一个存活概率 $a_{r,k+1}$ 需要已实例化的候选 $x_{r,k}$. 回溯式的全局搜索会因此把 $x_{r,k}$ 泄露进第 $k$ 步的接纳决策, 引入选择偏差 (附录 A 给出一个具体反例, 演示这种理论上的违规).
-
+我们先把所有合法的前缀扩展按存活概率降序全局排序. 为了动态确定最优的目标 batch 大小 $B$, 我们从排好序的池里逐个接纳 token, 每接纳一个就查代价表更新期望吞吐 $\Theta$. 无损投机解码严格要求非预见性 (non-anticipating): 接纳决策不能依赖未来的候选 token (Chen et al., 2023; Leviathan et al., 2023). 我们的置信度头依赖前一个采样 token 的 Markov 特征, 计算下一个存活概率 $a_{r,k+1}$ 需要已实例化的候选 $x_{r,k}$. 回溯式的全局搜索会因此把 $x_{r,k}$ 泄露进第 $k$ 步的接纳决策, 引入选择偏差 (附录 A 给出一个具体反例, 演示这种理论上的违规).
 
 为保证严格因果, 调度器 (Algorithm 1) 采用早停机制: 一旦吞吐下降 ($\Theta \leq \Theta_{\mathrm{best}}$), 立刻中断贪心搜索, 截断决定只依赖处理到这一步为止的前缀. 这把接纳事件与未来 token 隔离开, 保证精确恢复目标分布. 注意, 这种逐步早停当且仅当目标 $\Theta$ 单峰时才得到全局最大吞吐, 这隐含假设了硬件容量曲线平滑递减. 针对真实的非平滑 SPS 特性和异步系统流水线所需的工程改造, 见 5.2 节.
 
@@ -852,16 +725,11 @@ $$
 
 #### 3.3. Training · 训练
 
-
-训练时, 我们从每条目标序列中随机采样多个 anchor 位置, 组成 $\gamma$-token 的块作为训练数据. 目标模型全程冻结; 草稿模型共享目标模型的 embedding 层和语言模型头并保持冻结, 只更新主干 drafter, 顺序模块和置信度头.
-
-
-训练目标由三项组成: 交叉熵损失 $\mathcal{L}_{\mathrm{ce}}$, 分布匹配损失 $\mathcal{L}_{\mathrm{tv}}$, 置信度损失 $\mathcal{L}_{\mathrm{conf}}$. 三项都按位置加权 $w_k = \exp(-(k-1)/\gamma)$ (Chen et al., 2026), 强调靠前的块位置: 在基于前缀的验证下, 它们对期望接受长度贡献更大. 交叉熵损失 $\mathcal{L}_{\mathrm{ce}}$ 训练 drafter 预测正确的下一个 token:
+训练时, 我们从每条目标序列中随机采样多个 anchor 位置, 组成 $\gamma$-token 的块作为训练数据. 目标模型全程冻结; 草稿模型共享目标模型的 embedding 层和语言模型头并保持冻结, 只更新主干 drafter, 顺序模块和置信度头. 训练目标由三项组成: 交叉熵损失 $\mathcal{L}_{\mathrm{ce}}$, 分布匹配损失 $\mathcal{L}_{\mathrm{tv}}$, 置信度损失 $\mathcal{L}_{\mathrm{conf}}$. 三项都按位置加权 $w_k = \exp(-(k-1)/\gamma)$ (Chen et al., 2026), 强调靠前的块位置: 在基于前缀的验证下, 它们对期望接受长度贡献更大. 交叉熵损失 $\mathcal{L}_{\mathrm{ce}}$ 训练 drafter 预测正确的下一个 token:
 
 $$
 \mathcal {L} _ {\mathrm{ce}} = - \sum_ {k = 1} ^ {\gamma} w _ {k} \log p _ {k} ^ {d} (x _ {k} ^ {*}),\tag{9}
 $$
-
 
 其中 $x_k^*$ 是真实 token, $p_k^d$ 是草稿分布. 分布匹配损失 $\mathcal{L}_{\mathrm{tv}}$ 惩罚草稿分布与目标分布之间的全变差距离:
 
@@ -869,17 +737,11 @@ $$
 \mathcal {L} _ {\mathrm{tv}} = \sum_ {k = 1} ^ {\gamma} w _ {k} \| p _ {k} ^ {d} - p _ {k} ^ {t} \| _ {1}.\tag{10}
 $$
 
-
-全变差距离是接受率的直接代理: 每步接受概率等于 $1 - \frac{1}{2}\|p^d - p^t\|_1$ (Leviathan et al., 2023), 所以最小化 $\mathcal{L}_{\mathrm{tv}}$ 就直接最大化期望接受率.
-
-
-置信度损失 $\mathcal{L}_{\mathrm{conf}}$ 是二元交叉熵, 训练置信度头预测式 (8) 的软接受标签 $c_k^*$:
+全变差距离是接受率的直接代理: 每步接受概率等于 $1 - \frac{1}{2}\|p^d - p^t\|_1$ (Leviathan et al., 2023), 所以最小化 $\mathcal{L}_{\mathrm{tv}}$ 就直接最大化期望接受率. 置信度损失 $\mathcal{L}_{\mathrm{conf}}$ 是二元交叉熵, 训练置信度头预测式 (8) 的软接受标签 $c_k^*$:
 
 $$
 \mathcal {L} _ {\text {conf}} = - \sum_ {k = 1} ^ {\gamma} w _ {k} \left[ c _ {k} ^ {*} \log c _ {k} + (1 - c _ {k} ^ {*}) \log (1 - c _ {k}) \right].\tag{11}
 $$
-
-
 
 总目标是三项的加权组合 (默认权重 $\alpha_{\mathrm{ce}}=0.1$, $\alpha_{\mathrm{tv}}=0.9$, $\alpha_{\mathrm{conf}}=1.0$):
 
@@ -888,15 +750,7 @@ $$
 $$
 
 > **对一下:** 3.3 节的位置权重 $w_k=\exp(-(k-1)/\gamma)$ 与 DeepSpec 默认配置是否一致?
-> 答: 不完全一致. `config/dspark/dspark_qwen3_4b.py` 里 `block_size=7`, 但 `loss_decay_gamma=4.0`, `loss.py` 按 `exp(-pos/4.0)` 加权 ($pos$ 从 0 起), 衰减常数是 4, 没有取块长 7. 位置 7 的权重因此是 $e^{-1.5}\approx 0.22$, 按正文写法应为 $e^{-6/7}\approx 0.42$. 三项权重 0.1, 0.9, 1.0 与配置一致; 另外 `loss.py` 的 $\mathcal{L}_{\mathrm{tv}}$ 按权重和归一化, 式 (10) 写的是未归一化的和, 两者只差一个常数因子.
-
-
-
-为把原始草稿质量与系统层调度策略隔离开, 离线评估关闭置信度调度器, 强制所有 drafter 提出固定长度的块. 主要结果以每轮平均接受长度 ($\tau$) 衡量, 见表 1.
-
-
-DSpark 在所有目标模型和基准领域上都稳定超过自回归基线 (Eagle3) 与并行基线 (DFlash). 具体而言, 在 Qwen3-4B, 8B, 14B 上, DSpark 的宏平均接受长度比 Eagle3 分别高 30.9%, 26.7%, 30.0%. 与 DFlash 相比, 三个规模上的相对提升分别为 16.3%, 18.4%, 18.3%. 关键在于, 这一优势跨模型家族成立, Gemma4-12B 目标上的一致增益说明了这一点.
-
+> 答: 不完全一致. `config/dspark/dspark_qwen3_4b.py` 里 `block_size=7`, 但 `loss_decay_gamma=4.0`, `loss.py` 按 `exp(-pos/4.0)` 加权 ($pos$ 从 0 起), 衰减常数是 4, 没有取块长 7. 位置 7 的权重因此是 $e^{-1.5}\approx 0.22$, 按正文写法应为 $e^{-6/7}\approx 0.42$. 三项权重 0.1, 0.9, 1.0 与配置一致; 另外 `loss.py` 的 $\mathcal{L}_{\mathrm{tv}}$ 按权重和归一化, 式 (10) 写的是未归一化的和, 两者只差一个常数因子. 为把原始草稿质量与系统层调度策略隔离开, 离线评估关闭置信度调度器, 强制所有 drafter 提出固定长度的块. 主要结果以每轮平均接受长度 ($\tau$) 衡量, 见表 1. DSpark 在所有目标模型和基准领域上都稳定超过自回归基线 (Eagle3) 与并行基线 (DFlash). 具体而言, 在 Qwen3-4B, 8B, 14B 上, DSpark 的宏平均接受长度比 Eagle3 分别高 30.9%, 26.7%, 30.0%. 与 DFlash 相比, 三个规模上的相对提升分别为 16.3%, 18.4%, 18.3%. 关键在于, 这一优势跨模型家族成立, Gemma4-12B 目标上的一致增益说明了这一点.
 
 在平均提升之外, 表 1 还显示出强烈的领域效应: 结构化任务上的接受长度天然更高 (例如 Qwen3-4B 上数学 5.57, 代码 5.12), 开放式对话则低 (3.49). 数据可预测性的这种固有差异意味着, 静态验证长度经常把算力浪费在很可能被拒绝的尾部 token 上. 这直接促成了我们的置信度调度验证: 依据期望接受量动态剪裁草稿块.
 
@@ -904,28 +758,11 @@ DSpark 在所有目标模型和基准领域上都稳定超过自回归基线 (Ea
 
 #### 4.3.1. Why Can Parallel Generation Outperform Autoregression? · 并行生成为什么能胜过自回归
 
-
-表 1 给出一个反直觉的现象: 并行 drafter (DFlash) 和半自回归 drafter (DSpark) 的接受长度常常超过完全自回归的 drafter (Eagle3). 这与「逐步自回归比并行模型产出更高质量序列」的通常预期相反 (Israel et al., 2026; Ren et al., 2020; Zheng et al., 2025).
-
-
-
-
-
-
-为分析这一行为, 我们考察宏观接受长度以外的表现. 使用 Qwen3-4B 目标模型和 4.1 节的基准集, 我们引入在真实投机解码过程中跟踪的逐位置条件接受率. 具体地, 对给定草稿位置 $k$, 评估分母只计目标模型成功验证并接受了位置 1 到 $k-1$ 全部草稿 token 的那些实例; 指标再计算这些有效实例中位置 $k$ 的 token 也被接受的比例. 这样, 位置 $k$ 的评估不会被更早的前缀错误拖累, 能看到每个具体步上的真实预测质量. 图 2 给出这些测量, 显示出不同架构之间清楚的行为差异.
-
+表 1 给出一个反直觉的现象: 并行 drafter (DFlash) 和半自回归 drafter (DSpark) 的接受长度常常超过完全自回归的 drafter (Eagle3). 这与「逐步自回归比并行模型产出更高质量序列」的通常预期相反 (Israel et al., 2026; Ren et al., 2020; Zheng et al., 2025). 为分析这一行为, 我们考察宏观接受长度以外的表现. 使用 Qwen3-4B 目标模型和 4.1 节的基准集, 我们引入在真实投机解码过程中跟踪的逐位置条件接受率. 具体地, 对给定草稿位置 $k$, 评估分母只计目标模型成功验证并接受了位置 1 到 $k-1$ 全部草稿 token 的那些实例; 指标再计算这些有效实例中位置 $k$ 的 token 也被接受的比例. 这样, 位置 $k$ 的评估不会被更早的前缀错误拖累, 能看到每个具体步上的真实预测质量. 图 2 给出这些测量, 显示出不同架构之间清楚的行为差异.
 
 **位置 1 的容量优势.** 在第一个草稿位置, 两类架构都只依据目标上下文预测下一个 token. 这里的表现差异严格来自架构容量: Eagle3 这类自回归模型受 $O(\gamma)$ 延迟所限只能用浅网络, $O(1)$ 的并行 drafter 则负担得起深得多的网络. 这一结构差距在位置 1 带来可观的准确率差: DFlash 的起点明显高于 Eagle3 (例如数学 0.88 对 0.81, 对话 0.72 对 0.53). 投机解码是严格的前缀匹配存活过程, 第一个 token 的杠杆最大: 这里一旦被拒, 整个块立刻作废. 因此, 这一初始容量优势对最终接受长度的提升不成比例地大, 解释了为什么并行 drafter 尽管在靠后位置接受率快速衰减, 整体上仍胜过自回归 drafter.
 
-
 **独立性在靠后位置的局限.** 看曲线尾部 (位置 2 到 7), 独立并行生成的固有局限暴露出来. 随着前面的 token 锁定某条语义路径, 后续 token 自然更可预测. Eagle3 这类自回归模型能有效利用这种条件确定性, 在块的更深处保持甚至提高条件接受率 (例如对话从 0.53 升到 0.74). 相比之下, DFlash 接受率快速衰减, 代码从 0.87 降到 0.78, 对话从 0.72 降到 0.63. 每个并行位置对所有可能的前驱 token 做边缘化, 没有以实际采样出的前缀为条件, 所以模型经常提出不一致的后缀组合, 这种模式称为多模态碰撞 (Gu et al., 2018; Stern et al., 2018).
-
-
-
-
-
-
-
 
 **用半自回归缓解后缀衰减.** 上面的分析给出一个清楚的架构目标: 首 token 用并行主干的高容量, 后续 token 用自回归模型的依赖建模. 这直接促成了 DSpark 的半自回归设计. 如图 2 所示, DSpark 继承了深并行 drafter 的高初始接受率 (例如数学起点 0.93). 同时, 它的轻量顺序头缓解了并行生成典型的快速衰减. 化解这一取舍后, DSpark 在整个草稿块内保持高而稳定的条件接受率.
 
@@ -934,63 +771,34 @@ DSpark 在所有目标模型和基准领域上都稳定超过自回归基线 (Ea
 
 #### 4.3.2. A Little Autoregression Goes a Long Way · 少量自回归带来大收益
 
-
-基于 4.3.1 节的认识, 我们沿两个维度探索 DSpark 的架构设计空间: drafter 深度 (Transformer 层数) 与提议长度 (块大小 $\gamma$). 除非另作说明, 本节所有实验以 Qwen3-4B 为目标模型, 遵循 4.1 节的评测协议.
-
-
-**Drafter 深度.** 增加 Transformer 层数自然会扩大草稿模型的预测容量. 为隔离这一效应, 我们把块大小固定为 7, DSpark 层数从 1 变到 5, 与 5 层 DFlash 基线比较. 图 3 汇总了数学, 代码, 对话三个领域的接受长度. 如预期, DSpark 的表现随深度单调提升, 1 层到 2 层的边际增益最大. 2 层 DSpark 在所有领域都超过 5 层 DFlash 基线.
-
-
-
-这说明通过轻量顺序头注入局部自回归, 在准确率与参数量之间给出了很划算的取舍, 序列连贯性好于单纯堆叠更深的并行层.
-
+基于 4.3.1 节的认识, 我们沿两个维度探索 DSpark 的架构设计空间: drafter 深度 (Transformer 层数) 与提议长度 (块大小 $\gamma$). 除非另作说明, 本节所有实验以 Qwen3-4B 为目标模型, 遵循 4.1 节的评测协议. **Drafter 深度.** 增加 Transformer 层数自然会扩大草稿模型的预测容量. 为隔离这一效应, 我们把块大小固定为 7, DSpark 层数从 1 变到 5, 与 5 层 DFlash 基线比较. 图 3 汇总了数学, 代码, 对话三个领域的接受长度. 如预期, DSpark 的表现随深度单调提升, 1 层到 2 层的边际增益最大. 2 层 DSpark 在所有领域都超过 5 层 DFlash 基线. 这说明通过轻量顺序头注入局部自回归, 在准确率与参数量之间给出了很划算的取舍, 序列连贯性好于单纯堆叠更深的并行层.
 
 **提议长度.** 接着, 我们把 drafter 深度固定为 5 层, 让草稿长度 (提议长度 $\gamma$ 加一个 anchor token) 取 {4, 8, 12, 16}, 评估更长草稿块上的表现. DSpark 同时评估默认 Markov head 和 RNN head. 图 4 前三个子图显示, DSpark 在每个提议长度上都稳定超过 DFlash. 更重要的是, 差距随 $\gamma$ 增大而稳步拉开. 纯并行生成 (DFlash) 接受率快速衰减 (图 2), 长块的边际效用递减; DSpark 缓解了衰减, 相对 DFlash 的增益随之变大. 例如 $\gamma=7$ 时, DSpark 在数学, 代码, 对话上把接受长度分别提高 16%, 15%, 18%; $\gamma=15$ 时增益扩大到 30%, 26%, 22%. 另外, RNN head 相对 Markov head 只有边际的额外增益, 主要出现在较长提议长度上. 考虑到它实现更复杂, 部署性质也不如 Markov head, 我们默认用 Markov head.
 
 > **核对:** 这里的「草稿长度 = $\gamma$ + 1 个 anchor ∈ {4, 8, 12, 16}」, 与 3.1 节「$\gamma$ 个输入 (anchor 加 $\gamma-1$ 个 mask) 产出 $\gamma$ 个 logits」是同一个 $\gamma$ 吗?
 > 答: 按 DeepSpec 代码对得上. 配置 `block_size=7` 是草稿主干的输入宽度 (anchor 加 6 个 mask), `modeling.py` 用 `label_offsets = arange(1, block_size+1)` 让 7 个槽位预测 anchor 之后的 7 个 token, 所以产出 7 个草稿; 送去验证的是 anchor 加 7 个草稿共 8 个 token. 4.3.2 节的 {4, 8, 12, 16} 数的是验证宽度, 对应 $\gamma\in\{3,7,11,15\}$, 正文里 $\gamma=7$ 与 $\gamma=15$ 两个点正是其中两档. 接受长度含 bonus token (脚注 4), 上限是 $\gamma+1$.
 
-
 **延迟开销.** 我们量化 DSpark 顺序生成循环的开销. 图 4 最右子图报告每轮引擎延迟, 包括一次目标验证前向, 一次并行草稿块前向和串行采样循环, 在 batch 大小 128 下测量. 为避免序列长度偏差, 报告的延迟是不同上下文长度 ({512, 1024, 2048, 4096} token) 下的算术平均. 这个 batch 大小下目标模型主导验证计算时间, 顺序模块的延迟开销可以忽略. 因此, 草稿长度从 4 增到 16, 相对 DFlash 基线的整轮延迟只增加 0.2% 到 1.3%, 接受长度却最多提升 30%.
 
 #### 4.3.3. Verify Smarter, Not Longer: The Role of Confidence Head · 验证要更聪明而不是更长: 置信度头的作用
 
-
 尽管 DSpark 在长草稿块上保持高接受率, 验证整个提议仍然低效 (Hu et al., 2026b; Huang et al., 2024). 由于 4.2 节指出的领域差异, 开放式对话的尾部 token 仍面临高拒绝风险, 盲目验证会浪费目标算力. 为评估置信度头能否有效剪掉这些没希望的后缀, 我们用 Qwen3-4B 做离线阈值扫描. 这里单独验证估计器本身, 硬件感知前缀调度器 (3.2.2 节) 留到第 5 节的线上生产评估.
-
 
 **诊断: 静态阈值扫描.** 图 5 画出不同置信度阈值下每步平均 token 数 (柱) 与整体接受率 (线). 阈值升高, 接受率稳步上升, 因为估计器滤掉了最终会被拒绝的 token (斜线柱). 这说明置信度头能识别低价值的后缀 token, 这种剪枝在对话负载上最明显: 对话的 token 分布熵更高, 限制了定长验证的效率. 对话子图中, 提高阈值明显减少被拒 token, 接受率从 45.7% 升到 95.7%. 相比之下, 结构化任务 (数学与代码) 剪枝更温和, 保留更多草稿 token, 接受率分别从 76.9% 升到 92.5%, 从 67.6% 升到 92.0%.
 
-
-
-
-
-
-
 **从静态阈值到校准调度.** 静态阈值适合做诊断, 但在动态服务环境里次优, 因为它忽略系统负载: 低并发下验证低置信度 token 的机会成本很小, 高并发下却浪费关键的 batch 容量. 这种负载依赖促成了硬件感知前缀调度器. 如 3.2 节所述, 最大化系统级吞吐要求置信度模型同时具备强区分能力和精确校准, 才能准确估计累积存活概率. 可靠性图 (图 6) 显示, 原始模型区分能力强 (ROC-AUC (Hanley and McNeil, 1982) 在 0.81 到 0.90 之间), 但过度自信 (ECE 3%-8%). 施加事后 STS (3.2.1 节) 缓解了过度自信, 平均 ECE 降到约 1%, 存活估计变得可靠.
-
-
 
 **投机解码算法.** 投机解码把 token 提议与验证解耦, 加速自回归生成. 在早期分块方法 (Ge et al., 2022; Stern et al., 2018; Sun et al., 2021; Xia et al., 2023) 之上, 现代方法采用拒绝采样精确保持目标模型分布 (Chen et al., 2023; Leviathan et al., 2023). 推理加速直接取决于 drafter 的效率和准确率, 大量研究集中在优化它的架构. 除使用独立的小语言模型 (Chen et al., 2023; Leviathan et al., 2023) 外, 后续工作把多 token 头或特征外推器直接集成进目标模型 (Ankner et al., 2024; Cai et al., 2024, 2025; DeepSeek-AI, 2024; Eldenk et al., 2026; Gloeckle et al., 2024; Li et al., 2024b,c, 2026b; Zhang et al., 2025). 其他策略包括基于提前退出的自投机 (Elhoushi et al., 2024; Liu et al., 2024a; Xia et al., 2025; Zhang et al., 2024), 动态词表压缩 (Williams et al., 2026; Zhao et al., 2025b), prompt lookup (Saxena, 2023; Somasundaram et al., 2025), 后缀自动机 (Hu et al., 2025) 和检索 (He et al., 2023; Shen et al., 2026). 为消除起草本身的串行瓶颈, 一条研究线提出并行或分块生成, 包括 Medusa (Cai et al., 2024), P-EAGLE (Hui et al., 2026), PARD (An et al., 2026a,b), DART (Liu et al., 2026a) 和 DFlash (Chen et al., 2026). DDTree, TAPS 和 JetSpec 又把草稿链扩展成可验证的树 (Hu et al., 2026a; Ringel and Romano, 2026; Wang et al., 2026a). 同期工作包括: Domino (Huang et al., 2026a) 引入的 CausalEncoder 在概念上与我们的 RNN Head 相近; DFlare (Zhang et al., 2026a) 通过逐层融合处理条件化瓶颈.
 
-
 **面向系统的投机解码调度.** 在 drafter 架构之外, 另一条研究线关注每轮应生成或验证多少个投机 token. 为此, 多种方法用置信度启发式 (Du et al., 2024; Li et al., 2024b; Liu et al., 2026c; Mamou et al., 2024; Wen and Feng, 2026), 学习的接受预测器 (Huang et al., 2024; Zacks917, 2026) 或 bandit 式策略 (Liu et al., 2026b) 在线调整草稿长度. 进一步地, 一些近期工作认识到投机解码本质上是系统级调度问题, 依据实时系统负载和请求优先级调整投机预算, 优化整体 goodput 与延迟 (AngelSlim Team, 2026; Hu et al., 2026b; Huang et al., 2026b; Li et al., 2026a; Liu et al., 2024c; Miao et al., 2024; Sadhukhan et al., 2025; Wu et al., 2025).
-
-
-
 
 **并行生成.** 并行生成 token 的模型解码延迟几乎与输出长度无关, 是自回归解码的有吸引力的替代. 非自回归 Transformer (NAT, Gu et al., 2018) 开创了这一方向, 在一次前向里独立预测所有位置. 但这迫使模型对所有合理模式取平均, 输出常常混合来自不同合法序列的片段. 为解决这一局限, 出现了两条大的研究线. 一条保留单次前向架构, 改变模型看到的内容或训练方式: 引入潜变量作为条件输入, 把所有位置引向一致的输出 (Gu et al., 2018; Kaiser et al., 2018; Ma et al., 2019); 或放宽训练目标, 让模型专注产出单个连贯输出, 不去建模所有合法候选上的完整分布 (Du et al., 2021; Qian et al., 2021; Shao et al., 2021, 2023). 另一条通过迭代重预测 (Austin et al., 2021a; Ghazvininejad et al., 2019; Li et al., 2022), 块级自回归 (Arriola et al., 2025; Wang et al., 2018), 或 CRF (Sun et al., 2019), CTC (Libovický and Helcl, 2018; Saharia et al., 2020), HMM (Huang et al., 2022b), PCFG (Gui et al., 2023) 等结构化输出层, 重新引入有限的顺序依赖.
 
-
 投机解码还提出一个额外要求: drafter 必须为拒绝采样规则提供精确的逐 token 概率. 上述大多数技术由于迭代精修, 潜变量边缘化或全局归一化, 难以直接提供这样的概率. 例如, 与我们设计最接近的 CRF-NAT (Sun et al., 2019) 同样在并行隐状态上加了一个顺序模块, 但它的全局归一化配分函数使精确的逐 token 概率无法计算. 类似地, CTC-drafter (Wen et al., 2024) 把 CTC 输出层用于并行投机解码时, 因对齐路径的潜变量边缘化只能做贪心验证. DSpark 让顺序修正保持局部, 逐 token 概率仍是精确的 softmax 值, 绕开了这些限制.
-
-
 
 本文提出 DSpark, 一个面向高并发生产环境, 克服大语言模型推理结构性瓶颈与系统级瓶颈的投机解码框架. 算法上, DSpark 引入半自回归生成范式: 把计算繁重的并行主干与轻量顺序头耦合, 缓解独立并行 drafter 的快速后缀衰减. 系统上, 我们把验证长度选择表述为全局吞吐最大化问题, 用一个硬件感知前缀调度器, 依据校准后的存活概率和实时引擎负载, 动态定制目标模型的验证预算. 大量离线评估表明, DSpark 在多个领域明显超过最先进的自回归与并行基线. 此外, 它在 DeepSeek-V4 内的真实部署验证了其生产服务价值: 通过合理管理验证开销, DSpark 在重负载下维持稳健的并发, 稳定提高单用户生成速度, 把 LLM 服务的 Pareto 前沿向外推.
 
-
 #### A. Counterexample: Selection Bias Without Early-Stopping · 反例: 没有早停时的选择偏差
-
 
 我们给出一个简单反例, 说明离线全局搜索 (即 Algorithm 1 去掉 break 条件后的运行方式) 如何破坏无损投机解码所需的非预见性. 形式上, 第 $k$ 个草稿 token 的接纳事件 $\ell_r \ge k$ 必须由 token $x_{r,k}$ 采样之前调度器可见的信息决定, 不能依赖 $x_{r,k}$ 本身的取值. 考虑单个请求 ($R=1$), 最大草稿长度 $\gamma=2$ 的情形. 设第一个位置的 pre-token 置信度为 $a_1=0.8$, 实测容量曲线为
 
@@ -998,13 +806,11 @@ $$
 \mathrm{SPS} (1) = 1. 0, \qquad \mathrm{SPS} (2) = 0. 5, \qquad \mathrm{SPS} (3) = 0. 4 5.
 $$
 
-
 验证 0 个和 1 个草稿 token 的期望吞吐为
 
 $$
 \left| \begin{array}{l} \Theta_ {0} = 1 \cdot \operatorname{SPS} (1) = 1. 0, \\ \Theta_ {1} = (1 + 0. 8) \cdot \operatorname{SPS} (2) = 0. 9. \end{array} \right|
 $$
-
 
 没有早停时, 调度器在提交任何接纳决定之前继续评估 $\Theta_2$. Markov 置信度头使用上一个采样出的 token, 下一个置信度分数 $c_2$ 显式依赖 $x_1$ 的取值. 因此第二个前缀的存活概率
 
@@ -1012,16 +818,11 @@ $$
 a _ {2} = a _ {1} c _ {2}
 $$
 
-
-同样依赖 $x_1$. 考虑 $x_1$ 的两种取值:
-
-
-• **情形 1 ($x_1$ 给出高 $c_2$):** 设 $x_1$ 使 $c_2=0.9$, 则
+同样依赖 $x_1$. 考虑 $x_1$ 的两种取值: • **情形 1 ($x_1$ 给出高 $c_2$):** 设 $x_1$ 使 $c_2=0.9$, 则
 
 $$
 a _ {2} = 0. 8 \times 0. 9 = 0. 7 2.
 $$
-
 
 长度 2 的期望吞吐为
 
@@ -1029,19 +830,12 @@ $$
 \Theta_ {2} = (1 + 0. 8 + 0. 7 2) \times 0. 4 5 = 1. 1 3 4.
 $$
 
-
-$\Theta_2$ 是 {1.0, 0.9, 1.134} 中的全局最大值, 调度器返回 $\ell=2$, 第一个 token $x_1$ 被接纳进验证前缀.
-
-> **再算:** 这组数里 $\Theta_1<\Theta_0<\Theta_2$, 带 break 的 Algorithm 1 在这里会错过什么?
-> 答: 带 break 时, 接纳 $(1,1)$ 后 $\Theta=0.9<\Theta_{\mathrm{best}}=1.0$, 算法立刻停, 返回 $\ell=0$; 情形 1 下 $\ell=2$ 的期望吞吐 1.134 因此拿不到, 损失约 12%. 反例里的 $\Theta$ 序列先降后升, 不是单峰的, 这正是 5.2 节说的锯齿 SPS 曲线会让早停卡住的情形. 也就是说, 附录 A 同时给出了两件事: break 保住无损, 也带来吞吐损失, 5.2 节用「两步之前的信息定 $K$」把这两件事分开处理.
-
-
-• **情形 2 ($x_1$ 给出低 $c_2$):** 设 $x_1$ 使 $c_2=0$, 则
+$\Theta_2$ 是 {1.0, 0.9, 1.134} 中的全局最大值, 调度器返回 $\ell=2$, 第一个 token $x_1$ 被接纳进验证前缀. > **再算:** 这组数里 $\Theta_1<\Theta_0<\Theta_2$, 带 break 的 Algorithm 1 在这里会错过什么?
+> 答: 带 break 时, 接纳 $(1,1)$ 后 $\Theta=0.9<\Theta_{\mathrm{best}}=1.0$, 算法立刻停, 返回 $\ell=0$; 情形 1 下 $\ell=2$ 的期望吞吐 1.134 因此拿不到, 损失约 12%. 反例里的 $\Theta$ 序列先降后升, 不是单峰的, 这正是 5.2 节说的锯齿 SPS 曲线会让早停卡住的情形. 也就是说, 附录 A 同时给出了两件事: break 保住无损, 也带来吞吐损失, 5.2 节用「两步之前的信息定 $K$」把这两件事分开处理. • **情形 2 ($x_1$ 给出低 $c_2$):** 设 $x_1$ 使 $c_2=0$, 则
 
 $$
 a _ {2} = 0.
 $$
-
 
 长度 2 的期望吞吐为
 
@@ -1049,21 +843,15 @@ $$
 \Theta_ {2} = (1 + 0. 8 + 0) \times 0. 4 5 = 0. 8 1.
 $$
 
-
-此时全局最大值仍是 $\Theta_0=1.0$, 调度器返回 $\ell=0$, 第一个 token $x_1$ 没有被接纳进验证前缀.
-
-
-于是, 第一个草稿 token 是否被接纳, 动态地依赖这个草稿 token 本身的取值. 这种回溯依赖引入选择偏差: 调度器偏好那些引出高置信度后续的 token, 而 $x_1$ 的接纳决定本应在观察 $x_1$ 之前做出. 下面把分布偏差写明. 设词表为 $\{A,B\}$, 第一个位置的目标分布与草稿分布为
+此时全局最大值仍是 $\Theta_0=1.0$, 调度器返回 $\ell=0$, 第一个 token $x_1$ 没有被接纳进验证前缀. 于是, 第一个草稿 token 是否被接纳, 动态地依赖这个草稿 token 本身的取值. 这种回溯依赖引入选择偏差: 调度器偏好那些引出高置信度后续的 token, 而 $x_1$ 的接纳决定本应在观察 $x_1$ 之前做出. 下面把分布偏差写明. 设词表为 $\{A,B\}$, 第一个位置的目标分布与草稿分布为
 
 $$
 p _ {\mathrm{t}} (A) = 0. 7, \qquad p _ {\mathrm{t}} (B) = 0. 3,
 $$
 
-
 $$
 p _ {\mathrm{d}} (A) = 0. 5, \qquad p _ {\mathrm{d}} (B) = 0. 5.
 $$
-
 
 第一个位置的标准投机接受概率为
 
@@ -1071,13 +859,11 @@ $$
 \left| \sum_ {x \in \{A, B \}} \min \bigl (p _ {\mathrm{t}} (x), p _ {\mathrm{d}} (x) \bigr) = \min (0. 7, 0. 5) + \min (0. 3, 0. 5) = 0. 8, \right.
 $$
 
-
 与假设值 $a_1=0.8$ 一致. 设回溯式调度器的行为如上: $x_1=A$ 给出高后续置信度, 因而 $\ell=2$; $x_1=B$ 给出低后续置信度, 因而 $\ell=0$. 第一个输出 token 的分布如下. 若 $x_1=A$, 草稿 token 被接纳, 接受概率为
 
 $$
 \min \left(1, \frac {p _ {\mathrm{t}} (A)}{p _ {\mathrm{d}} (A)}\right) = \min \left(1, \frac {0 . 7}{0 . 5}\right) = 1,
 $$
-
 
 所以输出 token 是 $A$. 若 $x_1=B$, 草稿 token 不被接纳, 目标模型直接从 $p_{\mathrm{t}}$ 重新生成一个 token. 因此
 
@@ -1085,13 +871,11 @@ $$
 \Pr (Y = A) = \Pr (x _ {1} = A) \cdot 1 + \Pr (x _ {1} = B) \cdot p _ {\mathrm{t}} (A) = 0. 5 + 0. 5 \times 0. 7 = 0. 8 5,
 $$
 
-
 从而
 
 $$
 \Pr (Y = B) = 0. 1 5.
 $$
-
 
 这个输出分布 (0.85, 0.15) 与目标分布 (0.7, 0.3) 不同, 证明回溯式调度器不是无损的. 在因果贪心调度器里, 早停机制避免了这个问题. 由于 $\Theta_1<\Theta_0$, 调度器在评估 $c_2$ 这类依赖后续的量之前就立即停止并返回 $\ell=0$. 第一个位置的接纳决定因此只依赖 pre-token 信息, 不会被 $x_1$ 的取值带偏. 这恢复了标准无损性论证所需的非预见性.
 
