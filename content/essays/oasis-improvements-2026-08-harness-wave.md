@@ -49,7 +49,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 ### 精读
 
-* [LongHorizon-Harness](../longhorizon/03-计划执行与系统/3.1-LongHorizon-Harness/3.1-LongHorizon-Harness.md)
+* [LongHorizon-Harness](../longhorizon/3-计划执行与系统/3.1-LongHorizon-Harness.md)
 
 ***
 
@@ -74,7 +74,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 ### 精读
 
-* [Evolving User Intent](../longhorizon/02-状态记忆与恢复/2.1-用户意图演化/2.1-用户意图演化.md)
+* [Evolving User Intent](../longhorizon/2-状态记忆与恢复/2.1-用户意图演化.md)
 
 ***
 
@@ -125,9 +125,9 @@ Orchard 的启示:把 **Env(沙箱生命周期)** 与 **Harness(推理循环)** 
 
 ### 精读
 
-* [Code as Agent Harness](../longhorizon/03-计划执行与系统/3.2-代码作为Agent-Harness/3.2-代码作为Agent-Harness.md)
-* [Orchard](../longhorizon/04-训练环境与案例/4.2-Orchard/4.2-Orchard.md)
-* [OpenForge RL](../longhorizon/04-训练环境与案例/4.1-OpenForge-RL/4.1-OpenForge-RL.md)
+* [Code as Agent Harness](../longhorizon/3-计划执行与系统/3.2-代码作为Agent-Harness.md)
+* [Orchard](../longhorizon/4-训练环境与案例/4.2-Orchard.md)
+* [OpenForge RL](../longhorizon/4-训练环境与案例/4.1-OpenForge-RL.md)
 
 ***
 
@@ -145,7 +145,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 
 ### 精读
 
-* [RSIBench-Data](../rsi/5-可靠性与安全/5.3-评测基准/5.3-评测基准.md)
+* [RSIBench-Data](../rsi/5-可靠性与安全/5.3-评测基准.md)
 
 ***
 
@@ -166,7 +166,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 ### 精读 / 资源
 
 * Polaris
-* [Stanford CS329A Skill](../rsi/1-基础/1.2-定义与形式化/1.2-定义与形式化.md)
+* [Stanford CS329A Skill](../rsi/1-基础/1.2-定义与形式化.md)
 * [bilibili2skill](../resources/bilibili2skill/bilibili2skill.md)
 * 资源花园其它工具/创意 Skill:见 `resources/_garden.md`
 
