@@ -9,7 +9,7 @@ excerpt: "mHC 把 Hyper-Connections 的残差混合矩阵投影到双随机矩�
 
 材料是 DeepSeek-AI 的论文 *mHC: Manifold-Constrained Hyper-Connections* (arXiv 2512.24880, 2025 年 12 月, 正文加附录 19 页). 官方没有单独的 mHC 仓库, 训练用的内核收在 [deepseek-ai/TileKernels](https://github.com/deepseek-ai/TileKernels) 的 `tile_kernels/mhc/` 目录下, 同仓库的 `tile_kernels/torch/mhc.py` 是 PyTorch 参考实现; 下文对照的代码是 2026-09-30 的提交 66258df. 逐段译文见 [mHC 对照译稿](./mhc-bi.md).
 
-论文要解决的问题是: Hyper-Connections (HC) 把残差流加宽到 $n$ 路, 在小模型上有收益, 但放到 27B 的 MoE 上, 残差混合矩阵连乘之后增益失控, 同时 $n$ 路残差让每层的读写量, 激活显存和流水线通信都涨到原来的 $n$ 倍左右. mHC 的回答分两半: 数学上把残差混合矩阵 $\mathcal{H}_l^{\mathrm{res}}$ 约束成双随机矩阵, 系统上用融合内核, 分块重计算和改造的 DualPipe 把开销压下去. HC 的结构, 双随机矩阵的性质证明和 Sinkhorn-Knopp 的手算例子已经写在 [Hyper-Connections 与 mHC](../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 里, 下文只在需要时引用结论, 篇幅放在论文自己的设定, 实验数字的口径和代码实现上. V4 怎样使用 mHC 见 [DeepSeek-V4 解析](../../01-模型技术报告/deepseek-v4/deepseek-v4-analysis.md) 第 1.2 节, 另一条改进路线见 [xHC](../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md).
+论文要解决的问题是: Hyper-Connections (HC) 把残差流加宽到 $n$ 路, 在小模型上有收益, 但放到 27B 的 MoE 上, 残差混合矩阵连乘之后增益失控, 同时 $n$ 路残差让每层的读写量, 激活显存和流水线通信都涨到原来的 $n$ 倍左右. mHC 的回答分两半: 数学上把残差混合矩阵 $\mathcal{H}_l^{\mathrm{res}}$ 约束成双随机矩阵, 系统上用融合内核, 分块重计算和改造的 DualPipe 把开销压下去. HC 的结构, 双随机矩阵的性质证明和 Sinkhorn-Knopp 的手算例子已经写在 Hyper-Connections 与 mHC 里, 下文只在需要时引用结论, 篇幅放在论文自己的设定, 实验数字的口径和代码实现上. V4 怎样使用 mHC 见 DeepSeek-V4 解析 第 1.2 节, 另一条改进路线见 xHC.
 
 ## 1. HC 在 27B 上哪里不稳
 
@@ -55,7 +55,7 @@ $$
 
 式 (6) 要求 $\mathcal{H}_l^{\mathrm{res}}$ 非负, $\mathcal{H}_l^{\mathrm{res}}\mathbf{1}_n=\mathbf{1}_n$, $\mathbf{1}_n^\top\mathcal{H}_l^{\mathrm{res}}=\mathbf{1}_n^\top$. 对照第 1.2 节的指标, 行和为 1 就是前向增益为 1, 列和为 1 就是反向增益为 1. 列和为 1 还有一层含义: $\mathbf{1}_n^\top\mathcal{H}\mathbf{x}=\mathbf{1}_n^\top\mathbf{x}$, 即混合前后 $n$ 路之和不变, 各路的平均信号被原样传下去, 这正是普通残差恒等映射在多路情形下的推广. 非负性再保证这种守恒不是靠正负抵消凑出来的.
 
-论文列了三条性质: 谱范数不超过 1, 对矩阵乘法封闭, 是置换矩阵的凸组合 (Birkhoff 多面体). 证明见 [Hyper-Connections 与 mHC](../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). 对实验最要紧的是第二条: 单层约束成立, 任意层数的连乘就自动成立, 第 1.2 节那种 60 层累积出 3000 倍的路径被从结构上切断. $n=1$ 时双随机矩阵只能是标量 1, mHC 退回普通残差. $n=4$ 时 Birkhoff 多面体是 9 维 ($(n-1)^2$) 的凸集, 4 阶置换矩阵有 24 个顶点, 混合矩阵在这 9 个自由度里取值.
+论文列了三条性质: 谱范数不超过 1, 对矩阵乘法封闭, 是置换矩阵的凸组合 (Birkhoff 多面体). 证明见 Hyper-Connections 与 mHC. 对实验最要紧的是第二条: 单层约束成立, 任意层数的连乘就自动成立, 第 1.2 节那种 60 层累积出 3000 倍的路径被从结构上切断. $n=1$ 时双随机矩阵只能是标量 1, mHC 退回普通残差. $n=4$ 时 Birkhoff 多面体是 9 维 ($(n-1)^2$) 的凸集, 4 阶置换矩阵有 24 个顶点, 混合矩阵在这 9 个自由度里取值.
 
 ### 2.2. 参数化: 式 (7)(8) 相对 HC 改了三处
 
@@ -73,7 +73,7 @@ TileKernels 的实现和正文有三处不同. 一是起点: 参考实现的 Sin
 
 起点的病态程度可以从代码直接算. softmax 之后每个元素不超过 1, 加上 $\epsilon$ 之后不低于 $10^{-6}$, 同一行最大元与最小元之比被限制在约 $10^6$ 以内. 按正文的 $\exp$ 写法没有这个上限: $\tilde{\mathcal{H}}^{\mathrm{res}}$ 同一行两个元素差 30, 取指数后比值就是 $e^{30}\approx10^{13}$, 交替归一要把这样的矩阵拉到接近双随机, 需要的轮数远多于 20. 后续工作 mHC-lite (arXiv 2601.05732) 正是从这个收敛问题出发, 改成直接参数化置换矩阵的凸组合, 免去迭代. 正文对截断只说了一句「略微偏离 1」, 没有给出单层列和误差的分布, 也没有比较 10 次, 20 次和更多次迭代对 loss 的影响.
 
-## 3. 每一项的计算与显存开销
+### 2.4. 每一项的计算与显存开销
 
 ### 3.1. 算力几乎不涨, 访存才是瓶颈
 
@@ -95,7 +95,7 @@ TileKernels 的实现和正文有三处不同. 一是起点: 参考实现的 Sin
 
 正文最后把重计算块的边界对齐到流水线阶段, 理由是理论最优值「通常与每个流水阶段的层数相当」. 27B 和内部大模型的流水并行度文中都没有给出, 这句话无法从文中数字核对. 对齐的好处在第 4.3 节: 每个阶段的首个输入本来就在本地, 重计算不依赖跨阶段通信. TileKernels 的 `multilayer_recompute` 用一个内核跑完整块的逐层重算, 测试里的隐藏维取 1280, 2560, 4096, 7168, 前两个对应附录表的 3B 和 27B, 后两个与 V4-Flash 和 V4-Pro 的隐藏维相同.
 
-## 4. 内核融合与流水线重叠
+### 2.5. 内核融合与流水线重叠
 
 ### 4.1. 式 (14) 到 (16): 把 RMSNorm 挪到矩阵乘之后
 
@@ -126,7 +126,7 @@ $n$ 路残差让流水阶段之间传递的激活变成原来的 $n$ 倍, 阶段
 
 摘要和第 4.3 节都说 $n=4$ 的 mHC 只带来 6.7% 的额外训练时间, 但没有写出对照的基准是什么: 是相对同等配置的普通残差, 还是相对没有优化的 HC, 用的是哪个模型规模和哪种并行配置, 正文都没有交代. V4 技术报告第 3.5.2 节给出的口径是「重叠 1F1B 流水阶段墙钟时间的 6.7%」, 即以一个重叠后的流水阶段为单位比较墙钟时间, 这说明数字来自 V4 的并行设定, 不一定适用于 27B 实验. 另外第 3.2 节的推算显示, 融合之后每层的残差相关读写仍是普通残差的约 6 倍, 6.7% 能成立, 说明这部分访存在整层时间里占比很小, 大部分被注意力和 MoE 的计算与通信盖住了.
 
-## 5. 训练稳定性与下游实验的口径
+## 3. 训练稳定性与下游实验的口径
 
 ### 5.1. 四个模型的配置与 token 数
 
@@ -164,7 +164,7 @@ token 数可以用 batch, 步数和 4096 的序列长度核对: 27B 是 $1280\ti
 
 图 6(b) 解析: 3B-1T 一次训练中取 5 个检查点, 横轴是累计 FLOPs. 绝对差从约 $-0.024$ 单调缩到 $-0.015$, 比值从约 98.7% 单调升到 99.1%. 这条曲线的走向与图 5(a) 一致: 训练越久, mHC 相对基线的优势越小. 正文对图 6(b) 只说用来「考察单次训练内的动态」, 没有描述这个趋势, 也没有给出 1T token 之后是否继续收窄. 若这一趋势持续, mHC 的收益有一部分是更快收敛, 而不全是更低的最终 loss; 正文提到的内部大规模实验没有给出任何数字, 无法用来判断.
 
-## 6. 传播增益, 映射可视化与几处存疑
+## 4. 传播增益, 映射可视化与几处存疑
 
 ### 6.1. 图 7: 只剩反向在动
 
@@ -189,7 +189,7 @@ token 数可以用 batch, 步数和 4096 的序列长度核对: 27B 是 $1280\ti
 
 ### 6.3. 缺失的对照与证据范围
 
-表 1 只有「res 单开」「res 加 pre」「三者全开」三行, 尚未单独测量受约束的信息混合带来的增益. 一个直接对照是保持 pre 和 post 动态, 同时把 $\mathcal{H}^{\mathrm{res}}$ 固定为 $\mathbf{I}$: 该多路模型满足恒等映射, 没有连乘问题, 也不需要 Sinkhorn. 它与 mHC 的差值可以分离「受约束的跨流混合」本身的贡献. 论文没有报告这组实验. 机制层面的其他改法, 例如放宽约束或更换参数化, 见 [xHC](../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md).
+表 1 只有「res 单开」「res 加 pre」「三者全开」三行, 尚未单独测量受约束的信息混合带来的增益. 一个直接对照是保持 pre 和 post 动态, 同时把 $\mathcal{H}^{\mathrm{res}}$ 固定为 $\mathbf{I}$: 该多路模型满足恒等映射, 没有连乘问题, 也不需要 Sinkhorn. 它与 mHC 的差值可以分离「受约束的跨流混合」本身的贡献. 论文没有报告这组实验. 机制层面的其他改法, 例如放宽约束或更换参数化, 见 xHC.
 
 其余证据缺口按章节列出:
 
@@ -199,9 +199,9 @@ token 数可以用 batch, 步数和 4096 的序列长度核对: 27B 是 $1280\ti
 - 第 5.2 节的梯度范数「与基线相当」: 衰减前 mHC 高出约 30%.
 - 第 5.3 节的扩展结论: 图 6(b) 中优势随 token 数单调收窄, 正文没有讨论; 内部大规模实验没有数字.
 
-现有实验直接支持的范围是: 在 27B 规模上, 双随机约束把复合映射的增益从三位数到四位数压到 2 以内, 训练曲线比 HC 平稳, 下游收益不低于 HC, 融合内核与重计算也使系统开销保持可控. V4 随后把 mHC 作为默认残差结构沿用, V4.1-Flash 又继续压缩其访存, 见 [DeepSeek-V4 解析](../../01-模型技术报告/deepseek-v4/deepseek-v4-analysis.md).
+现有实验直接支持的范围是: 在 27B 规模上, 双随机约束把复合映射的增益从三位数到四位数压到 2 以内, 训练曲线比 HC 平稳, 下游收益不低于 HC, 融合内核与重计算也使系统开销保持可控. V4 随后把 mHC 作为默认残差结构沿用, V4.1-Flash 又继续压缩其访存, 见 DeepSeek-V4 解析.
 
-## 参考文献
+### 参考文献
 
 - Z. Xie et al. mHC: Manifold-Constrained Hyper-Connections. arXiv:2512.24880, 2025. https://arxiv.org/abs/2512.24880
 - D. Zhu et al. Hyper-Connections. arXiv:2409.19606, 2024. https://arxiv.org/abs/2409.19606
@@ -210,3 +210,980 @@ token 数可以用 batch, 步数和 4096 的序列长度核对: 27B 是 $1280\ti
 - DeepSeek-AI. DeepSeek-V3 Technical Report. arXiv:2412.19437, 2024. https://arxiv.org/abs/2412.19437
 - L. Wang et al. TileLang: A Composable Tiled Programming Model for AI Systems. arXiv:2504.17577, 2025. https://arxiv.org/abs/2504.17577
 - mHC-lite. arXiv:2601.05732, 2026. https://arxiv.org/abs/2601.05732
+
+
+## 5. 从单流残差到受约束多流状态
+
+这一部分把残差网络、Hyper-Connections、mHC 与后续 xHC 放在同一组状态转移方程里。比较的核心是残差状态维数、读写映射的秩、混合矩阵的约束，以及这些选择怎样改变沿深度传播的 Jacobian。
+
+
+
+> 相关阅读: 2.1.3 残差连接 · 02 xHC · 03 Gated Residual · AttnRes · 相关模型: GLM-5.3-Flash
+
+Hyper-Connections (HC) 是 ByteDance 2024 年的工作 (arXiv:2409.19606), 把单条残差流扩成 $n$ 条可学习混合的流; mHC 是 DeepSeek 2025 年在 HC 之上的改进 (arXiv:2512.24880), 处理 HC 放大到 27B 时的训练失稳. 两篇围绕同一个问题: 残差连接除了恒等相加, 还能不能学出别的拓扑, 学了之后怎样保住恒等通路.
+
+### 1. 单流残差的两条限制
+
+#### 1.1 恒等通路
+
+标准残差一层写成
+
+$$
+\mathbf{x}_{l+1}=\mathbf{x}_{l}+\mathcal{F}(\mathbf{x}_{l},\mathcal{W}_{l}) \tag{1}
+$$
+
+沿深度递归展开 (mHC 论文式 (2)):
+
+$$
+\mathbf{x}_{L}=\mathbf{x}_{l}+\sum_{i=l}^{L-1}\mathcal{F}(\mathbf{x}_{i},\mathcal{W}_{i}) \tag{2}
+$$
+
+浅层的 $\mathbf{x}_{l}$ 不经任何可学矩阵就出现在深层 $\mathbf{x}_{L}$ 里. He 等人 2016 年的 *Identity Mappings in Deep Residual Networks* 把这条性质称为恒等映射: 某层学不好时可以让 $\mathcal{F}\to 0$ 退回恒等, 反向梯度 $\partial\mathbf{x}_L/\partial\mathbf{x}_l$ 里也始终有一项单位阵. 后面讨论的三种改法 (HC, mHC, xHC) 都以「这一项能否保住」作为稳定性的判据.
+
+#### 1.2 Pre-Norm 和 Post-Norm 的取舍
+
+单流的另一面是所有深度特征共用一条累加规则. HC 论文从归一化位置切入: Pre-Norm 把 Norm 放在子层前, 恒等通路无损, 梯度不消失, 但深层隐状态越来越像, 相邻层输出的余弦相似度很高, 论文沿用 Liu 等人 2020 年的说法, 称之为表示塌缩 (representation collapse), 后果是层数越多, 每增加一层带来的贡献越小; Post-Norm 把 Norm 放在相加之后, 各层表示差异大, 但每次相加后都被归一化缩放, 恒等通路不再无损, 深层容易梯度消失. HC 把两者看作同一连续谱上的两个固定点: 层输入与层输出之间的连接强度是预先规定的, 训练改不了.
+
+HC 论文进一步把两者写成不可训练的超连接矩阵 (HC 论文式 (15)(16)). $n=1$ 时 Pre-Norm 对应
+
+$$
+\mathcal{HC}_{\mathrm{PreNorm}}=\begin{pmatrix}0 & 1\\ 1 & 1\end{pmatrix} \tag{3}
+$$
+
+左下的 1 是读系数, 右上的 1 是写系数, 右下的 1 是残差系数. Post-Norm 的写系数和残差系数则要除以由输入方差, 子层输出方差和两者协方差拼出的范数, 这一除就让直传带上了缩放. 既然两者都是某个矩阵的特例, HC 的问题就变成: 能不能让这个矩阵可学, 甚至随输入变化.
+
+#### 1.3 已有做法
+
+在 HC 之前, 改深度方向连接的工作大致分两类 (mHC §2.2 与 xHC 相关工作的归纳):
+
+- 给残差分支加可学标量, 如 ReZero (Bachlechner 等人 2020) 写成 $\mathbf{x}_{i+1}=\mathbf{x}_i+\alpha_i\mathcal{F}(\mathbf{x}_i)$, 每层一个标量 $\alpha_i$, 初始化为 0, 起步时整个网络就是恒等映射; 论文摘要报告 12 层 Transformer 在 enwik8 上收敛快 56%. 这类方法只调幅值, 拓扑仍是单流相加.
+- 加宽或加密连接: DenseNet, FractalNet, DLA 在卷积网络里引入跨层稠密连接; 在 Transformer 上, ResiDual 并行保留 Pre-Norm 和 Post-Norm 两条残差, DenseFormer 对历史层输出做加权平均, AltUp 把 token 表示加宽成多块, 每层只更新其中一块再预测其余块.
+
+HC 论文在 OLMo-1B 上直接比较过其中两种 (HC Table 4): AltUp $\times 2$ 和 ResiDual 的训练 loss 最终都被基线反超, 下游平均分分别为 62.4 和 62.0, 基线 62.5. 同表 DHC $\times 2$ 和 $\times 4$ 是 63.0 和 63.8.
+
+### 2. HC: 超连接矩阵
+
+#### 2.1 静态形式
+
+HC 把第 $k$ 层的输入写成超隐藏矩阵 $\mathbf{H}\in\mathbb{R}^{n\times d}$, 每行一条流 ($d$ 即 mHC 记号里的 $C$). 一层的连接由 $(n+1)\times(n+1)$ 的矩阵描述 (HC 论文式 (1)):
+
+$$
+\mathcal{HC}=\begin{pmatrix}\mathbf{0}_{1\times 1} & \mathbf{B}\\ \mathbf{A}_{m} & \mathbf{A}_{r}\end{pmatrix},\qquad \mathbf{B}\in\mathbb{R}^{1\times n},\ \mathbf{A}_{m}\in\mathbb{R}^{n\times 1},\ \mathbf{A}_{r}\in\mathbb{R}^{n\times n} \tag{4}
+$$
+
+前向计算是 (HC 论文式 (2)):
+
+$$
+\hat{\mathbf{H}}=\mathbf{B}^{\top}\,\mathcal{T}\!\left(\mathbf{H}^{\top}\mathbf{A}_{m}\right)^{\top}+\mathbf{A}_{r}^{\top}\mathbf{H} \tag{5}
+$$
+
+其中 $\mathcal{T}$ 是 Attention 或 FFN 子层. $\mathbf{A}_m$ 把 $n$ 条流加权成一份 $d$ 维输入交给子层; $\mathbf{B}$ 把子层输出按权重写回各流; $\mathbf{A}_r$ 让流与流直接交换. 论文把 $\mathbf{B}$ 和 $\mathbf{A}_m$ 合称深度连接 (depth-connections, 层输入与层输出之间), 把 $\mathbf{A}_r$ 称为宽度连接 (width-connections, 同一层内流与流之间).
+
+网络入口把嵌入复制 $n$ 份组成 $\mathbf{H}^0$, 出口把最后的 $n$ 条流按行求和, 再交给最终 Norm 和 unembedding. 对照式 (3), 只要取 $n=1$, $\mathbf{A}_m=\mathbf{A}_r=\mathbf{B}=1$, 式 (5) 就是 Pre-Norm 残差.
+
+#### 2.2 动态形式
+
+静态版 (SHC) 的系数对所有 token 一样. 动态版 (DHC) 让系数依赖输入 (HC 论文式 (10)-(13)):
+
+$$
+\begin{aligned}
+\bar{\mathbf{H}}&=\mathrm{norm}(\mathbf{H}),\\
+\mathbf{B}(\mathbf{H})&=s_{\beta}\circ\tanh\!\left(\bar{\mathbf{H}}\mathbf{W}_{\beta}\right)^{\top}+\mathbf{B},\\
+\mathbf{A}_{m}(\mathbf{H})&=s_{\alpha}\circ\tanh\!\left(\bar{\mathbf{H}}\mathbf{W}_{m}\right)+\mathbf{A}_{m},\\
+\mathbf{A}_{r}(\mathbf{H})&=s_{\alpha}\circ\tanh\!\left(\bar{\mathbf{H}}\mathbf{W}_{r}\right)+\mathbf{A}_{r}
+\end{aligned} \tag{6}
+$$
+
+$\mathbf{W}_{\beta},\mathbf{W}_{m}\in\mathbb{R}^{d\times 1}$, $\mathbf{W}_{r}\in\mathbb{R}^{d\times n}$, $s_\alpha, s_\beta$ 是初始化很小的可学缩放. $\tanh$ 把动态项限制在 $(-1,1)$ 再乘缩放; 第 2.4 节的消融里去掉 $\tanh$ 反而略好, 说明在 1B 规模上这层限幅不是必需的, 但它也不约束静态偏置, 稳定性问题要到 27B 才暴露 (第 3 节). 动态项权重初始化为 0, 静态项取 $\mathbf{B}=\mathbf{1}_{1\times n}$, $\mathbf{A}_r=\mathbf{I}_n$, $\mathbf{A}_m$ 取第 $k \bmod n$ 个单位列向量 (HC 论文式 (14)). 这样初始化时每层只从一条流读, 写回所有流, 流间不交换, 整体等价于 Pre-Norm 残差, 训练从熟悉的起点出发. 实现上静态部分不做 weight decay, 动态部分做. 最后一层的 $n$ 条流要求和, 为使求和后输出的标准差与基线一致, 初始化时把各层输出模块 (FFN 第二个线性层, 注意力输出投影) 的权重标准差按 $\sqrt{n}$ 缩放.
+
+初始化之后, 宽度连接还让层的排列可学. HC 论文式 (17)-(19) 给了 $n=2$ 的例子: 一组特定的 $\mathcal{HC}$ 让两层按普通残差串行; 对奇数层和偶数层换另一组矩阵, 相邻两层的输入就来自同一份状态, 相当于 parallel transformer block. 动态 HC 下这种排列还可以逐 token 变化. 从这里能看出 $\mathbf{A}_r$ 的作用: 它决定的是层与层之间的拓扑, 每个子层内部的计算没有变.
+
+#### 2.3 换成 mHC 的记号
+
+mHC 把一层写成 (mHC 论文式 (3)):
+
+$$
+\mathbf{x}_{l+1}=\mathcal{H}_{l}^{\mathrm{res}}\mathbf{x}_{l}+\mathcal{H}_{l}^{\mathrm{post}\,\top}\mathcal{F}\!\bigl(\mathcal{H}_{l}^{\mathrm{pre}}\mathbf{x}_{l},\mathcal{W}_{l}\bigr) \tag{7}
+$$
+
+| 映射 | 形状 | HC 记号 | 作用 |
+|------|------|---------|------|
+| $\mathcal{H}^{\mathrm{pre}}$ | $1\times n$ | $\mathbf{A}_m^\top$ | 把 $n$ 条流读成子层的一份输入 |
+| $\mathcal{H}^{\mathrm{post}}$ | $1\times n$ | $\mathbf{B}$ | 把子层输出写回各条流 |
+| $\mathcal{H}^{\mathrm{res}}$ | $n\times n$ | $\mathbf{A}_r^\top$ | 流与流之间混合 |
+
+式 (7) 里 $\mathcal{F}$ 只作用在 $\mathcal{H}^{\mathrm{pre}}$ 合成的一份 $C$ 维向量上, 不会对每条流各算一遍. $n$ 远小于 $C$ (主设定 $n=4$), 三个映射的矩阵乘相对子层计算可以忽略. HC 论文 OLMo-7B 的对比: 参数都是 6.9B, 每 token 前向 FLOPs 基线 13.36G, DHC $\times 4$ 13.38G.
+
+#### 2.4 HC 在 OLMo 和 OLMoE 上的结果
+
+以下数字来自 HC 论文, 设置是 OLMo / OLMoE, 训练 500B token, 评测协议用论文自己的.
+
+**扩张率 $n$ (HC Table 1, OLMo-1B)**. 下游平均分: 基线 62.5; DHC $\times 1$ 62.3, $\times 2$ 63.0, $\times 4$ 63.8, $\times 8$ 62.8. $n=1$ 时比基线还略低, 加宽到 2 和 4 开始涨, 8 的收益不再增加. 去掉 $\tanh$ 的 DHC $\times 4$ 是 64.4; DHC $\times 8$ 去掉 $\tanh$ 后 V2 验证 loss 降 0.034, V3 降 0.029. 论文报告所有 DHC 运行都没有 loss spike.
+
+**静态与动态 (HC Table 2, OLMo-1B)**. 所有 HC 变体都超过基线. $n=2$ 时两者相近: SHC $\times 2$ 下游 63.4, DHC $\times 2$ 63.0; $n=4$ 时 DHC 明显更好, V2 loss 2.781 对 SHC 的 2.791, 基线是 2.811. 去掉 $\tanh$ 的 DHC $\times 4$ 下游 64.4, V2 loss 2.779, 是表中最好的一行.
+
+**写回与宽度连接 (HC Table 3)**. 把宽度连接固定在初始值不训, V2 loss 上升 0.021, V3 loss 上升 0.017; 固定 $\mathbf{B}$ 的影响小得多. 流间交换本身贡献了收益, 不只是读写加权.
+
+**OLMo-7B**. DHC $\times 4$ 的 V2 loss 从 2.581 降到 2.559, 下游平均从 70.1 到 71.0. 训练曲线上基线频繁出现 loss spike, DHC 没有.
+
+**OLMoE-1B-7B** (激活约 1.3B, 总参 7B). 摘要与 Figure 1 报告: 收敛快约 1.8 倍, 500B token 时 ARC-Challenge 高 6 分. Table 6:
+
+| | MMLU Var | HellaSwag | ARC-C | ARC-E | PIQA | WinoGrande | BoolQ |
+|--|----------|-----------|-------|-------|------|------------|-------|
+| OLMoE-1B-7B | 38.5 | 69.5 | 41.8 | 72.8 | 77.6 | 64.4 | 65.4 |
+| OLMoE-1B-7B-DHC $\times$ 4 | 39.7 | 70.2 | **47.8** | 76.7 | 78.2 | 64.6 | 68.5 |
+
+同段报告训练 loss 降约 0.027, C4-en 验证 loss 降约 0.028, 多数指标上 DHC 用约一半 token 就追上基线终值.
+
+**学到的连接**. HC 论文 Figure 3 统计 OLMo-1B 相邻层输入的余弦相似度, Pre-Norm 基线明显更高, HC 把它拉开. 论文还把各层输出对后续层输入的贡献画成连接矩阵 (Figure 13, OLMo-1B-DHC $\times 4$, 500B token 检查点, 随机验证文本): Pre-Norm 基线是抹掉对角线的下三角全等矩阵, 每层平等加入残差; Post-Norm 基线只有相邻层有连接, 底层的权重每过一个 Post-Norm 就衰减一次; Pre-Norm 的 parallel transformer block 因 FFN 输入不依赖上一个注意力层输出而呈锯齿状. HC 学到的矩阵呈 $\Lambda$ 形: 多数层主要依赖少数几个相邻层, 这是 Post-Norm 的特征; 第 0, 2 层这样的底层输出又被后面许多层反复读取, 这是 Pre-Norm 的特征. 矩阵里还出现了局部锯齿, 例如第 11 层对第 12 层输入的贡献很小, 两层实际上并行执行, 2.3 节说的并行排列被训练自己学了出来.
+
+**显存**. HC 论文附录按 Korthikanti 等人的估算, 标准 Transformer 训练激活约为 $sbd\,L(34+5as/d)$ ($s$ 序列长, $b$ batch, $a$ 头数), HC 额外增加 $2nsbdL$. $n=2$ 时额外部分不到总量的 15%. 这一估算只算残差状态本身, 不含 mHC 后来处理的系数核中间激活.
+
+**视觉任务 (HC 附录 E)**. ImageNet 256×256 类条件生成上, DiT-XL/2-SHC $\times 2$ (675M, FP16) 的 FID 是 2.18, 同精度基线 DiT-XL/2 是 2.36, 参数多约一半的 DiT-1B/2 (983M) 是 2.13. ImageNet 分类 ($224\times 224$, 300 epoch, $n=2$): ViT/16-Base 从 76.38% 到 SHC 77.60%, DHC 77.26%; ViT/16-Large 从 77.25% 到 SHC 78.38%, DHC 79.94%. Large 的训练曲线上 HC 的优势随 epoch 增加而缩小, 论文归因于多轮重复同一数据集. 论文还从 ImageNet 验证集随机抽三个类别, 统计 ViT-Base/16-DHC $\times 2$ 最后一层的动态权重: 写回权重 $\beta$ 在同一类别内高度集中, 读与混合权重 $\alpha$ 在类内更分散, 但不同类别之间的分布差异更明显. 动态系数确实随输入变化, 而且变化与语义类别相关.
+
+### 3. 放大到 27B 时的两个问题
+
+#### 3.1 混合矩阵沿深度连乘
+
+把式 (7) 沿深度展开 (mHC 论文式 (4)):
+
+$$
+\mathbf{x}_{L}=\Biggl(\prod_{i=1}^{L-l}\mathcal{H}_{L-i}^{\mathrm{res}}\Biggr)\mathbf{x}_{l}+\sum_{i=l}^{L-1}\Biggl(\prod_{j=1}^{L-1-i}\mathcal{H}_{L-j}^{\mathrm{res}}\Biggr)\mathcal{H}_{i}^{\mathrm{post}\,\top}\mathcal{F}(\mathcal{H}_{i}^{\mathrm{pre}}\mathbf{x}_{i},\mathcal{W}_{i}) \tag{8}
+$$
+
+对比式 (2), 浅层 $\mathbf{x}_l$ 前面的系数从单位阵变成了一串 $\mathcal{H}^{\mathrm{res}}$ 的乘积. HC 对 $\mathcal{H}^{\mathrm{res}}$ 不加约束 (动态项是 $\tanh$ 乘小门, 再加无约束的静态偏置, mHC 论文式 (5)), 乘积的行和与列和可以偏离 1, 并沿深度按指数累积.
+
+用一个 $n=2$ 的算例看量级. 设每层 $\mathcal{H}^{\mathrm{res}}=\begin{pmatrix}1.1 & 0.1\\ 0.1 & 1.1\end{pmatrix}$, 行和是 1.2, 只比 1 大 20%. 30 层模型每层有 Attention 和 FFN 两个子层, 共 60 次连乘, 乘积的行和是 $1.2^{60}\approx 5.6\times 10^{4}$; 若每层行和是 0.9, 则 $0.9^{60}\approx 1.8\times 10^{-3}$. 单层看起来很小的偏离, 到深层就是数量级的放大或衰减.
+
+mHC 用 Amax Gain Magnitude 衡量这一点: 复合映射的最大绝对行和 (前向最坏放大) 和最大绝对列和 (反向最坏放大), 理想值是 1. 论文 Figure 3 把每个块按 Attention, FFN 拆成两层计数, 在选定序列上对 token 求平均. 27B 的 HC 模型上, 复合映射的这个值峰值约 3000. 训练曲线与之对应 (mHC Figure 2): HC 约在 12k step 出现 loss 突刺, 梯度范数同时失稳.
+
+mHC 的组件消融 (mHC Table 1) 说明 $\mathcal{H}^{\mathrm{res}}$ 恰恰是收益最大的部分. 固定的对照是 $\mathcal{H}^{\mathrm{pre}}$ 取均匀 $1/n$, $\mathcal{H}^{\mathrm{post}}$ 取全 1, $\mathcal{H}^{\mathrm{res}}=I$. 只打开 $\mathcal{H}^{\mathrm{res}}$ 时 loss 降 0.022, 再打开 pre 降 0.025, 三者都打开降 0.027. 收益和失稳来自同一个矩阵, 所以 mHC 选择约束它, 不删掉它.
+
+#### 3.2 读写量
+
+FLOPs 几乎不变, 墙钟时间却会变. 残差状态从 $C$ 扩到 $nC$ 后, 每层维护残差的读写元素数跟着 $n$ 涨. mHC Table 2 只计残差维护, 不含 $\mathcal{F}$ 内部:
+
+| 方法 | 每 token 读 | 每 token 写 |
+|------|-------------|-------------|
+| 标准残差 | $2C$ | $C$ |
+| HC | $(5n+1)C+n^{2}+2n$ | $(3n+1)C+n^{2}+2n$ |
+
+代入 $n=4$: 读 $21C+24$, 写 $13C+24$, 合计约 $34C$, 是标准残差 $3C$ 的 11 倍多. 激活显存也按 $n$ 倍增长, 流水线并行时每个 stage 之间要多传 $n$ 倍的激活, 气泡随之变大. HC 论文的开销对比只报告了 FLOPs.
+
+### 4. mHC: 双随机约束与工程实现
+
+#### 4.1 约束集合
+
+mHC 要求 $\mathcal{H}^{\mathrm{res}}$ 落在双随机矩阵集合里 (mHC 论文式 (6)):
+
+$$
+\mathcal{M}^{\mathrm{res}}=\bigl\{\mathcal{H}\in\mathbb{R}^{n\times n}\mid\mathcal{H}\mathbf{1}_{n}=\mathbf{1}_{n},\ \mathbf{1}_{n}^{\top}\mathcal{H}=\mathbf{1}_{n}^{\top},\ \mathcal{H}\geqslant 0\bigr\} \tag{9}
+$$
+
+这个集合叫 Birkhoff 多面体, 是全部 $n\times n$ 置换矩阵的凸包, 所以每个 $\mathcal{H}^{\mathrm{res}}$ 都可以看成若干种「流的重排」的加权平均. mHC 的出发点是: 多流结构下理想的恒等映射应当是一种守恒机制, 前向和反向时各流的平均信号强度保持不变; HC 的复合映射不保持特征的全局均值, 这才导致无界放大或衰减. 双随机约束带来三条性质:
+
+1. **范数不扩张**. 双随机矩阵的谱范数不超过 1, 单层映射不会放大信号. 这可以由 $\|\mathcal{H}\|_2\le\sqrt{\|\mathcal{H}\|_1\,\|\mathcal{H}\|_\infty}$ 得到: $\|\mathcal{H}\|_1$ 是最大列绝对和, $\|\mathcal{H}\|_\infty$ 是最大行绝对和, 双随机矩阵两者都是 1. 又因为 $\mathcal{H}\mathbf{1}_n=\mathbf{1}_n$, 全 1 方向上增益恰好是 1, 所以谱范数等于 1.
+2. **对乘法封闭**. 两个双随机矩阵的乘积仍是双随机, 所以式 (8) 里任意一段连乘都还在 $\mathcal{M}^{\mathrm{res}}$ 里, 复合映射的行和与列和恒为 1.
+3. **均值守恒**. 行和为 1 表示每条输出流是输入流的凸组合; 列和为 1 表示 $\mathbf{1}^{\top}(\mathcal{H}\mathbf{x})=\mathbf{1}^{\top}\mathbf{x}$, 各流之和不变.
+
+$n=1$ 时集合里只有标量 1, 式 (7) 退回普通残差. 读写两侧另加非负约束, 避免正负系数在复合时相互抵消.
+
+也可以只用 softmax 把每行归一. 这只保证行和为 1, 列和不受控, 连乘后均值守恒不成立, 所以 mHC 用行列都归一的 Sinkhorn-Knopp.
+
+#### 4.2 参数化
+
+HC 对隐状态的最后一维做 norm 再按流投影. mHC 先把 $\mathbf{x}_{l}\in\mathbb{R}^{n\times C}$ 展平成 $\vec{\mathbf{x}}_{l}\in\mathbb{R}^{1\times nC}$, 让动态系数一次看到全部 $nC$ 维 (mHC 论文式 (7)):
+
+$$
+\begin{aligned}
+\vec{\mathbf{x}}'_{l}&=\mathrm{RMSNorm}(\vec{\mathbf{x}}_{l}),\\
+\tilde{\mathcal{H}}^{\mathrm{pre}}_{l}&=\alpha^{\mathrm{pre}}_{l}\cdot(\vec{\mathbf{x}}'_{l}\varphi^{\mathrm{pre}}_{l})+\mathbf{b}^{\mathrm{pre}}_{l},\\
+\tilde{\mathcal{H}}^{\mathrm{post}}_{l}&=\alpha^{\mathrm{post}}_{l}\cdot(\vec{\mathbf{x}}'_{l}\varphi^{\mathrm{post}}_{l})+\mathbf{b}^{\mathrm{post}}_{l},\\
+\tilde{\mathcal{H}}^{\mathrm{res}}_{l}&=\alpha^{\mathrm{res}}_{l}\cdot\mathrm{mat}(\vec{\mathbf{x}}'_{l}\varphi^{\mathrm{res}}_{l})+\mathbf{b}^{\mathrm{res}}_{l}
+\end{aligned} \tag{10}
+$$
+
+$\varphi^{\mathrm{pre}},\varphi^{\mathrm{post}}\in\mathbb{R}^{nC\times n}$, $\varphi^{\mathrm{res}}\in\mathbb{R}^{nC\times n^{2}}$, $\mathrm{mat}$ 把 $1\times n^2$ 还原成 $n\times n$. 门 $\alpha$ 初始化为 0.01, 训练初期系数几乎就是静态偏置. 然后投影 (mHC 论文式 (8)):
+
+$$
+\mathcal{H}^{\mathrm{pre}}_{l}=\sigma(\tilde{\mathcal{H}}^{\mathrm{pre}}_{l}),\qquad\mathcal{H}^{\mathrm{post}}_{l}=2\sigma(\tilde{\mathcal{H}}^{\mathrm{post}}_{l}),\qquad\mathcal{H}^{\mathrm{res}}_{l}=\mathrm{SinkhornKnopp}(\tilde{\mathcal{H}}^{\mathrm{res}}_{l}) \tag{11}
+$$
+
+读权重落在 $(0,1)$. 写权重落在 $(0,2)$, 动态项和偏置都为 0 时恰好是 1, 与初始化的 Pre-Norm 等价形式对齐, 同时保留写得更强的余地, 但有硬上界. 几个数值: $\tilde{\mathcal{H}}^{\mathrm{post}}=2$ 时写权重 $2\sigma(2)\approx1.76$, 为 $-2$ 时约 0.24, logit 再大也到不了 2.
+
+#### 4.3 Sinkhorn-Knopp
+
+Sinkhorn 与 Knopp 1967 年证明: 正矩阵交替做行归一和列归一会收敛到双随机矩阵. mHC 的实现是 $\mathbf{M}^{(0)}=\exp(\tilde{\mathcal{H}}^{\mathrm{res}})$, 然后 (mHC 论文式 (9)):
+
+$$
+\mathbf{M}^{(t)}=\mathcal{T}_{r}\bigl(\mathcal{T}_{c}(\mathbf{M}^{(t-1)})\bigr) \tag{12}
+$$
+
+$\mathcal{T}_{c}$ 把每列除以列和, $\mathcal{T}_{r}$ 把每行除以行和. 主设定 $t_{\max}=20$. 计算量很小: $n=4$ 时每轮行列各归一一次, 约 $2n^2=32$ 次除法, 20 轮共约 640 次, 每个 token 每个子层算一次, 与 $\mathcal{F}$ 里按 $C$ 计的矩阵乘相比可以忽略. 开销在于这 20 轮是串行的小操作, 第 4.4 节要把它们放进一个核里.
+
+手算一个 $2\times 2$ 例子. 取 $\tilde{\mathcal{H}}^{\mathrm{res}}=\begin{pmatrix}0 & 1\\ 2 & 0\end{pmatrix}$, 则 $\mathbf{M}^{(0)}=\begin{pmatrix}1 & 2.718\\ 7.389 & 1\end{pmatrix}$. 第一轮先列归一得 $\begin{pmatrix}0.119 & 0.731\\ 0.881 & 0.269\end{pmatrix}$, 再行归一得 $\begin{pmatrix}0.140 & 0.860\\ 0.766 & 0.234\end{pmatrix}$, 此时行和为 1, 列和是 0.906 和 1.094. 第三轮后列和是 0.985 和 1.015. $2\times 2$ 双随机矩阵只有 $\begin{pmatrix}a & 1-a\\ 1-a & a\end{pmatrix}$ 一种形状, 交替归一不改变交叉比 $M_{11}M_{22}/(M_{12}M_{21})=e^{-3}$, 所以极限满足 $a/(1-a)=e^{-1.5}$, 即 $a\approx 0.182$. 若流状态的列和是 $(4,1)$, 用第三轮的矩阵混合后变成 $(4.03,0.95)$, 总量 5 被保住到小数点后一位多; 迭代越多误差越小.
+
+有限步只能得到近似双随机. mHC 报告单层映射的反向增益略偏离 1, 27B 上复合映射的最大增益约 1.6 (Figure 7(b)). 相对 HC 的约 3000 低三个数量级, 已足以稳定训练.
+
+#### 4.4 让 mHC 跑得动的工程
+
+mHC §4 的三项基础设施把 6.7% 的额外时间压出来.
+
+**融核**. 在 $nC$ 维的 $\vec{\mathbf{x}}_l$ 上做 RMSNorm 延迟很高. 除以范数是按 token 的标量, mHC 把它挪到与 $\varphi$ 的矩阵乘之后, 数学等价; RMSNorm 的权重和三组偏置, 投影也分别并进 $\varphi_l\in\mathbb{R}^{nC\times(n^2+2n)}$ 和 $\mathbf{b}_l$. 具体是三类核: 一个核把对 $\vec{\mathbf{x}}_l$ 的两次扫描 (矩阵乘和求范数) 合在一起, 反向的两次矩阵乘也合成一个核, 避免重复加载 $\vec{\mathbf{x}}_l$; 门控缩放, $\sigma$, $2\sigma$ 这些对小系数的轻量操作合成一个核, 省掉启动开销; Sinkhorn-Knopp 的 20 次迭代放在一个核里, 反向用自定义核在片上重算中间结果并完整走一遍迭代. 系数计算用 TileLang 写成少量融合核, 精度上 $\vec{\mathbf{x}}_l$ 用 bfloat16, $\varphi$ 用 tfloat32, 门, 偏置和三个映射用 float32 (mHC 论文式 (10)-(19)). 把 $\mathcal{H}^{\mathrm{post}}$ 的写回和 $\mathcal{H}^{\mathrm{res}}$ 的混合合成一个核后, 这一步的读从 $(3n+1)C$ 降到 $(n+1)C$, 写从 $3nC$ 降到 $nC$.
+
+**选择性重计算**. 前向结束后丢掉 mHC 核的中间激活, 反向时只重跑 mHC 核 (不重跑 $\mathcal{F}$) 把它们算回来. mHC Table 3 列出每 token 的激活: 子层输出 $\mathcal{F}(\mathcal{H}^{\mathrm{pre}}_{l}\mathbf{x}_{l})$ ($C$ 个元素) 每层都存; 对连续 $L_r$ 层组成的块, 只存首层输入 $\mathbf{x}_{l_0}$ ($nC$ 个元素); 块内的 $\mathbf{x}_{l}$ ($nC$), $\mathcal{H}^{\mathrm{pre}}_{l}\mathbf{x}_{l}$ ($C$) 和它的 RMSNorm ($C$) 在反向时临时重算. 常驻部分是 $\lceil L/L_r\rceil$ 个块首状态, 临时部分是当前块的 $(n+2)C\times L_r$, 总量最小的块长是 (mHC 论文式 (20)):
+
+$$
+L_{r}^{*}=\arg\min_{L_{r}}\left[nC\left\lceil\frac{L}{L_{r}}\right\rceil+(n+2)C\,L_{r}\right]\approx\sqrt{\frac{nL}{n+2}} \tag{13}
+$$
+
+忽略取整时对 $L_r$ 求导, $-nCL/L_r^2+(n+2)C=0$, 就得到右边的近似. 代入 $n=4$, $L=60$ (30 层, 每层两个子层), $L_r^*\approx\sqrt{40}\approx 6.3$. 流水线并行要求重计算块不跨 stage 边界; mHC 观察到理论最优值通常与每个 stage 的层数接近, 于是直接让重计算边界与 stage 对齐. 每个 stage 的首个激活 $\mathbf{x}_{l_0}$ 本地已有缓存, 重计算因此不依赖流水线通信.
+
+**通信重叠**. $n$ 流残差让 stage 之间的通信延迟明显变长, stage 边界上重算 $L_r$ 层 mHC 核也有不小的计算量. mHC 扩展 DeepSeek-V3 的 DualPipe 调度来重叠这两部分: MLP 层的 $\mathcal{F}_{\mathrm{post,res}}$ 核放在专用的高优先级计算流上, 不阻塞通信流; 注意力层的长时间操作不用 persistent kernel, 使被重叠的注意力计算可以被抢占.
+
+### 5. 27B 实验与边界
+
+#### 5.1 配置
+
+mHC 的实验骨干是 DeepSeek-V3 风格的 MoE: MLA (KV 压缩秩 512), 每 token 激活 6 个路由专家加 2 个共享专家, 无辅助损失的负载均衡, AdamW, 序列长度 4096. mHC 统一取 $n=4$, $t_{\max}=20$, $\alpha$ 初始化 0.01, RMSNorm 的 $\varepsilon$ 为 1e-20 (mHC 附录 Table 5):
+
+| 规模 | 层数 | 激活 / 总参 | 维度 | 路由专家数 | 训练 token / step |
+|------|------|-------------|------|-----------|-------------------|
+| 3B | 12 | 612M / 2.97B | 1280 | 64 | 39.3B / 30k |
+| 9B | 18 | 1.66B / 9.18B | 1920 | 64 | 105B / 50k |
+| 27B | 30 | 4.14B / 27.0B | 2560 | 72 | 262B / 50k |
+| 3B-1T | 12 | 612M / 2.97B | 1280 | 64 | 1.05T / 100k |
+
+#### 5.2 稳定性与 loss
+
+27B 上, mHC 的梯度范数轮廓与基线接近, 不随 HC 一起失稳; 最终 loss 比基线低 0.021 (Figure 5). 复合映射的最大增益从 HC 的约 3000 降到约 1.6. Figure 8 画出代表性的单层和复合映射, 坐标轴上标注行和 (前向增益) 与列和 (反向增益): HC 的复合映射行列和远离 1, mHC 的单层和复合映射行列和都接近 1.
+
+Figure 6(a) 给 3B / 9B / 27B 的算力扩展曲线, 每个点是一组算力最优的模型大小与数据量配置, mHC 相对基线的 loss 优势随算力增长只轻微衰减. Figure 6(b) 是 3B 模型训练到 1T token 的轨迹, 用来看 token 扩展.
+
+#### 5.3 下游 (mHC Table 4)
+
+| Benchmark | BBH | DROP | GSM8K | HellaSwag | MATH | MMLU | PIQA | TriviaQA |
+|-----------|-----|------|-------|-----------|------|------|------|----------|
+| Metric | EM | F1 | EM | Acc. | EM | Acc. | Acc. | EM |
+| Shots | 3 | 3 | 8 | 10 | 4 | 5 | 0 | 5 |
+| 27B Baseline | 43.8 | 47.0 | 46.7 | 73.7 | 22.0 | 59.0 | 78.5 | 54.3 |
+| 27B w/ HC | 48.9 | 51.6 | 53.2 | 74.3 | **26.4** | 63.0 | 79.9 | 56.3 |
+| 27B w/ mHC | **51.0** | 53.9 | 53.8 | 74.7 | 26.0 | 63.4 | 80.5 | 57.6 |
+
+HC 在全部八项上已经超过基线, 失稳是在训练过程中, 不在最终分数上. mHC 在七项上高于 HC, BBH 高 2.1, DROP 高 2.3; MATH 一项 26.0 略低于 HC 的 26.4. 这张表和第 2.4 节 HC 论文的 OLMoE 表来自不同的骨干, 数据和评测协议, 不能横向相加.
+
+#### 5.4 边界
+
+Transformer 一层仍是 Norm, Attention 或 FFN, 残差合并. mHC 改的只是合并: 隐状态从 $[T,C]$ 扩成 $[T,n,C]$, 每个子层各预测一组 $(\mathcal{H}^{\mathrm{pre}},\mathcal{H}^{\mathrm{post}},\mathcal{H}^{\mathrm{res}})$, 子层仍是一份 $C$ 维计算. 注意力头数, KV 布局, 专家路由都留在 $\mathcal{F}$ 里不动. 计算量仍由 Attention 和 FFN (以及 MoE 的专家 GEMM) 决定; 新增的开销在系数核, $n$ 倍的残差读写和 $n$ 倍的残差激活显存.
+
+参数量可以直接算. 每个子层的 $\varphi_l$ 是 $nC\times(n^2+2n)$, 一层两个子层合计 $2nC(n^2+2n)$; $n=4$ 时为 $192C$, 与 xHC 论文附录给的 $P_{\mathrm{mHC},N=4}=192C$ 一致. 代入 27B 配置 $C=2560$, 30 层: $192\times 2560\times 30\approx 1.47\times 10^{7}$, 约 14.7M, 不到总参 27.0B 的千分之一, 按比例算约万分之五. 每 token 生成系数的乘加次数与参数量同阶, 也可以忽略. $n=16$ 时这一项变成 $2\times 16C\times 288=9216C$, 是 $n=4$ 的 48 倍, 这就是 xHC 所说的三次方增长.
+
+已发布模型里, 智谱 GLM-5.3-Flash 的 Hugging Face `config.json` 写有 `mhc: true`, `hc_mult: 4`, `hc_sinkhorn_iters: 20`, `hc_eps: 1e-6`: 四条流, 二十次迭代, 与 mHC 主设定相同, `hc_eps` 用于防止归一化时除零. 整机见 GLM-5.3-Flash.
+
+mHC 会在四种情况下失效或收益变小. 第一是 Sinkhorn-Knopp 迭代步数不足: 有限步迭代下复合增益不是精确的 1, 27B 上实测最大约 1.6, 深度再大或步数再少时, 这个误差会随连乘累积. 第二是数据多轮重复: HC 在 ViT/16-Large 上的优势随 epoch 增加而缩小 (第 2.4 节), 同一数据集反复训练 300 epoch 时, 多流带来的额外容量收益递减. 第三是只改拓扑, 不融核: 读写量按 $n$ 倍增长是结构决定的 (3.2 节), 没有第 4.4 节的融核, 重计算和通信重叠, 墙钟开销会远高于 6.7%. 第四是继续加宽 $n$: $\varphi^{\mathrm{res}}$ 的参数量是 $nC\times n^{2}$, 每 token 生成 $\mathcal{H}^{\mathrm{res}}$ 的计算按 $n^{3}C$ 增长, 写回仍是一个 $1\times n$ 的稠密向量, 单个子层输出要均分到所有流. xHC 论文在 2.5B MoE 上把 mHC 从 $N=4$ 加到 16, loss 只略有改善, 训练 FLOPs 却多了 32%, 对应改法见 02 xHC.
+
+把流数 $n$ 和 $\mathcal{H}^{\mathrm{res}}$ 的约束当作两个参数, HC 家族的几种方法可以排成下表:
+
+| 设置 | 结果 |
+|------|------|
+| $n=1$ | 双随机只剩标量 1, 即普通 Pre-Norm 残差 |
+| $n>1$, 系数固定, $\mathcal{H}^{\mathrm{res}}=I$ | 多流但不交换, 对应 mHC Table 1 的对照组 |
+| $n>1$, $\mathcal{H}^{\mathrm{res}}$ 不约束 | HC (SHC 或 DHC) |
+| $n>1$, $\mathcal{H}^{\mathrm{res}}$ 双随机 | mHC |
+| $n>1$, $\mathcal{H}^{\mathrm{res}}$ 换成其他约束集合 | mHC 结论部分提出的方向; Liu, Zhang 与 Li 2026 的谱球约束 HC (arXiv:2603.20896) 属于这一类 |
+| $n$ 加大到 16, 写回稀疏, 读用时间维增强 | xHC |
+| 保留多流, 删掉 $\mathcal{H}^{\mathrm{res}}$, 读改逐元素门 | Gated Residual |
+
+前两行说明 mHC 的两个退化情形: $n=1$ 时双随机矩阵只剩标量 1; 系数固定且 $\mathcal{H}^{\mathrm{res}}=I$ 时流之间不交换, 这正是 mHC Table 1 用来单独评估 $\mathcal{H}^{\mathrm{res}}$ 的对照组. 中间三行只改 $\mathcal{H}^{\mathrm{res}}$ 的约束, 不约束是 HC, 双随机是 mHC, 换别的约束集合是 mHC 结论部分留下的方向. 最后两行是同目录的两篇: xHC 继续加宽并改写回, Gated Residual 反过来删掉 $\mathcal{H}^{\mathrm{res}}$, 把表达力放到读上.
+
+几个名字或组件相近的机制作用在别处. ReZero 一类的残差缩放调的是单流上残差分支的标量幅值, 不涉及 $n\times n$ 拓扑, 可以与多流叠加. MoE 路由决定每个 token 激活哪些专家, 发生在 $\mathcal{F}$ 内部; mHC 的实验骨干是 MoE, 但两者机制无关. AttnRes 每层用注意力对历史层输出做加权聚合, 不维护固定条数的流, 也没有双随机约束. Tay 等人的 Sparse Sinkhorn Attention 同用 Sinkhorn-Knopp, 作用对象是注意力块的排序, 不是残差混合矩阵. HCA / CSA 是压缩注意力, 名字里的 HC 与 Hyper-Connections 无关.
+
+### 参考文献
+
+1. [Zhu, D., et al. (2024). Hyper-Connections.](https://arxiv.org/abs/2409.19606) *arXiv:2409.19606*. 式 (1)(2)(10)-(19), Table 1/3/4/6, Figure 1/3, OLMo-7B 与 OLMoE-1B-7B 结果.
+2. [Xie, Z., et al. (2025). mHC: Manifold-Constrained Hyper-Connections.](https://arxiv.org/abs/2512.24880) *arXiv:2512.24880*. 式 (2)-(9)(20), Table 1/2/4/5, Figure 2/3/5-8, 6.7% 额外开销.
+3. [Zhang, X., et al. (2026). xHC: Expanded Hyper-Connections.](https://arxiv.org/abs/2607.14530) *arXiv:2607.14530*. 第 1 节 mHC 从 $N=4$ 到 16 的 loss 与 FLOPs.
+4. [zai-org. GLM-5.3-Flash config.json.](https://huggingface.co/zai-org/GLM-5.3-Flash/blob/main/config.json) Hugging Face.
+5. Sinkhorn, R., & Knopp, P. (1967). Concerning nonnegative matrices and doubly stochastic matrices. *Pacific Journal of Mathematics*, 21(2), 343-348.
+6. He, K., Zhang, X., Ren, S., & Sun, J. (2016). Identity Mappings in Deep Residual Networks. *ECCV*.
+
+
+
+
+> 相关阅读: 01 Hyper-Connections 与 mHC · 03 Gated Residual · 2.1.3 残差连接 · AttnRes · CSA/HCA
+
+xHC 出自 Zhang 等人 2026 的 *xHC: Expanded Hyper-Connections* (arXiv:2607.14530), 作者来自上海交大与小红书 Dots Studio 等. 它建立在 mHC 之上, 处理的问题是残差流数 $N$ 能不能从 mHC 的 4 条继续加到 16 条.
+
+### 1. 问题: mHC 停在 $N=4$
+
+#### 1.1 多流残差回顾
+
+HC 把残差状态写成 $N$ 条流 $X_l=(x_{l,1},\dots,x_{l,N})^\top\in\mathbb{R}^{N\times C}$, 一层更新是 (xHC 论文式 (1)):
+
+$$
+X_{l+1}=\mathcal{H}_l^{\mathrm{res}}X_l+\mathcal{H}_l^{\mathrm{post}}\,\mathcal{F}\!\bigl(\mathcal{H}_l^{\mathrm{pre}}X_l,\,\mathcal{W}_l\bigr) \tag{1}
+$$
+
+| 映射 | 形状 (稠密时) | 作用 |
+|------|----------------|------|
+| $\mathcal{H}^{\mathrm{pre}}$ | $1\times N$ | 把 $N$ 条流读成子层 (Attention 或 MLP) 的一份输入 |
+| $\mathcal{H}^{\mathrm{post}}$ | $N\times 1$ | 把子层输出写回各条流 |
+| $\mathcal{H}^{\mathrm{res}}$ | $N\times N$ | 流与流之间混合 |
+
+xHC 原文把写映射写成 $N\times 1$ 列向量, 01 用的 mHC 记号是 $1\times n$ 再转置, 两者等价. mHC 用 Sinkhorn-Knopp 把 $\mathcal{H}^{\mathrm{res}}$ 投到双随机矩阵上, 深度方向的连乘 $\prod_l\mathcal{H}_l^{\mathrm{res}}$ 行列和保持为 1, 恒等映射由此保住 (推导见 01 第 4 节).
+
+#### 1.2 加宽的收益与成本
+
+HC 论文的结果显示, $N$ 从 1 到 4 收益很大, FLOPs 增加不到 2%. 这提示残差流数可能是宽度, 深度之外的第三条扩展轴: 流越多, 能分别保存的层输出加权历史越多. 但已有的 HC 系方法都停在 $N=4$: 除 HC 和 mHC 外, Yang 与 Gao 2026 的 mHC-lite 关心的是 Sinkhorn-Knopp 能否少于 20 次迭代, Liu 等人 2026 把 $\mathcal{H}^{\mathrm{res}}$ 的约束集合从 Birkhoff 多面体换成谱球. 这些工作改的是混合矩阵的约束和求法, 没有回答流数本身还能不能继续加.
+
+xHC 论文 §3.2 在 2.5B MoE 上把 mHC 扫到 $N\in\{2,4,8,16,32\}$, 训练配方相同 (Figure 1). $N$ 超过 4 后收益迅速饱和: 从 4 到 16, loss 只降 0.006, 训练 FLOPs 却多 32%. 同一区间 xHC 的 loss 降 0.012, FLOPs 只多 4%.
+
+#### 1.3 瓶颈一: 写回信息不足
+
+第 $l$ 层写回第 $i$ 条流时, mHC 的形式是 (xHC 论文式 (3)):
+
+$$
+\Delta x_{l,i}=h_{l,i}^{\mathrm{post}}\cdot\mathrm{out} \tag{2}
+$$
+
+系数 $h_{l,i}^{\mathrm{post}}$ 可以随输入, 随流变化, 但每层注入的新向量方向只有一个, 就是子层输出 $\mathrm{out}$. 每条流本应保存一份不同权重的层输出历史. $N$ 小时, 用不同标量加权同一个 $\mathrm{out}$ 足够让各流分工; $N$ 变大后, 新增的流没有新的写回分量, 它们的历史越来越像, 多出来的流变得冗余.
+
+用矩阵写更直观. 把一层对全部流的写回叠成 $\Delta X_l\in\mathbb{R}^{N\times C}$, 则 $\Delta X_l=\mathbf{h}^{\mathrm{post}}_l\,\mathrm{out}^{\top}$, 是一个列向量乘一个行向量, 秩为 1. 无论 $N$ 取多大, 每层对多流状态的新增量都只占一个方向; $N$ 条流之间的差别只能来自不同层写回系数的组合和 $\mathcal{H}^{\mathrm{res}}$ 的混合. xHC 论文 §4.5 的消融 (第 2.4 节表中第 (3) 行到第 (4) 行) 是这一瓶颈的证据.
+
+直接给每条流各算一份 $\mathcal{F}$ 能把秩提到 $N$, 但层 FLOPs 会乘 $N$.
+
+#### 1.4 瓶颈二: 混合矩阵的生成成本
+
+mHC 从 $NC$ 维展平状态预测 $N^2$ 个混合系数, 投影代价是 $O(N^3C)$. xHC 附录 C 给出每层参数量的闭式, mHC 为:
+
+$$
+P_{\mathrm{mHC}}=(4N^2+2N^3)\,C \tag{3}
+$$
+
+代入 $N=4$ 得 $192C$, 代入 $N=16$ 得 $9216C$, 后者是前者的 48 倍; 流数只翻了 4 倍. 三次方项的占比也在变: $N=4$ 时 $2N^3=128$ 占 192 的三分之二, $N=16$ 时 $2N^3=8192$ 占 9216 的 89%, 加宽后几乎全部参数都花在生成 $\mathcal{H}^{\mathrm{res}}$ 上. 附录 Table 10 落到具体模型上: 18B ($C=2112$, 28 层) 的 mHC $N=16$ 每层 19.5M 参数, 参数开销 26.3%, 训练 FLOPs 开销 18.9%; 28B ($C=2560$, 32 层) 分别是 23.6M, 30.2%, 22.3%. 作为对照, mHC $N=4$ 在两个规模上的 FLOPs 开销只有 0.7% 和 0.5%.
+
+收益被写回瓶颈限制, 成本由三次方项主导, 两者叠加, 就是 $N$ 加不上去的原因.
+
+### 2. xHC: 加厚写回, 稀疏更新
+
+#### 2.1 时间维增强写回
+
+xHC 的主设定: $N=16$ 条流, 每个子层只更新 $k=4$ 条, 其中 $m=2$ 条固定激活, 另外 2 条由路由选出; 读取覆盖全部 16 条, 未更新的 12 条原样传到下一层, 后续层仍能读到. 两个改动分别对应 1.3 节和 1.4 节, 先看针对写回瓶颈的这一个.
+
+便宜的新信息来源在序列方向. 自回归预测本来就以上下文为条件, 相邻 token 的子层输出已经算过, 与当前 token 语义兼容. xHC 对子层输出做 $r$ 路逐通道的因果 1D 卷积, 核长 $\{\kappa_1,\dots,\kappa_r\}$, 与原输出拼在一起 (xHC 论文式 (4)):
+
+$$
+\mathrm{out}_{\mathrm{aug}}=\bigl[\mathrm{out};\ \mathrm{DWConv}_{\kappa_1}(\mathrm{out});\ \dots;\ \mathrm{DWConv}_{\kappa_r}(\mathrm{out})\bigr]\in\mathbb{R}^{S\times K_r\times C} \tag{4}
+$$
+
+$K_r=r+1$ 是写回分量数. 主设定 $r=3$, 核长 $\{4,8,12\}$, 所以 $K_r=4$. 卷积因果, 不破坏自回归顺序; 参数量是 $C\sum_j\kappa_j=(4+8+12)C=24C$. 核长 $\kappa$ 的因果卷积在当前 token 之外还看前 $\kappa-1$ 个 token, 三路分别覆盖前 3, 7, 11 个位置, 给出三个时间范围的局部摘要. 以 18B 的 $C=2112$ 计, 每个 MLP 子层的卷积参数约 5.1 万, 只占该层 xHC 参数 2.65M 的 2% 左右.
+
+卷积输出与 $\mathrm{out}$ 高度相关. 附录 D 报告 18B 上卷积支路与主支路的余弦相似度可以超过 0.7. 这些近似平行的分量直接交给 $\mathcal{H}^{\mathrm{post}}$ 组合, 会沿同一方向放大写回. xHC 按 token 在 $C$ 维上做修正 Gram-Schmidt (xHC 论文式 (5)), 令 $v_1=\mathrm{out}$, 对后续支路 $g_j$:
+
+$$
+v_{j+1}=g_j-\sum_{i=1}^{j}\frac{\langle g_j,v_i\rangle}{\langle v_i,v_i\rangle}v_i \tag{5}
+$$
+
+只减去投影, 不做单位化, 得到的 $v_i$ 两两正交.
+
+手算一个二维例子 (数值为演示构造). 设 $v_1=\mathrm{out}=(1,0)$, 一路卷积输出 $g_1=(0.8,0.6)$, 两者余弦相似度 0.8, 落在附录 D 说的「超过 0.7」的范围. 按式 (5), $\langle g_1,v_1\rangle/\langle v_1,v_1\rangle=0.8$, $v_2=(0.8,0.6)-0.8\,(1,0)=(0,0.6)$. 正交化前两个分量都有 $x$ 方向的大份额, $\mathcal{H}^{\mathrm{post}}$ 给两者各取系数 1 时, 写回在 $x$ 方向上是 1.8; 正交化后 $x$ 方向只剩 $v_1$ 的 1, 卷积支路只贡献 $\mathrm{out}$ 里没有的那 0.6. 10B 消融里去掉 Gram-Schmidt 的验证 loss 是 1.984, 默认 1.983, 几乎不变; 18B 上去掉则训练失稳. 论文在 AdamW 下的解释是: 没有正交化时, 写回会沿同一方向被放大, 带来激活增长和梯度尺度尖峰.
+
+时间增强只加在 MLP (含 MoE FFN) 之后. 注意力已经在 token 之间做过内容相关的混合; MLP 逐 token 独立计算, 更适合注入局部上下文特征. 附录 Table 11 试过注意力后也加同样的卷积, 验证 loss 1.985, 比默认差 0.002, 收益很小, 还增加计算和实现复杂度. 因此注意力子层 $K_r=1$.
+
+多尺度是否有用, 附录 Table 12 在稠密 mHC $N=16$ (不加稀疏) 上单独验证: 不加卷积 1.998, 单尺度一支 1.989, 三尺度 1.984. 论文 Figure 5 把时间增强单独加到 mHC 的 $N\in\{4,8,16\}$ 上, 相对 mHC 的 loss 改善随 $N$ 增大而增大. 写回不足在大 $N$ 时才明显, 与 $N=4$ 时一个 $\mathrm{out}$ 就够用的观察一致.
+
+#### 2.2 稀疏写, 稠密读
+
+**路由**. 把展平的 $N$ 流状态做 LayerNorm, 用一个线性投影得到 $N$ 个 sigmoid 分数 (xHC 论文式 (6)):
+
+$$
+s=\sigma(\tilde{x}_lW_r)\in\mathbb{R}^{N},\qquad W_r\in\mathbb{R}^{NC\times N} \tag{6}
+$$
+
+用 sigmoid 不用 softmax, 是为了减轻赢家通吃. 为了稳定, 采用固定加路由的方案 (xHC 论文式 (7)): $m$ 条流始终激活, 路由权重为 1, 其余 $k-m$ 条在非固定流上做 TopK. 主设定是 2 条固定加 Top-2. 激活流的下标记为 $\mathcal{I}=(\mathcal{I}_1,\dots,\mathcal{I}_k)$, 权重记为 $p$.
+
+**读取保持稠密** (xHC 论文式 (8)):
+
+$$
+\mathrm{input}_l=\sum_{i=1}^{N}h_{l,i}^{\mathrm{pre}}\,x_{l,i},\qquad\mathcal{H}_l^{\mathrm{pre}}=f_{\mathrm{pre}}(X_l)\in\mathbb{R}^{1\times N} \tag{7}
+$$
+
+稀疏写的主要风险是信息断开: 某层写入的流, 下一层可能没被选中, 跨层传播就断了. 稠密读让任何一条流里的信息不管路由怎么选都对后续层可见. 这也是残差流与 MoE 专家的区别: 专家不携带跨层的持续状态, 残差流携带.
+
+估一下量级. 主设定下 2 条固定流每个子层都更新, 剩下 14 条争 2 个名额. 假设路由在这 14 条上大致均匀, 每条非固定流在一个子层被选中的概率约 $2/14\approx 14\%$, 平均每 7 个子层被写一次, 其余时间保持不变. 18B 有 28 层, 56 个子层, 一条非固定流在整个前向里大约被写 8 次; 它在两次写入之间保存的内容, 只有靠稠密读才能被中间各层用上. 实际路由由输入决定, 不一定均匀, 这里只用来说明非固定流是写入稀疏, 读取频繁的长期状态. 固定流则保证每层至少有 2 个写入目标, Table 2 第 (8) 行去掉固定流后 loss 从 1.983 升到 1.986.
+
+**混合与写回只在激活流上做** (xHC 论文式 (9)(10)):
+
+$$
+\mathcal{H}_l^{\mathrm{res}}=\mathrm{SK}\bigl(f_{\mathrm{res}}(X_{\mathrm{active}})\bigr)\in\mathbb{R}^{k\times k} \tag{8}
+$$
+
+$$
+\mathcal{H}_l^{\mathrm{post}}=f_{\mathrm{post}}(X_{\mathrm{active}})\in\mathbb{R}^{k\times K_r} \tag{9}
+$$
+
+主导代价从 $O(N^3C)$ 降到 $O(k^3C)$. 写回乘路由权重 $p_j$, 而 $p_j$ 只作用在新写入上, 不作用在残差混合上 (xHC 论文式 (11)(12)):
+
+$$
+\Delta X_{\mathrm{active},j}=p_j\sum_{r=1}^{K_r}\mathcal{H}_{l,j,r}^{\mathrm{post}}\,v_r \tag{10}
+$$
+
+$$
+X_{\mathrm{active}}^{\mathrm{new}}=\mathcal{H}_l^{\mathrm{res}}X_{\mathrm{active}}+\Delta X_{\mathrm{active}} \tag{11}
+$$
+
+$v_r$ 是式 (5) 正交化后的写回分量. 新的激活流再按 $\mathcal{I}$ 写回全状态, 未选中的流不变.
+
+按 1.3 节的写法, 式 (10) 叠成矩阵是 $\Delta X_{\mathrm{active}}=\mathrm{diag}(p)\,\mathcal{H}^{\mathrm{post}}_l V$, 其中 $V\in\mathbb{R}^{K_r\times C}$ 的行是 $v_1,\dots,v_{K_r}$. $\mathcal{H}^{\mathrm{post}}_l$ 是 $k\times K_r$, 所以每个 MLP 子层写回的秩最多是 $\min(k,K_r)=4$, mHC 是 1. 主设定 $k=K_r=4$, 激活流数和写回分量数相等, 4 条被更新的流每层都可以拿到互不相同的新方向. Attention 子层 $K_r=1$, 写回仍是秩 1.
+
+**参数化** (xHC 论文式 (13)-(15)) 沿用 mHC: $\mathcal{H}^{\mathrm{pre}}$ 对全部 $N$ 流做 RMSNorm 后取 $\sigma$, 落在 $(0,1)$; $\mathcal{H}^{\mathrm{res}}$ 对 $kC$ 维激活状态生成 logits, 取 $\exp$ 后做 20 次 Sinkhorn; $\mathcal{H}^{\mathrm{post}}$ 用 $2\sigma$, 落在 $(0,2)$; 门 $\alpha$ 初始化 0.01, 映射从静态偏置起步.
+
+**行和钳制**. 附录 A 报告, 罕见的极端激活会妨碍 Sinkhorn 收敛, 使部分行和大于 1, 放大前向信号. xHC 在 Sinkhorn 之后做:
+
+$$
+\mathcal{H}_{l,i:}^{\mathrm{res}}\leftarrow\frac{\mathcal{H}_{l,i:}^{\mathrm{res}}}{\max\bigl(\sum_j\mathcal{H}_{l,ij}^{\mathrm{res}},\,1\bigr)} \tag{12}
+$$
+
+只缩放行和超过 1 的行, 论文观察到它能稳定训练且不损害性能. 例如 Sinkhorn 没收敛时某一行是 $(0.6,0.3,0.2,0.1)$, 行和 1.2, 式 (12) 把它除以 1.2 得到 $(0.5,0.25,0.167,0.083)$; 行和为 0.9 的行除以 $\max(0.9,1)=1$, 保持不变.
+
+**出口**. 与 mHC 相同, 最后一层的 $N$ 条流按 token 求和成一份 $C$ 维向量, 再进入最终 RMSNorm 和 unembedding.
+
+一层 xHC 子层的步骤 (论文 Algorithm 1 的概括):
+
+```text
+1. 看全部 N 条流, 选出 k 条 (含 m 条固定流)
+2. 稠密读: N 条流加权合成子层输入
+3. 运行 F (Attention 或 MLP)
+4. 若是 MLP: 3 路因果卷积 + Gram-Schmidt, 得到 Kr=4 个写回分量
+5. 只在 k 条流上做 Sinkhorn 混合与写回 (p 只乘新写入)
+6. 其余 N-k 条原样进入下一层
+```
+
+两项改动要一起用. 只加厚写回, 混合仍是 $O(N^3C)$; 只做稀疏, 写回仍只有一个 $\mathrm{out}$, 新增的流还是冗余.
+
+#### 2.3 参数量
+
+xHC 附录 C 的每层参数闭式:
+
+$$
+P_{\mathrm{xHC}}=\Bigl(4N^2+2k^3+k^2+k^2K_r+\sum_i\kappa_i\Bigr)C \tag{13}
+$$
+
+代入 $N=16$, $k=4$, $K_r=4$, 核长 $\{4,8,12\}$: $4\times256+2\times64+16+64+24=1256$, 即 $1256C$; $N=4$, $k=2$ 时是 $124C$. 18B 上 $1256\times 2112\approx 2.65$M 每层, 与 Table 10 一致. 训练 FLOPs 按 $F_{\mathrm{HC}}=6P_{\mathrm{HC}}L$ 估算, 18B 参数开销 3.5%, FLOPs 开销 4.1%; 28B 分别为 4.1% 和 3.0%. xHC 的参数只随 $C$ 线性增长, 而骨干 FLOPs 随宽度增长更快, 所以规模越大, 相对开销越低.
+
+$N$ 扫描的配置 (附录 Table 7): $(N,k,m)=(2,1,0),(4,2,1),(8,4,2),(16,4,2)$. $N=4$ 那一档 xHC 的 $k=2$, 与 mHC 的 $N=4$ 不是一回事: $k$ 是每层更新的流数, $N$ 是保存的流数.
+
+#### 2.4 消融 (10B MoE)
+
+Table 2 在 10B MoE 上拆解, 指标是 Pile 测试集验证 loss, 括号内是相对 vanilla 的额外训练 FLOPs:
+
+| 变体 | $N$ | 时间增强 | 稀疏 | 稠密读 | $k$ | 固定流 | 路由 | Val. Loss↓ |
+|------|-----|----------|------|------|-----|------|------|------------|
+| (1) Vanilla | -- | -- | -- | -- | -- | -- | -- | 2.029 |
+| (2) mHC (+0.6%) | 4 | -- | -- | -- | -- | -- | -- | 2.004 |
+| (3) mHC (+18.8%) | 16 | -- | -- | -- | -- | -- | -- | 1.998 |
+| (4) mHC + 时间增强 (+20.1%) | 16 | ✓ | -- | -- | -- | -- | -- | 1.984 |
+| (5) xHC (+3.3%) | 16 | ✓ | ✓ | ✓ | 4 | 2 | Sigmoid | **1.983** |
+| (6) 无稠密读, 无固定流 | 16 | ✓ | ✓ | ✗ | 4 | 0 | Sigmoid | 1.997 |
+| (7) 无稠密读 | 16 | ✓ | ✓ | ✗ | 4 | 2 | Sigmoid | 1.985 |
+| (8) 无固定流 | 16 | ✓ | ✓ | ✓ | 4 | 0 | Sigmoid | 1.986 |
+| (9) $k=2$ | 16 | ✓ | ✓ | ✓ | 2 | 1 | Sigmoid | 1.991 |
+| (10) $k=8$ | 16 | ✓ | ✓ | ✓ | 8 | 2 | Sigmoid | 1.982 |
+| (11) Softmax 路由 | 16 | ✓ | ✓ | ✓ | 4 | 2 | Softmax | 1.988 |
+
+前五行是一条递进路线. (2) 到 (3): mHC 从 $N=4$ 到 16, loss 只从 2.004 降到 1.998, 开销从 0.6% 涨到 18.8%, 这是 1.2 节饱和现象在 10B 上的复现. (3) 到 (4): 时间增强把 loss 降到 1.984, 说明写回瓶颈确实存在, 但开销仍有 20.1%. (4) 到 (5): 加入稀疏后 loss 不变 (1.983), 开销回到 3.3%.
+
+后六行是在 (5) 上逐项拆件. (6)(7)(8): 稠密读和固定流同时去掉, loss 退到 1.997, 接近不加时间增强的 mHC $N=16$; 在有固定流的前提下只去掉稠密读, loss 从 1.983 升到 1.985; 只去掉固定流升到 1.986. 固定流给稀疏写提供了每层都保证存在的写入目标. (9)(10): $k=2$ 更新的流不够 (1.991); $k=8$ 只再降 0.001, 成本更高, 主设定取 $k=4$. (11): softmax 路由 1.988, 差于 sigmoid.
+
+### 3. xHC-Flash: 访存
+
+#### 3.1 每子层读写量
+
+FLOPs 降下来之后, 瓶颈变成反复读取整个 $N$ 流状态. xHC Table 4 拆解残差维护的每 token 访存 (不含 $\mathcal{F}$ 内部, 按子层均摊):
+
+| 操作 | mHC 读 | mHC 写 | xHC 读 | xHC 写 |
+|------|--------|--------|--------|--------|
+| 映射生成 | $NC$ | $N^2+2N$ | $NC$ | $2N$ |
+| $\mathcal{H}^{\mathrm{pre}}$ 稠密读 | $NC+N$ | $C$ | $NC+N$ | $C$ |
+| 收集激活流 | -- | -- | $kC$ | $kC$ |
+| 激活流映射生成 | -- | -- | $kC$ | $k^2+kK_r$ |
+| $\mathcal{H}^{\mathrm{res}}$ 混合 | $NC+N^2$ | $NC$ | $kC+k^2$ | $kC$ |
+| $\mathcal{H}^{\mathrm{post}}$ 写回 | $C+N$ | $NC$ | $K_rC+kK_r$ | $kC$ |
+| 合并与散回 | $2NC$ | $NC$ | $2kC$ | $kC$ |
+| 每子层均摊 | $21C$ ($N=4$) | $13C$ ($N=4$) | $55C$ | $18.5C$ |
+
+mHC $N=4$ 合计 $34C$, 与 01 第 3.2 节由 mHC 论文 Table 2 代入 $n=4$ 得到的 $21C$ 读, $13C$ 写一致; mHC 若直接用 $N=16$, 每子层是 $130C$: 按 01 第 3.2 节的读写公式, 读 $(5N+1)C=81C$, 写 $(3N+1)C=49C$. xHC 合计 $73.5C$, 约为 mHC $N=4$ 的 2.2 倍. 大头是每个子层对 $NC=16C$ 的两次全状态读: 一次生成映射, 一次稠密读.
+
+均摊数字可以按表逐项加出来 (忽略 $N$, $k^2$ 这类与 $C$ 无关的小项). xHC 的 MLP 子层读: 映射生成 $16C$, 稠密读 $16C$, 收集 $4C$, 激活流映射 $4C$, 混合 $4C$, 写回 $K_rC=4C$, 合并散回 $8C$, 再加卷积读 $C$, 共 $57C$; Attention 子层 $K_r=1$ 且无卷积, 共 $53C$; 平均 $55C$. 写: 稠密读输出 $C$, 收集 $4C$, 混合 $4C$, 写回 $4C$, 合并 $4C$, 共 $17C$, MLP 再加卷积写 $3C$ 为 $20C$, 平均 $18.5C$. 同样方法代入 mHC $N=4$: 读 $4C+4C+4C+C+8C=21C$, 写 $C+4C+4C+4C=13C$.
+
+#### 3.2 Flash 的改动
+
+xHC-Flash 让相邻子层共享一次全状态加载 (论文 §5.2, Algorithm 2):
+
+- 路由在每个块 (一个 Attention 加一个 MLP) 入口只算一次, 两个子层共用 $\mathcal{I}$ 和 $p$.
+- $\mathcal{H}^{\mathrm{pre,Attn}}$ 和 $\mathcal{H}^{\mathrm{pre,MLP}}$ 保留各自的权重, 都从块入口状态生成, 并一次算出两份基础读出 $\mathrm{inp}_A$, $\mathrm{inp}_M$ (xHC 论文式 (17)). 论文发现保留子层各自的读权重对性能很重要.
+- 去掉 Attention 侧的 $\mathcal{H}^{\mathrm{res}}$, Attention 只做稀疏写回 (xHC 论文式 (18)), 混合推迟到 MLP.
+- Attention 写完后, 只用激活流的变化修正 MLP 的输入, 不再读一遍 $NC$ (xHC 论文式 (19)):
+
+$$
+\mathrm{input}_{\mathrm{MLP}}=\mathrm{inp}_M+\alpha\,\mathrm{out}_{\mathrm{Attn}},\qquad\alpha=\sum_{j=1}^{k}\mathcal{H}^{\mathrm{pre,MLP}}_{\mathcal{I}_j}\,p_j\,\mathcal{H}^{\mathrm{post,Attn}}_{j} \tag{14}
+$$
+
+$\alpha$ 是每个 token 一个标量, 由已经算出的系数组合而成. 推导很直接: Attention 只改了 $k$ 条激活流, 第 $j$ 条增加了 $p_j\mathcal{H}^{\mathrm{post,Attn}}_j\mathrm{out}_{\mathrm{Attn}}$; MLP 的读权重在这条流上是 $\mathcal{H}^{\mathrm{pre,MLP}}_{\mathcal{I}_j}$, 把 $k$ 项加起来就是 $\alpha\,\mathrm{out}_{\mathrm{Attn}}$. 附录 E.3 给出这个修正精确成立的三个条件: 路由和各子层读映射都在共享窗口入口固定; 中间子层之前不做残差混合; 每次稀疏写只改激活流. 相对满配 xHC, Flash 近似的是控制日程 (共享路由, 入口生成读映射, 混合推迟), 读的修正公式本身没有近似.
+
+**xHC-Flash-4sub** 让两个块 (四个子层) 共用一次路由, 从组入口状态生成四套读映射 $\{\mathcal{H}^{\mathrm{pre},t}\}_{t=1}^{4}$. 后面的子层要同时消化 Attention 和 MLP 的写回, 而 MLP 写回有 $K_r=4$ 个分量, 对激活流的修正是 $\sum_{r}\bigl(\sum_j\mathcal{H}^{\mathrm{pre},t}_{\mathcal{I}_j}p_j\mathcal{H}^{\mathrm{post},q}_{j,r}\bigr)\mathrm{out}^{(q)}_{\mathrm{aug},r}$ (xHC 论文式 (34)), 是多个向量的加权和, 不能再写成一个标量乘一个向量. 显式维护累计增量要多开一个 $[S,B,k,C]$ 缓冲区, 写回后更新, 修正时再读. 论文改为把稠密读拆成两部分 (xHC 论文式 (35)-(37)):
+
+$$
+\mathrm{input}^{(t)}=\underbrace{\sum_{i\notin\mathcal{I}}\mathcal{H}^{\mathrm{pre},t}_{i}x_{i}^{(0)}}_{\text{非激活流, 组入口算一次}}+\underbrace{\sum_{j=1}^{k}\mathcal{H}^{\mathrm{pre},t}_{\mathcal{I}_j}x_{\mathcal{I}_j}^{(t)}}_{\text{激活流, 用当前状态}} \tag{15}
+$$
+
+混合推迟到组内最后一个 MLP, 中间子层只改激活流, 所以非激活流在组内保持入口值 $x_i^{(0)}$, 第一项可以在组入口一次算完; 第二项只读 $k$ 条激活流. 最后的 MLP 做一次混合, 再散回全状态. 这样每子层的读写均摊到 $26.5C$ 和 $13.5C$, 合计 $40C$.
+
+#### 3.3 结果 (Table 5, 10B)
+
+| 方法 | Val. Loss↓ | 每子层 I/O |
+|------|------------|------------|
+| Vanilla | 2.029 | $3C$ |
+| mHC ($N=4$) | 2.004 | $34C$ |
+| xHC ($N=16,k=4$) | 1.983 | $73.5C$ |
+| xHC-Flash | 1.983 | $51C$ |
+| xHC-Flash-4sub | 1.984 | $40C$ |
+
+Flash 比满配少 $22.5C$, 主要省掉的是第二个子层的全状态映射生成和稠密读; 4sub 再少 $11C$. Flash 与满配 xHC 都是 1.983; 4sub 均摊到 $40C$, 与 mHC $N=4$ 的 $34C$ 接近, loss 仍比 mHC 低 0.020. 这些 I/O 数字来自论文的访存模型.
+
+#### 3.4 融核与墙钟
+
+实现分成映射生成和映射应用两个阶段, 同输入的操作融合. 残差状态和投影操作数用 bfloat16, 归一化统计量, 路由, 映射系数和 Sinkhorn 用 float32. 路由与读映射的投影拼成一次 GEMM, 一个 Triton 核完成归一化修正, 生成 $\mathcal{H}^{\mathrm{pre}}$ 并做 2 条固定加 Top-2 选择, 反向时路由梯度只经两个被选中的 logits 回传. 稠密读 $\mathcal{H}^{\mathrm{pre}}X$ 和激活流混合 $\mathcal{H}^{\mathrm{res}}X_{\mathrm{active}}$ 放进同一个核, 反向直接把两者的梯度累加到全状态梯度里, 省掉单独的 $kC$ 维梯度和散加. MLP 侧一个专用核同时算三路卷积; $K_r=4$ 的写回核直接读原输出和三路卷积输出, 不拼出 $[S,B,4,C]$ 张量, 省掉额外的 $4C$ 读和 $4C$ 写.
+
+§5.3 在 18B MoE 上测墙钟, 不开流水线通信重叠以排除调度干扰. 论文重实现的 mHC $N=4$ 融核相对基线约多 15% 训练时间, 高于 mHC 原文的 6.7%, 论文说明两者规模, 并行方式, 重叠调度可能不同, 不能直接比较. xHC-Flash-4sub 在 mHC 之上再多约 11%, 主要来自 $N=16$ 的全状态投影, 两次稠密读和反向的残差流操作; 开 DualPipe 这类通信重叠后还能再降. 2K token 推理 prefill: mHC 比基线多 11.4%, Flash-4sub 多 12.9%, 相对 mHC 只多 1.3%. 额外的训练开销主要在反向, 不在前向残差路径.
+
+### 4. 18B 和 28B 结果与边界
+
+#### 4.1 配置
+
+骨干是 DeepSeekMoE 风格: 一个前置稠密层加若干 MoE 层, 每个 MoE 层有 144 个路由专家和 1 个共享专家, top-8 sigmoid 路由; 注意力是 GQA 加 QK LayerNorm, 头维 128, RoPE $\theta=50000$, SwiGLU, RMSNorm. Qwen2 tokenizer, 词表 152064, 上下文 8192. 优化器 AdamW ($\beta_1=0.9$, $\beta_2=0.95$), weight decay 0.1, 梯度裁剪 1.0, WSD 学习率日程. 附录 Table 6 的四个规模:
+
+| 规模 | 激活参数 | 层数 | 隐藏维 | 注意力头 / KV 组 | 专家 FFN 维 | 基础学习率 | 用途 |
+|------|---------|------|--------|-------------------|------------|-----------|------|
+| 2.5B | 0.5B | 15 | 1024 | 8 / 4 | 320 | 6.95e-4 | $N$ 扫描 |
+| 10B | 1.4B | 15 | 2080 | 16 / 8 | 704 | 4.82e-4 | 消融 |
+| 18B | 1.7B | 28 | 2112 | 16 / 8 | 672 | 3.97e-4 | 主结果 |
+| 28B | 2.7B | 32 | 2560 | 20 / 10 | 768 | 3.5e-4 | 主结果 |
+
+mHC 列取 $N=4$, xHC 列取 $N=16, k=4$.
+
+$N$ 扫描 (§4.4, 2.5B) 把 xHC 的 $N$ 取 2, 4, 8, 16, 与同 $N$ 的稠密 mHC 对比. xHC 的 loss 从 $N=2$ 到 16 持续下降, 每翻一倍都有明显改善, 额外 FLOPs 很小; mHC 在 $N=4$ 之后很快饱和.
+
+#### 4.2 下游 (Table 1)
+
+| Benchmark | 18B Vanilla | 18B mHC | 18B xHC | 28B Vanilla | 28B mHC | 28B xHC |
+|-----------|-------------|---------|---------|-------------|---------|---------|
+| MMLU | 48.9 | 54.7 | 57.2 | 54.6 | 56.8 | 60.5 |
+| MMLU-Pro | 21.1 | 27.4 | 29.7 | 30.1 | 34.9 | 36.0 |
+| MMLU-Redux | 46.4 | 49.9 | 52.8 | 50.6 | 53.9 | 56.4 |
+| BBH | 32.4 | 33.7 | 39.5 | 41.7 | 43.6 | 43.4 |
+| CommonsenseQA | 54.6 | 56.6 | 60.9 | 60.5 | 63.9 | 69.6 |
+| ARC-Challenge | 55.7 | 66.3 | 72.2 | 70.8 | 74.9 | 77.7 |
+| GSM8K | 37.7 | 44.5 | 48.4 | 50.3 | 56.3 | 59.2 |
+| HumanEval | 25.6 | 23.2 | 29.3 | 27.4 | 26.8 | 31.1 |
+| LCBench | 9.9 | 12.2 | 14.6 | 15.1 | 14.8 | 17.9 |
+| CMMLU | 42.7 | 47.6 | 50.4 | 47.6 | 50.1 | 53.4 |
+| CEval | 44.5 | 48.8 | 52.4 | 50.2 | 51.2 | 54.9 |
+| C3 | 67.1 | 72.7 | 78.3 | 75.2 | 78.7 | 82.5 |
+| **Average** | **40.6** | **44.8** | **48.8** | **47.8** | **50.5** | **53.6** |
+
+18B 训练 loss 依次是 1.799, 1.776, 1.758. 相对 mHC, 18B 平均高 4.0, 增幅大的列有 HumanEval +6.1, ARC-Challenge +5.9, BBH +5.8, C3 +5.6; 28B 平均高 3.1, 增幅大的列有 CommonsenseQA +5.7, HumanEval +4.3, C3 +3.8, MMLU +3.7. 28B 的 BBH 是 43.4, 比 mHC 的 43.6 低 0.2; 18B 上 xHC 在全部 12 项都是三列最高. 代码类任务上 mHC 有时不如 vanilla: 18B HumanEval 23.2 对 25.6, 28B HumanEval 26.8 对 27.4, LCBench 14.8 对 15.1; xHC 在这几项上都超过 vanilla.
+
+评测在修改过的 OpenCompass 上进行. 选择题用条件似然打分: MMLU, MMLU-Redux, CMMLU, CEval 5-shot, ARC-Challenge 25-shot, C3 3-shot; 生成题解析后比对: MMLU-Pro 5-shot, BBH 3-shot, CommonsenseQA 7-shot, GSM8K 4-shot, HumanEval 0-shot pass@1, LCBench 5-shot. 这套协议与 mHC 论文 Table 4 不同, 两篇的绝对分数不能直接比较.
+
+#### 4.3 Scaling law 与 Muon 叠加
+
+§4.3 在约 $1.7\times10^{19}$ 到 $4.0\times10^{20}$ FLOPs 之间训练四个规模 (激活 180M 到 1.10B, 附录 Table 8), 拟合
+
+$$
+\mathcal{L}(C)=AC^{-\alpha}+E,\qquad E=0.72 \tag{16}
+$$
+
+这里 $C$ 指训练 FLOPs, $E$ 是估计的不可约 loss; 拟合方法是对 $\log_2(\mathcal{L}-E)$ 与 $\log_{10}C$ 做线性回归, 再换回上式. 四个规模的上下文都是 8192, 144 个路由专家, top-8. 拟合系数 (附录 Table 9): vanilla $A=109.303$, $\alpha=0.0936$; mHC $A=99.139$, $\alpha=0.0920$; xHC $A=97.703$, $\alpha=0.0919$. 三者指数几乎相同, 差别主要在系数 $A$. 最大算力点上 xHC 的 loss 比 mHC 低约 1.1%, 比 vanilla 低约 2.4%. 以最大的 vanilla 和 mHC 模型的 loss 为目标, 从 xHC 拟合曲线上读出所需算力, vanilla 要 xHC 的 1.50 倍, mHC 要 1.19 倍.
+
+上面的拟合都用 AdamW. 换成 Muon 后 xHC 的收益是否还在, 论文在 18B 上用 Table 3 检查, 平均下游: AdamW vanilla 40.6, Muon vanilla 43.1, Muon 加 xHC (去掉 Gram-Schmidt) 49.9. 换优化器本身带来 2.5 分; 在 Muon 基线上再加 xHC 多 6.8 分, AdamW 下 xHC 相对 vanilla 是 8.2 分 (上面的 Table 1). 两者的收益没有互相抵消, 大部分可以叠加. Muon 只用于骨干的注意力, MLP/MoE 和 MoE 路由投影, 动量 0.95, 5 次 Newton-Schulz 迭代, 更新 RMS 对齐 AdamW 的目标值 0.2; 嵌入, 归一化和全部 xHC 参数用 AdamW. xHC 的路由和映射投影把 $NC$ 或 $kC$ 维映射到 $N$, $k^2$, $kK_r$ 这样很小的输出维, 形状极不均衡, 不适合 Muon 的矩阵正交化. 去掉 Gram-Schmidt 的理由是 Muon 的 Newton-Schulz 正交化已经让更新谱更受控, 前向投影掉平行分量也会同时投影掉这些方向的梯度, 在 Muon 下显得多余且略有限制. 优化器本身见 6.5.1 优化器综述.
+
+#### 4.4 边界
+
+Transformer 一层仍是 Norm, Attention 或 FFN, 残差合并. xHC 改的是合并, 隐状态从 $[T,C]$ 扩成 $[T,N,C]$, 头数, KV 布局, 专家路由都不变, $\mathcal{F}$ 仍只接收一份 $C$ 维输入. 同一层里有两套 Top-K: MoE 路由决定 token 进哪些专家, xHC 路由决定 $N$ 条残差流里更新哪 $k$ 条, 两者对象不同. 按 4.1 节的配置, 前者是 144 个路由专家选 8 个, 后者是 14 条非固定流选 2 条.
+
+xHC 的几个部件各有对应的失效. 结构上, 读也做稀疏时 (Table 2 第 (6) 行, 去掉稠密读和固定流) loss 退到 1.997, 跨层传播被路由切断; 路由改用 softmax 时 (第 (11) 行) 是 1.988, 差于 sigmoid 的 1.983, 因为 softmax 让各流争夺固定的总权重, 容易集中到一两条流上; 注意力子层后也加时间增强, Table 11 显示 loss 反而差 0.002, 还多出卷积计算, 注意力本身已经跨 token 混合, 再加局部卷积收益很小. 规模上, $k$ 跟着 $N$ 一起增大时, 式 (13) 里的 $2k^3$ 项会重新主导成本, 第 (10) 行 $k=8$ 只换来 0.001 的 loss; 在 AdamW 下去掉 Gram-Schmidt, 10B 上看不出差别, 18B 上训练失稳. 数值上, 极端激活下 Sinkhorn 的行和可能超过 1, 要靠式 (12) 的钳制.
+
+成本也不能只看 FLOPs. 满配 xHC 的残差读写是 mHC $N=4$ 的 2.2 倍, 墙钟开销要靠 Flash 变体和融核压下来; 即使用 Flash-4sub, 18B 训练仍比 mHC 多约 11%. 下表把 xHC 和相邻设定放在同一组参数上:
+
+| 设置 | 结果 |
+|------|------|
+| $N=1$ | 单流残差 |
+| $N=4$, 稠密, 无时间增强 | mHC 主设定 |
+| $N=16$, 稠密, 无时间增强 | mHC 加宽, Table 2 第 (3) 行 |
+| $N=16$, 稠密, 加时间增强 | Table 2 第 (4) 行 |
+| $N=16$, $k=4$, 加时间增强 | xHC 主设定 |
+| $k=N$ | 稀疏退化为稠密 |
+| Attention 侧去掉 $\mathcal{H}^{\mathrm{res}}$, 块内共享路由 | xHC-Flash, 每子层 $36C$ 读, $15C$ 写 |
+| 两个块共享路由, 混合只在第二个 MLP | xHC-Flash-4sub, 每子层 $40C$ |
+
+表的前两行是退化情形: $N=1$ 回到单流, $k=N$ 时稀疏更新退化为稠密. 中间三行就是 Table 2 从 mHC 走到 xHC 的路径, 先加宽, 再加时间增强, 最后改成稀疏更新, 每一步的 loss 变化见第 2.4 节. 最后两行只改访存, 不改模型能表达的东西.
+
+同族里, mHC 是 xHC 的直接前作, 多流加双随机混合, 主设定 $N=4$, 机制见 01. Gated Residual 也加宽到 4 条, 但读用逐元素门并删掉 $H_{\mathrm{res}}$, xHC 则在 $k$ 条激活流上保留 Sinkhorn 混合. AttnRes 每层用注意力对历史层输出加权聚合, 不维护固定条数的流. 名字相近而无关的有两个: Tay 等人的 Sparse Sinkhorn Attention 同样用 Sinkhorn-Knopp, 作用对象是注意力块的排序; HCA / CSA 是压缩注意力, 缩写里的 HC 与 Hyper-Connections 无关. 论文代码在 <https://github.com/aHapBean/xHC>.
+
+### 参考文献
+
+1. Zhang, X., Qin, X., Zou, S., Dai, T., Shi, X., Wu, H., Yang, Y., Xia, Z., Zhang, S., Yao, L., Liu, Y., Cheng, Y., & Yan, J. (2026). [xHC: Expanded Hyper-Connections.](https://arxiv.org/abs/2607.14530) *arXiv:2607.14530*. 式 (1)-(19), Algorithm 1-2, Table 1-12, Figure 1/4/5, 附录 A-E.
+2. Zhu, D., et al. (2024). [Hyper-Connections.](https://arxiv.org/abs/2409.19606) *arXiv:2409.19606*.
+3. Xie, Z., et al. (2025). [mHC: Manifold-Constrained Hyper-Connections.](https://arxiv.org/abs/2512.24880) *arXiv:2512.24880*.
+4. Liu, Z., Zhang, H., & Li, A. (2026). [Beyond the Birkhoff Polytope: Spectral-Sphere-Constrained Hyper-Connections.](https://arxiv.org/abs/2603.20896) *arXiv:2603.20896*.
+5. Yang, Y., & Gao, J. (2026). [mHC-lite: You Don't Need 20 Sinkhorn-Knopp Iterations.](https://arxiv.org/abs/2601.05732) *arXiv:2601.05732*.
+6. Tay, Y., Bahri, D., Yang, L., Metzler, D., & Juan, D.-C. (2020). [Sparse Sinkhorn Attention.](https://arxiv.org/abs/2002.11296) *ICML*.
+7. He, K., Zhang, X., Ren, S., & Sun, J. (2016). [Deep Residual Learning for Image Recognition.](https://arxiv.org/abs/1512.03385) *CVPR*.
+
+
+## 6. 论文公式、证据与外推边界
+
+这一节按论文原始定义重新串联数值不稳定、流形投影和实验结果，并把严格成立的矩阵性质与有限规模实验观察分开。双随机约束能控制特定范数和一致向量方向，不自动给出任意深度网络的全局优化保证。
+
+
+
+
+自 ResNet (He et al., 2016a) 提出以来, 深度神经网络的结构演进很快. 如图 1(a), 单层结构可以写成:
+
+$$
+\mathbf {x} _ {l + 1} = \mathbf {x} _ {l} + \mathcal {F} (\mathbf {x} _ {l}, \mathcal {W} _ {l}),\tag{1}
+$$
+
+
+其中 $\mathbf{x}_l$ 和 $\mathbf{x}_{l+1}$ 分别是第 $l$ 层的 $C$ 维输入与输出, $\mathcal{F}$ 是残差函数. 过去十年里, 残差函数 $\mathcal{F}$ 从卷积演变到注意力和前馈网络等各种操作, 残差连接这一范式却一直保持原样. 随着 Transformer (Vaswani et al., 2017) 的发展, 这一范式已经成为大语言模型 (LLM) 的基本设计元素 (Brown et al., 2020; Liu et al., 2024b; Touvron et al., 2023).
+
+
+这种成功主要归功于残差连接形式简洁. 更重要的是, 早期研究 (He et al., 2016b) 揭示了残差连接的恒等映射性质能在大规模训练中保持稳定和高效. 把式 (1) 沿多层递归展开, 得到:
+
+$$
+\mathbf {x} _ {L} = \mathbf {x} _ {l} + \sum_ {i = l} ^ {L - 1} \mathcal {F} (\mathbf {x} _ {i}, \mathcal {W} _ {i}),\tag{2}
+$$
+
+
+其中 $L$ 和 $l$ 分别对应较深层和较浅层. 恒等映射指的就是 $\mathbf{x}_l$ 这一项本身, 强调浅层信号不经任何修改直接映射到深层.
+
+
+最近, 以 Hyper-Connections (HC) (Zhu et al., 2024) 为代表的工作给残差连接引入了一个新维度, 并在实验上展示了它的性能潜力. HC 的单层结构见图 1(b). HC 加宽残差流, 加强连接复杂度, 在不改变单个计算单元 FLOPs 的前提下显著提高了拓扑复杂度. HC 的单层传播形式化为:
+
+$$
+\mathbf {x} _ {l + 1} = \mathcal {H} _ {l} ^ {\mathrm{res}} \mathbf {x} _ {l} + \mathcal {H} _ {l} ^ {\mathrm{post} \top} \mathcal {F} (\mathcal {H} _ {l} ^ {\mathrm{pre}} \mathbf {x} _ {l}, \mathcal {W} _ {l}),\tag{3}
+$$
+
+
+其中 $\mathbf{x}_l$ 和 $\mathbf{x}_{l+1}$ 分别是第 $l$ 层的输入与输出. 与式 (1) 不同, $\mathbf{x}_l$ 和 $\mathbf{x}_{l+1}$ 的特征维度从 $C$ 扩成 $n\times C$, $n$ 是扩张率. $\mathcal{H}_l^{\mathrm{res}}\in\mathbb{R}^{n\times n}$ 是一个可学习映射, 在残差流内部混合特征. $\mathcal{H}_l^{\mathrm{pre}}\in\mathbb{R}^{1\times n}$ 同样可学习, 把 $nC$ 维的流聚合成 $C$ 维的层输入; 反过来, $\mathcal{H}_l^{\mathrm{post}}\in\mathbb{R}^{1\times n}$ 把层输出映射回流上.
+
+
+然而训练规模变大后, HC 带来了潜在的不稳定风险. 主要问题在于 HC 不加约束, 结构跨多层延伸时恒等映射性质被破坏. 在由多条并行流组成的结构里, 理想的恒等映射起守恒作用: 它保证前向和反向传播时各流的平均信号强度不变. 用式 (3) 把 HC 沿多层递归展开, 得到:
+
+$$
+\mathbf {x} _ {L} = \left(\prod_ {i = 1} ^ {L - l} \mathcal {H} _ {L - i} ^ {\mathrm{res}}\right) \mathbf {x} _ {l} + \sum_ {i = l} ^ {L - 1} \left(\prod_ {j = 1} ^ {L - 1 - i} \mathcal {H} _ {L - j} ^ {\mathrm{res}}\right) \mathcal {H} _ {i} ^ {\mathrm{post} \top} \mathcal {F} (\mathcal {H} _ {i} ^ {\mathrm{pre}} \mathbf {x} _ {i}, \mathcal {W} _ {i}),\tag{4}
+$$
+
+
+
+其中 $L$ 和 $l$ 分别是较深层和较浅层. 与式 (2) 相比, HC 中的复合映射 $\prod_{i=1}^{L-l}\mathcal{H}_{L-i}^{\mathrm{res}}$ 不能保持特征的全局均值. 这一差别导致信号无界地放大或衰减, 在大规模训练中引发不稳定. 另一个问题是: HC 在 FLOPs 上保持了计算效率, 但原始设计没有处理加宽后的残差流在访存上的硬件效率. 这些因素合在一起, 限制了 HC 的实际可扩展性, 也妨碍它用于大规模训练.
+
+> **核对:** 式 (4) 之后说复合映射「不能保持特征的全局均值」, 这里的均值守恒对应 $\mathcal{H}^{\mathrm{res}}$ 的哪个条件?
+> 答: 把 $n$ 条流的均值写成 $\frac1n\mathbf{1}_n^\top\mathbf{x}$. 经过一层混合后是 $\frac1n\mathbf{1}_n^\top\mathcal{H}^{\mathrm{res}}\mathbf{x}$, 对任意 $\mathbf{x}$ 都等于原均值, 当且仅当 $\mathbf{1}_n^\top\mathcal{H}^{\mathrm{res}}=\mathbf{1}_n^\top$, 即列和为 1. 行和为 1 ($\mathcal{H}^{\mathrm{res}}\mathbf{1}_n=\mathbf{1}_n$) 管的是另一件事: 各流取同一个值时输出不变, 再加上非负就使每条输出流是输入流的凸组合. 式 (6) 同时要求两者, 列和对应均值守恒和反向增益, 行和对应前向增益, 第 3.1 节的 Amax Gain Magnitude 正是分别量这两组和.
+
+
+为应对这些问题, 我们提出 **流形约束超连接** (**mHC**), 见图 1(c). 它是一个通用框架, 把 HC 的残差连接空间投影到特定流形上以恢复恒等映射性质, 同时配上严格的基础设施优化保证效率. 具体地, mHC 用 Sinkhorn-Knopp 算法 (Sinkhorn and Knopp, 1967) 把 $\mathcal{H}_l^{\mathrm{res}}$ 熵投影到 Birkhoff 多面体上, 也就是把残差连接矩阵约束在由双随机矩阵构成的流形里. 这类矩阵的行和与列和都等于 1, 所以 $\mathcal{H}_l^{\mathrm{res}}\mathbf{x}_l$ 是输入特征的凸组合. 这一性质让信号传播条件良好: 特征均值守恒, 信号范数受到严格约束, 有效降低了信号消失或爆炸的风险. 此外, 双随机矩阵对矩阵乘法封闭, 复合映射 $\prod_{i=1}^{L-l}\mathcal{H}_{L-i}^{\mathrm{res}}$ 仍保有这种守恒性质. 因此 mHC 能在任意深度之间保持恒等映射的稳定. 效率方面, 我们做了内核融合, 并用 TileLang (Wang et al., 2025) 开发了混合精度内核; 另外通过选择性重计算降低显存占用, 并在 DualPipe 调度 (Liu et al., 2024b) 内仔细重叠通信.
+
+
+大量语言模型预训练实验表明, mHC 在保持 HC 性能优势的同时, 稳定性和可扩展性都很突出. 内部的大规模训练显示 mHC 能支撑规模化训练, 扩张率 $n=4$ 时只多出 6.7% 的时间开销.
+
+### 2. Related Works · 相关工作
+
+
+深度学习的结构进展大体可以分成微观设计和宏观设计两类. 微观设计关心计算块的内部结构, 规定特征在空间, 时间和通道维度上怎样处理. 宏观设计则确定块与块之间的拓扑结构, 决定特征表示怎样在不同层之间传播, 路由和合并.
+
+### 2.1. Micro Design · 微观设计
+
+
+
+
+凭借参数共享和平移不变性, 卷积最早主导了结构化信号的处理. 之后的深度可分离卷积 (Chollet, 2017) 和分组卷积 (Xie et al., 2017) 等变体提升了效率, 而 Transformer (Vaswani et al., 2017) 的出现让注意力和前馈网络 (FFN) 成为现代结构的基本构件. 注意力负责全局的信息传播, FFN 增强单个特征的表示能力. 为了在性能与 LLM 的算力需求之间取得平衡, 注意力朝高效变体演进, 例如 Multi-Query Attention (MQA) (Shazeer, 2019), Grouped-Query Attention (GQA) (Ainslie et al., 2023) 和 Multi-Head Latent Attention (MLA) (Liu et al., 2024a). 与此同时, FFN 经由 MoE (Fedus et al., 2022; Lepikhin et al., 2020; Shazeer et al., 2017) 推广成稀疏计算范式, 参数可以大幅增加而计算成本不按比例增长.
+
+### 2.2. Macro Design · 宏观设计
+
+
+宏观设计决定网络的全局拓扑 (Srivastava et al., 2015). 在 ResNet (He et al., 2016a) 之后, DenseNet (Huang et al., 2017) 和 FractalNet (Larsson et al., 2016) 分别通过稠密连接和多路径结构提高拓扑复杂度来提升性能. Deep Layer Aggregation (DLA) (Yu et al., 2018) 进一步扩展了这一路线, 跨不同深度和分辨率递归地聚合特征.
+
+
+近来宏观设计的重心转向加宽残差流 (Chai et al., 2020; Fang et al., 2023; Heddes et al., 2025; Mak and Flanigan, 2025; Menghani et al., 2025; Pagliardini et al., 2024; Xiao et al., 2025; Xie et al., 2023; Zhu et al., 2024). Hyper-Connections (HC) (Zhu et al., 2024) 引入可学习矩阵来调节不同深度特征之间的连接强度; Residual Matrix Transformer (RMT) (Mak and Flanigan, 2025) 把标准残差流换成外积记忆矩阵, 便于存储特征; MUDDFormer (Xiao et al., 2025) 用多路动态稠密连接优化跨层信息流. 这些方法虽有潜力, 却都破坏了残差连接固有的恒等映射性质, 带来不稳定并妨碍扩展; 而且特征宽度加大后, 访存开销也很显著. mHC 以 HC 为基础, 把残差连接空间限制到特定流形上以恢复恒等映射性质, 同时配上严格的基础设施优化保证效率. 这一做法在保留加宽连接的拓扑收益的同时, 提升了稳定性和可扩展性.
+
+### 3. Preliminary · 预备知识
+
+
+先约定记号. 在 HC 的写法里, 第 $l$ 层的输入 $\mathbf{x}_l\in\mathbb{R}^{1\times C}$ 被扩成 $n$ 倍, 构成隐藏矩阵 $\mathbf{x}_l=(\mathbf{x}_{l,0}^\top,\cdots,\mathbf{x}_{l,n-1}^\top)^\top\in\mathbb{R}^{n\times C}$, 可以看作 $n$ 条流的残差. 这一步加宽了残差流. 为了管理这条流的读出, 写入和更新, HC 引入三个可学习线性映射: $\mathcal{H}_l^{\mathrm{pre}},\mathcal{H}_l^{\mathrm{post}}\in\mathbb{R}^{1\times n}$ 和 $\mathcal{H}_l^{\mathrm{res}}\in\mathbb{R}^{n\times n}$. 它们改写了式 (1) 的标准残差连接, 得到式 (3).
+
+
+HC 的可学习映射由两部分系数组成: 依赖输入的部分和全局共享的部分, 分别叫动态映射和静态映射. HC 按下式计算系数:
+
+$$
+\left\{ \begin{array}{l} \tilde {\mathbf {x}} _ {l} = \mathrm{RMSNorm} (\mathbf {x} _ {l}) \\ \mathcal {H} _ {l} ^ {\mathrm{pre}} = \alpha_ {l} ^ {\mathrm{pre}} \cdot \tanh (\theta_ {l} ^ {\mathrm{pre}} \tilde {\mathbf {x}} _ {l} ^ {\top}) + \mathbf {b} _ {l} ^ {\mathrm{pre}} \\ \mathcal {H} _ {l} ^ {\mathrm{post}} = \alpha_ {l} ^ {\mathrm{post}} \cdot \tanh (\theta_ {l} ^ {\mathrm{post}} \tilde {\mathbf {x}} _ {l} ^ {\top}) + \mathbf {b} _ {l} ^ {\mathrm{post}} \\ \mathcal {H} _ {l} ^ {\mathrm{res}} = \alpha_ {l} ^ {\mathrm{res}} \cdot \tanh (\theta_ {l} ^ {\mathrm{res}} \tilde {\mathbf {x}} _ {l} ^ {\top}) + \mathbf {b} _ {l} ^ {\mathrm{res}}, \end{array} \right.\tag{5}
+$$
+
+
+
+
+其中 RMSNorm(·) (Zhang and Sennrich, 2019) 作用在最后一维上, 标量 $\alpha_l^{\mathrm{pre}},\alpha_l^{\mathrm{post}},\alpha_l^{\mathrm{res}}\in\mathbb{R}$ 是可学习的门控因子, 初始化为小值. 动态映射由线性投影 $\theta_l^{\mathrm{pre}},\theta_l^{\mathrm{post}}\in\mathbb{R}^{1\times C}$ 和 $\theta_l^{\mathrm{res}}\in\mathbb{R}^{n\times C}$ 得到, 静态映射则是可学习偏置 $\mathbf{b}_l^{\mathrm{pre}},\mathbf{b}_l^{\mathrm{post}}\in\mathbb{R}^{1\times n}$ 和 $\mathbf{b}_l^{\mathrm{res}}\in\mathbb{R}^{n\times n}$.
+
+
+引入 $\mathcal{H}_l^{\mathrm{pre}}$, $\mathcal{H}_l^{\mathrm{post}}$ 和 $\mathcal{H}_l^{\mathrm{res}}$ 这些映射, 计算开销可以忽略, 因为典型的扩张率 $n$ (例如 4) 远小于输入维度 $C$. 这样设计后, HC 把残差流的信息容量和层的输入维度解耦了, 而层的输入维度与模型的计算复杂度 (FLOPs) 强相关. 于是 HC 提供了一条新的扩展途径: 调整残差流宽度. 它补充了预训练 Scaling Laws (Hoffmann et al., 2022) 中讨论的两个传统维度, 即模型 FLOPs 和训练数据量.
+
+
+HC 需要三个映射来处理残差流与层输入之间的维度不匹配, 但表 1 的初步实验表明, 残差映射 $\mathcal{H}_l^{\mathrm{res}}$ 带来的性能收益最大. 这说明残差流内部的有效信息交换十分关键.
+
+
+### 3.1. Numerical Instability · 数值不稳定
+
+
+残差映射 $\mathcal{H}_l^{\mathrm{res}}$ 对性能很关键, 但它被逐层连续施加, 给数值稳定带来很大风险. 如式 (4) 所示, HC 跨多层延伸后, 从第 $l$ 层到第 $L$ 层的有效信号传播由复合映射 $\prod_{i=1}^{L-l}\mathcal{H}_{L-i}^{\mathrm{res}}$ 决定. 由于可学习映射 $\mathcal{H}_l^{\mathrm{res}}$ 没有约束, 这个复合映射必然偏离恒等映射, 信号幅值在前向和反向传播中都容易爆炸或消失. 这破坏了残差学习依赖信号畅通流动的基本前提, 让更深或更大的模型训练失稳.
+
+
+实验证据支持这一分析. 我们在大规模实验中观察到 loss 行为不稳, 见图 2. 以 mHC 为参照, HC 在约 12k step 处出现意外的 loss 上冲, 并与梯度范数的不稳高度相关. 对 $\mathcal{H}_l^{\mathrm{res}}$ 的分析进一步印证了这种不稳的机制. 为量化复合映射 $\prod_{i=1}^{L-l}\mathcal{H}_{L-i}^{\mathrm{res}}$ 沿残差流放大信号的程度, 我们用两个指标: 第一个基于复合映射行和的最大绝对值, 刻画前向传播的最坏放大; 第二个基于最大绝对列和, 对应反向传播. 两者合称复合映射的 Amax Gain Magnitude (最大增益幅值). 如图 3(b), 这一指标出现峰值约 3000 的极端值, 与 1 相差悬殊, 证实残差流确实在爆炸.
+
+
+
+
+
+
+
+
+
+
+
+
+### 3.2. System Overhead · 系统开销
+
+
+额外映射都是线性的, 所以 HC 的计算复杂度可控, 但系统层面的开销是不可忽略的挑战. 访存 (I/O) 成本常常是现代模型结构的主要瓶颈之一, 也就是常说的「内存墙」(Dao et al., 2022). 结构设计时经常忽略这个瓶颈, 它却决定性地影响运行效率.
+
+
+以广泛采用的 Pre-Norm Transformer (Vaswani et al., 2017) 为对象, 我们分析 HC 固有的 I/O 模式. 表 2 汇总了 $n$ 流残差设计在单个残差层中带来的每 token 访存开销. 分析显示 HC 让访存成本增加了大约与 $n$ 成正比的倍数. 没有融合内核缓解时, 这么大的 I/O 需求会显著拖低训练吞吐. 此外, $\mathcal{H}_l^{\mathrm{pre}}$, $\mathcal{H}_l^{\mathrm{post}}$ 和 $\mathcal{H}_l^{\mathrm{res}}$ 含可学习参数, 反向传播需要它们的中间激活, 这让 GPU 显存占用大幅增加, 往往需要梯度检查点才能把显存控制在可行范围. 再者, 在流水线并行 (Qi et al., 2024) 中 HC 的通信成本是 $n$ 倍, 气泡更大, 训练吞吐下降.
+
+
+
+> **拆开:** 表 2 的两个合计怎么来的, $n=4$ 时比普通残差多多少?
+> 答: 读列逐行相加: 算系数读 $nC$, 应用 pre 读 $nC+n$, 应用 post 读 $C+n$, 应用 res 读 $nC+n^2$, 残差合并读 $2nC$, 合计 $(5n+1)C+n^2+2n$. 写列: 系数 $n^2+2n$, pre 输出 $C$, post 输出 $nC$, res 输出 $nC$, 合并输出 $nC$, 合计 $(3n+1)C+n^2+2n$. 两列都与表一致. $n=4$ 时读 $21C+24$, 写 $13C+24$, 读写合计约 $34C$; 普通残差只有读 $2C$ 写 $C$, 合计 $3C$, 相差 11 倍多. 这张表只算残差这一侧, $\mathcal{F}$ 内部 (注意力, FFN) 的访存不在内. 第 4.3.1 节把 post, res 与合并融成一个核后, 这三步的读从 $(3n+1)C$ 降到 $(n+1)C$, 写从 $3nC$ 降到 $nC$, 正是把中间结果不落 HBM 的结果.
+
+### 4. Method · 方法
+
+### 4.1. Manifold-Constrained Hyper-Connections · 流形约束超连接
+
+
+受恒等映射原理 (He et al., 2016b) 启发, mHC 把残差映射 $\mathcal{H}_l^{\mathrm{res}}$ 约束到特定流形上. 原始恒等映射强制 $\mathcal{H}_l^{\mathrm{res}}=\mathbf{I}$ 来保证稳定, 同时也排除了残差流之间的信息交换, 限制多流结构的表达能力. 因此我们把残差映射投影到一个既保持跨层信号稳定、又允许残差流相互作用的流形. 具体地, $\mathcal{H}_l^{\mathrm{res}}$ 被限制为双随机矩阵, 即元素非负且每行、每列之和均为 1. 形式上, 记 $\mathcal{M}^{\mathrm{res}}$ 为双随机矩阵构成的流形 (又称 Birkhoff 多面体), 把 $\mathcal{H}_l^{\mathrm{res}}$ 约束为 $\mathcal{P}_{\mathcal{M}^{\mathrm{res}}}(\mathcal{H}_l^{\mathrm{res}})$, 定义为:
+
+$$
+\mathcal {P} _ {\mathcal {M} ^ {\mathrm{res}}} (\mathcal {H} _ {l} ^ {\mathrm{res}}) := \left\{\mathcal {H} _ {l} ^ {\mathrm{res}} \in \mathbb {R} ^ {n \times n} \mid \mathcal {H} _ {l} ^ {\mathrm{res}} \mathbf {1} _ {n} = \mathbf {1} _ {n}, \mathbf {1} _ {n} ^ {\top} \mathcal {H} _ {l} ^ {\mathrm{res}} = \mathbf {1} _ {n} ^ {\top}, \mathcal {H} _ {l} ^ {\mathrm{res}} \geqslant 0 \right\},\tag{6}
+$$
+
+
+其中 $\mathbf{1}_n$ 是 $n$ 维全 1 向量.
+
+
+$n=1$ 时双随机条件退化成标量 1, 恢复原始的恒等映射. 选择双随机约束带来几条对大规模训练有利的严格理论性质:
+
+
+1. **范数保持:** 双随机矩阵的谱范数以 1 为上界 (即 $\|\mathcal{H}_l^{\mathrm{res}}\|_2\le1$). 这意味着这个可学习映射不扩张, 能有效缓解梯度爆炸.
+
+
+2. **复合封闭:** 双随机矩阵集合对矩阵乘法封闭. 这保证跨多层的复合残差映射 $\prod_{i=1}^{L-l}\mathcal{H}_{L-i}^{\mathrm{res}}$ 仍是双随机的, 从而在模型的整个深度上保持稳定.
+
+
+
+
+3. **Birkhoff 多面体的几何解释:** 集合 $\mathcal{M}^{\mathrm{res}}$ 构成 Birkhoff 多面体, 即全体置换矩阵的凸包. 由此有一个清楚的几何解释: 残差映射是若干置换的凸组合. 从数学上看, 反复施加这类矩阵会让各流之间的信息混合单调增加, 起到稳健的特征融合作用.
+
+> **问:** 第 1 条说谱范数不超过 1, 第 3 条说反复施加会让混合单调增加, 这两条合起来对深层的复合映射意味着什么?
+> 答: 谱范数的界可以由 $\|\mathcal{H}\|_2\le\sqrt{\|\mathcal{H}\|_1\|\mathcal{H}\|_\infty}$ 得到, 双随机矩阵的最大列和与最大行和都是 1. 又因 $\mathcal{H}\mathbf{1}_n=\mathbf{1}_n$, 全 1 方向的增益恰好为 1, 所以谱范数等于 1, 其余方向的增益不超过 1. 连乘下去, 全 1 方向 (各流取平均) 保持不变, 与之正交的「流间差异」方向只会被压缩或保持. 若各层矩阵都有一定混合 (不是置换阵), 复合矩阵会趋向 $\frac1n\mathbf{1}\mathbf{1}^\top$, 即均匀平均. 图 8 第二行可以看到这一点: 60 层复合的 mHC 矩阵元素都在 0.21 到 0.29 之间, 接近 $1/4$. 所以浅层信号送到最深层时已经被平均到四条流上, 「混合单调增加」的另一面是浅层信号在流间的区分度随深度丢失. 论文把它写成特征融合的好处, 没有讨论这一代价.
+
+
+此外, 我们对输入映射 $\mathcal{H}_l^{\mathrm{pre}}$ 和输出映射 $\mathcal{H}_l^{\mathrm{post}}$ 加非负约束. 这一约束防止正负系数组合造成信号相互抵消, 也可以看作一种特殊的流形投影.
+
+### 4.2. Parameterization and Manifold Projection · 参数化与流形投影
+
+
+本节详细说明 mHC 中 $\mathcal{H}_l^{\mathrm{pre}}$, $\mathcal{H}_l^{\mathrm{post}}$ 和 $\mathcal{H}_l^{\mathrm{res}}$ 的计算过程. 给定第 $l$ 层的输入隐藏矩阵 $\mathbf{x}_l\in\mathbb{R}^{n\times C}$, 先把它展平成向量 $\vec{\mathbf{x}}_l=\mathrm{vec}(\mathbf{x}_l)\in\mathbb{R}^{1\times nC}$, 以保留完整的上下文信息. 然后沿用原始 HC 的写法得到动态映射和静态映射:
+
+$$
+\left\{ \begin{array}{l} \vec {\mathbf {x}} _ {l} ^ {\prime} = \mathrm{RMSNorm} (\vec {\mathbf {x}} _ {l}) \\ \tilde {\mathcal {H}} _ {l} ^ {\mathrm{pre}} = \alpha_ {l} ^ {\mathrm{pre}} \cdot (\vec {\mathbf {x}} _ {l} ^ {\prime} \varphi_ {l} ^ {\mathrm{pre}}) + \mathbf {b} _ {l} ^ {\mathrm{pre}} \\ \tilde {\mathcal {H}} _ {l} ^ {\mathrm{post}} = \alpha_ {l} ^ {\mathrm{post}} \cdot (\vec {\mathbf {x}} _ {l} ^ {\prime} \varphi_ {l} ^ {\mathrm{post}}) + \mathbf {b} _ {l} ^ {\mathrm{post}} \\ \tilde {\mathcal {H}} _ {l} ^ {\mathrm{res}} = \alpha_ {l} ^ {\mathrm{res}} \cdot \mathrm{mat} (\vec {\mathbf {x}} _ {l} ^ {\prime} \varphi_ {l} ^ {\mathrm{res}}) + \mathbf {b} _ {l} ^ {\mathrm{res}}, \end{array} \right.\tag{7}
+$$
+
+
+其中 $\varphi_l^{\mathrm{pre}},\varphi_l^{\mathrm{post}}\in\mathbb{R}^{nC\times n}$ 和 $\varphi_l^{\mathrm{res}}\in\mathbb{R}^{nC\times n^2}$ 是动态映射的线性投影, $\mathrm{mat}(\cdot)$ 是把 $\mathbb{R}^{1\times n^2}$ 变形为 $\mathbb{R}^{n\times n}$ 的 reshape 函数.
+
+
+然后通过下式得到最终的约束映射:
+
+$$
+\left\{ \begin{array}{l} \mathcal {H} _ {l} ^ {\mathrm{pre}} = \sigma (\tilde {\mathcal {H}} _ {l} ^ {\mathrm{pre}}) \\ \mathcal {H} _ {l} ^ {\mathrm{post}} = 2 \sigma (\tilde {\mathcal {H}} _ {l} ^ {\mathrm{post}}) \\ \mathcal {H} _ {l} ^ {\mathrm{res}} = \text {Sinkhorn - Knopp} (\tilde {\mathcal {H}} _ {l} ^ {\mathrm{res}}), \end{array} \right.\tag{8}
+$$
+
+
+其中 $\sigma(\cdot)$ 是 Sigmoid 函数. Sinkhorn-Knopp(·) 算子先用指数运算让所有元素为正, 再交替缩放行和列, 迭代归一使行和列和为 1. 具体地, 以正矩阵 $\mathbf{M}^{(0)}=\exp(\tilde{\mathcal{H}}_l^{\mathrm{res}})$ 为起点, 归一化迭代为:
+
+$$
+\left| \mathbf {M} ^ {(t)} = \mathcal {T} _ {r} \left(\mathcal {T} _ {c} (\mathbf {M} ^ {(t - 1)})\right), \right.\tag{9}
+$$
+
+
+其中 $\mathcal{T}_r$ 和 $\mathcal{T}_c$ 分别是行归一化和列归一化. $t_{\max}\to\infty$ 时这一过程收敛到双随机矩阵 $\mathcal{H}_l^{\mathrm{res}}=\mathbf{M}^{(t_{\max})}$. 实验中我们取 $t_{\max}=20$ 作为实用值.
+
+### 4.3. Efficient Infrastructure Design · 高效基础设施设计
+
+
+本节详细说明为 mHC 定制的基础设施设计. 经过严格优化, 我们在大规模模型中实现了 $n=4$ 的 mHC, 训练开销只多 6.7%.
+
+### 4.3.1. Kernel Fusion · 内核融合
+
+
+
+
+我们观察到 mHC 中的 RMSNorm 作用在高维隐状态 $\vec{\mathbf{x}}_l\in\mathbb{R}^{1\times nC}$ 上时延迟明显, 于是把「除以范数」这一步挪到矩阵乘之后. 这一优化保持数学等价, 同时提高效率. 此外, 我们用混合精度策略在不损失速度的前提下尽量提高数值精度, 并把共享访存的多个操作融合进统一的计算内核, 缓解显存带宽瓶颈. 基于式 (10) 到 (13) 给出的输入和参数, 我们实现了三个专用 mHC 内核来计算 $\mathcal{H}_l^{\mathrm{pre}}$, $\mathcal{H}_l^{\mathrm{post}}$ 和 $\mathcal{H}_l^{\mathrm{res}}$. 在这些内核里, 偏置和线性投影分别合并成 $\mathbf{b}_l$ 和 $\varphi_l$, RMSNorm 的权重也吸收进 $\varphi_l$.
+
+
+式 (14) 到 (15): 我们开发了一个统一内核, 把对 $\vec{\mathbf{x}}_l$ 的两次扫描融合在一起, 借助矩阵乘单元把显存带宽利用率拉满. 反向传播包含两次矩阵乘, 同样合进一个内核, 免去重复加载 $\vec{\mathbf{x}}_l$. 两个内核都有精细调过的流水 (加载, 类型转换, 计算, 写回), 高效处理混合精度.
+
+
+• 式 (16) 到 (18): 这些对小系数的轻量操作被顺势融合进一个内核, 显著降低内核启动开销.
+
+
+• 式 (19): Sinkhorn-Knopp 迭代在单个内核内完成. 反向传播用我们推导的自定义内核, 在片上重算中间结果并完整走一遍迭代.
+
+$$
+\varphi_ {l}: \text {tfloat32} \quad [ n C, n ^ {2} + 2 n ]\tag{10}
+$$
+
+$$
+\vec {\mathbf {x}} _ {l}: \text {bfloat16} \quad [ 1, n C ]\tag{11}
+$$
+
+$$
+\alpha_ {l} ^ {\text {pre}}, \alpha_ {l} ^ {\text {post}}, \alpha_ {l} ^ {\text {res}}: \text {float32} \quad \text {Scalars}\tag{12}
+$$
+
+$$
+\mathbf {b} _ {l}: \text {float32} \quad [ 1, n ^ {2} + 2 n ]\tag{13}
+$$
+
+$$
+\left[ \tilde {\mathcal {H}} _ {l} ^ {\text {pre}}, \tilde {\mathcal {H}} _ {l} ^ {\text {post}}, \tilde {\mathcal {H}} _ {l} ^ {\text {res}} \right]: \text {float32} \quad = \vec {\mathbf {x}} _ {l} \varphi_ {l}\tag{14}
+$$
+
+$$
+r: \text {float32} \quad = \left\| \vec {\mathbf {x}} _ {l} \right\| _ {2} / \sqrt {n C}\tag{15}
+$$
+
+$$
+\left[ \tilde {\mathcal {H}} _ {l} ^ {\mathrm{pre}}, \tilde {\mathcal {H}} _ {l} ^ {\mathrm{post}}, \tilde {\mathcal {H}} _ {l} ^ {\mathrm{res}} \right]: \text {float32} \quad = 1 / r \left[ \alpha_ {l} ^ {\mathrm{pre}} \tilde {\mathcal {H}} _ {l} ^ {\mathrm{pre}}, \alpha_ {l} ^ {\mathrm{post}} \tilde {\mathcal {H}} _ {l} ^ {\mathrm{post}}, \alpha_ {l} ^ {\mathrm{res}} \tilde {\mathcal {H}} _ {l} ^ {\mathrm{res}} \right] + \mathbf {b} _ {l}\tag{16}
+$$
+
+$$
+\left| \mathcal {H} _ {l} ^ {\mathrm{pre}}: \text {float32} \right. \quad = \sigma \left(\tilde {\mathcal {H}} _ {l} ^ {\mathrm{pre}}\right)\tag{17}
+$$
+
+$$
+\left| \begin{array}{l} \mathcal {H} _ {l} ^ {\text {post}}: \text {float32} \end{array} \right. = 2 \sigma \left(\tilde {\mathcal {H}} _ {l} ^ {\text {post}}\right)\tag{18}
+$$
+
+$$
+\mathcal {H} _ {l} ^ {\text {res}}: \text {float32} \quad = \text {Sinkhorn - Knopp} \left(\tilde {\mathcal {H}} _ {l} ^ {\text {res}}\right)\tag{19}
+$$
+
+
+上述系数通过两个内核作用于残差状态: 第一个计算 $\mathcal{F}_{\mathrm{pre}}:=\mathcal{H}_l^{\mathrm{pre}}\mathbf{x}_l$, 第二个计算 $\mathcal{F}_{\mathrm{post,res}}:=\mathcal{H}_l^{\mathrm{res}}\mathbf{x}_l+\mathcal{H}_l^{\mathrm{post}\top}\mathcal{F}(\cdot,\cdot)$. 把 $\mathcal{H}_l^{\mathrm{post}}$ 和 $\mathcal{H}_l^{\mathrm{res}}$ 的施加与残差合并融合后, 这个内核读的元素数从 $(3n+1)C$ 降到 $(n+1)C$, 写的元素数从 $3nC$ 降到 $nC$. 大部分内核 (式 (14) 到 (15) 除外) 用 TileLang (Wang et al., 2025) 高效实现. 这个框架简化了计算流程复杂的内核的实现, 以较少工程量充分利用显存带宽.
+
+### 4.3.2. Recomputing · 重计算
+
+
+
+
+$n$ 流残差设计在训练时带来可观的显存开销. 为缓解这一点, 我们在前向结束后丢弃 mHC 内核的中间激活, 反向传播时重新执行 mHC 内核 (不执行沉重的层函数 $\mathcal{F}$) 即时算回来. 这样, 对连续 $L_r$ 层组成的一个块, 只需存第一层的输入 $\mathbf{x}_{l_0}$. 不计轻量的系数, 但计入 $\mathcal{F}$ 内部的 pre-norm, 表 3 汇总了为反向传播保留的中间激活.
+
+
+
+mHC 内核的重计算以连续 $L_r$ 层为一块进行. 总共 $L$ 层时, 必须为所有 $\lceil L/L_r\rceil$ 个块常驻保存首层输入 $\mathbf{x}_{l_0}$ 供反向使用. 除这部分常驻显存外, 重计算过程还为当前处理的块带来 $(n+2)C\times L_r$ 个元素的临时显存, 它决定了反向传播时的峰值显存. 因此我们通过最小化与 $L_r$ 对应的总显存来确定最优块大小 $L_r^*$:
+
+$$
+\left| L _ {r} ^ {*} = \arg \min _ {L _ {r}} \left[ n C \times \left\lceil \frac {L}{L _ {r}} \right\rceil + (n + 2) C \times L _ {r} \right] \approx \sqrt {\frac {n L}{n + 2}}. \right|\tag{20}
+$$
+
+
+此外, 大规模训练中的流水线并行带来一个限制: 重计算块不能跨流水线阶段边界. 我们观察到理论最优值 $L_r^*$ 通常与每个流水阶段的层数相当, 所以选择让重计算边界与流水阶段对齐.
+
+### 4.3.3. Overlapping Communication in DualPipe · 在 DualPipe 中重叠通信
+
+
+大规模训练中, 流水线并行是降低参数与梯度显存占用的标准做法. 我们采用 DualPipe 调度 (Liu et al., 2024b), 它能有效重叠跨节点互联的通信流量, 例如专家并行和流水线并行中的通信. 但与单流设计相比, mHC 的 $n$ 流残差让流水阶段之间的通信延迟大幅增加. 另外在阶段边界上, 对全部 $L_r$ 层重算 mHC 内核也带来不可忽略的计算开销. 为解决这些瓶颈, 我们扩展了 DualPipe 调度 (见图 4), 在流水阶段边界上更好地重叠通信与计算.
+
+
+为了不阻塞通信流, 我们把 MLP (即 FFN) 层的 $\mathcal{F}_{\mathrm{post,res}}$ 内核放在一条专用的高优先级计算流上执行. 我们还避免在注意力层的长时间操作中使用 persistent kernel, 以免造成长时间停顿. 这一设计让被重叠的注意力计算可以被抢占, 调度更灵活, 同时保持计算设备处理单元的高利用率. 另外, 每个阶段的初始激活 $\mathbf{x}_{l_0}$ 已在本地缓存, 重计算过程因此与流水线通信的依赖解耦.
+
+
+
+
+### 5. Experiments · 实验
+
+### 5.1. Experimental Setup · 实验设置
+
+
+我们通过语言模型预训练验证所提方法, 对基线, HC 和 mHC 做对比分析. 采用受 DeepSeek-V3 (Liu et al., 2024b) 启发的 MoE 架构, 训练四个模型变体以覆盖不同的评估情形. HC 和 mHC 的扩展率 $n$ 都设为 4. 主要关注对象是一个 27B 模型, 训练数据量与参数量成比例, 作为系统级主结果的研究对象. 在此基础上, 加入同样按比例配数据训练的 3B 和 9B 小模型分析算力扩展行为, 观察不同算力下的性能趋势. 另外为专门考察 token 扩展行为, 我们在固定的 1T token 语料上单独训练一个 3B 模型. 模型配置和训练超参数详见附录 A.1.
+
+### 5.2. Main Results · 主要结果
+
+
+
+
+
+
+
+我们先考察 27B 模型的训练稳定性与收敛. 如图 5(a) 所示, mHC 有效缓解了 HC 中出现的训练不稳定, 最终 loss 比基线低 0.021. 图 5(b) 的梯度范数分析进一步印证了稳定性的改善: mHC 的表现明显好于 HC, 保持了与基线相当的平稳曲线.
+
+
+
+
+表 4 给出多种基准上的下游表现 (Bisk et al., 2020; Cobbe et al., 2021; Hendrycks et al., 2020, 2021; Joshi et al., 2017; Zellers et al., 2019). mHC 带来全面提升, 始终优于基线, 并在多数任务上超过 HC. 与 HC 相比, mHC 进一步增强了模型的推理能力, 在 BBH (Suzgun et al., 2022) 上提升 2.1%, 在 DROP (Dua et al., 2019) 上提升 2.3%.
+
+### 5.3. Scaling Experiments · 扩展实验
+
+
+
+
+
+
+
+
+
+为评估方法的可扩展性, 我们报告不同规模下 mHC 相对基线的 loss 相对改善. 图 6(a) 画出跨 3B, 9B, 27B 参数的算力扩展曲线. 曲线表明, 即使在更高的算力预算下性能优势也能稳健保持, 只有轻微衰减. 此外, 图 6(b) 给出 3B 模型的 token 扩展曲线, 用来考察单次训练内的动态. 这些结果共同验证了 mHC 在大规模场景下的有效性. 我们内部的大规模训练实验也进一步印证了这一结论.
+
+
+
+
+
+
+
+
+
+### 5.4. Stability Analysis · 稳定性分析
+
+
+与图 3 类似, 图 7 展示 mHC 的传播稳定性. 理想情况下单层映射满足双随机约束, 前向信号增益和反向梯度增益都应等于 1. 但用 Sinkhorn-Knopp 算法的实际实现必须限制迭代次数以保证计算效率. 我们的设置用 20 次迭代得到近似解. 因此如图 7(a) 所示, 反向梯度增益略微偏离 1. 在图 7(b) 的复合情形中偏离增大, 但仍有界, 最大约 1.6. 与 HC 接近 3000 的最大增益相比, mHC 把它降低了三个数量级. 这些结果表明 mHC 相比 HC 显著增强了传播稳定性, 保证前向信号和反向梯度平稳流动. 此外图 8 展示了有代表性的映射. 我们观察到, HC 在最大增益很大时其他数值往往也偏大, 说明所有传播路径普遍不稳定. 相比之下, mHC 始终给出稳定的结果.
+
+> **停一下:** 为什么图 7(a) 只有反向增益偏离 1, 前向增益却是一条贴着 1 的直线?
+> 答: 式 (9) 每轮先列归一再行归一, 迭代停在第 $t_{\max}$ 轮时, 最后一步是行归一, 所以行和精确为 1, 列和只是近似为 1. 按 §3.1 的定义, 前向增益取最大绝对行和, 反向增益取最大绝对列和, 于是前向恒为 1, 截断误差全部落在列和上, 表现为反向增益偏离. 官方 TileKernels 的 Sinkhorn 实现最后一步是对 comb 矩阵做列归一, 而 `mhc_post_ref` 的 einsum `'abmn,abmc->abnc'` 等价于用 comb 的转置去乘残差流, 两者合起来同样是 $\mathcal{H}^{\mathrm{res}}$ 的行和精确为 1. 两种写法结论一致. 另外, 代码默认迭代 10 轮 (`repeat=10`), 并在指数化前先做 softmax 再加 $10^{-6}$, 正文写的是 20 轮, 也没有提到 eps.
+
+
+
+
+本文指出, 按 Hyper-Connections (HC) 的思路拓宽残差流, 让连接方式多样化, 确实带来性能提升, 但这些连接不受约束, 会导致信号发散. 这种破坏让信号能量无法跨层守恒, 引发训练不稳定, 阻碍深层网络扩展. 为此我们提出**流形约束超连接** (**mHC**), 一个把残差连接空间投影到特定流形上的通用框架. mHC 用 Sinkhorn-Knopp 算法对残差映射施加双随机约束, 把信号传播变成特征的凸组合. 实验结果证实 mHC 有效恢复了恒等映射性质, 实现稳定的大规模训练, 可扩展性优于常规 HC. 更关键的是, 借助高效的基础设施级优化, mHC 带来这些改进时的计算开销可以忽略.
+
+
+作为 HC 范式的通用扩展, mHC 为后续研究打开了几个有前景的方向. 本文用双随机矩阵保证稳定性, 但这个框架也容许针对特定学习目标探索其他流形约束. 我们预期, 进一步研究不同的几何约束, 可能得到更好地平衡可塑性与稳定性的新方法. 此外, 我们希望 mHC 重新唤起社区对宏观架构设计的兴趣. 通过加深对拓扑结构如何影响优化与表示学习的理解, mHC 将有助于突破当前的局限, 并可能为下一代基础架构的演进指出新路径.
