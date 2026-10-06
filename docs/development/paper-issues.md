@@ -432,6 +432,19 @@
 - **janusflow-9** 评测缺少人类偏好、安全、延迟、显存和吞吐指标. 求证结果:
 - **janusflow-10** Euler 求解没有与高阶求解器比较，少步采样的外推边界不明确. 求证结果:
 
+### Janus-Pro
+
+解析：`content/deepseek/01-模型技术报告/deepseek-janus-pro/deepseek-janus-pro-analysis.md`。
+
+- **janus-pro-1** 论文没有公开 7200 万合成美学图所用的生成模型、采样参数与过滤流程，生成数据无法独立复现. 求证结果:
+- **janus-pro-2** 阶段 II 计划 360K 步但在 270K 步早停，论文没有给出早停指标、验证曲线或 checkpoint 选择规则. 求证结果:
+- **janus-pro-3** 训练日程、理解数据、合成数据、任务比例和优化超参同时变化，缺少逐因素消融，Janus 到 Janus-Pro-1B 的增益无法拆分归因. 求证结果:
+- **janus-pro-4** 生成评测没有报告 FID、人类偏好、审美分或多 seed 方差，“画质与稳定性提升”主要依赖定性样例. 求证结果:
+- **janus-pro-5** GenEval 与 DPG-Bench 的采样温度、CFG、候选数量等完整推理设置没有披露，跨模型小幅差异包含未知采样因素. 求证结果:
+- **janus-pro-6** 9000 万理解数据和 7200 万合成数据没有公开去重、污染检查及详细来源构成，训练集与公开评测的重合风险无法复算. 求证结果:
+- **janus-pro-7** 论文只给 GPU 节点数与墙钟天数，没有 token 吞吐、packing 利用率、训练 FLOPs 或阶段级资源统计，1B/7B 的等算力效率无法比较. 求证结果:
+- **janus-pro-8** 论文承认 384 分辨率限制 OCR 和小脸细节，但理解表没有 OCR 专项结果，生成表也没有按对象尺度或文字渲染分项. 求证结果:
+
 ### DeepSeek-Prover-V2
 
 解析：`content/deepseek/01-模型技术报告/deepseek-prover-v2/deepseek-prover-v2-analysis.md`。
