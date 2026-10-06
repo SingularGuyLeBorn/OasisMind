@@ -1,6 +1,6 @@
 ---
 title: "持续学习 Continual Learning (含 TTT)"
-description: 从 EWC, 回放, 参数隔离到 TTT: 模型训完之后怎样继续学, 学了怎样不忘
+description: "从 EWC, 回放, 参数隔离到 TTT: 模型训完之后怎样继续学, 学了怎样不忘"
 published: true
 ---
 # 持续学习

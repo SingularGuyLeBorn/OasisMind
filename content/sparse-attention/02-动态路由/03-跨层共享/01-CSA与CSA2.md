@@ -1,5 +1,5 @@
 ---
-title: CSA、HCA 与 CSA2: 压缩序列上的稀疏检索和跨层复用
+title: "CSA、HCA 与 CSA2: 压缩序列上的稀疏检索和跨层复用"
 description: 解析 DeepSeek V4 的 CSA/HCA 混合层及 V4.1 Flash 的 Full、Reindex、Reuse 三模式, 核算 KV、索引和层排布.
 published: true
 ---

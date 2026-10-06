@@ -1,6 +1,6 @@
 ---
 title: "源神启动! DeepSeek"
-description: DeepSeek 一家的论文与开源仓库: 模型技术报告, 架构与算法论文, 系统论文, 基础设施代码, 每篇都有对照译稿与技术解析
+description: "DeepSeek 一家的论文与开源仓库: 模型技术报告, 架构与算法论文, 系统论文, 基础设施代码, 每篇都有对照译稿与技术解析"
 published: true
 ---
 # 源神启动! DeepSeek

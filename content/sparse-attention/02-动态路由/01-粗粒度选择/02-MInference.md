@@ -1,5 +1,5 @@
 ---
-title: MInference: 按 head 模式加速长上下文 Prefill
+title: "MInference: 按 head 模式加速长上下文 Prefill"
 description: 解析 MInference 的离线模式搜索、在线稀疏索引、三类 GPU kernel、数值计算与质量性能边界.
 published: true
 ---

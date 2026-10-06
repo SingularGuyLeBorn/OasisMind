@@ -3,7 +3,7 @@ title: "Loss-Free Balancing: 只管选择的专家偏置如何替代 MoE 辅助�
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "MoE", "负载均衡", "路由"]
 published: true
-excerpt: "Loss-Free Balancing 给每个路由专家一个只参与 Top-K 排序的偏置 $b_i$, 每步按 batch 负载的符号更新 $u=0.001$, 在 1B 和 3B DeepSeekMoE 上把 $\mathrm{MaxVio}_{\mathrm{global}}$ 从 0.72 和 0.52 压到 0.04, 困惑度略降; DeepSeek-V3 沿用了这套做法, 并补了一个极小的序列级均衡损失."
+excerpt: 'Loss-Free Balancing 给每个路由专家一个只参与 Top-K 排序的偏置 $b_i$, 每步按 batch 负载的符号更新 $u=0.001$, 在 1B 和 3B DeepSeekMoE 上把 $\mathrm{MaxVio}_{\mathrm{global}}$ 从 0.72 和 0.52 压到 0.04, 困惑度略降; DeepSeek-V3 沿用了这套做法, 并补了一个极小的序列级均衡损失.'
 ---
 # Loss-Free Balancing: 只管选择的专家偏置如何替代 MoE 辅助损失
 

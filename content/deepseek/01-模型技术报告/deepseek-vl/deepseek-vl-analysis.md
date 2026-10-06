@@ -3,7 +3,7 @@ title: "DeepSeek-VL 技术解析: 混合视觉编码器与先保语言的多模�
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析", "多模态", "视觉语言模型", "SigLIP"]
 published: true
-excerpt: "DeepSeek-VL 用 SigLIP $384$ 加 SAM-B $1024$ 的混合编码器把一张图压成 $576$ 个 token, 再让纯文本在联合预训练里占 $70\%$ 来保住语言能力; 1.3B 版只用 SigLIP, 官方代码的 SAM 支路还多一个论文没写的跨层 $\alpha$ 项."
+excerpt: 'DeepSeek-VL 用 SigLIP $384$ 加 SAM-B $1024$ 的混合编码器把一张图压成 $576$ 个 token, 再让纯文本在联合预训练里占 $70\%$ 来保住语言能力; 1.3B 版只用 SigLIP, 官方代码的 SAM 支路还多一个论文没写的跨层 $\alpha$ 项.'
 ---
 
 # DeepSeek-VL: 混合视觉编码器与先保语言的多模态预训练

@@ -1,5 +1,5 @@
 ---
-title: LongLoRA: 用S²-Attn完成长上下文微调
+title: "LongLoRA: 用S²-Attn完成长上下文微调"
 description: 推导Shifted Sparse Attention的分组与平移, 分析参数适配、位置扩展、训练成本和部署边界.
 published: true
 ---
