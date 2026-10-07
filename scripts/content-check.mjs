@@ -4,6 +4,7 @@
  * 2. links       正文里的相对链接与图片必须在磁盘上真实存在
  * 3. frontmatter 入库的 md 必须有 frontmatter 且含 title（om-sync 缺 title 时会拿路径当标题）
  * 4. markers     读者可见正文不得残留审稿批注
+ * 5. structure   正文标题数量与单节跨度不得退化成扩写内容堆在末节
  *
  * 用法：node scripts/content-check.mjs [files|links|frontmatter|markers ...] [--list]
  * 不带检查名 = 全部；--list 打印每条问题，否则只打印汇总与前 20 条。有问题时退出码 1。
@@ -140,7 +141,49 @@ function checkMarkers(mdFiles) {
   return issues;
 }
 
-const CHECKS = { files: checkFiles, links: checkLinks, frontmatter: checkFrontmatter, markers: checkMarkers };
+function checkStructure(mdFiles) {
+  const issues = [];
+  for (const f of mdFiles) {
+    const r = path.relative(CONTENT, f).replace(/\\/g, "/");
+    if (r.startsWith("model-library/") || r.endsWith("-bi.md")) continue;
+
+    const lines = stripCode(fs.readFileSync(f, "utf8")).split(/\r?\n/);
+    const headings = [];
+    lines.forEach((line, index) => {
+      const m = line.match(/^(#{2,4})\s+(.+)/);
+      if (m) headings.push({ index, level: m[1].length, title: m[2].trim() });
+    });
+
+    const h2 = headings.filter((h) => h.level === 2).length;
+    const h3 = headings.filter((h) => h.level === 3).length;
+    const h4 = headings.filter((h) => h.level === 4).length;
+    if (h2 > 7) issues.push(`${rel(f)}  二级标题 ${h2} 个，超过 7 个`);
+    if (h3 > 16) issues.push(`${rel(f)}  三级标题 ${h3} 个，超过 16 个`);
+    if (h4) issues.push(`${rel(f)}  含 ${h4} 个四级标题，请改为同一论证节内的段落路标`);
+
+    headings.forEach((heading, i) => {
+      if (heading.level !== 3) return;
+      const next = headings.slice(i + 1).find((h) => h.level <= 3);
+      const body = lines.slice(heading.index + 1, next?.index ?? lines.length);
+      const nonEmpty = body.filter((line) => line.trim()).length;
+      const chars = body.join("\n").length;
+      if (nonEmpty >= 80 && chars >= 7000) {
+        issues.push(
+          `${rel(f)}:${heading.index + 1}  「${heading.title}」下有 ${nonEmpty} 个非空行、${chars} 字符`,
+        );
+      }
+    });
+  }
+  return issues;
+}
+
+const CHECKS = {
+  files: checkFiles,
+  links: checkLinks,
+  frontmatter: checkFrontmatter,
+  markers: checkMarkers,
+  structure: checkStructure,
+};
 
 function main() {
   const args = process.argv.slice(2);
