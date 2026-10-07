@@ -239,6 +239,8 @@ Google 工程师内部流传着许多关于 Jeff Dean 的"神话"[^17][^48]:
 
 这些玩笑背后是工程师文化对他技术权威的认可.在硅谷,Dean 与 Ghemawat 是唯二获得过 Google 最高技术荣誉 **Senior Fellow** 的员工.
 
+### 访谈、合作与工程方法
+
 **长期搭档:Jeff Dean × Sanjay Ghemawat 与<Performance Hints>**
 
 Dean 职业生涯中最重要的技术伙伴关系是与 **Sanjay Ghemawat** 的合作.二人 1999 年前后同时从 DEC 加入 Google,共同打造 MapReduce,GFS,Bigtable,Spanner 与 Pathways 等系统,并因共同获得 **2012 年 ACM-Infosys Foundation 计算科学奖** 而闻名[^36].<纽约客>在 *The Friendship That Made Google Huge* 一文中详细描绘了他们二人**同一张桌子结对编程**的工作方式:一人打字,另一人持续 review,保持共享心智模型,把 ego 降到最低,代码归属团队而非个人[^44].
@@ -301,6 +303,8 @@ Dean 还讨论了当时 AI 的几个关键趋势:
 这次播客也展示了 Dean 对 AI  democratization(民主化)的重视.他认为,Google 不仅要自己使用最先进的 AI,还要通过 Google Cloud,TensorFlow,开放数据集和研究论文,让外部开发者,学术研究者,初创企业也能获得类似能力.这种"内部先行,外部扩散"的模式,与后来 Vertex AI,Gemini API 的发布逻辑完全一致.
 
 Dean 还强调,AI 研究的速度正在加快,五年内(2018–2023)语言模型,图像生成,多模态理解等领域都会发生显著变化.事后回顾,这一预测高度准确:Transformer,BERT,GPT,Stable Diffusion,Gemini 等模型都在这一周期内涌现,而 Dean 领导的 Google Brain/DeepMind 正是这些变化的核心推动者之一.
+
+### 近年的模型、算力与组织判断
 
 **2024 Purdue 讲座:机器学习五大趋势**
 
