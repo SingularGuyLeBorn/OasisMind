@@ -37,7 +37,7 @@ describe("editorAgentComplete", () => {
       after: "后文BBB",
       paragraph: "这里应该是例子",
       title: "持续学习",
-      garden: "llm-guide",
+      garden: "LargeLanguageModelGuide",
       slug: "4.7",
     });
     expect(p).toContain("在这里写一个 LoRA 例子");
@@ -125,7 +125,7 @@ describe("editorAgentComplete", () => {
     const res = await completeEditorWithAgent(services as never, {
       agentId: "clagent00000000000000000001",
       instruction: "加一张图",
-      garden: "llm-guide",
+      garden: "LargeLanguageModelGuide",
       postId: "clxxxxxxxxxxxxxxxxxxxxxxxx",
     });
     expect(res.content).toContain("fig-001.png");
@@ -133,7 +133,7 @@ describe("editorAgentComplete", () => {
       "generate_illustration",
       expect.objectContaining({
         prompt: "linear attention figure",
-        garden: "llm-guide",
+        garden: "LargeLanguageModelGuide",
         postId: "clxxxxxxxxxxxxxxxxxxxxxxxx",
       }),
       expect.anything(),

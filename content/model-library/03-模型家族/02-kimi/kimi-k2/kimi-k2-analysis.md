@@ -23,7 +23,7 @@ k1.5 把 Kimi 的叙事重心放在 RL 上, 底座结构一个字没提. K2 反�
 
 ### 2.1. 1.04T 总参, 32B 激活: 稀疏度和头数的取舍
 
-Table 2 把 K2 和 DeepSeek-V3 并排比较. 层数都是 61, 隐宽 7168, 专家中间维 2048; 总参从 671B 涨到 1.04T(↑54%), 激活参从 37B 降到 32.6B(↓13%), 专家总数从 256 涨到 384, 每个 token 仍激活 8 个路由专家加 1 个共享专家, 注意力头从 128 砍到 64, 前置稠密层从 3 层减到 1 层, V3 的专家分组(Expert Grouping)在 K2 里去掉了. 细粒度专家加共享专家的机制见 [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md), MLA 的低秩 KV 压缩和解耦 RoPE 见 [04-MLA-低秩潜变量与矩阵吸收](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md).
+Table 2 把 K2 和 DeepSeek-V3 并排比较. 层数都是 61, 隐宽 7168, 专家中间维 2048; 总参从 671B 涨到 1.04T(↑54%), 激活参从 37B 降到 32.6B(↓13%), 专家总数从 256 涨到 384, 每个 token 仍激活 8 个路由专家加 1 个共享专家, 注意力头从 128 砍到 64, 前置稠密层从 3 层减到 1 层, V3 的专家分组(Expert Grouping)在 K2 里去掉了. 细粒度专家加共享专家的机制见 [01-DeepSeek-MoE](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md), MLA 的低秩 KV 压缩和解耦 RoPE 见 [04-MLA-低秩潜变量与矩阵吸收](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md).
 
 把专家加到 384 的依据是 Figure 5 的**稀疏度 Scaling Laws**. 报告把稀疏度定义为总专家数除以激活专家数, K2 是 384/8 = 48. 小规模控制实验里固定激活专家 8 个, 共享专家 1 个, 只增加总专家数, 训练和验证 loss 都随稀疏度升高而下降. 换算成算力: 要达到相同的验证 loss 1.5, 稀疏度 48 比稀疏度 8, 16, 32 分别省 1.69×, 1.39×, 1.15× FLOPs. 稀疏度再往上还能换分, 但专家并行的通信和负载均衡也更难做, 报告在性能和成本之间停在 48. 这条 Scaling Laws 是用 Muon 训练得到的, 与 AdamW 下的结论是否相同, 报告没有对照.
 
@@ -36,7 +36,7 @@ Figure 6 的实验设计是: 头数等于层数的配置, 对比头数翻倍的�
 
 ### 2.2. MuonClip: 换了优化器, 也换来新问题
 
-§2.1 先讲动机. 前作 Moonlight 的实验表明, 在同样的算力, 规模和数据量下, Muon 比 AdamW 更省 token. Muon 的更新先做动量, 再用 Newton-Schulz 迭代近似矩阵符号函数(msign), 让更新矩阵的奇异值趋于一致, 再乘系数对齐 Adam 的更新 RMS, 并加权重衰减. 机制见 [01-Muon优化器专题](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/01-Muon优化器专题/01-Muon优化器专题.md). 问题出在放大之后: 中等规模(9B 激活, 53B 总参)的 MoE 用原版 Muon 训练, Figure 2 左图里最大注意力 logit 很快超过 1000, 这个量级通常伴随 loss spike, 偶尔还会发散. 报告说这种现象在 Muon 下比在 AdamW 下更常见.
+§2.1 先讲动机. 前作 Moonlight 的实验表明, 在同样的算力, 规模和数据量下, Muon 比 AdamW 更省 token. Muon 的更新先做动量, 再用 Newton-Schulz 迭代近似矩阵符号函数(msign), 让更新矩阵的奇异值趋于一致, 再乘系数对齐 Adam 的更新 RMS, 并加权重衰减. 机制见 [01-Muon优化器专题](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/01-Muon优化器专题/01-Muon优化器专题.md). 问题出在放大之后: 中等规模(9B 激活, 53B 总参)的 MoE 用原版 Muon 训练, Figure 2 左图里最大注意力 logit 很快超过 1000, 这个量级通常伴随 loss spike, 偶尔还会发散. 报告说这种现象在 Muon 下比在 AdamW 下更常见.
 
 现成的办法都不合适. logit soft-cap 截的是进 softmax 前的值, Q 和 K 的点积本身仍可能继续涨; QK-Norm 需要完整的 Key, 而 MLA 推理时 Key 并不完整物化. **QK-Clip** 换了个思路, 不碰 logit, 改去压产生 logit 的权重. 信号是每个头在当前 batch 里进 softmax 前的最大值:
 
@@ -44,7 +44,7 @@ $$S_{\max}^h=\frac{1}{\sqrt d}\max_{\mathbf X\in B}\max_{i,j}\mathbf Q_i^h\mathb
 
 $i,j$ 是同一条样本里的 token 位置, 这个量在前向时已经算出, 不增加开销. 朴素版本对所有头一起缩放, $\mathbf W_q^h\leftarrow\gamma^{\alpha}\mathbf W_q^h$, $\mathbf W_k^h\leftarrow\gamma^{1-\alpha}\mathbf W_k^h$, 其中 $\gamma=\min(1,\tau/\max_h S_{\max}^h)$, $\alpha$ 通常取 0.5. 因为 logit 对 $\mathbf W_q$ 和 $\mathbf W_k$ 各是一次, 两边指数加起来为 1, 同一输入下 logit 恰好乘 $\gamma$, 最大值被压回 $\tau$; $\alpha$ 只决定这份缩放在 Q, K 两侧怎么分. 缩放发生在本步 Muon 更新之后, 本步的前向和反向不动, 管的是下一步. 实践中只有少数头会爆炸, 所以改成按头计算 $\gamma_h=\min(1,\tau/S_{\max}^h)$, 没超阈值的头 $\gamma_h=1$, 完全不受影响.
 
-MLA 上要多想一步. 每个头的 logit 由两部分相加: 无位置的 $q^C\cdot k^C$ 和带 RoPE 的 $q^R\cdot k^R$(这个拆法来自 MLA 的结构, 报告只列了缩放规则). 报告的规则是 $q^C$, $k^C$ 各乘 $\sqrt{\gamma_h}$, $q^R$ 乘 $\gamma_h$, 所有头共享的 $k^R$ 不动. 代进去, 第一部分乘 $\sqrt{\gamma_h}\cdot\sqrt{\gamma_h}=\gamma_h$, 第二部分乘 $\gamma_h\cdot 1=\gamma_h$, 整个 logit 仍然正好乘 $\gamma_h$, 和 MHA 下 $\alpha=0.5$ 的效果一致. $k^R$ 被所有头共用, 缩放它会连带改掉没出问题的头, 所以把 RoPE 那一份全部压到头独有的 $q^R$ 上. Algorithm 1 把 Muon, 权重衰减, RMS 对齐和 QK-Clip 合成一个优化器, 命名 **MuonClip**. 苏剑林在科学空间的文章里把 QK-Clip 定位为专门给 Muon 补的更新规则, 讲得比报告更直白, 相关整理见 [MuonClip 与 Polar Express](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/04-MuonClip与PolarExpress/04-MuonClip与PolarExpress.md).
+MLA 上要多想一步. 每个头的 logit 由两部分相加: 无位置的 $q^C\cdot k^C$ 和带 RoPE 的 $q^R\cdot k^R$(这个拆法来自 MLA 的结构, 报告只列了缩放规则). 报告的规则是 $q^C$, $k^C$ 各乘 $\sqrt{\gamma_h}$, $q^R$ 乘 $\gamma_h$, 所有头共享的 $k^R$ 不动. 代进去, 第一部分乘 $\sqrt{\gamma_h}\cdot\sqrt{\gamma_h}=\gamma_h$, 第二部分乘 $\gamma_h\cdot 1=\gamma_h$, 整个 logit 仍然正好乘 $\gamma_h$, 和 MHA 下 $\alpha=0.5$ 的效果一致. $k^R$ 被所有头共用, 缩放它会连带改掉没出问题的头, 所以把 RoPE 那一份全部压到头独有的 $q^R$ 上. Algorithm 1 把 Muon, 权重衰减, RMS 对齐和 QK-Clip 合成一个优化器, 命名 **MuonClip**. 苏剑林在科学空间的文章里把 QK-Clip 定位为专门给 Muon 补的更新规则, 讲得比报告更直白, 相关整理见 [MuonClip 与 Polar Express](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/04-MuonClip与PolarExpress/04-MuonClip与PolarExpress.md).
 
 效果看三张图. Figure 2 右图是正式 K2 训练, $\tau=$ 100: logit 开始被压在 100, 大约 30% 训练步之后才自然回落到正常区间, 全程没有调整 $\tau$. Figure 3 是逐步 loss, 没有平滑也没有抽稀, 看不到 spike. 附录 D 用更严的 $\tau=30$ 在小模型上做消融(Figure 12), loss 曲线几乎重合, 说明 QK-Clip 不伤收敛; 正式训练的前 70000 步里约 12.7% 的头至少触发过一次, 之后所有头的 $S_{\max}$ 都降到 100 以下, QK-Clip 实际上不再起作用. **它更像训练早期的护栏, 而不是全程生效的正则.**
 
@@ -71,7 +71,7 @@ $$\mathbf M_t=\mu\mathbf M_{t-1}+\mathbf G_t,\qquad \mathbf O_t=\mathrm{NS}(\mat
 
 Table 1 用早期 K2 检查点在 SimpleQA 上比较三种方案: 原始 wiki 文本复读 10 个 epoch 得 23.76; 改写 1 次再复读 10 个 epoch 得 27.39; 改写 10 次各训 1 遍得 28.94. 三种方案都让模型把这份知识过 10 遍, 差别在这 10 遍里有几个不同版本: 第一种是 1 个原文版本, 第二种是 1 个改写版本, 第三种是 10 个改写版本. 第一种到第二种只换了措辞, 重复次数不变, 涨 3.63; 第二种到第三种措辞都是改写的, 只把重复换成多样, 再涨 1.55. **改写比复读更能提高事实类分数**, 而且两部分增益能分开看. 改写后的文本长度是否与原文相当, 报告没说, 所以三种方案的训练 token 数是否严格相等无法确认. 但报告在大规模语料上把每份数据最多改写两次, 说明并没有把「改写 10 次」当成可以直接放大的默认方案, 同时承认幻觉, 毒性和跨域保真仍是开放问题. 整个语料分 Web, Code, Math, Knowledge 四个域, 共 15.5T token, 清洗流程大体沿用 k1.5. 数据这一面报告交代得比结构粗: 四个域各占多少比例, 改写数据占总量多少, tokenizer 词表多大, 去污染怎么做, 正文都没有给数字. 引言里有一句定位倒是很明确: 高质量人类数据越来越有限, token 效率正在成为 Scaling Laws 里的关键系数. MuonClip 和改写是从优化器与数据两头同时提高 token 效率, 这两件事在报告里是配套出现的.
 
-预训练课表(§2.5)是 4096 上下文, MuonClip 加 WSD 学习率: 500 步 warmup 后前 10T token 用恒定学习率 2e-4, 后 5.5T 余弦衰减到 2e-5; 权重衰减全程 0.1, 全局 batch 67M token. 尾段先退火再做长上下文激活, 学习率从 2e-5 降到 7e-6, 先用 4k 长度训 400B token, 再用 32k 训 60B token, 最后用 YaRN 扩到 128k, 机制见 [长度外推: 从 PI 到 YaRN](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md). 和 k1.5 直接把最大长度一路拉到 131,072 相比, K2 在 32k 之后改用频率外推收尾, 真正在长序列上训练的 token 量并不大. 长上下文能力是预训练尾段显式激活出来的, 这一点和 k1.5 一致.
+预训练课表(§2.5)是 4096 上下文, MuonClip 加 WSD 学习率: 500 步 warmup 后前 10T token 用恒定学习率 2e-4, 后 5.5T 余弦衰减到 2e-5; 权重衰减全程 0.1, 全局 batch 67M token. 尾段先退火再做长上下文激活, 学习率从 2e-5 降到 7e-6, 先用 4k 长度训 400B token, 再用 32k 训 60B token, 最后用 YaRN 扩到 128k, 机制见 [长度外推: 从 PI 到 YaRN](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md). 和 k1.5 直接把最大长度一路拉到 131,072 相比, K2 在 32k 之后改用频率外推收尾, 真正在长序列上训练的 token 量并不大. 长上下文能力是预训练尾段显式激活出来的, 这一点和 k1.5 一致.
 
 把课表换算成步数, 能和第 2.2 节的 QK-Clip 数据对上. 全局 batch 67M token, 15.5T token 约合 23 万步, 其中恒定学习率的 10T 约 15 万步. QK-Clip 在前 70000 步里活跃, 约占总步数的 30%, 与 Figure 2 右图「约 30% 训练步之后 logit 自然回落」的描述一致; 按 token 算, 这段时间大约对应前 4.7T token. 也就是说, **QK-Clip 只在恒定学习率阶段的前半段起作用**, 余弦衰减开始之前就已经完全退出. 学习率越大, 更新越猛, logit 越容易上涨, 护栏在大学习率阶段生效也符合直觉.
 
@@ -118,7 +118,7 @@ F.3 同时承认了副作用. 规则禁止自我限定和免责声明(例如「�
 
 $$L_{\mathrm{RL}}(\theta)=\mathbb{E}_{x\sim\mathcal D}\Big[\frac1K\sum_{i=1}^K\Big(r(x,y_i)-\bar r(x)-\tau\log\frac{\pi_\theta(y_i|x)}{\pi_{\mathrm{old}}(y_i|x)}\Big)^2\Big],\quad \bar r(x)=\frac1K\sum_{i=1}^K r(x,y_i)$$
 
-括号里 $r-\bar r$ 是组内相对奖励, 高于组均值的回答要求 $\log\pi_\theta/\pi_{\mathrm{old}}$ 为正, 即概率上调; $\tau$ 把这个对数比换算成奖励的量纲, $\tau$ 越大, 同样的奖励差只允许更小的概率变化, 起 KL 式约束的作用. 和 k1.5 的式子相比, k1.5 推导里的 $\tau\log Z$ 在这里直接写成了 $\bar r(x)$, 也就是把 k1.5「实践中用均值近似」那一步固定成定义; 优化器同样是 Muon. 它属于无 critic 的组内相对优化一族, 对照见 [02-GRPO](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), 区别仍是只减均值, 不除标准差.
+括号里 $r-\bar r$ 是组内相对奖励, 高于组均值的回答要求 $\log\pi_\theta/\pi_{\mathrm{old}}$ 为正, 即概率上调; $\tau$ 把这个对数比换算成奖励的量纲, $\tau$ 越大, 同样的奖励差只允许更小的概率变化, 起 KL 式约束的作用. 和 k1.5 的式子相比, k1.5 推导里的 $\tau\log Z$ 在这里直接写成了 $\bar r(x)$, 也就是把 k1.5「实践中用均值近似」那一步固定成定义; 优化器同样是 Muon. 它属于无 critic 的组内相对优化一族, 对照见 [02-GRPO](../../../../LargeLanguageModelGuide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md), 区别仍是只减均值, 不除标准差.
 
 在此之上加了三个设计, 报告的动机是任务类型变多后各域很难同时涨分. **Budget Control** 按任务类型给每条样本设 token 上限, 超出即截断并给惩罚, 惩罚记进 $r$, 这条回答在 $r-\bar r$ 里就更可能落成负项, 概率被压低; 各类任务的上限和惩罚值报告都没给. 它和 k1.5 长度奖励的差别在同一步计算上很清楚: k1.5 在组内按相对长度连续打分, 预算随这一组回答的长短浮动; K2 是按任务定死的硬上限, 预算内不管长短, 超了才罚. **PTX 辅助损失**把人工精选的高质量样本作为辅助项加回 RL 目标, 防止联合训练中遗忘, 也避免过拟合到训练里出现的有限任务; 报告只引了 PTX 的出处, 没写式子和权重. **温度衰减**针对创意写作和复杂推理, 早期高温采样鼓励探索, 后期降温求稳定, 衰减曲线没给.
 

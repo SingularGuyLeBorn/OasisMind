@@ -10,7 +10,7 @@ excerpt: "FlexOlmo 让每个数据拥有者以冻结的公共模型为锚训练�
 
 论文: Weijia Shi, Akshita Bhagia, Kevin Farhat, Sewon Min 等, 「FlexOlmo: Open Language Models for Flexible Data Use」, arXiv 2507.07024v4 (2025-08-23), NeurIPS 2025. 作者来自 Ai2, 华盛顿大学, UC Berkeley, 斯坦福和 MIT. 代码: [github.com/allenai/FlexOlmo](https://github.com/allenai/FlexOlmo); 权重: [allenai/FlexOlmo-7x7B-1T](https://huggingface.co/allenai/FlexOlmo-7x7B-1T) 与 `-RT` 版; 公共模型 `allenai/Flex-public-7B-1T`. 文中的代码行为均以仓库 `main` 分支的训练脚本和 HF `config.json` 为准.
 
-FlexOlmo 要解决的场景是: 若干机构各自持有不能外传的数据, 想合作训练一个语言模型, 而且每份数据在推理时能单独开关. 做法是把 MoE 的专家当作数据的载体, 一份数据只训练一个 FFN 专家和一行路由向量, 其余参数全部来自一个只见过公开数据的 dense 模型. 架构与参数量, 协调训练, 路由初始化, 推理时增删专家和数据提取风险由同一套模块边界串联起来. 公共模型的架构沿用 [OLMo 2](../olmo-2/olmo-2-analysis.md), MoE 的一般训练方式可对照 [OLMoE](../olmoe/olmoe-analysis.md) 和 [MoE 路由与 Top-K 可导性](../../../../llm-guide/2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).
+FlexOlmo 要解决的场景是: 若干机构各自持有不能外传的数据, 想合作训练一个语言模型, 而且每份数据在推理时能单独开关. 做法是把 MoE 的专家当作数据的载体, 一份数据只训练一个 FFN 专家和一行路由向量, 其余参数全部来自一个只见过公开数据的 dense 模型. 架构与参数量, 协调训练, 路由初始化, 推理时增删专家和数据提取风险由同一套模块边界串联起来. 公共模型的架构沿用 [OLMo 2](../olmo-2/olmo-2-analysis.md), MoE 的一般训练方式可对照 [OLMoE](../olmoe/olmoe-analysis.md) 和 [MoE 路由与 Top-K 可导性](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).
 
 ## 1. 问题设定与模型结构
 

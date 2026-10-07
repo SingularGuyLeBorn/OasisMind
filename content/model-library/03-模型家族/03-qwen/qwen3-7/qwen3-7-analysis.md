@@ -13,7 +13,7 @@ excerpt: "Qwen3.7-Max 只在 Alibaba Cloud Model Studio 通过 API 提供, 没�
 
 Qwen3.7-Max 只在 Alibaba Cloud Model Studio 通过 API 提供, 没有开源权重. 模型卡能说明的有三件: 它和五个对手在 41 行基准上各站在哪; 训练侧只公开了 environment scaling 的延续和 Task/Harness/Verifier 三分的 rollout 设计; 另外给了内核优化, RL 监控, YC-Bench 三个长程案例. 数据, 架构, 预训练这几面这一页没有, 能做的是把评测表读细, 把训练侧那两段话和社区对 agent RL 的已知做法对上.
 
-机制单独成篇. Agentic RL 训练: [13.4.1-AgenticRL训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md). 运行时环境与沙箱: [13.3.4-运行时环境与沙箱](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱/13.3.4-运行时环境与沙箱.md). Agent 安全与 reward hacking: [13.5.3-Agent安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md). 前代对照: [qwen3-6-analysis](../qwen3-6/qwen3-6-analysis.md).
+机制单独成篇. Agentic RL 训练: [13.4.1-AgenticRL训练](../../../../LargeLanguageModelGuide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md). 运行时环境与沙箱: [13.3.4-运行时环境与沙箱](../../../../LargeLanguageModelGuide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱/13.3.4-运行时环境与沙箱.md). Agent 安全与 reward hacking: [13.5.3-Agent安全与对齐](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md). 前代对照: [qwen3-6-analysis](../qwen3-6/qwen3-6-analysis.md).
 
 ## 1. 定位与对照表
 

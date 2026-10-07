@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { findPostByHref, resolvePostLinkTarget } from "../postHref";
 
 const posts = [
-  { slug: "ilya-30/15-attention-is-all-you-need", title: "Attention", garden: "classic-papers" },
-  { slug: "hippo-最优多项式投影记忆", title: "HiPPO", garden: "classic-papers" },
+  { slug: "ilya-30/15-attention-is-all-you-need", title: "Attention", garden: "ClassicPapers" },
+  { slug: "hippo-最优多项式投影记忆", title: "HiPPO", garden: "ClassicPapers" },
 ];
 
 describe("findPostByHref", () => {
@@ -26,8 +26,8 @@ describe("resolvePostLinkTarget", () => {
       resolvePostLinkTarget(
         "hippo-最优多项式投影记忆",
         posts,
-        "classic-papers/_garden",
-        "classic-papers",
+        "ClassicPapers/_garden",
+        "ClassicPapers",
       )?.slug,
     ).toBe("hippo-最优多项式投影记忆");
   });

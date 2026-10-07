@@ -288,7 +288,7 @@ describe("agentCron", () => {
       const out = (await executeNativeTool(
         "session_spawn_goal",
         {
-          prompt: "完成知乎面经搜集并写入 llm-interview 花园，至少入库 3 题并更新首页",
+          prompt: "完成知乎面经搜集并写入 LargeLanguageModelInterview 花园，至少入库 3 题并更新首页",
           model: "deepseek-chat",
           mode: "goal",
           title: `goal-run-${suffix}`,
@@ -314,7 +314,7 @@ describe("agentCron", () => {
       const goal = await readGoalStateRaw(out.newSessionId!);
       expect(goal?.status).toBe("active");
       expect(goal?.mode).toBe("goal");
-      expect(goal?.text).toContain("llm-interview");
+      expect(goal?.text).toContain("LargeLanguageModelInterview");
       expect(goal?.execModel).toBe("deepseek-chat");
     } finally {
       await cleanup(mgr.id, sub.id);

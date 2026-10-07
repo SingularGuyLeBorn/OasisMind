@@ -67,7 +67,7 @@ export const KNOWLEDGE_BOARD = [
   { id: "posts", title: "博客花园", meta: "公开长文 · 主展厅" },
   { id: "knowledge", title: "知识库", meta: "蒸馏笔记 · 可检索" },
   { id: "resources", title: "资源库", meta: "素材索引 · 清单" },
-  { id: "llm-guide", title: "LLM 指南", meta: "体系化入门" },
+  { id: "LargeLanguageModelGuide", title: "LLM 指南", meta: "体系化入门" },
   { id: "interview", title: "面试题集", meta: "刷题与复盘" },
   { id: "daily", title: "每日碎片", meta: "随记沉淀" },
 ] as const;

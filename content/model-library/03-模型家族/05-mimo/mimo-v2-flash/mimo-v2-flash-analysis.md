@@ -37,7 +37,7 @@ $$
 s_{ij}=\frac{\exp(a_{ij}-m_i)}{\exp(\mathrm{sink}-m_i)+\sum_{j'}\exp(a_{ij'}-m_i)},\qquad m_i=\max\big(\max_j a_{ij},\,\mathrm{sink}\big),\qquad o_i=\sum_j s_{ij}v_j .
 $$
 
-$\mathrm{sink}\in\mathbb{R}$ 每头一个, 只出现在分母; $m_i$ 在分子分母上同时减掉, 只防溢出, 不改结果. 把权重加起来, $\sum_j s_{ij}=1-p_i^{\mathrm{sink}}$, 其中 $p_i^{\mathrm{sink}}=e^{\mathrm{sink}}/\big(e^{\mathrm{sink}}+\sum_{j'}e^{a_{ij'}}\big)$. 窗内所有 key 的 logit 都明显低于 sink 时, $p_i^{\mathrm{sink}}\to1$, $o_i\to0$, 这个头这一步基本不输出; 没有 sink 时 $\sum_j s_{ij}=1$ 是硬约束, 窗内 128 个 key 再不相关也得把这 1 份权重分完. SWA 层的 $j$ 只取窗内位置, GA 层取全部前文, 公式相同. Table 2 的 「w/o sink」 关掉的就是分母里的 $\exp(\mathrm{sink}-m_i)$, 相当于 $\mathrm{sink}\to-\infty$. 背景见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md) 与 [高效注意力全景综述](../../../../llm-guide/2-核心原理与架构/2.3-注意力的高效实现/01-高效注意力全景综述/01-高效注意力全景综述.md).
+$\mathrm{sink}\in\mathbb{R}$ 每头一个, 只出现在分母; $m_i$ 在分子分母上同时减掉, 只防溢出, 不改结果. 把权重加起来, $\sum_j s_{ij}=1-p_i^{\mathrm{sink}}$, 其中 $p_i^{\mathrm{sink}}=e^{\mathrm{sink}}/\big(e^{\mathrm{sink}}+\sum_{j'}e^{a_{ij'}}\big)$. 窗内所有 key 的 logit 都明显低于 sink 时, $p_i^{\mathrm{sink}}\to1$, $o_i\to0$, 这个头这一步基本不输出; 没有 sink 时 $\sum_j s_{ij}=1$ 是硬约束, 窗内 128 个 key 再不相关也得把这 1 份权重分完. SWA 层的 $j$ 只取窗内位置, GA 层取全部前文, 公式相同. Table 2 的 「w/o sink」 关掉的就是分母里的 $\exp(\mathrm{sink}-m_i)$, 相当于 $\mathrm{sink}\to-\infty$. 背景见 [StreamingLLM 与 Attention Sink](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md) 与 [高效注意力全景综述](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.3-注意力的高效实现/01-高效注意力全景综述/01-高效注意力全景综述.md).
 
 消融在 32B 稠密代理上做, QK 维与 RoPE 配置和正式模型一致, 层数与 SWA:GA 比例报告没写: 同管线预训练 250B tokens (序列 8,192), 扩到 32,768 再训 40B, 然后 long-context SFT 与 reasoning SFT. Table 2 显示 $W=128$ 无 sink 全面掉分 (MMLU 54.9 vs All GA 57.3), 加 sink 后 MMLU 58.3, BBH 56.1, 反超 All GA. Table 3 长上下文上 $W=128$+sink 在 GSM-Infinite 17.3, NoLiMa 51.2, MRCR 34.4 优于或持平 All GA; $W=512$+sink 在 NoLiMa 38.5, MRCR 19.6 反而明显变差. Table 4 复杂推理平均 46.3 vs All GA 42.4. 三张表用的 checkpoint 阶段不同 (Table 2 未扩长的 base, Table 3 扩长后的 base 与 long-context SFT 模型, Table 4 reasoning SFT 模型), 不能横向当成同一权重上的数.
 
@@ -69,7 +69,7 @@ Table 6 的长上下文对照同样要看全行. GSM-Infinite Hard 从 16K 到 1
 
 ### 2.2. MTP: 同一个模块服务预训练, 解码和 RL rollout
 
-MTP 的用法承自 MiMo-7B, 时间表也一样: 预训练只挂 1 个 MTP head, 损失权重 Stage 1 为 0.3, Stage 2/3 为 0.1, 与 DeepSeek-V3 后半程调低 MTP 权重的节奏同型. 后训练再复制成 $K=3$ 层, 每块 0.33B, 结构刻意轻: dense FFN 而非 MoE, SWA (64/8, 窗 128) 而非 GA, 每个头吃主模型 hidden 与 token embedding. 开源同时放出三层 MTP 权重, 草稿模块被当成可交付物. MTP 的一般机制见 [MTP 单独成篇](../../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.1-多Token预测MTP/2.8.1-多Token预测MTP.md).
+MTP 的用法承自 MiMo-7B, 时间表也一样: 预训练只挂 1 个 MTP head, 损失权重 Stage 1 为 0.3, Stage 2/3 为 0.1, 与 DeepSeek-V3 后半程调低 MTP 权重的节奏同型. 后训练再复制成 $K=3$ 层, 每块 0.33B, 结构刻意轻: dense FFN 而非 MoE, SWA (64/8, 窗 128) 而非 GA, 每个头吃主模型 hidden 与 token embedding. 开源同时放出三层 MTP 权重, 草稿模块被当成可交付物. MTP 的一般机制见 [MTP 单独成篇](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.8-其他架构方向/2.8.1-多Token预测MTP/2.8.1-多Token预测MTP.md).
 
 §2.3 给了两条加速理由. 解码侧: 草稿多 token 让主模型一次并行校验, 抬高 FFN 与 attention 的算术强度, 又不按请求放大 KV I/O. RL 侧: 小 batch 的 on-policy 更新更稳, 但吃不满 GPU; 长尾序列到最后 batch 趋近 1, 空转最严重, MTP 用 token 级并行补回吞吐. 这与后面的 Data Scheduler 处理的是同一个痛点的两面: MTP 改单请求的算术强度, Data Scheduler 改序列什么时候回填.
 
@@ -79,7 +79,7 @@ MTP 的用法承自 MiMo-7B, 时间表也一样: 预训练只挂 1 个 MTP head,
 
 ### 3.1. 后训练主轴: 从分域教师到 MOPD
 
-Figure 3 / §4.1 把后训练分三步. Stage 1 通用 SFT, 解决指令跟随. Stage 2 训分域教师: agentic (search, coding, tool) 与 non-agentic (数学, 通识推理, 安全) 各自 RL 或 SFT. Stage 3 是 **MOPD** (Multi-Teacher On-Policy Distillation): 学生从自身分布采样, 由对应领域的教师逐 token 打分, 再叠加结果奖励. 报告的动机是把 RL 算力花在教师上, 再用蒸馏把多个专家合进一个学生, 避免参数合并的互相干扰和离线蒸馏的分布偏移. §4.1 把要解决的问题说成两个: 能力失衡, 提升一项技能会让另一项退步 (see-saw 效应); 学习低效, 合并多个专家时训练信号没被充分利用. 顺序多阶段训练容易出前者, 参数合并和离线蒸馏容易出后者. 机制单独成篇见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md) 与 [On-Policy Distillation 深度解析](../../../../llm-guide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md).
+Figure 3 / §4.1 把后训练分三步. Stage 1 通用 SFT, 解决指令跟随. Stage 2 训分域教师: agentic (search, coding, tool) 与 non-agentic (数学, 通识推理, 安全) 各自 RL 或 SFT. Stage 3 是 **MOPD** (Multi-Teacher On-Policy Distillation): 学生从自身分布采样, 由对应领域的教师逐 token 打分, 再叠加结果奖励. 报告的动机是把 RL 算力花在教师上, 再用蒸馏把多个专家合进一个学生, 避免参数合并的互相干扰和离线蒸馏的分布偏移. §4.1 把要解决的问题说成两个: 能力失衡, 提升一项技能会让另一项退步 (see-saw 效应); 学习低效, 合并多个专家时训练信号没被充分利用. 顺序多阶段训练容易出前者, 参数合并和离线蒸馏容易出后者. 机制单独成篇见 [MOPD 多教师在线蒸馏](../../../../LargeLanguageModelGuide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md) 与 [On-Policy Distillation 深度解析](../../../../LargeLanguageModelGuide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md).
 
 on-policy distillation 的来路要讲清, 才看得懂 MOPD 改了什么. 传统蒸馏让学生模仿教师写好的整段回答 (离线, 学生没见过自己犯错后的状态). GKD 提出让学生自己采样, 教师在学生走到的每个前缀上给 token 分布, 并指出 reverse KL 是 「mode seeking」 的, 学生会集中到教师高概率的那一种行为上, 而不是把概率摊到多个平庸选项. Thinking Machines 把逐 token 的 reverse KL 取负直接当作 RL 优势, 教师在学生采到的 token 上算 log-prob 即可, 不用枚举全词表. MOPD 在这个框架上加了两件事: 教师按 prompt 所属领域切换 (多教师), 以及可以再加上 GRPO 一类结果奖励.
 

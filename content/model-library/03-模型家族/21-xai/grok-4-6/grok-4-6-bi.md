@@ -84,7 +84,7 @@ We then used Grok 4.5 to regenerate the SFT trajectories across reasoning effort
 随后我们用 Grok 4.5 重新生成了 SFT 轨迹, 覆盖不同的推理强度 (reasoning efforts), 不同的 agent 框架 (agent harnesses), 以及 STEM, 软件工程, 知识工作等领域, 并用模型自动检查过滤掉有问题的轨迹. 这样得到的 SFT checkpoint 表现出很强的性能和更好的行为.
 
 > **确认:** 为什么用 Grok 4.5 重生成轨迹, 而不用更强的模型, 或者直接复用 4.5 当年训时的旧轨迹?
-> 页面只交代了做法, 没交代动机, 可以按常识补两层. 一是时间线: 生成 SFT 数据时 Grok 4.6 还不存在, 上一代的 Grok 4.5 就是手上最强的教师, 用它重生成比复用旧轨迹能得到质量更高, 风格更一致的数据. 二是「regenerate」这个词说明 4.5 自己当年训 SFT 时也有过一版轨迹, 现在是按新需求 (覆盖更多推理强度和 agent 框架) 重做一遍. 代价是学生的上限被教师压住, 教师的坏习惯也会一起蒸馏过去, 所以后一句紧跟了「filtered out problematic traces with model-based checks」——但检查器本身也是模型, 谁检查检查器, 页面没答. 用上一代模型给下一代造 SFT 数据的做法, 一般机制见 [OPD 与自蒸馏](../../../../llm-guide/4-后训练/4.9-OPD/4.9-OPD.md).
+> 页面只交代了做法, 没交代动机, 可以按常识补两层. 一是时间线: 生成 SFT 数据时 Grok 4.6 还不存在, 上一代的 Grok 4.5 就是手上最强的教师, 用它重生成比复用旧轨迹能得到质量更高, 风格更一致的数据. 二是「regenerate」这个词说明 4.5 自己当年训 SFT 时也有过一版轨迹, 现在是按新需求 (覆盖更多推理强度和 agent 框架) 重做一遍. 代价是学生的上限被教师压住, 教师的坏习惯也会一起蒸馏过去, 所以后一句紧跟了「filtered out problematic traces with model-based checks」——但检查器本身也是模型, 谁检查检查器, 页面没答. 用上一代模型给下一代造 SFT 数据的做法, 一般机制见 [OPD 与自蒸馏](../../../../LargeLanguageModelGuide/4-后训练/4.9-OPD/4.9-OPD.md).
 
 Grok 4.6 is trained on a wide range of agentic RL tasks, including knowledge work, general coding, and domain-specific environments for kernel optimization, web development, computer-aided design, and more.
 

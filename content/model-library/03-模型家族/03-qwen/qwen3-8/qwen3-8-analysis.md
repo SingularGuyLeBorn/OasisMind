@@ -21,7 +21,7 @@ $$
 S_t=\alpha_t\big(I-\beta_t k_t k_t^\top\big)S_{t-1}+\beta_t k_t v_t^\top \tag{1}
 $$
 
-$k_t, v_t$ 是当前 token 的 key 和 value, $\beta_t\in(0,1)$ 是写入强度. 式 (1) 说明状态大小与序列长度无关, decode 时这些层不需要随长度增长的 KV cache; 代价是前缀被压进有限的矩阵, 逐 token 的精确检索要靠剩下那 1/4 的 Gated Attention 层. Gated Attention ([Qiu 等, 2025](https://arxiv.org/abs/2505.06708)) 是在 SDPA 输出之后乘一个由 query 决定的 sigmoid 门, 再进输出投影. 两者的推导分别见 [KDA 一篇](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) 和 [Gated Attention 一篇](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md).
+$k_t, v_t$ 是当前 token 的 key 和 value, $\beta_t\in(0,1)$ 是写入强度. 式 (1) 说明状态大小与序列长度无关, decode 时这些层不需要随长度增长的 KV cache; 代价是前缀被压进有限的矩阵, 逐 token 的精确检索要靠剩下那 1/4 的 Gated Attention 层. Gated Attention ([Qiu 等, 2025](https://arxiv.org/abs/2505.06708)) 是在 SDPA 输出之后乘一个由 query 决定的 sigmoid 门, 再进输出投影. 两者的推导分别见 [KDA 一篇](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) 和 [Gated Attention 一篇](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md).
 
 [Qwen3.5](../qwen3-5/qwen3-5-analysis.md) (2026-02) 把这套混合结构搬到旗舰 397B-A17B 上, 博客写的是「基于 Qwen3-Next」, 并把词表从 150k 扩到 250k, 语言从 119 种扩到 201 种. [Qwen3.6](../qwen3-6/qwen3-6-analysis.md) 的 27B 模型卡写明 64 层, 布局 16 × (3 层 Gated DeltaNet + 1 层 Gated Attention), 和 3.5 是同一套骨架. [Qwen3.7-Max](../qwen3-7/qwen3-7-analysis.md) 只走 API, 规格没有公开. Qwen3.8-Max 回到「基于 Qwen3.5」的说法, 所以从 3.5 起, 旗舰线的 token 混合大概率一直是 3:1 混合; 3.8-Max 是否保留这个比例, 博客没有写.
 
@@ -62,7 +62,7 @@ Qwen3.7-Max 在 environment scaling 上加了一条具体设计: 每个训练实
 
 ## 3. 真实工作 RL
 
-博客的 Work 一节是全文唯一讲训练方法的地方. 目标是同时扩大 RL 环境和 RL 算力, 让通用工作能力在 QwenWork, Claude Code, Codex, OpenClaw, Hermes 几种 harness 上一起提升. 博客把它拆成三个互相耦合的问题: 环境怎么扩, 奖励怎么统一, batch 怎么配. 关于这一套 RL 的一般背景, 见 [Agentic RL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md).
+博客的 Work 一节是全文唯一讲训练方法的地方. 目标是同时扩大 RL 环境和 RL 算力, 让通用工作能力在 QwenWork, Claude Code, Codex, OpenClaw, Hermes 几种 harness 上一起提升. 博客把它拆成三个互相耦合的问题: 环境怎么扩, 奖励怎么统一, batch 怎么配. 关于这一套 RL 的一般背景, 见 [Agentic RL 训练](../../../../LargeLanguageModelGuide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md).
 
 环境按 Task, Workspace, Harness 三条轴各自分级. Task 从单任务到多任务, 再到跨多天的任务; Workspace 从多文件到分层目录, 再到复杂的异构目录; Harness 按类别, 版本和挂载的 skills 变化. 三轴独立, 组合数是乘法: 设三轴各有 $n_T, n_W, n_H$ 个取值, 可组合出的环境数是 $n_T n_W n_H$, 每加一个 harness 版本就多出 $n_T n_W$ 个环境, 不需要为每个新场景写一套定制集成.
 
@@ -80,7 +80,7 @@ $$
 
 $x$ 是题目, $k$ 是判据条数, $w_j$ 是第 $j$ 条的权重. 分母做了归一化, 判据条数和权重不同的题, 奖励落在同一个 $[0,1]$ 区间里. 这正是博客说的「尺度一致」要解决的问题. 论文的另一种做法是把全部判据交给裁判, 让它直接给一个整体分 (implicit aggregation). 论文在医学和科学两个领域做实验, 最好的变体相对直接让裁判打 Likert 分的基线, 在 HealthBench 上相对提升最高 31%. 这个结果和 3.8-Max 表里 HealthBench 60.2 (全表最高) 方向一致, 但博客没有说用的是哪种聚合, 裁判是哪个模型.
 
-agentic inspection 这一项在 Qwen 自己的材料里有前例. Qwen3.7-Max 被当作审查者接进 SWE 任务的 RL 监控, 在超过 80 小时里调用工具一万多次, 新增 13 条启发式规则. 3.8 把「让 agent 检查」写进奖励系统本身, 用途可能更宽: 检查渲染出的网页, 3D 场景, 生成的报告是否符合要求 (推测). LLM 裁判和 agent 检查都会被策略针对, 奖励模型过优化的一般机制见 [Best-of-N 与奖励模型过优化](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md). 博客没有给 hacking 率或裁判一致性的数字.
+agentic inspection 这一项在 Qwen 自己的材料里有前例. Qwen3.7-Max 被当作审查者接进 SWE 任务的 RL 监控, 在超过 80 小时里调用工具一万多次, 新增 13 条启发式规则. 3.8 把「让 agent 检查」写进奖励系统本身, 用途可能更宽: 检查渲染出的网页, 3D 场景, 生成的报告是否符合要求 (推测). LLM 裁判和 agent 检查都会被策略针对, 奖励模型过优化的一般机制见 [Best-of-N 与奖励模型过优化](../../../../LargeLanguageModelGuide/4-后训练/4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/01-Best-of-N-奖励模型过优化/01-Best-of-N-奖励模型过优化.md). 博客没有给 hacking 率或裁判一致性的数字.
 
 ### 3.2. 在线数据均衡: batch 的组成怎样影响梯度方差
 
@@ -94,7 +94,7 @@ $$
 
 按比例分层抽样 (每个 batch 里第 $k$ 层恰好占 $w_k B$ 条) 时, 层间项消失, 只剩 $\frac{1}{B}\sum_k w_k\sigma_k^2$. 这是抽样调查里的标准结果 ([Cochran, 1977](https://www.wiley.com/en-us/Sampling+Techniques%2C+3rd+Edition-p-9780471162407)). 式 (3) 说明, 不同 harness, 不同 workspace 上的梯度方向差得越远, 层间项越大, 随机拼 batch 带来的额外方差越大. 手算一个两层的例子 (仅示意): $w_1=w_2=0.5$, $\mu_1=1$, $\mu_2=-1$, $\sigma_1=\sigma_2=1$, $B=64$; 随机抽样时方差是 $(1+1)/64\approx0.031$, 分层后是 $1/64\approx0.016$, 减半.
 
-第二个机制在难度这一维. 博客没说用什么 RL 算法; 如果是 [GRPO](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 这类组内相对优势的算法, 同一道题采 $G$ 条回答, 第 $i$ 条的优势是
+第二个机制在难度这一维. 博客没说用什么 RL 算法; 如果是 [GRPO](../../../../LargeLanguageModelGuide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 这类组内相对优势的算法, 同一道题采 $G$ 条回答, 第 $i$ 条的优势是
 
 $$
 \hat A_i=\frac{r_i-\mathrm{mean}(r_1,\dots,r_G)}{\mathrm{std}(r_1,\dots,r_G)} \tag{4}

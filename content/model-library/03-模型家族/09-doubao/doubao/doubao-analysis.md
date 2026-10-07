@@ -19,7 +19,7 @@ excerpt: "目录名叫 doubao, 但整页没有出现 「Doubao」 或 「豆包�
 
 ## 2. 头条: Seed2.1 的一句话和三个去向
 
-Seed2.1 只配了一句话: 「A next-generation agent for real-world productivity」, 即面向真实世界生产力的新一代智能体. **把模型直接称作 agent, 而不是 language model**, 和 Seed2.1 模型卡的主线一致: 那份卡以通用 Agent, 生产级编程, 前沿研究和 Seed for Seed 四章组织, 评测也大量绑定 harness 和产品环境. Agent 训练与评测的一般讨论见 [Agentic RL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md) 和 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
+Seed2.1 只配了一句话: 「A next-generation agent for real-world productivity」, 即面向真实世界生产力的新一代智能体. **把模型直接称作 agent, 而不是 language model**, 和 Seed2.1 模型卡的主线一致: 那份卡以通用 Agent, 生产级编程, 前沿研究和 Seed for Seed 四章组织, 评测也大量绑定 harness 和产品环境. Agent 训练与评测的一般讨论见 [Agentic RL 训练](../../../../LargeLanguageModelGuide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练/13.4.1-AgenticRL训练.md) 和 [Benchmark 与 Eval](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 三个链接分工清楚. Learn more 进站内产品页 `/en/seed2_1`; Tech blog 进一篇 slug 为 `seed2-1-officially-released-advancing-ai-productivity` 的博客; Try now 跳到 BytePlus 的 playground, 参数是 `model=dola-seed-2-1-turbo-260628`. 这个 ID 带了标题没有的 `turbo` 后缀, 对应模型卡里的 Seed2.1 Turbo 一档; `260628` 形如 2026-06-28 的日期版本号, 这是按格式推断, 页面没有解释. 头条配图抓成一块纯黑矩形, 没有补充信息.
 
@@ -27,7 +27,7 @@ Seed2.1 只配了一句话: 「A next-generation agent for real-world productivi
 
 六条按日期倒序: 8 月 5 日音视频全双工大模型 (Audio), 7 月 31 日 Seedance 2.5 (Visual), 7 月 23 日 Seed STEM Fellows 项目开放 (Research programs), 7 月 20 日 Seed Audio 1.0 音频创作模型 (Audio), 7 月 8 日 Seedream 5.0 Pro (Visual), 7 月 7 日 EdgeBench (Frontier research). 按类别看是四条模型发布, 一条研究项目, 一条研究博客. 放在谱系里读, 这说明 2026 年的 Seed 已经不是 「一个旗舰语言模型加若干变体」, 而是**语言, 图像, 视频, 音频, 全双工语音各有独立产品线, 共用一个团队品牌**.
 
-几条标题各有可记的点. 第一条写 「Fully Multimodal」, URL 却写 「omni-modal」 并带 `seedrealtime` 前缀, 与第 3 页的 SeedRealtime 站内链接对得上名字; 1.5 代 pro 产品页已经把语音和文本 token 放进同一序列训练, 这条全双工模型是否由那条线演化而来, 页面没说. 全双工的一般讨论见 [Omni 与全双工](../../../../llm-guide/8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md). EdgeBench 标题说测量真实世界的环境学习并发现新的 Scaling Law, 但页面没有曲线和变量, 看不出这条规律描述的是部署前的规模投入还是部署后的环境交互量.
+几条标题各有可记的点. 第一条写 「Fully Multimodal」, URL 却写 「omni-modal」 并带 `seedrealtime` 前缀, 与第 3 页的 SeedRealtime 站内链接对得上名字; 1.5 代 pro 产品页已经把语音和文本 token 放进同一序列训练, 这条全双工模型是否由那条线演化而来, 页面没说. 全双工的一般讨论见 [Omni 与全双工](../../../../LargeLanguageModelGuide/8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md). EdgeBench 标题说测量真实世界的环境学习并发现新的 Scaling Law, 但页面没有曲线和变量, 看不出这条规律描述的是部署前的规模投入还是部署后的环境交互量.
 
 ## 4. 产品墙与这页的边界
 

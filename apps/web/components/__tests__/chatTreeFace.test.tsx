@@ -232,7 +232,7 @@ describe("Chat 树 / 瘦卡另存", () => {
                 originalChars: 8000,
                 metadata: {
                   hasError: true,
-                  shortFields: { error: "文件不存在: content/llm-guide/very/long/path.md" },
+                  shortFields: { error: "文件不存在: content/LargeLanguageModelGuide/very/long/path.md" },
                   fieldSizes: {},
                 },
               },
@@ -275,7 +275,7 @@ describe("Chat 树 / 瘦卡另存", () => {
               type: "tool",
               toolCallId: "c1",
               name: "native:post_list",
-              args: { garden: "llm-guide" },
+              args: { garden: "LargeLanguageModelGuide" },
               result: {
                 _om_persisted: true,
                 _om_result_path: "data/tool-results/s1/c1.json",

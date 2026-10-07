@@ -60,7 +60,7 @@ S, C
 
 默认（用户点名「还凑合」）：
 
-`content/llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/images/fig-gated-attn-g1-after-sdpa.png`
+`content/LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/images/fig-gated-attn-g1-after-sdpa.png`
 
 按拓扑换参考，不要按论文题目：
 

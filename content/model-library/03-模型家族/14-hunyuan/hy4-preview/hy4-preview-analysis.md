@@ -71,7 +71,7 @@ $$N_{\text{act}} \approx 77\times9\times37.7\text{M} + 23.0\text{B} \approx 49.2
 
 ### 2.3. MTP 和部署量级
 
-MTP 只有 1 层, vLLM 命令里却设了 3 个投机 token, 推理时应是把这一层重复调用来出多步草稿; SGLang 那边写的是 NEXTN, 3 步, 草稿 token 4 个. Hy3 的 MTP 层是 3.8B, 草稿长度 vLLM 2, SGLang 3. 两代 MTP 占主干的比例都约 1.3% (3.8/295 和 10/770), 和 2.1 估出的「Hy4 的 MTP 是一层与主干同构的 MoE 层」相符; Hy3 的 MTP 结构卡上没写, 比例相同只能说明它也随主干一起放大. GLM-5 走的是另一条路, 训练时 3 个 MTP 层共享参数, 缓解只训一层 MTP 时第二个草稿 token 接受率偏低的问题. Hy4 preview 是否做了类似处理, 模型卡没写. 机制见 [多 Token 预测 MTP](../../../../llm-guide/2-核心原理与架构/2.8-其他架构方向/2.8.1-多Token预测MTP/2.8.1-多Token预测MTP.md) 与 [投机解码原理与应用](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用/01-投机解码原理与应用.md).
+MTP 只有 1 层, vLLM 命令里却设了 3 个投机 token, 推理时应是把这一层重复调用来出多步草稿; SGLang 那边写的是 NEXTN, 3 步, 草稿 token 4 个. Hy3 的 MTP 层是 3.8B, 草稿长度 vLLM 2, SGLang 3. 两代 MTP 占主干的比例都约 1.3% (3.8/295 和 10/770), 和 2.1 估出的「Hy4 的 MTP 是一层与主干同构的 MoE 层」相符; Hy3 的 MTP 结构卡上没写, 比例相同只能说明它也随主干一起放大. GLM-5 走的是另一条路, 训练时 3 个 MTP 层共享参数, 缓解只训一层 MTP 时第二个草稿 token 接受率偏低的问题. Hy4 preview 是否做了类似处理, 模型卡没写. 机制见 [多 Token 预测 MTP](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.8-其他架构方向/2.8.1-多Token预测MTP/2.8.1-多Token预测MTP.md) 与 [投机解码原理与应用](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用/01-投机解码原理与应用.md).
 
 两段部署命令都加载 FP8 版, 8 路张量并行. 780B 的 FP8 权重约 780GB, 分到 8 张卡每张约 97.5GB, 80GB 的 H100 放不下, 至少要 H200 或 H20-3e 这一档 141GB 的卡, 剩下的约 40GB 每卡给 KV 缓存和激活. 页面没写 GPU 型号和显存要求, 这是按字节算的下限. vLLM 命令 `--speculative-config` 那一行末尾漏了续行反斜杠, 照抄会断成两条命令. 两个框架都有官方预构建镜像, `vllm/vllm-openai:hy4-preview` 和 `lmsysorg/sglang:hy4-preview`, 后者同时提供 x86 和 Arm 两种架构. 仓库还附了一套微调流程 (`finetune/README.md`); 量化一节只介绍腾讯的 AngelSlim 压缩工具包, 没说 FP8 版是不是用它量化的.
 
@@ -79,7 +79,7 @@ MTP 只有 1 层, vLLM 命令里却设了 3 个投机 token, 推理时应是把�
 
 ### 3.1. MLA 压缩和 1M 的 KV 缓存
 
-Hy3 的 GQA 每层每 token 存 8 个 K 头和 8 个 V 头, 头维 128. Hy4 preview 的 KV 压缩维 512 意味着每层每 token 只存一个 512 维的潜向量, 推理时把上投影矩阵吸收进 query 和输出投影, 所有头共用这份潜向量, 机制见 [MLA: 低秩潜变量与解耦 RoPE](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md) 与 [MLA 矩阵吸收与工程实现](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/04-MLA-矩阵吸收与工程实现/04-MLA-矩阵吸收与工程实现.md). 按 BF16 算每 token 的 KV 字节:
+Hy3 的 GQA 每层每 token 存 8 个 K 头和 8 个 V 头, 头维 128. Hy4 preview 的 KV 压缩维 512 意味着每层每 token 只存一个 512 维的潜向量, 推理时把上投影矩阵吸收进 query 和输出投影, 所有头共用这份潜向量, 机制见 [MLA: 低秩潜变量与解耦 RoPE](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md) 与 [MLA 矩阵吸收与工程实现](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/04-MLA-矩阵吸收与工程实现/04-MLA-矩阵吸收与工程实现.md). 按 BF16 算每 token 的 KV 字节:
 
 $$B_{\text{Hy3}} = 2\times80\times8\times128\times2 = 327{,}680,\qquad B_{\text{Hy4}} = 78\times(512+d_R)\times2 \tag{3}$$
 
@@ -107,7 +107,7 @@ IndexCache (arXiv 2603.12201) 的作者是 Z.ai 和清华的 GLM 团队, 这是�
 
 怎么决定哪些层保留, 论文给了两种. 不改权重的做法用贪心搜索, 在校准集上每次把一个 F 层翻成 S 层, 挑语言模型 loss 涨得最少的那个; 论文指出均匀间隔 (每 4 层留 1 层) 会掉点, 因为前部和过渡区的层对去掉 indexer 更敏感. 改权重的做法加一个多层蒸馏 loss, 让每个保留的 indexer 去拟合它服务的所有层的平均注意力分布, 这样均匀间隔也能追平原始 DSA. 实验模型是从 GLM-4.7-Flash (30B-A3B, 47 层 MLA) 改出来的 DSA 版, 在 200K 长度的 SFT 数据上先稠密预热 1000 步, 再稀疏训练 4000 步. 在这个模型上只留 1/4 的 indexer, 200K 上下文下 prefill 最多快 1.82 倍, decode 快 1.48 倍. 在 744B 的 GLM-5 上做的初步实验, 图 1 写去掉一半 indexer 端到端约 1.2 倍, 正文写至少 1.3 倍. GLM-5.2 的 IndexShare 在 78 层里只给 21 层留 indexer ([GLM-5.3-Flash 篇](../../13-glm/glm-5-3-flash/glm-5-3-flash-analysis.md)). Hy4 preview 留了几层, 用哪种方式定, 模型卡没写.
 
-同一问题还有别的解法. Qwen 的 QSA 不减 indexer 层数, 改成在层内把 indexer 要扫的序列变短, 理由是混合架构里全局层之间隔着几层线性注意力, 跨层共享的前提变弱 ([QSA](../../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/05-QSA-Qwen稀疏注意力/05-QSA-Qwen稀疏注意力.md)). Hy4 preview 是 78 层全注意力的纯 Transformer, 相邻层相似的前提更容易成立, 选跨层复用是顺理成章的.
+同一问题还有别的解法. Qwen 的 QSA 不减 indexer 层数, 改成在层内把 indexer 要扫的序列变短, 理由是混合架构里全局层之间隔着几层线性注意力, 跨层共享的前提变弱 ([QSA](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.4-稀疏注意力/05-QSA-Qwen稀疏注意力/05-QSA-Qwen稀疏注意力.md)). Hy4 preview 是 78 层全注意力的纯 Transformer, 相邻层相似的前提更容易成立, 选跨层复用是顺理成章的.
 
 ### 3.4. 长上下文的两条路与名字里的「Gated」
 
@@ -117,7 +117,7 @@ IndexCache (arXiv 2603.12201) 的作者是 Z.ai 和清华的 GLM 团队, 这是�
 
 ### 3.5. 残差: 4 条流的 iHC
 
-规格表的「Residual Streams 4」对应正文的 iHC (identity Hyper-Connections), 链接是一篇知乎专栏, 不是论文, 模型卡也没有复述做法. 能借来理解的是 Hyper-Connections 这一族. HC (arXiv 2409.19606) 把残差从一条 $C$ 维向量扩成 $n$ 条, 每层用三个小矩阵做读, 写和流间混合, 子层本身只算一次. DeepSeek 的 mHC (arXiv 2512.24880) 发现 HC 在 27B MoE 上不稳: 混合矩阵沿深度连乘, 复合增益峰值约 3000, 出现 loss 突刺. mHC 用 Sinkhorn-Knopp 把混合矩阵投到双随机矩阵上, $n=4$ 时复合增益降到约 1.6, 额外训练时间 6.7% ([Hyper-Connections 与 mHC](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)).
+规格表的「Residual Streams 4」对应正文的 iHC (identity Hyper-Connections), 链接是一篇知乎专栏, 不是论文, 模型卡也没有复述做法. 能借来理解的是 Hyper-Connections 这一族. HC (arXiv 2409.19606) 把残差从一条 $C$ 维向量扩成 $n$ 条, 每层用三个小矩阵做读, 写和流间混合, 子层本身只算一次. DeepSeek 的 mHC (arXiv 2512.24880) 发现 HC 在 27B MoE 上不稳: 混合矩阵沿深度连乘, 复合增益峰值约 3000, 出现 loss 突刺. mHC 用 Sinkhorn-Knopp 把混合矩阵投到双随机矩阵上, $n=4$ 时复合增益降到约 1.6, 额外训练时间 6.7% ([Hyper-Connections 与 mHC](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)).
 
 这组讨论的核心是「恒等通路」能不能保住: 浅层信号不经可学矩阵直达深层, 反向梯度里始终有一项单位阵. iHC 的名字强调 identity, 方向与此一致; 具体是把混合矩阵固定为单位阵, 还是另加约束, 页面没说. 4 条流的代价是残差读写量按流数放大, mHC 在 $n=4$ 时每层读约 $21C$, 写约 $13C$, 标准残差是 $2C$ 和 $C$. Hy4 preview 选 4 和 mHC 的设置相同.
 

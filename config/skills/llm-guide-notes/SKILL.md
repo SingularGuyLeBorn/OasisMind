@@ -5,7 +5,7 @@ icon: "BookOpen"
 trigger: "/llm-guide-notes"
 enabled: true
 kind: procedural
-tags: ["llm-guide", "writing"]
+tags: ["LargeLanguageModelGuide", "writing"]
 version: "1.0.0"
 ---
 
@@ -15,7 +15,7 @@ version: "1.0.0"
 
 ## 何时用
 
-用户要补 `content/llm-guide/` 笔记、对齐 MoE/MHA 文风、或执行 `CURSOR-GOAL-续写提示词.md`。
+用户要补 `content/LargeLanguageModelGuide/` 笔记、对齐 MoE/MHA 文风、或执行 `CURSOR-GOAL-续写提示词.md`。
 
 ## 见微硬约束
 

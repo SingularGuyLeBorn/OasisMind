@@ -40,7 +40,7 @@ excerpt: "打印时页面左下角一直叠着 axeptio 的 cookie 弹窗, 每页
 
 页面对架构只有两句定性描述: 「relies on standard architecture」 和 「a drop-in replacement in any system using Mistral 7B」. 「standard」 指什么, 页面没展开; 是不是稠密模型, 用什么注意力, 用什么位置编码, 都没写. 这意味着 「12B」 在本页只能当作名字里的量级标签来读, 不能拿它去算显存或 FLOPs.
 
-和上下文相关的数也只有一个: 「up to 128k tokens」. 页面两次提到 「large context window」, 但没有任何长上下文评测, 没说训练序列多长, 也没说 128k 在推理时对显存有什么要求. 长上下文技术的一般背景见本库 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md), 但 NeMo 具体用了其中哪一种, 本页没说.
+和上下文相关的数也只有一个: 「up to 128k tokens」. 页面两次提到 「large context window」, 但没有任何长上下文评测, 没说训练序列多长, 也没说 128k 在推理时对显存有什么要求. 长上下文技术的一般背景见本库 [长上下文与外推技术](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md), 但 NeMo 具体用了其中哪一种, 本页没说.
 
 ## 3. 表 1: 三行四列能读出什么
 
@@ -85,7 +85,7 @@ excerpt: "打印时页面左下角一直叠着 axeptio 的 cookie 弹窗, 每页
 
 压缩率也改变了 128k 的实际容量. 同样 128k 个 token, 按旧 tokenizer 计量大约装得下: 英文约 143k, 中文约 164k, 韩语约 284k, 阿拉伯语约 387k 旧 token 的内容 (按 128k × 压缩率). 反过来说, 表 1 和图 1 里的准确率和 token 数无关, 但凡是按 token 计价, 按 token 算吞吐的指标, 换 tokenizer 之后和旧模型不能直接比.
 
-压缩更好通常要付出词表更大的代价, 词表越大, 嵌入矩阵越大. 本页没印 Tekken 的词表大小, 这笔账算不了. 「85% of all languages」 同样无从核对: 分母是哪些语言没说, 也没有和 Llama 3 tokenizer 对比的图表. tokenizer 训练的一般做法见本库 [分词器与 Tokenizer](../../../../llm-guide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
+压缩更好通常要付出词表更大的代价, 词表越大, 嵌入矩阵越大. 本页没印 Tekken 的词表大小, 这笔账算不了. 「85% of all languages」 同样无从核对: 分母是哪些语言没说, 也没有和 Llama 3 tokenizer 对比的图表. tokenizer 训练的一般做法见本库 [分词器与 Tokenizer](../../../../LargeLanguageModelGuide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
 
 ## 6. 表 2 与指令微调
 
@@ -99,7 +99,7 @@ excerpt: "打印时页面左下角一直叠着 axeptio 的 cookie 弹窗, 每页
 
 部署相关的信息集中在第一段和最后一段. 基座和指令版都用 Apache 2.0 许可, 权重放 HuggingFace, 推理用 mistral-inference, 微调用 mistral-finetune; la Plateforme 上的名字是 open-mistral-nemo-2407, 后缀 2407 和 「July 18, 2024」 的年月对得上; NVIDIA 这边打包成 NIM 推理微服务, 放在 ai.nvidia.com.
 
-「trained with quantisation awareness, enabling FP8 inference without any performance loss」 是全文唯一和量化有关的句子. 没有 FP8 和高精度的对照分数, 没说量化了权重还是连激活一起, 也没说 「无损」 是在哪些基准上测的. FP8 相对 16 位格式能把权重存储减半, 这是格式本身的性质, 但 NeMo 的权重总量本页没印, 所以具体省多少也算不出. 相关背景见本库 [量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md) 和 [FP8 混合精度训练详解](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/02-FP8混合精度训练详解/02-FP8混合精度训练详解.md).
+「trained with quantisation awareness, enabling FP8 inference without any performance loss」 是全文唯一和量化有关的句子. 没有 FP8 和高精度的对照分数, 没说量化了权重还是连激活一起, 也没说 「无损」 是在哪些基准上测的. FP8 相对 16 位格式能把权重存储减半, 这是格式本身的性质, 但 NeMo 的权重总量本页没印, 所以具体省多少也算不出. 相关背景见本库 [量化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md) 和 [FP8 混合精度训练详解](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/02-FP8混合精度训练详解/02-FP8混合精度训练详解.md).
 
 「drop-in replacement」 和 Tekken 之间有张力. 换了 tokenizer, 同一段输入的 token 序列就变了, 旧系统里任何按 token 写死的逻辑 (截断长度, 计费, 缓存) 都要跟着改. 页面没说 「drop-in」 覆盖到哪一层, 更稳妥的理解是: 推理框架和调用方式不用改, tokenizer 要连模型一起换.
 

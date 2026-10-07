@@ -49,7 +49,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 ### 精读
 
-* [LongHorizon-Harness](../longhorizon/3-计划执行与系统/3.1-状态机与验证闭环/3.1.1-MEA状态循环.md)
+* [LongHorizon-Harness](../LongHorizonTask/3-计划执行与系统/3.1-状态机与验证闭环/3.1.1-MEA状态循环.md)
 
 ***
 
@@ -74,7 +74,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 **精读**
 
-* [Evolving User Intent](../longhorizon/2-状态记忆与恢复/2.1-目标演化与约束传播/2.1.1-演化意图的状态代数.md)
+* [Evolving User Intent](../LongHorizonTask/2-状态记忆与恢复/2.1-目标演化与约束传播/2.1.1-演化意图的状态代数.md)
 
 ***
 
@@ -125,9 +125,9 @@ Orchard 的启示:把 **Env(沙箱生命周期)** 与 **Harness(推理循环)** 
 
 ### 精读
 
-* [Code as Agent Harness](../longhorizon/3-计划执行与系统/3.2-可执行计划与工具语义/3.2.1-代码Harness与副作用.md)
-* [Orchard](../longhorizon/4-训练环境与案例/4.2-环境状态与可恢复训练/4.2.1-Orchard环境与轨迹.md)
-* [OpenForge RL](../longhorizon/4-训练环境与案例/4.1-轨迹生成与策略优化/4.1.1-OpenForge轨迹与训练接口.md)
+* [Code as Agent Harness](../LongHorizonTask/3-计划执行与系统/3.2-可执行计划与工具语义/3.2.1-代码Harness与副作用.md)
+* [Orchard](../LongHorizonTask/4-训练环境与案例/4.2-环境状态与可恢复训练/4.2.1-Orchard环境与轨迹.md)
+* [OpenForge RL](../LongHorizonTask/4-训练环境与案例/4.1-轨迹生成与策略优化/4.1.1-OpenForge轨迹与训练接口.md)
 
 ***
 
@@ -145,7 +145,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 
 **精读**
 
-* [RSIBench-Data](../rsi/5-可靠性与安全/5.2-评测与安全治理/5.2.1-评测基准.md)
+* [RSIBench-Data](../RecursiveSelfImprovement/5-可靠性与安全/5.2-评测与安全治理/5.2.1-评测基准.md)
 
 ***
 
@@ -166,7 +166,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 ### 精读 / 资源
 
 * Polaris
-* [Stanford CS329A Skill](../rsi/1-基础/1.1-边界与证据/1.1.2-定义与形式化.md)
+* [Stanford CS329A Skill](../RecursiveSelfImprovement/1-基础/1.1-边界与证据/1.1.2-定义与形式化.md)
 * [bilibili2skill](../resources/bilibili2skill/bilibili2skill.md)
 * 资源花园其它工具/创意 Skill:见 `resources/_garden.md`
 

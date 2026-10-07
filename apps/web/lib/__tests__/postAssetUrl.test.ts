@@ -6,20 +6,20 @@ describe("resolvePostAssetUrl", () => {
     expect(
       resolvePostAssetUrl("images/llm_evolution_timeline.png", {
         slug: "1-导论与基础/1.3-发展历程与趋势展望/1.3-发展历程与趋势展望",
-        garden: "llm-guide",
+        garden: "LargeLanguageModelGuide",
       }),
     ).toBe(
-      "/api/posts/assets/llm-guide/1-导论与基础/1.3-发展历程与趋势展望/images/llm_evolution_timeline.png",
+      "/api/posts/assets/LargeLanguageModelGuide/1-导论与基础/1.3-发展历程与趋势展望/images/llm_evolution_timeline.png",
     );
   });
 
   it("花园首页 _garden 配图落在花园根目录", () => {
     expect(
       resolvePostAssetUrl("images/cover.png", {
-        slug: "llm-guide/_garden",
-        garden: "llm-guide",
+        slug: "LargeLanguageModelGuide/_garden",
+        garden: "LargeLanguageModelGuide",
       }),
-    ).toBe("/api/posts/assets/llm-guide/images/cover.png");
+    ).toBe("/api/posts/assets/LargeLanguageModelGuide/images/cover.png");
   });
 
   it("缺 garden 时回退 posts", () => {
@@ -32,10 +32,10 @@ describe("resolvePostAssetUrl", () => {
     expect(
       resolvePostAssetUrl("images/00_abstract.png", {
         slug: "ilya-30/12-understanding-lstm-networks/12-understanding-lstm-networks",
-        garden: "classic-papers",
+        garden: "ClassicPapers",
       }),
     ).toBe(
-      "/api/posts/assets/classic-papers/ilya-30/12-understanding-lstm-networks/images/00_abstract.png",
+      "/api/posts/assets/ClassicPapers/ilya-30/12-understanding-lstm-networks/images/00_abstract.png",
     );
   });
 
@@ -43,10 +43,10 @@ describe("resolvePostAssetUrl", () => {
     expect(
       resolvePostAssetUrl("./images/fig-rsi-four-terms.png", {
         slug: "1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析",
-        garden: "rsi",
+        garden: "RecursiveSelfImprovement",
       }),
     ).toBe(
-      "/api/posts/assets/rsi/1-坐标系与术语/01-RSI-术语辨析/images/fig-rsi-four-terms.png",
+      "/api/posts/assets/RecursiveSelfImprovement/1-坐标系与术语/01-RSI-术语辨析/images/fig-rsi-four-terms.png",
     );
   });
 

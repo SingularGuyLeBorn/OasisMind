@@ -42,7 +42,7 @@ excerpt: "每页左下角都叠着 axeptio 的 cookie 弹窗, 正文文字能从
 
 总参数: 本页未印. 把两个部件相加是 12B 加 0.4B, 约 12.4B; 视觉编码器约占 3.2%. 这个加法有个前提: 页面只说了 「two components」, 没说编码器和解码器之间有没有投影层或别的连接模块, 如果有, 参数也不在这两个数里. 激活参数: 本页未印. 页面没说是稠密结构还是 MoE, 也没有给出每个 token 走多少参数, 所以这一栏只能空着.
 
-规格层面全是空白. 解码器 「based on Mistral Nemo」, 但层数, 隐藏维度, 注意力头数, 词表大小都没写. 第 19 页代码里 tokenizer 从 `tekken.json` 加载, 这只说明 tokenizer 文件名叫 tekken, 词表多大本页没说. 同家族的 [Mistral Nemo 解读](../nemo-12b/nemo-12b-analysis.md) 记的是另一页的内容, 这里不搬数. tokenizer 的一般背景见 [分词器与 Tokenizer](../../../../llm-guide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
+规格层面全是空白. 解码器 「based on Mistral Nemo」, 但层数, 隐藏维度, 注意力头数, 词表大小都没写. 第 19 页代码里 tokenizer 从 `tekken.json` 加载, 这只说明 tokenizer 文件名叫 tekken, 词表多大本页没说. 同家族的 [Mistral Nemo 解读](../nemo-12b/nemo-12b-analysis.md) 记的是另一页的内容, 这里不搬数. tokenizer 的一般背景见 [分词器与 Tokenizer](../../../../LargeLanguageModelGuide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
 
 ## 3. 可变分辨率: 16x16 patch 和两个特殊 token
 
@@ -50,7 +50,7 @@ excerpt: "每页左下角都叠着 axeptio 的 cookie 弹窗, 正文文字能从
 
 按这个规则可以算成本. 一张 1024x1024 的图是 64x64 = 4096 个图像 token, 加 63 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 共 4160. 128k 如果按 128,000 算, 不放文字也只能装下约 30 张这样的图; 按 131,072 算约 31 张. 第 20 页 vLLM 示例用的是 200x300 的图, 向上补齐是 13 列 19 行, 共 266 个 token, 向下截断是 234. 页面没说边长不是 16 的倍数怎么办, 也没说有没有分辨率上限, 大图会不会先缩小. 「giving the user flexibility on the number of tokens」 这句话, 实际上把控制成本的责任交给了用户.
 
-这种 「原分辨率切 patch」 的做法和固定分辨率编码器 (先把图缩放到统一尺寸) 是两条路, 一般性的对比见 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/8.8-CLIP与视觉编码器.md) 和 [LLaVA 架构深度解析](../../../../llm-guide/8-多模态/8.2-视觉语言模型/02-LLaVA架构深度解析/02-LLaVA架构深度解析.md). 可变宽高比下二维位置怎么编码, 本页一个字没提; 一般做法见 [RoPE 的视觉与多模态扩展](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md), 但 Pixtral 用没用其中哪一种, 本页给不出答案. 另一条路是压缩视觉 token, 见 [QFormer 与视觉 Token 压缩](../../../../llm-guide/8-多模态/8.2-视觉语言模型/03-QFormer与视觉Token压缩/03-QFormer与视觉Token压缩.md); Pixtral 走的是不压缩, 一个 patch 一个 token.
+这种 「原分辨率切 patch」 的做法和固定分辨率编码器 (先把图缩放到统一尺寸) 是两条路, 一般性的对比见 [CLIP 与视觉编码器](../../../../LargeLanguageModelGuide/8-多模态/8.8-CLIP与视觉编码器/8.8-CLIP与视觉编码器.md) 和 [LLaVA 架构深度解析](../../../../LargeLanguageModelGuide/8-多模态/8.2-视觉语言模型/02-LLaVA架构深度解析/02-LLaVA架构深度解析.md). 可变宽高比下二维位置怎么编码, 本页一个字没提; 一般做法见 [RoPE 的视觉与多模态扩展](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md), 但 Pixtral 用没用其中哪一种, 本页给不出答案. 另一条路是压缩视觉 token, 见 [QFormer 与视觉 Token 压缩](../../../../LargeLanguageModelGuide/8-多模态/8.2-视觉语言模型/03-QFormer与视觉Token压缩/03-QFormer与视觉Token压缩.md); Pixtral 走的是不压缩, 一个 patch 一个 token.
 
 ## 4. 评测协议: 同一套框架, 同一个 prompt
 
@@ -100,7 +100,7 @@ excerpt: "每页左下角都叠着 axeptio 的 cookie 弹窗, 正文文字能从
 
 往后, 页首横幅说 Pixtral 12B 「has been replaced by our latest, more powerful vision and multimodal models」, 没有点名. 本库同目录还有 [Pixtral Large 解读](../pixtral-large/pixtral-large-analysis.md), 名字相近, 但本页一次都没提到 Pixtral Large, 两者的关系本页给不出. 单看这一页, 谱系是一条短线: 2024 年 9 月从 Nemo 12B 派生出来, 12B 解码器加 400M 视觉编码器, 128k 上下文, Apache 2.0, 到 2026 年 9 月打印时已被未具名的新模型接替, 中间约 738 天 (从发布日到打印日, 不是弃用日期).
 
-视觉编码器 「trained from scratch」 这一点在谱系上也有意义. 常见做法是复用现成的 CLIP 类编码器 (一般背景见 [视觉语言模型](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2-视觉语言模型.md)), Pixtral 自己训了一个支持可变尺寸的编码器, 这是它和 Nemo 之间唯一的新增部件. 这个编码器用什么数据, 训多久, 页面都没写.
+视觉编码器 「trained from scratch」 这一点在谱系上也有意义. 常见做法是复用现成的 CLIP 类编码器 (一般背景见 [视觉语言模型](../../../../LargeLanguageModelGuide/8-多模态/8.2-视觉语言模型/8.2-视觉语言模型.md)), Pixtral 自己训了一个支持可变尺寸的编码器, 这是它和 Nemo 之间唯一的新增部件. 这个编码器用什么数据, 训多久, 页面都没写.
 
 ## 11. 本页对不上的数字
 

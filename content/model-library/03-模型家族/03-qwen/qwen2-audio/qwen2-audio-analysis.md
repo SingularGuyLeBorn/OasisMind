@@ -11,7 +11,7 @@ excerpt: "Qwen2-Audio 是一个 8.2B 的音频语言模型, 输入音频和文�
 
 Qwen2-Audio 是一个 8.2B 的音频语言模型, 输入音频和文本, 输出文本. 它和前作 Qwen-Audio 用的是同一种拼法: 音频编码器接 decoder-only 语言模型, 目标仍是条件 next-token prediction. 变化集中在接口和数据上. 编码器改用 **Whisper-large-v3** 初始化, 前端是 16kHz, 128 通道 mel, 编码器每帧约 40ms; 预训练把 Qwen-Audio 的分层标签换成自然语言 prompt, 数据量扩大, 读图约 52 万小时, 其中语音占大头; SFT 把离线的 Audio Analysis 和在线的 Voice Chat 联合训练, 不靠 system prompt 切换; 最后一段用 DPO 调事实性和行为. 评测以 AIR-Bench chat 为主, 四维分 7.18 / 6.99 / 6.79 / 6.77, 高于 Gemini-1.5-pro, 但 Gemini 因安全拦截少测了约 1/5 样本. 下面按前端, 数据, 训练, 评测几块怎样互相牵制来讲.
 
-机制见单独成篇. 音频前端与音频语言模型: [8.3-音频与语音模型](../../../../llm-guide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md). 端到端语音交互的后续路线: [8.7-Omni与全双工](../../../../llm-guide/8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md). SFT: [4.2-SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md). DPO: [01-DPO](../../../../llm-guide/4-后训练/4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md).
+机制见单独成篇. 音频前端与音频语言模型: [8.3-音频与语音模型](../../../../LargeLanguageModelGuide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md). 端到端语音交互的后续路线: [8.7-Omni与全双工](../../../../LargeLanguageModelGuide/8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md). SFT: [4.2-SFT](../../../../LargeLanguageModelGuide/4-后训练/4.2-SFT/4.2-SFT.md). DPO: [01-DPO](../../../../LargeLanguageModelGuide/4-后训练/4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md).
 
 ## 1. 接口与前端
 

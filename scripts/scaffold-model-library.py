@@ -3,9 +3,9 @@ import shutil
 
 root = r"D:\ALL IN AI\OasisMind-full-clone"
 src = os.path.join(root, "content", "models", "03-模型家族")
-guide = os.path.join(root, "content", "llm-guide")
+guide = os.path.join(root, "content", "LargeLanguageModelGuide")
 garden = os.path.join(root, "content", "model-library")
-order = ["deepseek", "kimi", "qwen", "stepfun", "mimo", "olmo"]
+order = ["deepseek", "kimi", "qwen", "stepfun", "mimo", "OLMo"]
 vendors = sorted(d for d in os.listdir(src) if os.path.isdir(os.path.join(src, d)))
 seq = order + [v for v in vendors if v not in order]
 

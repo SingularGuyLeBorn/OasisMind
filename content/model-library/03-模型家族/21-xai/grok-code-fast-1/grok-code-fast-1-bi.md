@@ -78,7 +78,7 @@ Our inference and supercomputing teams developed several innovative techniques t
 我们的推理团队和超算团队开发了几项创新技术, 大幅加快 serving (模型服务) 速度, 带来一种独特的响应体验: 你还没读完 CoT 的第一段, 模型可能已经调了几十次工具. 我们还投入做了 prompt caching (提示缓存) 优化, 与首发合作伙伴配合使用时, 缓存命中率经常超过 90%.
 
 > **核对:**「cache hit rates above 90%」的分母是什么, 谁家的缓存?
-> 页面没定义口径. 至少三种读法: 按请求数算, 按 token 数算, 或按「可缓存前缀被复用」的比例算, 三种数差很多. 而且这是一个带条件的说法 —— 「when used with our launch partners」, 缓存命中靠的是合作伙伴平台把重复的前缀 (系统提示, 工具定义, 代码上下文) 原样发回, 换一家不复用前缀的客户端, 命中率可能完全不同. 「regularly achieving」是频率副词, 没有样本量. prompt caching 的一般机制见 [KV 缓存与内存优化](../../../../llm-guide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md).
+> 页面没定义口径. 至少三种读法: 按请求数算, 按 token 数算, 或按「可缓存前缀被复用」的比例算, 三种数差很多. 而且这是一个带条件的说法 —— 「when used with our launch partners」, 缓存命中靠的是合作伙伴平台把重复的前缀 (系统提示, 工具定义, 代码上下文) 原样发回, 换一家不复用前缀的客户端, 命中率可能完全不同. 「regularly achieving」是频率副词, 没有样本量. prompt caching 的一般机制见 [KV 缓存与内存优化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md).
 
 > **回看:**「你还没读完 CoT 第一段, 模型已经调了几十次工具」(本页) 和第 6 页「新变体才支持 parallel tool calling」放在一起, 现在的「快」到底是哪种快?
 > 两句合读: 当前版本工具调用不是并行形态, 「几十次工具」串行堆出来还能快, 说明快在单次工具循环的延迟 —— 低 TTFT 加每轮调用之间的近零停顿, 而不是单位时间吞吐. 推断支撑机制有二: 一是本页自己给的 prompt caching (90%+ 命中让每轮循环免重算前缀, 这正是串行工具循环最吃重的部分), 二是服务端流式调度让小步快跑. 模糊的点是: 没有 parallel tool calling, 「几十次」究竟怎么数出来的, 是演示个案还是典型值, 页面没区分. 注意第 4 页那张 TPS 图度量的又是另一个「快」—— 只数 final response tokens 的吞吐, 交互延迟不在它的坐标里, 三个「快」被归在 Blazing fast 一个标题下.
@@ -154,14 +154,14 @@ TPS 指标是通过各模型厂商自己的 API 直接测量回答的生成速�
 \- Qwen3-Coder: 托管在 DeepInfra 上, 用低精度 (fp4) 跑, 这会降低回答质量.
 
 > **停一下:** 三个厂商三种测法, 这张图里的 TPS 还算同一个量吗?
-> 只是勉强可比. 第一, 口径: 只算 final response tokens, 推理模型花在 CoT 上的 token 不进分子也不进分母, 所以「推理模型普遍显得慢」这件事在这张图上被口径抹掉了, 第 2 页那句「你还没读完 CoT 第一段, 模型已调了几十次工具」描述的是另一种快, 根本不在这张图的坐标里. 第二, 通道: 四家模型走四个不同 serving 栈, TPS 一半测模型一半测部署, xAI 用自己 API 测自家模型, 既没有说各家的并发, 批量, 精度档位是否对齐. 第三, Qwen3-Coder 走第三方 DeepInfra 的 fp4 低精度托管, fp4 一般换来吞吐和显存收益, 对 TPS 有利, 页面却自承这会降低质量, 等于在一张宣传速度的图里放进了一个「更快但差点」的参照点. 量化精度的一般讨论见 [量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md).
+> 只是勉强可比. 第一, 口径: 只算 final response tokens, 推理模型花在 CoT 上的 token 不进分子也不进分母, 所以「推理模型普遍显得慢」这件事在这张图上被口径抹掉了, 第 2 页那句「你还没读完 CoT 第一段, 模型已调了几十次工具」描述的是另一种快, 根本不在这张图的坐标里. 第二, 通道: 四家模型走四个不同 serving 栈, TPS 一半测模型一半测部署, xAI 用自己 API 测自家模型, 既没有说各家的并发, 批量, 精度档位是否对齐. 第三, Qwen3-Coder 走第三方 DeepInfra 的 fp4 低精度托管, fp4 一般换来吞吐和显存收益, 对 TPS 有利, 页面却自承这会降低质量, 等于在一张宣传速度的图里放进了一个「更快但差点」的参照点. 量化精度的一般讨论见 [量化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md).
 
 We took a holistic approach to evaluating model performance, blending public benchmarks with real-world testing. On the full subset of SWE-Bench-Verified, grok-code-fast-1 scored 70.8% using our own internal harness.
 
 我们对模型性能采取整体评估的路子, 公开基准和真实世界测试相结合. 在 SWE-Bench-Verified 的完整子集上, grok-code-fast-1 用我们自己的内部 harness (评测脚手架) 跑出了 70.8%.
 
 > **对一下:**「full subset」和「internal harness」这两个限定词放在一起, 70.8% 还能和谁比?
-> 本页找不到对照组. 全文只有这一个基准分数, 竞品的 SWE-Bench 分数一个都没给. 「internal harness」意味着脚手架, 提示词, 工具配置都不公开, 同样的模型换一套公开脚手架, 分数可以差好几个点; 「full subset of SWE-Bench-Verified」的措辞也绕 —— SWE-Bench Verified 本身就是从 SWE-Bench 全集中人工核验选出的子集, 「full subset」说的是把 Verified 这 500 题跑全, 不是别的意思. 这个分数只能当「xAI 自测口径下的上限参考」, 横向比较要等第三方复现. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
+> 本页找不到对照组. 全文只有这一个基准分数, 竞品的 SWE-Bench 分数一个都没给. 「internal harness」意味着脚手架, 提示词, 工具配置都不公开, 同样的模型换一套公开脚手架, 分数可以差好几个点; 「full subset of SWE-Bench-Verified」的措辞也绕 —— SWE-Bench Verified 本身就是从 SWE-Bench 全集中人工核验选出的子集, 「full subset」说的是把 Verified 这 500 题跑全, 不是别的意思. 这个分数只能当「xAI 自测口径下的上限参考」, 横向比较要等第三方复现. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md).
 
 While benchmarks like SWE-Bench provide valuable insights, we've found they don't fully reflect the nuances of real-world software engineering, particularly the end-user experience in agentic coding workflows.
 

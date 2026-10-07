@@ -346,7 +346,7 @@ And now, Grok can see what you see! Point your camera, speak right away, and Gro
 现在, Grok 还能看见你看到的东西! 把摄像头对准目标, 直接开口, Grok 就会实时给出见解: 在语音对话里分析你眼前的场景, 并实时回应你. 我们很自豪地推出这个自研训练的模型, 它用上了我们最先进的强化学习框架和语音压缩技术.
 
 > **拆开:**「this model trained in-house」指哪个模型, 是 Grok 4 本身在说话吗?
-> 页面没讲清楚. 小标题叫「Grok 4 Voice Mode」, 这一段却说「this model」, 配的是「reinforcement learning framework and speech compression techniques」, 听起来是一个单独的语音模型. 它和 Grok 4 是同一套权重, 还是语音模型在前面把文字交给 Grok 4, 本页没说; 延迟, 支持的语言, 声音数量也都没有数字. 语音模型的常见做法见 [音频与语音模型](../../../../llm-guide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md), 那是通用背景, 不代表 xAI 的做法.
+> 页面没讲清楚. 小标题叫「Grok 4 Voice Mode」, 这一段却说「this model」, 配的是「reinforcement learning framework and speech compression techniques」, 听起来是一个单独的语音模型. 它和 Grok 4 是同一套权重, 还是语音模型在前面把文字交给 Grok 4, 本页没说; 延迟, 支持的语言, 声音数量也都没有数字. 语音模型的常见做法见 [音频与语音模型](../../../../LargeLanguageModelGuide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md), 那是通用背景, 不代表 xAI 的做法.
 
 <!-- page 9 of 11 -->
 
@@ -372,7 +372,7 @@ focus remains on making models smarter, faster, and more efficient, as we drive 
 重点仍是让模型更聪明, 更快, 更高效, 朝着[真正理解并深刻帮助人类](https://x.ai/)的系统迈进.
 
 > **想:**「verifiable rewards in controlled domains」是在说 Grok 4 的训练奖励只来自可验证任务吗?
-> 本页最多能读出「以可验证奖励为主」. 第 2 页说可验证训练数据从数学和代码扩展到「many more domains」, 这里又说下一步才走出「controlled domains」, 两句合起来, Grok 4 的强化学习主要吃的是答案能自动核对的任务. 有没有偏好模型, 人类反馈, 奖励怎么设计, 页面一个字都没写.「complex real-world problems」没有可验证答案时奖励从哪来, 也只是方向, 没有方法. RLVR 能走多远的一般讨论见 [RLVR 的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md).
+> 本页最多能读出「以可验证奖励为主」. 第 2 页说可验证训练数据从数学和代码扩展到「many more domains」, 这里又说下一步才走出「controlled domains」, 两句合起来, Grok 4 的强化学习主要吃的是答案能自动核对的任务. 有没有偏好模型, 人类反馈, 奖励怎么设计, 页面一个字都没写.「complex real-world problems」没有可验证答案时奖励从哪来, 也只是方向, 没有方法. RLVR 能走多远的一般讨论见 [RLVR 的局限性与探索边界分析](../../../../LargeLanguageModelGuide/4-后训练/4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md).
 
 ![Image block](images/p10-2026-spacexai-llc.png)
 

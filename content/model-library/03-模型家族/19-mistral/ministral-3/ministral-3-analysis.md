@@ -41,7 +41,7 @@ excerpt: "缺的东西也很清楚. 训练数据只有 「text-only and interlea
 
 这个假设不一定成立. 第 4 页的剪枝只有层剪枝, 隐藏维度剪枝, FFN 剪枝, 没有剪注意力头, 三档的头数也完全一样, 所以注意力内部宽度可能是从父模型继承下来的, 三档一样宽. 作为敏感性检查, 如果三档头宽都取 128 (假设值, 不是页面数字), 14B 约 13.5B, 3B 约 3.43B, 8B 不变. 差别在 5% 左右, 不影响量级判断. 激活参数: 三档本页都未印; 论文把它们称为 dense 模型, 没有路由, 也没有提到按 token 选择部分参数. 视觉编码器 410M 三档共用同一份结构, 名字里的数是否包含它, 页面没说; 如果加上, 语言加视觉约 14.4B, 8.9B, 3.6B, 3B 里视觉编码器占约 11%, 比例比大尺寸高得多.
 
-嵌入的比例也值得一看, 因为 3B 共享嵌入的理由就是 「avoid embedding parameters dominating」. 词表按 131,072 算, 3B 的一份嵌入约 0.40B, 占约 12.5%; 如果不共享, 两份约 0.81B, 占约 22%. 8B 两份约 1.07B, 占约 12.6%; 14B 两份约 1.34B, 占约 9.6%. 所以 3B 共享之后, 嵌入占比和 8B 差不多. 词表 131K 对小模型是不小的负担, 3B 省掉的这 0.4B 相当于它 3 到 4 层 Transformer 的参数量. tokenizer 的一般背景见 [分词器与 Tokenizer](../../../../llm-guide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
+嵌入的比例也值得一看, 因为 3B 共享嵌入的理由就是 「avoid embedding parameters dominating」. 词表按 131,072 算, 3B 的一份嵌入约 0.40B, 占约 12.5%; 如果不共享, 两份约 0.81B, 占约 22%. 8B 两份约 1.07B, 占约 12.6%; 14B 两份约 1.34B, 占约 9.6%. 所以 3B 共享之后, 嵌入占比和 8B 差不多. 词表 131K 对小模型是不小的负担, 3B 省掉的这 0.4B 相当于它 3 到 4 层 Transformer 的参数量. tokenizer 的一般背景见 [分词器与 Tokenizer](../../../../LargeLanguageModelGuide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
 
 ## 3. 谱系: 从 Mistral Small 3.1 往下长出来的一支
 
@@ -49,7 +49,7 @@ excerpt: "缺的东西也很清楚. 训练数据只有 「text-only and interlea
 
 方法上的祖先分三条线. 剪枝这条线来自 Minitron [Sreenivas et al., 2024; Muralidharan et al., 2024] 和 Wanda [Sun et al., 2023]: 用校准数据上的激活统计来决定剪什么, 剪完再用蒸馏补回来. 论文在层重要度上和 Minitron 分了手, 不用逐层删掉看 perplexity 的反事实方法, 改用输入输出激活范数之比. 长上下文这条线是 YaRN [Peng et al., 2023] 加按位置调节 softmax 温度 [Nakanishi, 2025; MetaAI, 2025]. 后训练这条线借了三家: DPO [Rafailov et al., 2023] 的在线版 ODPO [Guo et al., 2024], GRPO [Shao et al., 2024; DeepSeek-AI et al., 2025], 以及 Magistral [Rastogi et al., 2025] 的 RL 数据清洗和 GRPO 配方. 同目录的 [Magistral 原文](../magistral/magistral-bi.md) 就是后者.
 
-teacher 的谱系比模型本身更复杂. 预训练用 Mistral Small 3.1, 指令 SFT 用 Mistral Medium 3 (有一处写 3.1), 3B 推理 SFT 用 Magistral Small 1.2, 图 4 的消融里还出现了 「MS3.1 Instruct 2506」. 也就是说, 一个 3B Reasoning 模型身上叠了至少三个 Mistral 模型的输出分布. 这种 「多 teacher 接力」 是本文的特点, 也是它能用 1 到 3 万亿 token 就做出竞争力的原因之一. 知识蒸馏和剪枝的一般做法可以对照 [知识蒸馏](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.3-知识蒸馏/6.3.3-知识蒸馏.md) 和 [剪枝](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.2-剪枝/6.3.2-剪枝.md).
+teacher 的谱系比模型本身更复杂. 预训练用 Mistral Small 3.1, 指令 SFT 用 Mistral Medium 3 (有一处写 3.1), 3B 推理 SFT 用 Magistral Small 1.2, 图 4 的消融里还出现了 「MS3.1 Instruct 2506」. 也就是说, 一个 3B Reasoning 模型身上叠了至少三个 Mistral 模型的输出分布. 这种 「多 teacher 接力」 是本文的特点, 也是它能用 1 到 3 万亿 token 就做出竞争力的原因之一. 知识蒸馏和剪枝的一般做法可以对照 [知识蒸馏](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.3-知识蒸馏/6.3.3-知识蒸馏.md) 和 [剪枝](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.2-剪枝/6.3.2-剪枝.md).
 
 ## 4. 级联蒸馏: 一份数据, 三次剪枝
 
@@ -69,7 +69,7 @@ teacher 的谱系比模型本身更复杂. 预训练用 Mistral Small 3.1, 指�
 
 伪代码有几处和正文对不上, 读的时候要留意. 正文说层重要度是 「ratio of input to output activation norms」, 代码写的是 `output_norm / input_norm`, 方向相反. `layers_to_keep` 被传给 `remove_layers`, 名字和用途打架. PCA 的 `n_components=n_dims` 里 `n_dims` 没有定义, 函数开头取出的是 `target_dim`. 这些都不影响理解思路, 但如果想照着复现, 至少层重要度的方向要先弄清楚: 按代码, 保留的是输出范数相对输入放大最多的层, 也就是对残差流改动最大的层, 这在直觉上说得通.
 
-剪枝清单里没有注意力头剪枝, 这是个值得注意的空白. 表 1 三档都是 32 个 query 头, 8 个 KV 头, 如果注意力内部宽度也不剪, 那么注意力部分的参数只随潜变量维度线性缩小, FFN 部分却随潜变量维度和 FFN 维度两个方向缩小. 按每头维度等于潜变量维度除以 32 的假设, 注意力约占每层参数的 20.6% (14B), 19.2% (8B), 21.7% (3B), 比例大体稳定; 按注意力宽度继承的假设, 小模型里注意力的比例会明显升高. 页面没有给出答案. GQA 的一般背景见 [GQA: 在性能与缓存之间折中](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
+剪枝清单里没有注意力头剪枝, 这是个值得注意的空白. 表 1 三档都是 32 个 query 头, 8 个 KV 头, 如果注意力内部宽度也不剪, 那么注意力部分的参数只随潜变量维度线性缩小, FFN 部分却随潜变量维度和 FFN 维度两个方向缩小. 按每头维度等于潜变量维度除以 32 的假设, 注意力约占每层参数的 20.6% (14B), 19.2% (8B), 21.7% (3B), 比例大体稳定; 按注意力宽度继承的假设, 小模型里注意力的比例会明显升高. 页面没有给出答案. GQA 的一般背景见 [GQA: 在性能与缓存之间折中](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
 
 ## 6. 蒸馏 teacher 的三条发现
 
@@ -83,9 +83,9 @@ teacher 的谱系比模型本身更复杂. 预训练用 Mistral Small 3.1, 指�
 
 ## 7. 后训练两条线: Instruct 和 Reasoning
 
-Instruct 线是 SFT 加 ODPO. SFT 用 fp8 量化跑, 损失是 teacher 的 logit 蒸馏, 视觉编码器冻结, 适配层可训练. ODPO 每题从当前策略用温度 0.7 采两条回答, 由成对奖励模型 PWRM 判断哪条更好; 损失在经典 DPO 上改了三处: 用 PWRM 的概率输出代替硬的胜负标签, 调 PWRM 温度校准概率, 用 β 重标定让损失对 β 不那么敏感. 工程上还有两个实用的做法: 采样中出现死循环的回答直接判负, 以及生成时允许执行工具. 论文说在线版对压住无限生成 「particularly important」, 但 Instruct 的 SFT 版, 离线 DPO 版, ODPO 版之间没有给对比数. DPO 在线化的一般思路见 [OAIF: 在线 AI 反馈](../../../../llm-guide/4-后训练/4.6-偏好优化/4.6.2-在线偏好与自对弈/01-OAIF-在线AI反馈/01-OAIF-在线AI反馈.md).
+Instruct 线是 SFT 加 ODPO. SFT 用 fp8 量化跑, 损失是 teacher 的 logit 蒸馏, 视觉编码器冻结, 适配层可训练. ODPO 每题从当前策略用温度 0.7 采两条回答, 由成对奖励模型 PWRM 判断哪条更好; 损失在经典 DPO 上改了三处: 用 PWRM 的概率输出代替硬的胜负标签, 调 PWRM 温度校准概率, 用 β 重标定让损失对 β 不那么敏感. 工程上还有两个实用的做法: 采样中出现死循环的回答直接判负, 以及生成时允许执行工具. 论文说在线版对压住无限生成 「particularly important」, 但 Instruct 的 SFT 版, 离线 DPO 版, ODPO 版之间没有给对比数. DPO 在线化的一般思路见 [OAIF: 在线 AI 反馈](../../../../LargeLanguageModelGuide/4-后训练/4.6-偏好优化/4.6.2-在线偏好与自对弈/01-OAIF-在线AI反馈/01-OAIF-在线AI反馈.md).
 
-Reasoning 线是 SFT, GRPO, ODPO 三段, 起点是长上下文预训练 checkpoint, 不是 Instruct. 推理 SFT 混合了短 CoT (来自通用 SFT 数据) 和长 CoT (带专用 system prompt 的推理轨迹), 覆盖数学, 编程, 对话, 指令遵循, 多语言, 工具, 视觉推理. 3B 是个例外: 普通 SFT 让它变得脆, 啰嗦, 大量重复和无限生成, 于是改用 Magistral Small 1.2 做 logit 蒸馏. GRPO 分两段: STEM RL 用数学, 代码, 视觉推理题; General RL 由 LLM 评委按原子化评分细则打分, 奖励等于满足的条目比例. 最长生成从 32K 提到 80K, 提了 2.5 倍, 理由是 RL 中截断比例不小. 最后的 ODPO 与 Instruct 相同, 只是先剥掉思考段再交给奖励模型. GRPO 的计算流程见 [GRPO 计算流程全解析](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md).
+Reasoning 线是 SFT, GRPO, ODPO 三段, 起点是长上下文预训练 checkpoint, 不是 Instruct. 推理 SFT 混合了短 CoT (来自通用 SFT 数据) 和长 CoT (带专用 system prompt 的推理轨迹), 覆盖数学, 编程, 对话, 指令遵循, 多语言, 工具, 视觉推理. 3B 是个例外: 普通 SFT 让它变得脆, 啰嗦, 大量重复和无限生成, 于是改用 Magistral Small 1.2 做 logit 蒸馏. GRPO 分两段: STEM RL 用数学, 代码, 视觉推理题; General RL 由 LLM 评委按原子化评分细则打分, 奖励等于满足的条目比例. 最长生成从 32K 提到 80K, 提了 2.5 倍, 理由是 RL 中截断比例不小. 最后的 ODPO 与 Instruct 相同, 只是先剥掉思考段再交给奖励模型. GRPO 的计算流程见 [GRPO 计算流程全解析](../../../../LargeLanguageModelGuide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md).
 
 两条线的共同点是 「蒸馏贯穿始终」: 预训练蒸馏 Mistral Small 3.1, 指令 SFT 蒸馏 Medium 3 或 3.1, 3B 推理 SFT 蒸馏 Magistral Small 1.2. 只有 GRPO 和 ODPO 两段不依赖 teacher 的 logits. 这让整套配方很依赖 Mistral 自家的大模型存货; 换一家没有这些 teacher 的团队, 照着论文做不出同样的结果. 论文用 「inference-time scaling」 形容推理版的目标, 即让模型在推理时花更多 token 换更高的分, 表 5 和图 5 的对比正是在检验这一点.
 
@@ -119,7 +119,7 @@ Reasoning 线是 SFT, GRPO, ODPO 三段, 起点是长上下文预训练 checkpoi
 
 论文反复说面向 「compute and memory constrained applications」, 却没给任何部署数字. 用表 1 可以粗算. 权重按 bf16 每参数 2 字节: 14B 约 28.1 GB, 8B 约 17.0 GB, 3B 约 6.4 GB (只算语言部分, 不含 410M 视觉编码器). 这说明 3B 能进一张消费级显卡, 14B 在 bf16 下需要较大显存, 要落到端侧多半还得量化; 论文只在指令 SFT 处提到 fp8, 没说发布权重是什么精度.
 
-KV cache 在长上下文下更关键. 每个 token 的 KV cache 是 2 × 层数 × KV 头数 × 每头维度个数值. 按每头维度等于潜变量维度除以 32 的假设和 bf16: 14B 每 token 约 204.8 KB, 8B 约 139.3 KB, 3B 约 79.9 KB; 满 262,144 token 时分别约 53.7 GB, 36.5 GB, 20.9 GB. 3B 满上下文的 KV cache 是它自身权重的 3 倍多. GQA 把 KV 头从 32 压到 8, 已经把 cache 砍到四分之一, 但 256k 对 「memory constrained」 场景仍然是纸面能力. 长上下文外推的一般背景见 [RoPE 专题](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/2.1.4-位置编码.md).
+KV cache 在长上下文下更关键. 每个 token 的 KV cache 是 2 × 层数 × KV 头数 × 每头维度个数值. 按每头维度等于潜变量维度除以 32 的假设和 bf16: 14B 每 token 约 204.8 KB, 8B 约 139.3 KB, 3B 约 79.9 KB; 满 262,144 token 时分别约 53.7 GB, 36.5 GB, 20.9 GB. 3B 满上下文的 KV cache 是它自身权重的 3 倍多. GQA 把 KV 头从 32 压到 8, 已经把 cache 砍到四分之一, 但 256k 对 「memory constrained」 场景仍然是纸面能力. 长上下文外推的一般背景见 [RoPE 专题](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/2.1.4-位置编码.md).
 
 ## 12. 本页对不上的数字和说法
 

@@ -110,7 +110,7 @@ function gardenTags(garden: GardenCard): string[] {
   if (id.includes("interview") || id.includes("面试")) return ["面试", "题集", "刷题"];
   if (id.includes("guide") || id.includes("指南")) return ["指南", "入门", "体系"];
   if (id.includes("daily") || id.includes("碎片")) return ["碎片", "日记", "随记"];
-  if (id.includes("rsi")) return ["研究", "递归", "实验"];
+  if (id.includes("RecursiveSelfImprovement")) return ["研究", "递归", "实验"];
   const title = displayGardenTitle(garden.title);
   return [title.slice(0, 4), "本地", "Markdown"].filter(Boolean);
 }

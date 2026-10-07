@@ -47,7 +47,7 @@ $$
 u = \mathrm{RMSNorm}(h),\quad s = W_r u + b_r,\quad \mathcal{T} = \mathrm{TopK}(s, 4),\quad h' = h + \sum_{i\in\mathcal{T}} \frac{e^{s_i}}{\sum_{j\in\mathcal{T}} e^{s_j}}\, E_i(u) \tag{1}
 $$
 
-式 (1) 里的归一化只在 $\mathcal{T}$ 内进行, 4 个权重之和恒为 1. 这和「先对全部专家 softmax 再截断」的写法不同: 后者 4 个权重之和小于 1, 并且随 router 对落选专家的打分浮动, 专家输出的整体量级会跟着变. **先选后归一**的代价是落选专家的 logit 在这一步拿不到梯度, 只能靠别的机制 (比如负载均衡损失) 让它们有机会被选中. 模型卡没提负载均衡怎么做, 也没提共享专家; 开源配置里只有 128 个普通专家和 top-4, 没有常驻专家. MoE 的系统侧问题 (专家并行, all-to-all 通信, 负载不均) 可参见 [MoE 系统与并行](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md).
+式 (1) 里的归一化只在 $\mathcal{T}$ 内进行, 4 个权重之和恒为 1. 这和「先对全部专家 softmax 再截断」的写法不同: 后者 4 个权重之和小于 1, 并且随 router 对落选专家的打分浮动, 专家输出的整体量级会跟着变. **先选后归一**的代价是落选专家的 logit 在这一步拿不到梯度, 只能靠别的机制 (比如负载均衡损失) 让它们有机会被选中. 模型卡没提负载均衡怎么做, 也没提共享专家; 开源配置里只有 128 个普通专家和 top-4, 没有常驻专家. MoE 的系统侧问题 (专家并行, all-to-all 通信, 负载不均) 可参见 [MoE 系统与并行](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md).
 
 两个模型的稀疏程度差别很大. 120b 每 token 激活 4/128 的专家, 20b 激活 4/32; 20b 的专家总量只有 120b 的 1/6 (32 × 24 对 128 × 36), 这是 Figure 1 里它在知识类任务 (GPQA, HLE, MMLU) 上落后的直接原因. 第 2.6.1 节的原话是「On more knowledge-related tasks such as GPQA, the gpt-oss-20b model lags behind due to its smaller size」, 这里的「size」指总参数; 在 AIME 这类更靠推理长度的任务上, 两者几乎持平 (带工具 AIME 2025 为 97.9 对 98.7).
 
@@ -61,11 +61,11 @@ $$
 
 和标准 SwiGLU $\mathrm{SiLU}(a)\odot b$ 相比有三处改动 (开源配置). 一是门控函数 $x\,\sigma(1.702x)$: 1.702 是用 sigmoid 近似 GELU 时的常数, 所以这个门更接近 GELU 的形状, 而 SiLU 对应系数 1. 二是截断: 门控分支只截上限 7, 线性分支截到 ±7, 限制了 FFN 中间激活的最大值. 三是 $(\tilde b + 1)$: 线性分支加 1 后再相乘, 等价于在门控输出 $\tilde a\,\sigma(1.702\tilde a)$ 上再并联一条**直通路径**, 这就是脚注说的「residual connection」. 各级投影都带偏置 ($c_1$, $c_2$, 注意力的 QKV 也有偏置), 这延续了 GPT-2 的习惯.
 
-截断为什么要做, 模型卡没说. 一个合理的推测是: MoE 权重要以 4 bit 存储, 激活峰值越小, 低比特下的数值误差越可控, 训练也越不容易出现尖峰; +1 则保证门控接近 0 时专家输出不至于完全塌掉. 这两点都属于推测. GLU 家族的一般形式和 SwiGLU 的来历可参见 [GLU 家族: 从 GLU 到 SwiGLU](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.1-激活函数/02-GLU家族-从GLU到SwiGLU/02-GLU家族-从GLU到SwiGLU.md).
+截断为什么要做, 模型卡没说. 一个合理的推测是: MoE 权重要以 4 bit 存储, 激活峰值越小, 低比特下的数值误差越可控, 训练也越不容易出现尖峰; +1 则保证门控接近 0 时专家输出不至于完全塌掉. 这两点都属于推测. GLU 家族的一般形式和 SwiGLU 的来历可参见 [GLU 家族: 从 GLU 到 SwiGLU](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.1-激活函数/02-GLU家族-从GLU到SwiGLU/02-GLU家族-从GLU到SwiGLU.md).
 
 ## 5. 注意力: 128 token 窗口与稠密层交替
 
-注意力这一段信息密度很高. 带状窗口与全稠密交替, 沿用 GPT-3 的做法 [10][11]; 开源配置的 layer_types 显示第 0 层是窗口层, 之后一层稠密一层窗口, 120b 共 18 层稠密, 18 层窗口 (20b 各 12 层). 每层 64 个 query 头, 每头 64 维, Q 的总宽度 4096 比残差维度 2880 还宽; KV 头只有 8 个, 每 8 个 query 头共用一组 K, V. GQA 在显存与质量之间的取舍可参见 [GQA: 在性能与缓存之间折中](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
+注意力这一段信息密度很高. 带状窗口与全稠密交替, 沿用 GPT-3 的做法 [10][11]; 开源配置的 layer_types 显示第 0 层是窗口层, 之后一层稠密一层窗口, 120b 共 18 层稠密, 18 层窗口 (20b 各 12 层). 每层 64 个 query 头, 每头 64 维, Q 的总宽度 4096 比残差维度 2880 还宽; KV 头只有 8 个, 每 8 个 query 头共用一组 K, V. GQA 在显存与质量之间的取舍可参见 [GQA: 在性能与缓存之间折中](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
 
 这两个设计叠加起来, **KV cache 被压得很小**. 按 BF16 存储, 序列长度为 $L$ 时
 
@@ -75,7 +75,7 @@ $$
 
 代入 $n_{kv}=8$, $d_h=64$, 每层每 token 是 2048 byte. 120b 稠密层 18 层, 每 token 约 36KiB; 窗口层 18 层最多各存 128 个 token, 总共固定约 4.5MiB. 于是 8,192 token 约 288MiB, 32,768 token 约 1.1GiB, 131,072 token 约 4.5GiB; 20b 稠密层 12 层, 每 token 24KiB, 131,072 token 约 3.0GiB. 作为对照, 如果 36 层全是稠密层且 64 个头各有自己的 K, V, 每 token 要 576KiB, 131,072 token 就是 72GiB, 比 120b 的全部权重还大. GQA 贡献 8 倍, 交替窗口再贡献约 2 倍, 合计约 16 倍.
 
-窗口层的代价在于看得近. 每个窗口层的 token 只能看前 128 个 token, 长程信息全靠稠密层传递. 本文没给窗口层与稠密层比例的消融, 也没给长上下文检索类评测 (比如大海捞针), 131,072 这个长度下模型实际能用上多少, 从模型卡里看不出来. KV cache 的一般压缩手段可参见 [KV 缓存与内存优化](../../../../llm-guide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md).
+窗口层的代价在于看得近. 每个窗口层的 token 只能看前 128 个 token, 长程信息全靠稠密层传递. 本文没给窗口层与稠密层比例的消融, 也没给长上下文检索类评测 (比如大海捞针), 131,072 这个长度下模型实际能用上多少, 从模型卡里看不出来. KV cache 的一般压缩手段可参见 [KV 缓存与内存优化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md).
 
 ## 6. attention sink: 给 softmax 留一个「什么都不看」的出口
 
@@ -87,7 +87,7 @@ $$
 
 当所有打分都远小于 $z_h$ 时, 分母几乎全是 $\exp(z_h)$, 各 $\alpha_{ij}$ 都趋近 0, 这个头的输出接近零向量. Miller 的 off-by-one 相当于 $z_h$ 固定为 0 (分母加 1), gpt-oss 让每个头自己学. 参考实现的写法是把 $z_h$ 当成额外一列 logit 拼到打分矩阵上, softmax 之后再丢掉这一列, 与式 (4) 等价.
 
-这一设计和窗口注意力关系很紧. StreamingLLM [17] 发现, 普通 softmax 的权重和必须为 1, 头在「没什么可看」的时候会把注意力堆到序列开头的几个 token 上, 开头 token 一旦被挤出 KV cache, 质量就崩. gpt-oss 的窗口层只看最近 128 个 token, 序列开头很快就不在窗口里了, 普通注意力找不到固定的「垃圾桶」; **分母里的可学习偏置正好补上这个位置** (这是推测, 模型卡没把两者联系起来). 详细机制可参见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md); 另一条让头输出接近零的路线是在注意力输出上加门控, 见 [Gated Attention](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md).
+这一设计和窗口注意力关系很紧. StreamingLLM [17] 发现, 普通 softmax 的权重和必须为 1, 头在「没什么可看」的时候会把注意力堆到序列开头的几个 token 上, 开头 token 一旦被挤出 KV cache, 质量就崩. gpt-oss 的窗口层只看最近 128 个 token, 序列开头很快就不在窗口里了, 普通注意力找不到固定的「垃圾桶」; **分母里的可学习偏置正好补上这个位置** (这是推测, 模型卡没把两者联系起来). 详细机制可参见 [StreamingLLM 与 Attention Sink](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.7-长上下文与外推技术/2.7.2-KV缓存压缩与淘汰/01-StreamingLLM与Attention-Sink/01-StreamingLLM与Attention-Sink.md); 另一条让头输出接近零的路线是在注意力输出上加门控, 见 [Gated Attention](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/05-Gated-Attention-SDPA输出门控.md).
 
 ## 7. RoPE 与 YaRN: 从 4096 拉到 131,072
 
@@ -99,37 +99,37 @@ $$
 
 其中 $d_{\text{low}} = 32\ln\big(4096/(32\cdot 2\pi)\big)/\ln 150000 \approx 8.09$, $d_{\text{high}} = 32\ln\big(4096/(2\pi)\big)/\ln 150000 \approx 17.40$. 所以前 9 对 ($d = 0$ 到 8) 保持原频率, 后 14 对 ($d = 18$ 到 31) 全部除以 32, 中间 9 对线性过渡. 另外 cos, sin 乘以温度系数 $0.1\ln s + 1 \approx 1.347$, 由于 q, k 都乘, 注意力 logit 实际放大约 1.81 倍, 用来抵消插值后注意力分布变平.
 
-式 (5) 的分界点正好解释了模型卡为什么说「dense layers」. $d = 8$ 这一对的波长约 $2\pi\times 150000^{0.25}\approx 124$ token, 也就是说, 波长短于约 128 token 的维度完全不动, 长于约 4096 token 的维度才被压缩. 窗口层只看 128 以内的相对位置, 起作用的主要是高频维度, 这些维度 YaRN 根本没改; 被压缩的低频维度在 128 token 内几乎不转, 对窗口层影响很小. 参考实现里窗口层和稠密层用的是同一套 RoPE, 但**实际受 YaRN 影响的只有稠密层**. RoPE 本身见 [RoPE 详解](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/01-RoPE本体-旋转位置编码/01-RoPE本体-旋转位置编码.md), 从 PI 到 YaRN 的演变见 [长度外推: 从 PI 到 YaRN 的频率扩展](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md).
+式 (5) 的分界点正好解释了模型卡为什么说「dense layers」. $d = 8$ 这一对的波长约 $2\pi\times 150000^{0.25}\approx 124$ token, 也就是说, 波长短于约 128 token 的维度完全不动, 长于约 4096 token 的维度才被压缩. 窗口层只看 128 以内的相对位置, 起作用的主要是高频维度, 这些维度 YaRN 根本没改; 被压缩的低频维度在 128 token 内几乎不转, 对窗口层影响很小. 参考实现里窗口层和稠密层用的是同一套 RoPE, 但**实际受 YaRN 影响的只有稠密层**. RoPE 本身见 [RoPE 详解](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/01-RoPE本体-旋转位置编码/01-RoPE本体-旋转位置编码.md), 从 PI 到 YaRN 的演变见 [长度外推: 从 PI 到 YaRN 的频率扩展](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md).
 
 ## 8. MXFP4: 4.25 bit 与单卡 80GB
 
-MXFP4 出自 OCP 的 Microscaling 规范 [5]. 每 32 个元素组成一块, 每个元素是 4 bit 的 E2M1 浮点数 (可表示 0, 0.5, 1, 1.5, 2, 3, 4, 6 及其负数), 整块共享一个 8 bit 的 E8M0 指数, 即一个 2 的整数次幂. 平均每元素 4 + 8/32 = 4.25 bit, 这就是第 2.1 节的数. 块内共享指数意味着同一块里最大值决定了精度, 离群值会拖累同块其他元素, 这也是第 4 节那种激活截断可能有用的地方 (推测). 格式细节和 NVFP4 的对比见 [MXFP4 与 NVFP4](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/03-MXFP4与NVFP4/03-MXFP4与NVFP4.md).
+MXFP4 出自 OCP 的 Microscaling 规范 [5]. 每 32 个元素组成一块, 每个元素是 4 bit 的 E2M1 浮点数 (可表示 0, 0.5, 1, 1.5, 2, 3, 4, 6 及其负数), 整块共享一个 8 bit 的 E8M0 指数, 即一个 2 的整数次幂. 平均每元素 4 + 8/32 = 4.25 bit, 这就是第 2.1 节的数. 块内共享指数意味着同一块里最大值决定了精度, 离群值会拖累同块其他元素, 这也是第 4 节那种激活截断可能有用的地方 (推测). 格式细节和 NVFP4 的对比见 [MXFP4 与 NVFP4](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/03-MXFP4与NVFP4/03-MXFP4与NVFP4.md).
 
-第 2.1 节的措辞是「We post-trained the models with quantization of the MoE weights to MXFP4 format」, 意思是后训练阶段 MoE 权重就已经是 MXFP4, 不是训完再做一次训练后量化. 训练时梯度怎么穿过量化 (比如直通估计), 模型卡没写. **只量化 MoE 权重是有依据的**: 它们占总参数 98.2%, 其余部分 (注意力, router, 嵌入, 输出投影) 在开源配置里列为不转换的模块. 按这个口径估算, 120b 的 MoE 部分 114.71B × 4.25/8 ≈ 56.8GiB, 其余约 2.12B 参数按 BF16 约 3.9GiB, 合计约 60.7GiB; 20b 约 9.5 + 3.4 ≈ 12.8GiB, 与 Table 1 的 60.8GiB, 12.8GiB 基本对上. 一般的权重量化方法见 [权重量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/01-权重量化/01-权重量化.md).
+第 2.1 节的措辞是「We post-trained the models with quantization of the MoE weights to MXFP4 format」, 意思是后训练阶段 MoE 权重就已经是 MXFP4, 不是训完再做一次训练后量化. 训练时梯度怎么穿过量化 (比如直通估计), 模型卡没写. **只量化 MoE 权重是有依据的**: 它们占总参数 98.2%, 其余部分 (注意力, router, 嵌入, 输出投影) 在开源配置里列为不转换的模块. 按这个口径估算, 120b 的 MoE 部分 114.71B × 4.25/8 ≈ 56.8GiB, 其余约 2.12B 参数按 BF16 约 3.9GiB, 合计约 60.7GiB; 20b 约 9.5 + 3.4 ≈ 12.8GiB, 与 Table 1 的 60.8GiB, 12.8GiB 基本对上. 一般的权重量化方法见 [权重量化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/01-权重量化/01-权重量化.md).
 
-「单张 80GB GPU」和「16GB 内存」这两个说法可以用式 (3) 再核一遍. 80GB 约 74.5GiB, 扣掉 60.8GiB 权重剩约 13.7GiB, 够放三条 131,072 token 的 KV cache (每条约 4.5GiB), 激活和框架开销还没算. 16GB 约 14.9GiB, 扣掉 12.8GiB 剩约 2GiB, 按 20b 每 token 24KiB 算只够几万 token, 所以 **16GB 设备上跑满 131,072 的上下文并不现实**, 模型卡的说法对应的是短上下文场景. 显存构成的一般分析见 [显存占用分析](../../../../llm-guide/6-训练与推理优化/6.2-显存与计算分析/6.2.1-显存占用分析/6.2.1-显存占用分析.md).
+「单张 80GB GPU」和「16GB 内存」这两个说法可以用式 (3) 再核一遍. 80GB 约 74.5GiB, 扣掉 60.8GiB 权重剩约 13.7GiB, 够放三条 131,072 token 的 KV cache (每条约 4.5GiB), 激活和框架开销还没算. 16GB 约 14.9GiB, 扣掉 12.8GiB 剩约 2GiB, 按 20b 每 token 24KiB 算只够几万 token, 所以 **16GB 设备上跑满 131,072 的上下文并不现实**, 模型卡的说法对应的是短上下文场景. 显存构成的一般分析见 [显存占用分析](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.2-显存与计算分析/6.2.1-显存占用分析/6.2.1-显存占用分析.md).
 
 ## 9. 分词器: o200k_harmony
 
-分词器是 o200k 的扩展版, 用于 GPT-4o 和 o4-mini 的同一套 BPE, 额外加入 harmony 格式的专用 token, 词表共 201,088. 附录的 Figure 17 和 Figure 18 能看到其中一部分: `<|start|>`, `<|message|>`, `<|end|>`, `<|channel|>`, `<|constrain|>`, `<|call|>`. 这些 token 负责切分消息边界, 标记通道和工具调用的结束, 解析器靠它们判断哪段是 CoT, 哪段是给用户的答案, 哪段要交给工具执行. 分词器的一般设计见 [分词器与 Tokenizer](../../../../llm-guide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
+分词器是 o200k 的扩展版, 用于 GPT-4o 和 o4-mini 的同一套 BPE, 额外加入 harmony 格式的专用 token, 词表共 201,088. 附录的 Figure 17 和 Figure 18 能看到其中一部分: `<|start|>`, `<|message|>`, `<|end|>`, `<|channel|>`, `<|constrain|>`, `<|call|>`. 这些 token 负责切分消息边界, 标记通道和工具调用的结束, 解析器靠它们判断哪段是 CoT, 哪段是给用户的答案, 哪段要交给工具执行. 分词器的一般设计见 [分词器与 Tokenizer](../../../../LargeLanguageModelGuide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
 
 **大词表的代价**在第 2 节已经算过: 输出投影 0.579B 全部计入激活参数, 对 20b 来说占每 token 计算量的六分之一左右. 好处是多语言和代码的压缩率更高, 同样的文本切出的 token 更少, 对第 12 节讲的长 CoT 来说, token 越省, 推理成本越低. 模型卡没给压缩率数据, 这一点只能定性地说.
 
 ## 10. 预训练: 数据, 过滤与 2.1M H100 小时
 
-数据部分只有三句: 纯文本, 数万亿 token, 侧重 STEM, 编程和通用知识; 复用 GPT-4o 的 CBRN 预训练过滤器, 尤其过滤危险的生物安全知识; 知识截止 2024 年 6 月 (附录 Figure 17 的系统消息里也写着「Knowledge cutoff: 2024-06」). 过滤比例, 过滤前后数据量, 过滤对能力的影响都没有. 第 5 节的生物评测说明, **预训练过滤并没有把相关知识清干净**, 真正把分数压下去的是后训练阶段的拒答. 一般的数据清洗流程见 [数据处理](../../../../llm-guide/3-预训练/3.1-预训练数据/3.1.3-数据处理/3.1.3-数据处理.md).
+数据部分只有三句: 纯文本, 数万亿 token, 侧重 STEM, 编程和通用知识; 复用 GPT-4o 的 CBRN 预训练过滤器, 尤其过滤危险的生物安全知识; 知识截止 2024 年 6 月 (附录 Figure 17 的系统消息里也写着「Knowledge cutoff: 2024-06」). 过滤比例, 过滤前后数据量, 过滤对能力的影响都没有. 第 5 节的生物评测说明, **预训练过滤并没有把相关知识清干净**, 真正把分数压下去的是后训练阶段的拒答. 一般的数据清洗流程见 [数据处理](../../../../LargeLanguageModelGuide/3-预训练/3.1-预训练数据/3.1.3-数据处理/3.1.3-数据处理.md).
 
-训练算力给得比较具体: H100, PyTorch, 针对专家计算优化的 Triton 算子, FlashAttention [21], 120b 共 2.1M H100 小时, 20b「almost 10x fewer」. 用 $C \approx 6 N_{\text{act}} D$ 粗估: 2.1M 小时 × 3600 秒 × H100 BF16 稠密峰值约 989 TFLOPS ≈ 7.5 × 10^24 FLOPs 的峰值算力; 硬件利用率取 10% 到 40%, 对应 $D \approx$ 24T 到 97T token. 这个区间很宽, 而且 2.1M 小时是否包含后训练, MoE 在 H100 上的实际利用率, 本文都没说, 只能说明量级在几十 T. 作为对照, 按稠密模型每参数约 20 token 的经验比例, 5.13B 激活参数只需约 100B token, gpt-oss 的训练量远超这个点, 这是为推理成本而**过量训练**小激活模型的常见做法. MoE 的 Scaling 关系与稠密模型不同, 这个对照只作参考, 相关讨论见 [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md).
+训练算力给得比较具体: H100, PyTorch, 针对专家计算优化的 Triton 算子, FlashAttention [21], 120b 共 2.1M H100 小时, 20b「almost 10x fewer」. 用 $C \approx 6 N_{\text{act}} D$ 粗估: 2.1M 小时 × 3600 秒 × H100 BF16 稠密峰值约 989 TFLOPS ≈ 7.5 × 10^24 FLOPs 的峰值算力; 硬件利用率取 10% 到 40%, 对应 $D \approx$ 24T 到 97T token. 这个区间很宽, 而且 2.1M 小时是否包含后训练, MoE 在 H100 上的实际利用率, 本文都没说, 只能说明量级在几十 T. 作为对照, 按稠密模型每参数约 20 token 的经验比例, 5.13B 激活参数只需约 100B token, gpt-oss 的训练量远超这个点, 这是为推理成本而**过量训练**小激活模型的常见做法. MoE 的 Scaling 关系与稠密模型不同, 这个对照只作参考, 相关讨论见 [Scaling Law](../../../../LargeLanguageModelGuide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md).
 
-20b 的数字更耐琢磨. 它的激活参数是 120b 的 0.70 倍, GPU 小时却只有约 1/10; 同样利用率下, 训练 token 量约为 120b 的 (1/10) ÷ 0.70 ≈ 1/7. 要么 20b 训练 token 明显更少, 要么两者利用率差得多 (小模型通常更难把 GPU 喂饱, 这会让差距更大而不是更小). 模型卡两样都没交代. FlashAttention 如何减少显存读写见 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-注意力的高效实现/03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md).
+20b 的数字更耐琢磨. 它的激活参数是 120b 的 0.70 倍, GPU 小时却只有约 1/10; 同样利用率下, 训练 token 量约为 120b 的 (1/10) ÷ 0.70 ≈ 1/7. 要么 20b 训练 token 明显更少, 要么两者利用率差得多 (小模型通常更难把 GPU 喂饱, 这会让差距更大而不是更小). 模型卡两样都没交代. FlashAttention 如何减少显存读写见 [FlashAttention](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.3-注意力的高效实现/03-FlashAttention-IO感知分块/03-FlashAttention-IO感知分块.md).
 
 ## 11. 后训练: CoT 强化学习与 harmony 格式
 
-后训练的描述是「similar CoT RL techniques as OpenAI o3」: 用强化学习教模型借助 CoT 推理解题, 同时教它用工具; 数据覆盖编程, 数学, 科学等. 因为方法相近, 模型的「性格」与 ChatGPT 里的模型相似. 算法是 PPO 一类还是 GRPO 一类, 奖励是可验证奖励还是奖励模型, 模型卡都没写, 所以没法把 gpt-oss 归到某个具体的算法谱系下. 推理模型的一般训练路线见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md), 组相对优势类算法见 [GRPO](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md).
+后训练的描述是「similar CoT RL techniques as OpenAI o3」: 用强化学习教模型借助 CoT 推理解题, 同时教它用工具; 数据覆盖编程, 数学, 科学等. 因为方法相近, 模型的「性格」与 ChatGPT 里的模型相似. 算法是 PPO 一类还是 GRPO 一类, 奖励是可验证奖励还是奖励模型, 模型卡都没写, 所以没法把 gpt-oss 归到某个具体的算法谱系下. 推理模型的一般训练路线见 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md), 组相对优势类算法见 [GRPO](../../../../LargeLanguageModelGuide/4-后训练/4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md).
 
 harmony 格式是后训练里信息最多的部分. 它有两层结构. 第一层是角色, 按优先级排成 System > Developer > User > Assistant > Tool, 发生指令冲突时高优先级胜出; Tool 排最后, 意味着工具返回的内容 (比如网页正文) 在设计上不应覆盖任何人的指令. 第二层是通道: analysis 放 CoT, commentary 放函数调用 (也放给用户看的「前言」, 概述接下来的行动计划), final 放最终答案. **通道把「模型在想什么」和「模型对用户说什么」在 token 层面分开**, 部署方可以只展示 final, 对 analysis 另做过滤, 这与第 16 节「不对 CoT 施压」的决定配套.
 
-附录两段示例把格式展开了. Figure 17 的 system 消息里依次是身份, 知识截止, 当前日期, `reasoning: low`, 合法通道列表, 以及「对 functions 的调用必须走 commentary 通道」; developer 消息里是指令 (「Use a friendly tone.」) 和一个 TypeScript 风格的函数命名空间; 最后以 `<|start|>assistant` 结尾, 等模型续写. Figure 18 的输出先在 analysis 通道写一句 CoT, 再在 commentary 通道发起调用, 用 `to=functions.get_weather` 指定接收方, `<|constrain|>json` 约束参数格式, `<|call|>` 结束. 这里有个小错: Figure 17 定义的函数叫 get_current_weather, Figure 18 调用的是 get_weather. 模型卡还特别提醒, 多轮对话里要删掉之前各轮的推理内容; 格式如果用错, 模型就处在训练时没见过的分布上, 能力会打折扣. 工具调用的一般协议见 [工具使用与 MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP/13.1.3-工具使用与MCP.md).
+附录两段示例把格式展开了. Figure 17 的 system 消息里依次是身份, 知识截止, 当前日期, `reasoning: low`, 合法通道列表, 以及「对 functions 的调用必须走 commentary 通道」; developer 消息里是指令 (「Use a friendly tone.」) 和一个 TypeScript 风格的函数命名空间; 最后以 `<|start|>assistant` 结尾, 等模型续写. Figure 18 的输出先在 analysis 通道写一句 CoT, 再在 commentary 通道发起调用, 用 `to=functions.get_weather` 指定接收方, `<|constrain|>json` 约束参数格式, `<|call|>` 结束. 这里有个小错: Figure 17 定义的函数叫 get_current_weather, Figure 18 调用的是 get_weather. 模型卡还特别提醒, 多轮对话里要删掉之前各轮的推理内容; 格式如果用错, 模型就处在训练时没见过的分布上, 能力会打折扣. 工具调用的一般协议见 [工具使用与 MCP](../../../../LargeLanguageModelGuide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP/13.1.3-工具使用与MCP.md).
 
 ## 12. 三档推理强度与推理时多花算力
 
@@ -141,7 +141,7 @@ Table 3 的 low 到 high 增幅按任务类型分得很开. AIME 2025 不带工�
 
 ## 13. 工具与智能体任务
 
-后训练教了三类工具: 浏览 (search 和 open 两个函数), 有状态的 Jupyter 里运行 Python, 以及 developer 消息里定义的任意函数. 模型可以把 CoT, 函数调用, 函数返回, 中间消息和最终答案交错排列, 也就是在推理过程中调用工具. 这种「推理里嵌工具」的训练方式见 [Tool-integrated Reasoning RL](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.2-Tool-integrated-Reasoning-RL/13.4.2-Tool-integrated-Reasoning-RL.md).
+后训练教了三类工具: 浏览 (search 和 open 两个函数), 有状态的 Jupyter 里运行 Python, 以及 developer 消息里定义的任意函数. 模型可以把 CoT, 函数调用, 函数返回, 中间消息和最终答案交错排列, 也就是在推理过程中调用工具. 这种「推理里嵌工具」的训练方式见 [Tool-integrated Reasoning RL](../../../../LargeLanguageModelGuide/13-Agent/13.4-Agent训练与进化/13.4.2-Tool-integrated-Reasoning-RL/13.4.2-Tool-integrated-Reasoning-RL.md).
 
 Table 3 带工具和不带工具的对比说明, 工具在低推理档最有用. AIME 2024 上, 120b low 档带工具比不带高 19.1 分 (75.4 对 56.3), high 档只高 0.8 分 (96.6 对 95.8); AIME 2025 low 档高 22.5 分, high 档高 5.4 分. 多半是 Python 替模型做了计算, 在 CoT 短的时候替代了一部分「想」, CoT 足够长时模型自己也能算对. 结论是**工具和推理长度可以互相替代**, 低档加工具是一条便宜的路. 反例也有: 20b 的 Codeforces low 档带工具只有 1251, 比不带工具的 1366 还低, 小模型在短预算下用终端工具可能反而分散了精力 (推测).
 
@@ -157,11 +157,11 @@ HealthBench 是这份模型卡里 120b 相对闭源模型最亮眼的一项. Fig
 
 ## 15. 默认安全: 违禁内容, 越狱与指令层级
 
-安全训练的主要手段是**审慎对齐** (deliberative alignment) [29]: 让模型在 CoT 里对照成文的安全规范推理, 再决定拒答还是作答; 配合**指令层级** [30], 教模型在冲突时服从更高优先级的角色. 思路与 [Constitutional AI](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 一类「按成文规范自我约束」的做法相近. 违禁内容评测分两套: 标准集 (Table 4) 已经饱和, 四个模型大多在 0.95 以上; Production Benchmarks (Table 5) 更接近生产数据, 多轮, 更难. 标准集上 20b 的 personal-data/semi-restrictive 为 0.947, 比 o4-mini 的 0.975 低 2.8 分, 超出正文「1-2 points」的说法; Production Benchmarks 上 120b 对 o4-mini 是 9 胜 1 平 1 负, 输的那一项是 illicit/violent (0.817 对 0.845), 正文只点名了 20b 在这一项上落后.
+安全训练的主要手段是**审慎对齐** (deliberative alignment) [29]: 让模型在 CoT 里对照成文的安全规范推理, 再决定拒答还是作答; 配合**指令层级** [30], 教模型在冲突时服从更高优先级的角色. 思路与 [Constitutional AI](../../../../LargeLanguageModelGuide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 一类「按成文规范自我约束」的做法相近. 违禁内容评测分两套: 标准集 (Table 4) 已经饱和, 四个模型大多在 0.95 以上; Production Benchmarks (Table 5) 更接近生产数据, 多轮, 更难. 标准集上 20b 的 personal-data/semi-restrictive 为 0.947, 比 o4-mini 的 0.975 低 2.8 分, 超出正文「1-2 points」的说法; Production Benchmarks 上 120b 对 o4-mini 是 9 胜 1 平 1 负, 输的那一项是 illicit/violent (0.817 对 0.845), 正文只点名了 20b 在这一项上落后.
 
 越狱评测 (Table 6) 用 StrongReject 的四个类别, gpt-oss 与 o4-mini 都在 0.96 到 0.99 之间, 差距在 2 分以内. 拉开差距的是指令层级. Table 7 的系统提示词提取, 120b 为 0.832, 20b 为 0.881, o4-mini 为 0.993; 提示注入劫持为 0.780, 0.639, 0.917. Table 8 的四项里, 20b 在 developer 消息下的短语保护只有 0.661; 唯一反超 o4-mini 的是 120b 在 developer 消息下的密码保护 (1.000 对 0.947). 模型卡自己的结论是 gpt-oss「generally underperform OpenAI o4-mini」, 并指出这意味着**部署方靠 system 消息防越狱, 效果不如 OpenAI 在自家模型上用同一手段**; 补救办法是开发者针对自己遇到的越狱再做微调.
 
-指令层级是用 SFT 式的监督数据训的: 收集三种角色消息相互冲突的样例, 「supervised gpt-oss」去服从高优先级. 一般做法见 [SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md). 值得补一句的是覆盖面: 评测只测了 system 对 user, developer 对 user 两类冲突, Tool 消息里的注入没有单独的表, 而浏览工具恰恰会把外部网页内容带进上下文. 对要接入浏览或第三方工具的部署方来说, 这一档的鲁棒性需要自己测. 安全评测的一般设计见 [安全与对抗评测](../../../../llm-guide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md), 智能体场景下的注入问题见 [Agent 安全与对齐](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md).
+指令层级是用 SFT 式的监督数据训的: 收集三种角色消息相互冲突的样例, 「supervised gpt-oss」去服从高优先级. 一般做法见 [SFT](../../../../LargeLanguageModelGuide/4-后训练/4.2-SFT/4.2-SFT.md). 值得补一句的是覆盖面: 评测只测了 system 对 user, developer 对 user 两类冲突, Tool 消息里的注入没有单独的表, 而浏览工具恰恰会把外部网页内容带进上下文. 对要接入浏览或第三方工具的部署方来说, 这一档的鲁棒性需要自己测. 安全评测的一般设计见 [安全与对抗评测](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md), 智能体场景下的注入问题见 [Agent 安全与对齐](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐/13.5.3-Agent安全与对齐.md).
 
 ## 16. 不给 CoT 施压, 以及幻觉
 

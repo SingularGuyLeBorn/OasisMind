@@ -23,16 +23,16 @@ describe("normalizeReportBack", () => {
   it("带 evidence 字符串 → cited，父侧只见指针不见会话", () => {
     const n = normalizeReportBack({
       content: "结论：注意力是加权平均",
-      evidence: ["content/llm-guide/notes/attn.md", "https://arxiv.org/abs/1706.03762"],
+      evidence: ["content/LargeLanguageModelGuide/notes/attn.md", "https://arxiv.org/abs/1706.03762"],
     });
     expect(n.evidenceStatus).toBe("cited");
     expect(n.unverified).toBe(false);
     expect(n.evidence).toEqual([
-      { kind: "path", ref: "content/llm-guide/notes/attn.md" },
+      { kind: "path", ref: "content/LargeLanguageModelGuide/notes/attn.md" },
       { kind: "url", ref: "https://arxiv.org/abs/1706.03762" },
     ]);
     expect(n.asyncResult).not.toContain(REPORT_UNVERIFIED_MARK);
-    expect(n.asyncResult).toContain("path: content/llm-guide/notes/attn.md");
+    expect(n.asyncResult).toContain("path: content/LargeLanguageModelGuide/notes/attn.md");
     expect(n.asyncResult).toContain("url: https://arxiv.org/abs/1706.03762");
   });
 

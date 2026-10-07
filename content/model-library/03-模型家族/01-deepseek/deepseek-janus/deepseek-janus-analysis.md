@@ -23,7 +23,7 @@ Janus 是一个 1.3B 的统一多模态模型: 同一个自回归 Transformer �
 
 ### 1.2. 两条视觉通路
 
-理解通路用 **SigLIP-Large-Patch16-384**. 384×384 的图按 16×16 切块, 得到 24×24 共 576 个 patch 特征, 从二维网格展平成一维序列, 再经一个两层 MLP 的理解 adaptor 映射到 LLM 的输入空间. SigLIP 用逐对的 sigmoid 损失替代 CLIP 那种需要全 batch softmax 归一化的对比损失, 训练对 batch 大小更不敏感, 它的特征偏向图文语义对齐, 当代 VLM 多用它当视觉塔. 视觉编码器的选型讨论见 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/01-CLIP与视觉编码器/01-CLIP与视觉编码器.md), LLaVA 式「编码器加 adaptor 接 LLM」的结构见 [LLaVA 架构深度解析](../../../../llm-guide/8-多模态/8.2-视觉语言模型/02-LLaVA架构深度解析/02-LLaVA架构深度解析.md).
+理解通路用 **SigLIP-Large-Patch16-384**. 384×384 的图按 16×16 切块, 得到 24×24 共 576 个 patch 特征, 从二维网格展平成一维序列, 再经一个两层 MLP 的理解 adaptor 映射到 LLM 的输入空间. SigLIP 用逐对的 sigmoid 损失替代 CLIP 那种需要全 batch softmax 归一化的对比损失, 训练对 batch 大小更不敏感, 它的特征偏向图文语义对齐, 当代 VLM 多用它当视觉塔. 视觉编码器的选型讨论见 [CLIP 与视觉编码器](../../../../LargeLanguageModelGuide/8-多模态/8.8-CLIP与视觉编码器/01-CLIP与视觉编码器/01-CLIP与视觉编码器.md), LLaVA 式「编码器加 adaptor 接 LLM」的结构见 [LLaVA 架构深度解析](../../../../LargeLanguageModelGuide/8-多模态/8.2-视觉语言模型/02-LLaVA架构深度解析/02-LLaVA架构深度解析.md).
 
 生成通路用 LlamaGen 的 **VQ tokenizer**, 码本 16,384 项, 下采样 16 倍, 所以 384×384 的图同样变成 576 个离散 ID. 每个 ID 对应的码本向量经生成 adaptor(也是两层 MLP)映射进 LLM. 输出端另起一个随机初始化的图像预测头, 在 16,384 个码本 ID 上做分类; 文本仍用 LLM 自带的预测头. 生成出的 ID 序列交给 VQ 的 CNN 解码器还原成像素. 报告只写了码本大小和下采样率; 按 LlamaGen 报告, 这个 tokenizer 的码本向量只有 8 维并做 L2 归一化, 在 384 分辨率下的重建 rFID 是 0.94. 码本向量维度这么低, 说明它就是为「重建像素」设计的, 几乎不带语义, 这也是 Exp-A 里拿它做理解会崩的原因.
 
@@ -109,6 +109,6 @@ Exp-D 是 Janus 本身: SigLIP 加 VQ, 理解和生成一起训, POPE 87.0, MMBe
 
 生成速度值得单独算一下. 一张 384×384 的图要逐个解码 576 个 token, 每个 token 在 CFG 下要算条件和无条件两路; 扩散模型通常是 20 到 50 步去噪, 每步对整张图的潜变量并行计算. 自回归路线可以借用 LLM 的 KV cache 和 vLLM 这类推理框架加速, LlamaGen 就报告过用 vLLM 提速 3 到 4 倍. 但分辨率一旦提高, token 数按平方增长, 768×768 就是 2304 个 token, 这是自回归图像生成在高分辨率上的主要障碍, 报告提到的「因果和双向注意力混合」就是为了缓解它.
 
-报告还列了几个扩展方向: 理解端换 EVA-CLIP, InternViT 等更强的编码器, 或用动态高分辨率和 pixel shuffle 压缩 token; 生成端换 MoVQGAN 这类更细的编码器, 改用 diffusion loss, 或者混合因果和双向注意力来减少逐 token 生成的误差累积; 再往外可以接点云, 触觉, 脑电等新模态, 每种模态配自己的编码器. 这些都是解耦带来的灵活性, 两条通路可以各自升级而互不影响. 统一多模态的整体图景见 [多模态](../../../../llm-guide/8-多模态/8-多模态.md).
+报告还列了几个扩展方向: 理解端换 EVA-CLIP, InternViT 等更强的编码器, 或用动态高分辨率和 pixel shuffle 压缩 token; 生成端换 MoVQGAN 这类更细的编码器, 改用 diffusion loss, 或者混合因果和双向注意力来减少逐 token 生成的误差累积; 再往外可以接点云, 触觉, 脑电等新模态, 每种模态配自己的编码器. 这些都是解耦带来的灵活性, 两条通路可以各自升级而互不影响. 统一多模态的整体图景见 [多模态](../../../../LargeLanguageModelGuide/8-多模态/8-多模态.md).
 
 在 DeepSeek 谱系里, Janus 的语言底座来自 DeepSeek-LLM, 表格图表数据来自 DeepSeek-VL, 训练框架是 HAI-LLM, 生成端直接用了开源的 LlamaGen tokenizer. 它之后有两条延续: 同年 11 月的 JanusFlow 把生成端换成 rectified flow, 仍保留理解端的 SigLIP; 2025 年 1 月的 Janus-Pro 保持架构不变, 把模型扩到 7B, 扩充数据并调整三阶段的训练安排. 两者都保留了「理解和生成各用一套视觉编码」这个前提. Janus 这篇报告留下的主要是 Table 5 的 B 对 C 对比: 共享编码器即使带了语义, 同时做生成也会拖累理解.

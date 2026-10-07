@@ -42,7 +42,7 @@ tags:
 | `{{topic}}` | `大模型 面试` | 开放平台搜索词（可多轮换关键词） |
 | `{{max_articles}}` | `8` | 最多深读篇数 |
 | `{{max_questions}}` | `15` | 最多入库题数 |
-| `{{garden}}` | `llm-interview` | 写入花园 id |
+| `{{garden}}` | `LargeLanguageModelInterview` | 写入花园 id |
 
 ## 工作流程
 

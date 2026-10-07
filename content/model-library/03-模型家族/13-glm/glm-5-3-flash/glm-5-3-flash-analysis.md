@@ -31,7 +31,7 @@ GLM-5.3-Flash 没有在线性和稀疏之间二选一, 而是两种都用: 线�
 
 ### 1.4. 线性层: 状态大小固定
 
-配置里线性层的参数放在 `linear_attn_config` 下: 64 个头, 头维 128, 短卷积核长 4, `gate_lower_bound: -5.0`, 层号列表的字段名是 `kda_layers`. 字段名指向 Kimi Delta Attention (KDA): 在 Gated DeltaNet 的基础上把头级标量遗忘门换成通道级的对角遗忘, 写入前先按 delta 规则擦掉当前键方向上的旧值, $q, k, v$ 先过短卷积. 机制和分块并行算法见 [Kimi Delta Attention](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md).
+配置里线性层的参数放在 `linear_attn_config` 下: 64 个头, 头维 128, 短卷积核长 4, `gate_lower_bound: -5.0`, 层号列表的字段名是 `kda_layers`. 字段名指向 Kimi Delta Attention (KDA): 在 Gated DeltaNet 的基础上把头级标量遗忘门换成通道级的对角遗忘, 写入前先按 delta 规则擦掉当前键方向上的旧值, $q, k, v$ 先过短卷积. 机制和分块并行算法见 [Kimi Delta Attention](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.1-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md).
 
 KDA 的状态递推是 (Kimi Linear 论文式 (1)):
 
@@ -75,7 +75,7 @@ I_{t,s}=\sum_{j=1}^{H^I} w^I_{t,j}\,\mathrm{ReLU}\left(q^I_{t,j}\cdot k^I_s\righ
 \tag{2}
 $$
 
-每个查询要和所有前面的键算一遍, 每层 $O(L^2)$, 是 1M 上下文下 indexer 延迟和显存的来源. 推导见 [QSA 一文的 DSA 与 IndexPool 部分](../../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/05-QSA-Qwen稀疏注意力/05-QSA-Qwen稀疏注意力.md). IndexPool 的做法是把相邻 4 个位置的 indexer 键加权池化成 1 个:
+每个查询要和所有前面的键算一遍, 每层 $O(L^2)$, 是 1M 上下文下 indexer 延迟和显存的来源. 推导见 [QSA 一文的 DSA 与 IndexPool 部分](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.4-稀疏注意力/05-QSA-Qwen稀疏注意力/05-QSA-Qwen稀疏注意力.md). IndexPool 的做法是把相邻 4 个位置的 indexer 键加权池化成 1 个:
 
 $$
 \tilde k^I_b=\sum_{i=0}^{3}\omega_{b,i}\,k^I_{4b+i}
@@ -100,7 +100,7 @@ IndexPool 只压 indexer 的键, 被选中的块里主注意力仍在原始的�
 
 博客对 mHC 只有一句: 「adopts Manifold-Constrained Hyper-Connections (mHC) to further improve scaling efficiency」. 架构图上每个子层旁都有一个 mHC 框. 配置给了参数: `mhc: true`, `hc_mult: 4`, `hc_sinkhorn_iters: 20`, `hc_eps: 1e-06`.
 
-mHC 出自 DeepSeek (arXiv 2512.24880). Hyper-Connections 把残差从一条 $C$ 维向量扩成 $n$ 条, 每层用小矩阵完成读, 写和流间混合; 问题是流间混合矩阵沿深度连乘, DeepSeek 在 27B MoE 上测到复合映射的最大增益峰值约 3000, 训练出现 loss 突刺. mHC 用 Sinkhorn-Knopp 迭代把混合矩阵投到双随机矩阵 (非负, 行和与列和都为 1) 上, 双随机矩阵的乘积仍是双随机矩阵, 迭代 20 次后复合增益最大约 1.6; $n=4$ 时额外训练时间 6.7%. GLM-5.3-Flash 的 $n=4$ 和 20 次迭代与 mHC 论文的默认设置相同. 推导见 [Hyper-Connections 与 mHC](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). 
+mHC 出自 DeepSeek (arXiv 2512.24880). Hyper-Connections 把残差从一条 $C$ 维向量扩成 $n$ 条, 每层用小矩阵完成读, 写和流间混合; 问题是流间混合矩阵沿深度连乘, DeepSeek 在 27B MoE 上测到复合映射的最大增益峰值约 3000, 训练出现 loss 突刺. mHC 用 Sinkhorn-Knopp 迭代把混合矩阵投到双随机矩阵 (非负, 行和与列和都为 1) 上, 双随机矩阵的乘积仍是双随机矩阵, 迭代 20 次后复合增益最大约 1.6; $n=4$ 时额外训练时间 6.7%. GLM-5.3-Flash 的 $n=4$ 和 20 次迭代与 mHC 论文的默认设置相同. 推导见 [Hyper-Connections 与 mHC](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md).
 
 一层 mHC 写成 (mHC 论文式 (3)):
 

@@ -35,10 +35,10 @@ excerpt: "英雄区只放两张卡."
 
 系统类有两条. 04 的标题是 「MiMo-V2.5-Pro-UltraSpeed: 将 1T 参数模型的生成速度推向 1000 TPS」, 摘要句写 UltraSpeed 模式 「通过模型与系统极致 Codesign 突破 1000tps」, 两处大小写不同, 保持原样. 05 写 V2.5 系列推理全链路优化, 「将 Hybrid SWA 效率推向极致」. 首页没有给 UltraSpeed 的 batch, 上下文长度或硬件, 也没把 1000 TPS 归因到哪一层设计. 放进谱系里看, Hybrid SWA 从 Flash 起就是这个家族降推理开销的主手段, V2.5-Pro 的 1T 参数与 V2.6 报告里 Pro 档的 1.02T 一致; 但 UltraSpeed 的吞吐是在什么条件下测的, 这里没有依据可写.
 
-语音与 Pro 各有一条收尾. **MiMo-V2.5-ASR** 开源, 支持中英双语, 方言, 歌词等复杂场景; **MiMo-V2.5-TTS Series** 主张 「让声音表现可以被语言自由调度」; **MiMo-V2.5-Pro** 的英文句是 「A leap in agentic and long horizon coherence」. 音频背景可对照 [音频与语音模型](../../../../llm-guide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md). ASR 与 TTS 的参数量, 词表, 评测都不在首页上.
+语音与 Pro 各有一条收尾. **MiMo-V2.5-ASR** 开源, 支持中英双语, 方言, 歌词等复杂场景; **MiMo-V2.5-TTS Series** 主张 「让声音表现可以被语言自由调度」; **MiMo-V2.5-Pro** 的英文句是 「A leap in agentic and long horizon coherence」. 音频背景可对照 [音频与语音模型](../../../../LargeLanguageModelGuide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md). ASR 与 TTS 的参数量, 词表, 评测都不在首页上.
 
 ### 2.2. 这张首页能回答什么
 
-能回答的: 家族当前的旗舰是 V2.6 Series, 语音线单列; 研究时间线从 2025 年 5 月的 7B 推理模型, 经模态专报, MoE 稳定性, Flash 技术报告, 走到 2026 年的稀疏注意力, Agent RL 资源效率与多教师蒸馏; UltraSpeed 宣称 1T 参数 1000 TPS; Hybrid SWA 被当作 V2.5 推理优化的核心. 后训练主线从 GRPO 规则奖励到 MOPD 再到 MOPD2 的演化, 要到同目录各型号报告里读; 背景可对照 [On-Policy Distillation 深度解析](../../../../llm-guide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md) 与 [高效与稀疏注意力](../../../../llm-guide/2-核心原理与架构/2.3-注意力的高效实现/2.3-注意力的高效实现.md).
+能回答的: 家族当前的旗舰是 V2.6 Series, 语音线单列; 研究时间线从 2025 年 5 月的 7B 推理模型, 经模态专报, MoE 稳定性, Flash 技术报告, 走到 2026 年的稀疏注意力, Agent RL 资源效率与多教师蒸馏; UltraSpeed 宣称 1T 参数 1000 TPS; Hybrid SWA 被当作 V2.5 推理优化的核心. 后训练主线从 GRPO 规则奖励到 MOPD 再到 MOPD2 的演化, 要到同目录各型号报告里读; 背景可对照 [On-Policy Distillation 深度解析](../../../../LargeLanguageModelGuide/4-后训练/4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md) 与 [高效与稀疏注意力](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.3-注意力的高效实现/2.3-注意力的高效实现.md).
 
 不能回答的: 任何一代的层数, 专家数, 窗口与训练 token; MOPD, HySparse, ARL-Tangram 的公式和表; UltraSpeed 的测法; V2.6 与 V2.5-TTS 是否同底座. 这些问题要么在同族的 7B, Flash, V2.6 报告与 V2.5 / V2.5-Pro 产品页里有答案, 要么目前没有公开材料. 首页的价值在于给出日期顺序: R3 早于 Flash, HySparse 晚于 Flash, MOPD 单独成文晚于 Flash 半年, 这个顺序和各报告内部的引用关系是一致的.

@@ -31,19 +31,19 @@ excerpt: "这份材料是 Anthropic 官网 Announcements 栏目下的发布稿, 
 
 第 3 页的表有五列: Claude 3.5 Sonnet, Claude 3 Opus, GPT-4o, Gemini 1.5 Pro, Llama-400b (early snapshot). 行覆盖 GPQA Diamond, MMLU, HumanEval, MGSM, MATH, GSM8K, DROP (F1), BIG-Bench-Hard. 3.5 Sonnet 对 3 Opus 九格全部领先, 幅度从 MGSM 的 0.9 个百分点到 MATH 的 11.0 个百分点; GPQA 59.4% 对 50.4%, HumanEval 92.0% 对 84.9%. 对 GPT-4o, 两者都有分数的六格里 3.5 Sonnet 赢四格, 输 MMLU 0-shot CoT (88.3% 对 88.7%) 和 MATH (71.1% 对 76.6%) 两格.
 
-难点在口径. 左边三列同一行设置一致, 右边两列经常不同: Gemini 在 MGSM, MATH, GSM8K 上分别用 8-shot, 4-shot, 11-shot, DROP 标 「Variable shots」; Llama 列有两格注明是预训练模型, 也就是没做后训练的基座, 和其余几列不在同一阶段. 五列齐全且设置一致的只有 HumanEval 一行. 预训练模型与后训练模型混在一张表里, 本身就提醒读者: DROP, BIG-Bench-Hard 这类分数里, 有多少来自预训练, 有多少来自后训练对格式和推理习惯的塑造, 表上分不开. 通用问题见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md). PDF 原图里 3.5 Sonnet 一列用橙框圈起, 每行最高分印成绿色, md 转换丢了颜色, 中文对照表在 bi 里按 PDF 拆开.
+难点在口径. 左边三列同一行设置一致, 右边两列经常不同: Gemini 在 MGSM, MATH, GSM8K 上分别用 8-shot, 4-shot, 11-shot, DROP 标 「Variable shots」; Llama 列有两格注明是预训练模型, 也就是没做后训练的基座, 和其余几列不在同一阶段. 五列齐全且设置一致的只有 HumanEval 一行. 预训练模型与后训练模型混在一张表里, 本身就提醒读者: DROP, BIG-Bench-Hard 这类分数里, 有多少来自预训练, 有多少来自后训练对格式和推理习惯的塑造, 表上分不开. 通用问题见 [评测科学与证据](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md). PDF 原图里 3.5 Sonnet 一列用橙框圈起, 每行最高分印成绿色, md 转换丢了颜色, 中文对照表在 bi 里按 PDF 拆开.
 
 ### 2.2. 视觉评测表
 
 第 4 页的视觉表四列 (没有 Llama), 五行: MathVista (testmini), AI2D, MMMU (val), Chart Q&A, 文档视觉问答, 设置统一为 0-shot 或 0-shot CoT, 比文本表整齐. 3.5 Sonnet 对 3 Opus 五项全部领先, 提升在 5.9 到 17.2 个百分点之间, 最大的是 MathVista (67.7% 对 50.5%). 对 GPT-4o 和 Gemini 1.5 Pro, 它在 MMMU 上落后 GPT-4o (68.3% 对 69.1%), 其余四项领先, 但 AI2D 上三家都在 94% 以上, 差距不到 1 个百分点.
 
-正文的视觉卖点有两个: 视觉推理 (以图表解读为例) 和从有瑕疵的图片里转写文字. 前者有 MathVista 和 Chart Q&A 对应; 后者没有专门评测, 只能间接参考文档问答. MathVista 涨幅最大而 AI2D 几乎饱和, 说明提升集中在 「看图后还要多步推理」 的任务上, 纯识别类已经接近天花板 (推测). 视觉接入方式和图文训练数据, 本页没有. Chart Q&A 用 「Relaxed accuracy」, 文档问答用 「ANLS score」, 度量方式见 [VLM的评测与基准](../../../../llm-guide/8-多模态/8.2-视觉语言模型/06-VLM的评测与基准/06-VLM的评测与基准.md).
+正文的视觉卖点有两个: 视觉推理 (以图表解读为例) 和从有瑕疵的图片里转写文字. 前者有 MathVista 和 Chart Q&A 对应; 后者没有专门评测, 只能间接参考文档问答. MathVista 涨幅最大而 AI2D 几乎饱和, 说明提升集中在 「看图后还要多步推理」 的任务上, 纯识别类已经接近天花板 (推测). 视觉接入方式和图文训练数据, 本页没有. Chart Q&A 用 「Relaxed accuracy」, 文档问答用 「ANLS score」, 度量方式见 [VLM的评测与基准](../../../../LargeLanguageModelGuide/8-多模态/8.2-视觉语言模型/06-VLM的评测与基准/06-VLM的评测与基准.md).
 
 ### 2.3. 内部 agentic 编码评测与 TestingTime 脚注
 
-表外还有一组编码数字: 在一项内部 agentic 编码评测里, 3.5 Sonnet 解决 64% 的问题, 3 Opus 解决 38%. 任务是按自然语言需求在开源代码库里修 bug 或加功能, 模型可以借助工具写代码, 改代码, 运行代码. 这是全页唯一一项 agent 形态的评测, 也是和 HumanEval 差别最大的一项: HumanEval 上两者差 7.1 个点, 这里差 26 个点. 单函数补全已经接近饱和, 多步调试才拉开差距, 这指向后训练在工具调用和长轨迹上下了功夫 (推测). 题量, 轮数上限, 判定标准和其他模型对照都没给. 四个月后的升级版 3.5 Sonnet 改用公开的 SWE-bench Verified 报分, 见同级目录 3.5 Haiku 与 **computer use** 两篇. 评测形态见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md) 与 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
+表外还有一组编码数字: 在一项内部 agentic 编码评测里, 3.5 Sonnet 解决 64% 的问题, 3 Opus 解决 38%. 任务是按自然语言需求在开源代码库里修 bug 或加功能, 模型可以借助工具写代码, 改代码, 运行代码. 这是全页唯一一项 agent 形态的评测, 也是和 HumanEval 差别最大的一项: HumanEval 上两者差 7.1 个点, 这里差 26 个点. 单函数补全已经接近饱和, 多步调试才拉开差距, 这指向后训练在工具调用和长轨迹上下了功夫 (推测). 题量, 轮数上限, 判定标准和其他模型对照都没给. 四个月后的升级版 3.5 Sonnet 改用公开的 SWE-bench Verified 报分, 见同级目录 3.5 Haiku 与 **computer use** 两篇. 评测形态见 [Benchmark与Eval](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md) 与 [IDE与Coding-Agent](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
 
-文本表的两条脚注值得单独看. GPQA 在 「5-shot CoT ... with maj@32」 下是 67.2%, 表中 0-shot CoT 是 59.4%; MMLU 在 5-shot CoT 下是 90.4%, 表中是 88.7% 和 88.3%. maj@32 是同一题采样 32 次后多数投票, 属于 **TestingTime** 投入, 和部署前把模型做大的 Scaling 是两回事. GPQA 上多采样换来 7.8 个点, 而 MMLU 只换来不到 2 个点, 说明越难的题, 推理阶段多花算力的回报越大. 页面把这两个数放脚注不进表, 是在分开两种口径. 背景见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
+文本表的两条脚注值得单独看. GPQA 在 「5-shot CoT ... with maj@32」 下是 67.2%, 表中 0-shot CoT 是 59.4%; MMLU 在 5-shot CoT 下是 90.4%, 表中是 88.7% 和 88.3%. maj@32 是同一题采样 32 次后多数投票, 属于 **TestingTime** 投入, 和部署前把模型做大的 Scaling 是两回事. GPQA 上多采样换来 7.8 个点, 而 MMLU 只换来不到 2 个点, 说明越难的题, 推理阶段多花算力的回报越大. 页面把这两个数放脚注不进表, 是在分开两种口径. 背景见 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 ## 3. 产品, 安全与边界
 
@@ -51,13 +51,13 @@ excerpt: "这份材料是 Anthropic 官网 Announcements 栏目下的发布稿, 
 
 Artifacts 是 Claude.ai 的界面功能: 生成的代码, 文档, 网页设计放到对话旁的独立窗口里, 用户可以查看, 编辑, 接着改, 页面自称 「preview feature」, 没有 API 表述和评测. 它说明这次同时推了模型和产品界面, 对理解模型能力没有增量. 不过模型要稳定地产出能直接渲染的完整网页和代码, 需要后训练里有对应的格式数据, 这一点本页没有交代.
 
-「Coming soon」 一节的目标是每隔几个月改善智能, 速度, 成本之间的权衡曲线; 3.5 Haiku 和 3.5 Opus 年内发布; 新模态与企业集成在开发中; Memory 功能在探索中. 都没有日期和数字. 事后看, 3.5 Haiku 在 10 月发布, 3.5 Opus 没有以这个名字发布, 本页当然不知道这一点. 跨会话记忆的一般做法见 [记忆系统](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.1-记忆系统/13.1.1-记忆系统.md).
+「Coming soon」 一节的目标是每隔几个月改善智能, 速度, 成本之间的权衡曲线; 3.5 Haiku 和 3.5 Opus 年内发布; 新模态与企业集成在开发中; Memory 功能在探索中. 都没有日期和数字. 事后看, 3.5 Haiku 在 10 月发布, 3.5 Opus 没有以这个名字发布, 本页当然不知道这一点. 跨会话记忆的一般做法见 [记忆系统](../../../../LargeLanguageModelGuide/13-Agent/13.1-Agent核心组件/13.1.1-记忆系统/13.1.1-记忆系统.md).
 
 ### 3.2. 安全与隐私
 
-结论: 红队评估认为 3.5 Sonnet 仍处于 **ASL-2**. 过程: 交给 UK AISI 做部署前安全评估, 结果按美英两国 AISI 的谅解备忘录共享给 US AISI; 吸收外部领域专家的政策反馈; 按 Thorn 儿童安全专家的反馈更新分类器并微调模型. 最后一条值得注意: 它同时动了两层防线, 一层是部署侧的分类器, 一层是模型本身的微调, 这是后来系统卡里 「模型层加系统层」 双层防护写法的早期形态. 红队和部署前评估的做法见 [安全与对抗评测](../../../../llm-guide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
+结论: 红队评估认为 3.5 Sonnet 仍处于 **ASL-2**. 过程: 交给 UK AISI 做部署前安全评估, 结果按美英两国 AISI 的谅解备忘录共享给 US AISI; 吸收外部领域专家的政策反馈; 按 Thorn 儿童安全专家的反馈更新分类器并微调模型. 最后一条值得注意: 它同时动了两层防线, 一层是部署侧的分类器, 一层是模型本身的微调, 这是后来系统卡里 「模型层加系统层」 双层防护写法的早期形态. 红队和部署前评估的做法见 [安全与对抗评测](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
-没说的比说了的多: 红队测了哪些风险类别, UK AISI 的结论, 分类器指标, 微调前后对比, 都指向模型卡增补. 隐私一段写 「privacy」 是 「core constitutional principles」 之一, 承诺除非用户明确授权, 不用用户提交的数据训练生成式模型. 这句把隐私放进宪法原则, 等于说它既约束数据收集, 也在 **Constitutional AI** 的训练信号里出现. 页首 2025 年 8 月的条款更新横幅没有展开, 从这份材料判断不了两者关系. 通用讨论见 [隐私数据与内容治理](../../../../llm-guide/5-评测-安全与治理/5.3-隐私数据与内容治理/5.3-隐私数据与内容治理.md).
+没说的比说了的多: 红队测了哪些风险类别, UK AISI 的结论, 分类器指标, 微调前后对比, 都指向模型卡增补. 隐私一段写 「privacy」 是 「core constitutional principles」 之一, 承诺除非用户明确授权, 不用用户提交的数据训练生成式模型. 这句把隐私放进宪法原则, 等于说它既约束数据收集, 也在 **Constitutional AI** 的训练信号里出现. 页首 2025 年 8 月的条款更新横幅没有展开, 从这份材料判断不了两者关系. 通用讨论见 [隐私数据与内容治理](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.3-隐私数据与内容治理/5.3-隐私数据与内容治理.md).
 
 ### 3.3. 材料边界
 

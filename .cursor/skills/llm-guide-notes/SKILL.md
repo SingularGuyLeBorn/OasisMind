@@ -3,7 +3,7 @@ name: llm-guide-notes
 description: >-
   Writes and extends OasisMind llm-guide technical notes in the house style
   (科学空间节奏 + 本库 MoE/MHA/RoPE/GQA/MLA 样本). Use when authoring or revising
-  Markdown in content/llm-guide/, filling empty shells, adding 2026-08
+  Markdown in content/LargeLanguageModelGuide/, filling empty shells, adding 2026-08
   勘误, generating unwatermarked figures, or continuing the llm-guide Goal.
 ---
 
@@ -11,7 +11,7 @@ description: >-
 
 给初学者看懂、给从业者能核对数字。不是百科、不是专栏转写、不是面试提纲。
 
-写任何 `content/llm-guide/` 正文前，按顺序 Read：
+写任何 `content/LargeLanguageModelGuide/` 正文前，按顺序 Read：
 
 1. `docs/development/llm-guide-notes/live/GOAL.md`
 2. `docs/development/llm-guide-notes/live/PLAN.md`
@@ -28,7 +28,7 @@ description: >-
 
 ## 硬约束
 
-- 只改 `content/llm-guide/` 及其 `images/`、`content/uploads/llm-guide/`。不要改 `apps/`、`packages/`、Chat/SSE。
+- 只改 `content/LargeLanguageModelGuide/` 及其 `images/`、`content/uploads/llm-guide/`。不要改 `apps/`、`packages/`、Chat/SSE。
 - **禁止删除**既有文件，**例外**：用户已拍板删掉整个第 10 / 11 / 12 章（综述堆、实践堆、访谈堆）。其余 mineru/pdf/旧图仍不删。
 - 接到今天：把正确事实写进主叙述，读者只读一版。**禁止**再写 `> **2026-08 修订（不删上文）`。
 - 配图：**必须浅色**，且箭头必须接到框边上。深色底图保留旧文件，新生成浅色 `fig-*.png` 改引用。生图前 Read `.cursor/skills/academic-diagrams/SKILL.md`（PaperBanana 五角色 × `GenerateImage`，禁止单次交差）。

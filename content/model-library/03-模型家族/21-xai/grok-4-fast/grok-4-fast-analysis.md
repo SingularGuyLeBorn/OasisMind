@@ -25,7 +25,7 @@ xAI 在两个月前的 [Grok 4 公告](../grok-4/grok-4-bi.md) 里押的是另�
 
 核心 claim 是一句算术: Grok 4 Fast 在基准上与 Grok 4 打平, 平均少用 **40% 的 thinking token**. 支撑它的是第 2 到 4 页那组「Intelligence Density」散点图, 按 AIME 2024, AIME 2025, HMMT 2025, GPQA Diamond 分了面板, 横轴 thinking tokens, 纵轴 Score. 坏消息是这张图在 md 里被拆成了两张只有坐标轴刻度的 HTML 表格 (28000, 100% 是轴端刻度, 不是成绩), PDF 文字层也只有轴标签, 每个面板上点了几个模型, 各是多少 token 多少分, 核不了. 「平均少 40%」的分项浮动 therefore 无从读起, 这是全篇最重要的一个数, 也是证据最薄的一个数.
 
-训练侧只给了一句话: 用**大规模强化学习**最大化智能密度. 用 RL 直接压推理长度的常见做法是答案对了再按长度给奖励, 让模型学会「够用就停」; 推理能力一般怎么训, 见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md), 可验证奖励的边界见 [RLVR 的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md). 这两篇是通用背景, xAI 的奖励里到底有没有长度项, 页面一个字没写.
+训练侧只给了一句话: 用**大规模强化学习**最大化智能密度. 用 RL 直接压推理长度的常见做法是答案对了再按长度给奖励, 让模型学会「够用就停」; 推理能力一般怎么训, 见 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md), 可验证奖励的边界见 [RLVR 的局限性与探索边界分析](../../../../LargeLanguageModelGuide/4-后训练/4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md). 这两篇是通用背景, xAI 的奖励里到底有没有长度项, 页面一个字没写.
 
 ### 2.2 98% 与 47x: 两个倍数, 两种口径
 
@@ -35,9 +35,9 @@ xAI 在两个月前的 [Grok 4 公告](../grok-4/grok-4-bi.md) 里押的是另�
 
 ## 3. 工具使用与搜索: 第二个卖点
 
-**Tool-use RL** 是这篇给的第二个机制词: 端到端训练模型决定何时调工具 (代码执行, 网页浏览), 与 [Grok 4 公告](../grok-4/grok-4-bi.md) 的「trained with reinforcement learning to use tools」一脉相承, 一般做法见 [Tool-integrated Reasoning RL](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.2-Tool-integrated-Reasoning-RL/13.4.2-Tool-integrated-Reasoning-RL.md). 六张 agentic 基准表 (第 6 页) 里, Grok 4 Fast 对 Grok 4 六战全胜: BrowseComp 44.9 对 43.0, SimpleQA 95.0 对 94.0, Reka Research Eval 66.0 对 58.0, BrowseComp (zh) 51.2 对 45.0, X Bench Deepsearch (zh) 74.0 对 66.0, X Browse 58.0 对 53.2, 涨幅 0.9 到 8.0 个点. 对 Grok 3 (No Reasoning) 是碾压局, SimpleQA 差 13 个点, 两项中文基准差 40 个点以上.
+**Tool-use RL** 是这篇给的第二个机制词: 端到端训练模型决定何时调工具 (代码执行, 网页浏览), 与 [Grok 4 公告](../grok-4/grok-4-bi.md) 的「trained with reinforcement learning to use tools」一脉相承, 一般做法见 [Tool-integrated Reasoning RL](../../../../LargeLanguageModelGuide/13-Agent/13.4-Agent训练与进化/13.4.2-Tool-integrated-Reasoning-RL/13.4.2-Tool-integrated-Reasoning-RL.md). 六张 agentic 基准表 (第 6 页) 里, Grok 4 Fast 对 Grok 4 六战全胜: BrowseComp 44.9 对 43.0, SimpleQA 95.0 对 94.0, Reka Research Eval 66.0 对 58.0, BrowseComp (zh) 51.2 对 45.0, X Bench Deepsearch (zh) 74.0 对 66.0, X Browse 58.0 对 53.2, 涨幅 0.9 到 8.0 个点. 对 Grok 3 (No Reasoning) 是碾压局, SimpleQA 差 13 个点, 两项中文基准差 40 个点以上.
 
-口径上要给这张表打两个折. 其一, BrowseComp (zh), X Bench Deepsearch (zh), X Browse 三项是中文或 X 场景, X Browse 还是 xAI 自造的自测基准, 没有第三方复核. 其二, 紧跟图后的脚注「All Claude models were benchmarked with Extended Thinking」没有落点: 两张表里一个 Claude 都没有, 脚注可能属于抓取时丢失的另一张图. 各家开不开扩展思考, 评测就不在同一条件上, 这类口径问题在 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md) 里是通用风险, 本篇尤其明显.
+口径上要给这张表打两个折. 其一, BrowseComp (zh), X Bench Deepsearch (zh), X Browse 三项是中文或 X 场景, X Browse 还是 xAI 自造的自测基准, 没有第三方复核. 其二, 紧跟图后的脚注「All Claude models were benchmarked with Extended Thinking」没有落点: 两张表里一个 Claude 都没有, 脚注可能属于抓取时丢失的另一张图. 各家开不开扩展思考, 评测就不在同一条件上, 这类口径问题在 [Benchmark 与 Eval](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md) 里是通用风险, 本篇尤其明显.
 
 LMArena 一组两个榜 (md 丢了关键数, 数字按 PDF 文字层补). Search Arena 上 grok-4-fast-search 以 **1163 Elo 排第一, 领先 o3-search 17 分**, 注意上榜的是带 search 后缀的搜索管线版本, 不是纯模型; 17 分稳不稳, 页面没给置信区间和对战局数. Text Arena 上纯模型 grok-4-fast 排第 8, 与 7 月 9 日快照的 grok-4-0709 打平, 宣传点落在「同重量级模型都在第 18 名或更低」——可全篇没有参数量, 「重量级」的分档依据报告里没写, 只能当厂商口径听.
 

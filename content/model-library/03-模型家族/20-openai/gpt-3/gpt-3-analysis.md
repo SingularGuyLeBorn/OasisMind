@@ -22,7 +22,7 @@ excerpt: "GPT-3 之前的主流路线是先预训练, 再针对每个任务做�
 
 GPT-3 之前的主流路线是先预训练, 再针对每个任务做微调. 架构可以做到任务无关, 但每个任务仍然要几千到几十万条标注样本, 还要单独训练一份权重. 论文第 1 节把这个限制拆成三条: 标注数据贵, 微调后的模型容易学到窄分布里的伪相关, 人类学新任务并不需要这么多例子. GPT-3 要验证的是另一条路: 不改权重, 把任务说明和少量示例写进上下文, 让一个足够大的语言模型在推理阶段直接完成任务.
 
-这篇论文的贡献不在架构上. 第 2.1 节明说模型和架构沿用前作, 包括修改过的初始化, pre-normalization 和可逆的 tokenization, 唯一的结构改动是层间交替使用稠密注意力和局部带状稀疏注意力, 做法类似 Sparse Transformer. 真正的变量是规模和评测协议. 论文把 in-context learning 定义为预训练外循环之内的一个内循环 (图 1.1): 外循环靠 SGD 学到大量技能, 内循环在一次前向里靠上下文示例识别任务. 这一定义后来成了 Prompt 工程的起点, 相关背景可看 [Prompt 工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md) 和 [ICL 相关综述](../../../../llm-guide/10-综述与前沿论文/03-LLM技术与ICL与Principle/03-LLM技术与ICL与Principle.md).
+这篇论文的贡献不在架构上. 第 2.1 节明说模型和架构沿用前作, 包括修改过的初始化, pre-normalization 和可逆的 tokenization, 唯一的结构改动是层间交替使用稠密注意力和局部带状稀疏注意力, 做法类似 Sparse Transformer. 真正的变量是规模和评测协议. 论文把 in-context learning 定义为预训练外循环之内的一个内循环 (图 1.1): 外循环靠 SGD 学到大量技能, 内循环在一次前向里靠上下文示例识别任务. 这一定义后来成了 Prompt 工程的起点, 相关背景可看 [Prompt 工程](../../../../LargeLanguageModelGuide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md) 和 [ICL 相关综述](../../../../LargeLanguageModelGuide/10-综述与前沿论文/03-LLM技术与ICL与Principle/03-LLM技术与ICL与Principle.md).
 
 三种设定的区别只在示例数. few-shot 的 K 一般取 **10 到 100**, 上限由 2048 的窗口决定; one-shot 给一个示例; zero-shot 只给自然语言说明. 论文特意把 one-shot 单列, 理由是它最接近人类接到任务时的情形. 有开发集的任务会先在开发集上试几个 K, 再用最好的 K 跑测试集, 所以 few-shot 的数字并非完全没有调参, 只是调的是示例数和提示格式, 不碰权重.
 
@@ -38,9 +38,9 @@ GPT-3 之前的主流路线是先预训练, 再针对每个任务做微调. 架�
 
 ## 3. 训练数据: 过滤, 去重, 和不按体量采样
 
-数据侧有三步 (第 2.2 节): 用分类器按与高质量语料的相似度过滤 Common Crawl, 在文档层做模糊去重, 再混入几路精选语料. 附录 A 给了细节. 分类器是逻辑回归, 正例是 WebText, Wikipedia 和网络书籍语料, 负例是未过滤的 Common Crawl. 保留规则是 np.random.pareto(α) > 1 - document_score, α 取 9, 目的是大部分保留高分文档, 同时留下一些分布外的文档. 去重用 Spark 的 MinHashLSH, 10 个哈希, 平均让各数据集缩小约 10%, 并且把 WebText 从 Common Crawl 里模糊剔除. 数据处理的一般做法可参考 [数据处理](../../../../llm-guide/3-预训练/3.1-预训练数据/3.1.3-数据处理/3.1.3-数据处理.md).
+数据侧有三步 (第 2.2 节): 用分类器按与高质量语料的相似度过滤 Common Crawl, 在文档层做模糊去重, 再混入几路精选语料. 附录 A 给了细节. 分类器是逻辑回归, 正例是 WebText, Wikipedia 和网络书籍语料, 负例是未过滤的 Common Crawl. 保留规则是 np.random.pareto(α) > 1 - document_score, α 取 9, 目的是大部分保留高分文档, 同时留下一些分布外的文档. 去重用 Spark 的 MinHashLSH, 10 个哈希, 平均让各数据集缩小约 10%, 并且把 WebText 从 Common Crawl 里模糊剔除. 数据处理的一般做法可参考 [数据处理](../../../../LargeLanguageModelGuide/3-预训练/3.1-预训练数据/3.1.3-数据处理/3.1.3-数据处理.md).
 
-Common Crawl 取了 2016 到 2019 年的 41 个月度分片, 过滤前 45TB 压缩文本, 过滤后 570GB, 正文说约合 400B 个 BPE token, 表 2.2 写 410B. 表 2.2 的关键设计是采样权重不跟体量走: Common Crawl 占 60%, WebText2 占 22%, Books1 和 Books2 各 8%, Wikipedia 3%. 结果是在 300B token 的预算下, Common Crawl 和 Books2 连一遍都没过完, WebText2 和 Wikipedia 被看了 2 到 3 遍. 论文把这叫做用少量过拟合换更高质量的数据. tokenization 方面论文只说沿用可逆 BPE, 背景可看 [分词器与 Tokenizer](../../../../llm-guide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
+Common Crawl 取了 2016 到 2019 年的 41 个月度分片, 过滤前 45TB 压缩文本, 过滤后 570GB, 正文说约合 400B 个 BPE token, 表 2.2 写 410B. 表 2.2 的关键设计是采样权重不跟体量走: Common Crawl 占 60%, WebText2 占 22%, Books1 和 Books2 各 8%, Wikipedia 3%. 结果是在 300B token 的预算下, Common Crawl 和 Books2 连一遍都没过完, WebText2 和 Wikipedia 被看了 2 到 3 遍. 论文把这叫做用少量过拟合换更高质量的数据. tokenization 方面论文只说沿用可逆 BPE, 背景可看 [分词器与 Tokenizer](../../../../LargeLanguageModelGuide/3-预训练/3.2-分词器与Tokenizer/3.2-分词器与Tokenizer.md).
 
 这张表按自身数字复算会出几处偏差. 五个权重相加是 101%. 用 权重 × 300B / 体量 复算 epoch, Common Crawl 是 0.44, 和表一致; WebText2 约 3.5, 表里印 2.9; Wikipedia 约 3.0, 表里印 3.4; Books1 约 2.0, 表里印 1.9, 属于取整范围. 附录 C 还提到 Common Crawl 只用了约 40%, 和表里的 0.44 在同一量级, 但措辞不同. 这些偏差不影响结论, 可它们说明表 2.2 的 epoch 列可能按某个未公开的实际采样日志填写, 而非用表里的权重直接算出.
 
@@ -50,7 +50,7 @@ Common Crawl 取了 2016 到 2019 年的 41 个月度分片, 过滤前 45TB 压�
 
 硬件方面, 所有模型在微软提供的高带宽集群上用 V100 训练, 大模型同时使用矩阵乘法内的模型并行和跨层的模型并行. 表 D.1 按 6 × 参数量 × token 数估算总算力, 并注明忽略了注意力部分的计算. 175B 为 **3.64E+03** PF-days. 按 6 × 174.6e9 × 300e9 / 8.64e19 复算约 3,637 PF-days, 和表一致. 13B 是 268 PF-days, 2.7B 是 55.2 PF-days. 图 2.2 的说明拿 「GPT-3 3B」 和 RoBERTa-Large 比, 说两者算力都在 50 PF-days 左右, 表 2.1 没有 3B 这一档, 按数值看指的是 2.7B (55.2 对 49.3).
 
-图 3.1 把八个模型的验证损失画成算力的函数, 拟合出 L = 2.57 · C^(-0.048). 代入 C = 3640 得到约 1.73. 论文要说明的是: 按 Kaplan 等人的 Scaling Laws, 验证损失在跨三个数量级的模型上仍然是平滑幂律, 而且这种平滑在下游任务上大体延续. 图 2.2 的说明还特意提到, 依据这组规律, 他们用 「更大的模型, 更少的 token」 来分配算力. Scaling Laws 的推导与后续修正可参考 [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md). 稀疏注意力这一项, 论文只写了交替稠密与局部带状, 没有给带宽等超参, 综述见 [稀疏注意力综述](../../../../llm-guide/2-核心原理与架构/2.4-稀疏注意力/2.4-稀疏注意力.md).
+图 3.1 把八个模型的验证损失画成算力的函数, 拟合出 L = 2.57 · C^(-0.048). 代入 C = 3640 得到约 1.73. 论文要说明的是: 按 Kaplan 等人的 Scaling Laws, 验证损失在跨三个数量级的模型上仍然是平滑幂律, 而且这种平滑在下游任务上大体延续. 图 2.2 的说明还特意提到, 依据这组规律, 他们用 「更大的模型, 更少的 token」 来分配算力. Scaling Laws 的推导与后续修正可参考 [Scaling Law](../../../../LargeLanguageModelGuide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md). 稀疏注意力这一项, 论文只写了交替稠密与局部带状, 没有给带宽等超参, 综述见 [稀疏注意力综述](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.4-稀疏注意力/2.4-稀疏注意力.md).
 
 ## 5. 评测协议: 同一个模型怎样当选择题和生成题用
 

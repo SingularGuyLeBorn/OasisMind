@@ -3,7 +3,7 @@ import os
 root = r"D:\ALL IN AI\OasisMind-full-clone"
 src = os.path.join(root, "content", "models", "03-模型家族")
 chapter = os.path.join(root, "content", "model-library", "03-模型家族")
-order = ["deepseek", "kimi", "qwen", "stepfun", "mimo", "olmo"]
+order = ["deepseek", "kimi", "qwen", "stepfun", "mimo", "OLMo"]
 vendors = sorted(d for d in os.listdir(src) if os.path.isdir(os.path.join(src, d)))
 sequence = order + [vendor for vendor in vendors if vendor not in order]
 

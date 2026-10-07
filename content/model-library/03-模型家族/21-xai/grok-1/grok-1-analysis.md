@@ -21,7 +21,7 @@ excerpt: "这份材料能回答的问题很窄: xAI 在什么时候, 用什么�
 
 ## 2. 这次放出的是什么: 预训练结束时的原始 checkpoint
 
-公告反复强调的是「base」. 放出的是「raw base model checkpoint from the Grok-1 pre-training phase」, 预训练在 2023 年 10 月结束, 模型「not fine-tuned for any specific application, such as dialogue」. 换句话说, 拿到的是一个**只做过 next-token prediction 的底座**, 不会像聊天产品那样按指令回答, 要用于对话还得自己做 SFT 和后续对齐. 基座与后训练的分工可以对照 [预训练](../../../../llm-guide/3-预训练/3-预训练.md) 与 [SFT](../../../../llm-guide/4-后训练/4.2-SFT/4.2-SFT.md).
+公告反复强调的是「base」. 放出的是「raw base model checkpoint from the Grok-1 pre-training phase」, 预训练在 2023 年 10 月结束, 模型「not fine-tuned for any specific application, such as dialogue」. 换句话说, 拿到的是一个**只做过 next-token prediction 的底座**, 不会像聊天产品那样按指令回答, 要用于对话还得自己做 SFT 和后续对齐. 基座与后训练的分工可以对照 [预训练](../../../../LargeLanguageModelGuide/3-预训练/3-预训练.md) 与 [SFT](../../../../LargeLanguageModelGuide/4-后训练/4.2-SFT/4.2-SFT.md).
 
 这里有一个容易读错的链接. 正文里「Grok-1」指向 `x.ai/news/grok`, 那是 2023 年 11 月发布 Grok 聊天产品的新闻. 聊天产品背后的模型做过面向对话的微调, 这次放出的是更早的预训练底座, **两者不是同一份权重**. 从 2023 年 10 月预训练结束到 2024 年 3 月 17 日发布, 中间约 5 个月, 本页没说这段时间 checkpoint 有没有再训练, 只说放出的是预训练阶段的产物.
 
@@ -29,19 +29,19 @@ excerpt: "这份材料能回答的问题很窄: xAI 在什么时候, 用什么�
 
 ## 3. 结构信息: 314B 和 25% 之外本页没有
 
-「Model Details」里和结构有关的只有一句:「314B parameter Mixture-of-Experts model with 25% of the weights active on a given token.」 314B 是总参数, 正文前面写成「314 billion」, 是同一个数. 25% 是每个 token 用到的权重比例. 页面没有印激活参数的绝对值, 按比例换算约 78.5B. 这个换算有一个前提页面没交代: 前半句说「parameter」, 后半句说「weights」, 25% 的分母是否包含 embedding, 注意力层这类每个 token 都要经过的共享部分, 页面没说. 如果共享部分不计入, 实际参与计算的参数会比 78.5B 多. MoE 为什么能让总参数和单 token 计算量分开, 可以看 [MoE](../../../../llm-guide/2-核心原理与架构/2.6-MoE/2.6-MoE.md).
+「Model Details」里和结构有关的只有一句:「314B parameter Mixture-of-Experts model with 25% of the weights active on a given token.」 314B 是总参数, 正文前面写成「314 billion」, 是同一个数. 25% 是每个 token 用到的权重比例. 页面没有印激活参数的绝对值, 按比例换算约 78.5B. 这个换算有一个前提页面没交代: 前半句说「parameter」, 后半句说「weights」, 25% 的分母是否包含 embedding, 注意力层这类每个 token 都要经过的共享部分, 页面没说. 如果共享部分不计入, 实际参与计算的参数会比 78.5B 多. MoE 为什么能让总参数和单 token 计算量分开, 可以看 [MoE](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.6-MoE/2.6-MoE.md).
 
 本页没有的结构信息比有的多得多: 专家个数, 每个 token 选几个专家, 路由方式和负载均衡, 层数, 隐藏维度, 注意力头数, 是否用 GQA 或 RoPE, 上下文长度, 词表大小, 权重存储精度. 这些都**不能从总参数和激活比例反推出来**, 比如 25% 既可以对应「8 选 2」, 也可以对应「16 选 4」或共享专家加路由专家的其它组合, 本页没给任何能区分它们的线索. 同家族里, [xAI 新闻页分析](../xai/xai-analysis.md) 提到 Grok-1.5 的上下文是 128,000 token, 但那是另一个型号, 不能挪到 Grok-1 身上.
 
 ## 4. 训练: 自研 JAX + Rust 训练栈, 数据只有形容词
 
-训练相关的原文是两句. 一句是「Base model trained on a large amount of text data」, 另一句是「Trained from scratch by xAI using a custom training stack on top of JAX and Rust in October 2023.」前一句只说是文本数据和「large amount」, 没有 token 数, 语种比例, 来源或截止时间. 后一句给了技术栈: 基于 JAX, 再用 Rust 写了定制部分. 至于 Rust 管的是调度, 数据管线还是容错, 本页没说. 训练框架的一般分工可以对照 [训练框架](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.3-训练框架/6.1.3-训练框架.md), MoE 训练时的专家并行与通信问题见 [MoE 系统与并行](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md).
+训练相关的原文是两句. 一句是「Base model trained on a large amount of text data」, 另一句是「Trained from scratch by xAI using a custom training stack on top of JAX and Rust in October 2023.」前一句只说是文本数据和「large amount」, 没有 token 数, 语种比例, 来源或截止时间. 后一句给了技术栈: 基于 JAX, 再用 Rust 写了定制部分. 至于 Rust 管的是调度, 数据管线还是容错, 本页没说. 训练框架的一般分工可以对照 [训练框架](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.3-训练框架/6.1.3-训练框架.md), MoE 训练时的专家并行与通信问题见 [MoE 系统与并行](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md).
 
 时间口径上有一处不一致. 第 1 页说预训练「concluded in October 2023」, 第 2 页说「trained ... in October 2023」, 后者读起来像整个训练都在 10 月完成. 按第 1 页理解更稳妥: 10 月是结束时间, 起点本页没有, 所以**训练时长和算力都算不出来**. 第 2 页的「October 2023.」还连同句号一起被做成了指向 x.ai 首页的链接, 这是网页模板遗留, 不是训练记录的出处. 本页也没有 Scaling Laws 分析, 训练曲线或损失值.
 
 ## 5. 使用与部署: 本页只给了一个 GitHub 入口
 
-「To get started with using the model, follow the instructions at github.com/xai-org/grok」是全文唯一的使用说明. 硬件要求, 推荐的推理框架, 需要几张卡, 支持什么精度, 本页都没写. 可以粗算一下量级: 314B 参数如果按每参数 2 字节存, 单权重就约 628 GB, 按 1 字节量化也要约 314 GB. 这是按参数量做的算术, 页面没说实际发布的存储格式. MoE 的激活比例降低的是每个 token 的计算量, **不降低需要装进显存或内存的总权重**, 所以部署门槛仍由 314B 决定. 量化的一般做法见 [量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md), MoE 部署时的专家放置问题见 [MoE 的工程实践](../../../../llm-guide/2-核心原理与架构/2.6-MoE/03-MoE负载均衡与容量/03-MoE负载均衡与容量.md).
+「To get started with using the model, follow the instructions at github.com/xai-org/grok」是全文唯一的使用说明. 硬件要求, 推荐的推理框架, 需要几张卡, 支持什么精度, 本页都没写. 可以粗算一下量级: 314B 参数如果按每参数 2 字节存, 单权重就约 628 GB, 按 1 字节量化也要约 314 GB. 这是按参数量做的算术, 页面没说实际发布的存储格式. MoE 的激活比例降低的是每个 token 的计算量, **不降低需要装进显存或内存的总权重**, 所以部署门槛仍由 314B 决定. 量化的一般做法见 [量化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md), MoE 部署时的专家放置问题见 [MoE 的工程实践](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.6-MoE/03-MoE负载均衡与容量/03-MoE负载均衡与容量.md).
 
 评测方面, 本页一个分数都没有. 没有和同期开源模型的对比表, 没有 MMLU 之类的通用评测, 也没有安全评估. 作为未经微调的基座, 它的直接用途是**继续训练或研究, 而不是开箱对话**. 同家族的 [Grok-1.5 Vision](../grok-1-5v/grok-1-5v-bi.md) 专页才开始出现评测表, 那是一个月后的另一个型号.
 

@@ -57,7 +57,7 @@ const GARDEN_ROOT_LABEL: Record<string, string> = {
   posts: "博客",
   knowledge: "知识库",
   resources: "资源",
-  "llm-guide": "LLM 指南",
+  "LargeLanguageModelGuide": "LLM 指南",
   diffusion: "扩散模型",
 };
 

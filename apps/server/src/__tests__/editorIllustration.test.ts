@@ -53,7 +53,7 @@ describe("generateEditorIllustration", () => {
           "```text\nCreate a technical educational figure about linear attention in four panels.\n```\n",
         after: "",
         title: "线性注意力",
-        garden: "llm-guide",
+        garden: "LargeLanguageModelGuide",
         postId: "clxxxxxxxxxxxxxxxxxxxxxxxx",
       },
     );
@@ -68,7 +68,7 @@ describe("generateEditorIllustration", () => {
         name: "fig-001.png",
         unique: false,
         mimeType: "image/png",
-        garden: "llm-guide",
+        garden: "LargeLanguageModelGuide",
         postId: "clxxxxxxxxxxxxxxxxxxxxxxxx",
       }),
     );

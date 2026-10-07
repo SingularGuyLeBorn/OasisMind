@@ -2,7 +2,7 @@
 
 写新笔记前至少精读 **用户点名的两篇 + 下面「加选」里与本篇同族的一篇**。不要只看本摘要。
 
-路径均相对仓库根 `content/llm-guide/`。
+路径均相对仓库根 `content/LargeLanguageModelGuide/`。
 
 ## 用户点名（风格锚）
 

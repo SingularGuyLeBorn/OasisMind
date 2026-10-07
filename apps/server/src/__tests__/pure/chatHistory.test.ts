@@ -103,7 +103,7 @@ describe("chatHistory 工具回放", () => {
         {
           type: "post",
           id: "clxxxxxxxxxxxxxxxxxxxxxxxxx",
-          garden: "llm-guide",
+          garden: "LargeLanguageModelGuide",
           slug: "4.7-持续学习",
           title: "持续学习",
           excerpt: "一句话摘要",
@@ -113,7 +113,7 @@ describe("chatHistory 工具回放", () => {
       false,
     );
     expect(typeof content).toBe("string");
-    expect(content).toContain("[引用文章 · llm-guide/4.7-持续学习 · 持续学习]");
+    expect(content).toContain("[引用文章 · LargeLanguageModelGuide/4.7-持续学习 · 持续学习]");
     expect(content).toContain("一句话摘要");
     expect(content).toContain("正文开头……");
     expect(content).toContain("总结这篇文章");

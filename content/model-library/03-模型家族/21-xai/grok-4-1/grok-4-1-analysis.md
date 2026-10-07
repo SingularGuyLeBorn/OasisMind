@@ -21,11 +21,11 @@ excerpt: "这份材料能回答的问题: Grok 4.1 何时上线, 在哪些产品
 
 ## 2. 训练: 一句话的方法, 不可验证的奖励交给推理模型打分
 
-全文关于训练只有两句. 一句是沿用「the same large scale reinforcement learning infrastructure that powered Grok 4」, 优化目标是「style, personality, helpfulness, and alignment」; 另一句是为这些「non-verifiable reward signals」开发了新方法, 用「frontier agentic reasoning models as reward models」自主评估并迭代回答. 背景可以对照两条旧路: 经典 RLHF 先用人类偏好训一个打分的奖励模型, 再做策略优化, 见 [基于奖励模型的 RL](../../../../llm-guide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md); 用 AI 反馈代替人类标注的做法见 [RLAIF](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md). xAI 自称的新意在于评委本身是会推理, 带 agentic 能力的前沿模型, 而不是一个只输出标量的打分头.
+全文关于训练只有两句. 一句是沿用「the same large scale reinforcement learning infrastructure that powered Grok 4」, 优化目标是「style, personality, helpfulness, and alignment」; 另一句是为这些「non-verifiable reward signals」开发了新方法, 用「frontier agentic reasoning models as reward models」自主评估并迭代回答. 背景可以对照两条旧路: 经典 RLHF 先用人类偏好训一个打分的奖励模型, 再做策略优化, 见 [基于奖励模型的 RL](../../../../LargeLanguageModelGuide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md); 用 AI 反馈代替人类标注的做法见 [RLAIF](../../../../LargeLanguageModelGuide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md). xAI 自称的新意在于评委本身是会推理, 带 agentic 能力的前沿模型, 而不是一个只输出标量的打分头.
 
 但页面没给能复现或评估这套方法的任何一环: 评委是哪个模型, 它给绝对分还是做成对比较, 评分细则由谁写, 评委会不会调用工具, 策略优化用哪种算法, 训了多少步. 「iterate on responses」是指评委改写回答再拿来训练, 还是指多轮打分, 也读不出来. 所以这一节能下的结论只有一条: **4.1 的改动集中在后训练的奖励设计上**, 至于底座是否换过, 页面既没说换, 也没说没换.
 
-这套做法有一个已知风险, 页面没有讨论. 策略对着 LLM 评委优化, 容易学到评委偏爱的表面特征, 比如更长, 情绪更浓, 更有「人设」. 第 5, 7, 9 页的三组示例恰好都朝这个方向变 (见第 7 节). 更麻烦的是评测端: EQ-Bench3 和 Creative Writing v3 本身也是 LLM 评判的, EQ-Bench3 的评委是 Claude 3.7 Sonnet. 训练奖励和评测打分都来自 LLM 的判断, 评委模型虽然不同, 但它们的偏好相关到什么程度, 页面没做分析. 评测证据的强弱怎么分级, 可以参考 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md). 另外, 第 1 页说模型「fully retaining the razor-sharp intelligence and reliability of its predecessors」, 本页没有任何数学, 代码或推理类基准来支撑「完整保留」, 这一点只能等 model card 或第三方评测.
+这套做法有一个已知风险, 页面没有讨论. 策略对着 LLM 评委优化, 容易学到评委偏爱的表面特征, 比如更长, 情绪更浓, 更有「人设」. 第 5, 7, 9 页的三组示例恰好都朝这个方向变 (见第 7 节). 更麻烦的是评测端: EQ-Bench3 和 Creative Writing v3 本身也是 LLM 评判的, EQ-Bench3 的评委是 Claude 3.7 Sonnet. 训练奖励和评测打分都来自 LLM 的判断, 评委模型虽然不同, 但它们的偏好相关到什么程度, 页面没做分析. 评测证据的强弱怎么分级, 可以参考 [评测科学与证据](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md). 另外, 第 1 页说模型「fully retaining the razor-sharp intelligence and reliability of its predecessors」, 本页没有任何数学, 代码或推理类基准来支撑「完整保留」, 这一点只能等 model card 或第三方评测.
 
 ## 3. 静默灰度与 64.78%: 线上盲测缺了分母
 
@@ -37,7 +37,7 @@ excerpt: "这份材料能回答的问题: Grok 4.1 何时上线, 在哪些产品
 
 ## 4. LMArena: 1483, 1465 和图里找不到的 #33
 
-正文说 Grok 4.1 Thinking 以 1483 Elo 排第一, 领先最高的非 xAI 模型 31 分; 非推理的 Grok 4.1 以 1465 排第二. 截图里最高的非 xAI 模型是 gemini-2.5-pro 1452, 1483 − 1452 = 31, 对得上. 31 分换成期望胜率约 54.4%, 也就是一百次对决里大约赢 54 次, 正文用「commanding margin」形容, 有点重. 非推理版超过其它模型完整推理配置这句也成立: 1465 高于 claude-sonnet-4-5 thinking-32k 的 1450, claude-opus-4-1 thinking-16k 的 1449 和 gpt-5-high 的 1437. 对产品来说这一条比第一名更实在, 因为 tensor 不消耗思考 token, 延迟和成本都低. 推理模式与非推理模式的差别见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
+正文说 Grok 4.1 Thinking 以 1483 Elo 排第一, 领先最高的非 xAI 模型 31 分; 非推理的 Grok 4.1 以 1465 排第二. 截图里最高的非 xAI 模型是 gemini-2.5-pro 1452, 1483 − 1452 = 31, 对得上. 31 分换成期望胜率约 54.4%, 也就是一百次对决里大约赢 54 次, 正文用「commanding margin」形容, 有点重. 非推理版超过其它模型完整推理配置这句也成立: 1465 高于 claude-sonnet-4-5 thinking-32k 的 1450, claude-opus-4-1 thinking-16k 的 1449 和 gpt-5-high 的 1437. 对产品来说这一条比第一名更实在, 因为 tensor 不消耗思考 token, 延迟和成本都低. 推理模式与非推理模式的差别见 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 读这张图还要注意三处. 一是轴名写着「Overall Style Control Elo」, 这是 LMArena 对回答长度和格式做过校正后的分数, 正文只写「Elo」, 没交代. 考虑到 4.1 的回答普遍更长, 这个前提对理解分数很重要. 二是图只挑了 16 个模型, grok-4-0709 以 1409 垫底, grok-4-fast 是 1420. 正文说 Grok 4「had an overall rank of #33」, 这个名次在图里看不到, 读者没法核对. 三是置信区间. 按网格线目测, grok-4.1 的区间大约 1454 到 1476, gemini-2.5-pro 大约 1449 到 1456, 两者几乎相接; grok-4.1-thinking 大约 1472 到 1494, 和第三名分得开. 所以第一名稳, 第二名对第三名的领先落在误差边缘. 这些端点是按像素估的, 页面没有印出. 截图对应的榜单日期页面也没写, LMArena 分数会随新投票漂移, 1483 只代表发文前后的某个时点.
 

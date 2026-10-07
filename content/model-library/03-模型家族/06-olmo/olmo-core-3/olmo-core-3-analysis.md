@@ -10,7 +10,7 @@ excerpt: "Olmo-core 3 把 MoE 训练从全重分片 FSDP 换到 DDP, 再叠加�
 
 来源: 同目录 [对照译稿](./olmo-core-3-bi.md) ([Supercharging Olmo-core for Efficient and Scalable MoE Training](https://allenai.org/papers/olmocore3), Ai2, 2026-10, 168 页). 这是一份训练系统报告, 没有发布新模型. 代码在 [allenai/OLMo-core](https://github.com/allenai/OLMo-core), MoE 部分集中在 `src/olmo_core/nn/moe/v2/`. 同期博客 [Olmo-core 3](https://huggingface.co/blog/allenai/olmocore3) 给了几组对外数字. 直接前作是 [Olmo 3 解读](../olmo-3/olmo-3-analysis.md) 里的稠密 FSDP 训练栈; 同一家族的架构实验见 [Olmo Hybrid 解读](../olmo-hybrid/olmo-hybrid-analysis.md).
 
-一句话身份: Olmo-core 3 是 Ai2 为 MoE 预训练重写的执行路径. 它以 **DDP** 为数据并行底座, 叠加 **分布式优化器**, **专家并行 (EP)** 和 **流水线并行 (PP)**, token 搬运改用基于 NVSHMEM 对称内存的 **rowwise EP**, 并去掉了前向路径上的 host 同步. 在 8 张 B300 上, 激活 3.2B 的模型从 4.6B 总参数扩到 47B, 吞吐从 54.5K 降到 52K token/s/GPU; 最大配置 1.2T 总参数, 58B 激活, 在 512 张 B300 上随机路由跑到每卡 858 TFLOP/s. MoE 的基础推导见 [2.6 MoE](../../../../llm-guide/2-核心原理与架构/2.6-MoE/2.6-MoE.md), 系统侧背景见 [6.1.8 MoE 系统与并行](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md).
+一句话身份: Olmo-core 3 是 Ai2 为 MoE 预训练重写的执行路径. 它以 **DDP** 为数据并行底座, 叠加 **分布式优化器**, **专家并行 (EP)** 和 **流水线并行 (PP)**, token 搬运改用基于 NVSHMEM 对称内存的 **rowwise EP**, 并去掉了前向路径上的 host 同步. 在 8 张 B300 上, 激活 3.2B 的模型从 4.6B 总参数扩到 47B, 吞吐从 54.5K 降到 52K token/s/GPU; 最大配置 1.2T 总参数, 58B 激活, 在 512 张 B300 上随机路由跑到每卡 858 TFLOP/s. MoE 的基础推导见 [2.6 MoE](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.6-MoE/2.6-MoE.md), 系统侧背景见 [6.1.8 MoE 系统与并行](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md).
 
 ## 1. MoE 让稠密训练栈多付两种成本
 
@@ -188,7 +188,7 @@ Table 20 取两个窗口的中位数: 高系数一支 CE 从 2.473 升到 2.523 
 
 ### 5.1. MXFP8 的格式和代价
 
-MXFP8 每 32 个值共享一个 E8M0 scale (只有指数, 无符号无尾数), 每个值本身是 1 字节 E4M3, Blackwell 上由 `tcgen05.mma` 的 `block_scale` 模式原生支持. 一个块的存储是 $B_{MXFP8}=1+1/32=33/32$ 字节每值 (eq. 57), 替换 BF16 的 2 字节省 $1-33/64\approx48.4\%$. 量化是 $q=\mathrm{E4M3}(x/s)$, 还原是 $\hat x=sq$ (eq. 58), $s$ 是 2 的幂; GEMM 要求的 scale 排布还要再做一次 swizzle. B300 的 BF16 稠密峰值是 2250 TFLOP/s, FP8 是 4500, 正好 2 倍, 但这只是 Tensor Core 上限, 量化, 反量化, swizzle 和小 GEMM 都会吃掉一部分. 背景推导见 [MXFP4 与 NVFP4](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/03-MXFP4与NVFP4/03-MXFP4与NVFP4.md).
+MXFP8 每 32 个值共享一个 E8M0 scale (只有指数, 无符号无尾数), 每个值本身是 1 字节 E4M3, Blackwell 上由 `tcgen05.mma` 的 `block_scale` 模式原生支持. 一个块的存储是 $B_{MXFP8}=1+1/32=33/32$ 字节每值 (eq. 57), 替换 BF16 的 2 字节省 $1-33/64\approx48.4\%$. 量化是 $q=\mathrm{E4M3}(x/s)$, 还原是 $\hat x=sq$ (eq. 58), $s$ 是 2 的幂; GEMM 要求的 scale 排布还要再做一次 swizzle. B300 的 BF16 稠密峰值是 2250 TFLOP/s, FP8 是 4500, 正好 2 倍, 但这只是 Tensor Core 上限, 量化, 反量化, swizzle 和小 GEMM 都会吃掉一部分. 背景推导见 [MXFP4 与 NVFP4](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.2-混合精度训练/03-MXFP4与NVFP4/03-MXFP4与NVFP4.md).
 
 线性层的前向是 $Y=XW^\top$, dgrad 是 $\nabla_X=\nabla_YW$, Wgrad 是 $\nabla_W=\nabla_Y^\top X$ (eq. 60). 前向和 dgrad 用同一个权重的两个方向, 每个方向要一份自己的量化数据和 scale 排布, 所以每个权重有两份缓存, 合计 $2\times33/32=2.0625$ 字节, 比一份 BF16 权重还多 3.125%. **MXFP8 不减少常驻训练状态**, FP32 主权重和优化器状态照旧, 只是 BF16 计算权重换成了两份缓存. scale 怎么选也影响训练: OCP 的 floor 规则先把块最大值 $a$ 向下取到 2 的幂再除以 $2^8$, NVIDIA 的 rceil 规则取 $e=\lceil\log_2(a/448)\rceil$, 448 是 E4M3 的最大值. 以 $a=500$ 为例, floor 选 $s=1$, 超过 448 的值被截断; rceil 选 $s=2$, 不截断. 代码里的默认值是 rceil ([`mxfp8_config.py`](https://github.com/allenai/OLMo-core/blob/main/src/olmo_core/mxfp8_config.py) 读环境变量 `OLMO_MXFP8_SCALE_MODE`, 缺省为 `rceil`).
 
@@ -273,7 +273,7 @@ Adam 下没有统一的指数. 报告把学习率写成 $\eta(B)=\eta_\infty/(1+
 
 §22 只是设计映射, 没有 MoE 后训练的实测. SFT 只改 label 张量和损失分母 (prompt 位置标为 −100), 但被 mask 的位置照样经过 router, dispatch 和专家 GEMM, 在 EP 下照样占用互联带宽, 所以后训练吞吐要按监督 token 重新统计. DPO 一个样本变成 chosen 和 rejected 两条序列, 共享前缀的路由计算会做两次, 参考模型要么常驻要么预先算好 log-prob. RLVR 还需要 rollout 推理, 校验和权重同步, 这些在报告的测量之外; 拓扑无关 checkpoint 可以作为权重传输的基础, 但延迟没测.
 
-§23 Table 39 按四个维度对比同类系统. Megatron-Core 用分布式优化器常驻本地权重, dispatch 作为可选后端, 矩用 BF16, 重叠依赖足够的独立工作并划出专门的 SM; PyTorch FSDP 全重分片时每次前向反向前 gather 权重; DeepSpeed-MoE 结合 ZeRO 与 EP; DeepSeek-V3 和 DeepEP 用 ZeRO-1 保留完整本地权重, 主权重和累积梯度 FP32, AdamW 矩 BF16, 显式分配通信 SM. Olmo-core 3 的组合是常驻本地权重, 固定容量的路由索引式逐行搬运, FP32 主权重和优化器状态为权威, 默认阶段串行. 报告也承认, 现有测量没有把常驻权重和专家放置的作用分开, 不能据此说它在墙钟或显存上普遍优于全重分片 FSDP. 更完整的系统分类见 [6.1.8 MoE 系统与并行](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md), 容量与负载均衡的通用推导见 [MoE 负载均衡与容量](../../../../llm-guide/2-核心原理与架构/2.6-MoE/03-MoE负载均衡与容量/03-MoE负载均衡与容量.md).
+§23 Table 39 按四个维度对比同类系统. Megatron-Core 用分布式优化器常驻本地权重, dispatch 作为可选后端, 矩用 BF16, 重叠依赖足够的独立工作并划出专门的 SM; PyTorch FSDP 全重分片时每次前向反向前 gather 权重; DeepSpeed-MoE 结合 ZeRO 与 EP; DeepSeek-V3 和 DeepEP 用 ZeRO-1 保留完整本地权重, 主权重和累积梯度 FP32, AdamW 矩 BF16, 显式分配通信 SM. Olmo-core 3 的组合是常驻本地权重, 固定容量的路由索引式逐行搬运, FP32 主权重和优化器状态为权威, 默认阶段串行. 报告也承认, 现有测量没有把常驻权重和专家放置的作用分开, 不能据此说它在墙钟或显存上普遍优于全重分片 FSDP. 更完整的系统分类见 [6.1.8 MoE 系统与并行](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md), 容量与负载均衡的通用推导见 [MoE 负载均衡与容量](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.6-MoE/03-MoE负载均衡与容量/03-MoE负载均衡与容量.md).
 
 ## 参考文献
 

@@ -23,7 +23,7 @@ excerpt: "这份材料能回答三件事: Grok 3 和 Grok 3 mini 的推理模式
 
 讲训练的原文只有三处. 第一处是「Trained on our Colossus supercluster with 10x the compute of previous state-of-the-art models」. 10 倍的参照系不明确, 可以是 xAI 的上一代 [Grok-2](../grok-2/grok-2-bi.md), 也可以是业界此前最强的模型. 页面没给训练 FLOPs, GPU 型号和数量, 训练时长, 所以这个倍数换算不成绝对量. 第 5 页的「200,000 GPU cluster」跟在「preparing to train even larger models」后面, 属于下一步计划, 不能当成 Grok 3 的训练规模.
 
-第二处是推理模型「trained using reinforcement learning (RL) at an unprecedented scale to refine its chain-of-thought process」. 公告描述了 RL 之后模型的行为: 回溯纠错, 简化步骤, 调用预训练知识, 比较多种思路, 验证自己的解答. 这些是对输出的观察, 不是配方. 奖励来自规则校验还是奖励模型, 用的是 PPO 还是 GRPO 一类算法, 题目从哪来, 训练了多少步, 页面都没写. 推理模型 RL 的一般做法可以看 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md) 和 [基于奖励模型的 RL](../../../../llm-guide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md), 那是背景, 不是 Grok 3 的做法.
+第二处是推理模型「trained using reinforcement learning (RL) at an unprecedented scale to refine its chain-of-thought process」. 公告描述了 RL 之后模型的行为: 回溯纠错, 简化步骤, 调用预训练知识, 比较多种思路, 验证自己的解答. 这些是对输出的观察, 不是配方. 奖励来自规则校验还是奖励模型, 用的是 PPO 还是 GRPO 一类算法, 题目从哪来, 训练了多少步, 页面都没写. 推理模型 RL 的一般做法可以看 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md) 和 [基于奖励模型的 RL](../../../../LargeLanguageModelGuide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md), 那是背景, 不是 Grok 3 的做法.
 
 第三处是小节标题「Pretraining on a Massive Scale」. 标题说预训练, 这一节却没有任何预训练信息, 数据量, 数据来源, 截止时间都没有, 内容全是关掉推理后的评测结论. 能读出的意思只有一层: xAI 想说明 Grok 3 不开推理时, 底座本身也够强.
 
@@ -40,7 +40,7 @@ excerpt: "这份材料能回答三件事: Grok 3 和 Grok 3 mini 的推理模式
 
 按印出的数字, 四张图的第一名都是 Grok 家族, 家族最好成绩领先 o3 mini (high) 4.9 到 8.5 个点. 但每根 Grok 柱子都分深橙, 浅橙两段, 印出的数字对应浅色段末端, 图上没有图例. 正文说 93.3% 是「our highest level of test-time compute (cons@64)」, 也就是每题采样 64 次后做 **majority voting**. 所以浅色段最可能是 cons@64, 深色段是单次或较低预算的成绩. 按坐标轴目测, AIME'25 上 Grok 3 的深色段约 77, mini 约 82, 都低于 o3 mini (high) 的 86.5; GPQA 上两者深色段都在 80 左右, 和 o3 mini (high) 的 79.7 差不多. 目测误差大约一两个点, 但结论方向不变: 领先主要来自 cons@64 这一段.
 
-对手的柱子大多是单段灰色, 它们是单次作答还是也用了多次采样, 图上没说. 唯一的例外是 AIME'24 里 o1 的柱子, 深色段约 75, 浅灰延伸到 83.3, 说明这张图对不同模型混用了不同设置. 对手的标注也不统一: o1 在 AIME'25 是「(medium)」, 在 LCB 是「(high)」, 在 AIME'24 和 GPQA 不带括号; DeepSeek 在 LCB 写的是「R1-Preview」. 公平的比较应该在同一采样预算下进行, 这四张图做不到. 评测口径的一般问题见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
+对手的柱子大多是单段灰色, 它们是单次作答还是也用了多次采样, 图上没说. 唯一的例外是 AIME'24 里 o1 的柱子, 深色段约 75, 浅灰延伸到 83.3, 说明这张图对不同模型混用了不同设置. 对手的标注也不统一: o1 在 AIME'25 是「(medium)」, 在 LCB 是「(high)」, 在 AIME'24 和 GPQA 不带括号; DeepSeek 在 LCB 写的是「R1-Preview」. 公平的比较应该在同一采样预算下进行, 这四张图做不到. 评测口径的一般问题见 [评测科学与证据](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 AIME 还有题量的问题. AIME 每场 15 题, 93.3% 正好是 15 题对 14 题, 或两场 30 题对 28 题. 按 15 题算, 一题就是 6.7 个点, AIME'25 上 Grok 3 对 o3 mini (high) 的 6.8 个点差距大约只相当于一道题. mini 的 90.8% 和 o3 mini (high) 的 86.5% 都不是 15 或 30 的整数倍能得出的比例, 说明这些数字是多次运行取平均, 或者题目范围不是一整场, 页面都没说明. AIME'25 在发文前 7 天才公布, 是四项里最不可能被训练数据覆盖的一项; AIME'24 和 GPQA 公开已久, 页面没有讨论数据污染.
 
@@ -54,13 +54,13 @@ AIME 还有题量的问题. AIME 每场 15 题, 93.3% 正好是 15 题对 14 题
 
 非推理模式的说法是: 在非推理模型中, Grok 3 在 GPQA, MMLU-Pro, AIME 上取得最先进的结果, 在图像理解 (MMMU) 和视频理解 (EgoSchema) 上也很出色. 支撑它的是第 5 页那张表, 可惜左侧大半被橙色色块遮住. 能看清的只有最右两列表头「4o」和「Claude 3.5 Sonnet」, Claude 3.5 Sonnet 一列的八个值 (16.0%, 65.0%, 40.2%, 78.0%, 69.9%, 28.4%, 70.4%, —), 以及最后一行 EgoSchema 的六个值 (74.5%, 74.3%, 71.9%, —, 72.2%, —). 行内最高的是第一列 74.5%, 但第一列表头被遮住, 不能确认是不是 Grok 3.
 
-表有八行, 正文只点名了五个基准, 行名看不到, 所以哪一行对应 GPQA 或 AIME 都对不上号. 唯一完整可读的多模态数字来自 MMMU 那张图, 可它标的是「Grok 3 Beta (Think)」, 属于推理模式: Grok 3 78, o1 78.2, Gemini 2.0 Flash Thinking 75.4, Grok 3 排第二. 推理模式的五张条形图里, 只有这一张 Grok 家族没拿第一. 正文说非推理模式在 MMMU 上「excels」, 本目录能核对的只有推理模式的这个第二名. 视频理解基准的一般情况见 [视频理解模型](../../../../llm-guide/8-多模态/8.4-视频理解模型/8.4-视频理解模型.md).
+表有八行, 正文只点名了五个基准, 行名看不到, 所以哪一行对应 GPQA 或 AIME 都对不上号. 唯一完整可读的多模态数字来自 MMMU 那张图, 可它标的是「Grok 3 Beta (Think)」, 属于推理模式: Grok 3 78, o1 78.2, Gemini 2.0 Flash Thinking 75.4, Grok 3 排第二. 推理模式的五张条形图里, 只有这一张 Grok 家族没拿第一. 正文说非推理模式在 MMMU 上「excels」, 本目录能核对的只有推理模式的这个第二名. 视频理解基准的一般情况见 [视频理解模型](../../../../LargeLanguageModelGuide/8-多模态/8.4-视频理解模型/8.4-视频理解模型.md).
 
 ## 6. 1M 上下文和 LOFT (128k)
 
-原文是「a context window of 1 million tokens — 8 times larger than our previous models」. 同家族 [xAI 新闻页](../xai/xai-bi.md) 记着 Grok-1.5 的上下文是 128,000 token, 1,000,000 除以 128,000 约 7.8; 两边都按 2 的幂算 (1,048,576 和 131,072) 则正好 8 倍. 「previous models」指哪一代, 页面没说. 窗口怎么扩到 1M, 位置编码怎么处理, 训练时用了多长的序列, 都没有. 长上下文扩展的常见路线可以看 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md).
+原文是「a context window of 1 million tokens — 8 times larger than our previous models」. 同家族 [xAI 新闻页](../xai/xai-bi.md) 记着 Grok-1.5 的上下文是 128,000 token, 1,000,000 除以 128,000 约 7.8; 两边都按 2 的幂算 (1,048,576 和 131,072) 则正好 8 倍. 「previous models」指哪一代, 页面没说. 窗口怎么扩到 1M, 位置编码怎么处理, 训练时用了多长的序列, 都没有. 长上下文扩展的常见路线可以看 [长上下文与外推技术](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md).
 
-能支撑长上下文能力的证据只有 LOFT 一句:「On the LOFT (128k) benchmark ... Grok 3 achieved state-of-the-art accuracy (averaged across 12 diverse tasks)」. 这句有三个缺口. 一是测的是 128k 长度, 只覆盖 1M 窗口的八分之一左右. 二是没有分数, 也没说和谁比. 三是 12 个任务是哪些, 页面没列. 1M 长度上的检索或 [大海捞针测试](../../../../llm-guide/3-预训练/3.6-预训练评估/3.6.3-大海捞针测试/3.6.3-大海捞针测试.md) 一类结果都没有. LOFT 面向「long-context RAG use cases」, 长上下文直接读和检索增强的取舍可以对照 [RAG](../../../../llm-guide/7-LLM应用开发/7.2-RAG/7.2-RAG.md). 1M 窗口是否在 API 里开放, 页面也没说.
+能支撑长上下文能力的证据只有 LOFT 一句:「On the LOFT (128k) benchmark ... Grok 3 achieved state-of-the-art accuracy (averaged across 12 diverse tasks)」. 这句有三个缺口. 一是测的是 128k 长度, 只覆盖 1M 窗口的八分之一左右. 二是没有分数, 也没说和谁比. 三是 12 个任务是哪些, 页面没列. 1M 长度上的检索或 [大海捞针测试](../../../../LargeLanguageModelGuide/3-预训练/3.6-预训练评估/3.6.3-大海捞针测试/3.6.3-大海捞针测试.md) 一类结果都没有. LOFT 面向「long-context RAG use cases」, 长上下文直接读和检索增强的取舍可以对照 [RAG](../../../../LargeLanguageModelGuide/7-LLM应用开发/7.2-RAG/7.2-RAG.md). 1M 窗口是否在 API 里开放, 页面也没说.
 
 ## 7. Chatbot Arena: 1402 属于 chocolate
 
@@ -72,7 +72,7 @@ AIME 还有题量的问题. AIME 每场 15 题, 93.3% 正好是 15 题对 14 题
 
 产品层面, 推理模式靠界面上的 Think 按钮打开. 公告说「Grok 3 (Think)'s mind is completely open」, 用户能看到推理过程, 可示例里推理内容折叠在「Click to read my mind」后面, 抓取结果没有展开的部分. 用户看到的是原始推理全文还是整理后的摘要, 页面没说. 唯一的示例只思考了 6 秒, 做的是把 Pong 和 Breakout 混在一起的「Break-Pong」, 代码和视频都没抓到, 效果核不了.
 
-API 方面, Grok 3 和 Grok 3 mini 的标准版与推理版「In the coming weeks」上线, DeepSearch 面向企业合作伙伴开放. 后续计划是在 Enterprise API 里加入工具使用, 代码执行和「advanced agent capabilities」, 这些 Agent 能力的一般构成见 [Agent](../../../../llm-guide/7-LLM应用开发/7.3-Agent/7.3-Agent.md). 安全方面只有一句: 继上周发布 RMF (Risk Management Framework) 之后, 希望在训练中加快 scalable oversight 和对抗鲁棒性的进展. 链接文件名 `2025.02.20-RMF-Draft.pdf` 的日期比发文日还晚一天, 和「last week」对不上. 页面没有安全评测结果, 也没有 system card, 相关评测方法见 [安全与对抗评测](../../../../llm-guide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
+API 方面, Grok 3 和 Grok 3 mini 的标准版与推理版「In the coming weeks」上线, DeepSearch 面向企业合作伙伴开放. 后续计划是在 Enterprise API 里加入工具使用, 代码执行和「advanced agent capabilities」, 这些 Agent 能力的一般构成见 [Agent](../../../../LargeLanguageModelGuide/7-LLM应用开发/7.3-Agent/7.3-Agent.md). 安全方面只有一句: 继上周发布 RMF (Risk Management Framework) 之后, 希望在训练中加快 scalable oversight 和对抗鲁棒性的进展. 链接文件名 `2025.02.20-RMF-Draft.pdf` 的日期比发文日还晚一天, 和「last week」对不上. 页面没有安全评测结果, 也没有 system card, 相关评测方法见 [安全与对抗评测](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 ## 9. 架构: 本页没有
 

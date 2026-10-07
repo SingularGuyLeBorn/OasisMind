@@ -27,7 +27,7 @@ excerpt: "这页的叙述单位是能力项: 经济价值任务, 编程, 事实�
 
 参数量, 是否 MoE, 注意力用的是 MHA, GQA 还是 MLA, 位置编码是不是 RoPE, 上下文窗口多大, 预训练用了多少 token, 后训练是 SFT 加 PPO 还是 GRPO, 这些本页一个字都没有. 唯一沾边的训练信息在 「Our partners」 一节: Azure 数据中心, 以及 H100, H200, GB200-NVL72 三代 NVIDIA GPU 支撑了 「at-scale training infrastructure」. 这只说明训练集群横跨 Hopper 和 Blackwell 两代硬件, 推不出训练算力的量级.
 
-页外背景: GPT-5 在 2025 年 8 月发布, GPT-5.1 在 2025 年 11 月发布, GPT-5.2 离 GPT-5.1 只隔约一个月. 这么短的间隔更像是后训练和推理配置的迭代, 而不是一次新的大规模预训练, 但这只是按时间线的推测, 本页没有证据. 页面把 「显著的智能提升」 归功于和 NVIDIA, Microsoft 的合作, 和 [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md) 讨论的部署前扩大规模是两回事, 页面没给能把两者分开的数据.
+页外背景: GPT-5 在 2025 年 8 月发布, GPT-5.1 在 2025 年 11 月发布, GPT-5.2 离 GPT-5.1 只隔约一个月. 这么短的间隔更像是后训练和推理配置的迭代, 而不是一次新的大规模预训练, 但这只是按时间线的推测, 本页没有证据. 页面把 「显著的智能提升」 归功于和 NVIDIA, Microsoft 的合作, 和 [Scaling Law](../../../../LargeLanguageModelGuide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md) 讨论的部署前扩大规模是两回事, 页面没给能把两者分开的数据.
 
 ## 3. GDPval: 70.9% 背后的三种口径
 
@@ -43,7 +43,7 @@ excerpt: "这页的叙述单位是能力项: 经济价值任务, 编程, 事实�
 
 页外背景: SWE-bench Verified 是 2024 年 8 月 OpenAI 请人工从 SWE-bench 里筛出的 500 道 Python 题, 模型拿到真实仓库和 issue, 生成补丁, 用仓库自带测试判对错. 这套题被刷了一年多, 头部模型已经挤在 70% 到 80% 之间, 还有数据污染的疑虑. SWE-Bench Pro 是 Scale AI 在 2025 年 9 月推出的替代品, 题目更长, 覆盖多种语言, 并留了一部分私有题防污染. 本页用的是 public 子集.
 
-GPT-5.2 Thinking 在 SWE-Bench Pro public 上 55.6%, 比 GPT-5.1 Thinking 的 50.8% 高 4.8 个点; SWE-bench Verified 80.0% 对 76.3%, 高 3.7 个点. 两项增幅接近, 换成更难的题并没有拉开更大差距. 页面把 Verified 标成 「not plotted」, 图的主角换成 Pro, 本身说明 Verified 已经接近饱和. Agent 式编程的一般形态见 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
+GPT-5.2 Thinking 在 SWE-Bench Pro public 上 55.6%, 比 GPT-5.1 Thinking 的 50.8% 高 4.8 个点; SWE-bench Verified 80.0% 对 76.3%, 高 3.7 个点. 两项增幅接近, 换成更难的题并没有拉开更大差距. 页面把 Verified 标成 「not plotted」, 图的主角换成 Pro, 本身说明 Verified 已经接近饱和. Agent 式编程的一般形态见 [IDE与Coding-Agent](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
 
 SWE-Lancer IC Diamond 的 74.6% 有分母问题. 脚注说 237 题里 40 题在 OpenAI 的基础设施上跑不起来, 被略去, 实际分母 197 题, 约为全集的 83%. 若把这 40 题记 0 分, 分数约 62%. 页面没说 GPT-5.1 Thinking 的 69.7% 是否在同一批 197 题上算的. 这种 「排除不可复现题」 的做法在 OpenAI 的公告里不是第一次, 它让自家分数和别家在完整题集上的分数不能直接比.
 
@@ -51,7 +51,7 @@ SWE-Lancer IC Diamond 的 74.6% 有分母问题. 脚注说 237 题里 40 题在 
 
 正文说 GPT-5.2 Thinking 含错误的回答 「30%rel less common」, 附录可以复算: 开搜索时无错误回答从 91.2% 到 93.9%, 错误率从 8.8% 降到 6.1%, 相对降约 30.7%, 对得上. 不开搜索时从 87.3% 到 88.0%, 错误率从 12.7% 降到 12.0%, 相对只降约 5.5%. 30% 这个数只在开了搜索, 推理强度拉满的条件下成立, 这个条件写在图注里, 没写进正文那句 「hallucinates less」.
 
-判错的方式也要看. 图注说错误 「were detected by other models, which may make errors themselves」, 即用模型当裁判. 用模型给模型挑错, 裁判自身的漏检率和误报率会直接进入分数, 页面没给裁判的准确率. 另外这是回答级的统计, 一条回答里有一处错就算错, 图注说论断级错误率 「far lower」. LLM 当裁判的一般风险见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
+判错的方式也要看. 图注说错误 「were detected by other models, which may make errors themselves」, 即用模型当裁判. 用模型给模型挑错, 裁判自身的漏检率和误报率会直接进入分数, 页面没给裁判的准确率. 另外这是回答级的统计, 一条回答里有一处错就算错, 图注说论断级错误率 「far lower」. LLM 当裁判的一般风险见 [评测科学与证据](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).
 
 ## 6. 长上下文: MRCR 的跃升和 /compact
 
@@ -59,15 +59,15 @@ OpenAI-MRCR v2 把多个一模一样的请求埋进由相似请求和回复组�
 
 几个细节值得注意. 一是 8k-16k 那一档 89.3% 低于相邻的 95.3% 和 92.0%, 曲线有个凹口, 页面没解释, 也没印每档样本数. 二是正文说 4-needle 变体 「near 100%」 到 256k, 附录没印 4-needle 的数, 这句只能信页面. 三是 256k 定义为 256 × 1,024 = 262,144 token, 每个点是区间平均, 「256k」 实际代表 128k 到 256k 之间所有长度. 四是 BrowseComp Long Context 上只提升了 2.0 和 0.3 个点, GPT-5.1 在那里本来就有九成. Graphwalks 两项 (bfs 94.0% 对 76.8%, parents 89.0% 对 71.5%) 只测了 <128k.
 
-提升从哪来, 本页一个字没提. 位置编码外推, 长序列继续训练, 推理侧 KV cache 优化都是常见路线, 原理见 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md) 和 [KVCache压缩与优化技术](../../../../llm-guide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4.2-KVCache压缩与优化技术/6.4.2-KVCache压缩与优化技术.md), 但不能往 GPT-5.2 身上套. 页面连上下文窗口多大都没印.
+提升从哪来, 本页一个字没提. 位置编码外推, 长序列继续训练, 推理侧 KV cache 优化都是常见路线, 原理见 [长上下文与外推技术](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md) 和 [KVCache压缩与优化技术](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4.2-KVCache压缩与优化技术/6.4.2-KVCache压缩与优化技术.md), 但不能往 GPT-5.2 身上套. 页面连上下文窗口多大都没印.
 
-新增的 Responses /compact 端点是另一条路: 对超过最大窗口的长任务, 把前面的上下文压缩后再接着跑, 从而 「extends the model's effective context window」. 这和模型本身能读多长是两件事, 它是在 API 层做上下文管理, 思路和 Agent 系统里的记忆压缩一致, 见 [上下文管理策略](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.2-上下文管理策略/13.3.2-上下文管理策略.md) 和 [记忆压缩](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.2-记忆压缩/13.1.2-记忆压缩.md). 页面没说压缩是由模型自己生成摘要, 还是服务端另有机制, 也没给压缩前后的质量对比.
+新增的 Responses /compact 端点是另一条路: 对超过最大窗口的长任务, 把前面的上下文压缩后再接着跑, 从而 「extends the model's effective context window」. 这和模型本身能读多长是两件事, 它是在 API 层做上下文管理, 思路和 Agent 系统里的记忆压缩一致, 见 [上下文管理策略](../../../../LargeLanguageModelGuide/13-Agent/13.3-Agent系统工程/13.3.2-上下文管理策略/13.3.2-上下文管理策略.md) 和 [记忆压缩](../../../../LargeLanguageModelGuide/13-Agent/13.1-Agent核心组件/13.1.2-记忆压缩/13.1.2-记忆压缩.md). 页面没说压缩是由模型自己生成摘要, 还是服务端另有机制, 也没给压缩前后的质量对比.
 
 ## 7. 视觉: 分数里有 Python 工具的份
 
 页外背景: CharXiv 是 2024 年普林斯顿提出的图表理解评测, 题目来自 arXiv 论文里的真实图表, reasoning 子集要求跨多个图元做推理. ScreenSpot-Pro 是 2025 年的 GUI 定位评测, 截图来自专业软件, 分辨率高, 目标控件往往只占画面很小一块.
 
-正文说 「cutting error rates roughly in half」. 按附录算: CharXiv reasoning 带 Python 错误率从 19.7% 到 11.3%, 降约 43%; 不带工具从 33.0% 到 17.9%, 降约 46%; ScreenSpot-Pro 带 Python 从 35.8% 到 13.7%, 降约 62%. 图表推理不到一半, 界面理解超过一半. ScreenSpot-Pro 只印了带 Python 的分数, 图注说不开工具 「scores are much lower」 并建议开启, 可见高分辨率截图上模型要靠写代码裁图, 放大来找控件. 这类 「视觉加工具」 的做法和多模态模型本身的视觉编码能力要分开看, 相关背景见 [多模态](../../../../llm-guide/8-多模态/8-多模态.md).
+正文说 「cutting error rates roughly in half」. 按附录算: CharXiv reasoning 带 Python 错误率从 19.7% 到 11.3%, 降约 43%; 不带工具从 33.0% 到 17.9%, 降约 46%; ScreenSpot-Pro 带 Python 从 35.8% 到 13.7%, 降约 62%. 图表推理不到一半, 界面理解超过一半. ScreenSpot-Pro 只印了带 Python 的分数, 图注说不开工具 「scores are much lower」 并建议开启, 可见高分辨率截图上模型要靠写代码裁图, 放大来找控件. 这类 「视觉加工具」 的做法和多模态模型本身的视觉编码能力要分开看, 相关背景见 [多模态](../../../../LargeLanguageModelGuide/8-多模态/8-多模态.md).
 
 其余视觉项增幅不大: MMMU Pro 带 Python 80.4% 对 79.0%, Video MMMU 85.9% 对 82.9%. 主板标注的例子页面自己承认 「Both models make clear mistakes」, GPT-5.2 的框只是 「sometimes match」. 视觉编码器的结构, 输入分辨率, 图像 token 数, 本页都没有.
 
@@ -75,15 +75,15 @@ OpenAI-MRCR v2 把多个一模一样的请求埋进由相似请求和回复组�
 
 页外背景: τ2-bench 是 Sierra 在 2025 年推出的 Agent 评测, 在 tau-bench 的 airline 和 retail 之外加了 telecom 领域. telecom 的特点是用户那一侧也要操作设备, 被测模型得一边调工具, 一边指导由 LLM 扮演的用户动手, 最后按系统终态判分.
 
-Telecom 98.7% 对 95.6%, Retail 82.0% 对 77.9%. 图注给了两个条件: Telecom 在系统提示里加了一段提分用的通用指令, Airline 因参考答案质量差被整体排除. 页面没说 GPT-5.1 那一列是否用了同一段提示. 另外三项工具评测增幅更大: BrowseComp 65.8% 对 50.8%, Scale MCP-Atlas 60.6% 对 44.5%, Toolathlon 46.3% 对 36.1%. Pro 在 BrowseComp 上是 77.9%, 比 Thinking 高 12.1 个点, 是附录里 Pro 和 Thinking 差距最大的一项. 工具调用这条线的演进见 [工具调用演进](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.4-工具调用演进/13.1.4-工具调用演进.md).
+Telecom 98.7% 对 95.6%, Retail 82.0% 对 77.9%. 图注给了两个条件: Telecom 在系统提示里加了一段提分用的通用指令, Airline 因参考答案质量差被整体排除. 页面没说 GPT-5.1 那一列是否用了同一段提示. 另外三项工具评测增幅更大: BrowseComp 65.8% 对 50.8%, Scale MCP-Atlas 60.6% 对 44.5%, Toolathlon 46.3% 对 36.1%. Pro 在 BrowseComp 上是 77.9%, 比 Thinking 高 12.1 个点, 是附录里 Pro 和 Thinking 差距最大的一项. 工具调用这条线的演进见 [工具调用演进](../../../../LargeLanguageModelGuide/13-Agent/13.1-Agent核心组件/13.1.4-工具调用演进/13.1.4-工具调用演进.md).
 
-Triple Whale 的评价讲了一种架构变化: 把 「fragile, multi-agent system」 收成 「a single mega-agent with 20+ tools」, 系统提示也从冗长变成一行. 这是客户的使用体验, 没有数字支撑 (「100x easier to maintain」 不是测量值), 但方向清楚: 单个模型工具调用够稳时, 拆成多个 Agent 来隔离错误的收益变小, 编排成本反而突出. 多 Agent 和单 Agent 的取舍见 [多Agent系统](../../../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.3-多Agent系统/13.3.3-多Agent系统.md).
+Triple Whale 的评价讲了一种架构变化: 把 「fragile, multi-agent system」 收成 「a single mega-agent with 20+ tools」, 系统提示也从冗长变成一行. 这是客户的使用体验, 没有数字支撑 (「100x easier to maintain」 不是测量值), 但方向清楚: 单个模型工具调用够稳时, 拆成多个 Agent 来隔离错误的收益变小, 编排成本反而突出. 多 Agent 和单 Agent 的取舍见 [多Agent系统](../../../../LargeLanguageModelGuide/13-Agent/13.3-Agent系统工程/13.3.3-多Agent系统/13.3.3-多Agent系统.md).
 
 ## 9. 推理强度的五档和 TestingTime
 
 本页的每个分数都挂着推理强度. API 这边 GPT-5.2 新增第五档 xhigh, 文中还出现 none (低延迟场景) 和 high; ChatGPT Pro 里最高档叫 heavy. 附录脚注说: GPT-5.2 Thinking 和 Pro 按 xhigh 跑, GPT-5.1 Thinking 按 high 跑, 专业类评测 GPT-5.2 Thinking 按 heavy 跑. 也就是说附录里的新旧对比本身就不在同一档, GPT-5.2 多了一档可用的 TestingTime 预算. 页面没公布每档的 token 用量, 分不清分数提升有多少来自模型, 有多少来自多想.
 
-还有两处例外. ARC-AGI-2 上 Pro 的 54.2% 标着 「(high)」, 和脚注说的 xhigh 对不上, 所以它和 Thinking 在 xhigh 下的 52.9% 不是同档比较. reasoning.effort='none' 下 「substantially outperforming GPT-5.1 and GPT-4.1」 没有任何数字, 对应的图没抓到. 推理模型在 TestingTime 多花算力的原理见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
+还有两处例外. ARC-AGI-2 上 Pro 的 54.2% 标着 「(high)」, 和脚注说的 xhigh 对不上, 所以它和 Thinking 在 xhigh 下的 52.9% 不是同档比较. reasoning.effort='none' 下 「substantially outperforming GPT-5.1 and GPT-4.1」 没有任何数字, 对应的图没抓到. 推理模型在 TestingTime 多花算力的原理见 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 数学和科学几项已经顶到天花板. AIME 2025 两个 GPT-5.2 版本都是 100.0%, HMMT Feb 2025 是 99.4% 和 100.0%. 页外背景: AIME 2025 共 30 题, GPT-5.1 的 94.0% 乘 30 是 28.2, 不是整数, 说明这类分数是多次采样取平均. 还有区分度的是 FrontierMath 和 HLE: FrontierMath Tier 1-3 40.3% 对 31.0%, Tier 4 14.6% 对 12.5%; HLE 不用工具 34.5% 对 25.7%, 带搜索和 Python 时 Pro 到 50.0%. ARC-AGI-2 从 17.6% 到 52.9%, 涨了 35.3 个点, 是附录里相对增幅最大的一项 (约 3 倍). 页外背景: 2024 年 12 月 o3 预览版在 ARC-AGI-1 上用高算力拿到 87.5%, 本页链接的正是那篇文章; 一年后 Pro 在 ARC-AGI-1 上是 90.5%.
 
@@ -101,7 +101,7 @@ GPQA Diamond 上 Pro 93.2%, Thinking 92.4%, 差 0.8 个点. 页外背景: Diamon
 
 安全一节延续 GPT-5 的 safe completion 思路: 不是简单拒答, 而是在安全边界内给出最有帮助的回答. 这次的重点是敏感对话, 正文说在涉及自杀或自伤迹象, 心理困扰, 情感依赖的提示上, GPT-5.2 Instant 和 Thinking 的不良回应都比 GPT-5.1 和 GPT-5 少. 心理健康评测表印了三行分数, 按正文的方向, 分数应是越高越好.
 
-表里有一格和正文对不上: 情感依赖一行, GPT-5.2 Instant 0.938, GPT-5.1 Instant 0.945, 新版低了 0.007. 其余五组对比都是新版更高, Thinking 那一侧增幅很大 (第一行 0.915 对 0.684, 情感依赖 0.955 对 0.785). 第一行名称被横幅盖住, 第四列表头残成 「GPT-!Think」, 按正文推是 GPT-5.1 Thinking. 正文提到的 GPT-5 Instant 和 Thinking 表里没有. 评分方法, 样本数, 分数的含义 (通过率还是合规率), 页面都指向系统卡, 本页没有. 这类评测的方法论见 [安全与对抗评测](../../../../llm-guide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
+表里有一格和正文对不上: 情感依赖一行, GPT-5.2 Instant 0.938, GPT-5.1 Instant 0.945, 新版低了 0.007. 其余五组对比都是新版更高, Thinking 那一侧增幅很大 (第一行 0.915 对 0.684, 情感依赖 0.955 对 0.785). 第一行名称被横幅盖住, 第四列表头残成 「GPT-!Think」, 按正文推是 GPT-5.1 Thinking. 正文提到的 GPT-5 Instant 和 Thinking 表里没有. 评分方法, 样本数, 分数的含义 (通过率还是合规率), 页面都指向系统卡, 本页没有. 这类评测的方法论见 [安全与对抗评测](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.2-安全与对抗评测/5.2-安全与对抗评测.md).
 
 另外两件事只有定性描述. 一是年龄预估模型处于推出早期, 目标是自动识别 18 岁以下用户并启用内容保护, 准确率, 误判率都没给. 二是页面承认 ChatGPT 里还有过度拒答的问题. 这两件事和 safe completion 是同一个取舍的两端: 保护做得越宽, 误拦成年用户和正常请求的代价越高.
 

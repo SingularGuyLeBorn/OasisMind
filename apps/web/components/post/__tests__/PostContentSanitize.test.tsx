@@ -111,7 +111,7 @@ describe("PostContent sanitize", () => {
         <PostContent
           content={"![](images/missing.png)"}
           postSlug="hello/hello"
-          postGarden="rsi"
+          postGarden="RecursiveSelfImprovement"
         />,
       );
     });

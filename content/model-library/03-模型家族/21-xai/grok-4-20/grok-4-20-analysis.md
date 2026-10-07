@@ -27,15 +27,15 @@ excerpt: "这份材料能回答的问题是: 在 xAI 的 API 里, Grok 4.20 叫�
 
 ## 3. 能力标签: 三项能力, 三张入口卡, 只重合两项
 
-Capabilities 列了 Function calling, Structured outputs, Reasoning 三项, 页尾的入口卡片是 Quickstart, Tool use, Structured outputs 三张. Function calling 和 Tool use 链到同一个 `function-calling` 指南, Structured outputs 两边都有. Reasoning 没有入口卡, Quickstart 是通用教程. 描述句里的「agentic tool calling」在页面上能落到的就是 Function calling 这一项, 原理和常见的调用格式可以看 [FunctionCalling](../../../../llm-guide/7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md), 结构化输出的做法见 [结构化输出](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.5-结构化输出/13.1.5-结构化输出.md).
+Capabilities 列了 Function calling, Structured outputs, Reasoning 三项, 页尾的入口卡片是 Quickstart, Tool use, Structured outputs 三张. Function calling 和 Tool use 链到同一个 `function-calling` 指南, Structured outputs 两边都有. Reasoning 没有入口卡, Quickstart 是通用教程. 描述句里的「agentic tool calling」在页面上能落到的就是 Function calling 这一项, 原理和常见的调用格式可以看 [FunctionCalling](../../../../LargeLanguageModelGuide/7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md), 结构化输出的做法见 [结构化输出](../../../../LargeLanguageModelGuide/13-Agent/13.1-Agent核心组件/13.1.5-结构化输出/13.1.5-结构化输出.md).
 
-Reasoning 这一项只写了「The model can think before responding.」. 本页没说推理能不能关, 有没有强度档位, 推理过程产生的 token 怎么计费. 对比一下 Grok 4.3 专页, 那里写的是 Configurable reasoning, 支持 none, low, medium, high 四档. Grok 4.20 这里没有档位, 结合下面别名表的情况, 它看起来只有推理这一种形态, 但页面没有明说. 推理能力一般怎么训出来, 见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
+Reasoning 这一项只写了「The model can think before responding.」. 本页没说推理能不能关, 有没有强度档位, 推理过程产生的 token 怎么计费. 对比一下 Grok 4.3 专页, 那里写的是 Configurable reasoning, 支持 none, low, medium, high 四档. Grok 4.20 这里没有档位, 结合下面别名表的情况, 它看起来只有推理这一种形态, 但页面没有明说. 推理能力一般怎么训出来, 见 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md).
 
 ## 4. 价格: 三档单价, 两个没展开的开关
 
-页面给了三个单价, 都按每 1M token 计: 输入 \$1.25, 输出 \$2.50, 缓存输入 \$0.20. 输出是输入的 2 倍, 缓存输入是普通输入的 16%. 举个按页面单价算的例子 (请求规模是假设的): 一次输入 100K, 输出 10K 的请求, 不命中缓存时是 \$0.125 加 \$0.025, 共 \$0.15; 如果 100K 输入里有 90K 命中缓存, 输入部分降到 \$0.018 加 \$0.0125, 总价约 \$0.056, 不到原来的四成. 缓存价通常对应服务端复用已经算过的前缀, 省掉重复的预填充计算, 一般机制见 [KV 缓存与内存优化](../../../../llm-guide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md). 至于 xAI 的缓存最短多长, 保留多久, 怎样算命中, 本页都没写.
+页面给了三个单价, 都按每 1M token 计: 输入 \$1.25, 输出 \$2.50, 缓存输入 \$0.20. 输出是输入的 2 倍, 缓存输入是普通输入的 16%. 举个按页面单价算的例子 (请求规模是假设的): 一次输入 100K, 输出 10K 的请求, 不命中缓存时是 \$0.125 加 \$0.025, 共 \$0.15; 如果 100K 输入里有 90K 命中缓存, 输入部分降到 \$0.018 加 \$0.0125, 总价约 \$0.056, 不到原来的四成. 缓存价通常对应服务端复用已经算过的前缀, 省掉重复的预填充计算, 一般机制见 [KV 缓存与内存优化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md). 至于 xAI 的缓存最短多长, 保留多久, 怎样算命中, 本页都没写.
 
-另外两套价格在页面上看不到. 一是长上下文定价: 超过 200K 的请求换一套费率, 可开关是关着的, 抓下来的页面没有显示. 上下文窗口是 1,000,000, 200K 只占 20%, 也就是说**窗口后 80% 的区间价格未知**, 上面那个例子一旦超过 200K 就不再成立. 页面也没说 200K 按输入算还是按输入加输出算, 超过后是整次改价还是超出部分改价. 二是 Batch API 定价, 详情里写了「Supported」, 价格同样藏在关着的开关后面. 第 2 页还说「full regional based pricing below」, 往下只看到 us-east-1 和 us-west-2 两个区域名, 没有分区价格. 长上下文的一般代价可以对照 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md).
+另外两套价格在页面上看不到. 一是长上下文定价: 超过 200K 的请求换一套费率, 可开关是关着的, 抓下来的页面没有显示. 上下文窗口是 1,000,000, 200K 只占 20%, 也就是说**窗口后 80% 的区间价格未知**, 上面那个例子一旦超过 200K 就不再成立. 页面也没说 200K 按输入算还是按输入加输出算, 超过后是整次改价还是超出部分改价. 二是 Batch API 定价, 详情里写了「Supported」, 价格同样藏在关着的开关后面. 第 2 页还说「full regional based pricing below」, 往下只看到 us-east-1 和 us-west-2 两个区域名, 没有分区价格. 长上下文的一般代价可以对照 [长上下文与外推技术](../../../../LargeLanguageModelGuide/2-核心原理与架构/2.7-长上下文与外推技术/2.7-长上下文与外推技术.md).
 
 ## 5. 模型名与 15 个别名: 能拼出的版本线
 

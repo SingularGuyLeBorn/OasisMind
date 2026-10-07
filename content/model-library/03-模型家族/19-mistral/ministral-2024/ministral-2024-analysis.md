@@ -76,7 +76,7 @@ excerpt: "打印时每页左下角都叠着 axeptio 的 cookie 弹窗. 正文文
 
 ## 6. 函数调用与 agent 中间层
 
-页面给 les Ministraux 的定位有两层. 一层是本地推理: 端侧翻译, 不联网的智能助手, 本地分析, 自主机器人, 强调 「compute-efficient and low-latency」. 另一层是和 Mistral Large 这类大模型搭配, 在多步 agent 工作流里做函数调用中间层, 负责输入解析, 任务路由和按用户意图调 API. 函数调用的一般机制见本库 [Function Calling](../../../../llm-guide/7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md).
+页面给 les Ministraux 的定位有两层. 一层是本地推理: 端侧翻译, 不联网的智能助手, 本地分析, 自主机器人, 强调 「compute-efficient and low-latency」. 另一层是和 Mistral Large 这类大模型搭配, 在多步 agent 工作流里做函数调用中间层, 负责输入解析, 任务路由和按用户意图调 API. 函数调用的一般机制见本库 [Function Calling](../../../../LargeLanguageModelGuide/7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md).
 
 支撑这一定位的只有表 2 的 C7 一列. Ministral 3B 28.4, Ministral 8B 31.6, Mistral 7B 6.9, 其余四个对手全是 N/A. 3B 是 Mistral 7B 的约 4.1 倍, 8B 约 4.6 倍. 列头只剩 「...bench」, 满分多少, 测的是单轮调用还是多步路由, 页面都没说. 对手全是 N/A, 所以 「set a new frontier in ... function-calling」 在本页只有和自家旧模型的比较作证.
 
@@ -86,7 +86,7 @@ excerpt: "打印时每页左下角都叠着 axeptio 的 cookie 弹窗. 正文文
 
 la Plateforme 上两者输入输出同价: 8B 每百万 token 0.1 美元, 3B 0.04 美元. 按这个价格, 处理 10 亿 token, 8B 约 100 美元, 3B 约 40 美元 (输入输出合计). API 名都带 「-latest」 后缀, 页面没给固定版本号; Hugging Face 链接里的仓库名是 Ministral-8B-Instruct-2410, 后缀 2410 和 「October 16, 2024」 的年月对得上.
 
-许可两行不一样. 8B 写了 Mistral Commercial License 和 Mistral Research License 两种, 3B 只写 Mistral Commercial License. 权重方面只说 「Ministral 8B Instruct」 开放给研究用途, 3B 的权重没提, 8B 的基座权重也没提. 自部署要找 Mistral 谈商业许可, Mistral 会按客户场景协助做 「lossless quantization」; 量化到几 bit, 量化前后分数如何, 都没写. 量化的一般做法见本库 [量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md).
+许可两行不一样. 8B 写了 Mistral Commercial License 和 Mistral Research License 两种, 3B 只写 Mistral Commercial License. 权重方面只说 「Ministral 8B Instruct」 开放给研究用途, 3B 的权重没提, 8B 的基座权重也没提. 自部署要找 Mistral 谈商业许可, Mistral 会按客户场景协助做 「lossless quantization」; 量化到几 bit, 量化前后分数如何, 都没写. 量化的一般做法见本库 [量化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md).
 
 这套安排和 「on-device」 的定位有些张力. 端侧场景通常意味着权重要落到用户设备上, 而本页 3B 只有 API 和商业许可, 8B 也只有指令版权重且限研究用途. 真正上端侧需要先谈许可, 这一点在 「Use cases」 段里没提, 到价格表下面才出现.
 

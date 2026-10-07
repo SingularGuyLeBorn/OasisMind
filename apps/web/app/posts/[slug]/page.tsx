@@ -36,10 +36,10 @@ function PostDetailPageContent() {
   );
 
   useEffect(() => {
-    if (garden === DEFAULT_POST_GARDEN && slug.startsWith("llm-guide/")) {
-      const nextSlug = slug.slice("llm-guide/".length);
+    if (garden === DEFAULT_POST_GARDEN && slug.startsWith("LargeLanguageModelGuide/")) {
+      const nextSlug = slug.slice("LargeLanguageModelGuide/".length);
       router.replace(
-        `/posts/${encodeURIComponent(nextSlug)}?garden=${encodeURIComponent("llm-guide")}`,
+        `/posts/${encodeURIComponent(nextSlug)}?garden=${encodeURIComponent("LargeLanguageModelGuide")}`,
       );
     }
   }, [garden, slug, router]);
@@ -47,7 +47,7 @@ function PostDetailPageContent() {
   const { data: post, isPending, isFetching } = trpc.post.getBySlug.useQuery(
     { slug, garden },
     {
-      enabled: !(garden === DEFAULT_POST_GARDEN && slug.startsWith("llm-guide/")),
+      enabled: !(garden === DEFAULT_POST_GARDEN && slug.startsWith("LargeLanguageModelGuide/")),
       staleTime: 5 * 60 * 1000,
       // 切文时保留上一篇，避免卸掉整页再挂骨架/编辑器
       placeholderData: keepPreviousData,

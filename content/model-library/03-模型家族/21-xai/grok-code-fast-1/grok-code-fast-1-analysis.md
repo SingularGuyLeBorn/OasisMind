@@ -29,7 +29,7 @@ excerpt: "这篇公告能回答三件事: grok-code-fast-1 的 API 定价是多�
 
 散点图横轴是每 1M token 的输出价, 右端点标 \$20, 纵轴是 TPS, 除 Grok Code Fast 1 自己的 190 外没有任何刻度. 图上 6 个点: 橙色的 grok-code-fast-1 独占左上高位, 灰点是 Qwen3-Coder, Gemini 2.5 Pro, Claude Sonnet 4, GPT-5 和 Grok 4, 全部挤在中下部, 具体 TPS 一个都读不出来. 这张图的视觉结论「又快又便宜」是设计出来的: 唯一能读的两个数都长在自家点上, 竞品只剩相对位置.
 
-可比性问题在 Methodology 的三条子弹里: Gemini 2.5 Pro, GPT-5, Claude Sonnet 4 走各家公开 API, Grok Code Fast 1 和 Grok 4 走 xAI API, Qwen3-Coder 走 DeepInfra 的 fp4 低精度托管. TPS 的一半测的是模型, 一半测的是部署: 同样的权重, serving 栈, 并发档位, 精度配置不同, 数字可以差出几倍. 页面对前四项一个都没对齐, 对 Qwen3-Coder 反而自承 fp4「reduces response quality」, 等于在同一张宣传速度的图里放进了一个「更快但质量打折」的参照点. 低精度换来吞吐和显存收益是量化的常规取舍, 见 [量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md); 推理侧还能叠投机解码, 连续批处理这类与模型无关的加速手段, 见 [推理框架与高级优化](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6-推理框架与高级优化.md). 公告把 serving 团队的头功记在「several innovative techniques」名下, 技术是什么, 哪一项贡献了多少, 页面一字未提.
+可比性问题在 Methodology 的三条子弹里: Gemini 2.5 Pro, GPT-5, Claude Sonnet 4 走各家公开 API, Grok Code Fast 1 和 Grok 4 走 xAI API, Qwen3-Coder 走 DeepInfra 的 fp4 低精度托管. TPS 的一半测的是模型, 一半测的是部署: 同样的权重, serving 栈, 并发档位, 精度配置不同, 数字可以差出几倍. 页面对前四项一个都没对齐, 对 Qwen3-Coder 反而自承 fp4「reduces response quality」, 等于在同一张宣传速度的图里放进了一个「更快但质量打折」的参照点. 低精度换来吞吐和显存收益是量化的常规取舍, 见 [量化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md); 推理侧还能叠投机解码, 连续批处理这类与模型无关的加速手段, 见 [推理框架与高级优化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.6-推理框架与高级优化/6.6-推理框架与高级优化.md). 公告把 serving 团队的头功记在「several innovative techniques」名下, 技术是什么, 哪一项贡献了多少, 页面一字未提.
 
 还有第三种「快」根本不在图的坐标里: 第 2 页那句「你还没读完 CoT 第一段, 模型已经调了几十次工具」描述的是 agentic 循环的响应性, 也就是工具往返之间的等待短. 这是产品体验里的关键一环, 但页面没有给任何一次工具往返的延迟数, 三种快混在一起用一个 190 代言.
 
@@ -37,7 +37,7 @@ excerpt: "这篇公告能回答三件事: grok-code-fast-1 的 API 定价是多�
 
 第 3 页给出三档 API 定价, 每 1M token 计: 输入 \$0.20, 输出 \$1.50, 缓存输入 \$0.02. 第 5 页原样复述一遍, 功能是区分两条获取通道: 七家首发合作伙伴限时免费, xAI API 按价常态收费. 三档之间的倍数结构传递了明确的计费信号: 缓存输入是常规输入的 1/10, 鼓励客户端稳定地复用前缀; 输出是输入的 7.5 倍, 而推理模型的 CoT 按输出计费, 等于对 TestingTime 直接收费 —— 想得越久, 账单越厚.
 
-prompt caching 的省钱逻辑对应服务端复用前缀的 KV, 省掉重复的预填充计算, 一般机制见 [KV 缓存与内存优化](../../../../llm-guide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md). 公告给的命中率数字是「与首发合作伙伴配合使用时经常超过 90%」, 两个限定都重要: 命中靠的是合作伙伴平台把系统提示, 工具定义, 代码上下文这些重复前缀原样发回, 换一个不复用前缀的客户端, 命中率无从谈起; 「经常」是频率词, 分母按请求算还是按 token 算, 页面没定义. xAI 的缓存窗口最短多长, 保留多久, 命中怎么判定, 也都没写.
+prompt caching 的省钱逻辑对应服务端复用前缀的 KV, 省掉重复的预填充计算, 一般机制见 [KV 缓存与内存优化](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.4-KV缓存与内存优化/6.4-KV缓存与内存优化.md). 公告给的命中率数字是「与首发合作伙伴配合使用时经常超过 90%」, 两个限定都重要: 命中靠的是合作伙伴平台把系统提示, 工具定义, 代码上下文这些重复前缀原样发回, 换一个不复用前缀的客户端, 命中率无从谈起; 「经常」是频率词, 分母按请求算还是按 token 算, 页面没定义. xAI 的缓存窗口最短多长, 保留多久, 命中怎么判定, 也都没写.
 
 把价格放回那张散点图: 横轴选输出价而不是输入价, 正是三档里最高的口径, grok-code-fast-1 的 \$1.50 在 \$20 量程的最左端, 竞品的输出价越远越靠右. 图和定价互相成就, 各自挑了对自己最有利的轴.
 
@@ -51,7 +51,7 @@ prompt caching 的省钱逻辑对应服务端复用前缀的 KV, 省掉重复的
 
 ### 4.2 评测: 70.8% 的三个限定词
 
-全文唯一一个基准分数: SWE-Bench-Verified 完整子集 70.8%, 用的是 **xAI 自己的内部 harness**. 三个限定词各砍一刀横向可比性. 「SWE-Bench-Verified 完整子集」: Verified 本身就是从 SWE-Bench 全集中人工核验出的子集, full subset 指把这 500 题跑全, 不跑子采样. 「internal harness」: 脚手架, 提示词, 工具配置不公开, 同一模型换一套公开脚手架分数可以差好几个点. 缺对照组: 全文没有给任何竞品在同一基准上的分数, 70.8% 是孤岛数字. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md), SWE-Bench 这类解题基准在 agentic coding 里的角色见 [IDE 与 Coding Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
+全文唯一一个基准分数: SWE-Bench-Verified 完整子集 70.8%, 用的是 **xAI 自己的内部 harness**. 三个限定词各砍一刀横向可比性. 「SWE-Bench-Verified 完整子集」: Verified 本身就是从 SWE-Bench 全集中人工核验出的子集, full subset 指把这 500 题跑全, 不跑子采样. 「internal harness」: 脚手架, 提示词, 工具配置不公开, 同一模型换一套公开脚手架分数可以差好几个点. 缺对照组: 全文没有给任何竞品在同一基准上的分数, 70.8% 是孤岛数字. 评测口径的通用问题见 [Benchmark 与 Eval](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval/13.5.2-Benchmark与Eval.md), SWE-Bench 这类解题基准在 agentic coding 里的角色见 [IDE 与 Coding Agent](../../../../LargeLanguageModelGuide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent/13.5.1-IDE与Coding-Agent.md).
 
 第 4 页后半段是评测哲学: 基准不能完整反映真实软件工程, 所以要配常态化人工评估和自动化评估. 这套说法与第 5 页「被程序员评价为又快又可靠」衔接, 但人工评估的样本量, 评分量表, 是否盲评, 和谁对比, 全部缺失, 披露粒度止于「这是训练信号的一部分」. 页面诚实地把这套评估的定位写明了 —— 「to guide our model training」 —— 它是训练的罗盘, 不是独立的第三方验证.
 

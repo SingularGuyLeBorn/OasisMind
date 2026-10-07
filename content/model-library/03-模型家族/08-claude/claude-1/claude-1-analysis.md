@@ -29,7 +29,7 @@ excerpt: "这份 PDF 分成两块. 第 1 页到第 5 页是 2023 年 3 月 14 �
 
 第 2 页说今天提供两个版本. Claude 是 「state-of-the-art high-performance model」, Claude Instant 是 「lighter, less expensive, and much faster option」. 差别只用了几个比较级, 没有参数量, 延迟或单价. 同一页链接了一份价格 PDF, 本页没有转录其中数字.
 
-「大模型加轻量模型」 的两档结构后来一直延续: Claude 2 时代是 Claude 2 与 Claude Instant 1.2, Claude 3 起变成 Opus, Sonnet, Haiku 三档, 同级目录各有一篇. Instant 是单独训练的小模型, 还是由大模型蒸馏而来, 这页没有, Anthropic 后来的公开资料也没有交代. 蒸馏的一般做法见 [知识蒸馏](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.3-知识蒸馏/6.3.3-知识蒸馏.md), 不能拿来推断 Instant 的来历.
+「大模型加轻量模型」 的两档结构后来一直延续: Claude 2 时代是 Claude 2 与 Claude Instant 1.2, Claude 3 起变成 Opus, Sonnet, Haiku 三档, 同级目录各有一篇. Instant 是单独训练的小模型, 还是由大模型蒸馏而来, 这页没有, Anthropic 后来的公开资料也没有交代. 蒸馏的一般做法见 [知识蒸馏](../../../../LargeLanguageModelGuide/6-训练与推理优化/6.3-模型压缩/6.3.3-知识蒸馏/6.3.3-知识蒸馏.md), 不能拿来推断 Instant 的来历.
 
 ## 2. HHH 与伙伴评测
 
@@ -37,13 +37,13 @@ excerpt: "这份 PDF 分成两块. 第 1 页到第 5 页是 2023 年 3 月 14 �
 
 「helpful, honest, and harmless」 在全文出现两次, 一次在第 1 页的产品定义里, 一次在第 2 页的后续计划里. 这三个词不是营销新造的: Anthropic 2021 年的 「A General Language Assistant as a Laboratory for Alignment」 就把 HHH 当作助手对齐的目标, 2022 年 4 月的 HH-RLHF 论文用人类偏好比较训练偏好模型, 再用 RL 优化策略, 并公开了一部分 helpful 与 harmless 的比较数据; 2022 年 12 月的 **Constitutional AI** 论文把 harmless 一侧的人类标注换成 AI 按一组书面原则给出的偏好, 即 RLAIF. 公告发布两个月后, Anthropic 在 2023 年 5 月的 「Claude's Constitution」 一文里明确说 Claude 用这套宪法训练. 这条时间线来自公开论文和博客, 本公告自己没有提任何一种方法.
 
-公告里最具体的质量说法来自客户: 早期客户反馈 Claude 更不容易产生有害输出, 更好交谈, 也更 steerable, 用更少的力气就能拿到想要的结果. Anthropic 自己补了一句: Claude 能按指示调整个性, 语气和行为. 把这两句放回上面那条研究线, 「更少有害输出而不过度回避」 正是 Constitutional AI 论文追求的 harmless 且 non-evasive; 但公告没有给任何有害率, 拒答率或对比数据, 所以这只能算方向一致, 算不上证据. **RLHF** 与 RLAIF 的机制见 [基于奖励模型的RL-RLHF-PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md), [Constitutional AI 宪法对齐](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 和 [RLAIF](../../../../llm-guide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
+公告里最具体的质量说法来自客户: 早期客户反馈 Claude 更不容易产生有害输出, 更好交谈, 也更 steerable, 用更少的力气就能拿到想要的结果. Anthropic 自己补了一句: Claude 能按指示调整个性, 语气和行为. 把这两句放回上面那条研究线, 「更少有害输出而不过度回避」 正是 Constitutional AI 论文追求的 harmless 且 non-evasive; 但公告没有给任何有害率, 拒答率或对比数据, 所以这只能算方向一致, 算不上证据. **RLHF** 与 RLAIF 的机制见 [基于奖励模型的RL-RLHF-PPO](../../../../LargeLanguageModelGuide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md), [Constitutional AI 宪法对齐](../../../../LargeLanguageModelGuide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md) 和 [RLAIF](../../../../LargeLanguageModelGuide/4-后训练/4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md).
 
 ### 2.2. 六家伙伴: 定性评测和检索接入
 
 Quora 通过 Poe 提供 Claude, Autumn Besselman 转述用户评价: 回答详细, 好懂, 像自然对话; 后面接三条 Poe 用户的引语, 说 Claude 比 ChatGPT 更像聊天, 讲故事更有互动感, 答案深入但表达简单. Juni Learning 把 Claude 用在 Discord 上的 Juni Tutor Bot, CEO Vivian Shen 说评估过竞争对手后选了 Claude, 举了数学题和批判性阅读两个例子. Notion 的 Akshay Kothari 说 Claude 的创意写作和摘要能力用在 Notion AI 上. Robin AI 用 Claude 评估合同条款并给出替代措辞, CEO 说部署后用户参与度, 反馈和成单都有提升. AssemblyAI 说合作帮他们更快交付基于 LLM 的生成式 AI 能力.
 
-这些引语是公告里唯一的 「评测」. 它们全是定性描述, 样本由 Anthropic 挑选, 没有一个数字; Juni 说 「evaluated Anthropic against competitors」, 评估方法和指标都没给. 另一处值得单独看的是 DuckDuckGo: DuckAssist 依据 Wikipedia 和其他来源生成答案, Anthropic 在这一段前面写 「正与伙伴合作, 把 Claude 接入可靠, 实时的信息源」. 模型本身没有联网, 实时性靠伙伴侧检索后塞进上下文, 属于检索增强生成的用法, 见 [RAG](../../../../llm-guide/7-LLM应用开发/7.2-RAG/7.2-RAG.md). 这也说明在 2023 年初, 「知识截止」 的问题是在产品层用检索绕开的, 不是在训练层解决的.
+这些引语是公告里唯一的 「评测」. 它们全是定性描述, 样本由 Anthropic 挑选, 没有一个数字; Juni 说 「evaluated Anthropic against competitors」, 评估方法和指标都没给. 另一处值得单独看的是 DuckDuckGo: DuckAssist 依据 Wikipedia 和其他来源生成答案, Anthropic 在这一段前面写 「正与伙伴合作, 把 Claude 接入可靠, 实时的信息源」. 模型本身没有联网, 实时性靠伙伴侧检索后塞进上下文, 属于检索增强生成的用法, 见 [RAG](../../../../LargeLanguageModelGuide/7-LLM应用开发/7.2-RAG/7.2-RAG.md). 这也说明在 2023 年初, 「知识截止」 的问题是在产品层用检索绕开的, 不是在训练层解决的.
 
 ## 3. 配图与边界
 

@@ -37,7 +37,7 @@ Instant 这一节交代了三处改动. 第一是默认语气 「warmer by defau
 
 第二是指令遵循. 「每次只用六个词」 那组最适合逐字核对. GPT-5 的确认句 「Understood. All responses will be six.」 是 6 个词, 为了凑数省掉了 「words」; 接下来回答旅行问题时, 前两句各 6 个词, 后三句分别 11, 12, 9 个, 合计 44 个. GPT-5.1 Instant 三句话 「Understood, I will respond in six.」, 「Consider Japan, Italy, Greece, Canada, Iceland.」, 「Scenery culture cuisine climate friendly locals.」 都是 6 个词. 这个例子说明的是跨轮次保持约束的能力, GPT-5 把约束当成了每句开头的规矩, 两句之后就回到常规回答. GPT-5 那边还有一处时间错位: 它说日本是 「summer 2025」 的热门去处, 而公告日期是 2025 年 11 月, 「this summer」 按常理应当指 2026 年.
 
-第三是这页对 Instant 最有技术含量的一句: "For the first time, GPT‑5.1 Instant can use adaptive reasoning to decide when to think before responding to more challenging questions「. 在 GPT-5 时代, ChatGPT 里要不要思考由 Auto 路由在 Instant 和 Thinking 之间选; 现在 Instant 自己也能决定先想一想. 这意味着 」思考「 从一个模型级的切换, 至少部分下放到了单次请求级别. 页面没说 Instant 的思考和 Thinking 的思考用的是不是同一套机制, 也没说 Auto 路由在 Instant 能自己思考之后怎么分工, 只说 Auto 」will continue to route each query to the model best suited for it「. 推理模型怎样学会 」先想再答" 的一般做法, 可参见 [推理与思考能力](../../../../llm-guide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md), 本页没有提供 OpenAI 自己的做法.
+第三是这页对 Instant 最有技术含量的一句: "For the first time, GPT‑5.1 Instant can use adaptive reasoning to decide when to think before responding to more challenging questions「. 在 GPT-5 时代, ChatGPT 里要不要思考由 Auto 路由在 Instant 和 Thinking 之间选; 现在 Instant 自己也能决定先想一想. 这意味着 」思考「 从一个模型级的切换, 至少部分下放到了单次请求级别. 页面没说 Instant 的思考和 Thinking 的思考用的是不是同一套机制, 也没说 Auto 路由在 Instant 能自己思考之后怎么分工, 只说 Auto 」will continue to route each query to the model best suited for it「. 推理模型怎样学会 」先想再答" 的一般做法, 可参见 [推理与思考能力](../../../../LargeLanguageModelGuide/4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md), 本页没有提供 OpenAI 自己的做法.
 
 ## 3. Thinking: 思考时间的分布变宽了
 
@@ -53,13 +53,13 @@ Thinking 这一节的核心数字只有一句: 在 「a representative distribut
 
 演示本身也不能替代评测. 棒球统计那组, 提问要解释 BABIP 和 wRC+ 两个指标, 两栏回答在截图可视范围内都只讲到 BABIP, wRC+ 一个字都没露面. GPT-5 那栏写 「League average hovers around 300 most seasons」, 按它自己给的公式 (H−HR)/(AB−K−HR+SF), 分子不超过分母, BABIP 不会超过 1, 棒球统计习惯写 .300, 小数点在 PDF 文字层就已经丢了. 这组对比真正想演示的是第 6 页开头那句 「less jargon and fewer undefined terms」: GPT-5 用 HRs, SF 这类缩写, GPT-5.1 Thinking 用 「plain English」 把 Hits, Home Runs 拼全. 这是风格差异, 不是正确率差异, 两边给的公式其实是同一个.
 
-洒咖啡那组演示的是 「default tone is also warmer and more empathetic」. GPT-5 的回答提到 「spotlight effect」, 给了换说法, 一句话回应, 记一件做得好的事三条建议; GPT-5.1 Thinking 用 「Hey — no, they didn’t」 开头, 按 1, 2, 3 编号做心理疏导, 第 3 条被截断. 两者哪个更好, 取决于读者口味, 页面没有给偏好评测的胜率. 评测证据的一般要求可参见 [评测科学与证据](../../../../llm-guide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md), 按那里的标准, 这页的能力主张基本停在 「有演示, 无测量」.
+洒咖啡那组演示的是 「default tone is also warmer and more empathetic」. GPT-5 的回答提到 「spotlight effect」, 给了换说法, 一句话回应, 记一件做得好的事三条建议; GPT-5.1 Thinking 用 「Hey — no, they didn’t」 开头, 按 1, 2, 3 编号做心理疏导, 第 3 条被截断. 两者哪个更好, 取决于读者口味, 页面没有给偏好评测的胜率. 评测证据的一般要求可参见 [评测科学与证据](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md), 按那里的标准, 这页的能力主张基本停在 「有演示, 无测量」.
 
 ## 5. 架构与训练: 本页没有
 
 架构方面, 本页没有任何信息. 没有参数量, 没有是否 MoE, 没有上下文长度, 没有注意力或位置编码方案. 唯一和 「模型形态」 沾边的是两处: Instant 与 Thinking 在 API 里 「both with adaptive reasoning」, 以及 Auto 负责路由. 前者说明两个模型都能在单次请求里决定思考多少, 后者说明 ChatGPT 层面仍然是多模型组合. 至于两者是不是同一个基座, Thinking 的思考档位怎样实现, 这页给不出依据, 下文也不做推测.
 
-训练方面同样没有. 数据来源, SFT, RLHF, 奖励设计, 一概没提. 与训练有关的只有几句间接描述: 更能遵守 custom instructions; 预设风格 「designed to align with what we’ve learned about how people naturally steer the model」 (这句也是 MinerU 丢掉, 只在 PDF 第 10 页开头出现的); 语气 「warmer by default」. 第二句暗示风格预设参考了用户实际怎样引导模型的数据, 但没说是用来训练模型, 还是只用来设计菜单. 让模型语气更暖, 更听指令的常见路线是基于偏好反馈的后训练, 一般流程见 [RLHF 与 PPO](../../../../llm-guide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md), 本页没有说 GPT-5.1 用了哪一种.
+训练方面同样没有. 数据来源, SFT, RLHF, 奖励设计, 一概没提. 与训练有关的只有几句间接描述: 更能遵守 custom instructions; 预设风格 「designed to align with what we’ve learned about how people naturally steer the model」 (这句也是 MinerU 丢掉, 只在 PDF 第 10 页开头出现的); 语气 「warmer by default」. 第二句暗示风格预设参考了用户实际怎样引导模型的数据, 但没说是用来训练模型, 还是只用来设计菜单. 让模型语气更暖, 更听指令的常见路线是基于偏好反馈的后训练, 一般流程见 [RLHF 与 PPO](../../../../LargeLanguageModelGuide/4-后训练/4.4-强化学习基础/4.4-强化学习基础.md), 本页没有说 GPT-5.1 用了哪一种.
 
 安全方面, 页面只有一个链接: 「system card addendum」. 原句 「Our system card addendum includes more information on our safety approach for GPT‑5.1」 的链接文字被 MinerU 挪到了句末, 读起来成了 「Our includes more information」. 系统卡补充文档里有什么评级和分数, 本页一个都没转述.
 
@@ -75,7 +75,7 @@ Thinking 这一节的核心数字只有一句: 在 「a representative distribut
 
 推送顺序很清楚: Pro, Plus, Go, Business 这些付费用户先, 然后免费和未登录用户. Enterprise 和 Edu 有七天提前体验开关, 默认关闭, 窗口期过后 GPT-5.1 「will become the sole default model」. PDF 第 9 页开头还有一句 Markdown 丢掉的提醒: 今天打开 ChatGPT 未必马上能看到 GPT-5.1, 会在接下来几天里逐步推开. GPT-5 Pro 会 「soon」 升级为 GPT-5.1 Pro, 没有日期.
 
-两个期限要分开读. 七天管的是 「默认用哪个」, 三个月管的是 「还能不能在旧版模型下拉菜单里手动选 GPT-5」. 三个月的保留只写了 「for paid subscribers」, Enterprise 和 Edu 算不算在内, 页面没说. OpenAI 在这里还给出了一条面向以后的承诺: 新模型上线时给出充足的评估和反馈时间, 下线期会提前清楚公布. 这类部署节奏属于模型上线后的治理问题, 一般讨论见 [部署治理与持续保证](../../../../llm-guide/5-评测-安全与治理/5.4-部署治理与持续保证/5.4-部署治理与持续保证.md).
+两个期限要分开读. 七天管的是 「默认用哪个」, 三个月管的是 「还能不能在旧版模型下拉菜单里手动选 GPT-5」. 三个月的保留只写了 「for paid subscribers」, Enterprise 和 Edu 算不算在内, 页面没说. OpenAI 在这里还给出了一条面向以后的承诺: 新模型上线时给出充足的评估和反馈时间, 下线期会提前清楚公布. 这类部署节奏属于模型上线后的治理问题, 一般讨论见 [部署治理与持续保证](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.4-部署治理与持续保证/5.4-部署治理与持续保证.md).
 
 API 的命名值得多看一眼. Thinking 在 API 里直接叫 GPT-5.1, Instant 叫 gpt-5.1-chat-latest. 也就是说, ChatGPT 里用得最多的那个模型, 在 API 里反而带着长后缀; 调不带后缀的 GPT-5.1 拿到的是推理模型. 页面没有解释这种安排, 也没给 API 的上线日期, 只说 「later this week」. 命名规则则写得明白: 5.1 表示 GPT-5 代内的实质改进, 以后 GPT-5 的迭代都照此命名.
 

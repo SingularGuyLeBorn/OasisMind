@@ -28,11 +28,11 @@ describe("postExplain", () => {
       quote: "W_t = W_0 + B_t A_t",
       title: "持续学习",
       slug: "4.7-持续学习",
-      garden: "llm-guide",
+      garden: "LargeLanguageModelGuide",
       surrounding: "冻结骨干 + 适配器",
     });
     expect(prompt).toContain("持续学习");
-    expect(prompt).toContain("llm-guide/4.7-持续学习");
+    expect(prompt).toContain("LargeLanguageModelGuide/4.7-持续学习");
     expect(prompt).toContain("W_t = W_0 + B_t A_t");
     expect(prompt).toContain("冻结骨干");
   });
@@ -42,7 +42,7 @@ describe("postExplain", () => {
       quote: "经验回放",
       title: "持续学习",
       slug: "4.7",
-      garden: "llm-guide",
+      garden: "LargeLanguageModelGuide",
     });
     expect(res.explanation).toBe("这是一段解释。");
     expect(res.model).toBe("test-model");
