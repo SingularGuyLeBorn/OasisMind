@@ -5,9 +5,9 @@ published: true
 excerpt: "把推理阶段的梯度更新写进序列模型本身: TTT layer 的隐状态是一个小模型的权重, LaCT 把更新块放大到上千 token, TTT-E2E 直接在 Transformer 的 MLP 上做下一个 token 预测的梯度步. 以及它们和线性注意力, SSM, RWKV, Titans 的边界."
 tags: ["continual-learning", "test-time-training", "long-context", "fast-weights", "learning-path"]
 ---
-# 05 · TestingTime 训练与长上下文
+# TestingTime 训练与长上下文
 
-第 4 章的推理阶段更新面对的是分布偏移, 每个样本是一张图. 这一章面对的是长上下文: 输入是一条上万到上百万 token 的序列, 模型要一边读一边把前文压进一个状态. 全注意力保留全部 KV, 每个 token 的开销随长度增长; 线性 RNN 把历史压进一个固定大小的矩阵, 开销与长度无关, 但装得下的东西有限. TTT 这一支的做法是让状态本身是一个模型的权重, 让「读一段上下文」等于「在这段上下文上训练一步」. 本章三篇: [5.1 TTT layers 与 fast weights](./5.1-TTT-layers与fast-weights.md) 给出这种层的定义和它与注意力的等价关系, [5.2 LaCT 与 TTT-E2E](./5.2-LaCT与TTT-E2E.md) 讲之后两条改进, [5.3 与 attention, SSM, RWKV, Titans 的边界](./5.3-与attention-SSM-RWKV-Titans的边界.md) 把这些方法和线性注意力一族放进同一张表.
+第 4 章的推理阶段更新面对的是分布偏移, 每个样本是一张图. 这一章面对的是长上下文: 输入是一条上万到上百万 token 的序列, 模型要一边读一边把前文压进一个状态. 全注意力保留全部 KV, 每个 token 的开销随长度增长; 线性 RNN 把历史压进一个固定大小的矩阵, 开销与长度无关, 但装得下的东西有限. TTT 这一支的做法是让状态本身是一个模型的权重, 让「读一段上下文」等于「在这段上下文上训练一步」. 本章三篇: [Fast weights 与 TTT layers](./5.1-Fast-weights/5.1-Fast-weights.md) 给出这种层的定义和它与注意力的等价关系, [块级更新与端到端 TTT](./5.2-块级更新/5.2-块级更新.md) 讲之后两条改进, [序列模型边界](./5.3-序列模型边界/5.3-序列模型边界.md) 把这些方法和线性注意力一族放进同一张表.
 
 ## 1 三篇怎样衔接
 
