@@ -145,7 +145,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 
 **精读**
 
-* [RSIBench-Data](../rsi/5-可靠性与安全/5.3-评测基准.md)
+* [RSIBench-Data](../rsi/5-可靠性与安全/5.2-评测与安全治理/5.2.1-评测基准.md)
 
 ***
 
@@ -166,7 +166,7 @@ RSIBench-Data:58% 场景能超过首次尝试,但达峰后续跑 **78% 最终更
 ### 精读 / 资源
 
 * Polaris
-* [Stanford CS329A Skill](../rsi/1-基础/1.2-定义与形式化.md)
+* [Stanford CS329A Skill](../rsi/1-基础/1.1-边界与证据/1.1.2-定义与形式化.md)
 * [bilibili2skill](../resources/bilibili2skill/bilibili2skill.md)
 * 资源花园其它工具/创意 Skill:见 `resources/_garden.md`
 
