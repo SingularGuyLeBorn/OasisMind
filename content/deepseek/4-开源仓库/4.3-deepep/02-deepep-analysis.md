@@ -299,21 +299,7 @@ DualPipe 的重叠粒度是 chunk: 一个 micro-batch 的通信对另一个 micr
 
 Flux ([Chang et al., 2024](https://arxiv.org/abs/2406.06858)) 处理的是 TP 那一侧的 AllReduce 和 AllGather. 它把通信和依赖它的 GEMM 拆成更细的操作, 再融合进一个更大的 kernel, 在 GEMM 的 tile 粒度上边算边通信. 论文称融合 kernel 最多能掩盖 96% 的通信, 训练相对 Megatron-LM 在 128 卡上最多加速 1.24 倍, 推理相对 vLLM 在 8 卡上 prefill 与 decode 分别最多加速 1.66 倍和 1.30 倍. 同一团队的 Triton-distributed ([Zheng et al., 2025](https://arxiv.org/abs/2504.19442)) 把这类重叠 kernel 的编写搬到 Triton 编译器里, 用通信原语加计算原语描述分布式 kernel. 注意力 TP 的通信交给 Flux 一类方法, 专家侧的 All-to-All 交给 DeepEP 和 Comet 一类方法, 两者作用在一层的不同位置, 可以同时使用.
 
-### 3.3. 参考文献
-
-1. Lepikhin, D., et al. (2020). [GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding](https://arxiv.org/abs/2006.16668).
-2. Fedus, W., Zoph, B., & Shazeer, N. (2021). [Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity](https://arxiv.org/abs/2101.03961). 第 5 节.
-3. Hwang, C., et al. (2023). [Tutel: Adaptive Mixture-of-Experts at Scale](https://arxiv.org/abs/2206.03382). MLSys 2023. 附录 A 2DH All-to-All.
-4. DeepSeek-AI. (2024). [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model](https://arxiv.org/abs/2405.04434). §3.1.3.
-5. DeepSeek-AI. (2024). [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437). §3.2, §3.3, §3.5.1, Table 2.
-6. DeepSeek. [DeepEP](https://github.com/deepseek-ai/DeepEP). README: `EPBuffer`, 异步 dispatch / combine, FP8 dispatch.
-7. Zhang, S., et al. (2025). [Comet: Fine-grained Computation-communication Overlapping for Mixture-of-Experts](https://arxiv.org/abs/2502.19811).
-8. Chang, L.-W., et al. (2024). [FLUX: Fast Software-based Communication Overlap On GPUs Through Kernel Fusion](https://arxiv.org/abs/2406.06858).
-9. Zheng, S., et al. (2025). [Triton-distributed: Programming Overlapping Kernels on Distributed AI Systems with the Triton Compiler](https://arxiv.org/abs/2504.19442).
-10. Rajbhandari, S., Rasley, J., Ruwase, O., & He, Y. (2020). [ZeRO: Memory Optimizations Toward Training Trillion Parameter Models](https://arxiv.org/abs/1910.02054). SC20.
-11. Patarasuk, P., & Yuan, X. (2009). [Bandwidth Optimal All-reduce Algorithms for Clusters of Workstations](https://doi.org/10.1016/j.jpdc.2008.09.002). *Journal of Parallel and Distributed Computing*, 69(2).
-12. Moonshot AI. (2026). [Kimi K3 Technical Report](https://arxiv.org/abs/2607.24653). 推理 kernel 一节.
-13. Elango, V., et al. (2026). [LatentMoE](https://arxiv.org/abs/2601.18089).
+### 3.3. DeepEP 的两种工作模式
 
 上一篇讲完了 grouped GEMM 怎么处理 dispatch 送来的 token。这一篇往回补一块：dispatch/combine 本身——那次把 token 从一个 rank 搬到另一个 rank 的 all-to-all——具体是怎么在 GPU 上跑起来的。EP 一章的 dispatch 篇已经介绍过 dispatch 要达成的目标 layout，以及 Megatron 原生路径和 DeepEP fused dispatch 这两条主线在 API 层面的样子；这里要做的是把 DeepEP 这个通信库的实现彻底打开，看看 channel、prefix matrix、IBGDA 这些概念具体指什么，以及本仓库所引版本（`v1.2.1+`，`__version__ = '2.0.0'`）里并存的 V1（legacy/NVSHMEM）和 V2（elastic/NCCL Gin）两套实现差在哪。
 
@@ -400,6 +386,8 @@ flowchart TB
 切换 normal 和 low-latency 之间还有一个实现细节要注意：两者共用部分 buffer，切换前必须调用 `clean_low_latency_buffer`（[[deepep:deep_ep/buffers/legacy.py#L538]]），因为 low-latency 模式要求相关 buffer 处于零初始化状态。
 
 ---
+
+### 3.4. 接收布局与 notify_dispatch
 
 **接收端怎么知道数据落在哪里：notify_dispatch、channel、prefix matrix**
 
@@ -830,3 +818,19 @@ NVSHMEM 支持两种要求不同的模式, 用下面任一种方法都能打开 
 
 > **确认:** 这份安装文档要求配驱动的 `NVreg_EnableStreamMemOPs=1` 与 `PeerMappingOverride=1`, 这两项在 V2.5 之后还需要吗?
 > 答: 不需要. V2.5 的发布说明写明「Fully remove V1, including its APIs, NVSHMEM backend, and legacy documentation. NVSHMEM is no longer a dependency」, 当前 README 的依赖列表里只剩 NCCL 2.32.3 及以上, 部署前置从「改驱动注册键并重启」变成「装一个与 CUDA 匹配的 NCCL 包」. QP 规划随之换了地方: [`deep_ep/buffers/ep.py`](https://github.com/deepseek-ai/DeepEP/blob/main/deep_ep/buffers/ep.py) 的 `EPBuffer` 在 `allow_hybrid_mode` 下默认分配 65 或 129 个 QP (取决于 `check_fast_rdma_atomic_support` 的结果), 关掉 hybrid 时分配 17 个; 这个数在 [`csrc/kernels/comm/context.cpp`](https://github.com/deepseek-ai/DeepEP/blob/main/csrc/kernels/comm/context.cpp) 里写进 NCCL 的 `ginContextCount`, 取代了 V1 通过 `NVSHMEM_IBGDA_NUM_RC_PER_PE` 环境变量传给 NVSHMEM 的做法.
+
+## 参考文献
+
+1. Lepikhin, D., et al. (2020). [GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding](https://arxiv.org/abs/2006.16668).
+2. Fedus, W., Zoph, B., & Shazeer, N. (2021). [Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity](https://arxiv.org/abs/2101.03961). 第 5 节.
+3. Hwang, C., et al. (2023). [Tutel: Adaptive Mixture-of-Experts at Scale](https://arxiv.org/abs/2206.03382). MLSys 2023. 附录 A 2DH All-to-All.
+4. DeepSeek-AI. (2024). [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model](https://arxiv.org/abs/2405.04434). §3.1.3.
+5. DeepSeek-AI. (2024). [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437). §3.2, §3.3, §3.5.1, Table 2.
+6. DeepSeek. [DeepEP](https://github.com/deepseek-ai/DeepEP). README: `EPBuffer`, 异步 dispatch / combine, FP8 dispatch.
+7. Zhang, S., et al. (2025). [Comet: Fine-grained Computation-communication Overlapping for Mixture-of-Experts](https://arxiv.org/abs/2502.19811).
+8. Chang, L.-W., et al. (2024). [FLUX: Fast Software-based Communication Overlap On GPUs Through Kernel Fusion](https://arxiv.org/abs/2406.06858).
+9. Zheng, S., et al. (2025). [Triton-distributed: Programming Overlapping Kernels on Distributed AI Systems with the Triton Compiler](https://arxiv.org/abs/2504.19442).
+10. Rajbhandari, S., Rasley, J., Ruwase, O., & He, Y. (2020). [ZeRO: Memory Optimizations Toward Training Trillion Parameter Models](https://arxiv.org/abs/1910.02054). SC20.
+11. Patarasuk, P., & Yuan, X. (2009). [Bandwidth Optimal All-reduce Algorithms for Clusters of Workstations](https://doi.org/10.1016/j.jpdc.2008.09.002). *Journal of Parallel and Distributed Computing*, 69(2).
+12. Moonshot AI. (2026). [Kimi K3 Technical Report](https://arxiv.org/abs/2607.24653). 推理 kernel 一节.
+13. Elango, V., et al. (2026). [LatentMoE](https://arxiv.org/abs/2601.18089).

@@ -495,7 +495,7 @@ MFU 低可能只是算子本来就受内存约束，得先用 §2 的方法判�
 
 ---
 
-### 3.2. 小结
+### 3.2. Grouped GEMM 的任务组织
 
 - **roofline = 两道天花板取 min**：$P = \min(\pi,\ I \cdot \beta)$。撞哪道墙由算子自身的 arithmetic intensity $I = \text{FLOP/byte}$ 与 ridge point $I^* = \pi/\beta$ 的大小关系决定。
 - **四类 LLM 算子的 $I$**：大 GEMM $O(n)$→compute-bound；GEMV/decode $O(1)$→深度 memory-bound（batching 抬 $I$）；elementwise/norm $O(1)$→memory-bound（fusion）；attention（§2.4）朴素 $I \approx d/s$（**与序列长无关的常数**、瓶颈是物化 $N \times N$ 矩阵）→ FlashAttention 用 tiling + online-softmax 让矩阵不落 HBM、$I$ 右移约 10× 逼近 compute-bound，decode-attention 则退化成 $2/s$ 卡在读 KV cache。锚点：DeepGEMM FP8 到 1550 TFLOPS（贴 compute roof）、FlashAttention 降 IO（往右挪）。
@@ -548,7 +548,7 @@ X  │ expert0    │ exp1 │  expert2    │... │   每段 [n_i, H]
 
 ---
 
-**两种 layout：contiguous 与 masked**
+### 3.3. Contiguous 与 masked layout
 
 DeepGEMM 为 MoE 提供了两套 API，分别对应两种部署场景。
 
@@ -665,7 +665,7 @@ flowchart LR
 
 ---
 
-### 3.3. Expert 的反向：dgrad 与 wgrad
+### 3.4. Expert 的反向：dgrad 与 wgrad
 
 一个 grouped linear $Y = X W^{\top}$ 的反向包含两个梯度，**它们分别使用不同的 grouped 模式**，这是本篇最需要记住的一点。
 
