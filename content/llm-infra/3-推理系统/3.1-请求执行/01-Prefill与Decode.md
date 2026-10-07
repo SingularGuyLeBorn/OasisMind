@@ -159,6 +159,8 @@ $P_{shape}$ 是小矩阵可持续算力，不是规格峰值；$Q_w$ 是否每�
 
 验证 chunked prefill 应同时检查数值和服务行为。选取覆盖块边界、超长前缀、不同 mask 与多种 dtype 的固定 token 序列，对比分块和整段执行的 logits、首 token 与 KV 内容；容差按累加精度设定，不能只比最终生成文本，因为采样可能掩盖小的 logits 偏差。性能侧记录每块的 prefix length、chunk size、设备时间、decode 插入间隔和调度空档。总 prefill 时间变长但 TPOT 达标可能是预期交换；logits 超出容差则属于正确性失败，不能用吞吐收益抵消。
 
+### 4.3. 调度与容量怎样进入模型
+
 **PD 分离的队列模型。**
 
 Prefill 池服务率用 input token/s 更合适，Decode 池用 output token/s 和 KV 容量描述。若平均请求输入 $S_p$、输出 $S_o$，到达率 $\lambda$ 请求/s，两池需求分别约为 $\lambda S_p$ input token/s 和 $\lambda S_o$ output token/s。任一池利用率接近 1，队列都会快速上升。
@@ -216,6 +218,8 @@ Top-k 可用局部选择而非完整排序，top-p 需要累积概率到阈值�
 权重 14 GB 从本地 SSD 20 GB/s 读取理论 0.7 s，从远端 2 GB/s 则 7 s，还要反序列化与 H2D。多副本同时启动会争用后端，使单副本微基准失效。节点缓存与分层分发减少惊群，但版本校验必须先完成。
 
 预编译常见 shape 可缩短首请求，编译 cache 与 GPU 架构、驱动、编译器版本绑定。Cache miss 安全回退 eager，同时实例在后台准备；在 readiness 前完成关键 warmup，避免把真实用户当预热流量。
+
+### 4.4. 基准、回退与端到端决策
 
 **可复现的基准清单。**
 
