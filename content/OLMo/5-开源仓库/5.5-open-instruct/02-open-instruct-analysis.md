@@ -10,7 +10,7 @@ excerpt: "基于固定提交 1182625 的代码与配置，解析 Open Instruct �
 
 Open Instruct 提交 `11826255077617a46919ce75cadf1f3d53f30dac` 的训练实现分布在 `open_instruct/dataset_transformation.py`,`data_loader.py`,SFT/DPO/RM 与 `grpo_fast.py`,配方和运行入口位于 `scripts/train/olmo3/`,`configs/`,`docs/olmo3.md` 及污染检查代码.仓库将自身定位为研究代码且不保证向后兼容,文中的接口描述因此对应这一提交.
 
-![Open Instruct 从统一数据契约到 SFT,偏好学习和在线 RLVR 的训练图](images/open-instruct-training-flow.svg)
+![Open Instruct 从统一数据契约到 SFT,偏好学习和在线 RLVR 的训练图](images/open-instruct-training-flow.png)
 > 图 1:统一数据转换把消息,偏好对和可验证任务送入不同阶段;SFT 产生策略起点,DPO 或奖励模型使用偏好数据,在线 RLVR 则把策略采样,验证奖励与参数更新连成反馈循环.
 
 图 1 中三条训练路线共享稳定的数据语义和模型接口,各自采用不同的损失.SFT 需要明确哪些 assistant token 参与交叉熵;DPO 要保证 chosen 与 rejected 共用同一 prompt,并依赖参考策略定义相对变化;RLVR 每轮都由当前策略生成 rollout,再由验证器给出奖励,因此采样服务,训练集群和版本标识必须同步.箭头没有表示 SFT,DPO,RLVR 必须全部执行,也没有表示后一阶段必然优于前一阶段;具体组合取决于目标行为,数据覆盖和计算预算.

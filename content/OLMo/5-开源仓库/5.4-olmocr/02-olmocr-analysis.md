@@ -10,7 +10,7 @@ excerpt: "基于固定提交 f7cfe4c 的真实代码，解析 PDF 渲染、任�
 
 olmOCR 提交 `f7cfe4c22098b154c76b6ec950d1c0a464eecf8d` 的主要实现位于 `olmocr/pipeline.py`、`work_queue.py`、`pdf_info.py`、`prompts/`、`filter/`、`datatypes.py`、`bench/`、`tests/` 与数据渲染脚本。它的输出来自视觉语言模型，不能当作传统字符识别的确定性转写。
 
-![olmOCR 从 PDF 页面到可恢复 Markdown 文档的处理流水线](images/olmocr-page-pipeline.svg)
+![olmOCR 从 PDF 页面到可恢复 Markdown 文档的处理流水线](images/olmocr-page-pipeline.png)
 > 图 1：PDF 先拆成带文档和页码标识的任务，单页渲染后进入视觉语言模型，输出经格式验证、重试与过滤，再按页序合并为 Markdown 文档。
 
 图 1 中页级任务是恢复和并发的最小单位：失败页可以单独重试，成功页不必重新推理。文档标识与页码沿整条链路保留，合并器才能在并行完成顺序不同的情况下恢复原始页序。验证器只能检查输出格式、重复、截断等可编码条件，不能证明转写忠实；跨页表格、脚注和段落延续也可能在页级切分时受损。因而最终 Markdown 仍需抽样核对原页，不能把“通过验证”解释成“内容完全正确”。

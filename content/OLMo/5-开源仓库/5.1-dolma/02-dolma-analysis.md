@@ -10,7 +10,7 @@ excerpt: "基于固定提交 669f534 的源码与配置，解析 Dolma 的文档
 
 官方源码提交 `669f534823b08d266a8fff01f8a1c916a5a56576` 的数据处理机制分布在 `src/` 下的 Rust 实现, Python 工具入口, `docs/data-format.md`, `taggers.md`, `deduplication.md`, `mixer.md` 与 `parallel-processor.md`. README 所述三万亿 token 数据集是这套工具的一项产物.
 
-![Dolma 从原始文档到版本化训练语料的数据处理图](images/dolma-data-dag.svg)
+![Dolma 从原始文档到版本化训练语料的数据处理图](images/dolma-data-dag.png)
 > 图 1：原始 JSONL 文档经过稳定标识、Tagger 属性计算、过滤与去重，随后由 Mixer 按版本化配方输出训练语料；统计和审计记录横跨整条链路。
 
 图 1 中的实线箭头表示文档内容的主要流向，虚线表示不直接改写正文、却会影响后续选择的属性与统计。`source + id` 是追踪单条文档的主键，Tagger 生成属性和统计，过滤规则据此决定保留或删除。Mixer 接收的是带来源、属性和版本信息的候选文档，不能假定输入已经绝对干净。图中没有给出任何固定阈值或数据比例，因为这些属于具体数据版本的配方，不能从工具仓库本身推出。

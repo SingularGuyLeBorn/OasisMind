@@ -10,7 +10,7 @@ excerpt: "基于固定提交 5f6f58a 的真实源码，解析 OLMo-core 的 Trai
 
 分析对应本地官方快照 `data/sources/OLMo-core/repo` 的提交 `5f6f58a133e7ef577d596295f2c8db4651c27857`. 证据来自 `src/olmo_core/train/trainer.py`, `train/train_module/`, `train/checkpoint.py`, `distributed/`, `data/`, `nn/transformer/`, `src/scripts/official/` 与 `docs/source/guides/`. OLMo-core 持续演进, 提交号把当前实现与未来接口, 外部仓库能力及 README 中尚未落地的规划分开.
 
-![OLMo-core 训练控制、数学步骤与可恢复状态的分层图](images/olmo-core-training-stack.svg)
+![OLMo-core 训练控制、数学步骤与可恢复状态的分层图](images/olmo-core-training-stack.png)
 > 图 1：Trainer 管理循环和生命周期，TrainModule 定义前向、损失与优化步骤；设备网格承载数据、张量、流水线和上下文并行，数据游标与分布式状态共同进入 checkpoint。
 
 图 1 把“谁决定下一步做什么”和“这一步具体算什么”分开。Trainer 沿控制箭头触发取数、前后向、优化、日志与保存，TrainModule 返回损失和待更新状态；并行网格改变张量分片与通信位置，却不应悄悄改变训练目标。恢复箭头同时指向模型、优化器、调度器、随机数状态和数据游标，因为只恢复权重并不能保证继续看到相同的 token 顺序。图中没有指定某个 OLMo 版本采用哪组并行维度，那必须回到发布配置和运行记录核对。
