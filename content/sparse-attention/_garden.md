@@ -29,11 +29,11 @@ published: true
 
 2025 年 2 月公开的 [NSA](https://arxiv.org/abs/2502.11089) 把压缩、选择、滑窗做成三个原生训练分支。Prompt进入某层后，压缩分支把重叠 token 块变成少量 compressed KV，并用这条分支已经算出的分数给原始连续块排名；selection分支回读 top blocks 的原始 KV；window分支单独处理最近 token，三路各做attention再门控相加。它省在训练、Prefill与Decode都不必算完整 $n^2$，代价是三套分支、block 粗粒度和离散选择。后来这篇工作拿下了 [ACL 2025 Best Paper](https://2025.aclweb.org/program/awards/)，也算是这一轮稀疏注意力热潮里相当醒目的一个节点。
 
-同在 2025 年 2 月的 [MoBA](./2-动态路由/2.4-训练原生稀疏/2.4.2-MoBA.md) 把历史切成 blocks。每个 query 先用块表示路由，再只对 top-k blocks 内的原始 K/V 做attention，并保留因果局部块。它可以把 $k$ 放大到全部blocks退化回full attention，训练迁移更平滑；代价是路由要准确，block越大越容易把无关邻居一起读进来，block越小又越难把GPU喂饱。
+同在 2025 年 2 月的 [MoBA](./2-动态路由/2.1-粗粒度选择/2.1.3-MoBA.md) 把历史切成 blocks。每个 query 先用块表示路由，再只对 top-k blocks 内的原始 K/V 做attention，并保留因果局部块。它可以把 $k$ 放大到全部blocks退化回full attention，训练迁移更平滑；代价是路由要准确，block越大越容易把无关邻居一起读进来，block越小又越难把GPU喂饱。
 
 2025 年 9 月发布实验版本、12 月报告完整模型的 [DeepSeek-V3.2 / DSA](https://arxiv.org/abs/2512.02556) 又换了一种数据流：每层当前hidden state仍生成自己的主attention query与MLA KV，同时用轻量 Lightning Indexer 扫描历史 index keys，选出 token级top-k，再去主KV中gather。别把“轻量索引”理解成免费，它仍要全历史扫描低维状态；它省的是昂贵主KV的QK与读取，代价是索引器训练、top-k和随机gather。
 
-2025 年 10 月的 [Kimi Linear / KDA](https://arxiv.org/abs/2510.26692) 回到有限状态路线。KDA基于delta rule更新矩阵状态，并用更细粒度门控制写入和遗忘；论文模型按层混合KDA与MLA。大多数层不保留全历史token KV，少数MLA层承担精确回看。它省cache和长Decode读取，代价仍是有限状态的信息碰撞，以及混合层留下的完整attention成本。
+2025 年 10 月的 [Kimi Linear / KDA](./1-基础/1.4-KDA与混合线性注意力.md) 回到有限状态路线。KDA基于delta rule更新矩阵状态，并用更细粒度门控制写入和遗忘；论文模型按层混合KDA与MLA。大多数层不保留全历史token KV，少数MLA层承担精确回看。它省cache和长Decode读取，代价仍是有限状态的信息碰撞，以及混合层留下的完整attention成本。
 
 ### 2026: 开始砍“层的副本”和“Prompt 必须走完所有层”
 
@@ -89,7 +89,7 @@ KV cache 压缩与 Sparse Attention 有交集，但两者不相同。淘汰方�
 
 ### 3.1. 从成本模型进入
 
-[基础](./1-基础/1-基础.md)先固定记号和成本口径, 再沿[成本与阶段](./1-基础/1.1-成本与阶段/1.1-成本与阶段.md)、[静态图结构](./1-基础/1.2-静态图结构/1.2-静态图结构.md)、[混合与流式](./1-基础/1.3-混合与流式/1.3-混合与流式.md)三条路线讨论 Longformer、BigBird、滑动窗口、局部—全局混合层与 attention sink。随后依次进入[动态路由](./2-动态路由/2-动态路由.md)、[KV 选择](./3-KV选择/3-KV选择.md)、[训练](./4-训练/4-训练.md)、[内核](./5-内核/5-内核.md)与[评测](./6-评测/6-评测.md)。阅读这些材料时，应把训练、prefill 和 decode 分开，把 FLOPs、峰值显存、KV 容量和 KV 读取分开。静态拓扑是最适合建立参照系的起点，因为选择集合与输入内容无关，哪些边存在可以直接画出并手算。
+[基础](./1-基础/1-基础.md)先固定记号和成本口径, 再沿[成本与阶段](./1-基础/1.1-成本模型.md)、[静态图结构](./1-基础/1.2-静态拓扑.md)、[混合与流式](./1-基础/1.3-混合拓扑.md)三条路线讨论 Longformer、BigBird、滑动窗口、局部—全局混合层与 attention sink。随后依次进入[动态路由](./2-动态路由/2-动态路由.md)、[KV 选择](./3-KV选择/3-KV选择.md)、[训练](./4-训练/4-训练.md)、[内核](./5-内核/5-内核.md)与[评测](./6-评测/6-评测.md)。阅读这些材料时，应把训练、prefill 和 decode 分开，把 FLOPs、峰值显存、KV 容量和 KV 读取分开。静态拓扑是最适合建立参照系的起点，因为选择集合与输入内容无关，哪些边存在可以直接画出并手算。
 
 后续章节将进入内容相关路由、KV 选择、训练方法与稀疏 kernel。动态方法要与静态窗口在相同预算下比较：每个 query 实际读多少 token，路由器额外读取多少数据，召回关键 token 的失败怎样传播。系统章节则检查逻辑 mask 是否真的变成块级跳算，以及加速是否只在特定序列长度和 batch 上成立。
 
