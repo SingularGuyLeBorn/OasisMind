@@ -407,7 +407,7 @@ E2E 进程由 `apps/web/e2e-global/setup.mjs` 启动（不要再用 Playwright `
 | 改 tRPC | `apps/server/src/router.ts`、`packages/shared/src/schemas.ts` |
 | 改 sync | `apps/server/src/scripts/sync.ts` |
 | 新建知识库或设计领域目录 | `docs/knowledge-base-design.md`；先判断知识库类型与主分类轴，再建目录 |
-| 改知识库文章、目录或编号 | `docs/writing-spec.md` §3.5；叶子文章可直接放父目录，非叶子节点必须使用同名目录与同名首页 |
+| 改知识库文章、目录或编号 | `docs/writing-spec.md` §3.5；一级、二级必须使用同名目录与同名首页，只有 `1.1.1` 三级节点允许直接成为叶子 |
 | 测试圣经 / 满分标准 | `docs/development/testing.md` |
 
 ---

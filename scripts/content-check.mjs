@@ -5,9 +5,10 @@
  * 3. frontmatter 入库的 md 必须有 frontmatter 且含 title（om-sync 缺 title 时会拿路径当标题）
  * 4. markers     读者可见正文不得残留审稿批注
  * 5. structure   正文标题数量与单节跨度不得退化成扩写内容堆在末节
+ * 6. tree        一级、二级知识节点必须使用同名目录与同名首页，三级才允许成为叶子
  *
- * 用法：node scripts/content-check.mjs [files|links|frontmatter|markers ...] [--list]
- * 不带检查名 = 全部；--list 打印每条问题，否则只打印汇总与前 20 条。有问题时退出码 1。
+ * 用法：node scripts/content-check.mjs [files|links|frontmatter|markers|structure|tree ...] [--garden=opd] [--list]
+ * 不带检查名 = 常规全文检查；tree 是结构迁移专项，可用 --garden 限定单库。--list 打印每条问题，否则只打印汇总与前 20 条。有问题时退出码 1。
  */
 import fs from "fs";
 import path from "path";
@@ -21,6 +22,8 @@ const RL_ATTACHMENTS = new Set(["implementation.py", "pipeline_skeleton.py", "ex
 /** 不入库成文章的目录（与 om-sync ignore_dirs 一致）及无 _garden 的素材区 */
 const NON_POST_TOP = new Set(["uploads", "about"]);
 const NON_POST_DIRS = new Set(["images", "public", "assets", ".trash"]);
+const TREE_EXCLUDED_GARDENS = new Set(["model-library", "daily-fragments"]);
+let gardenFilter = null;
 const MARKERS = [
   /[(（]估算[)）]/,
   /[(（]推断[)）]/,
@@ -177,19 +180,65 @@ function checkStructure(mdFiles) {
   return issues;
 }
 
+const FIRST_NODE_RE = /^\d+-/;
+const SECOND_NODE_RE = /^\d+\.\d+-/;
+
+function checkTree() {
+  const issues = [];
+  const gardens = fs.readdirSync(CONTENT, { withFileTypes: true }).filter((ent) => {
+    if (!ent.isDirectory() || NON_POST_TOP.has(ent.name) || TREE_EXCLUDED_GARDENS.has(ent.name)) return false;
+    if (gardenFilter && ent.name !== gardenFilter) return false;
+    return fs.existsSync(path.join(CONTENT, ent.name, "_garden.md"));
+  });
+
+  for (const garden of gardens) {
+    const gardenDir = path.join(CONTENT, garden.name);
+    const firstEntries = fs.readdirSync(gardenDir, { withFileTypes: true });
+    for (const ent of firstEntries) {
+      if (ent.isFile() && ent.name.endsWith(".md") && ent.name !== "_garden.md" && FIRST_NODE_RE.test(ent.name)) {
+        issues.push(`${rel(path.join(gardenDir, ent.name))}  TREE_L1_FILE 一级节点必须放入同名目录`);
+      }
+      if (!ent.isDirectory() || !FIRST_NODE_RE.test(ent.name)) continue;
+
+      const firstDir = path.join(gardenDir, ent.name);
+      const firstIndex = path.join(firstDir, `${ent.name}.md`);
+      if (!fs.existsSync(firstIndex)) issues.push(`${rel(firstDir)}  TREE_NO_INDEX 一级目录缺同名首页 ${ent.name}.md`);
+
+      const secondEntries = fs.readdirSync(firstDir, { withFileTypes: true });
+      for (const child of secondEntries) {
+        if (child.isFile() && child.name.endsWith(".md") && SECOND_NODE_RE.test(child.name)) {
+          issues.push(`${rel(path.join(firstDir, child.name))}  TREE_L2_FILE 二级节点必须放入同名目录`);
+        }
+        if (!child.isDirectory() || !SECOND_NODE_RE.test(child.name)) continue;
+        const secondDir = path.join(firstDir, child.name);
+        const secondIndex = path.join(secondDir, `${child.name}.md`);
+        if (!fs.existsSync(secondIndex)) {
+          issues.push(`${rel(secondDir)}  TREE_NO_INDEX 二级目录缺同名首页 ${child.name}.md`);
+        }
+      }
+    }
+  }
+  return issues;
+}
+
 const CHECKS = {
   files: checkFiles,
   links: checkLinks,
   frontmatter: checkFrontmatter,
   markers: checkMarkers,
   structure: checkStructure,
+  tree: checkTree,
 };
+
+const DEFAULT_CHECKS = ["files", "links", "frontmatter", "markers", "structure"];
 
 function main() {
   const args = process.argv.slice(2);
   const listAll = args.includes("--list");
+  const gardenArg = args.find((a) => a.startsWith("--garden="));
+  gardenFilter = gardenArg?.slice("--garden=".length) || null;
   const selected = args.filter((a) => !a.startsWith("--"));
-  const names = selected.length ? selected : Object.keys(CHECKS);
+  const names = selected.length ? selected : DEFAULT_CHECKS;
   for (const n of names) {
     if (!CHECKS[n]) {
       console.error(`未知检查项「${n}」，可选：${Object.keys(CHECKS).join(" / ")}`);
