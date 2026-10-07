@@ -49,7 +49,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 ### 精读
 
-* [LongHorizon-Harness](../longhorizon/3-计划执行与系统/3.1-LongHorizon-Harness.md)
+* [LongHorizon-Harness](../longhorizon/3-计划执行与系统/3.1-状态机与验证闭环/3.1.1-MEA状态循环.md)
 
 ***
 
@@ -74,7 +74,7 @@ tags: ["oasismind", "harness", "long-horizon", "rsi", "roadmap"]
 
 **精读**
 
-* [Evolving User Intent](../longhorizon/2-状态记忆与恢复/2.1-用户意图演化.md)
+* [Evolving User Intent](../longhorizon/2-状态记忆与恢复/2.1-目标演化与约束传播/2.1.1-演化意图的状态代数.md)
 
 ***
 
@@ -125,9 +125,9 @@ Orchard 的启示:把 **Env(沙箱生命周期)** 与 **Harness(推理循环)** 
 
 ### 精读
 
-* [Code as Agent Harness](../longhorizon/3-计划执行与系统/3.2-代码作为Agent-Harness.md)
-* [Orchard](../longhorizon/4-训练环境与案例/4.2-Orchard.md)
-* [OpenForge RL](../longhorizon/4-训练环境与案例/4.1-OpenForge-RL.md)
+* [Code as Agent Harness](../longhorizon/3-计划执行与系统/3.2-可执行计划与工具语义/3.2.1-代码Harness与副作用.md)
+* [Orchard](../longhorizon/4-训练环境与案例/4.2-环境状态与可恢复训练/4.2.1-Orchard环境与轨迹.md)
+* [OpenForge RL](../longhorizon/4-训练环境与案例/4.1-轨迹生成与策略优化/4.1.1-OpenForge轨迹与训练接口.md)
 
 ***
 
