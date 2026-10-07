@@ -74,7 +74,7 @@ PP 再按层切: 每个 stage 的参数约为 $P_{local}\approx\frac1P(P_{dense}
 
 ## 2. token 怎么搬, 以及怎样不让 CPU 等 GPU
 
-### 2.1. block all-to-all 的重排和 host 计数
+**block all-to-all 的重排和 host 计数?**
 
 EP 的基线路径用 `all_to_all_single`. 这个集合通信要求发给每个 peer 的数据在内存里是连续的一块, 因此 dispatch 前要先把路由行按目标 rank 排好 (local permute), 交换后再按本地专家顺序排一遍 (global permute), combine 时反过来再做两次. 一个 MoE 层的前向最多有四次显式的布局转换. 另外, `all_to_all_single` 需要 host 端的 split 列表, 也就是发给每个 peer 多少行, 而这个数只有 GPU 上的 router 算完才知道, CPU 必须先把计数拷回来.
 
@@ -669,7 +669,7 @@ $$
 
 容量丢弃进一步改变梯度. 若路线 $i$ 被拒绝, 它不进入式 (119), 主任务对该路线的专家输出和混合权重梯度均为零; router 仍可能通过 LBL 收到梯度. 训练目标此时包含一条隐含的不连续反馈: 越拥挤的专家越可能丢路线, 被丢 token 的主任务梯度又无法通过该专家更新. 提高容量因子会减少这种截断, 同时增大缓冲和最坏工作量.
 
-**lease 解决的是值的生命周期。**
+### lease 解决的是值的生命周期。
 
 对第 $\ell$ 个 MoE block 和第 $u$ 个 microbatch, 记其 dispatch 缓冲为 $B_{\ell,u}$. 前向专家 up projection 读取它, Wgrad 在对应反向中还要用输入重建权重梯度:
 

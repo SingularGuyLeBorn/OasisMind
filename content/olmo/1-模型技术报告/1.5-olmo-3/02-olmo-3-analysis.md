@@ -11,7 +11,7 @@ Olmo 3 的 118 页报告为 arXiv:2512.13961v2, 对照译稿见 `01-olmo-3-bi.md
 
 ## 1. 定位与架构
 
-### 1.1. 谱系坐标: 从 「训得稳」 走到 「为推理而训」
+**谱系坐标: 从 「训得稳」 走到 「为推理而训」?**
 
 OLMo 2 解决的是全开放 dense 模型能不能稳定训完, 以及退火和 RLVR 能不能把它推到开权重的竞争带. Olmo 3 的骨架几乎原样继承: 仍是 dense 的 7B / 32B, Table 33 里 QK-Norm, 作用在子层输出上的 RMSNorm, z-loss 权重 10⁻⁵, embedding 不做 weight decay, RoPE θ = 5×10⁵ 都与上一代一致, 层数 32 / 64, 32B 继续用 40/8 的 GQA. 变化集中在一个方向上: 整条流水线都在为长推理让路. 预训练上下文从 4096 提到 8192 并引入 **sliding window attention (SWA)**, midtraining 提前混入 thinking trace, RL 的 rollout 上限拉到 32K. 这三处分属架构, 数据和后训练, 目标是同一个.
 
@@ -67,7 +67,7 @@ Table 10 回答了一个更根本的问题: 把后训练性质的数据 (指令�
 
 单一来源常常此涨彼跌. Table 7 里偏数学/代码的 mix 在数学和代码上明显超过最终 mix, 但 MC 与 GenQA 掉分; 偏 GenQA 的 mix 反过来伤数学和代码. Table 8 的 Reddit-to-Flashcards 抬 MCQA, 伤数学; Table 9 的 meta-reasoning 抬数学代码, 伤生成式问答. 去污染对所有 split 下手, 因为部分开发基准会拿 train split 来降噪, 去掉后 DROP, Minerva, SQuAD 等明显掉分, 另一些几乎不动. 32B 的 midtraining 用两个数据顺序种子各跑一次再合并权重, 合并后 MC<sub>STEM</sub> 涨近 1 分, GenQA 0.4 分, Math 相对两次单跑分别 +2.9 与 +1.6; 这与 OLMo 2 的 soup 做法一脉相承.
 
-**让小实验说真话: OlmoBaseEval 与去污染。**
+### 让小实验说真话: OlmoBaseEval 与去污染。
 
 上面每个数据决策都依赖小算力实验, 而小模型在数学, 代码和选择题上的分数接近随机, 分差容易被噪声淹没. §3.3 的对策有三件. 其一是**按能力聚类取宏平均**: 用约 23K 条开源模型的基准分数做 Ward 层次聚类, 再人工对齐成 MC<sub>STEM</sub>, MC<sub>Non-STEM</sub>, GenQA, Math, Code, Code FIM 六簇. 其二是用 OLMo 2 的一族 Scaling 模型找小算力下仍有信号的代理指标, 再拿约 70 个开权重模型检查高算力端是否饱和. 其三是提高信噪比: 加样本, 调 pass@k 的 n, 把 CruxEval 这类能力相关但噪声大的任务移出宏平均.
 
@@ -129,7 +129,7 @@ $$\mathcal{J}(\theta)=\frac{1}{\sum_{i=1}^{G}|y_i|}\sum_{i=1}^{G}\sum_{t=1}^{|y_
 
 Table 23 在 2 个 8×A100 节点 (一个训练一个推理) 上逐项加组件: OLMo 2 的 RL 设施 881 token/s, 加 continuous batching 到 975, 改进线程到 1358, 加 inflight updates 到 2949, MBU 从 12.90% 升到 43.21%. **inflight updates** 的做法是训练步结束后直接更新推理引擎的权重, 不暂停生成, 也不清空 KV 缓存; 代价是一条回复可能前半段由旧权重生成, 后半段由新权重生成, 策略略微偏离 on-policy, 截断重要性采样恰好兜住这类偏差 (这是按式 (1) 的结构做的解读). 脚注 43 给了直观对比: 早期一个检查点在 9 个节点上训 14 天才跑完一个 epoch, 加上两项改动后 5 个节点 7 天即可.
 
-**RL 之后分数怎样移动。**
+### RL 之后分数怎样移动。
 
 Table 14 把 32B 的四个阶段排在一起 (SFT, DPO, Olmo 3 Think 最终版, Olmo 3.1 Think). 推理与指令遵循一路上升: AIME 2025 66.2 / 70.7 / 72.5 / 78.1, OMEGA 43.1 / 45.2 / 50.6 / 53.4, IFEval 83.9 / 80.6 / 89.0 / 93.8, IFBench 37.0 / 34.4 / 47.6 / 68.1. IFBench 在 3.1 上多出 20.5 分, 是续训 21 天里涨得最多的一项, 精确指令遵循的可验证奖励显然还远没饱和.
 
@@ -619,7 +619,7 @@ clip-higher不保证熵上升. 它放宽正优势概率增长,若奖励集中在
 
 ## 4. 三条后训练分支解决不同目标
 
-### 4.1. Think的长度来自哪里
+**Think的长度来自哪里?**
 
 Think在SFT阶段就学习长推理格式,DPO继续提高数学代码与聊天偏好,进入RL前平均回复已接近32K上限. Figure18里RL期间长度先略降再缓慢上升,说明最终能力增长主要来自固定长预算内提高轨迹质量,而非持续增加推理token.
 
