@@ -129,4 +129,4 @@ OPD 需要更强的接口,通常要求共享或可对齐的输出空间,教师�
 
 最终可用一张三轴表验收任何蒸馏实验:外层轨迹来自教师、当前学生还是历史学生;局部信号是硬 token、完整分布、粗化分布还是对比差;梯度是否穿过采样分布.序列级 KD、CoT SFT、GKD、MiniLLM、DistiLLM 与 DistiLLM-2 都能落到这张表中.方法名称只提供索引,三个概率对象才决定模型到底学了什么.
 
-一手来源:[DistiLLM](https://arxiv.org/abs/2402.03898)、[DistiLLM-2](https://arxiv.org/abs/2503.07067)、[Sequence-Level Knowledge Distillation](https://arxiv.org/abs/1606.07947)、[Distilling Step-by-Step](https://arxiv.org/abs/2305.02301).相关基础见 [GKD](1.1.1-GKD.md)、[MiniLLM](1.1.2-MiniLLM.md) 与 [OPSD](../../2-自蒸馏与稳定性/2.1-特权教师/2.1.2-OPSD.md).
+一手来源:[DistiLLM](https://arxiv.org/abs/2402.03898)、[DistiLLM-2](https://arxiv.org/abs/2503.07067)、[Sequence-Level Knowledge Distillation](https://arxiv.org/abs/1606.07947)、[Distilling Step-by-Step](https://arxiv.org/abs/2305.02301).相关基础见 [GKD](01-GKD.md)、[MiniLLM](02-MiniLLM.md) 与 [OPSD](../../04-特权自蒸馏/4.1-特权教师/02-OPSD.md).
