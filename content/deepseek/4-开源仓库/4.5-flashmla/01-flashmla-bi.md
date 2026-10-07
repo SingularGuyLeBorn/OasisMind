@@ -195,9 +195,7 @@ Where `s_q` is the number of q tokens per q sequence (1 if MTP / speculative dec
 > **拆开:** 这里 `get_mla_metadata()` 不带任何参数, 和旧接口差别很大, 元数据到底什么时候算出来?
 > 答: 新接口里 `get_mla_metadata` 只返回一个空的 `FlashMLASchedMeta` 占位对象, 真正的 split-KV 调度元数据在第一次调用 `flash_mla_with_kvcache` 时, 由 C++ 侧 `sparse_decode_fwd` 生成并写回 `sched_meta.tile_scheduler_metadata`. 旧接口则要在循环前传入 `cache_seqlens` 当场算好. 见 [flash_mla_interface.py](https://github.com/deepseek-ai/FlashMLA/blob/main/flash_mla/flash_mla_interface.py) 的 `get_mla_metadata` 与 `flash_mla_with_kvcache`.
 
-**FP8 / FP4 KV Cache Format · FP8 / FP4 KV 缓存格式**
-
-For decoding, this kernel currently supports only the FP8 and FP4 KV cache formats. Unquantized (bfloat16) KV cache format is not supported.
+**FP8 / FP4 KV Cache Format · FP8 / FP4 KV 缓存格式:** For decoding, this kernel currently supports only the FP8 and FP4 KV cache formats. Unquantized (bfloat16) KV cache format is not supported.
 
 解码阶段, 该 kernel 目前只支持 FP8 与 FP4 KV 缓存格式, 不支持未量化 (bfloat16) 的 KV 缓存.
 
@@ -215,9 +213,7 @@ See `tests/quant.py` for quantization and dequantization details.
 
 量化与反量化细节见 [tests/quant.py](https://github.com/deepseek-ai/FlashMLA/blob/main/tests/quant.py).
 
-**`indices` Tensor · `indices` 张量**
-
-The `indices` tensor enables token-level sparse attention by instructing the kernel to compute attention only for specified tokens.
+**`indices` Tensor · `indices` 张量:** The `indices` tensor enables token-level sparse attention by instructing the kernel to compute attention only for specified tokens.
 
 `indices` 张量开启 token 级稀疏注意力, 让 kernel 只对指定 token 算注意力.
 
@@ -229,9 +225,7 @@ The `indices` tensor enables token-level sparse attention by instructing the ker
 - 格式: `indices_in_kvcache[i][j][k] = (token t 所在 page block 的下标) * page_block_size + (token t 在该 block 内的偏移)`, 其中 `t` 是第 i 个 batch、第 j 条 query 序列的第 k 个 token. 因为 page block 下标已编进 `indices_in_kvcache`, kernel 不再用 `block_table` 参数; 但仍须传入它, 因为它是必填位置参数 (传 `None` 即可).
 - 无效项: 无效下标置为 `-1`.
 
-**Return Values · 返回值**
-
-The kernel returns `(out, lse)`, where `out` is the attention result `[batch_size, seq_len_q, h_q, head_dim_v]`, bfloat16; `lse` is the log-sum-exp of the attention scores for each query head, `[batch_size, h_q, seq_len_q]`, float32. Its shape is transposed with respect to `out`.
+**Return Values · 返回值:** The kernel returns `(out, lse)`, where `out` is the attention result `[batch_size, seq_len_q, h_q, head_dim_v]`, bfloat16; `lse` is the log-sum-exp of the attention scores for each query head, `[batch_size, h_q, seq_len_q]`, float32. Its shape is transposed with respect to `out`.
 
 kernel 返回 `(out, lse)`: `out` 是注意力结果 `[batch_size, seq_len_q, h_q, head_dim_v]`, bfloat16; `lse` 是每个 query 头的注意力分数 log-sum-exp, `[batch_size, h_q, seq_len_q]`, float32, 其形状相对 `out` 做了转置.
 
@@ -250,145 +244,7 @@ DSA prefill kernel 直接调用 `flash_mla_sparse_fwd`, 参数如下:
 - `topk_length`: Optional, `[s_q]`, int32. If provided, the i-th query token only attends to the first `topk_length[i]` indices.
 
 - `q`: 形状 `[s_q, h_q, d_qk]` 的 query 张量.
-- `kv`: 形状 `[s_kv, h_kv, d_qk]` 的 key-value 张量.
-- `indices`: 形状 `[s_q, h_kv, topk]` 的下标张量.
-- `sm_scale`: 标量.
-- `d_v`: 可选, value 向量维度, 只能是 512, 也是默认值.
-- `attn_sink`: 可选, `[h_q]`, float32. 给了的话, 输出再乘以 `exp(lse) / (exp(lse) + exp(attn_sink))`.
-- `topk_length`: 可选, `[s_q]`, int32. 给了的话, 第 i 个 query token 只看前 `topk_length[i]` 个下标.
-
-**Note on batching:** This kernel does not support a batch dimension. For multi-batch inference, reshape the input tensors and adjust the `indices` parameter to simulate batch processing.
-
-关于 batch: 该 kernel 不支持 batch 维. 多 batch 推理时, reshape 输入张量并调整 `indices` 来模拟 batch.
-
-**Invalid indices:** Set invalid entries in `indices` to `-1` or any number `>= s_kv`.
-
-无效下标: `indices` 中的无效项置为 `-1` 或任意 `>= s_kv` 的数.
-
-**Return Values and Equivalent PyTorch Code:** The kernel returns `(out, max_logits, lse)`, where `max_logits` and `lse` are in the natural logarithm. This is equivalent to the following PyTorch operations:
-
-返回值与等价 PyTorch 代码: kernel 返回 `(out, max_logits, lse)`, 其中 `max_logits` 与 `lse` 以自然对数计. 等价于下面的 PyTorch 运算:
-
-```python
-Q: [s_q, h_q, d_qk], bfloat16
-kv: [s_kv, h_kv, d_qk], bfloat16
-indices: [s_q, h_kv, topk], int32
-
-kv = kv.squeeze(1)  # [s_kv, d_qk], h_kv must be 1
-indices = indices.squeeze(1)    # [s_q, topk]
-invalid = (indices < 0) | (indices >= s_kv)     # [s_q, topk], the kernel ignores these entries
-indices = indices.masked_fill(invalid, 0)       # So that the gather below stays in range
-focused_kv = kv[indices]    # [s_q, topk, d_qk]
-
-P = (Q @ focused_kv.transpose(-1, -2)) * sm_scale    # [s_q, h_q, topk]
-P = P.masked_fill(invalid.unsqueeze(1), float('-inf'))
-max_logits = P.max(dim=-1).values   # [s_q, h_q]
-lse = torch.logsumexp(P, dim=-1)    # [s_q, h_q]
-S = torch.softmax(P, dim=-1)        # [s_q, h_q, topk]
-out = S @ focused_kv  # [s_q, h_q, d_qk]
-
-return (out, max_logits, lse)
-```
-
-A query token that has no valid index is an edge case on top of the code above: the kernel returns `max_logits = -inf`, `lse = +inf` and an all-zero output for it, whereas the pseudo-code would produce a NaN output.
-
-没有任何有效下标的 query token 是上面代码之外的边界情形: kernel 给它返回 `max_logits = -inf`、`lse = +inf` 和全零输出, 而伪代码会产出 NaN.
-
-#### Dense MHA Prefill · 稠密 MHA 预填充
-
-This kernel implements the standard dense Multi-Head Attention (MHA) forward and backward operations. It can be called using `flash_attn_varlen_func`, `flash_attn_varlen_qkvpacked_func`, or `flash_attn_varlen_kvpacked_func`.
-
-该 kernel 实现标准稠密 Multi-Head Attention (MHA) 的前向与反向, 可用 `flash_attn_varlen_func`、`flash_attn_varlen_qkvpacked_func` 或 `flash_attn_varlen_kvpacked_func` 调用.
-
-The usage is similar to the `flash_attn` package, with two differences: the two packed variants take an additional required `head_dim_qk` argument, and all three return `(out, lse)` instead of only `out`.
-
-用法与 `flash_attn` 包相似, 两点不同: 两个 packed 变体多一个必填的 `head_dim_qk` 参数; 三者都返回 `(out, lse)` 而非只返回 `out`.
-
-#### Fused norm + RoPE + attn + RoPE + cast kernel · 融合 kernel
-
-In the DeepSeek-V4.1 release, we also provide a fused kernel that combines Q-norm (only used in V4, not in V4.1), Q-RoPE, core attention, O-RoPE (conjugate) and the cast to FP8 into a single kernel. It removes the extra time spent on these small kernels while keeping the same or even slightly higher TFlops, at the cost of having to permute the Q_b and Wv weights in advance.
-
-在 DeepSeek-V4.1 发布中, 我们还提供一个 fused kernel, 把 Q-norm (只在 V4 用, V4.1 不用)、Q-RoPE、核心注意力、O-RoPE (共轭) 与 cast-to-FP8 融进一个 kernel. 它去掉这些小 kernel 的额外耗时, 同时保持相同甚至略高的 TFlops, 代价是须事先置换 Q_b 与 Wv 权重.
-
-In DeepSeek-V4.1 attention, Q (`[hidden_size]`) is first projected to `[q_lora_rank]` (the Q_a projection) and then to `[num_attention_heads, head_dim]` (the Q_b projection). After core attention, the output (`[num_attention_heads, head_dim]`) is reshaped to `[o_groups, num_attention_heads // o_groups * head_dim]`, and each of its rows is projected to `[o_lora_rank]` (the Wv projection), giving an `[o_groups, o_lora_rank]` matrix. That matrix is reshaped to `[o_groups * o_lora_rank]` and finally projected to `[hidden_size]` (the Wo projection). This kernel requires the Q_b and Wv weights to be permuted.
-
-在 DeepSeek-V4.1 注意力里, Q (`[hidden_size]`) 先投到 `[q_lora_rank]` (Q_a 投影), 再投到 `[num_attention_heads, head_dim]` (Q_b 投影). 核心注意力后, 输出 (`[num_attention_heads, head_dim]`) reshape 成 `[o_groups, num_attention_heads // o_groups * head_dim]`, 每行投到 `[o_lora_rank]` (Wv 投影), 得到 `[o_groups, o_lora_rank]` 矩阵; 该矩阵 reshape 成 `[o_groups * o_lora_rank]`, 最终投到 `[hidden_size]` (Wo 投影). 该 kernel 要求 Q_b 与 Wv 权重被置换.
-
-The repo then shows `permute_q_b_proj`, `permute_wv_proj`, and the final `prefill` / `decode` calls that consume the permuted weights; see the README code blocks and the test script [tests/test-fused-norm-rope-attn-rope-cast.py](https://github.com/deepseek-ai/FlashMLA/blob/main/tests/test-fused-norm-rope-attn-rope-cast.py).
-
-随后仓库给出 `permute_q_b_proj`、`permute_wv_proj` 以及消费置换权重的 `prefill` / `decode` 调用代码; 详见 README 的代码块与测试脚本 [tests/test-fused-norm-rope-attn-rope-cast.py](https://github.com/deepseek-ai/FlashMLA/blob/main/tests/test-fused-norm-rope-attn-rope-cast.py).
-
-### Community Support & Citation · 社区支持与引用
-
-The README lists third-party ports (MetaX, Moore Threads, Hygon DCU, Intellifusion, Iluvatar Corex, AMD Instinct) and the BibTeX citation (`flashmla2025`, authors Jiashi Li, Shengyu Liu, Yuanhang Sun). These are kept in the original and not translated.
-
-README 列出了第三方移植版本 (MetaX、摩尔线程、海光 DCU、云天励飞、天数智芯、AMD Instinct) 与 BibTeX 引用 (`flashmla2025`, 作者 Jiashi Li、Shengyu Liu、Yuanhang Sun), 保留原文不译.
-
-## docs/20250422-new-kernel-deep-dive.md
-
-### A Deep-Dive Into the New Flash MLA Kernel · 新 FlashMLA kernel 深入剖析
-
-In the previous version of the Flash MLA kernel, we have achieved impressive performance: 3000 GB/s in memory-intensive settings and 580 TFlops in compute-bound settings. Now, we're pushing these numbers even further, reaching up to 660 TFlops.
-
-在[上一版](https://github.com/deepseek-ai/FlashMLA/tree/b31bfe72a83ea205467b3271a5845440a03ed7cb) FlashMLA kernel 中, 我们已经拿到亮眼的数字: 访存密集场景 3000 GB/s, 计算受限场景 580 TFlops. 现在把它推得更高, 最高到 660 TFlops.
-
-In this blog, we present a deep dive into the new kernel, explaining the optimizations and techniques behind this performance boost. We'll first explain why the MLA kernel is compute-bound despite being a decoding-stage attention kernel, then discuss our high-level kernel schedule design, and finally cover the technical details of the new kernel.
-
-这篇博客深入讲新 kernel, 解释性能提升背后的优化与技术. 先解释为什么 MLA kernel 明明是解码阶段的注意力 kernel 却受计算限制, 再谈高层调度设计, 最终讲实现细节.
-
-#### A Theoretical Analysis of the MLA Algorithm · MLA 算法的理论分析
-
-GPU kernels can be classified as either compute-bound (limited by FLOPs) or memory-bound (limited by memory bandwidth). To identify the kernel's bottleneck, we calculate the ratio of FLOPs to memory bandwidth (FLOPs/byte) and compare it with the GPU's capacity.
-
-GPU kernel 可分为计算受限 (受 FLOPs 限) 或访存受限 (受带宽限). 要判断瓶颈, 就算 FLOPs 与访存量之比 (FLOPs/byte), 再和 GPU 的能力对比.
-
-Assume the number of q heads is $h_q$, the number of q tokens per request is $s_q$ (should be 1 if MTP / speculative decoding is disabled), the number of kv tokens per request is $s_k\ (s_k \gg h_q s_q)$, and the head dimensions of K and V are $d_k$ and $d_v$ respectively. The number of FLOPs is roughly $2 (h_q s_q \cdot d_k \cdot s_k + h_q s_q \cdot s_k \cdot d_v) = 2 h_q s_q s_k (d_k+d_v)$, and the memory access volume (in bytes) is $\mathop{\text{sizeof}}(\text{bfloat16}) \times (h_q s_q d_k + s_k d_k + h_q s_q d_v) \approx 2s_k d_k$. Thus, the compute-memory ratio is $h_q s_q \cdot \frac{d_k+d_v}{d_k} \approx 2 h_q s_q$.
-
-设 q 头数为 $h_q$, 每请求 q token 数为 $s_q$ (关闭 MTP / 投机解码时为 1), 每请求 kv token 数为 $s_k\ (s_k \gg h_q s_q)$, K 与 V 的头维分别为 $d_k$ 与 $d_v$. FLOPs 约为 $2 h_q s_q s_k (d_k+d_v)$, 访存量 (字节) 约为 $2 s_k d_k$. 因此计算访存比约为 $h_q s_q \cdot \frac{d_k+d_v}{d_k} \approx 2 h_q s_q$.
-
-An NVIDIA H800 SXM5 GPU has a peak memory bandwidth of 3.35 TB/s and peak FLOPs of 990 TFlops. However, due to throttling (reducing to ~1600 MHz in our case), the practical peak FLOPs drops to ~865 TFlops. Therefore, when $h_qs_q \ge \frac{1}{2} \cdot \frac{865}{3.35} = 128$, the kernel is compute-bound; otherwise, it's memory-bound.
-
-NVIDIA H800 SXM5 的峰值带宽 3.35 TB/s, 峰值算力 990 TFlops. 但因降频 (本例降到约 1600 MHz), 实际峰值算力降到约 865 TFlops. 所以当 $h_qs_q \ge \frac{1}{2} \cdot \frac{865}{3.35} = 128$ 时 kernel 计算受限, 否则访存受限.
-
-According to the overview of DeepSeek's Online Inference System, we don't use Tensor Parallel for decoding instances, meaning $h_q$ is 128 and the kernel is compute-bound. Thus, we need to optimize the kernel for compute-bound settings.
-
-据 DeepSeek 在线推理系统的概览, 解码实例不用张量并行, 即 $h_q$ 为 128, kernel 计算受限. 因此要为计算受限场景优化.
-
-> **核对:** 128 这个阈值怎么来的, 为什么解码阶段也会计算受限?
-> 答: 阈值来自实际峰值算力除以带宽再除以 2, 即 $\frac{1}{2}\cdot\frac{865}{3.35}\approx 128$. 关键在 MLA 的计算访存比约 $2h_q s_q$, 远高于普通 MHA 解码 (每 head 自带一份 KV, 比值约 1). MLA 退化成 MQA 后, 128 个 query 头共享一份 KV, 读一次 KV 要喂 128 个头算, 所以访存被摊薄、算力吃满. 见 [20250422-new-kernel-deep-dive.md](https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250422-new-kernel-deep-dive.md).
-
-#### High-Level Design of the New Kernel · 新 kernel 的高层设计
-
-To fully utilize GPU compute resources, we need to overlap CUDA Core operations with Tensor Core operations and memory access with computation, keeping the Tensor Core constantly busy. This requires redesigning the kernel's "schedule".
-
-要榨干 GPU 算力, 需要让 CUDA Core 与 Tensor Core 的运算重叠、访存与计算重叠, 让 Tensor Core 一直忙着. 这要求重新设计 kernel 的「调度」.
-
-FlashAttention-3's paper introduces ping-pong scheduling and intra-warpgroup GEMM-softmax pipelining to overlap block-wise matmul and CUDA Core operations. However, these techniques can't be directly applied here due to resource constraints. The output matrix must be stored in registers due to WGMMA instruction requirements. Each $64 \times 512$ output matrix occupies 32,768 32-bit registers. With only 65,536 32-bit registers per SM, we can store only one output matrix per SM. This eliminates the possibility of having two output matrices and letting them use CUDA Core and Tensor Core in an interleaved manner.
-
-FlashAttention-3 论文引入 ping-pong 调度与 warpgroup 内 GEMM-softmax 流水, 来重叠分块矩阵乘与 CUDA Core 运算. 但受资源约束这些不能直接搬过来. 因 WGMMA 指令要求, 输出矩阵必须放在寄存器里. 每个 $64 \times 512$ 输出矩阵占 32768 个 32 位寄存器. 每个 SM 只有 65536 个 32 位寄存器, 所以一个 SM 只能放一份输出矩阵. 这就排除了「放两份输出矩阵、让它们交错用 CUDA Core 与 Tensor Core」的做法.
-
-Our solution involves an additional mathematical transformation beyond FlashAttention's online softmax and accumulation approach. In each step, we take two KV blocks ($K_0$, $K_1$, $V_0$, $V_1$). Since the output matrix occupies 32,768 registers (too many for one warpgroup), we split it vertically into $O_L$ and $O_R$ (each $64 \times 256$). We similarly split $V_0$ and $V_1$ into $V_{0L}$, $V_{0R}$, $V_{1L}$, and $V_{1R}$. The output matrix is then computed as follows:
-
-我们的方案在 FlashAttention 的在线 softmax 与累加之上多加一步数学变换. 每一步取两个 KV 块 ($K_0$, $K_1$, $V_0$, $V_1$). 因为输出矩阵占 32768 个寄存器 (对一个 warpgroup 太多), 把它竖着切成 $O_L$ 与 $O_R$ (各 $64 \times 256$), 同样把 $V_0$、$V_1$ 切成 $V_{0L}$、$V_{0R}$、$V_{1L}$、$V_{1R}$. 输出矩阵按如下方式算:
-
-0. Maintain a running max $m$ (initialized to $-\infty$, shared between the two warpgroups) and output matrices $\vec o_L, \vec o_R$ (initialized to 0).
-1. [0] Compute $`\vec p_0 = \vec q K_0^\intercal / qk\_scale`$.
-2. [1] Compute $`\vec p_1 = \vec q K_1^\intercal / qk\_scale`$.
-3. [0] Compute $mp_0 = \max(\vec p_0)$, $`m\_new_0 = \max(m, mp_0)`$, and $`scale_0 = \exp(m\_new_0 - m)`$. Update $`m \gets m\_new_0`$.
-4. [0] Perform softmax on $\vec p_0$: $`\vec p_0 \gets \exp(\vec p_0 - m\_new_0)`$.
-5. [0] Update $\vec o_L \gets \vec o_L \cdot scale_0 + \vec p_0 V_{0L}$.
-6. [1] Compute $mp_1 = \max(\vec p_1)$, $`m\_new_1 = \max(m, mp_1)`$, and $`scale_1 = \exp(m\_new_1 - m)`$. Update $`m \gets m\_new_1`$.
-7. [1] Perform softmax on $\vec p_1$: $`\vec p_1 \gets \exp(\vec p_1 - m\_new_1)`$.
-8. [1] Update $\vec o_R \gets \vec o_R \cdot (scale_0 \cdot scale_1) + \vec p_1 V_{1R}$.
-9. [0] Update $\vec p_0 \gets \vec p_0 \cdot scale_1$.
-10. [1] Update $\vec o_R \gets \vec o_R + \vec p_0 V_{0R}$.
-11. [0] Update $\vec o_L \gets \vec o_L \cdot scale_1 + \vec p_1 V_{1L}$.
-
-上列 12 步即 seesaw 调度的核心. 方括号里的数字标明是哪个 warpgroup 在做: warpgroup 0 维护 $\vec o_L$, warpgroup 1 维护 $\vec o_R$, 两者共享运行最大值 $m$ 与交叉传递的 scale 因子.
-
-This schedule can be viewed as a "ping-pong" variant using one output matrix—we call it "seesaw" scheduling. It's mathematically equivalent to FlashAttention's online softmax algorithm. This schedule allows us to overlap CUDA Core and Tensor Core operations by interleaving the two warpgroups, and also allows us to overlap memory access with computation since we can launch the corresponding TMA instructions right after data is no longer needed.
-
-这个调度可看成只用一份输出矩阵的 ping-pong 变体, 我们叫它 seesaw (跷跷板) 调度. 它数学上与 FlashAttention 的在线 softmax 完全等价. 通过交错两个 warpgroup, 它让 CUDA Core 与 Tensor Core 运算重叠; 又因为数据一旦不再需要就能立刻发对应的 TMA 指令, 它也让访存与计算重叠.
+- `kv`: 形状 `[s_kv, h_kv, d_qk]` 的 key-value …3812 tokens truncated…错两个 warpgroup, 它让 CUDA Core 与 Tensor Core 运算重叠; 又因为数据一旦不再需要就能立刻发对应的 TMA 指令, 它也让访存与计算重叠.
 
 The complete schedule is shown below (remember that in MLA, $K$ and $V$ are the same with different names).
 

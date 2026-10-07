@@ -890,9 +890,9 @@ theorem aime_1983_p9 (x : $\mathbb{R}$) ($h_0 : 0 &lt; x \land x &lt; Real. pi$)
 
 ```snap
 inequalities. Finally, we apply these results to conclude that the minimum value is indeed 12.
--/ 
+-/
 -- We start by ensuring that the product x*sinx is positive in the given range.
-have h1 : 0 < x * Real. sin x : = by 
+have h1 : 0 < x * Real. sin x : = by
     apply mul_pos
     -- x is positive in the range (0, π).
     exact h0.1
@@ -1023,7 +1023,7 @@ Finally, we find d:
 - d = 3a - b - c = 3 . 1 - 4/5 - 4/3 = 3 - 4/5 - 4/3 = 45/15 - 12/15 - 20/15 = 13/15
 The fraction 13/15 is already in its simplest form, and the sum of the numerator and the denominator is:
 13 + 15 = 28
--/ 
+-/
 have h4 : a = 1 : = by
 have h5 : 8 * a + 10 * b + 6 * c = 24 : = h3
 have h6 : 24 * a = 24 : = by

@@ -23,7 +23,7 @@ We present DeepSeek-OCR as an initial investigation into the feasibility of comp
 
 
 
-**Figure 1 embedded text (original)**
+### Figure 1 embedded text (original)
 
 ```text
 0.1
@@ -303,7 +303,7 @@ In summary, this work presents a preliminary exploration of using visual modalit
 
 
 
-**Figure 2 embedded text (original)**
+### Figure 2 embedded text (original)
 
 ```text
 usually >15
@@ -387,7 +387,7 @@ OCR, 特别是文档解析, 一直是图像到文本领域的活跃主题. 随�
 
 
 
-**Figure 3 embedded text (original)**
+### Figure 3 embedded text (original)
 
 ```text
 ... Output
@@ -433,289 +433,7 @@ Tokenizer
 patches
 ```
 
-图 3 展示 DeepEncoder 的串联路径: 输入先成为 $n\times16\times16$ 个 patch, 经 80M VITDet/SAM 与 16 倍卷积压缩后进入 300M CLIP ViT, 再与 prompt token 一同交给 DeepSeek-3B-MoE-A570M 解码器.
-
-Figure 3 | The architecture of DeepSeek-OCR. DeepSeek-OCR consists of a DeepEncoder and a DeepSeek-3B-MoE decoder. DeepEncoder is the core of DeepSeek-OCR, comprising three components: a SAM [17] for perception dominated by window attention, a CLIP [29] for knowledge with dense global attention, and a 16× token compressor that bridges between them.
-
-## 3. Methodology · 方法
-
-### 3.1. Architecture · 架构
-
-As shown in Figure 3, DeepSeek-OCR enjoys a unified end-to-end VLM architecture consisting of an encoder and a decoder. The encoder (namely DeepEncoder) is responsible for extracting image features and tokenizing as well as compressing visual representations. The decoder is used for generating the required result based on image tokens and prompts. DeepEncoder is approximately 380M in parameters, mainly composed of an 80M SAM-base [17] and a 300M CLIP-large [29] connected in series. The decoder adopts a 3B MoE [19, 20] architecture with 570M activated parameters. In the following paragraphs, we will delve into the model components, data engineering, and training skills.
-
-如 Figure 3 所示, DeepSeek-OCR 采用统一的端到端 VLM 架构, 由编码器与解码器组成. 编码器 DeepEncoder 负责提取图像特征, 把视觉表示 token 化并压缩; 解码器根据图像 token 与 prompt 生成所需结果. DeepEncoder 约有 380M 参数, 主要由串联的 80M SAM-base [17] 与 300M CLIP-large [29] 组成. 解码器采用 3B MoE [19, 20] 架构, 每个 token 激活 570M 参数. 下文将介绍模型组件, 数据工程与训练方法.
-
-### 3.2. DeepEncoder
-
-To explore the feasibility of contexts optical compression, we need a vision encoder with the following features: 1. Capable of processing high resolutions; 2. Low activation at high resolutions; 3. Few vision tokens; 4. Support for multiple resolution inputs; 5. Moderate parameter count. However, as described in the Section 2.1, current open-source encoders cannot fully satisfy all these conditions. Therefore, we design a novel vision encoder ourselves, named DeepEncoder.
-
-为了探索上下文光学压缩的可行性, 视觉编码器需要同时满足五项要求: 能处理高分辨率, 在高分辨率下保持较低激活, 产生较少视觉 token, 支持多种输入分辨率, 并维持适中的参数量. Section 2.1 所述开源编码器无法同时满足这些条件, 因此我们设计了新的视觉编码器 DeepEncoder.
-
-#### 3.2.1. Architecture of DeepEncoder · DeepEncoder 架构
-
-DeepEncoder mainly consists of two components: a visual perception feature extraction component dominated by window attention, and a visual knowledge feature extraction component with dense global attention. To benefit from the pretraining gains of previous works, we use SAM-base (patch-size 16) and CLIP-large as the main architectures for the two components respectively. For CLIP, we remove the first patch embedding layer since its input is no longer images but output tokens from the previous pipeline. Between the two components, we borrow from Vary [36] and use a 2-layer convolutional module to perform 16× downsampling of vision tokens. Each convolutional layer has a kernel size of 3, stride of 2, padding of 1, and channels increase from 256 to 1024. Assuming we input a 1024×1024 image, the DeepEncoder will segment it into 1024/16×1024/16=4096 patch tokens. Since the first half of encoder is dominated by window attention and only 80M, the activation is acceptable. Before entering global attention,
-
-DeepEncoder 主要包含两个组件: 由窗口注意力主导的视觉感知特征提取组件, 以及采用 dense global attention 的视觉知识特征提取组件. 为利用已有预训练收益, 两个组件分别采用 SAM-base, patch size 为 16, 与 CLIP-large 作为主体架构. CLIP 的输入不再是图像, 而是前一段流水线输出的 token, 因此移除其首个 patch embedding 层. 两个组件之间借鉴 Vary [36], 使用两层卷积模块把视觉 token 下采样 16 倍. 每层卷积的 kernel size 为 3, stride 为 2, padding 为 1, 通道数从 256 增至 1024. 假设输入 1024×1024 图像, DeepEncoder 会将其切分为 $1024/16\times1024/16=4096$ 个 patch token. 编码器前半段主要采用窗口注意力且只有 80M 参数, 因此激活量可接受. 在进入全局注意力之前,
-
-<!-- page 6 of 22 -->
-
-
-
-
-**Figure 4 embedded text (original)**
-
-```text
-W:1024||1280
-
-W:512||640
-
-+
-
-H:1024||1280
-
-H:1024||1280
-
-H:512||640
-
-640||1024
-
-Resize Padding
-
-n=6
-
-640||1024 W:1024||1280
-
-Mode: Base||Large
-
-Mode: Gundam||Gundam (Master)
-
-Mode: Tiny||Small
-
-R=1-(H-W)/W
-
-Token: 64||100 Token: 256||400 Valid: (256||400)×R
-
-Token: n×(100||256) + (256||400) Valid: n×(100||256) + (256||400)×R n∈[2:9]
-```
-
-图 4 展示多分辨率档位: Tiny 与 Small 直接 resize 到 512 或 640, Base 与 Large padding 到 1024 或 1280, Gundam 与 Gundam-M 组合局部 tile 和全局视图, 有效 token 数由长宽比与 tile 数决定.
-Figure 4 | To test model performance under different compression ratios (requiring different numbers of vision tokens) and enhance the practicality of DeepSeek-OCR, we configure it with multiple resolution modes.
-
-the 4096 tokens go through the compression module and the token count becomes 4096/16=256, thus making the overall activation memory controllable.
-
-这 4096 个 token 会经过压缩模块, token 数变为 $4096/16=256$, 从而使整体激活显存保持可控.
-
-Table 1 | Multi resolution support of DeepEncoder. For both research and application purposes, we design DeepEncoder with diverse native resolution and dynamic resolution modes.
-
-#### 3.2.2. Multiple resolution support · 多分辨率支持
-
-Suppose we have an image with 1000 optical characters and we want to test how many vision tokens are needed for decoding. This requires the model to support a variable number of vision tokens. That is to say the DeepEncoder needs to support multiple resolutions.
-
-假设一幅图像中有 1000 个光学字符, 需要测试解码它们需要多少视觉 token. 模型必须支持可变的视觉 token 数, 即 DeepEncoder 需要支持多种分辨率.
-
-We meet the requirement aforementioned through dynamic interpolation of positional encodings, and design several resolution modes for simultaneous model training to achieve the capability of a single DeepSeek-OCR model supporting multiple resolutions. As shown in Figure 4, DeepEncoder mainly supports two major input modes: native resolution and dynamic resolution. Each of them contains multiple sub-modes.
-
-我们通过动态插值位置编码满足这一要求, 并在训练中同时使用多个分辨率档位, 使单个 DeepSeek-OCR 模型支持多种分辨率. 如 Figure 4 所示, DeepEncoder 主要支持原生分辨率与动态分辨率两类输入模式, 每类又包含多个子模式.
-
-Native resolution supports four sub-modes: Tiny, Small, Base, and Large, with corresponding resolutions and token counts of 512×512 (64), 640×640 (100), 1024×1024 (256), and 1280×1280 (400) respectively. Since Tiny and Small modes have relatively small resolutions, to avoid wasting vision tokens, images are processed by directly resizing the original shape. For Base and Large modes, in order to preserve the original image aspect ratio, images are padded to the corresponding size. After padding, the number of valid vision tokens is less than the actual number of vision tokens, with the calculation formula being:
-
-原生分辨率支持 Tiny, Small, Base 与 Large 四个子模式, 对应分辨率和 token 数分别为 512×512, 64 个; 640×640, 100 个; 1024×1024, 256 个; 1280×1280, 400 个. Tiny 与 Small 分辨率较小, 为避免浪费视觉 token, 图像直接缩放到目标形状. Base 与 Large 为保留原图长宽比, 会把图像 padding 到相应尺寸. padding 后的有效视觉 token 数小于实际 token 数, 计算公式为:
-
-$$
-N_{valid}=\left\lceil N_{actual}\times\left[1-\frac{\max(w,h)-\min(w,h)}{\max(w,h)}\right]\right\rceil. \tag{1}
-$$
-
-where $w$ and $h$ represent the width and height of the original input image.
-
-其中 $w$ 与 $h$ 分别表示原始输入图像的宽和高.
-
-<!-- page 7 of 22 -->
-
-Dynamic resolution can be composed of two native resolutions. For example, Gundam mode consists of n×640×640 tiles (local views) and a 1024×1024 global view. The tiling method following InternVL2.0 [8]. Supporting dynamic resolution is mainly for application considerations, especially for ultra-high-resolution inputs (such as newspaper images). Tiling is a form of secondary window attention that can effectively reduce activation memory further. It’s worth noting that due to our relatively large native resolutions, images won’t be fragmented too much under dynamic resolution (the number of tiles is controlled within the range of 2 to 9). The vision token number output by the DeepEncoder under Gundam mode is: n×100 + 256, where n is the number of tiles. For images with both width and height smaller than 640, n is set to 0, i.e., Gundam mode will degrade to Base mode.
-
-动态分辨率可以由两种原生分辨率组合而成. 例如, Gundam 模式由 $n$ 个 640×640 tile, 即局部视图, 与一个 1024×1024 全局视图组成. tile 方法沿用 InternVL2.0 [8]. 支持动态分辨率主要出于应用考虑, 特别是报纸图像等超高分辨率输入. tile 可以视为第二层窗口注意力, 能进一步降低激活显存. 由于原生分辨率较高, 动态分辨率不会把图像过度切碎, tile 数控制在 2 到 9. Gundam 模式下 DeepEncoder 输出的视觉 token 数为 $n\times100+256$, 其中 $n$ 是 tile 数. 若图像宽高都小于 640, 则令 $n=0$, Gundam 模式会退化为 Base 模式.
-
-Gundam mode is trained together with the four native resolution modes to achieve the goal of one model supporting multiple resolutions. Note that Gundam-master mode (1024×1024 local views+1280×1280 global view) is obtained through continued training on a trained DeepSeek-OCR model. This is mainly for load balancing, as Gundam-master’s resolution is too large and training it together would slow down the overall training speed.
-
-Gundam 模式与四种原生分辨率模式共同训练, 使一个模型支持多种分辨率. Gundam-master 模式由 1024×1024 局部视图和 1280×1280 全局视图组成, 它是在已训练的 DeepSeek-OCR 上继续训练得到的. 这样安排主要是为了负载均衡: Gundam-master 分辨率过高, 若与其他模式共同训练会拖慢整体训练速度.
-
-### 3.3. The MoE Decoder · MoE 解码器
-
-Our decoder uses the DeepSeekMoE [19, 20], specifically DeepSeek-3B-MoE. During inference, the model activates 6 out of 64 routed experts and 2 shared experts, with about 570M activated parameters. The 3B DeepSeekMoE is very suitable for domain-centric (OCR for us) VLM research, as it obtains the expressive capability of a 3B model while enjoying the inference efficiency of a 500M small model.
-
-解码器采用 DeepSeekMoE [19, 20], 具体为 DeepSeek-3B-MoE. 推理时, 模型会从 64 个路由专家中激活 6 个, 并激活 2 个共享专家, 总激活参数约 570M. 3B DeepSeekMoE 适合以特定领域为中心的 VLM 研究, 在这里即 OCR: 它保留 3B 模型的表达能力, 同时具有约 500M 小模型的推理效率.
-
-The decoder reconstructs the original text representation from the compressed latent vision tokens of DeepEncoder as:
-
-解码器从 DeepEncoder 压缩后的视觉潜变量 token 重建原始文本表示:
-
-$$
-f_{dec}:\mathbb{R}^{n\times d_{latent}}\rightarrow\mathbb{R}^{N\times d_{text}};\quad \hat{X}=f_{dec}(Z),\quad n\leq N. \tag{2}
-$$
-
-where $Z\in\mathbb{R}^{n\times d_{latent}}$ are the compressed latent (vision) tokens from DeepEncoder and $\hat{X}\in\mathbb{R}^{N\times d_{text}}$ is the reconstructed text representation. The function $f_{dec}$ represents a non-linear mapping that can be effectively learned by compact language models through OCR-style training. It is reasonable to conjecture that LLMs, through specialized pretraining optimization, would demonstrate more natural integration of such capabilities.
-
-其中 $Z\in\mathbb{R}^{n\times d_{latent}}$ 是 DeepEncoder 输出的压缩视觉潜变量 token, $\hat{X}\in\mathbb{R}^{N\times d_{text}}$ 是重建的文本表示. 函数 $f_{dec}$ 表示一种非线性映射, 小型语言模型可以通过 OCR 式训练有效学会这种映射. 可以推测, 经过专门的预训练优化后, LLM 能更自然地整合这种能力.
-
-### 3.4. Data Engine · 数据引擎
-
-We construct complex and diverse training data for DeepSeek-OCR, including OCR 1.0 data, which mainly consists of traditional OCR tasks such as scene image OCR and document OCR; OCR 2.0 data, which mainly includes parsing tasks for complex artificial images, such as common charts, chemical formulas, and plane geometry parsing data; General vision data, which is mainly used to inject certain general image understanding capabilities into DeepSeek-OCR and preserve the general vision interface.
-
-我们为 DeepSeek-OCR 构建复杂多样的训练数据. OCR 1.0 数据主要包含场景图像 OCR 与文档 OCR 等传统任务; OCR 2.0 数据主要包含复杂人工图像的解析任务, 包括常见图表, 化学式和平面几何解析数据; 通用视觉数据用于赋予 DeepSeek-OCR 一定的一般图像理解能力, 并保留通用视觉接口.
-
-#### 3.4.1. OCR 1.0 data · OCR 1.0 数据
-
-Document data is the top priority for DeepSeek-OCR. We collect 30M pages of diverse PDF data covering about 100 languages from the Internet, with Chinese and English accounting for approximately 25M and other languages accounting for 5M. For this data, we create two types of ground truth: coarse annotations and fine annotations. Coarse annotations are extracted
-
-文档数据是 DeepSeek-OCR 的首要数据. 我们从互联网收集 3000 万页多样 PDF 数据, 覆盖约 100 种语言, 其中中文和英文约 2500 万页, 其他语言约 500 万页. 对这些数据, 我们构建粗标注与细标注两种 ground truth. 粗标注直接从
-
-<!-- page 8 of 22 -->
-
-Figure 5 | OCR 1.0 fine annotations display. We format the ground truth into an interleaved layout and text format, where each paragraph of text is preceded by the coordinates and label of it in the original image. All coordinates are normalized into 1000 bins.
-
-directly from the full dataset using fitz, aimed at teaching the model to recognize optical text, especially in minority languages. Fine annotations include 2M pages each for Chinese and English, labeled using advanced layout models (such as PP-DocLayout [33]) and OCR models (such as MinuerU [34] and GOT-OCR2.0 [38]) to construct detection and recognition interleaved data. For minority languages, in the detection part, we find that the layout model enjoys certain generalization capabilities. In the recognition part, we use fitz to create small patch data to train a GOT-OCR2.0, then use the trained model to label small patches after layout processing, employing a model flywheel to create 600K data samples. During the training of DeepSeek-OCR, coarse labels and fine labels are distinguished using different prompts. The ground truth for fine annotation image-text pairs can be seen in Figure 5. We also collect 3M Word data, constructing high-quality image-text pairs without layout by directly extracting content. This data mainly brings benefits to formulas and HTML-formatted tables. Additionally, we select some open-source data [28, 37] as supplements.
-
-完整数据集用 fitz 提取, 目标是教模型识别光学文字, 特别是低资源语言. 中文和英文各有 200 万页细标注, 使用 PP-DocLayout [33] 等先进布局模型与 MinuerU [34], GOT-OCR2.0 [38] 等 OCR 模型标注, 构建检测与识别交错数据. 对低资源语言, 布局检测部分利用布局模型已有的泛化能力; 识别部分先用 fitz 构建小 patch 数据训练 GOT-OCR2.0, 再用训练后的模型标注布局处理后的 patch, 通过模型飞轮构建 60 万条数据. 训练 DeepSeek-OCR 时, 用不同 prompt 区分粗标注与细标注. Figure 5 展示细标注图文对的 ground truth. 我们还收集 300 万份 Word 数据, 直接提取内容构建不带布局的高质量图文对, 主要改善公式与 HTML 格式表格. 此外还加入部分开源数据 [28, 37].
-
-For natural scene OCR, our model mainly supports Chinese and English. The image data sources come from LAION [31] and Wukong [13], labeled using PaddleOCR [9], with 10M data samples each for Chinese and English. Like document OCR, natural scene OCR can also control whether to output detection boxes through prompts.
-
-自然场景 OCR 主要支持中文和英文. 图像来自 LAION [31] 与 Wukong [13], 使用 PaddleOCR [9] 标注, 中英文各有 1000 万条样本. 与文档 OCR 相同, 自然场景 OCR 也可以通过 prompt 控制是否输出检测框.
-
-#### 3.4.2. OCR 2.0 data · OCR 2.0 数据
-
-Following GOT-OCR2.0 [38], we refer to chart, chemical formula, and plane geometry parsing data as OCR 2.0 data. For chart data, following OneChart [7], we use pyecharts and matplotlib
-
-沿用 GOT-OCR2.0 [38] 的定义, 我们把图表, 化学式和平面几何解析数据称为 OCR 2.0 数据. 图表数据参考 OneChart [7], 使用 pyecharts 与 matplotlib
-
-<!-- page 9 of 22 -->
-
-Figure 6 | For charts, we do not use OneChart’s [7] dictionary format, but instead use HTML table format as labels, which can save a certain amount of tokens. For plane geometry, we convert the ground truth to dictionary format, where the dictionary contains keys such as line segments, endpoint coordinates, line segment types, etc., for better readability. Each line segment is encoded using the Slow Perception [39] manner.
-
-to render 10M images, mainly including commonly used line, bar, pie, and composite charts. We define chart parsing as image-to-HTML-table conversion task, as shown in Figure 6(a). For chemical formulas, we utilize SMILES format from PubChem as the data source and render them into images using RDKit, constructing 5M image-text pairs. For plane geometry images, we follow Slow Perception [39] for generation. Specifically, we use perception-ruler size as 4 to model each line segment. To increase the diversity of rendered data, we introduce geometric translation-invariant data augmentation, where the same geometric image is translated in the original image, corresponding to the same ground truth drawn at the centered position in the coordinate system. Based on this, we construct a total of 1M plane geometry parsing data, as illustrated in Figure 6(b).
-
-渲染 1000 万幅图像, 主要包含常用折线图, 柱状图, 饼图与组合图. 如 Figure 6(a) 所示, 我们把图表解析定义为图像到 HTML 表格的转换任务. 化学式数据以 PubChem 的 SMILES 格式为来源, 用 RDKit 渲染成图像, 构建 500 万个图文对. 平面几何图像沿用 Slow Perception [39] 的生成方式, 用大小为 4 的 perception ruler 建模每条线段. 为增加渲染数据多样性, 我们加入几何平移不变数据增强: 在原图内平移同一几何图像, ground truth 仍对应坐标系中心位置绘制的图形. 基于这些方法共构建 100 万条平面几何解析数据, 如 Figure 6(b) 所示.
-
-#### 3.4.3. General vision data · 通用视觉数据
-
-DeepEncoder can benefit from CLIP’s pretraining gains and has sufficient parameters to incorporate general visual knowledge. Therefore, we also prepare some corresponding data for DeepSeek-OCR. Following DeepSeek-VL2 [40], we generate relevant data for tasks such as caption, detection, and grounding. Note that DeepSeek-OCR is not a general VLM model, and this portion of data accounts for only 20% of the total data. We introduce such type of data mainly to preserve the general vision interface, so that researchers interested in our model and general vision task can conveniently advance their work in the future.
-
-DeepEncoder 可以利用 CLIP 预训练收益, 也有足够参数容纳一般视觉知识. 因此我们为 DeepSeek-OCR 准备相应数据. 按照 DeepSeek-VL2 [40], 我们为 caption, detection 与 grounding 等任务生成数据. DeepSeek-OCR 不是通用 VLM, 这部分数据只占总量 20%. 引入这些数据主要是为了保留通用视觉接口, 便于关注该模型与一般视觉任务的研究者继续开展工作.
-
-#### 3.4.4. Text-only data · 纯文本数据
-
-To ensure the model’s language capabilities, we introduced 10% of in-house text-only pretrain data, with all data processed to a length of 8192 tokens, which is also the sequence length for DeepSeek-OCR. In summary, when training DeepSeek-OCR, OCR data accounts for 70%, general vision data accounts for 20%, and text-only data accounts for 10%.
-
-为保持模型语言能力, 我们加入 10% 的内部纯文本预训练数据. 所有数据都处理为 8192 token, 这也是 DeepSeek-OCR 的序列长度. 总体而言, DeepSeek-OCR 训练数据中 OCR 数据占 70%, 通用视觉数据占 20%, 纯文本数据占 10%.
-
-### 3.5. Training Pipelines · 训练流水线
-
-Our training pipeline is very simple and consists mainly of two stages: a). Training DeepEncoder independently; b). Training the DeepSeek-OCR. Note that the Gundam-master mode is obtained by continuing training on a pre-trained DeepSeek-OCR model with 6M sampled data. Since the training protocol is identical to other modes, we omit the detailed description hereafter.
-
-训练流水线主要包含两个阶段: 独立训练 DeepEncoder, 再训练 DeepSeek-OCR. Gundam-master 模式在预训练 DeepSeek-OCR 上使用 600 万条采样数据继续训练得到. 其训练协议与其他模式相同, 下文不再详述.
-
-<!-- page 10 of 22 -->
-
-#### 3.5.1. Training DeepEncoder · 训练 DeepEncoder
-
-Following Vary [36], we utilize a compact language model [15] and use the next token prediction framework to train DeepEncoder. In this stage, we use all OCR 1.0 and 2.0 data aforementioned, as well as 100M general data sampled from the LAION [31] dataset. All data is trained for 2 epochs with a batch size of 1280, using the AdamW [23] optimizer with cosine annealing scheduler [22] and a learning rate of 5e-5. The training sequence length is 4096.
-
-沿用 Vary [36], 我们使用小型语言模型 [15], 通过 next-token prediction 框架训练 DeepEncoder. 该阶段使用上述全部 OCR 1.0 与 OCR 2.0 数据, 并加入从 LAION [31] 采样的 1 亿条通用数据. 全部数据训练 2 个 epoch, batch size 为 1280, 使用 AdamW [23] 优化器与 cosine annealing 调度器 [22], 学习率为 $5\times10^{-5}$, 训练序列长度为 4096.
-
-#### 3.5.2. Training DeepSeek-OCR · 训练 DeepSeek-OCR
-
-After DeepEncoder is ready, we use data mentioned in Section 3.4 to train the DeepSeek-OCR, with the entire training process conducted on the HAI-LLM [14] platform. The entire model uses pipeline parallelism (PP) and is divided into 4 parts, with DeepEncoder taking two parts and the decoder taking two parts. For DeepEncoder, we treat SAM and the compressor as the vision tokenizer, place them in PP0 and freeze their parameters, while treating the CLIP part as input embedding layer and place it in PP1 with unfrozen weights for training. For the language model part, since DeepSeek3B-MoE has 12 layers, we place 6 layers each on PP2 and PP3. We use 20 nodes (each with 8 A100-40G GPUs) for training, with a data parallelism (DP) of 40 and a global batch size of 640. We use the AdamW optimizer with a step-based scheduler and an initial learning rate of 3e-5. For text-only data, the training speed is 90B tokens/day, while for multimodal data, the training speed is 70B tokens/day.
-
-DeepEncoder 完成后, 使用 Section 3.4 所述数据训练 DeepSeek-OCR, 全过程运行在 HAI-LLM [14] 平台. 整个模型采用流水线并行, 分为 4 段: DeepEncoder 与解码器各占两段. 在 DeepEncoder 中, SAM 与压缩器视为视觉 tokenizer, 放在 PP0 并冻结参数; CLIP 部分视为输入 embedding 层, 放在 PP1 并保持可训练. DeepSeek3B-MoE 有 12 层, PP2 与 PP3 各放 6 层. 训练使用 20 个节点, 每节点 8 张 A100-40G, 数据并行度为 40, global batch size 为 640. 优化器为 AdamW, 采用按 step 调度, 初始学习率为 $3\times10^{-5}$. 纯文本数据的训练速度为每天 90B token, 多模态数据为每天 70B token.
-
-Table 2 | We test DeepSeek-OCR’s vision-text compression ratio using all English documents with 600-1300 tokens from the Fox [21] benchmarks. Text tokens represent the number of tokens after tokenizing the ground truth text using DeepSeek-OCR’s tokenizer. Vision Tokens=64 or 100 respectively represent the number of vision tokens output by DeepEncoder after resizing input images to 512×512 and 640×640.
-
-| Text Tokens | 64 Vision Tokens: Precision | 64 Vision Tokens: Compression | 100 Vision Tokens: Precision | 100 Vision Tokens: Compression | Pages |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 600-700 | 96.5% | 10.5× | 98.5% | 6.7× | 7 |
-| 700-800 | 93.8% | 11.8× | 97.3% | 7.5× | 28 |
-| 800-900 | 83.8% | 13.2× | 96.8% | 8.5× | 28 |
-| 900-1000 | 85.9% | 15.1× | 96.8% | 9.7× | 14 |
-| 1000-1100 | 79.3% | 16.5× | 91.5% | 10.6× | 11 |
-| 1100-1200 | 76.4% | 17.7× | 89.8% | 11.3× | 8 |
-| 1200-1300 | 59.1% | 19.7× | 87.1% | 12.6× | 4 |
-
-表 2｜我们使用 Fox [21] 基准中全部 600–1300 token 的英文文档测试 DeepSeek-OCR 的视觉—文本压缩比。Text Tokens 是使用 DeepSeek-OCR tokenizer 对真实文本分词后的 token 数；Vision Tokens=64 或 100 分别表示把输入图像缩放至 512×512 或 640×640 后 DeepEncoder 输出的视觉 token 数。
-
-## 4. Evaluation · 评测
-
-### 4.1. Vision-text Compression Study · 视觉文本压缩研究
-
-We select Fox [21] benchmarks to verify DeepSeek-OCR’s compression-decompression capability for text-rich documents, in order to preliminarily explore the feasibility and boundaries of contexts optical compression. We use the English document portion of Fox, tokenize the ground truth text with DeepSeek-OCR’s tokenizer (vocabulary size of approximately 129k), and select documents with 600-1300 tokens for testing, which happens to be 100 pages. Since the number of text tokens is not large, we only need to test performance in Tiny and Small modes, where Tiny mode corresponds to 64 tokens and Small mode corresponds to 100 tokens. We use the prompt
-
-<!-- page 11 of 22 -->
-
-Table 3 | We use OmniDocBench [27] to test the performance of DeepSeek-OCR on real document parsing tasks. All metrics in the table are edit distances, where smaller values indicate better performance. "Tokens" represents the average number of vision tokens used per page, and "†200dpi" means using fitz to interpolate the original image to 200dpi. For the DeepSeek-OCR model, the values in parentheses in the "Tokens" column represent valid vision tokens, calculated according to Equation 1.
-
-表 3｜我们使用 OmniDocBench [27] 测试 DeepSeek-OCR 在真实文档解析任务上的表现。表中指标均为编辑距离，越小越好；“Tokens”表示每页平均使用的视觉 token 数，“†200dpi”表示使用 fitz 将原图插值到 200 dpi。DeepSeek-OCR 的 Tokens 栏中，括号内为按公式 1 计算的有效视觉 token 数。
-
-```text
-English / Chinese columns: overall, text, formula, table, order
-Pipeline Models
-Dolphin [11] - | 0.356 0.352 0.465 0.258 0.35 | 0.44 0.44 0.604 0.367 0.351
-Marker [1] - | 0.296 0.085 0.374 0.609 0.116 | 0.497 0.293 0.688 0.678 0.329
-Mathpix [2] - | 0.191 0.105 0.306 0.243 0.108 | 0.364 0.381 0.454 0.32 0.30
-MinerU-2.1.1 [34] - | 0.162 0.072 0.313 0.166 0.097 | 0.244 0.111 0.581 0.15 0.136
-MonkeyOCR-1.2B [18] - | 0.154 0.062 0.295 0.164 0.094 | 0.263 0.179 0.464 0.168 0.243
-PPstructure-v3 [9] - | 0.152 0.073 0.295 0.162 0.077 | 0.223 0.136 0.535 0.111 0.11
-End-to-end Models
-Nougat [6] 2352 | 0.452 0.365 0.488 0.572 0.382 | 0.973 0.998 0.941 1.00 0.954
-SmolDocling [25] 392 | 0.493 0.262 0.753 0.729 0.227 | 0.816 0.838 0.997 0.907 0.522
-InternVL2-76B [8] 6790 | 0.44 0.353 0.543 0.547 0.317 | 0.443 0.29 0.701 0.555 0.228
-Qwen2.5-VL-7B [5] 3949 | 0.316 0.151 0.376 0.598 0.138 | 0.399 0.243 0.5 0.627 0.226
-OLMOCR [28] 3949 | 0.326 0.097 0.455 0.608 0.145 | 0.469 0.293 0.655 0.652 0.277
-GOT-OCR2.0 [38] 256 | 0.287 0.189 0.360 0.459 0.141 | 0.411 0.315 0.528 0.52 0.28
-OCRFlux-3B [3] 3949 | 0.238 0.112 0.447 0.269 0.126 | 0.349 0.256 0.716 0.162 0.263
-GPT4o [26] - | 0.233 0.144 0.425 0.234 0.128 | 0.399 0.409 0.606 0.329 0.251
-InternVL3-78B [42] 6790 | 0.218 0.117 0.38 0.279 0.095 | 0.296 0.21 0.533 0.282 0.161
-Qwen2.5-VL-72B [5] 3949 | 0.214 0.092 0.315 0.341 0.106 | 0.261 0.18 0.434 0.262 0.168
-dots.ocr [30] 3949 | 0.182 0.137 0.320 0.166 0.182 | 0.261 0.229 0.468 0.160 0.261
-Gemini2.5-Pro [4] - | 0.148 0.055 0.356 0.13 0.049 | 0.212 0.168 0.439 0.119 0.121
-MinerU2.0 [34] 6790 | 0.133 0.045 0.273 0.15 0.066 | 0.238 0.115 0.506 0.209 0.122
-dots.ocr†200dpi [30] 5545 | 0.125 0.032 0.329 0.099 0.04 | 0.16 0.066 0.416 0.092 0.067
-DeepSeek-OCR (end2end)
-Tiny 64 | 0.386 0.373 0.469 0.422 0.283 | 0.361 0.307 0.635 0.266 0.236
-Small 100 | 0.221 0.142 0.373 0.242 0.125 | 0.284 0.24 0.53 0.159 0.205
-Base 256(182) | 0.137 0.054 0.267 0.163 0.064 | 0.24 0.205 0.474 0.1 0.181
-Large 400(285) | 0.138 0.054 0.277 0.152 0.067 | 0.208 0.143 0.461 0.104 0.123
-Gundam 795 | 0.127 0.043 0.269 0.134 0.062 | 0.181 0.097 0.432 0.089 0.103
-Gundam-M†200dpi 1853 | 0.123 0.049 0.242 0.147 0.056 | 0.157 0.087 0.377 0.08 0.085
-```
-
-without layout: "<image>\nFree OCR." to control the model’s output format. Nevertheless, the output format still cannot completely match Fox benchmarks, so the actual performance would be somewhat higher than the test results.
-
-我们选择 Fox [21] 基准验证 DeepSeek-OCR 对文本密集文档的压缩与解压能力, 初步探索上下文光学压缩的可行性和边界. 实验使用 Fox 的英文文档部分, 以 DeepSeek-OCR tokenizer, 词表约 129K, 编码 ground truth 文本, 并选择 600–1300 token 的文档, 恰好共 100 页. 由于文本 token 数不多, 只测试 Tiny 与 Small 模式, 分别对应 64 与 100 个视觉 token. 我们使用不带布局的 prompt `<image>\nFree OCR.` 控制模型输出格式. 尽管如此, 输出格式仍无法与 Fox 基准完全一致, 因此实际性能可能略高于测试结果.
-
-As shown in Table 2, within a 10× compression ratio, the model’s decoding precision can reach approximately 97%, which is a very promising result. In the future, it may be possible to achieve nearly 10× lossless contexts compression through text-to-image approaches. When the compression ratio exceeds 10×, performance begins to decline, which may have two reasons: one is that the layout of long documents becomes more complex, and another reason may be that long texts become blurred at 512×512 or 640×640 resolution. The first issue can be solved by rendering texts onto a single layout page, while we believe the second issue will become
-
-如 Table 2 所示, 压缩比在 $10\times$ 以内时, 模型解码精度可达约 97%, 结果很有潜力. 未来可能通过文本到图像的方法实现接近 $10\times$ 的近无损上下文压缩. 压缩比超过 $10\times$ 后, 性能开始下降. 原因可能有两个: 长文档布局更加复杂; 长文本在 512×512 或 640×640 分辨率下会变模糊. 第一个问题可以通过把文本渲染到统一布局页面来解决, 第二个问题则可能成为
-
-<!-- page 12 of 22 -->
-
-a feature of the forgetting mechanism. When compressing tokens by nearly 20×, we find that precision can still approach 60%. These results indicate that optical contexts compression is a very promising and worthwhile research direction, and this approach does not bring any overhead because it can leverage VLM infrastructure, as multimodal systems inherently require an additional vision encoder.
-
-遗忘机制的特征. 当 token 压缩接近 $20\times$ 时, 精度仍可接近 60%. 这些结果表明, 上下文光学压缩是有潜力的研究方向. 该方法可以复用 VLM 已有的视觉编码器基础设施, 报告因此认为不会额外引入新的编码器开销.
-
-Table 4 | Edit distances for different categories of documents in OmniDocBench. The results show that some types of documents can achieve good performance with just 64 or 100 vision tokens, while others require Gundam mode.
-
-表 4｜OmniDocBench 各类文档的编辑距离。结果表明，有些文档只需 64 或 100 个视觉 token 就能取得良好表现，另一些则需要 Gundam 模式。
-
-| Mode | Book | Slides | Financial Report | Textbook | Exam Paper | Magazine | Academic Papers | Notes | Newspaper | Overall |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Tiny | 0.147 | 0.116 | 0.207 | 0.173 | 0.294 | 0.201 | 0.395 | 0.297 | 0.94 | 0.32 |
-| Small | 0.085 | 0.111 | 0.079 | 0.147 | 0.171 | 0.107 | 0.131 | 0.187 | 0.744 | 0.205 |
-| Base | 0.037 | 0.08 | 0.027 | 0.1 | 0.13 | 0.073 | 0.052 | 0.176 | 0.645 | 0.156 |
-| Large | 0.038 | 0.108 | 0.022 | 0.084 | 0.109 | 0.06 | 0.053 | 0.155 | 0.353 | 0.117 |
-| Gundam | 0.035 | 0.085 | 0.289 | 0.095 | 0.094 | 0.059 | 0.039 | 0.153 | 0.122 | 0.083 |
-| Guandam-M | 0.052 | 0.09 | 0.034 | 0.091 | 0.079 | 0.079 | 0.048 | 0.1 | 0.099 | 0.077 |
-
-### 4.2. OCR Practical Performance · OCR 实际性能
-
-DeepSeek-OCR is not only an experimental model; it has strong practical capabilities and can construct data for LLM/VLM pretraining. To quantify OCR performance, we test DeepSeek-OCR on OmniDocBench [27], with results shown in Table 3. Requiring only 100 vision tokens (640×640 resolution), DeepSeek-OCR surpasses GOT-OCR2.0 [38] which uses 256 tokens; with 400 tokens (285 valid tokens, 1280×1280 resolution), it achieves on-par performance with state-of-the-arts on this benchmark. Using fewer than 800 tokens (Gundam mode), DeepSeek-OCR outperforms MinerU2.0 [34] which needs nearly 7,000 vision tokens. These results demonstrate that our DeepSeek-OCR model is powerful in practical applications, and because the higher tokens compression, it enjoys a higher research ceiling.
+图 3 展示 DeepEncoder 的串联路径: 输入先成为 $n\times16\times16$ 个 patch, 经 80M VITDet/SAM 与 16 倍卷积压缩后进入 300M CLIP ViT, 再与 prompt token 一同交给 DeepSeek-3B-MoE-…8705 tokens truncated…s compression, it enjoys a higher research ceiling.
 
 DeepSeek-OCR 不只是实验模型, 也具有较强实用能力, 可以构建 LLM/VLM 预训练数据. 为量化 OCR 性能, 我们在 OmniDocBench [27] 上测试 DeepSeek-OCR, 结果见 Table 3. DeepSeek-OCR 只需 100 个视觉 token, 即 640×640 分辨率, 就超过使用 256 个 token 的 GOT-OCR2.0 [38]; 使用 400 个 token, 其中 285 个有效 token, 分辨率 1280×1280 时, 达到该基准的领先水平. Gundam 模式使用少于 800 个 token, 超过需要近 7000 个视觉 token 的 MinerU2.0 [34]. 这些结果显示 DeepSeek-OCR 具有实际应用能力, 较高 token 压缩率也提供了更大的研究空间.
 
@@ -825,7 +543,7 @@ We also provide DeepSeek-OCR with a certain degree of general image understandin
 
 
 
-**Figure 12 embedded text (original)**
+### Figure 12 embedded text (original)
 
 ```text
 <image>\nLocate <|ref|>11-2=<|/ref|> in the image.
@@ -911,7 +629,7 @@ Our work represents an initial exploration into the boundaries of vision-text co
 
 
 
-**Figure 13 embedded text (original)**
+### Figure 13 embedded text (original)
 
 ```text
 Very Clear Clear

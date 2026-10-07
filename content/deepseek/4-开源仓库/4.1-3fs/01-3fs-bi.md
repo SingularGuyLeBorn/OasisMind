@@ -228,489 +228,7 @@ Metadata and storage services send heartbeats to cluster manager. Cluster manage
 > **停一下:** 集群管理器 (mgmtd) 的选主靠什么实现, 是否也走 FoundationDB?
 > 答: 是. mgmtd 在键值存储里维护一条租约记录, 各实例在事务里读写这条记录来续租或抢主, 默认 `lease_length` 60 秒, `extend_lease_interval` 10 秒. 见 [src/mgmtd/store/MgmtdStore.h](https://github.com/deepseek-ai/3FS/blob/main/src/mgmtd/store/MgmtdStore.h) 的 `extendLease`, `loadMgmtdLeaseInfo` 与 [src/mgmtd/service/MgmtdConfig.h](https://github.com/deepseek-ai/3FS/blob/main/src/mgmtd/service/MgmtdConfig.h). 节点信息, 路由版本和各类服务配置也存在同一个库里, 所以 FoundationDB 同时承担元数据与集群协调两种职责.
 
-File metadata operations (e.g. open or create files/directories) are sent to metadata services, which implement the file system semantics. Metadata services are stateless, since file metadata are stored in a transactional key-value store (e.g. FoundationDB). Clients can connect to any metadata service.
-
-文件元数据操作 (例如打开或创建文件, 目录) 发给元数据服务, 由它实现文件系统语义. 文件元数据存放在事务型键值存储 (例如 FoundationDB) 里, 因此元数据服务是无状态的, 客户端可以连任意一个元数据服务.
-
-Each storage service manages a few local SSDs and provides a chunk store interface. The storage service implements Chain Replication with Apportioned Queries (CRAQ) to ensure strong consistency. CRAQ's write-all-read-any approach helps to unleash the throughput of SSDs and RDMA network. A 3FS file is split into equally sized chunks, which are replicated over multiple SSDs.
-
-每个存储服务管理几块本地 SSD, 对外提供 chunk 存储接口. 存储服务实现 CRAQ 来保证强一致. CRAQ 「写全部, 读任意」的做法有助于把 SSD 和 RDMA 网络的吞吐用满. 一个 3FS 文件被切成大小相同的 chunk, 每个 chunk 在多块 SSD 上保存副本.
-
-Two clients are developed for applications: FUSE client and native client. Most applications use FUSE client, which has a low adoption barrier. Performance-critical applications are integrated with the native client.
-
-面向应用的客户端有两种: FUSE 客户端和原生客户端. 多数应用用 FUSE 客户端, 接入门槛低; 对性能敏感的应用集成原生客户端.
-
-### File system interfaces · 文件系统接口
-
-Object store is becoming a popular option for data analytics and machine learning. However, file system semantics and a unified namespace where files are organized in directories provide greater flexibility for applications.
-
-对象存储正成为数据分析和机器学习的常见选择. 不过, 文件系统语义加上按目录组织文件的统一命名空间, 给应用的灵活度更大.
-
--   *Atomic directory manipulation* An object store can approximate hierarchical directory structures by using slashes (/) in object keys. However, it doesn't natively support operations like atomically moving files/directories, or recursively deleting entire directories. Actually a common pattern in our internal applications involves creating a temporary directory, writing files to it, and then moving the directory to its final location. When handling a large number of small files, the recursive delete for directories is crucial. Without it, applications have to traverse each directory and remove files one by one.
-
--   *原子目录操作*: 对象存储可以在对象键里用斜杠 (/) 模拟层级目录, 但原生不支持原子地移动文件或目录, 也不支持递归删除整个目录. 我们内部应用里常见的模式是: 先建临时目录, 往里写文件, 再把整个目录移到最终位置. 处理大量小文件时, 目录的递归删除很关键; 没有它, 应用只能遍历每个目录逐个删文件.
-
--   *Symbolic and hard links* Our applications utilize symbolic and hard links to create lightweight snapshots of dynamically updated datasets, where new data is appended as individual files.
-
--   *符号链接与硬链接*: 我们的应用用符号链接和硬链接给动态更新的数据集做轻量快照, 新数据以单独文件的形式追加进来.
-
--   *Familiar interface* The file interface is well known and used everywhere. There is no need to learn a new storage API. Many datasets are stored as CSV/Parquet files. Adapting file-based data loaders to use the 3FS FUSE client or native client is straightforward.
-
--   *熟悉的接口*: 文件接口人人熟悉, 到处在用, 不需要学新的存储 API. 许多数据集以 CSV/Parquet 文件保存, 把基于文件的数据加载器改成用 3FS FUSE 客户端或原生客户端很直接.
-
-> **确认:** 「递归删除整个目录」在 3FS 里怎么做到不让应用逐个删文件?
-> 答: FUSE 客户端暴露了一个虚拟目录 `3fs-virt`. 应用在 `3fs-virt/rm-rf/` 下建一个指向目标目录的符号链接, FUSE 守护进程截获这个 `symlink` 调用, 转成一次 meta 端的递归删除请求, 文件数据交给后台 GC 回收. 见 [src/fuse/FuseOps.cc](https://github.com/deepseek-ai/3FS/blob/main/src/fuse/FuseOps.cc) 中对 `rm-rf` 的处理. smallpond 的 [smallpond/io/filesystem.py](https://github.com/deepseek-ai/smallpond/blob/main/smallpond/io/filesystem.py) 里 `remove_path` 对 `/hf3fs` 开头的路径用的就是这个入口.
-
-#### Limitations of FUSE · FUSE 的局限
-
-FUSE (Filesystem in Userspace) simplifies file system client development by redirecting I/O operations to user-space processes through the FUSE kernel module. It creates the illusion that applications are accessing the remote file system as if it were a local file system. However, it has performance limitations:
-
-FUSE (用户态文件系统) 通过 FUSE 内核模块把 I/O 操作转给用户态进程, 降低了文件系统客户端的开发难度. 应用看来, 访问远端文件系统和访问本地文件系统没有区别. 但它有性能局限:
-
--   *Memory copy overhead* The user-space file system daemon cannot access application memory. Data transfer between kernel and user spaces consumes memory bandwidth and increases end-to-end latency.
-
--   *内存拷贝开销*: 用户态文件系统守护进程不能直接访问应用的内存. 数据在内核态与用户态之间搬运, 既占内存带宽, 也拉长端到端延迟.
-
--   *Primitive multi-threading support* When an application initiates I/O requests, FUSE places these requests into a multi-threaded shared queue, protected by a spin lock. The user-space file system daemon then retrieves and processes requests from this queue. Due to lock contention, FUSE's I/O processing capability fails to scale with the number of threads. Our benchmark results indicate that FUSE only handles approximately 400K 4KiB reads per second. Further increasing concurrency does not improve performance as lock contention intensifies. `perf` profiling reveals that the kernel-space spin lock consumes a significant amount of CPU time.
-
--   *简陋的多线程支持*: 应用发起 I/O 请求时, FUSE 把请求放进一个由自旋锁保护, 多线程共享的队列, 用户态守护进程再从这个队列里取请求处理. 锁争用使 FUSE 的 I/O 处理能力无法随线程数扩展. 我们的测试结果显示 FUSE 每秒只能处理约 40 万次 4KiB 读; 继续提高并发也不会更快, 因为锁争用会更激烈. `perf` 剖析显示内核态自旋锁吃掉了大量 CPU 时间.
-
-Most applications, e.g. data analytics, perform large block writes on 3FS or they can buffer data in memory and flush it to 3FS when write buffer is full. However, FUSE on Linux 5.x does not support concurrent writes to the same file[^1]. Applications overcome this limitation by writing to multiple files concurrently, maximizing the total throughput.
-
-多数应用 (例如数据分析) 在 3FS 上做大块写, 或者先在内存里缓冲, 写缓冲满了再刷到 3FS. 但 Linux 5.x 上的 FUSE 不支持对同一文件并发写[^1]. 应用的应对办法是同时写多个文件, 把总吞吐做上去.
-
-> **再看:** 400K 次 4KiB 读/秒折合多少带宽, 单次 FUSE 请求的大小上限又是多少?
-> 答: $400\text{K} \times 4\ \text{KiB} \approx 1.53\ \text{GiB/s}$, 远低于 200Gbps 网卡的 23 GiB/s, 所以小块随机读在 FUSE 上先撞到的是请求处理速率. 大块读另有上限: 3FS 把 FUSE 连接的 `max_read` / `max_write` 设成 `io_bufs.max_buf_size`, 默认 1MB, 见 [src/fuse/FuseOps.cc](https://github.com/deepseek-ai/3FS/blob/main/src/fuse/FuseOps.cc) 的初始化代码和 [src/fuse/FuseConfig.h](https://github.com/deepseek-ai/3FS/blob/main/src/fuse/FuseConfig.h). USRBIO 文档里说的「最大单次 I/O 大小限制」指的就是这个.
-
-Read operations exhibit more complex patterns. Some training jobs require random access to dataset samples, with read sizes varying from a few kilobytes to several megabytes per sample. And samples are typically not 4K-aligned in files. Data loaders are specifically designed to fetch batches of samples. But they perform poorly when handling small random reads on FUSE-mounted 3FS. Bandwidth of SSDs and RDMA network are not fully utilized.
-
-读的模式更复杂. 一些训练作业需要随机访问数据集样本, 每个样本的读大小从几 KB 到几 MB 不等, 而且样本在文件里通常不按 4K 对齐. 数据加载器专门按批取样本, 但在 FUSE 挂载的 3FS 上处理小块随机读时表现很差, SSD 和 RDMA 网络的带宽都用不满.
-
-#### Asynchronous zero-copy API · 异步零拷贝 API
-
-Implementing the file system client as a VFS kernel module avoids performance issues mentioned above. But kernel module development is significantly more challenging than user-space system programming. Bugs are difficult to diagnose and can lead to catastrophic failures in production environments. For example, machines may crash and leave no log message for debugging. When upgrading a kernel module, all processes using the file system must be stopped cleanly; otherwise, a machine restart is required.
-
-把文件系统客户端做成 VFS 内核模块可以避开上面这些性能问题. 但内核模块开发比用户态系统编程难得多: bug 难诊断, 在生产环境可能酿成严重故障, 比如机器直接宕机, 一条可供排查的日志都不留. 升级内核模块时, 所有使用该文件系统的进程都得干净地停掉, 否则只能重启机器.
-
-For these reasons, we have chosen to implement a native client within the FUSE daemon. This client offers an interface that supports asynchronous zero-copy I/O operations. File meta operations are still handled by FUSE daemon (e.g. open/close/stat files). Applications call `open()` to obtain a file descriptor (fd) and register it via native API. They can then perform I/O operations on the file with native client. This approach ensures consistency in metadata operations with the POSIX API, making it easier to migrate existing code.
-
-出于这些原因, 我们选择把原生客户端放在 FUSE 守护进程内部实现. 这个客户端提供支持异步零拷贝 I/O 的接口. 文件元数据操作 (例如 open/close/stat) 仍由 FUSE 守护进程处理. 应用先调 `open()` 拿到文件描述符 (fd), 通过原生 API 注册它, 之后就能用原生客户端对这个文件做 I/O. 这样元数据操作与 POSIX API 保持一致, 迁移已有代码更容易.
-
-The asynchronous, zero-copy API is inspired by Linux `io_uring`. Below are the key data structures in the API:
-
-这套异步零拷贝 API 参考了 Linux 的 `io_uring`. API 的关键数据结构如下:
-
--   *Iov* A large memory region for zero-copy read/write operations, shared between the user process and the native client. InfiniBand memory registration is managed by the client. In native API, all read data will be read into Iov, and all write data should be written to Iov before calling the API.
-
--   *Iov*: 一大块用于零拷贝读写的内存区域, 由用户进程和原生客户端共享. InfiniBand 内存注册由客户端负责. 在原生 API 里, 所有读出的数据都落进 Iov, 所有要写的数据必须在调 API 之前先写进 Iov.
-
--   *Ior* A small shared ring buffer for communication between user process and native client. The usage of Ior is similar to Linux `io_uring`, where the user process enqueues read/write requests, and the native client dequeues these requests for completion. The requests are executed in batches, with their sizes controlled by the `io_depth` parameter. Multiple batches are processed in parallel, whether from different rings or the same ring. However, multiple rings are still recommended for multi-threaded applications, as sharing a ring requires synchronization, which can impact performance.
-
--   *Ior*: 一个小的共享环形缓冲区, 用于用户进程和原生客户端之间通信. 用法和 Linux `io_uring` 相近: 用户进程把读写请求入队, 原生客户端出队并完成这些请求. 请求按批执行, 批大小由 `io_depth` 参数控制. 多个批可以并行处理, 不论来自不同的环还是同一个环. 不过多线程应用仍建议每个线程用自己的环, 因为共享一个环需要同步, 会影响性能.
-
-Within the native client, multiple threads are spawned to fetch I/O requests from the Iors. These requests are batched and dispatched to storage services, reducing RPC overhead caused by small read requests.
-
-原生客户端内部会起多个线程从各个 Ior 取 I/O 请求. 这些请求被攒成批再发给存储服务, 减少小读请求带来的 RPC 开销.
-
-> **对一下:** 用户进程和 FUSE 守护进程是两个进程, Iov 的共享内存是怎么交到守护进程手里的?
-> 答: 走文件系统本身. `hf3fs_iovcreate` 在 `/dev/shm` 下建共享内存文件, 再在挂载点的 `3fs-virt/iovs/` 目录里建一个指向它的符号链接, 链接名里依次编码共享内存 ID, `block_size`, 读写方向与 `io_depth`, 优先级和超时; FUSE 守护进程截获这个 `symlink` 调用后 mmap 同一块内存并做 IB 注册. 提交通知同样借 `3fs-virt/iovs/submit-ios` 这个特殊入口和 IPC 信号量完成. 见 [src/lib/api/UsrbIo.cc](https://github.com/deepseek-ai/3FS/blob/main/src/lib/api/UsrbIo.cc) 与 [src/fuse/FuseOps.cc](https://github.com/deepseek-ai/3FS/blob/main/src/fuse/FuseOps.cc). 这也解释了「原生客户端在 FUSE 守护进程内」的含义: 数据面绕开内核 FUSE 队列, 控制面仍借用 FUSE 的 VFS 入口.
-
-### File metadata store · 文件元数据存储
-
-#### Location of file chunks · 文件 chunk 的位置
-
-3FS divides file data into equally sized chunks and stripes them across multiple replication chains (replication chains and chain tables are defined in Section [Data placement](https://github.com/deepseek-ai/3FS/blob/main/docs/design_notes.md#data-placement)). Users can specify the chain table, chunk size, and stripe size for files on a per-directory basis. Each chunk is independently stored on multiple storage services, with its chunk ID generated by concatenating the file's inode id and chunk index.
-
-3FS 把文件数据切成大小相同的 chunk, 条带化地分布到多条复制链上 (复制链和链表的定义见「Data placement」一节). 用户可以按目录为文件指定链表, chunk 大小和 stripe 大小. 每个 chunk 独立地存放在多个存储服务上, chunk ID 由文件的 inode id 和 chunk 序号拼接而成.
-
-When creating a new file, the metadata service employs a round-robin strategy to select consecutive replication chains from the designated chain table, based on the stripe size. Next, a random seed is generated to shuffle the selected chains. This allocation strategy ensures balanced data distribution across chains and SSDs.
-
-新建文件时, 元数据服务按 stripe 大小, 用轮转方式从指定链表里选出一段连续的复制链, 再生成一个随机种子把选中的链打乱. 这种分配方式让数据在各条链和各块 SSD 之间分布均衡.
-
-When an application opens a file, the client contacts the meta service to obtain the file's data layout information. Then the client can independently compute chunk IDs and chains for data operations, minimizing the involvement of the meta service in the critical path.
-
-应用打开文件时, 客户端向 meta 服务取得文件的数据布局信息. 之后客户端可以自己算出数据操作涉及的 chunk ID 和链, 关键路径上尽量不再找 meta 服务.
-
-> **核对:** chunk ID 真的只是「inode id + chunk 序号」吗?
-> 答: 代码里多了一段. `ChunkId` 由 8 字节 inode, 2 字节 track, 4 字节 chunk 序号组成, 三段都按大端序存, 这样同一文件的 chunk 在存储端按序号连续排列, 方便 meta 端找「末个 chunk」算文件长度. 见 [src/fbs/meta/Schema.h](https://github.com/deepseek-ai/3FS/blob/main/src/fbs/meta/Schema.h) 的 `ChunkId` 构造函数. chunk 序号是 32 位, `File::getChunkId` 在序号超过 `uint32_max` 时返回 `kFileTooLarge`, 所以单文件上限是 $2^{32}$ 个 chunk 乘以 chunk 大小, 见 [src/fbs/meta/Schema.cc](https://github.com/deepseek-ai/3FS/blob/main/src/fbs/meta/Schema.cc). 当前文件都用 track 0, 文档没有说明 track 的用途.
-
-#### File metadata on transactional key-value store · 事务型键值存储上的文件元数据
-
-3FS uses FoundationDB as its distributed storage system for metadata. FoundationDB provides a key-value store interface and supports transactions with Serializable Snapshot Isolation (SSI). 3FS stores all metadata as key-value pairs in FoundationDB. Meta services follow a stateless architecture, greatly enhancing maintainability by allowing administrators to seamlessly upgrade or restart services without disruption. When clients experience request failures or timeouts, they can automatically fail over to other available services.
-
-3FS 用 FoundationDB 作为元数据的分布式存储. FoundationDB 提供键值接口, 支持可串行化快照隔离 (SSI) 级别的事务. 3FS 把全部元数据以键值对存进 FoundationDB. meta 服务采用无状态架构, 管理员可以平滑地升级或重启服务而不中断业务, 可维护性大大提高. 客户端遇到请求失败或超时, 可以自动切换到其他可用的服务.
-
-The file system metadata primarily consists of two core structures: inodes and directory entries. Inodes store attribute information for files, directories, and symbolic links, each identified by a globally unique 64-bit identifier that increments monotonically. Inode keys are constructed by concatenating the "INOD" prefix with the inode id, which is encoded in little-endian byte order to spread inodes over multiple FoundationDB nodes. The inode values vary by its type:
-
-文件系统元数据主要由两种核心结构组成: inode 和目录项. inode 保存文件, 目录和符号链接的属性信息, 每个 inode 由一个全局唯一, 单调递增的 64 位标识符区分. inode 的键由前缀 「INOD」 加 inode id 拼成, inode id 按小端字节序编码, 目的是把 inode 分散到多个 FoundationDB 节点上. inode 的值随类型不同而不同:
-
--   All inode types contain basic attributes: ownership, permissions, access/modification/change times.
-
--   Additional attributes for file inodes: file length, chunk size, selected range in chain table, shuffle seed.
-
--   Additional attributes for directory inodes: the parent directory's inode id, default layout configurations for subdirectories/files (chain table, chunk size, stripe size). The parent's inode id is required to detect loops when moving directories. When moving `dir_a/dir_b` to `dir_c/`, we need to ensure that `dir_c` is not a descendant of `dir_b`, which can be achieved by checking all ancestors of `dir_c` upward.
-
--   Additional attributes for symbolic link inodes: target path string.
-
--   所有类型的 inode 都有基本属性: 属主, 权限, 访问/修改/变更时间.
--   文件 inode 额外保存: 文件长度, chunk 大小, 在链表里选中的范围, shuffle 种子.
--   目录 inode 额外保存: 父目录的 inode id, 子目录与文件的默认布局配置 (链表, chunk 大小, stripe 大小). 移动目录时要靠父目录 inode id 检测环: 把 `dir_a/dir_b` 移到 `dir_c/` 下, 必须确认 `dir_c` 不是 `dir_b` 的后代, 做法是从 `dir_c` 一路向上检查所有祖先.
--   符号链接 inode 额外保存: 目标路径字符串.
-
-> **想:** inode id 单调递增, 为什么改用小端序就能「分散到多个节点」?
-> 答: FoundationDB 按键的字典序把键空间切成连续区间分给存储节点. 若用大端序, 连续分配的 inode id 只在末个字节上变化, 新建文件全挤在同一个区间, 写入集中在一台节点上. 小端序把变化最快的低位字节放在键的最前面, 相邻 id 的键在字典序上相距很远, 写入自然分散. 见 [src/fbs/meta/Common.h](https://github.com/deepseek-ai/3FS/blob/main/src/fbs/meta/Common.h) 的 `InodeId::packKey` 使用 `folly::Endian::little`. 代价是按 inode id 做范围扫描失去意义, 不过元数据访问基本都是点查. 键前缀的完整列表在 [src/common/kv/KeyPrefix-def.h](https://github.com/deepseek-ai/3FS/blob/main/src/common/kv/KeyPrefix-def.h), 除 INOD, DENT 外还有 mgmtd 用的 NODE, CHIT, CONF 等.
-
-Directory entry keys are composed of a "DENT" prefix, the parent inode ID, and the entry name. Directory entry values store the target inode id and inode type. All entries within a directory naturally form a contiguous key range, allowing efficient directory listing via range queries.
-
-目录项的键由前缀 「DENT」, 父目录 inode ID 和条目名组成, 值保存目标 inode id 和 inode 类型. 同一目录下的所有条目天然构成一段连续的键区间, 用范围查询就能高效地列目录.
-
-The meta operations leverage FoundationDB's transactions:
-
-meta 操作借助 FoundationDB 的事务实现:
-
--   Read-only transactions used for metadata queries: fstat, lookup, listdir etc.
-
--   Read-write transactions used for metadata updates: create, link, unlink, rename etc.
-
--   只读事务用于元数据查询: fstat, lookup, listdir 等.
--   读写事务用于元数据更新: create, link, unlink, rename 等.
-
-For write transactions, FoundationDB tracks the read/write key sets to form conflict detection sets. When concurrent transaction conflicts are detected, the meta service automatically retries the transaction. This design enables multiple meta services to process requests in parallel while maintaining file system metadata consistency.
-
-对写事务, FoundationDB 记录读键集合和写键集合, 构成冲突检测集. 检测到并发事务冲突时, meta 服务自动重试该事务. 这样多个 meta 服务可以并行处理请求, 同时保持文件系统元数据一致.
-
-#### Dynamic file attributes · 动态文件属性
-
-On most local file systems, deleting an opened file is deferred until all associated file descriptors are closed. Consequently, it is necessary to track all file descriptors of the file. Training jobs open a large number of files during startup. Storing all file descriptors would impose heavy load on meta service and FoundationDB. Since training jobs do not depend on this feature, 3FS does not track file descriptors opened in read-only mode.
-
-在多数本地文件系统上, 删除一个已打开的文件会推迟到它所有的文件描述符都关闭之后. 因此必须跟踪文件的所有文件描述符. 训练作业启动时会打开大量文件, 把所有文件描述符都存下来会给 meta 服务和 FoundationDB 带来很重的负载. 训练作业并不依赖这个特性, 所以 3FS 不跟踪以只读方式打开的文件描述符.
-
-3FS maintains a file session for each file descriptor (fd) opened in write mode since deleting write opened files may lead to unreclaimable garbage chunks from concurrent writes. When a file with active write sessions is deleted, meta service delays the deletion until all its fds are closed. To prevent lingering sessions from offline clients, the 3FS meta service periodically checks client liveness and cleans up sessions of offline clients.
-
-对以写方式打开的每个 fd, 3FS 都维护一个文件会话, 因为删除写打开的文件可能让并发写留下无法回收的垃圾 chunk. 删除一个仍有活跃写会话的文件时, meta 服务会把删除推迟到它的所有 fd 关闭为止. 为了防止离线客户端留下的会话一直挂着, meta 服务会定期检查客户端是否存活, 清理离线客户端的会话.
-
-The file length is stored in the inode. For files being actively updated, the length stored in inode may diverge from the actual length. Clients periodically (5 seconds by default) report to meta service maximum write position of each file opened in write mode. If this position exceeds the length in inode and there is no concurrent truncate operation, this position is adopted as the new file length.
-
-文件长度保存在 inode 里. 对正在被更新的文件, inode 里的长度可能和实际长度不一致. 客户端定期 (默认 5 秒) 向 meta 服务报告每个写打开文件的最大写入位置. 如果这个位置超过 inode 里的长度, 且没有并发的 truncate 操作, 就采用它作为新的文件长度.
-
-> **回看:** 「默认 5 秒」上报一次写入位置, 开源代码里的默认值是多少?
-> 答: 对不上. FUSE 客户端的 `periodic_sync` 默认 `interval` 为 30 秒, 每轮最多处理 `limit` 1000 个 inode, 实际间隔再乘一个 0.7 到 1.3 之间的随机系数, 见 [src/fuse/FuseConfig.h](https://github.com/deepseek-ai/3FS/blob/main/src/fuse/FuseConfig.h) 的 `PeriodSync` 与 [src/fuse/FuseClients.cc](https://github.com/deepseek-ai/3FS/blob/main/src/fuse/FuseClients.cc). 示例配置 [configs/hf3fs_fuse_main.toml](https://github.com/deepseek-ai/3FS/blob/main/configs/hf3fs_fuse_main.toml) 里也写的是 `interval = '30s'`. 5 秒可能是 DeepSeek 生产环境的设置, 开源默认值更保守.
-
-Due to the possibility of concurrent writes from multiple clients, the method described above ensures only eventual consistency for file lengths. When processing close/fsync operations, the meta service obtains the precise file length by querying the ID and length of the last chunk from the storage service. Since file data is striped across multiple chains, this operation incurs non-negligible overhead.
-
-由于可能有多个客户端并发写, 上面的办法只能保证文件长度最终一致. 处理 close/fsync 时, meta 服务向存储服务查询末个 chunk 的 ID 和长度, 得到精确的文件长度. 文件数据条带化地分布在多条链上, 这个操作的开销不可忽略.
-
-Concurrent updates to the same file's length by multiple meta services may cause transaction conflicts and lead to repeated file length computation. To mitigate this, meta service distributes file length update tasks across multiple meta services using inode IDs and the rendezvous hash algorithm.
-
-多个 meta 服务并发更新同一文件的长度可能引发事务冲突, 导致长度被反复计算. 为缓解这一点, meta 服务按 inode ID 用 rendezvous hash 算法把文件长度更新任务分派到各个 meta 服务上.
-
-Our production environments use a large stripe size: 200. For small files, the number of chains containing file chunks is well below this number. The number of potentially used chains is stored in file inode and used as a hint when updating the length. It starts with an initial value of 16 and is doubled each time additional file chunks are written to more chains. This allows us to avoid querying all 200 chains when updating lengths of small files. This optimization can also be extended to the deletion of small files.
-
-我们的生产环境用的 stripe 很大: 200. 小文件的 chunk 实际只落在远少于 200 条的链上. inode 里保存「可能用到的链数」, 更新长度时把它当作提示. 它的初始值是 16, 每当文件 chunk 写到更多链上时翻倍. 这样更新小文件长度时不必查询全部 200 条链. 这个优化同样可以用到小文件的删除上.
-
-> **问:** 动态 stripe 提示 (初值 16, 每次翻倍) 在开源配置里默认打开吗?
-> 答: 默认关闭. meta 端 [src/meta/base/Config.h](https://github.com/deepseek-ai/3FS/blob/main/src/meta/base/Config.h) 里 `dynamic_stripe` 默认 `false`, `dynamic_stripe_initial` 为 16, `dynamic_stripe_growth` 为 2; 示例配置 [configs/meta_main.toml](https://github.com/deepseek-ai/3FS/blob/main/configs/meta_main.toml) 同样是 `false`, 只有 FUSE 侧示例配置写了 `true`. 两端都要开才生效. 长度更新任务的分派在 [src/meta/components/Distributor.cc](https://github.com/deepseek-ai/3FS/blob/main/src/meta/components/Distributor.cc) 的 `Distributor::getServer`, 按 inode id 调 `Weight::select` 在在线 meta 节点中选一台.
-
-### Chunk storage system · Chunk 存储系统
-
-The design goal of chunk storage system is to achieve the highest bandwidth possible even when there are storage medium failures. The read/write throughput of 3FS should scale linearly with the number of SSDs and bisection network bandwidth between clients and storage services. Applications access storage services in a locality-oblivious manner.
-
-chunk 存储系统的设计目标是: 即使存储介质出现故障, 也要做到尽可能高的带宽. 3FS 的读写吞吐应当随 SSD 数量以及客户端与存储服务之间的对分网络带宽线性扩展. 应用访问存储服务时不需要关心数据位置.
-
-#### Data placement · 数据放置
-
-Each file chunk is replicated over a chain of storage targets using chain replication with apportioned queries (CRAQ). In CRAQ write requests are sent to the head target and propagated along a chain. Read requests can be sent to any of the storage target. Usually the read traffic is evenly distributed among all targets in a chain for better load balance. Multiple storage targets are created on each SSD and the targets join different chains.
-
-每个文件 chunk 用 CRAQ 在一条由存储目标组成的链上复制. 在 CRAQ 里, 写请求发给链头的目标, 再沿链向后传播; 读请求可以发给链上任何一个存储目标. 通常读流量在链上所有目标之间平均分配, 以求负载均衡. 每块 SSD 上建多个存储目标, 这些目标加入不同的链.
-
-Suppose there are 6 nodes: A, B, C, D, E, F. Each node has 1 SSD. Create 5 storage targets on each SSD: 1, 2, ... 5. Then there are 30 targets in total: A1, A2, A3, ..., F5. If each chunk has 3 replicas, a chain table is constructed as follows.
-
-假设有 6 台节点: A, B, C, D, E, F, 每台 1 块 SSD. 在每块 SSD 上建 5 个存储目标: 1, 2, ... 5, 总共 30 个目标: A1, A2, A3, ..., F5. 如果每个 chunk 有 3 个副本, 可以构造如下链表.
-
-| Chain | Version | Target 1 (head) | Target 2 | Target 3 (tail) |
-| :---: | :-----: | :-------------: | :------: | :-------------: |
-|   1   |    1    |      `A1`       |   `B1`   |      `C1`       |
-|   2   |    1    |      `D1`       |   `E1`   |      `F1`       |
-|   3   |    1    |      `A2`       |   `B2`   |      `C2`       |
-|   4   |    1    |      `D2`       |   `E2`   |      `F2`       |
-|   5   |    1    |      `A3`       |   `B3`   |      `C3`       |
-|   6   |    1    |      `D3`       |   `E3`   |      `F3`       |
-|   7   |    1    |      `A4`       |   `B4`   |      `C4`       |
-|   8   |    1    |      `D4`       |   `E4`   |      `F4`       |
-|   9   |    1    |      `A5`       |   `B5`   |      `C5`       |
-|  10   |    1    |      `D5`       |   `E5`   |      `F5`       |
-
-Each chain has a version number. The version number is incremented if the chain is changed (e.g. a storage target is offline). Only the primary cluster manager makes changes to chain tables.
-
-每条链有一个版本号, 链发生变化 (例如某个存储目标离线) 时版本号加一. 只有主集群管理器可以修改链表.
-
-A few chain tables can be constructed to support different data placement requirements. For example, two chain tables can be created, one for batch/offline jobs and another for online services. The two tables consist of storage targets on mutually exclusive nodes and SSDs.
-
-可以构造几张链表来满足不同的数据放置需求. 例如建两张链表, 一张给批处理/离线作业, 一张给在线服务, 两张表的存储目标分属互不重叠的节点和 SSD.
-
-Logically, the state of each chain changes independently. Each chain can be included in multiple chain tables. The concept of chain table is created to let metadata service pick a table for each file and stripe file chunks across chains in the table.
-
-逻辑上每条链的状态独立变化, 一条链可以被多张链表收录. 引入链表这个概念, 是为了让元数据服务给每个文件挑一张表, 再把文件 chunk 条带化地分布到表里的各条链上.
-
-#### Balanced traffic during recovery · 恢复期间的流量均衡
-
-Suppose read traffic is evenly distributed among all storage targets in the above chain table. When A fails its read requests would be redirected to B and C. Under heavy load the read bandwidth of B, C is immediately saturated and B, C become the bottleneck of the entire system. Replacing a failed SSD and syncing data to the new SSD can take several hours. The read throughput is impaired during this period.
-
-假设读流量在上面那张链表的所有存储目标之间平均分配. A 故障时, 它的读请求会被转到 B 和 C. 负载重的时候, B, C 的读带宽立刻被打满, 成为整个系统的瓶颈. 更换故障 SSD 并把数据同步到新 SSD 可能要好几个小时, 这期间读吞吐一直受损.
-
-To reduce the performance impact, we can have more SSDs share the redirected traffic. In the following chain table, A is paired with every other SSDs. When A fails, each of the other SSDs receives 1/5 of A's read traffic.
-
-为了减轻性能影响, 可以让更多 SSD 分担被转走的流量. 在下面这张链表里, A 和其余每块 SSD 都配过对. A 故障时, 其余每块 SSD 各接走 A 读流量的 1/5.
-
-| Chain | Version | Target 1 (head) | Target 2 | Target 3 (tail) |
-| :---: | :-----: | :-------------: | :------: | :-------------: |
-|   1   |    1    |      `B1`       |   `E1`   |      `F1`       |
-|   2   |    1    |      `A1`       |   `B2`   |      `D1`       |
-|   3   |    1    |      `A2`       |   `D2`   |      `F2`       |
-|   4   |    1    |      `C1`       |   `D3`   |      `E2`       |
-|   5   |    1    |      `A3`       |   `C2`   |      `F3`       |
-|   6   |    1    |      `A4`       |   `B3`   |      `E3`       |
-|   7   |    1    |      `B4`       |   `C3`   |      `F4`       |
-|   8   |    1    |      `B5`       |   `C4`   |      `E4`       |
-|   9   |    1    |      `A5`       |   `C5`   |      `D4`       |
-|  10   |    1    |      `D5`       |   `E5`   |      `F5`       |
-
-To achieve maximum read throughput during recovery, the load balance problem can be formulated as a balanced incomplete block design. The optimal solution is obtained by using integer programming solver.
-
-为了在恢复期间获得最大读吞吐, 可以把这个负载均衡问题表述成平衡不完全区组设计 (BIBD), 用整数规划求解器求出最优解.
-
-> **看表:** 第二张表里 A 真的和其余 5 块 SSD 均匀配对吗?
-> 答: 按表逐行数, 不均匀. A 出现在链 2, 3, 5, 6, 9, 搭档分别是 (B, D), (D, F), (C, F), (B, E), (C, D), D 出现 3 次, E 只出现 1 次. 每条链里 A 的读份额 1/3 在 A 故障后由另外两个成员各接一半, 于是 D 接走 A 流量的 30%, B, C, F 各 20%, E 只有 10%, 和正文的「各 1/5」不符. 6 个点, 区组大小 3, 每点 5 个区组的 BIBD 要求每对节点恰好同链 $\lambda = 5 \times 2 / 5 = 2$ 次, 这样的设计存在, 表格只是示意没有取到. 仓库里真正的求解代码是 [deploy/data_placement/src/model/data_placement.py](https://github.com/deepseek-ai/3FS/blob/main/deploy/data_placement/src/model/data_placement.py), 用 Pyomo 建模, HiGHS 求解, 输出里的 `min_peer_traffic` 与 `max_peer_traffic` 相等才算均衡, 用法见 [deploy/data_placement/README.md](https://github.com/deepseek-ai/3FS/blob/main/deploy/data_placement/README.md).
-
-#### Data replication · 数据复制
-
-CRAQ is a write-all-read-any replication protocol optimized for read-heavy workloads. Utilizing read bandwidth of all replicas is critical to achieve highest read throughput in an all-flash storage system.
-
-CRAQ 是「写全部, 读任意」的复制协议, 针对读多写少的负载做了优化. 在全闪存存储系统里, 想拿到最高的读吞吐, 用上所有副本的读带宽是关键.
-
-When a write request is received by a storage service, it goes through the following steps:
-
-存储服务收到写请求后, 依次执行以下步骤:
-
-1.  The service checks if the chain version in write request matches with the latest known version; reject the request if it's not. The write request could be sent by a client or a predecessor in the chain.
-
-2.  The service issues RDMA Read operations to pull write data. If the client/predecessor fails, the RDMA Read operations may time out and the write is aborted.
-
-3.  Once the write data is fetched into local memory buffer, a lock for the chunk to be updated is acquired from a lock manager. Concurrent writes to the same chunk are blocked. All writes are serialized at the head target.
-
-4.  The service reads the committed version of the chunk into memory, applies the update, and stores the updated chunk as a pending version. A storage target may store two versions of a chunk: a committed version and a pending version. Each version has a monotonically-increasing version number. The version numbers of committed version and pending versions are `v` and `u` respectively, and satisfy `u = v + 1`.
-
-5.  If the service is the tail, the committed version is atomically replaced by the pending version and an acknowledgment message is sent to the predecessor. Otherwise, the write request is forwarded to the successor. When the committed version is updated, the current chain version is stored as a field in the chunk metadata.
-
-6.  When an acknowledgment message arrives at a storage service, the service replaces the committed version with the pending version and continues to propagate the message to its predecessor. The local chunk lock is then released.
-
-1.  服务检查写请求里的链版本是否等于自己已知的最新版本, 不等就拒绝. 写请求可能来自客户端, 也可能来自链上的前驱.
-2.  服务发起 RDMA Read 把写数据拉过来. 如果客户端或前驱故障, RDMA Read 可能超时, 本次写中止.
-3.  写数据进入本地内存缓冲后, 从锁管理器取得待更新 chunk 的锁, 对同一 chunk 的并发写会被阻塞. 所有写在链头处串行化.
-4.  服务把 chunk 的已提交版本读进内存, 应用更新, 把更新后的 chunk 存为待定版本. 一个存储目标上一个 chunk 最多有两个版本: 已提交版本和待定版本, 各带一个单调递增的版本号, 分别记为 `v` 和 `u`, 满足 $u = v + 1$.
-5.  如果本服务是链尾, 就用待定版本原子地替换已提交版本, 并向前驱发确认; 否则把写请求转发给后继. 已提交版本更新时, 当前的链版本作为一个字段写进 chunk 元数据.
-
-6.  确认消息到达某个存储服务时, 服务用待定版本替换已提交版本, 再把确认继续传给自己的前驱, 然后释放本地 chunk 锁.
-
-> **拆开:** 客户端重发同一个写请求, 链上会不会把同一更新应用两次? 设计文档没写这一层.
-> 答: 代码有专门的去重. [src/storage/service/ReliableUpdate.cc](https://github.com/deepseek-ai/3FS/blob/main/src/storage/service/ReliableUpdate.cc) 的 `ReliableUpdate::update` 按客户端, 链 ID 和 channel ID 维护一张表, 记录每个 channel 最近一次的 seqnum, requestId 和结果: 收到更旧的 seqnum 返回 `kDuplicateUpdate`, 同一 seqnum 重发则直接回放缓存的结果; channel 正被占用时返回 `kChannelIsLocked`. 链头在 [src/storage/service/StorageOperator.cc](https://github.com/deepseek-ai/3FS/blob/main/src/storage/service/StorageOperator.cc) 的 `handleUpdate` 里还会比较本地写后的 checksum 与后继回传的 checksum, 不一致返回 `kChecksumMismatch`. 第 2 步的 RDMA Read 由 `doUpdate` 里的 `rdmaReadBatch` 发起, 每块 IB 设备一个信号量限流.
-
-Suppose there are 3 targets in the chain: `A, B, C`. A write request has just entered step 5 at `A`. `A` forwards the request to successor `B`. Then `B` instantly fails and the forwarded write request is lost. When cluster manager detects `B`'s failure, it marks `B` as offline and moves it to the end of chain and broadcasts the updated chain table. Once `A` receives the latest chain table, it forwards the write request to the new successor `C`. `C` may not receive the latest chain table yet and rejects the request. But `A` can keep forwarding the request to `C`. Eventually `C` gets the latest chain table and accepts the request.
-
-假设链上有 3 个目标: `A, B, C`. 某个写请求在 `A` 上刚进入第 5 步, `A` 把它转发给后继 `B`, 随后 `B` 立刻故障, 转发的写请求丢失. 集群管理器检测到 `B` 故障后, 把 `B` 标为离线, 移到链尾, 并广播更新后的链表. `A` 收到最新链表后, 把写请求转发给新的后继 `C`. `C` 可能还没收到最新链表, 于是拒绝请求; 但 `A` 可以一直向 `C` 重发, `C` 最终拿到最新链表并接受请求.
-
-When a read request arrives at a storage service:
-
-读请求到达存储服务时:
-
-1.  When the service only has a committed version of the chunk, this version is returned to the client.
-
-2.  Unlike CRAQ, our implementation does not issue version query to the tail target. When there are both committed and pending versions, the service replies a special status code to notify the client. The client may wait for a short interval and retry. Or the client can issue a relaxed read request to get the pending version.
-
-1.  如果服务上这个 chunk 只有已提交版本, 就把它返回给客户端.
-2.  与 CRAQ 不同, 我们的实现不向链尾发版本查询. 当已提交版本和待定版本同时存在时, 服务回复一个特殊状态码通知客户端. 客户端可以等一小段时间重试, 也可以发一个宽松读 (relaxed read) 请求拿待定版本.
-
-> **确认:** 「同时存在两个版本时返回特殊状态码」在两套 chunk 引擎里都成立吗?
-> 答: 只在旧的 C++ 存储路径上成立. [src/storage/store/ChunkReplica.cc](https://github.com/deepseek-ai/3FS/blob/main/src/storage/store/ChunkReplica.cc) 的 `aioPrepareRead` 在 commitVer 与 updateVer 不相等时返回 `kChunkNotCommit`, 客户端 [src/client/storage/StorageClientImpl.cc](https://github.com/deepseek-ai/3FS/blob/main/src/client/storage/StorageClientImpl.cc) 把它和 `kRoutingVersionMismatch` 一起归为快速重试错误. Rust 引擎路径 [src/storage/store/ChunkEngine.cc](https://github.com/deepseek-ai/3FS/blob/main/src/storage/store/ChunkEngine.cc) 的 `aioPrepareRead` 只读已提交的 chunk 元数据, 把 commitVer 和 updateVer 都设成同一个 chunk 版本, 写到一半的新 chunk 只挂在引擎的 `writing_list` 里, 读请求看不到, 也就不会收到这个状态码. 宽松读对应请求里的 `ALLOW_READ_UNCOMMITTED` 特性位, 在 `StorageOperator::batchRead` 中处理.
-
-#### Failure detection · 故障检测
-
-The cluster manager relies on heartbeats to detect fail-stop failures. Cluster manager declares a service failed if it does not receive heartbeats from it for a configurable interval (e.g. T seconds). A service stops processing requests and exits if it cannot communicate with cluster manager for T/2 seconds. The heartbeat can be seen as a request to *renew a lease* granted by the manager.
-
-集群管理器依靠心跳检测失效-停止型故障. 如果在一个可配置的时长 (例如 T 秒) 内收不到某个服务的心跳, 集群管理器就宣布它故障. 一个服务若 T/2 秒联系不上集群管理器, 就停止处理请求并退出. 心跳可以看作向管理器申请*续租*.
-
-The metadata services are stateless. The list of online meta services provided by cluster manager is a simple service discovery mechanism that helps clients create connections to metadata services. If one meta service is down, the clients may switch to any other metadata service.
-
-元数据服务是无状态的. 集群管理器提供的在线 meta 服务列表就是一个简单的服务发现机制, 帮客户端建立到元数据服务的连接. 某个 meta 服务宕机时, 客户端可以切到任何其他元数据服务.
-
-Cluster manager plays a more critical role in membership changes of storage services. It maintains a global view of chain tables and storage targets' states. Each storage target has a public state and a local state.
-
-在存储服务的成员变化中, 集群管理器的作用更关键. 它维护链表和各存储目标状态的全局视图. 每个存储目标有一个公开状态和一个本地状态.
-
-Public state indicates if it's ready to serve read requests and if write requests would be propagated to it. Public states are stored with chain tables and distributed to services and clients.
-
-公开状态表示这个目标能否服务读请求, 写请求是否会传播到它. 公开状态和链表存在一起, 分发给各个服务和客户端.
-
-| Public State | Read | Write | Notes                                           |
-| :----------- | :--: | :---: | :---------------------------------------------- |
-| serving      |  Y   |   Y   | service alive and serving client requests       |
-| syncing      |  N   |   Y   | service alive and data recovery is in progress  |
-| waiting      |  N   |   N   | service alive and data recovery not started yet |
-| lastsrv      |  N   |   N   | service down and it was the last serving target |
-| offline      |  N   |   N   | service down or storage medium failure          |
-
-Local state is only known by storage services and cluster manager, and it's stored in the memory of cluster manager. If a storage target has medium failure, the related service sets the target's local state to offline in heartbeat. If a storage service is down, storage targets managed by the service are marked offline.
-
-本地状态只有存储服务和集群管理器知道, 保存在集群管理器的内存里. 存储目标发生介质故障时, 对应服务在心跳里把它的本地状态设为 offline; 存储服务宕机时, 它管理的所有存储目标都被标为 offline.
-
-| Local State | Notes                                                |
-| :---------- | :--------------------------------------------------- |
-| up-to-date  | service alive and serving client requests            |
-| online      | service alive and target in syncing or waiting state |
-| offline     | service down or storage medium failure               |
-
-A storage target can change from one public state to another in response to the latest local state. The local state plays the role of a triggering event. The cluster manager periodically scans every chain and updates the public states of targets on the chain according to a state-transition table.
-
-存储目标可以根据最新的本地状态从一个公开状态转到另一个, 本地状态起触发事件的作用. 集群管理器定期扫描每条链, 按状态转移表更新链上各目标的公开状态.
-
--   The chain version is incremented if the chain is updated.
-
--   If a storage target is marked offline, it's moved to the end of chain.
-
--   If a storage service finds public state of any local storage target is lastsrv or offline, it exits immediately. The service may be isolated from the cluster manager by network partition error.
-
--   Once the data recovery of a storage target in syncing state is completed, the storage service set the target's local state to up-to-date in subsequent heartbeat messages sent to cluster manager.
-
--   链被更新时, 链版本加一.
--   存储目标被标为 offline 时, 移到链尾.
--   存储服务发现本地任何一个存储目标的公开状态是 lastsrv 或 offline, 就立即退出, 因为它可能已被网络分区和集群管理器隔开.
--   处于 syncing 的存储目标完成数据恢复后, 存储服务在之后发给集群管理器的心跳里把它的本地状态设为 up-to-date.
-
-| Local State | Current Public State | Predecessor's Public State | Next Public State |
-| :---------- | :------------------- | :------------------------- | :---------------- |
-| up-to-date  | serving              | (any)                      | serving           |
-|             | syncing              | (any)                      | serving           |
-|             | waiting              | (any)                      | waiting           |
-|             | lastsrv              | (any)                      | serving           |
-|             | offline              | (any)                      | waiting           |
-| online      | serving              | (any)                      | serving           |
-|             | syncing              | serving                    | syncing           |
-|             |                      | not serving                | waiting           |
-|             | waiting              | serving                    | syncing           |
-|             |                      | not serving                | waiting           |
-|             | lastsrv              | (any)                      | serving           |
-|             | offline              | (any)                      | waiting           |
-| offline     | serving              | has no predecessor         | lastsrv           |
-|             |                      | has predecessor            | offline           |
-|             | syncing              | (any)                      | offline           |
-|             | waiting              | (any)                      | offline           |
-|             | lastsrv              | (any)                      | lastsrv           |
-|             | offline              | (any)                      | offline           |
-
-> **对一下:** 按转移表, 一条链上多个 waiting 目标会不会同时转成 syncing?
-> 答: 表里只要求前驱是 serving, 似乎可以. 代码多了一个条件. [src/mgmtd/service/updateChain.cc](https://github.com/deepseek-ai/3FS/blob/main/src/mgmtd/service/updateChain.cc) 的 `generateNewChain` 先按 SERVING, LASTSRV, SYNCING, WAITING, OFFLINE 的顺序重排链, 再只在「链上有 SERVING 且没有 SYNCING」时把排在最前的一个 WAITING 或 OFFLINE 目标提升为 SYNCING, 所以一条链同一时刻最多一个目标在同步. 所有 SERVING 同时离线时, 只有排第一的那个变成 LASTSRV, 其余进 OFFLINE. 心跳超时 T 对应 [src/mgmtd/service/MgmtdConfig.h](https://github.com/deepseek-ai/3FS/blob/main/src/mgmtd/service/MgmtdConfig.h) 的 `heartbeat_fail_interval`, 默认 60 秒.
-
-#### Data recovery · 数据恢复
-
-When a storage service exits (e.g. process crashes or restarts during upgrade), or a storage medium failure occurs, all related storage targets will be marked as offline and moved to the end of chains by cluster manager. Once the service restarts, each target on the service enters into the recovery process independently. The entire recovery process overlaps with normal activity and minimizes any interruption.
-
-存储服务退出 (例如进程崩溃, 或升级时重启) 或发生存储介质故障时, 相关存储目标都会被集群管理器标为 offline 并移到链尾. 服务重启后, 它上面的每个目标各自独立地进入恢复流程. 整个恢复过程与正常业务并行, 尽量减少中断.
-
-When a previously offline storage service starts:
-
-之前离线的存储服务启动时:
-
-1.  The service periodically pulls latest chain tables from cluster manager. But it does not send heartbeats until all its storage targets have been marked offline in the latest chain tables. This ensures all its targets would go through the data recovery process.
-
-2.  When a write request arrives during recovery, the request is always a full-chunk-replace write. The local committed version is updated and any existing pending version is abandoned. Since current service is the tail, an acknowledgment message is sent to the predecessor. The full state of the predecessor is copied to the returning service through a continuous stream of full-chunk-replace writes.
-
-3.  Before the data recovery of a storage target starts, the predecessor sends a dump-chunkmeta request to the returning service. Then the service iterates the local chunk metadata store to collect the ids, chain versions and committed/pending version numbers of all chunks on the target, and replies the collected metadata to the predecessor.
-
-4.  When a sync-done message arrives, the service knows that the storage target is up-to-date. It sets local state of the target to up-to-date in heartbeat messages sent to cluster manager.
-
-1.  服务定期从集群管理器拉取最新链表, 但在最新链表把它的所有存储目标都标为 offline 之前不发心跳. 这保证它的所有目标都会走一遍数据恢复流程.
-2.  恢复期间到来的写请求一定是整 chunk 替换写. 本地已提交版本被更新, 已有的待定版本被丢弃. 当前服务处在链尾, 所以直接向前驱发确认. 前驱的完整状态通过一连串整 chunk 替换写复制到回归的服务上.
-3.  某个存储目标开始数据恢复前, 前驱向回归的服务发 dump-chunkmeta 请求. 服务遍历本地 chunk 元数据存储, 收集该目标上所有 chunk 的 id, 链版本以及已提交/待定版本号, 回复给前驱.
-4.  收到 sync-done 消息时, 服务就知道这个存储目标已经是最新的, 在发给集群管理器的心跳里把它的本地状态设为 up-to-date.
-
-When a storage service finds a previously offline successor is online:
-
-存储服务发现之前离线的后继重新上线时:
-
-1. The service starts to forward normal write requests to the successor. Clients may only update a portion of the chunk, but the forwarded write requests should contain the whole chunk, i.e. a full-chunk-replace write.
-
-2. The service sends a dump-chunkmeta request to the successor. Once the metadata of all chunks on the successor target are received, it collects the chunk metadata on its local target. Then it compares the two copies of chunk metadata to decide which chunks should be transferred.
-
-3. The selected chunks are transferred to the successor by issuing full-chunk-replace write requests.
-
-   -   The chunk lock is first acquired for each chunk.
-
-   -   The chain version, committed version number and chunk content are read and transferred to successor by sending a full-chunk-replace request.
-
-   -   The chunk lock is released.
-
-4. When all required chunks have been transferred, a sync-done message is sent to the successor.
-
-1. 服务开始把正常写请求转发给后继. 客户端可能只更新 chunk 的一部分, 但转发出去的写请求必须带上整个 chunk, 也就是整 chunk 替换写.
-2. 服务向后继发 dump-chunkmeta 请求. 收齐后继目标上所有 chunk 的元数据后, 再收集本地目标上的 chunk 元数据, 比较两份元数据, 决定哪些 chunk 需要传输.
-3. 用整 chunk 替换写把选中的 chunk 传给后继:
-   -   先为每个 chunk 取得 chunk 锁;
-   -   读出链版本, 已提交版本号和 chunk 内容, 以整 chunk 替换请求发给后继;
-   -   释放 chunk 锁.
-4. 所需 chunk 全部传完后, 向后继发 sync-done 消息.
-
-The rules used to decide which chunks should be transferred are:
-
-决定哪些 chunk 需要传输的规则是:
-
--   If a chunk only exists on the local target, it should be transferred.
-
--   If a chunk only exists on the remote target, it should be removed.
-
--   If the chain version of local chunk replica is greater than that of the remote chunk replica, it should be transferred.
-
--   If the chain versions of local/remote chunk replicas are the same but local committed version number does not equal to the remote pending version number, it should be transferred.
-
--   Otherwise, two chunk replicas are either the same or being updated by in-progress write requests.
-
--   chunk 只在本地目标上存在: 传输.
--   chunk 只在远端目标上存在: 删除.
--   本地副本的链版本大于远端副本: 传输.
--   两边链版本相同, 但本地已提交版本号不等于远端待定版本号: 传输.
--   其余情况: 两个副本要么相同, 要么正被进行中的写请求更新.
-
-> **停一下:** 整 chunk 替换写在恢复期间会放大多少流量, 同步本身被打断时怎么办?
-> 答: 放大倍数等于 chunk 大小除以客户端实际写入量: 客户端改 4KiB, 转发给同步中后继的是整个 chunk (例如 512KiB 时放大 128 倍), 文档没有给出恢复期间的实测流量. 同步被打断的情形文档没有讨论, 社区 [issue #345](https://github.com/deepseek-ai/3FS/issues/345) 报告过重同步过程中目标再次 OFFLINE 后不能自动回到 SERVING, 讨论落在链版本推进与 checksum 比对两个条件上. 由于 `generateNewChain` 限制每条链只有一个 SYNCING, 卡住的目标会挡住同链其他目标的恢复, 见 [src/mgmtd/service/updateChain.cc](https://github.com/deepseek-ai/3FS/blob/main/src/mgmtd/service/updateChain.cc).
-
-#### Chunks and the metadata · Chunk 与其元数据
-
-File chunks are stored in the chunk engine. On each SSD, the persistent storage of the chunk engine consists of a fixed number of data files for storing chunk data, and a RocksDB instance for maintaining chunk metadata and other system information. Additionally, the chunk engine maintains an in-memory cache of chunk metadata to enhance query performance. A chunk allocator is implemented for fast allocation of new chunks. The chunk engine interface provides thread-safe access through the following operations:
-
-文件 chunk 存放在 chunk 引擎里. 在每块 SSD 上, chunk 引擎的持久存储由两部分组成: 固定数量的数据文件, 存 chunk 数据; 一个 RocksDB 实例, 存 chunk 元数据和其他系统信息. 此外, chunk 引擎在内存里维护一份 chunk 元数据缓存, 加快查询. 引擎还实现了一个 chunk 分配器, 用来快速分配新 chunk. chunk 引擎接口通过以下操作提供线程安全的访问:
-
-1.  *open/close* Initializes the engine by loading metadata from RocksDB and reconstructing chunk allocator states.
-
-2.  *get* Retrieves chunk metadata and reference-counted handle through a hashmap cache, enabling concurrent access with O(1) average complexity.
-
-3.  *update* Implements copy-on-write (COW) semantics by allocating new chunks before modifying data. Old chunks remain readable until all handles are released.
-
-4.  *commit* Commit the updated chunk metadata to RocksDB via write batches to ensure atomic updates; synchronously refresh the chunk metadata cache.
-
-1.  *open/close*: 从 RocksDB 加载元数据, 重建 chunk 分配器的状态, 完成引擎初始化.
-2.  *get*: 通过哈希表缓存取 chunk 元数据和带引用计数的句柄, 支持并发访问, 平均复杂度 $O(1)$.
-3.  *update*: 实现写时复制 (COW) 语义, 修改数据前先分配新 chunk. 在所有句柄释放之前, 旧 chunk 一直可读.
-4.  *commit*: 用 write batch 把更新后的 chunk 元数据提交到 RocksDB, 保证原子更新; 同时同步刷新 chunk 元数据缓存.
-
-The chunk data will ultimately be stored on physical blocks. Physical block sizes range from 64KiB to 64MiB in increments of powers of two, totaling 11 distinct sizes. The allocator will assign physical blocks whose sizes most closely match the actual chunk size. A resource pool is constructed for each physical block size, with each pool containing 256 physical files. The usage status of physical blocks is maintained in memory using bitmaps. When a physical block is reclaimed, its bitmap flag is set to 0. The actual storage space of the block remains preserved and will be prioritized for subsequent allocations. When no available physical blocks remain, `fallocate()` will be used to allocate a contiguous large space in physical files, creating 256 new physical blocks - this approach helps reduce disk fragmentation.
-
-chunk 数据最终存放在物理块上. 物理块大小从 64KiB 到 64MiB, 按 2 的幂递增, 共 11 种. 分配器为 chunk 分配与其实际大小最接近的物理块. 每种物理块大小各建一个资源池, 每个池有 256 个物理文件. 物理块的使用状态用内存中的位图维护: 回收物理块时把对应位清 0, 块的实际存储空间保留, 之后分配时优先复用. 没有可用物理块时, 用 `fallocate()` 在物理文件里一次分出一大段连续空间, 生成 256 个新物理块, 这样有助于减少磁盘碎片.
-
-When performing write operations on a chunk, the allocator first assigns a new physical block. The system then reads existing chunk data into a buffer, applies the update, and writes the updated buffer to the newly allocated block. An optimized process is implemented for appends, where data is directly added in-place at the end of the existing block. A new copy of metadata is constructed from the new block's location and existing chunk metadata. Subsequently, both the new chunk metadata and statuses of new and old physical blocks are atomically updated in RocksDB.
-
-对 chunk 做写操作时, 分配器先分配一个新的物理块, 系统把已有的 chunk 数据读进缓冲区, 应用更新, 再把更新后的缓冲区写到新分配的块上. 追加写有一条优化路径: 数据直接原地追加到已有块的末尾. 随后用新块的位置和已有 chunk 元数据构造一份新的元数据, 再在 RocksDB 里原子地更新新 chunk 元数据以及新旧物理块的状态.
-
-> **回看:** 这一节描述的「RocksDB + 11 档物理块」是默认的存储引擎吗?
-> 答: 描述对应 Rust 写的新引擎 [src/storage/chunk_engine](https://github.com/deepseek-ai/3FS/blob/main/src/storage/chunk_engine/README.md): [src/storage/chunk_engine/src/types/constants.rs](https://github.com/deepseek-ai/3FS/blob/main/src/storage/chunk_engine/src/types/constants.rs) 里 `CHUNK_SIZE_NUMBER` 为 11, 最小 64KiB, 一个 group 256 个 chunk 用 256 位位图管理. 仓库里还保留着旧的 C++ `ChunkStore`, 它的元数据库默认是 LevelDB ([src/storage/store/PhysicalConfig.h](https://github.com/deepseek-ai/3FS/blob/main/src/storage/store/PhysicalConfig.h) 的 `kv_store_type`). 选哪套由每个 target 的 `only_chunk_engine` 决定, 代码默认 `false`, 但官方部署脚本 [deploy/data_placement/src/setup/gen_chain_table.py](https://github.com/deepseek-ai/3FS/blob/main/deploy/data_placement/src/setup/gen_chain_table.py) 生成的 `create-target` 命令都带 `--use-new-chunk-engine`, 按部署指南搭出来的集群走的是 Rust 引擎. 写路径在 [src/storage/chunk_engine/src/core/engine.rs](https://github.com/deepseek-ai/3FS/blob/main/src/storage/chunk_engine/src/core/engine.rs) 的 `update_chunk`: 覆盖已有范围或超出块容量时走 `copy_on_write`, 纯追加走 `safe_write` 原地写.
+File metadata operations (e.g. open or create files/directories) are sent to metadata services, which implement the file system semantics. Metadata services are stateless, since file metadata are stored in a t…15666 tokens truncated….rs) 里 `CHUNK_SIZE_NUMBER` 为 11, 最小 64KiB, 一个 group 256 个 chunk 用 256 位位图管理. 仓库里还保留着旧的 C++ `ChunkStore`, 它的元数据库默认是 LevelDB ([src/storage/store/PhysicalConfig.h](https://github.com/deepseek-ai/3FS/blob/main/src/storage/store/PhysicalConfig.h) 的 `kv_store_type`). 选哪套由每个 target 的 `only_chunk_engine` 决定, 代码默认 `false`, 但官方部署脚本 [deploy/data_placement/src/setup/gen_chain_table.py](https://github.com/deepseek-ai/3FS/blob/main/deploy/data_placement/src/setup/gen_chain_table.py) 生成的 `create-target` 命令都带 `--use-new-chunk-engine`, 按部署指南搭出来的集群走的是 Rust 引擎. 写路径在 [src/storage/chunk_engine/src/core/engine.rs](https://github.com/deepseek-ai/3FS/blob/main/src/storage/chunk_engine/src/core/engine.rs) 的 `update_chunk`: 覆盖已有范围或超出块容量时走 `copy_on_write`, 纯追加走 `safe_write` 原地写.
 
 [^1]: https://elixir.bootlin.com/linux/v5.4.284/source/fs/fuse/file.c#L1573
 
@@ -743,13 +261,11 @@ USRBIO (User Space Ring Based IO, 用户态环形队列 IO) 是 3FS 上的一组
 
 #### hf3fs_iorcreate4
 
-**Summary**
-
-Create an Ior instance. All `hf3fs_iorcreate*` functions create Ior instances, but include various configurable parameters due to compatibility considerations. The `struct hf3fs_ior` instance can be allocated on stack as a local variable or as a member field of another struct. The create functions will not allocate memory for it, and the destroy function will not deallocate. The `struct hf3fs_iov` is the same.
+**Summary:** Create an Ior instance. All `hf3fs_iorcreate*` functions create Ior instances, but include various configurable parameters due to compatibility considerations. The `struct hf3fs_ior` instance can be allocated on stack as a local variable or as a member field of another struct. The create functions will not allocate memory for it, and the destroy function will not deallocate. The `struct hf3fs_iov` is the same.
 
 创建一个 Ior 实例. 所有 `hf3fs_iorcreate*` 函数都创建 Ior 实例, 只是出于兼容考虑带有不同的可配置参数. `struct hf3fs_ior` 实例可以作为局部变量分配在栈上, 也可以作为别的结构体的成员. 创建函数不为它分配内存, 销毁函数也不释放它. `struct hf3fs_iov` 同理.
 
-**Syntax**
+### Syntax
 
 ```c
 int hf3fs_iorcreate4(struct hf3fs_ior *ior,
@@ -762,7 +278,7 @@ int hf3fs_iorcreate4(struct hf3fs_ior *ior,
                      uint64_t flags);
 ```
 
-**Parameters**
+### Parameters
 
 - **ior**: Address for `hf3fs_ior`.
 - **hf3fs_mount_point**: Mount point for 3FS. This parameter is used to distinguish 3FS clusters, enabling a single machine to mount multiple 3FS instances.
@@ -779,14 +295,14 @@ int hf3fs_iorcreate4(struct hf3fs_ior *ior,
 
 > **核对:** `io_depth` 大于 0 时「攒够才发」, 如果应用末批凑不满会不会卡住?
 > 答: 会一直等. [src/fuse/IoRing.cc](https://github.com/deepseek-ai/3FS/blob/main/src/fuse/IoRing.cc) 取请求时, `io_depth > 0` 只在可取的 SQE 数达到 `io_depth` 时才组批, 不看超时; `io_depth < 0` 时满 $|io\_depth|$ 个或等到 `timeout` 就发. 所以 `io_depth > 0` 适合每轮请求数固定的场景 (例如一个训练 batch 固定取 N 个样本), 请求数不定的应用应当用 0 或负值.
-**Return Value**
+### Return Value
 
 - If success, return 0.
 - If fail, return `-errno`.
 
 成功返回 0, 失败返回 `-errno`.
 
-**Example**
+### Example
 
 ```c
 struct hf3fs_ior ior;
@@ -796,19 +312,17 @@ hf3fs_iordestroy(&ior);
 
 #### hf3fs_iordestroy
 
-**Summary**
-
-Destroy an Ior.
+**Summary:** Destroy an Ior.
 
 销毁一个 Ior.
 
-**Syntax**
+### Syntax
 
 ```c
 void hf3fs_destroy(struct hf3fs_ior *ior);
 ```
 
-**Parameters**
+### Parameters
 
 - **ior**: Address for Ior.
 
@@ -819,13 +333,11 @@ void hf3fs_destroy(struct hf3fs_ior *ior);
 
 #### hf3fs_iovcreate
 
-**Summary**
-
-Create an Iov instance and allocate shared memory for that Iov.
+**Summary:** Create an Iov instance and allocate shared memory for that Iov.
 
 创建一个 Iov 实例, 并为它分配共享内存.
 
-**Syntax**
+### Syntax
 
 ```c
 int hf3fs_iovcreate(struct hf3fs_iov *iov,
@@ -835,7 +347,7 @@ int hf3fs_iovcreate(struct hf3fs_iov *iov,
                     int numa);
 ```
 
-**Parameters**
+### Parameters
 
 - **iov**: Address for Iov.
 - **hf3fs_mount_point**: Mount point for 3FS. This parameter is used to distinguish 3FS clusters, enabling a single machine to mount multiple 3FS instances.
@@ -847,14 +359,14 @@ int hf3fs_iovcreate(struct hf3fs_iov *iov,
 
 `block_size` 不为 `0` 时, 函数会分配多块共享内存, 每块不超过 `block_size`; 为 `0` 时分配一整块大共享内存. 这个 Iov 上的所有 IO 都不能跨越块边界. 这个参数用于缩短 IB 注册时间. `numa` 是共享内存所在的 NUMA 节点 ID, `-1` 表示当前进程所在的 NUMA 节点.
 
-**Return Value**
+### Return Value
 
 - If success, return 0.
 - If fail, return `-errno`.
 
 成功返回 0, 失败返回 `-errno`.
 
-**Example**
+### Example
 
 ```c
 struct hf3fs_iov iov;
@@ -864,19 +376,17 @@ hf3fs_iovdestroy(&iov);
 
 #### hf3fs_iovdestroy
 
-**Summary**
-
-Destroy an Iov.
+**Summary:** Destroy an Iov.
 
 销毁一个 Iov.
 
-**Syntax**
+### Syntax
 
 ```c
 void hf3fs_iovdestroy(struct hf3fs_iov *iov);
 ```
 
-**Parameters**
+### Parameters
 
 - **param**: Address for Iov.
 
@@ -884,26 +394,24 @@ void hf3fs_iovdestroy(struct hf3fs_iov *iov);
 
 #### hf3fs_reg_fd
 
-**Summary**
-
-Register a file descriptor for FUSE IO.
+**Summary:** Register a file descriptor for FUSE IO.
 
 为 FUSE IO 注册一个文件描述符.
 
-**Syntax**
+### Syntax
 
 ```c
 int hf3fs_reg_fd(int fd, uint64_t flags);
 ```
 
-**Parameters**
+### Parameters
 
 - **fd**: A Linux file descriptor.
 - **flags**: Unused. For future use.
 
 `fd` 是一个 Linux 文件描述符. `flags` 暂未使用, 留作将来扩展.
 
-**Return Value**
+### Return Value
 
 - If success, return an integer less or equal than 0. This integer can be used in `hf3fs_prep_io` as `fd`. You can view this as an extra `fd` which is only usable in USRBIO API, and `hf3fs_prep_io` will accept both this new `fd` or the original Linux `fd`.
 - If fail, return `errno`.
@@ -914,25 +422,23 @@ int hf3fs_reg_fd(int fd, uint64_t flags);
 > 答: 文档与代码一致, 约定确实相反. [src/lib/api/UsrbIo.cc](https://github.com/deepseek-ai/3FS/blob/main/src/lib/api/UsrbIo.cc) 的 `hf3fs_reg_fd` 先确认 fd 属于 3FS, 用 `statx` 取 inode, 再 `dup` 一个新 fd, 把两个 fd 都登记进 `regfds` 表, 最终 `return -dupfd`; 出错时返回正的 `EBADF`, `EINVAL` 或 `errno`. 调用方应当用「返回值大于 0」判断失败.
 #### hf3fs_dereg_fd
 
-**Summary**
-
-Deregister a file descriptor.
+**Summary:** Deregister a file descriptor.
 
 注销一个文件描述符.
 
-**Syntax**
+### Syntax
 
 ```c
 void hf3fs_dereg_fd(int fd);
 ```
 
-**Parameters**
+### Parameters
 
 - **fd**: A Linux file descriptor.
 
 `fd` 是一个 Linux 文件描述符.
 
-**Example**
+### Example
 
 ```c
 int fd = open("example.txt", O_RDONLY);
@@ -943,13 +449,11 @@ close(fd);
 
 #### hf3fs_prep_io
 
-**Summary**
-
-Submit an I/O request to an Ior.
+**Summary:** Submit an I/O request to an Ior.
 
 向一个 Ior 提交一个 I/O 请求.
 
-**Syntax**
+### Syntax
 
 ```c
 int hf3fs_prep_io(struct hf3fs_ior *ior,
@@ -962,7 +466,7 @@ int hf3fs_prep_io(struct hf3fs_ior *ior,
                   void *userdata);
 ```
 
-**Parameters**
+### Parameters
 
 - **ior**: Address for Ior.
 - **iov**: Address for Iov.
@@ -977,14 +481,14 @@ int hf3fs_prep_io(struct hf3fs_ior *ior,
 
 `fd` 是要操作的文件, 必须先用 `hf3fs_reg_fd` 注册. `off` 是文件内偏移, `len` 是读或写的长度. `userdata` 是任意数据, 会由 `hf3fs_wait_for_ios` 原样返回.
 
-**Return Value**
+### Return Value
 
 - If success, return the index of I/O request in the Ior.
 - If fail, return `-errno`.
 
 成功返回该 I/O 请求在 Ior 中的序号, 失败返回 `-errno`.
 
-**Notes**
+### Notes
 
 - This function may not be thread safe.
 
@@ -992,32 +496,30 @@ int hf3fs_prep_io(struct hf3fs_ior *ior,
 
 #### hf3fs_submit_ios
 
-**Summary**
-
-Notify FUSE process that new I/O operations has been submitted.
+**Summary:** Notify FUSE process that new I/O operations has been submitted.
 
 通知 FUSE 进程有新的 I/O 操作已提交.
 
-**Syntax**
+### Syntax
 
 ```c
 int hf3fs_submit_ios(const struct hf3fs_ior *ior);
 ```
 
-**Parameters**
+### Parameters
 
 - **ior**: Address for Ior.
 
 `ior` 是 Ior 的地址.
 
-**Return Value**
+### Return Value
 
 - If success, return 0.
 - If fail, return `-errno`.
 
 成功返回 0, 失败返回 `-errno`.
 
-**Notes**
+### Notes
 
 - The I/O operations may be executed **before** you call `hf3fs_submit_ios`. This function is just notifying FUSE process to work, but the FUSE process also scan new operations periodically.
 
@@ -1028,13 +530,11 @@ I/O 操作可能在调用 `hf3fs_submit_ios` **之前**就已经执行. 这个�
 
 #### hf3fs_wait_for_ios
 
-**Summary**
-
-Wait and get results for completed I/O operations.
+**Summary:** Wait and get results for completed I/O operations.
 
 等待并取回已完成 I/O 操作的结果.
 
-**Syntax**
+### Syntax
 
 ```c
 int hf3fs_wait_for_ios(const struct hf3fs_ior *ior,
@@ -1044,7 +544,7 @@ int hf3fs_wait_for_ios(const struct hf3fs_ior *ior,
                        const struct timespec *abs_timeout);
 ```
 
-**Parameters**
+### Parameters
 
 - **ior**: Address for Ior.
 - **cqes**: Address for `hf3fs_cqe`s. This will contains I/O operation result, and `userdata` provided by `hf3fs_prep_io`.
@@ -1056,14 +556,14 @@ int hf3fs_wait_for_ios(const struct hf3fs_ior *ior,
 
 `min_results` 是最少要返回的结果数, `abs_timeout` 是返回前最多等待到的绝对时刻.
 
-**Return Value**
+### Return Value
 
 - If success, return number of completed I/O requests.
 - If fail, return `-errno`.
 
 成功返回已完成的 I/O 请求数, 失败返回 `-errno`.
 
-**Example**
+### Example
 
 ```c
 hf3fs_prep_io(&ior, &iov, true, iov.base, fd, 0, 4096, nullptr);
@@ -1074,7 +574,7 @@ hf3fs_cqe cqes[2];
 hf3fs_wait_for_ios(&ior, cqes, 2, 2, nullptr);
 ```
 
-**Notes**
+### Notes
 
 - It is OK to call `hf3fs_prep_io` and `hf3fs_submit_ios` in one thread, and call `hf3fs_wait_for_ios` in another thread. But only one thread can call `hf3fs_prep_io` and `hf3fs_submit_ios`, and only one thread can call `hf3fs_wait_for_ios`.
 
@@ -1091,7 +591,7 @@ constexpr uint64_t BLOCK_SIZE = (32 << 20);
 int main() {
     struct hf3fs_ior ior;
     hf3fs_iorcreate4(&ior, "/hf3fs/mount/point", NUM_IOS, true, 0, 0, -1, 0);
-    
+
     struct hf3fs_iov iov;
     hf3fs_iovcreate(&iov, "/hf3fs/mount/point", NUM_IOS * BLOCK_SIZE, 0, -1);
 

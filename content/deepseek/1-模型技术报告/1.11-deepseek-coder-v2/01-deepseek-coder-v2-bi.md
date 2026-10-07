@@ -231,7 +231,7 @@ Table 2 | Training Setting of DeepSeek-Coder-V2.
 
 ## 3.4. Long Context Extension ## 3.4. 长上下文扩展
 
-Following DeepSeek-V2, we extend the context length of DeepSeek-Coder-V2 to 128K using Yarn (Peng et al., 2023). The hyper-parameters of YARN are the same as DeepSeek-V2: the scale � to 40, � to 1, � to 32. We further continue training the model using two stages to enhance its capability for handling long contexts. In the first stage, we utilize a sequence length of 32K and a batch size of 1152 for 1000 steps. In the second stage, we train the model for an additional 1000 steps, employing a sequence length of 128K and a batch size of 288 sequences.
+Following DeepSeek-V2, we extend the context length of DeepSeek-Coder-V2 to 128K using YaRN (Peng et al., 2023). The hyper-parameters of YaRN are the same as DeepSeek-V2: the scale $s$ is set to 40, $\alpha$ to 1, and $\beta$ to 32. We further continue training the model using two stages to enhance its capability for handling long contexts. In the first stage, we utilize a sequence length of 32K and a batch size of 1152 for 1000 steps. In the second stage, we train the model for an additional 1000 steps, employing a sequence length of 128K and a batch size of 288 sequences.
 
 沿用 DeepSeek-V2, 用 **YaRN** 扩到 128K: scale=40, beta 为 1 与 32. 再分两阶段续训: 第一阶段序列长 32K, batch 1152, 1000 步; 第二阶段序列长 128K, batch 288, 再 1000 步.
 

@@ -143,19 +143,19 @@ Recursively Solve Subgoals by DeepSeek-Prover-V2-7B
 
 theorem induction_ineq_nsqlefactn (n : ℕ) (h₀ : 4 ≤ n) : n ^ 2 ≤ n ! := sorry
 
-Show that for any integer �≥4, we have �2 ≤�!.
+Show that for any integer $n \ge 4$, we have $n^2 \le n!$.
 
 lemma inductive_step (n : ℕ) (h₀ : 4 ≤ n) (base_case : 4 ^ 2 ≤ 4 !) : ∀ k ≥ 4, k ^ 2 ≤ k ! → (k + 1) ^ 2 ≤ (k + 1) ! := by sorry
 
 Synthesize into Complete Formal Proofs
 
-Understanding the Problem We need to show that for any integer �≥4, the inequality �2 ≤�! holds. Here, �! denotes the factorial of �, which is the product of all positive integers up to �.
+Understanding the Problem We need to show that for any integer $n \ge 4$, the inequality $n^2 \le n!$ holds. Here, $n!$ denotes the factorial of $n$, which is the product of all positive integers up to $n$.
 
 theorem induction_ineq_nsqlefactn (n : ℕ) (h₀ : 4 ≤ n) : n ^ 2 ≤ n ! := by have base_case : 4 ^ 2 ≤ 4 ! := by simp [Nat.factorial]
 
 chain-of-thought by DeepSeek-V3
 
-Proof Sketch To prove this formally, we can use mathematical induction. Here's how the induction would work: 1. Base Case: Verify the inequality for �= 4. 2. Inductive Step: Assume the inequality holds for some �= 4, i.e., �2 ≤�!. Then show that it holds for �+ 1, i.e., (�+ 1)2 ≤(�+ 1)!.
+Proof Sketch To prove this formally, we can use mathematical induction. Here's how the induction would work: 1. Base Case: Verify the inequality for $n = 4$. 2. Inductive Step: Assume the inequality holds for some $n \ge 4$, i.e., $n^2 \le n!$. Then show that it holds for $n + 1$, i.e., $(n + 1)^2 \le (n + 1)!$.
 
 have inductive_step : ∀ k ≥ 4, k ^ 2 ≤ k ! → (k + 1) ^ 2 ≤ (k + 1) ! := by intro k h₁ h₂ simp_all [Nat.factorial] nlinarith
 

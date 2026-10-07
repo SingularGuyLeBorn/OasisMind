@@ -17,10 +17,10 @@ Damai Dai$^{*1,2}$, Chengqi Deng$^{1}$, Chenggang Zhao$^{*1,3}$, R.X. Xu$^{1}$, 
 
 ## $^{1}$ DeepSeek-AI
 
-$^{2}$ National Key Laboratory for Multimedia Information Processing, Peking University  
- $^{3}$ Institute for Interdisciplinary Information Sciences, Tsinghua University  
- $^{4}$ National Key Laboratory for Novel Software Technology, Nanjing University  
-{daidamai, szf}@pku.edu.cn, {wenfeng.liang}@deepseek.com  
+$^{2}$ National Key Laboratory for Multimedia Information Processing, Peking University
+ $^{3}$ Institute for Interdisciplinary Information Sciences, Tsinghua University
+ $^{4}$ National Key Laboratory for Novel Software Technology, Nanjing University
+{daidamai, szf}@pku.edu.cn, {wenfeng.liang}@deepseek.com
 https://github.com/deepseek-ai/DeepSeek-MoE
 
 ## Abstract

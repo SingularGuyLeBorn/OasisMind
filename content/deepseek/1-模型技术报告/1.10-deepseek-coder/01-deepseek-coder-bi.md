@@ -99,9 +99,9 @@ with meticulous fine-tuning using instructional data, DeepSeek-Coder-Instruct ac
 
 
 
-• 推出 DeepSeek-Coder-Base 与 Instruct: 大规模代码语料训练, 覆盖 87 种语言, 多档规模适配不同算力与场景.  
-• 预训练阶段首次尝试**仓库级数据构造**, 跨文件代码生成明显变强.  
-• 系统分析 FIM 训练策略对代码预训练的影响, 给出配置层面的有用结论.  
+• 推出 DeepSeek-Coder-Base 与 Instruct: 大规模代码语料训练, 覆盖 87 种语言, 多档规模适配不同算力与场景.
+• 预训练阶段首次尝试**仓库级数据构造**, 跨文件代码生成明显变强.
+• 系统分析 FIM 训练策略对代码预训练的影响, 给出配置层面的有用结论.
 • 在大量代码相关基准上评测: Base 全面超过既有开源代码 LLM; 指令微调后, Instruct 在代码相关任务上优于 GPT-3.5 Turbo.
 
 ## 2. Data Collection 数据收集
@@ -290,7 +290,7 @@ The first training objective for our model is known as next token prediction. In
 
 ## 3.1.2. Fill-in-the-Middle 中间填补(FIM)
 
-The second training objective for our model is known as fill-in-the-middle. In the code pre-training scenario, it is often necessary to generate corresponding inserted content based on the given context and subsequent text. Due to specific dependencies in a programming language, relying solely on next token prediction is insufficient to learn this fill-in-the-middle capability. Therefore, several approaches (Bavarian et al., 2022; Li et al., 2023) propose the pretraining method of Fill-in-the-Midlle (FIM). This approach involves randomly dividing the text into three parts, then shuffling the order of these parts and connecting them with special characters. This method aims to incorporate a fill-in-the-blank pretraining task during the training process. Within the FIM methodology, two distinct modes are employed: PSM (Prefix-Suffix-Middle) and SPM (Suffix-Prefix-Middle). In the PSM mode, the training corpus is organized in the sequence of ��� � ��, �� � � ��, ������, aligning the text in a way that the middle segment is flanked by the prefix and suffix. Conversely, the SPM mode arranges the segments as ������, ������, ������, presenting a different structural challenge. These modes are instrumental in enhancing the model’s capability to handle various structural arrangements in code, providing a robust training framework for advanced code prediction tasks.
+The second training objective for our model is known as fill-in-the-middle. In the code pre-training scenario, it is often necessary to generate corresponding inserted content based on the given context and subsequent text. Due to specific dependencies in a programming language, relying solely on next token prediction is insufficient to learn this fill-in-the-middle capability. Therefore, several approaches (Bavarian et al., 2022; Li et al., 2023) propose the pretraining method of Fill-in-the-Middle (FIM). This approach involves randomly dividing the text into three parts, then shuffling the order of these parts and connecting them with special characters. This method aims to incorporate a fill-in-the-blank pretraining task during the training process. Within the FIM methodology, two distinct modes are employed: PSM (Prefix-Suffix-Middle) and SPM (Suffix-Prefix-Middle). PSM arranges the three content segments as prefix, suffix, and middle; SPM arranges them as suffix, prefix, and middle. Special FIM tokens delimit the segments in both modes. These modes are instrumental in enhancing the model's capability to handle various structural arrangements in code, providing a robust training framework for advanced code prediction tasks.
 
 
 
@@ -521,10 +521,10 @@ notable performance in this domain. Their effectiveness in handling code generat
 
 
 
-• **CodeGeeX2**: 多语言代码生成第二代, ChatGLM2 架构 + 大量代码样例.  
-• **StarCoder**: 约 15B 公开模型, 训在 Stack 精选子集, 覆盖 86 种语言.  
-• **CodeLlama**: LLaMA2 衍生, 7B/13B/34B, 在约 500B token 代码语料上继续训.  
-• **code-cushman-001**: OpenAI 约 12B, 早期 GitHub Copilot 所用.  
+• **CodeGeeX2**: 多语言代码生成第二代, ChatGLM2 架构 + 大量代码样例.
+• **StarCoder**: 约 15B 公开模型, 训在 Stack 精选子集, 覆盖 86 种语言.
+• **CodeLlama**: LLaMA2 衍生, 7B/13B/34B, 在约 500B token 代码语料上继续训.
+• **code-cushman-001**: OpenAI 约 12B, 早期 GitHub Copilot 所用.
 • **GPT-3.5 / GPT-4**: 非专训代码, 但靠巨大参数量在代码生成上也表现突出.
 
 ## 4.1. Code Generation 代码生成
@@ -750,8 +750,8 @@ We conduct a comparison between DeepSeek-Coder-v1.5 7B and DeepSeek-Coder 6.7B, 
 
 
 
-• **编程**: 多语言 HumanEval + Python MBPP.  
-• **数学推理**: GSM8K, MATH, 用写程序解题.  
+• **编程**: 多语言 HumanEval + Python MBPP.
+• **数学推理**: GSM8K, MATH, 用写程序解题.
 • **自然语言**: MMLU, BBH, HellaSwag, Winogrande, ARC-Challenge.
 
 • Math Reasoning: We assess performance on math reasoning tasks using the GSM8K benchmark (Cobbe et al., 2021) and the MATH (Hendrycks et al., 2021) benchmark [4]. These tasks involve solving math problems by generating programs.
