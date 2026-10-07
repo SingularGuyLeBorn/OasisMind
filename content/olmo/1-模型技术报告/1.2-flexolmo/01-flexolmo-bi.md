@@ -127,7 +127,7 @@ Related efforts in parameter-efficient training have explored merging LoRA adapt
 
 **Mixture-of-Experts (MoE)** MoE models [8, 9, 66], consisting of many small feedforward networks called experts, have gained popularity for their training and inference efficiency. Our work leverages the MoE architecture; however, our motivation and training method are fundamentally different as our primarily goal is to support modularity rather than efficiency.
 
-**MoE** MoE 模型 [8, 9, 66] 由许多被称为专家的小型前馈网络组成, 因训练和推理效率而流行. 我们用的是 MoE 架构, 但动机和训练方法根本不同: 我们的首要目标是支持模块化, 而不是效率.
+**MoE** MoE 模型 [8, 9, 66] 由许多被称为专家的小型前馈网络组成, 因训练和推理效率而流行. 我们用的是 MoE 架构, 但动机和训练方法根本不同: 我们的首要目标是支持模块化, 而并非效率.
 
 ## 3 FlexOlmo: LMs with Flexible Data Use · FlexOlmo: 数据可灵活使用的 LM
 
@@ -181,7 +181,7 @@ The router plays a critical role in MoE: the router function $r$ maps an input v
 
 $$r(\mathbf{x}) = \mathbf{W}_r\mathbf{x},\quad \mathbf{W}_r\in\mathbb{R}^{(n+1)\times h}$$
 
-路由器在 MoE 中至关重要: 路由函数 $r$ 把输入向量 $\mathbf{x}$ 映射为各专家模块上的分布, 公共模型也是其中一个专家, 见上式.
+路由器在 MoE 中很关键: 路由函数 $r$ 把输入向量 $\mathbf{x}$ 映射为各专家模块上的分布, 公共模型也是其中一个专家, 见上式.
 
 In typical MoEs, $\mathbf{W}_r$ is trained end-to-end alongside all expert modules, using access to the full training dataset. Instead, we decompose $\mathbf{W}_r$ into individual expert-specific router embeddings, where each row $\mathbf{r}_i$ represents the router embedding for expert $M_i$, learned only from $D_i$:
 
@@ -205,7 +205,7 @@ Otherwise default to $M_\text{pub}$. This helps the later merging process, where
 
 **加入偏置项** 标准路由器在全部专家之间联合学习, 而专家的协调训练只学一个专家与公共模型之间的两两路由决策. 也就是说, 训练中模型从不直接比较专家 $M_1$ 和 $M_2$, 这可能限制推理时的泛化. 为缓解这一点, 我们给每个独立训练的专家 $\{M_1, M_2, \ldots, M_n\}$ 加一个负偏置项 $b_i$, 满足上式时选择专家 $M_i$, 否则默认用 $M_\text{pub}$. 这有助于后续合并, 因为那时每个专家不只和公共模型竞争, 还要和所有其他专家竞争. 更多细节和理由见 §D.
 
-不是. 仓库 `scripts/train_expert_model.sh` 把两专家 MoE 的 `router.top_k` 设为 2, 两个专家每个 token 都参与计算, 偏置只改变 softmax 后的权重. `MoERouterWithExpertBias` 里 $b_i$ 是可学习参数, 前向时取 `torch.minimum(b, 0)` 保证非正; 文中没有说 $b_i$ 可学习, 也没有给初值或终值. 同一脚本实际构建的是 `olmoe_nx7b` 路由器, 带偏置的那一行被注释掉, HF 发布的 `FlexOlmoTopKRouter` 同样没有偏置.
+并非. 仓库 `scripts/train_expert_model.sh` 把两专家 MoE 的 `router.top_k` 设为 2, 两个专家每个 token 都参与计算, 偏置只改变 softmax 后的权重. `MoERouterWithExpertBias` 里 $b_i$ 是可学习参数, 前向时取 `torch.minimum(b, 0)` 保证非正; 文中没有说 $b_i$ 可学习, 也没有给初值或终值. 同一脚本实际构建的是 `olmoe_nx7b` 路由器, 带偏置的那一行被注释掉, HF 发布的 `FlexOlmoTopKRouter` 同样没有偏置.
 
 #### 3.3.3 Optional Router Training on Proxy Data · 可选: 在代理数据上训练路由器
 
@@ -275,7 +275,7 @@ We evaluate our models and baselines on a large and diverse collection of well-e
 
 Code4, 4 coding benchmarks including MBPP [103], MBPPPLUS [104], HUMANEVAL [105], and HUMANEVALPLUS [104]. To measure scientific literature understanding, we report on (8) SciRIFF5: comprising 5 subtasks from SciRIFF [106]. Finally, we include (9) NewsG: news generation and (10) PoemG: poem generation tasks, both evaluated using an LM judge.
 
-**特定领域评测** 通用评测基准已经包含一些数学考查, 我们再用 (6) Math2 进一步评测数学能力, 它包括两个专门的数学基准: GSM8K [101] 和 MATH [102]. 评测编程能力用 (7) Code4, 即 MBPP [103], MBPPPLUS [104], HUMANEVAL [105] 和 HUMANEVALPLUS [104] 四个编程基准. 衡量科学文献理解用 (8) SciRIFF5, 由 SciRIFF [106] 的 5 个子任务组成. 最后还有 (9) NewsG 新闻生成和 (10) PoemG 诗歌生成, 两者都用 LM 评审打分.
+**特定领域评测** 通用评测基准已经包含一些数学考查, 我们再用 (6) Math2 进一步评测数学能力, 它包括两个专门的数学基准: GSM8K [101] 和 MATH [102]. 评测编程能力用 (7) Code4, 即 MBPP [103], MBPPPLUS [104], HUMANEVAL [105] 和 HUMANEVALPLUS [104] 四个编程基准. 衡量科学文献理解用 (8) SciRIFF5, 由 SciRIFF [106] 的 5 个子任务组成. 末尾还有 (9) NewsG 新闻生成和 (10) PoemG 诗歌生成, 两者都用 LM 评审打分.
 
 ### 4.3 Baselines · 基线
 
@@ -319,7 +319,7 @@ Each data owner then takes this checkpoint and performs continued-pretraining fo
 
 We conduct ablation studies and compare against a comprehensive set of baselines at a small scale with four experts—Public mix, math, educational text, and code (Table 1). We then evaluate our final model on the full setup including the Public mix and all seven simulated closed sets (Table 2). Finally, we present an in-depth analysis to illustrate the behavior and effectiveness of FlexOlmo.
 
-我们先在四专家 (Public mix, 数学, 教育文本, 代码) 的小规模设定下做消融, 并与一整套基线比较 (表 1). 然后在包含 Public mix 和全部七个模拟封闭集的完整设定下评测最终模型 (表 2). 最后做深入分析, 说明 FlexOlmo 的行为和效果.
+我们先在四专家 (Public mix, 数学, 教育文本, 代码) 的小规模设定下做消融, 并与一整套基线比较 (表 1). 然后在包含 Public mix 和全部七个模拟封闭集的完整设定下评测最终模型 (表 2). 末尾做深入分析, 说明 FlexOlmo 的行为和效果.
 
 7
 
@@ -406,11 +406,11 @@ only. However, their performance is inconsistent: model soup and BTX are general
 
 **Final FlexOlmo in the full setup** Finally, we evaluate FlexOlmo in the full eight-expert setup and compare it against the public-only model, individual experts trained on closed datasets, and BTM (top-2), the strongest baseline from Table 1. This was done by simply adding four additional experts, benefiting from FlexOlmo's flexibility in easily adding new datasets. Consistent with earlier findings, FlexOlmo outperforms all individual models (the public baseline and individual experts), demonstrating the synergistic effect of combining independently trained modules. Compared to the strongest baseline BTM, it achieves a 10% relative improvement on average (Table 2). FlexOlmo excels on benchmarks where specialized experts perform well (BBH, Math2, NewsG, PoemG, SciRIFF5, Code4), matching or surpassing the experts, and also shows strong results on tasks where no single dataset suffices (e.g., MC9, Gen5, MMLU, MMLU Pro, AGI Eval).
 
-**完整设定下的最终 FlexOlmo** 最后, 我们在完整的八专家设定下评测 FlexOlmo, 并与仅公开数据的模型, 在封闭数据集上训练的单个专家, 以及表 1 中最强的基线 BTM (top-2) 比较. 得益于 FlexOlmo 便于加入新数据集的灵活性, 这只需再加四个专家即可. 与前面的发现一致, FlexOlmo 优于所有单个模型 (公开基线和各专家), 体现了组合独立训练模块的协同效应. 与最强基线 BTM 相比, 它平均相对提升 10% (表 2). FlexOlmo 在专门专家表现好的基准上 (BBH, Math2, NewsG, PoemG, SciRIFF5, Code4) 表现突出, 追平或超过这些专家; 在单个数据集都不够用的任务上 (如 MC9, Gen5, MMLU, MMLU Pro, AGI Eval) 也表现很强.
+**完整设定下的最终 FlexOlmo** 末尾, 我们在完整的八专家设定下评测 FlexOlmo, 并与仅公开数据的模型, 在封闭数据集上训练的单个专家, 以及表 1 中最强的基线 BTM (top-2) 比较. 得益于 FlexOlmo 便于加入新数据集的灵活性, 这只需再加四个专家即可. 与前面的发现一致, FlexOlmo 优于所有单个模型 (公开基线和各专家), 体现了组合独立训练模块的协同效应. 与最强基线 BTM 相比, 它平均相对提升 10% (表 2). FlexOlmo 在专门专家表现好的基准上 (BBH, Math2, NewsG, PoemG, SciRIFF5, Code4) 表现突出, 追平或超过这些专家; 在单个数据集都不够用的任务上 (如 MC9, Gen5, MMLU, MMLU Pro, AGI Eval) 也表现很强.
 
 ³This is likely because training on disjoint datasets causes experts to diverge from each other and from the seed model, making model soup limited, and training BTX on the public data only is not optimal.
 
-³ 可能的原因是: 在不相交的数据集上训练让专家彼此之间以及与种子模型之间发生偏离, 限制了 model soup; 而 BTX 只在公开数据上训练也不是最优的.
+³ 可能的原因是: 在不相交的数据集上训练让专家彼此之间以及与种子模型之间发生偏离, 限制了 model soup; 而 BTX 只在公开数据上训练也非最优的.
 
 9
 
@@ -466,7 +466,7 @@ Our results are as follows:
 
 ⁵Manual inspection suggests that the prefix prompts a deterministic continuation, causing the model to generate text that matches the target data even if the model has never seen that data during training, aligning with findings from previous research [111].
 
-⁴ 选数学数据, 是因为它是模拟封闭集中最小的, 数学专家训了三个 epoch (而不是一个), 更容易被提取. 因此数学数据上的提取率很可能是一个上界.
+⁴ 选数学数据, 是因为它是模拟封闭集中最小的, 数学专家训了三个 epoch (而并非一个), 更容易被提取. 因此数学数据上的提取率很可能是一个上界.
 
 ⁵ 人工检查表明, 前缀会引出确定性的续写, 即使模型训练时从没见过该数据, 也会生成与目标数据吻合的文本, 这与已有研究 [111] 的发现一致.
 
@@ -484,7 +484,7 @@ Table 4: Scaling up FlexOlmo (§5.4): We applied the FlexOlmo recipe to a 4T tok
 
 These results lead to the following conclusions. First, in practice, it is difficult to extract a substantial portion of the training data, which is in line with previous findings [108]. However, if a model includes any weights trained on the data, nonzero (though small) fraction of the data may be extractable. If data owners are comfortable with this minimal leakage, as long as a meaningful fraction of the data remains not extractable, we believe that FlexOlmo, in its current form, is a viable solution. If the owners' data includes any private or sensitive information, we recommend training experts using differentially private (DP) learning methods before contributing them to the model, which provides formal privacy guarantees. Applying DP is largely orthogonal to our architecture, and different data owners can make independent decisions on whether to apply DP or not, providing flexibility without compromising the overall design.
 
-由这些结果可以得出以下结论. 首先, 实践中很难提取出训练数据的相当一部分, 这与已有发现 [108] 一致. 但只要模型包含任何在该数据上训练的权重, 就可能有一小部分 (虽然很小, 但不为零) 数据可被提取. 如果数据拥有者能接受这种极小的泄露, 只要大部分数据仍不可提取, 我们认为当前形态的 FlexOlmo 是可行的方案. 如果拥有者的数据含有任何隐私或敏感信息, 我们建议在把专家贡献给模型之前, 用差分隐私 (DP) 学习方法训练专家, 以获得形式化的隐私保证. 应用 DP 与我们的架构基本正交, 不同数据拥有者可以各自决定是否使用 DP, 灵活且不影响整体设计.
+由这些结果可以得出以下结论. 第一步, 实践中很难提取出训练数据的相当一部分, 这与已有发现 [108] 一致. 但只要模型包含任何在该数据上训练的权重, 就可能有一小部分 (虽然很小, 但不为零) 数据可被提取. 如果数据拥有者能接受这种极小的泄露, 只要大部分数据仍不可提取, 我们认为当前形态的 FlexOlmo 是可行的方案. 如果拥有者的数据含有任何隐私或敏感信息, 我们建议在把专家贡献给模型之前, 用差分隐私 (DP) 学习方法训练专家, 以获得形式化的隐私保证. 应用 DP 与我们的架构基本正交, 不同数据拥有者可以各自决定是否使用 DP, 灵活且不影响整体设计.
 
 ### 5.4 Scaling FlexOlmo Further · 进一步扩展 FlexOlmo
 
@@ -1173,7 +1173,7 @@ We then filtered the dataset from Step #1 to retain only documents from subreddi
 6. which-of-following-is-true
 7. in-question options
 
-**3. 格式改写** 最后, 把第 2 步的数据送入合成改写流水线, 生成覆盖多种题型的学术问答条目. 参照 MMLU 中观察到的题型变化, 我们定义了 7 类题型 (开放式, 陈述补全, 填空, 陈述真伪判断, 「下列哪项具有性质 X」, 「下列哪项正确」, 题内选项), 并据此构造生成问答文本的提示.
+**3. 格式改写** 末尾, 把第 2 步的数据送入合成改写流水线, 生成覆盖多种题型的学术问答条目. 参照 MMLU 中观察到的题型变化, 我们定义了 7 类题型 (开放式, 陈述补全, 填空, 陈述真伪判断, 「下列哪项具有性质 X」, 「下列哪项正确」, 题内选项), 并据此构造生成问答文本的提示.
 
 For each format category we constructed a prompt for generating questions of that category given an input text. Below is an example prompt, for the "in-question-options" category. Prompts for other categories differ in 1) the content of the "For format ..." paragraph and 2) the in-context examples (1-3 examples per prompt).
 
@@ -1219,7 +1219,7 @@ For generating our rewritten QA data, we prompted GPT-4o mini (Jan 2025 version)
 
 Finally, GPT-4o mini outputs were parsed into separate QA items based on the "%%%%" separator, and 50% of items were prepended with the prefix "Question: ".
 
-最后, 按「%%%%」分隔符把 GPT-4o mini 的输出拆成单独的问答条目, 并给其中 50% 的条目加上前缀「Question: 」.
+末尾, 按「%%%%」分隔符把 GPT-4o mini 的输出拆成单独的问答条目, 并给其中 50% 的条目加上前缀「Question: 」.
 
 We validated these rewritten data in experiments with OLMo 7B [114] models trained to 2T tokens, carrying out continued pretraining on a 50-50 mix of DCLM and Reddit data while annealing the learning rate to zero, a strategy used in [115, 78, 107]. We run this continued pretraining with two versions of Reddit data: the filtered data from Step #2, and the rewritten data from Step #3. We find that the rewriting improves over the non-rewritten data in both MC9 and MMLU: MC9 improves from 0.74 to 0.76 and MMLU improves from 0.62 to 0.66.
 

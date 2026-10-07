@@ -14,7 +14,7 @@ excerpt: "固定到提交 5f6f58a 的 OLMo-core README 与数据加载指南选�
 
 > First install PyTorch according to the instructions specific to your operating system and hardware.
 
-首先按照与你的操作系统和硬件相匹配的说明安装 PyTorch。
+第一步按照与你的操作系统和硬件相匹配的说明安装 PyTorch。
 
 > For development, we recommend installing from source:
 

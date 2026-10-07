@@ -1,9 +1,9 @@
 ---
-title: "Fluid Benchmarking??????????????"
-category: "?????"
-tags: ["Fluid Benchmarking", "IRT", "?????", "??????", "????"]
+title: "Fluid Language Model Benchmarking · 对照译稿"
+category: "数据与评测"
+tags: ["Fluid Benchmarking", "IRT", "自适应评测", "语言模型评测", "测量理论"]
 published: true
-excerpt: "Fluid Benchmarking ??????????????????????????????????????????????????????"
+excerpt: "Fluid Benchmarking 用项目反应理论估计题目属性，并根据被测模型的能力动态选题，以更少样本改善评测效率、效度与方差。"
 ---
 
 <!-- arXiv 2509.11106; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/fluid-benchmarking/latex/ 的 LaTeX 源码为准 -->
@@ -218,13 +218,13 @@ Published as a conference paper at COLM 2025
 
 We introduce FLUID BENCHMARKING, a new method for benchmark refinement that departs from prior work (i) by changing AGGREGATE such that LM performance is represented in a latent ability space rather than the standard accuracy space (§3.1), and (ii) by choosing SELECT to dynamically adjust the subset of evaluation items to an LM (§3.2).
 
-我们引入了 FLUID BENCHMARKING，这是一种基准细化的新方法，它与之前的工作不同：(i) 通过更改 AGGREGATE，使 LM 性能在潜在能力空间而不是标准精度空间中表示（第 3.1 节），以及 (ii) 通过选择 SELECT 来动态调整 LM 的评估项目子集（第 3.2 节）。
+我们引入了 FLUID BENCHMARKING，这是一种基准细化的新方法，它与之前的工作不同：(i) 通过更改 AGGREGATE，使 LM 性能在潜在能力空间而并非标准精度空间中表示（第 3.1 节），以及 (ii) 通过选择 SELECT 来动态调整 LM 的评估项目子集（第 3.2 节）。
 
 3.1 Measuring Language Model Performance in Latent Ability Space · 在潜在能力空间中衡量语言模型表现
 
 Over the past several decades, research in psychometrics has developed a suite of methods to address the challenges discussed in the previous section, which arise in a similar form in human testing. We argue that psychometric methods can be fruitfully applied to the evaluation of LMs. In particular, we draw upon item response theory (IRT; Lord, 1980; van der Linden & Hambleton, 1997; DeMars, 2010), which represents test takers in a latent ability space. The specific IRT model we use is a two-parameter logistic (2PL) model (Lord, 1952; Birnbaum, 1968). Before providing a formal definition, we begin with a quick overview of the advantages of IRT-based ability estimates over accuracy.
 
-在过去的几十年里，心理测量学研究开发了一套方法来解决上一节中讨论的挑战，这些挑战在人体测试中以类似的形式出现。我们认为心理测量方法可以有效地应用于 LM 的评估。特别是，我们利用项目反应理论（IRT；Lord，1980；van der Linden & Hambleton，1997；DeMars，2010），该理论代表了潜在能力空间中的考生。我们使用的具体 IRT 模型是二参数逻辑 (2PL) 模型（Lord，1952；Birnbaum，1968）。在提供正式定义之前，我们首先快速概述基于 IRT 的能力评估相对于准确性的优势。
+在过去的几十年里，心理测量学研究开发了一套方法来解决上一节中讨论的挑战，这些挑战在人体测试中以类似的形式出现。我们认为心理测量方法可以有效地应用于 LM 的评估。特别是，我们利用项目反应理论（IRT；Lord，1980；van der Linden & Hambleton，1997；DeMars，2010），该理论代表了潜在能力空间中的考生。我们使用的具体 IRT 模型是二参数逻辑 (2PL) 模型（Lord，1952；Birnbaum，1968）。在提供正式定义之前，我们第一步快速概述基于 IRT 的能力评估相对于准确性的优势。
 
 The key property that distinguishes IRT-based ability estimates from accuracy is that IRT takes item characteristics into account, whereas accuracy treats all items equally. In the 2PL model that we consider here, the two item characteristics are:
 
@@ -244,7 +244,7 @@ response increases with ability. Low-discrimination items are often problematic�
 
 These features might be beneficial for benchmark refinement. In terms of efficiency, item parameters provide a principled basis for selecting Q∗. Item discrimination potentially offers dual benefits: it could enhance validity by reducing the impact of mislabeled items, while simultaneously decreasing variance by placing less weight on items that inconsistently differentiate between similar LMs. Finally, the fact that difficult items affect ability estimates differently than easy items could delay saturation effects, as differences in performance among strong LMs on difficult items are better captured than by accuracy.
 
-这些功能可能有利于基准细化。在效率方面，项目参数为选择Q*提供了原则依据。项目歧视可能会带来双重好处：它可以通过减少错误标记项目的影响来提高有效性，同时通过减少对相似 LM 之间不一致区分的项目的权重来减少方差。最后，困难项目对能力估计的影响与简单项目不同，这一事实可能会延迟饱和效应，因为强语言模型在困难项目上的性能差异比准确度更好地被捕获。
+这些功能可能有利于基准细化。在效率方面，项目参数为选择Q*提供了原则依据。项目歧视可能会带来双重好处：它可以通过减少错误标记项目的影响来提高有效性，同时通过减少对相似 LM 之间不一致区分的项目的权重来减少方差。末尾，困难项目对能力估计的影响与简单项目不同，这一事实可能会延迟饱和效应，因为强语言模型在困难项目上的性能差异比准确度更好地被捕获。
 
 Formulation. Let M = {m1, . . . , mk} be a set of LMs that have been evaluated on a benchmark Q. Assuming items with two outcomes, the probability that an LM mi answers item qj correctly can be modeled as a Bernoulli random variable uij, where uij = 1 (success) iff the LM’s answer is correct. The probability that uij = 1 is modeled as
 
@@ -486,7 +486,7 @@ Table 1: Comparison against baseline methods. AP: ANCHOR POINTS (Vivek et al., 2
 
 We compare against several previous benchmark refinement methods. First, we examine ANCHOR POINTS (Vivek et al., 2024), a method for efficient evaluation based on item clustering. We use the Open LLM Leaderboard to cluster the benchmarks and consider two subset sizes in the range examined by the authors (10 and 50). We also examine two IRT-based methods, TINYBENCHMARKS (Polo et al., 2024) and METABENCH (Kipnis et al., 2025), and compare directly against their subsets and evaluation tools. In terms of methods for increasing difficulty, we include the hard versions of ARC Challenge and MMLU from SMART (Gupta et al., 2024) and MAGI (Paech, 2024), respectively.
 
-我们与之前的几种基准细化方法进行了比较。首先，我们研究了锚点（Vivek et al., 2024），这是一种基于项目聚类的高效评估方法。我们使用 Open LLM Leaderboard 对基准进行聚类，并考虑作者检查范围内的两个子集大小（10 和 50）。我们还研究了两种基于 IRT 的方法，TINYBENCHMARKS（Polo 等人，2024 年）和 METABENCH（Kipnis 等人，2025 年），并直接与它们的子集和评估工具进行比较。在增加难度的方法方面，我们分别包括来自 SMART (Gupta et al., 2024) 和 MAGI (Paech, 2024) 的 ARC Challenge 和 MMLU 的硬版本。
+我们与之前的几种基准细化方法进行了比较。第一步，我们研究了锚点（Vivek et al., 2024），这是一种基于项目聚类的高效评估方法。我们使用 Open LLM Leaderboard 对基准进行聚类，并考虑作者检查范围内的两个子集大小（10 和 50）。我们还研究了两种基于 IRT 的方法，TINYBENCHMARKS（Polo 等人，2024 年）和 METABENCH（Kipnis 等人，2025 年），并直接与它们的子集和评估工具进行比较。在增加难度的方法方面，我们分别包括来自 SMART (Gupta et al., 2024) 和 MAGI (Paech, 2024) 的 ARC Challenge 和 MMLU 的硬版本。
 
 FLUID BENCHMARKING differs from prior methods through its AGGREGATE (§3.1) and its SELECT (§3.2). To disentangle these factors, we consider a baseline in which we ablate SELECT and compute an ability estimate based on a random subset of items (RANDOM IRT). In addition, we consider a baseline in which we ablate both SELECT and AGGREGATE, using a random subset of items to compute accuracy (RANDOM), a popular approach for efficient evaluation (Liang et al., 2023; Gu et al., 2024; Perlitz et al., 2024a).
 
@@ -554,7 +554,7 @@ Efficiency. Taking a global look at the results, we observe that FLUID BENCHMARK
 
 In Appendix H, we show that FLUID BENCHMARKING can improve evaluation quality even when efficiency is not a concern, outperforming full-benchmark accuracy.
 
-在附录 H 中，我们表明，即使效率不是问题，流体基准测试也可以提高评估质量，优于全基准测试精度。
+在附录 H 中，我们表明，即使效率并非问题，流体基准测试也可以提高评估质量，优于全基准测试精度。
 
 6 Analysis and Discussion · 分析与讨论
 
@@ -564,7 +564,7 @@ FLUID BENCHMARKING Avoids Mislabeled Items. To test whether FLUID BENCHMARK- ING
 
 DOM (|Q∗| = 100) across all LMs and checkpoints, finding that it is nearly two orders of magnitude smaller in the former (0.01) than in the latter (0.75)—in other words, while it takes roughly 100 benchmarking sessions for a mislabeled item to appear with FLUID BENCH- MARKING, one occurs in nearly every session with RANDOM. This suggests that FLUID BENCHMARKING is highly effective at avoiding mislabeled items.
 
-对所有 LM 和检查点进行 DOM (|Q*| = 100) 测试，发现前者 (0.01) 比后者 (0.75) 小了近两个数量级，换句话说，虽然使用 FLUID BENCHMARKING 时大约需要 100 个基准测试会话才会出现错误标记的项目，但使用 RANDOM 时几乎每个会话都会出现一个。这表明流体基准在避免贴错标签方面非常有效。
+对所有 LM 和检查点进行 DOM (|Q*| = 100) 测试，发现前者 (0.01) 比后者 (0.75) 小了近两个数量级，也就是说，虽然使用 FLUID BENCHMARKING 时大约需要 100 个基准测试会话才会出现错误标记的项目，但使用 RANDOM 时几乎每个会话都会出现一个。这表明流体基准在避免贴错标签方面非常有效。
 
 FLUID BENCHMARKING Adapts Items to Language Model Capability. To test whether item selection indeed dynamically adapts to the capability level of a given LM, we analyze how item selection changes as an LM gets better over the course of pretraining. Figure 3 visualizes the items selected for FLUID BENCHMARKING (|Q∗| = 50) with OLMo1-7B evaluated on HellaSwag. We observe a substantial shift in the selected items: initially, items are very easy, but they get gradually more difficult as the LM improves.
 
@@ -626,7 +626,7 @@ Figure 4: Training curves of OLMo2-7B (HellaSwag/500 items) with RANDOM (a) and 
 
 FLUID BENCHMARKING Delays Onset of Benchmark Saturation. To test whether FLUID BENCHMARKING indeed delays the onset of benchmark saturation, we focus on HellaSwag (|Q∗| = 500). Figure 4a shows OLMo2-7B’s performance during the final 30% of the training run, measured with RANDOM. Performance is already high by the 70% mark and does not show a consistent upward trend thereafter, instead fluctuating around the same level. By contrast, with FLUID BENCHMARKING (see Figure 4b), performance continues to improve steadily through the end of training, suggesting that FLUID BENCHMARKING effectively mitigates early benchmark saturation. This difference is captured by our measure of saturation: for the entire training run, the monotonicity of the HellaSwag curve is 0.91 for RANDOM, compared to 0.99 for FLUID BENCHMARKING.
 
-流体基准测试延迟基准饱和的开始。为了测试 FLUID BENCHMARKING 是否确实延迟了基准饱和的开始，我们重点关注 HellaSwag (|Q*| = 500)。图 4a 显示了使用 RANDOM 测量的 OLMo2-7B 在训练运行的最后 30% 期间的性能。性能已经达到了 70% 的高位，此后并没有表现出持续的上升趋势，而是在同一水平附近波动。相比之下，使用 FLUID BENCHMARKING（见图 4b），性能在训练结束时继续稳步提高，这表明 FLUID BENCHMARKING 有效地缓解了早期基准饱和。我们的饱和度测量捕获了这种差异：对于整个训练运行，随机性的 HellaSwag 曲线的单调性为 0.91，而流体基准测试的单调性为 0.99。
+流体基准测试延迟基准饱和的开始。为了测试 FLUID BENCHMARKING 是否确实延迟了基准饱和的开始，我们重点关注 HellaSwag (|Q*| = 500)。图 4a 显示了使用 RANDOM 测量的 OLMo2-7B 在训练运行的末尾 30% 期间的性能。性能已经达到了 70% 的高位，此后并没有表现出持续的上升趋势，；实际是在同一水平附近波动。相比之下，使用 FLUID BENCHMARKING（见图 4b），性能在训练结束时继续稳步提高，这表明 FLUID BENCHMARKING 有效地缓解了早期基准饱和。我们的饱和度测量捕获了这种差异：对于整个训练运行，随机性的 HellaSwag 曲线的单调性为 0.91，而流体基准测试的单调性为 0.99。
 
 80
 
@@ -644,7 +644,7 @@ Figure 5: FLUID BENCHMARKING with dynamic stopping on OLMo1- 7B/HellaSwag (see t
 
 Dynamic Stopping. A further advantage of FLUID BENCHMARKING is its support for dynamic stopping. In Figure 5, we demonstrate this with OLMo1-7B and HellaSwag, where we use the standard error of the ability estimate as the stopping criterion (Magis et al., 2017). Specifically, we terminate the evaluation once the standard error falls below the average ability gap between two rank-adjacent LMs on the Open LLM Leaderboard. The number of items required to reach this precision varies substantially over training, from around 20 at the beginning to over 80 midway, indicating that the common practice of using a fixed number of evaluation items is suboptimal.
 
-动态停止。 FLUID BENCHMARKING 的另一个优点是它支持动态停止。在图 5 中，我们使用 OLMo1-7B 和 HellaSwag 演示了这一点，其中我们使用能力估计的标准误差作为停止标准（Magis 等人，2017）。具体来说，一旦标准误差低于开放 LLM 排行榜上两个排名相邻的 LM 之间的平均能力差距，我们就会终止评估。达到这种精度所需的项目数量在训练过程中变化很大，从开始时的 20 左右到中期的 80 多个，这表明使用固定数量的评估项目的常见做法并不是最理想的。
+动态停止。 FLUID BENCHMARKING 的另一个优点是它支持动态停止。在图 5 中，我们使用 OLMo1-7B 和 HellaSwag 演示了这一点，其中我们使用能力估计的标准误差作为停止标准（Magis 等人，2017）。具体来说，一旦标准误差低于开放 LLM 排行榜上两个排名相邻的 LM 之间的平均能力差距，我们就会终止评估。达到这种精度所需的项目数量在训练过程中变化很大，从开始时的 20 左右到中期的 80 多个，这表明使用固定数量的评估项目的常见做法并非最理想的。
 
 9
 
@@ -654,7 +654,7 @@ Published as a conference paper at COLM 2025
 
 The False False Promise of Item Response Theory. Madaan et al. (2024) criticized IRT- based benchmark refinement methods for increasing variance, speaking of a “false promise of item response theory” for LMs. Our findings contextualize this in crucial ways. On the one hand, we confirm Madaan et al. (2024)’s observation that IRT-based methods (Polo et al., 2024; Kipnis et al., 2025) increase step-to-step variance. On the other hand, our results demonstrate that the issue is not intrinsic to IRT itself, but rather arises from the fact that prior IRT-based methods have not fully leveraged a central strength of IRT: dynamically adapting items to the LM’s capability. We find that exploiting this potential substantially reduces variance compared to accuracy-based evaluations.
 
-项目反应理论的错误承诺。马达安等人。 (2024) 批评基于 IRT 的基准细化方法增加了方差，并谈到了 LM 的“项目响应理论的错误承诺”。我们的研究结果以关键方式将这一点置于背景之中。一方面，我们确认 Madaan 等人。 (2024) 观察到基于 IRT 的方法 (Polo et al., 2024; Kipnis et al., 2025) 增加了逐步方差。另一方面，我们的结果表明，这个问题并不是 IRT 本身固有的，而是源于以下事实：之前基于 IRT 的方法没有充分利用 IRT 的核心优势：根据 LM 的能力动态调整项目。我们发现，与基于准确性的评估相比，利用这种潜力可以大大减少方差。
+项目反应理论的错误承诺。马达安等人。 (2024) 批评基于 IRT 的基准细化方法增加了方差，并谈到了 LM 的“项目响应理论的错误承诺”。我们的研究结果以关键方式将这一点置于背景之中。一方面，我们确认 Madaan 等人。 (2024) 观察到基于 IRT 的方法 (Polo et al., 2024; Kipnis et al., 2025) 增加了逐步方差。另一方面，我们的结果表明，这个问题并非 IRT 本身固有的，；实际是源于以下事实：之前基于 IRT 的方法没有充分利用 IRT 的核心优势：根据 LM 的能力动态调整项目。我们发现，与基于准确性的评估相比，利用这种潜力可以大大减少方差。
 
 Extension to Other Settings. While we focus on LM evaluation during pretraining in this paper, where efficiency is especially critical due to high computational costs and the need for frequent in-loop evaluations, FLUID BENCHMARKING is not inherently limited to this phase and holds potential value for posttraining as well. Furthermore, FLUID BENCHMARKING is readily extendable to other languages and modalities, provided that evaluation results are available to fit an IRT model. For example, applying FLUID BENCHMARKING to vision- language models could leverage leaderboards such as VHELM (Lee et al., 2024).
 
@@ -1120,7 +1120,7 @@ We find that full-benchmark accuracy performs worse than FLUID BENCHMARKING acro
 
 MARKING), and saturation (0.85 vs. 0.88 for FLUID BENCHMARKING). Notably, even FLUID BENCHMARKING with only 50 items outperforms full-benchmark accuracy on all three dimensions (cf. Table 2). These results suggest that FLUID BENCHMARKING can improve evaluation quality even in settings where efficiency is not a limiting factor.
 
-标记）和饱和度（流体基准标记为 0.85 与 0.88）。值得注意的是，即使只有 50 个项目的流体基准测试在所有三个维度上的表现也优于全基准测试精度（参见表 2）。这些结果表明，即使在效率不是限制因素的情况下，流体基准测试也可以提高评估质量。
+标记）和饱和度（流体基准标记为 0.85 与 0.88）。其中，即使只有 50 个项目的流体基准测试在所有三个维度上的表现也优于全基准测试精度（参见表 2）。这些结果表明，即使在效率并非限制因素的情况下，流体基准测试也可以提高评估质量。
 
 17
 

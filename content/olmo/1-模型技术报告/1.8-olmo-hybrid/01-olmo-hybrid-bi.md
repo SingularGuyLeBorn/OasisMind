@@ -31,9 +31,9 @@ willm@allenai.org marks core contributors. See author contributions here.
 
 Recent work has demonstrated the potential of non-transformer language models, especially linear recurrent neural networks (RNNs) and hybrid models that mix recurrence and attention. Yet there is no consensus on whether the potential benefits of these new architectures justify the risk and effort of scaling them up. To address this, we provide evidence for the advantages of hybrid models over pure transformers on several fronts. First, theoretically, we show that hybrid models do not merely inherit the expressivity of transformers and linear RNNs, but can express tasks beyond both, such as code execution. Putting this theory to practice, we train **Olmo Hybrid**, a 7B-parameter model largely comparable to Olmo 3 7B but with the sliding window layers replaced by Gated DeltaNet layers. We show that Olmo Hybrid outperforms Olmo 3 across standard pretraining and mid-training evaluations, demonstrating the benefit of hybrid models in a controlled, large-scale setting. We find that the hybrid model scales significantly more efficiently than the transformer, explaining its higher performance. However, its unclear why greater expressivity on specific formal problems should result in better scaling or superior performance on downstream tasks unrelated to those problems. To explain this apparent gap, we return to theory and argue why increased expressivity should translate to better scaling efficiency, completing the loop. Overall, our results suggest that hybrid models mixing attention and recurrent layers are a powerful extension to the language modeling paradigm: not merely to reduce memory during inference, but as a fundamental way to obtain more expressive models that scale better during pretraining.
 
-近期工作已展示非 Transformer 语言模型的潜力, 尤其是线性循环神经网络 (RNN) 以及把递归与注意力混在一起的 hybrid 模型. 然而社区尚未就一件事达成共识: 这些新架构的潜在收益, 是否足以支撑把它们做大的风险与投入. 为此, 我们从几条战线给出 hybrid 相对纯 Transformer 的优势证据. 首先在理论上, 我们证明 hybrid 并不只是继承 Transformer 与线性 RNN 的表达力, 还能表达两者都做不到的任务, 例如代码执行. 把理论落到实践, 我们训练 **Olmo Hybrid**: 一个大体可比 Olmo 3 7B 的 7B 参数模型, 只是把滑动窗层换成 Gated DeltaNet 层. 我们表明 Olmo Hybrid 在标准预训练与 mid-training 评测上超过 Olmo 3, 在可控的大规模设定下展示 hybrid 的收益. 我们发现 hybrid 相对 Transformer 显著更高效地 Scaling, 这解释了它更高的表现. 但为何特定形式问题上的更高表达力, 会带来更好的 Scaling, 或在与那些问题无关的下游任务上更强, 起初并不清楚. 为解释这道缝隙, 我们回到理论, 论证提高表达力为何应转化为更好的 Scaling 效率, 把理论与实证结果接起来. 总体而言, 结果表明把注意力与递归层混合的 hybrid 模型, 是对语言建模范式的有力扩展: 不只为了推理时省内存, 更是在部署前获得更有表达力, 预训练 Scaling 更好的模型的根本路径.
+近期工作已展示非 Transformer 语言模型的潜力, 尤其是线性循环神经网络 (RNN) 以及把递归与注意力混在一起的 hybrid 模型. 然而社区尚未就一件事达成共识: 这些新架构的潜在收益, 是否足以支撑把它们做大的风险与投入. 为此, 我们从几条战线给出 hybrid 相对纯 Transformer 的优势证据. 第一步在理论上, 我们证明 hybrid 并不只是继承 Transformer 与线性 RNN 的表达力, 还能表达两者都做不到的任务, 例如代码执行. 把理论落到实践, 我们训练 **Olmo Hybrid**: 一个大体可比 Olmo 3 7B 的 7B 参数模型, 只是把滑动窗层换成 Gated DeltaNet 层. 我们表明 Olmo Hybrid 在标准预训练与 mid-training 评测上超过 Olmo 3, 在可控的大规模设定下展示 hybrid 的收益. 我们发现 hybrid 相对 Transformer 显著更高效地 Scaling, 这解释了它更高的表现. 但为何特定形式问题上的更高表达力, 会带来更好的 Scaling, 或在与那些问题无关的下游任务上更强, 起初并不清楚. 为解释这道缝隙, 我们回到理论, 论证提高表达力为何应转化为更好的 Scaling 效率, 把理论与实证结果接起来. 总体而言, 结果表明把注意力与递归层混合的 hybrid 模型, 是对语言建模范式的有力扩展: 不只为了推理时省内存, 更是在部署前获得更有表达力, 预训练 Scaling 更好的模型的根本路径.
 
-是部署前训练 token (因而也是训练 FLOPs). Abstract 后文写 「scale better during pretraining」; Fig. 1 明确是同一 Common Crawl loss / MMLU 下更少 training tokens. 推理省状态是另一条轴, 见 Tab. 1, 不是 Fig. 1 的纵轴.
+是部署前训练 token (因而也是训练 FLOPs). Abstract 后文写 「scale better during pretraining」; Fig. 1 明确是同一 Common Crawl loss / MMLU 下更少 training tokens. 推理省状态是另一条轴, 见 Tab. 1, 并非 Fig. 1 的纵轴.
 
 <!-- page 2 of 70 -->
 
@@ -155,7 +155,7 @@ Table 1 Per-layer inference state size comparison under the Olmo 3 configuration
 | Grouped-Query SWA (4096 window, 8 KV heads, d<sub>h</sub>=128) | 8.39M | 16.0 MiB | 15.2× |
 | Olmo Hybrid GDN (30 heads, d<sub>k</sub>=96, d<sub>v</sub>=192) | 0.55M | 1.05 MiB | - |
 
-> 表内直接比 Elements 与 FP16 Size: SWA 8.39M / 16.0 MiB 对 GDN 0.55M / 1.05 MiB. SWA 行已把 window=4096 写进规格; GDN 行状态与序列长度无关. 不是另开 TestingTime 档, 是每层推理状态体积.
+> 表内直接比 Elements 与 FP16 Size: SWA 8.39M / 16.0 MiB 对 GDN 0.55M / 1.05 MiB. SWA 行已把 window=4096 写进规格; GDN 行状态与序列长度无关. 并非另开 TestingTime 档, 是每层推理状态体积.
 
 ### 2.2 Training Overview 训练概览
 
@@ -195,7 +195,7 @@ As a proof of concept, we also apply the Olmo 3 post-training recipe to Olmo Hyb
 
 **预训练效率.** 如图 1, Olmo Hybrid 比 Olmo 3 更省算力与数据: 达到与 Olmo 3 7B 相同的 Common Crawl loss 与 MMLU 准确率, 所需训练 token 显著更少. 到 6T token 训练结束时, 这一更高效率转化为相对 Olmo 3 的增益
 
-是. 图注写 「and thus also 35% and 49% fewer FLOPs, respectively」, 在 N 固定的 7B 对照下, 训练 FLOPs 随 D 近似同比例. 这是部署前训练算力, 不是 TestingTime.
+是. 图注写 「and thus also 35% and 49% fewer FLOPs, respectively」, 在 N 固定的 7B 对照下, 训练 FLOPs 随 D 近似同比例. 这是部署前训练算力, 并非 TestingTime.
 
 <!-- page 6 of 70 -->
 
@@ -264,7 +264,7 @@ A deep learning architecture should be made as expressive as possible—being ab
 
 In other words, this perspective calls for designing a highly flexible model whose hypothesis class contains as many subtasks as possible that could conceivably be reflected in naturalistic data, while remaining trainable at scale (cf. the Bitter Lesson; Sutton, 2019). Rather than constraining the hypothesis class, we trust the optimizer to find the right fit to the data. This perspective contrasts with classical machine learning wisdom that expressivity and inductive bias are at odds (the bias-variance tradeoff; Mitchell, 1980; Vapnik, 1991; Geman et al., 1992). However, recent work suggests that deep learning methods have an implicit bias toward simplicity that prevents highly expressive models from overfitting (Wilson, 2025). With this in mind, the expressivity thesis outlined above asserts that we should focus on making our architecture maximally expressive without worrying about the impact on inductive bias, as long as the architecture satisfies standard trainability constraints, i.e., the network must be differentiable and signals must propagate across layers during the forward and backward passes (cf. Yang et al., 2024a; Dey et al., 2025).
 
-换句话说, 这一视角要求设计高度灵活的模型: 其假设类尽可能多地包含可能在自然数据中出现的子任务, 同时能在规模上训练 (参见 the Bitter Lesson; Sutton, 2019). 我们不去约束假设类, 而是相信优化器能找到与数据匹配的解. 这与经典机器学习的看法相反: 后者认为表达力与归纳偏置相互冲突 (偏差-方差权衡; Mitchell, 1980; Vapnik, 1991; Geman et al., 1992). 不过近期工作表明, 深度学习方法带有偏向简单解的隐式偏置, 能防止高表达力模型过拟合 (Wilson, 2025). 据此, 上述表达力论点主张: 只要架构满足标准的可训练性约束, 即网络可微, 且前向与反向传播中信号能跨层传递 (参见 Yang et al., 2024a; Dey et al., 2025), 就应专注于让架构表达力最大化, 而不必担心对归纳偏置的影响.
+也就是说, 这一视角要求设计高度灵活的模型: 其假设类尽可能多地包含可能在自然数据中出现的子任务, 同时能在规模上训练 (参见 the Bitter Lesson; Sutton, 2019). 我们不去约束假设类, ；实际是相信优化器能找到与数据匹配的解. 这与经典机器学习的看法相反: 后者认为表达力与归纳偏置相互冲突 (偏差-方差权衡; Mitchell, 1980; Vapnik, 1991; Geman et al., 1992). 不过近期工作表明, 深度学习方法带有偏向简单解的隐式偏置, 能防止高表达力模型过拟合 (Wilson, 2025). 据此, 上述表达力论点主张: 只要架构满足标准的可训练性约束, 即网络可微, 且前向与反向传播中信号能跨层传递 (参见 Yang et al., 2024a; Dey et al., 2025), 就应专注于让架构表达力最大化, 而不必担心对归纳偏置的影响.
 
 Beyond trainability, the other major constraint that competes with expressivity is scalability. In general, there is a fundamental tradeoff between expressive power and the degree to which the model can process data efficiently during training. For example, if we want our architecture to exactly express NP-complete problems, it would not be possible to process text with it efficiently (assuming ${ \mathsf { P } } \neq { \mathsf { N P } } )$ . Even if we only require the model to express all tasks in P at training time, the model still could not be parallelized effectively over long sequences (assuming $\mathsf { N C } \neq \mathsf { P } ;$ Greenlaw et al., 1991), which would preclude scaling training to
 
@@ -276,11 +276,11 @@ Beyond trainability, the other major constraint that competes with expressivity 
 
 Figure 3 Expressive power of transformers, linear RNNs, and hybrid models relative to circuit complexity classes. Dashed lines represent unproven but conjectured separations between classes $( \mathrm { e . g . , } \mathsf { T C } ^ { 0 } \neq \mathsf { N C } ^ { 1 } )$ . Notably, transformers can express recall (Section 3.1), and DeltaNet (or GDN) with negative eigenvalues can express state tracking (Section 3.2) (Grazzi et $\operatorname { a l . } ,$ 2025). Hybridizing gives both capabilities, and we prove that it also unlocks state-based recall, a problem that neither model can express on its own (Section 3.3). With the addition of padding tokens, transformers can express exactly the class $\mathsf { T } C ^ { 0 }$ , whereas hybrid models can capture all of $\mathbb { N } \mathbb { C } ^ { 1 }$ , which enables solving boolean formula evaluation (Section 3.4).
 
-图 3 transformer, 线性 RNN 与 hybrid 模型的表达力, 相对于电路复杂度类的位置. 虚线表示尚未证明但被猜想成立的类间分离 $( \mathrm { e . g . , } \mathsf { T C } ^ { 0 } \neq \mathsf { N C } ^ { 1 } )$. 值得注意的是, transformer 能表达召回 (Section 3.1), 带负特征值的 DeltaNet (或 GDN) 能表达状态追踪 (Section 3.2) (Grazzi et $\operatorname { a l . } ,$ 2025). Hybrid 同时具备这两种能力, 我们还证明它解锁了 state-based recall, 这是两种模型单独都表达不了的问题 (Section 3.3). 加入 padding token 后, transformer 恰好能表达 $\mathsf { T } C ^ { 0 }$ 类, 而 hybrid 模型能覆盖整个 $\mathbb { N } \mathbb { C } ^ { 1 }$, 从而能求解布尔公式求值 (Section 3.4).
+图 3 transformer, 线性 RNN 与 hybrid 模型的表达力, 相对于电路复杂度类的位置. 虚线表示尚未证明但被猜想成立的类间分离 $( \mathrm { e . g . , } \mathsf { T C } ^ { 0 } \neq \mathsf { N C } ^ { 1 } )$. 其中, transformer 能表达召回 (Section 3.1), 带负特征值的 DeltaNet (或 GDN) 能表达状态追踪 (Section 3.2) (Grazzi et $\operatorname { a l . } ,$ 2025). Hybrid 同时具备这两种能力, 我们还证明它解锁了 state-based recall, 这是两种模型单独都表达不了的问题 (Section 3.3). 加入 padding token 后, transformer 恰好能表达 $\mathsf { T } C ^ { 0 }$ 类, 而 hybrid 模型能覆盖整个 $\mathbb { N } \mathbb { C } ^ { 1 }$, 从而能求解布尔公式求值 (Section 3.4).
 
 massive amounts of data. Thus, our goal in architecture design is not to blindly increase expressivity as much as possible, but to do so while preserving parallelism. A good architecture is one that pushes the frontier of the **expressivity-parallelism tradeoff** (Merrill and Sabharwal, 2023; Liu et al., 2026) as much as possible within fundamental, complexity-theoretic limits.
 
-海量数据上. 因此, 我们在架构设计上的目标不是盲目把表达力堆到最高, 而是在保持并行性的前提下提升表达力. 好的架构, 是在复杂度理论的根本限制之内, 尽可能把 **表达力-并行性权衡** (Merrill and Sabharwal, 2023; Liu et al., 2026) 的前沿往外推.
+海量数据上. 因此, 我们在架构设计上的目标并非盲目把表达力堆到最高, ；实际是在保持并行性的前提下提升表达力. 好的架构, 是在复杂度理论的根本限制之内, 尽可能把 **表达力-并行性权衡** (Merrill and Sabharwal, 2023; Liu et al., 2026) 的前沿往外推.
 
 Existing work has revealed that transformers do not sit on the frontier between expressivity and parallelism: more expressive models exist that are essentially just as parallelizable in practice. In particular, hybrid models can achieve more expressivity while maintaining similar levels of scalability, which we justify both with prior work and new theoretical results. Our core results are summarized in Figure 3. Linear RNNs and transformers have complementary strengths: while linear RNNs like GDN can express state tracking problems beyond the capabilities of transformers, transformers surpass linear RNNs at recall. Each architecture can be trained at scale, but each also has its own expressivity limitations, motivating hybrid models that inherit the best properties from each. Moreover, we prove new theoretical results establishing that hybrid models have expressivity advantages beyond both pure transformers and pure linear RNNs.
 
@@ -334,7 +334,7 @@ Figure 5 A code evaluation context where predicting the next token requires solv
 
 the set of all board states and $\Delta$ is the set of all moves. Another example is the "shell game": the problem of composing swaps (transpositions) over five objects. The complexity of state tracking depends on the algebraic structure of the transition monoid $\Delta ;$ in the hardest case (capturing the shell game and certain notations of chess; Merrill et al., 2024), state tracking is $\mathsf { N C ^ { 1 } \_ c o m p l e t e }$ . It follows that these instances of hard state tracking cannot be expressed by fixed-depth transformers assuming the complexity conjecture $\mathsf { T C } ^ { 0 } \neq \mathsf { N C } ^ { 1 }$ even though variants of these problems could conceivably manifest as subproblems of next-token prediction over natural language data. Intuitively, the problem arises from the fact that attention cannot aggregate information over the sequence of state updates in a way that is fully sensitive to their order (each attention head could look to the last token and apply an individual update, but then the depth of the network would grow with the sequence length).
 
-所有棋盘状态的集合, $\Delta$ 是所有走法的集合. 另一个例子是 「shell game」 (猜杯游戏): 对五个物体复合交换 (对换) 的问题. 状态追踪的复杂度取决于转移幺半群 $\Delta ;$ 的代数结构; 在最难的情形下 (涵盖 shell game 与国际象棋的某些记谱法; Merrill et al., 2024), 状态追踪是 $\mathsf { N C ^ { 1 } \_ c o m p l e t e }$ 的. 由此, 在复杂度猜想 $\mathsf { T C } ^ { 0 } \neq \mathsf { N C } ^ { 1 }$ 成立的前提下, 这些困难的状态追踪实例无法由固定深度 transformer 表达, 尽管这些问题的变体完全可能作为自然语言数据上 next-token prediction 的子问题出现. 直观上, 问题出在注意力无法以完全对顺序敏感的方式聚合一连串状态更新的信息 (每个注意力头可以看最后一个 token 并施加一次单独更新, 但那样网络深度就要随序列长度增长).
+所有棋盘状态的集合, $\Delta$ 是所有走法的集合. 另一个例子是 「shell game」 (猜杯游戏): 对五个物体复合交换 (对换) 的问题. 状态追踪的复杂度取决于转移幺半群 $\Delta ;$ 的代数结构; 在最难的情形下 (涵盖 shell game 与国际象棋的某些记谱法; Merrill et al., 2024), 状态追踪是 $\mathsf { N C ^ { 1 } \_ c o m p l e t e }$ 的. 由此, 在复杂度猜想 $\mathsf { T C } ^ { 0 } \neq \mathsf { N C } ^ { 1 }$ 成立的前提下, 这些困难的状态追踪实例无法由固定深度 transformer 表达, 尽管这些问题的变体完全可能作为自然语言数据上 next-token prediction 的子问题出现. 直观上, 问题出在注意力无法以完全对顺序敏感的方式聚合一连串状态更新的信息 (每个注意力头可以看末尾一个 token 并施加一次单独更新, 但那样网络深度就要随序列长度增长).
 
 ### 3.2 Background: Expressive Power of Linear RNNs 背景: 线性 RNN 的表达力
 
@@ -394,7 +394,7 @@ The input is a string $x , p , \pi ,$ where $x \in \{ 0 , 1 \} ^ { n }$ is a bit
 
 Intuitively, state-based recall is designed to require composing state tracking and recall, rather than just one capability. State-based recall can be naturally instantiated as a subtask of evaluating code, which requires both tracking the state of variables and using their values for memory accesses (e.g., indexing into a list). Figure 5 shows an example of how state-based recall might appear within code language modeling. This gives an intuition for how the additional expressivity of hybrid models could be relevant for tasks involving code evaluation. We now show formally that, since it requires the composition of state tracking and recall, state-based recall is solvable by hybrid models, but not pure transformers or GDN models:<sup>2</sup>
 
-直观上, state-based recall 的设计要求把状态追踪与召回组合起来, 而不是只用其中一种能力. 它可以自然地实例化为代码求值的子任务: 既要追踪变量状态, 又要用变量值做内存访问 (例如对列表取下标). Figure 5 展示了 state-based recall 在代码语言建模中可能出现的样子. 这给出一个直观理解: hybrid 模型的额外表达力可能与代码求值类任务相关. 下面给出形式化证明, 由于 state-based recall 需要状态追踪与召回的组合, hybrid 模型能求解它, 纯 transformer 或纯 GDN 模型则不能:<sup>2</sup>
+直观上, state-based recall 的设计要求把状态追踪与召回组合起来, 而并非只用其中一种能力. 它可以自然地实例化为代码求值的子任务: 既要追踪变量状态, 又要用变量值做内存访问 (例如对列表取下标). Figure 5 展示了 state-based recall 在代码语言建模中可能出现的样子. 这给出一个直观理解: hybrid 模型的额外表达力可能与代码求值类任务相关. 下面给出形式化证明, 由于 state-based recall 需要状态追踪与召回的组合, hybrid 模型能求解它, 纯 transformer 或纯 GDN 模型则不能:<sup>2</sup>
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>2</sup>Our formal models of transformers and RNNs operate under the common log-precision arithmetic assumption (Merrill and Sabharwal, 2023; Merrill et al., 2024), where all internal arithmetic is allowed to use O(log n) bits for input sequences of length n. All our inexpressibility results easily carry over to bounded-precision models. Theorem 1 holds also for poly-precision</span></small>
 
@@ -474,7 +474,7 @@ For some c, there exists a hybrid model (averaging-hard attention + GDN with neg
 
 In contrast to state-based recall, it is not obvious at first glance that boolean formula evaluation should be expressible via the interaction of attention and recurrence. However, Corollary 3.1 shows that it can be, at least for padded models, and moreover that, under standard complexity conjectures, it could not be solved with just one of these primitives. Corollary 3.1 can be restated to fold the padding into the problem definition itself: unpadded hybrid models can solve padded formula evaluation, but neither transformers nor linear RNNs can. Finally, the only property of boolean formula evaluation leveraged to obtain Corollary 3.1 is that it is $\mathbb { N } \mathbb { C } ^ { 1 }$ -complete. Thus, a similar result follows for any $\mathbb { N C } ^ { 1 }$ -complete problem. It is an open question whether a similar boolean formula evaluation result might be obtained for unpadded hybrid models.
 
-与 state-based recall 不同, 布尔公式求值能通过注意力与循环的相互作用来表达, 乍看并不显然. 但 Corollary 3.1 表明至少对加 padding 的模型是可以的, 而且在标准复杂度猜想下, 只用其中一种原语做不到. Corollary 3.1 也可以改写为把 padding 并入问题定义本身: 不加 padding 的 hybrid 模型能求解带 padding 的公式求值, transformer 与线性 RNN 都不能. 最后, 得到 Corollary 3.1 所用到的布尔公式求值的唯一性质, 是它为 $\mathbb { N } \mathbb { C } ^ { 1 }$-complete. 因此任何 $\mathbb { N C } ^ { 1 }$-complete 问题都有类似结果. 不加 padding 的 hybrid 模型能否得到类似的布尔公式求值结果, 仍是开放问题.
+与 state-based recall 不同, 布尔公式求值能通过注意力与循环的相互作用来表达, 乍看并不显然. 但 Corollary 3.1 表明至少对加 padding 的模型是可以的, 而且在标准复杂度猜想下, 只用其中一种原语做不到. Corollary 3.1 也可以改写为把 padding 并入问题定义本身: 不加 padding 的 hybrid 模型能求解带 padding 的公式求值, transformer 与线性 RNN 都不能. 末尾, 得到 Corollary 3.1 所用到的布尔公式求值的唯一性质, 是它为 $\mathbb { N } \mathbb { C } ^ { 1 }$-complete. 因此任何 $\mathbb { N C } ^ { 1 }$-complete 问题都有类似结果. 不加 padding 的 hybrid 模型能否得到类似的布尔公式求值结果, 仍是开放问题.
 
 <!-- page 13 of 70 -->
 
@@ -482,7 +482,7 @@ In contrast to state-based recall, it is not obvious at first glance that boolea
 
 To empirically validate the expressivity tradeoffs from Sections 3.1 to 3.3, we train three primary causal LMs—a standard transformer, a linear RNN (GDN with negative eigenvalues), and a hybrid model mixing GDN blocks with full attention—on synthetic state tracking, recall, and state-based recall tasks. We additionally evaluate no-negative-eigenvalue ablations of the linear RNN and hybrid model. Each task is generated online from short code-like templates (cf. Figures 4 and 5) and framed as a next-token prediction task where the final token requires evaluating the program correctly. We report next-token accuracy on the final answer token and vary task difficulty by increasing the number of required state updates and/or the size of the stored bit-array. For the state-tracking and state-based recall tasks, we additionally train on execution traces that include intermediate state-reveal checks in the form of assert statements, and we include these tokens in the language-modeling loss following Siems et al. (2026). Complete experimental details (model hyperparameters, optimization, curricula, and ablation runs) are provided in Section C.
 
-为实证检验 Sections 3.1 到 3.3 中的表达力权衡, 我们在合成的状态追踪, 召回与 state-based recall 任务上训练三个主要的因果 LM: 标准 transformer, 线性 RNN (带负特征值的 GDN), 以及把 GDN 块与全注意力混合的 hybrid 模型. 我们另外评测了线性 RNN 与 hybrid 模型不带负特征值的消融版本. 每个任务都由简短的类代码模板在线生成 (参见 Figures 4 and 5), 并构造成 next-token prediction 任务, 最后一个 token 需要正确求值程序才能答对. 我们报告最终答案 token 上的 next-token 准确率, 并通过增加所需状态更新次数和/或存储的位数组大小来调节任务难度. 对状态追踪与 state-based recall 任务, 我们还在执行轨迹上训练, 轨迹中含 assert 语句形式的中间状态揭示检查, 并按 Siems et al. (2026) 把这些 token 计入语言建模 loss. 完整实验细节 (模型超参, 优化, 课程学习与消融实验) 见 Section C.
+为实证检验 Sections 3.1 到 3.3 中的表达力权衡, 我们在合成的状态追踪, 召回与 state-based recall 任务上训练三个主要的因果 LM: 标准 transformer, 线性 RNN (带负特征值的 GDN), 以及把 GDN 块与全注意力混合的 hybrid 模型. 我们另外评测了线性 RNN 与 hybrid 模型不带负特征值的消融版本. 每个任务都由简短的类代码模板在线生成 (参见 Figures 4 and 5), 并构造成 next-token prediction 任务, 末尾一个 token 需要正确求值程序才能答对. 我们报告最终答案 token 上的 next-token 准确率, 并通过增加所需状态更新次数和/或存储的位数组大小来调节任务难度. 对状态追踪与 state-based recall 任务, 我们还在执行轨迹上训练, 轨迹中含 assert 语句形式的中间状态揭示检查, 并按 Siems et al. (2026) 把这些 token 计入语言建模 loss. 完整实验细节 (模型超参, 优化, 课程学习与消融实验) 见 Section C.
 
 **State Tracking.** To evaluate state tracking, we use the code evaluation task in Figure 4, where the context applies a sequence of state updates and the model must predict the value of a queried component of the final state. As shown in Figure 7, the GDN-based linear RNN and the hybrid remain near-perfect across all tested lengths, while the transformer drops rapidly as the update sequence length increases, consistent with the theoretical limitation of fixed-depth attention on state tracking (Section 3.1). The no-negative-eigenvalue ablations substantially weaken this behavior: the linear RNN without negative eigenvalues falls to 0.21484 and 0.22266 at n = 64 and 128, and the corresponding hybrid falls to 0.36328 at n = 128. In this implementation, negative eigenvalues appear important for robust recurrent state tracking, consistent with the findings from Grazzi et al. (2025).
 
@@ -506,13 +506,13 @@ Overall, these results support the theoretical picture while refining the archit
 
 Transformers and linear RNNs have complementary strengths from an expressivity perspective. We have shown that hybrid models do not simply inherit the strengths of each architecture; they go beyond both transformers and linear RNNs by expressing tasks that neither architecture alone can. Notably, this expressivity advantage of hybrid models comes despite them retaining theoretical parallelizability to a similar degree as transformers
 
-从表达力角度看, transformer 与线性 RNN 各有所长. 我们已经表明, hybrid 模型不只是继承两种架构各自的长处, 还能表达两者单独都表达不了的任务, 从而同时超越 transformer 与线性 RNN. 值得注意的是, hybrid 模型获得这种表达力优势的同时, 在理论上仍保持与 transformer 相近程度的可并行性
+从表达力角度看, transformer 与线性 RNN 各有所长. 我们已经表明, hybrid 模型不只是继承两种架构各自的长处, 还能表达两者单独都表达不了的任务, 从而同时超越 transformer 与线性 RNN. 其中, hybrid 模型获得这种表达力优势的同时, 在理论上仍保持与 transformer 相近程度的可并行性
 
 <!-- page 14 of 70 -->
 
 (Merrill et al., 2026). In other words, hybrid architectures extract strictly more from the level of parallelism at which transformers and linear RNNs operate, in a similar vein to the idea of "leaving less money on the table" and getting more out of the same resources in machine learning (Ligett, 2026). Thus, hybrid models push the expressivity-parallelism frontier for language modeling architectures beyond transformers (cf. beginning of Section 3), yielding fundamentally more expressive models that remain similarly scalable.
 
-(Merrill et al., 2026). 换句话说, 在 transformer 与线性 RNN 所处的并行程度上, hybrid 架构榨取出严格更多的能力, 这与机器学习中 「leaving less money on the table」, 即用相同资源得到更多产出的思路相近 (Ligett, 2026). 因此, hybrid 模型把语言建模架构的表达力-并行性前沿推到了 transformer 之外 (参见 Section 3 开头), 得到表达力根本更强, 可扩展性相近的模型.
+(Merrill et al., 2026). 也就是说, 在 transformer 与线性 RNN 所处的并行程度上, hybrid 架构榨取出严格更多的能力, 这与机器学习中 「leaving less money on the table」, 即用相同资源得到更多产出的思路相近 (Ligett, 2026). 因此, hybrid 模型把语言建模架构的表达力-并行性前沿推到了 transformer 之外 (参见 Section 3 开头), 得到表达力根本更强, 可扩展性相近的模型.
 
 ## 4 Scaling Behavior of Hybrid Models Hybrid 模型的 Scaling 行为
 
@@ -522,7 +522,7 @@ Section 3 确立了 hybrid 模型相对 transformer 在理论表达力上的提�
 
 First, by fitting scaling laws for hybrid models and transformers in a carefully controlled setting (Section 4.1), we establish that hybrid models achieve better scaling efficiency on loss-based pretraining metrics compared to transformers—particularly in scaling with data quantity—consistent with our findings from the Olmo Hybrid pretraining run. Next, drawing on existing theoretical explanations for scaling laws, we present a theoretical argument that increasing an LM's expressive power should improve its scaling efficiency (Section 4.2). Informally, building on explanations of scaling laws in terms of the multi-task nature of language modeling (Michaud et al., 2023), we argue that increased expressivity can improve scaling because it allows a model to acquire a larger proportion of the discrete computational tasks reflected in the pretraining data. This provides a conceptual explanation for the improved scaling efficiency of hybrid models that we take as a compelling hypothesis for future work to test and develop further.
 
-首先, 我们在严格受控的设置下为 hybrid 模型与 transformer 拟合 Scaling Laws (Section 4.1), 确立 hybrid 模型在基于 loss 的预训练指标上比 transformer 有更高的 Scaling 效率, 尤其是随数据量的 Scaling, 这与 Olmo Hybrid 预训练中的发现一致. 接着, 借助已有的 Scaling Laws 理论解释, 我们给出一个理论论证: 提升 LM 的表达力应能提高其 Scaling 效率 (Section 4.2). 非形式地说, 基于从语言建模的多任务本质来解释 Scaling Laws 的工作 (Michaud et al., 2023), 我们论证表达力提升能改善 Scaling, 因为它让模型能习得预训练数据中所反映的离散计算任务里更大的比例. 这为 hybrid 模型更高的 Scaling 效率提供了一个概念性解释, 我们把它视为一个有说服力的假说, 留待后续工作检验与发展.
+第一步, 我们在严格受控的设置下为 hybrid 模型与 transformer 拟合 Scaling Laws (Section 4.1), 确立 hybrid 模型在基于 loss 的预训练指标上比 transformer 有更高的 Scaling 效率, 尤其是随数据量的 Scaling, 这与 Olmo Hybrid 预训练中的发现一致. 接着, 借助已有的 Scaling Laws 理论解释, 我们给出一个理论论证: 提升 LM 的表达力应能提高其 Scaling 效率 (Section 4.2). 非形式地说, 基于从语言建模的多任务本质来解释 Scaling Laws 的工作 (Michaud et al., 2023), 我们论证表达力提升能改善 Scaling, 因为它让模型能习得预训练数据中所反映的离散计算任务里更大的比例. 这为 hybrid 模型更高的 Scaling 效率提供了一个概念性解释, 我们把它视为一个有说服力的假说, 留待后续工作检验与发展.
 
 ### 4.1 Scaling Laws for Hybrid Models Hybrid 模型的 Scaling Laws
 
@@ -544,7 +544,7 @@ $$
 
 where the number of parameters N and number of training tokens D are the independent variables. The quantity E is the irreducible loss, i.e., the loss that would be attained with infinite resources. The other fit parameters govern how efficiently loss is reduced when N, D are scaled. The coefficients A and B capture fixed-factor improvements in the resources required to reach a target loss: reducing either by a factor k with fixed E implies that the same target loss can be reached with a k-fold reduction in resources. Finally, the exponents α and β govern the rate at which loss improves with scale, though generally these exponents are not changed much by architecture choices. Comparing these parameters between two architectures provides a principled way to quantify which is fundamentally more compute- or data-efficient.
 
-其中参数量 N 与训练 token 数 D 是自变量. E 是不可约 loss, 即资源无限时能达到的 loss. 其余拟合参数决定 N, D 放大时 loss 下降的效率. 系数 A 与 B 刻画达到目标 loss 所需资源的固定倍数改进: 在 E 固定时把其中任一个降低 k 倍, 意味着用少 k 倍的资源就能达到同样的目标 loss. 最后, 指数 α 与 β 决定 loss 随规模改善的速率, 不过这些指数一般不会因架构选择而有多大变化. 比较两种架构的这些参数, 是量化哪一种在根本上更省算力或更省数据的有原则的方法.
+其中参数量 N 与训练 token 数 D 是自变量. E 是不可约 loss, 即资源无限时能达到的 loss. 其余拟合参数决定 N, D 放大时 loss 下降的效率. 系数 A 与 B 刻画达到目标 loss 所需资源的固定倍数改进: 在 E 固定时把其中任一个降低 k 倍, 意味着用少 k 倍的资源就能达到同样的目标 loss. 末尾, 指数 α 与 β 决定 loss 随规模改善的速率, 不过这些指数一般不会因架构选择而有多大变化. 比较两种架构的这些参数, 是量化哪一种在根本上更省算力或更省数据的有原则的方法.
 
 We now fit scaling laws to evaluate how efficiently hybrid models scale relative to other architectures. We evaluate three architectures—a pure transformer, a pure GDN, and a hybrid GDN architecture with every fourth
 
@@ -578,7 +578,7 @@ We train all architectures under **matched conditions**: identical training data
 
 **Model Specification.** Rather than matching parameter counts exactly, we match the architectural blueprint— the number of layers, heads, and the hidden dimension—of each model to that of Olmo 3 at each scale. This results in models with different numbers of parameters. We account for these differences by focusing on performance as a function of the training FLOPs and fit the scaling laws with respect to the exact number of parameters. The detailed configurations are presented in Table 22.
 
-**模型规格.** 我们不去精确匹配参数量, 而是在每个规模上让各模型的架构蓝图 (层数, 头数与隐藏维度) 与 Olmo 3 一致. 这会导致各模型参数量不同. 为此, 我们关注表现随训练 FLOPs 的变化, 并用精确参数量拟合 Scaling Laws. 详细配置见 Table 22.
+**模型规格.** 我们不去精确匹配参数量, ；实际是在每个规模上让各模型的架构蓝图 (层数, 头数与隐藏维度) 与 Olmo 3 一致. 这会导致各模型参数量不同. 为此, 我们关注表现随训练 FLOPs 的变化, 并用精确参数量拟合 Scaling Laws. 详细配置见 Table 22.
 
 **Fitting and Using Scaling Laws.** Given the collected $( N , D , L )$ data triples (35 per architecture; 5 for each of the 7 scales), we fit parametric scaling laws following Approach 3 of Hoffmann et al. (2022): we directly fit $L ( N , D ) = \dot { E } + A / N ^ { \alpha } + B / D ^ { \beta }$ by minimizing the Huber loss of log L between predictions and data. We model the validation loss, computed as the average cross-entropy across 11 held-out evaluation domains: C4 (Raffel et al., 2019), Dolma Books, Dolma Common Crawl, Dolma pes2o, Dolma Reddit, Dolma Stack, Dolma Wiki (Soldaini et al., 2024), ICE (Greenbaum and Nelson, 1996), M2D2 S2ORC (Reid et al., 2022; Lo et al., 2020), Pile (Gao et al., 2020), and WikiText-103 (Merity et al., 2016). Averaging across domains provides a less noisy and more representative signal than any single validation set. Following Hoffmann et al. (2022), we use Huber loss to reduce sensitivity to outliers from training instabilities. The fit is performed jointly over all $( N , D , L )$ triples for each architecture separately. To assess uncertainty in our scaling law estimates, we additionally compute 95% confidence intervals via bootstrap resampling (1,000 iterations).
 
@@ -702,7 +702,7 @@ Under these assumptions, the loss $\tilde { L }$ depends on the number of tasks 
 
 **Incorporating Expressivity.** We now adapt the quantization model to study how the expressive power of an LM impacts scaling efficiency. Section 3 analyzed which computational tasks can be expressed by hybrid models and transformers; now we consider the multi-task setting, where achieving low loss requires learning many individual tasks. We first stipulate that each of these tasks is expressible or inexpressible by our LM, independent of its frequency in the data:
 
-**纳入表达力.** 我们现在改造 quantization model, 研究 LM 的表达力如何影响 Scaling 效率. Section 3 分析了 hybrid 模型与 transformer 能表达哪些计算任务; 现在考虑多任务设置, 其中要达到低 loss 需要学会许多单个任务. 我们首先规定, 这些任务中的每一个对我们的 LM 而言要么可表达, 要么不可表达, 且与其在数据中的频率无关:
+**纳入表达力.** 我们现在改造 quantization model, 研究 LM 的表达力如何影响 Scaling 效率. Section 3 分析了 hybrid 模型与 transformer 能表达哪些计算任务; 现在考虑多任务设置, 其中要达到低 loss 需要学会许多单个任务. 我们第一步规定, 这些任务中的每一个对我们的 LM 而言要么可表达, 要么不可表达, 且与其在数据中的频率无关:
 
 **Assumption 1: Only Some Tasks Are Expressible 假设 1: 只有部分任务可表达**
 
@@ -712,7 +712,7 @@ For a given architecture, each task is either expressible or inexpressible, mode
 
 Increasing expressive power (e.g., going from a transformer to a hybrid model) corresponds to decreasing ϵ. We will analyze the expected loss under Assumption 1. Conceptually, increasing a model's expressivity $( 1 - \epsilon )$ could improve scaling efficiency because it increases the proportion of tasks that a model can learn efficiently, which is the mechanism by which loss decreases. There are two plausible mechanisms: first, the model might fail to learn inexpressible tasks entirely, or, second, the model might approximate them but require more parameters and data because the architecture does not admit a compact subnetwork for solving the task. We formalize a unified expressivity-aware extension to the quantization model that allows for either (or both) of these effects of expressivity. First, we formalize the fact that the loss achieved on a task after it has been learned may depend on whether the task is expressible:
 
-提升表达力 (例如从 transformer 换到 hybrid 模型) 对应于减小 ϵ. 我们将分析 Assumption 1 下的期望 loss. 概念上, 提升模型表达力 $( 1 - \epsilon )$ 能改善 Scaling 效率, 因为它提高了模型能高效学会的任务比例, 而这正是 loss 下降的机制. 有两种合理机制: 一是模型可能完全学不会不可表达的任务; 二是模型可能近似它们, 但因架构不存在求解该任务的紧凑子网络而需要更多参数与数据. 我们给 quantization model 形式化一个统一的表达力感知扩展, 允许这两种效应中的任一种 (或两者同时) 存在. 首先, 我们形式化这样一个事实: 任务学会之后达到的 loss 可能取决于该任务是否可表达:
+提升表达力 (例如从 transformer 换到 hybrid 模型) 对应于减小 ϵ. 我们将分析 Assumption 1 下的期望 loss. 概念上, 提升模型表达力 $( 1 - \epsilon )$ 能改善 Scaling 效率, 因为它提高了模型能高效学会的任务比例, 而这正是 loss 下降的机制. 有两种合理机制: 一是模型可能完全学不会不可表达的任务; 二是模型可能近似它们, 但因架构不存在求解该任务的紧凑子网络而需要更多参数与数据. 我们给 quantization model 形式化一个统一的表达力感知扩展, 允许这两种效应中的任一种 (或两者同时) 存在. 第一步, 我们形式化这样一个事实: 任务学会之后达到的 loss 可能取决于该任务是否可表达:
 
 **Assumption 2: Expressible Tasks Can Be Learned to Lower Loss 假设 2: 可表达任务能学到更低 loss**
 
@@ -756,13 +756,13 @@ Finally, the irreducible loss $L_{\infty}^{\epsilon}$ for both power laws depend
 $L_{\infty}^{\epsilon} = L_0 - (1 - \epsilon)\Delta - \epsilon\Delta'.$
 </div>
 
-**定理 4: 表达力感知的 Scaling Laws** 考虑用 Assumptions 1 to 3 增强的神经 Scaling Laws quantization model. 则作为参数量 N 的函数, loss $\tilde{L}(N)$ 可由幂律 $L(N)$ 很好地近似, 即 $\tilde{L}(N) \approx L(N)$, 其中 $L(N) - L_{\infty}^{\epsilon} \propto A_{\epsilon} \cdot N^{-\alpha}$, $A_{\epsilon} = (L_0 - L_{\infty}^{\epsilon}) \cdot (C + \epsilon(C' - C))^{\alpha}$. 类似地, 作为 token 预算 D 的函数, loss $\tilde{L}(D)$ 可由幂律 $L(D)$ 很好地近似, 即 $\tilde{L}(D) \approx L(D)$, 其中 $L(D) - L_{\infty}^{\epsilon} \propto B_{\epsilon} \cdot D^{-\alpha/(\alpha+1)}$, $B_{\epsilon} = (1 - \epsilon)\Delta T^{\alpha/(\alpha+1)} + \epsilon\Delta' T'^{\alpha/(\alpha+1)}$. 最后, 两条幂律的不可约 loss $L_{\infty}^{\epsilon}$ 通过 $L_{\infty}^{\epsilon} = L_0 - (1 - \epsilon)\Delta - \epsilon\Delta'$ 依赖于表达力.
+**定理 4: 表达力感知的 Scaling Laws** 考虑用 Assumptions 1 to 3 增强的神经 Scaling Laws quantization model. 则作为参数量 N 的函数, loss $\tilde{L}(N)$ 可由幂律 $L(N)$ 很好地近似, 即 $\tilde{L}(N) \approx L(N)$, 其中 $L(N) - L_{\infty}^{\epsilon} \propto A_{\epsilon} \cdot N^{-\alpha}$, $A_{\epsilon} = (L_0 - L_{\infty}^{\epsilon}) \cdot (C + \epsilon(C' - C))^{\alpha}$. 类似地, 作为 token 预算 D 的函数, loss $\tilde{L}(D)$ 可由幂律 $L(D)$ 很好地近似, 即 $\tilde{L}(D) \approx L(D)$, 其中 $L(D) - L_{\infty}^{\epsilon} \propto B_{\epsilon} \cdot D^{-\alpha/(\alpha+1)}$, $B_{\epsilon} = (1 - \epsilon)\Delta T^{\alpha/(\alpha+1)} + \epsilon\Delta' T'^{\alpha/(\alpha+1)}$. 末尾, 两条幂律的不可约 loss $L_{\infty}^{\epsilon}$ 通过 $L_{\infty}^{\epsilon} = L_0 - (1 - \epsilon)\Delta - \epsilon\Delta'$ 依赖于表达力.
 
 See Section E for a proof. Theorem 4 can be interpreted as follows. If we can express all tasks $( \epsilon = 0 )$ , we recover the standard irreducible loss $L _ { \infty } ^ { 0 } = L _ { 0 } - \Delta$ and scaling coefficients $A _ { 0 } = \Delta C ^ { \alpha }$ and $B _ { 0 } = \dot { \Delta } T ^ { \alpha / ( \alpha + 1 ) }$ from the quantization model (Michaud et al., 2023). On the other hand, if there are some tasks we cannot express $( \epsilon   >   0 )$ , the scaling coefficients $A _ { \epsilon }$ and $B _ { \epsilon }$ (and potentially irreducible loss $L _ { \infty } ^ { \epsilon } )$ will change. In particular, as illustrated in Figure 11, decreasing ϵ improves loss towards the $\epsilon = 0$ case. Formally, under any non-trivial instantiation of Assumptions 1 to 3, increasing expressivity shifts the loss curve down:
 
 证明见 Section E. Theorem 4 可以这样理解. 若所有任务都可表达 $( \epsilon = 0 )$, 就回到 quantization model (Michaud et al., 2023) 的标准不可约 loss $L _ { \infty } ^ { 0 } = L _ { 0 } - \Delta$ 与 Scaling 系数 $A _ { 0 } = \Delta C ^ { \alpha }$, $B _ { 0 } = \dot { \Delta } T ^ { \alpha / ( \alpha + 1 ) }$. 另一方面, 若有部分任务不可表达 $( \epsilon   >   0 )$, Scaling 系数 $A _ { \epsilon }$ 与 $B _ { \epsilon }$ (以及可能的不可约 loss $L _ { \infty } ^ { \epsilon } )$ 都会改变. 具体而言, 如 Figure 11 所示, 减小 ϵ 会让 loss 向 $\epsilon = 0$ 的情形改善. 形式上, 在 Assumptions 1 to 3 的任何非平凡实例化下, 提升表达力都会让 loss 曲线下移:
 
-能对上. Theorem 4 里的指数只来自 quantization model 的任务频率幂律 $p_k \propto k^{-(\alpha+1)}$, 与架构的 ε 无关, 所以表达力只改系数, 不改指数. 这正是 §4.1 先用无约束拟合看到指数统计上不可区分, 再固定 α=β=0.22 去比 B 的理由. 注意这里的 α 是任务分布的 Zipf 指数, 与 Eq. (1) 里参数项的 α 不是同一个量.
+能对上. Theorem 4 里的指数只来自 quantization model 的任务频率幂律 $p_k \propto k^{-(\alpha+1)}$, 与架构的 ε 无关, 所以表达力只改系数, 不改指数. 这正是 §4.1 先用无约束拟合看到指数统计上不可区分, 再固定 α=β=0.22 去比 B 的理由. 注意这里的 α 是任务分布的 Zipf 指数, 与 Eq. (1) 里参数项的 α 并非同一个量.
 
 **Corollary 4.1: Expressivity Always Improves Scaling 推论 4.1: 表达力总能改善 Scaling**
 
@@ -802,7 +802,7 @@ Tokens (D)
 
 Figure 11 Impact of expressivity $1 - \epsilon$ on loss under three instantiations of the expressivity-aware quantization model; both axes are log-scaled. In the first row, $\Delta ^ { \prime } < \Delta$ , so decreasing ϵ lowers irreducible loss $\left(  Corollary 4.2 \right)$ and reduces loss everywhere (Corollary 4.1), but especially for large N and D. In the second row, $\Delta ^ { \prime } = \Delta$ , but inexpressible tasks require more parameters and tokens than expressible tasks. Thus, while increasing expressivity shifts down the scaling curve everywhere, irreducible loss remains the same, so for large enough $N , D ,$ the loss reduction diminishes. Finally, the third row incorporates both effects of expressivity. This means decreasing ϵ both causes an initial difference in loss and lowers irreducible loss, leading to a visible gap in loss as ϵ decreases across values of N and D.
 
-图 11 表达力感知 quantization model 三种实例化下, 表达力 $1 - \epsilon$ 对 loss 的影响; 两轴均为对数刻度. 第一行中 $\Delta ^ { \prime } < \Delta$, 因此减小 ϵ 会降低不可约 loss $\left(  Corollary 4.2 \right)$, 并在各处降低 loss (Corollary 4.1), 在 N 与 D 较大时尤其明显. 第二行中 $\Delta ^ { \prime } = \Delta$, 但不可表达任务比可表达任务需要更多参数与 token. 因此提升表达力虽然让 Scaling 曲线处处下移, 不可约 loss 却不变, 所以 $N , D ,$ 足够大时 loss 降幅逐渐消失. 最后, 第三行同时包含表达力的两种效应. 这意味着减小 ϵ 既带来初始的 loss 差异, 又降低不可约 loss, 使得随 ϵ 减小, 在各个 N 与 D 取值上都能看到明显的 loss 差距.
+图 11 表达力感知 quantization model 三种实例化下, 表达力 $1 - \epsilon$ 对 loss 的影响; 两轴均为对数刻度. 第一行中 $\Delta ^ { \prime } < \Delta$, 因此减小 ϵ 会降低不可约 loss $\left(  Corollary 4.2 \right)$, 并在各处降低 loss (Corollary 4.1), 在 N 与 D 较大时尤其明显. 第二行中 $\Delta ^ { \prime } = \Delta$, 但不可表达任务比可表达任务需要更多参数与 token. 因此提升表达力虽然让 Scaling 曲线处处下移, 不可约 loss 却不变, 所以 $N , D ,$ 足够大时 loss 降幅逐渐消失. 末尾, 第三行同时包含表达力的两种效应. 这意味着减小 ϵ 既带来初始的 loss 差异, 又降低不可约 loss, 使得随 ϵ 减小, 在各个 N 与 D 取值上都能看到明显的 loss 差距.
 
 **Corollary 4.2: Expressivity Can Shift Irreducible Loss 推论 4.2: 表达力可以移动不可约 loss**
 
@@ -812,7 +812,7 @@ If and only if $\Delta ^ { \prime } < \Delta$ irreducible loss $L _ { \infty } ^
 
 As visualized in the top row of Figure 11, this leads to a clear difference in loss for large N and D (when the irreducible loss starts to dominate), even though the loss curves start more similarly for small N and D. In contrast, if Assumptions 2 and 3 are instantiated so that inexpressible tasks can be fully learned $( \Delta ^ { \prime } = \Delta )$ but require more parameters and tokens $( C ^ { \prime } > C ,   T ^ { \prime } > T )$ , the picture is different: we see dramatic differences in loss for small values of N and D based on ϵ, but these differences go to 0 in the limit of large N and D, as illustrated in the middle row of Figure 11. Finally, if we combine both assumptions, i.e., inexpressible tasks achieve a lower loss reduction $( \Delta ^ { \prime } < \Delta )$ and also require more parameters and tokens to learn, we see a gap between the loss curves for all values of N and D, as seen in the bottom row of Figure 11.
 
-如 Figure 11 第一行所示, 这会在 N 与 D 较大时 (不可约 loss 开始占主导) 造成明显的 loss 差异, 尽管在 N 与 D 较小时各条曲线起点更接近. 相反, 若把 Assumptions 2 与 3 实例化为不可表达任务能被完全学会 $( \Delta ^ { \prime } = \Delta )$, 但需要更多参数与 token $( C ^ { \prime } > C ,   T ^ { \prime } > T )$, 图景就不同了: 在 N 与 D 较小时, 不同 ϵ 下 loss 差异很大, 但在 N 与 D 很大的极限下这些差异趋于 0, 如 Figure 11 中间一行所示. 最后, 若把两个假设结合起来, 即不可表达任务的 loss 降幅更低 $( \Delta ^ { \prime } < \Delta )$, 学习时还需要更多参数与 token, 那么在所有 N 与 D 取值上各条 loss 曲线之间都有差距, 如 Figure 11 最下一行所示.
+如 Figure 11 第一行所示, 这会在 N 与 D 较大时 (不可约 loss 开始占主导) 造成明显的 loss 差异, 尽管在 N 与 D 较小时各条曲线起点更接近. 相反, 若把 Assumptions 2 与 3 实例化为不可表达任务能被完全学会 $( \Delta ^ { \prime } = \Delta )$, 但需要更多参数与 token $( C ^ { \prime } > C ,   T ^ { \prime } > T )$, 图景就不同了: 在 N 与 D 较小时, 不同 ϵ 下 loss 差异很大, 但在 N 与 D 很大的极限下这些差异趋于 0, 如 Figure 11 中间一行所示. 末尾, 若把两个假设结合起来, 即不可表达任务的 loss 降幅更低 $( \Delta ^ { \prime } < \Delta )$, 学习时还需要更多参数与 token, 那么在所有 N 与 D 取值上各条 loss 曲线之间都有差距, 如 Figure 11 最下一行所示.
 
 A natural question is which instantiation of Assumptions 1 to 3 is most consistent with the empirical scaling laws from Section 4.1. Based on Corollary 4.2, lower irreducible loss for more expressive architectures supports a model where expressible tasks have greater loss reduction, i.e., $\Delta ^ { \prime } < \Delta$ Because we do not find clear empirical evidence in Section 4.1 that architecture affects irreducible loss, it appears that a quantization model with $\Delta ^ { \prime } = \Delta$ may better fit the data, though more precise estimates of the scaling law parameters could change this conclusion. Further, based on Corollary 4.1, a model where expressivity does not improve parameter efficiency requires $C ^ { \prime } = C$ and $\Delta ^ { \prime } = \Delta$ . Thus, a quantization model with $T ^ { \prime } > T$ but $C ^ { \prime } = C$ and $\Delta ^ { \prime } = \Delta$ appears most consistent with the observed scaling behavior of hybrid models vs. transformers, though future work that more precisely estimates the scaling coefficients (in particular, the irreducible loss) for these
 
@@ -840,7 +840,7 @@ Interestingly, and perhaps counterintuitively, even tasks that were already expr
 
 We emphasize that our theoretical results were obtained in the simplified quantization model of scaling laws (Michaud et al., 2023), rather than by analyzing the actual learning dynamics of LMs. While this setting is somewhat simplistic, it nicely captures fundamental properties of language modeling such as its multi-task data distribution. We thus take it to provide a plausible conceptual explanation for the link between expressivity and scaling improvements, though we caution against reading too much into the precise quantitative predictions such as the scaling law coefficients and exponents (cf. Michaud, 2026). There is ample opportunity for more in-depth theoretical work to expand the analysis presented here to more realistic models of training, as well as empirical work that tests predictions of different theory variants.
 
-我们强调, 这些理论结果是在简化的 Scaling Laws quantization model (Michaud et al., 2023) 中得到的, 而不是通过分析 LM 的实际学习动态. 这一设定虽然有些简化, 却很好地抓住了语言建模的基本性质, 例如多任务的数据分布. 因此我们认为它为表达力与 Scaling 改善之间的联系提供了一个合理的概念性解释, 但提醒不要过度解读其精确的定量预测, 例如 Scaling Laws 的系数与指数 (参见 Michaud, 2026). 后续有充分空间做更深入的理论工作, 把这里的分析扩展到更贴近实际的训练模型, 也可以做实证工作来检验不同理论变体的预测.
+我们强调, 这些理论结果是在简化的 Scaling Laws quantization model (Michaud et al., 2023) 中得到的, 而并非通过分析 LM 的实际学习动态. 这一设定虽然有些简化, 却很好地抓住了语言建模的基本性质, 例如多任务的数据分布. 因此我们认为它为表达力与 Scaling 改善之间的联系提供了一个合理的概念性解释, 但提醒不要过度解读其精确的定量预测, 例如 Scaling Laws 的系数与指数 (参见 Michaud, 2026). 后续有充分空间做更深入的理论工作, 把这里的分析扩展到更贴近实际的训练模型, 也可以做实证工作来检验不同理论变体的预测.
 
 While expressivity is one clear advantage of GDN-based hybrid models, other factors may also contribute to the performance gains, such as increased training stability, which we explore in Section A.1. In Section 5.1, we see that GDN hybrid models shows better scaling trends than hybrid models using Mamba, whose expressivity is constrained to $\top C ^ { 0 }$ , in line with the hypothesized link between expressivity and scaling. However, GDN without the negative eigenvalue extension (which is thought to be less expressive; cf. Section 3.2) shows very similar scaling trends to GDN with negative values, in potential disagreement with theory. This could suggest that some other benefit of GDN beyond expressivity explains its improved scaling relative to transformers, though it is also an open question whether GDN, even without negative eigenvalues, could have expressivity advantages over transformers such as the ability to solve some $\mathbb { N } \mathbb { C } ^ { \overbrace { 1 } } .$ -complete problems.
 
@@ -922,7 +922,7 @@ Figure 16 直观展示所测架构的表现, Table 5 给出 OlmoBaseEval Easy �
 
 • **交错:** 注意力层按固定间隔放置 (每第 4 层).
 
-• **居中:** 注意力层集中在网络中部, 另在最后一个位置加一层注意力.
+• **居中:** 注意力层集中在网络中部, 另在末尾一个位置加一层注意力.
 
 Despite having very similar parameter counts (948M vs. 932M at 760M; Table 22), the interleaved configuration consistently outperforms the middle placement, with the gap growing at larger scales. Both configurations outperform the transformer baseline, confirming that the benefit of hybridization is robust to placement strategy, though interleaving appears preferable. One interpretation of the advantage of interleaved placement is that uniformly distributing attention layers allows every part of the network to access global context, whereas concentrating attention in the middle creates a bottleneck through which all "attention-relevant information" must pass. Additionally, connecting to our theoretical results in Section 3.3, interleaving maximizes the number of alternations between layer types, which may unlock additional expressive power: for example, stacked compositions of tasks like state-based recall (Theorem 1) could benefit from multiple rounds of alternation between state tracking and recall. While Theorem 3 shows that a single alternation suffices with padding tokens, in practice, multiple alternations without padding may be more effective.
 
@@ -930,7 +930,7 @@ Despite having very similar parameter counts (948M vs. 932M at 760M; Table 22), 
 
 **Linear-to-Attention Ratio: 1:1 vs. 3:1 vs. 7:1.** We vary the fraction of attention layers from 50% down to 12.5%, using interleaved placement with GDN throughout. At the smallest scales (60M–190M parameters), the 7:1 ratio (12.5% attention) tends to perform best or on par with 3:1, suggesting that fewer attention layers can suffice when models are small. At larger scales (600M–1B), however, the 3:1 ratio consistently achieves the best or second-best performance across all domains (Table 21), while the 7:1 ratio falls slightly behind despite having more parameters. The 1:1 ratio (50% attention) performs comparably to 3:1 at small scales but underperforms at larger scales, suggesting that the higher computational cost of more attention layers does not pay off relative to the GDN layers. Overall, the 3:1 ratio (25% attention) offers the best trade-off across scales and domains, and we select it for Olmo Hybrid. Notably, all three interleaved hybrid configurations substantially outperform the transformer at large scales, so the exact ratio is less critical than the decision to hybridize at all.
 
-**线性层与注意力层比例: 1:1 对 3:1 对 7:1.** 我们把注意力层占比从 50% 调到 12.5%, 全程用 GDN 交错放置. 在最小规模 (60M–190M 参数) 上, 7:1 比例 (12.5% 注意力) 往往最好或与 3:1 持平, 说明模型较小时更少的注意力层就够了. 但在较大规模 (600M–1B) 上, 3:1 比例在所有领域都稳定取得最好或第二好的表现 (Table 21), 7:1 比例尽管参数更多却略微落后. 1:1 比例 (50% 注意力) 在小规模上与 3:1 相当, 在较大规模上表现更差, 说明更多注意力层带来的更高计算成本, 相对 GDN 层并不划算. 总体而言, 3:1 比例 (25% 注意力) 在各规模与各领域上权衡最好, 我们为 Olmo Hybrid 选用它. 值得注意的是, 三种交错 hybrid 配置在大规模上都大幅超过 transformer, 因此具体比例不如 「是否做 hybrid」 这个决定关键.
+**线性层与注意力层比例: 1:1 对 3:1 对 7:1.** 我们把注意力层占比从 50% 调到 12.5%, 全程用 GDN 交错放置. 在最小规模 (60M–190M 参数) 上, 7:1 比例 (12.5% 注意力) 往往最好或与 3:1 持平, 说明模型较小时更少的注意力层就够了. 但在较大规模 (600M–1B) 上, 3:1 比例在所有领域都稳定取得最好或第二好的表现 (Table 21), 7:1 比例尽管参数更多却略微落后. 1:1 比例 (50% 注意力) 在小规模上与 3:1 相当, 在较大规模上表现更差, 说明更多注意力层带来的更高计算成本, 相对 GDN 层并不划算. 总体而言, 3:1 比例 (25% 注意力) 在各规模与各领域上权衡最好, 我们为 Olmo Hybrid 选用它. 其中, 三种交错 hybrid 配置在大规模上都大幅超过 transformer, 因此具体比例不如 「是否做 hybrid」 这个决定关键.
 
 **GDN Architecture: Gate and Eigenvalue Sign.** We additionally ablate two internal GDN design choices—the use of the output gate and the sign of the recurrence eigenvalues—across both pure and hybrid (3:1 interleaved) configurations. In the GDN, the output gate multiplies the RNN output by a learned sigmoid-gated projection, while the eigenvalue sign determines whether the recurrence allows oscillatory dynamics (negative EVs) or monotone decay only (positive EVs). Results are reported in the bottom two sections of Tables 5 and 21.
 
@@ -980,7 +980,7 @@ We also compare to open-weight pure RNN models: Falcon Mamba (Zuo et al., 2024) 
 
 Finally, we report performance for hybrid models using MoE for MLP layers: Nemotron 3 Nano (NVIDIA Team, 2025b), which alternates between Mamba-2 SSM on 85% of layers and self-attention (GQA) on 15% of layers; and Kimi Linear (Kimi Team, 2025), which uses Kimi DeltaNet on 75% of layers and self-attention (MLA; DeepSeek-AI, 2024) on 25% of layers.
 
-最后, 我们报告 MLP 层使用 MoE 的 hybrid 模型的表现: Nemotron 3 Nano (NVIDIA Team, 2025b), 85% 的层用 Mamba-2 SSM, 15% 的层用自注意力 (GQA), 交替排列; 以及 Kimi Linear (Kimi Team, 2025), 75% 的层用 Kimi DeltaNet, 25% 的层用自注意力 (MLA; DeepSeek-AI, 2024).
+末尾, 我们报告 MLP 层使用 MoE 的 hybrid 模型的表现: Nemotron 3 Nano (NVIDIA Team, 2025b), 85% 的层用 Mamba-2 SSM, 15% 的层用自注意力 (GQA), 交替排列; 以及 Kimi Linear (Kimi Team, 2025), 75% 的层用 Kimi DeltaNet, 25% 的层用自注意力 (MLA; DeepSeek-AI, 2024).
 
 **Evaluation Details.** Not all models apply long-context extension to the same window size, so for our base model results on RULER we evaluate up to the maximum supported context window at the end of pretraining. We use the most recent vLLM (Kwon et al., 2023) and transformers versions across all models, except for the pure RNN baselines<sup>5</sup>.
 
@@ -1006,7 +1006,7 @@ Among hybrid dense models, there is a large discrepancy in token budgets. Olmo H
 
 As a preliminary investigation of hybrid models' capabilities after post-training, we apply a portion of the Olmo 3 post-training pipeline to create a preliminary Instruct version of Olmo Hybrid. Following Olmo Team (2025), this involves three stages: thinking SFT on long reasoning traces, then an instruction-tuning phase without the model first thinking, and finally direct preference optimization (DPO; Rafailov et al., 2024). In this section, we compare Olmo Hybrid and Olmo 3 7B at each stage and discuss details and challenges we encountered when adapting our post-training recipe to the hybrid architecture.
 
-作为对 hybrid 模型后训练能力的初步考察, 我们套用 Olmo 3 后训练流程的一部分, 做出 Olmo Hybrid 的初版 Instruct 模型. 按 Olmo Team (2025), 流程分三阶段: 先在长推理轨迹上做 thinking SFT, 再做模型不先思考的指令微调阶段, 最后做 DPO (Rafailov et al., 2024). 本节在每个阶段对比 Olmo Hybrid 与 Olmo 3 7B, 并讨论把后训练配方迁移到 hybrid 架构时遇到的细节与挑战.
+作为对 hybrid 模型后训练能力的初步考察, 我们套用 Olmo 3 后训练流程的一部分, 做出 Olmo Hybrid 的初版 Instruct 模型. 按 Olmo Team (2025), 流程分三阶段: 先在长推理轨迹上做 thinking SFT, 再做模型不先思考的指令微调阶段, 末尾做 DPO (Rafailov et al., 2024). 本节在每个阶段对比 Olmo Hybrid 与 Olmo 3 7B, 并讨论把后训练配方迁移到 hybrid 架构时遇到的细节与挑战.
 
 **Data Changes.** Relative to Olmo 3, there is one minor change to the Think SFT stage: the addition of function-calling data for tool use. The lack of advanced tool use in our Think models is a known limitation for building agentic models; this new data is one part of broader changes planned for future Olmo models. We use the same prompts from the Olmo 3 Instruct SFT models with new thinking traces, reusing thinking traces from DR Tülu (Shao et al., 2025) for the Web Search QA prompts and generating reasoning traces with GPT-4.1 for the remaining data, upsampling each data point 3× to increase token coverage.<sup>6</sup> The Instruct SFT and DPO data are identical to the Olmo 3 7B and 32B Instruct SFT and DPO variants.
 
@@ -1184,7 +1184,7 @@ Compared to Olmo 3, Olmo Hybrid achieves better pretraining efficiency, which tr
 
 The authors thank Taira Anderson, Kyle Wiggers, David Albright, and Stephen Kelman for contributing to the release of Olmo Hybrid. WM thanks Songlin Yang and Mehryar Mohri for relevant discussions. AS acknowledges the support of the ETH AI Center doctoral fellowship. This research used resources of the Oak Ridge Leadership Computing Facility, which is a DOE Office of Science User Facility supported under Contract DE-AC05-00OR22725. Additionally, this research used Lambda's computational resources for part of Olmo Hybrid pretraining; the authors thank Amir Zadeh, Allison Beck, Abhi Sarma, and Long Fei for their support during that phase. Finally, this material is based upon work supported by the National Science Foundation under Award No. 2413244.
 
-作者感谢 Taira Anderson, Kyle Wiggers, David Albright 与 Stephen Kelman 为 Olmo Hybrid 发布所做的贡献. WM 感谢 Songlin Yang 与 Mehryar Mohri 的相关讨论. AS 感谢 ETH AI Center 博士奖学金的支持. 本研究使用了 Oak Ridge Leadership Computing Facility 的资源, 该设施是在 Contract DE-AC05-00OR22725 下支持的 DOE Office of Science 用户设施. 此外, 本研究在 Olmo Hybrid 部分预训练中使用了 Lambda 的计算资源; 作者感谢 Amir Zadeh, Allison Beck, Abhi Sarma 与 Long Fei 在该阶段的支持. 最后, 本材料基于 National Science Foundation 资助 (Award No. 2413244) 的工作.
+作者感谢 Taira Anderson, Kyle Wiggers, David Albright 与 Stephen Kelman 为 Olmo Hybrid 发布所做的贡献. WM 感谢 Songlin Yang 与 Mehryar Mohri 的相关讨论. AS 感谢 ETH AI Center 博士奖学金的支持. 本研究使用了 Oak Ridge Leadership Computing Facility 的资源, 该设施是在 Contract DE-AC05-00OR22725 下支持的 DOE Office of Science 用户设施. 此外, 本研究在 Olmo Hybrid 部分预训练中使用了 Lambda 的计算资源; 作者感谢 Amir Zadeh, Allison Beck, Abhi Sarma 与 Long Fei 在该阶段的支持. 末尾, 本材料基于 National Science Foundation 资助 (Award No. 2413244) 的工作.
 
 <!-- page 31 of 70 -->
 
@@ -1526,7 +1526,7 @@ Each Olmo Hybrid GDN head is sized proportionately to an Olmo 3 attention head. 
 
 We used the Flash Linear Attention (Yang and Zhang, 2024) implementation of Gated DeltaNet. In particular, we used the default parameter implemented when instantiating single layer directly (as opposed to the model-level initialization).
 
-Gated DeltaNet 的实现取自 Flash Linear Attention (Yang and Zhang, 2024). 具体地, 我们用的是直接实例化单层时的默认参数初始化, 而不是模型级初始化.
+Gated DeltaNet 的实现取自 Flash Linear Attention (Yang and Zhang, 2024). 具体地, 我们用的是直接实例化单层时的默认参数初始化, 而并非模型级初始化.
 
 Beyond the individual GDN heads, the overall architecture is roughly the same Olmo 3 7B (Olmo Team, 2025) with a few small tweaks to the architecture, learning rate schedule and training data:
 
@@ -1673,7 +1673,7 @@ Merrill and Sabharwal (2025, Section 2.1). Our constructions for UHATs also work
 
 We first establish the negative side of the main theorems (Theorem 1 and corollary 3.1) via core lemmas in Section B.1. We then complete the proofs by giving explicit constructions for hybrid models solving these problems. Finally, we turn to giving a complete padded characterization.
 
-我们先在 B.1 节用两个核心引理确立主定理 (定理 1 与推论 3.1) 的否定部分, 再给出求解这些问题的 hybrid 模型的显式构造, 完成证明. 最后给出一个完整的 padded 刻画.
+我们先在 B.1 节用两个核心引理确立主定理 (定理 1 与推论 3.1) 的否定部分, 再给出求解这些问题的 hybrid 模型的显式构造, 完成证明. 末尾给出一个完整的 padded 刻画.
 
 ### B.1 Limitations of Transformers and RNNs
 
@@ -1753,7 +1753,7 @@ We next show that each of the listed problems have $\Omega ( n )$ communication 
 
 • Finally, evaluating formulas in Polish notation has a communication complexity of $\Omega ( n )$ (Merrill, 2021, Theorem 6).
 
-• 最后, 波兰表示法下公式求值的通信复杂度为 $\Omega(n)$ (Merrill, 2021, Theorem 6).
+• 末尾, 波兰表示法下公式求值的通信复杂度为 $\Omega(n)$ (Merrill, 2021, Theorem 6).
 
 With polynomial padding tokens, precision remains logarithmic in the input sequence length:
 
@@ -1795,7 +1795,7 @@ Proof. Lemma 1 shows transformers cannot solve state-based recall assuming $\mat
 
 (Attention $\neq \: G D N )$ The order of layers is reversed, but the overall idea remains similar. We first use an AHAT block to compute, for each pointer $k ,$ quantities $\phi ( p _ { k } / i )$ and $\phi ( 1 / i )$ , from which $\phi ( p _ { k } )$ can be computed. This is possible with averaging-hard attention (hence reliance on AHAT) because $p _ { k }$ is encoded in unary. Next, we use another layer of 5 attention heads to retrieve each value $x _ { p _ { k } }$ from each pointer $p _ { k }$ using query $\phi ( p _ { k } )$ , key $\phi ( i )$ , and value $x _ { i }$ . Finally, we use GDN to implement transposition composition over the values $x _ { p _ { 1 } } , \ldots , x _ { p _ { 5 } }$ , rather than over the pointers. Thus, in either order, one alternation allows a hybrid model to express state-based recall. □
 
-(注意力在前, GDN 在后) 层的顺序反过来, 整体思路不变. 先用一个 AHAT 块, 对每个指针 $k$ 算出 $\phi(p_k/i)$ 和 $\phi(1/i)$, 由这两者可以得到 $\phi(p_k)$. 因为 $p_k$ 是一进制编码, averaging-hard attention 能做到这一步 (这也是这里依赖 AHAT 的原因). 接着用另一层 5 个注意力头, 以 $\phi(p_k)$ 为 query, $\phi(i)$ 为 key, $x_i$ 为 value, 从每个指针 $p_k$ 取出对应的值 $x_{p_k}$. 最后用 GDN 在值 $x_{p_1}, \ldots, x_{p_5}$ 上实现对换复合, 而不是在指针上. 因此无论哪种顺序, 交替一次就足以让 hybrid 模型表达 state-based recall. □
+(注意力在前, GDN 在后) 层的顺序反过来, 整体思路不变. 先用一个 AHAT 块, 对每个指针 $k$ 算出 $\phi(p_k/i)$ 和 $\phi(1/i)$, 由这两者可以得到 $\phi(p_k)$. 因为 $p_k$ 是一进制编码, averaging-hard attention 能做到这一步 (这也是这里依赖 AHAT 的原因). 接着用另一层 5 个注意力头, 以 $\phi(p_k)$ 为 query, $\phi(i)$ 为 key, $x_i$ 为 value, 从每个指针 $p_k$ 取出对应的值 $x_{p_k}$. 末尾用 GDN 在值 $x_{p_1}, \ldots, x_{p_5}$ 上实现对换复合, 而并非在指针上. 因此无论哪种顺序, 交替一次就足以让 hybrid 模型表达 state-based recall. □
 
 If GDN precedes attention, then this construction works for binary-encoded pointers in addition to unary encoded pointers, as well as for UHAT blocks. It follows that, with more than one alternation, hybrid models (regardless of UHAT or AHAT) can also handle binary-encoded pointers, since this setting subsumes the one where GDN precedes attention.
 
@@ -1805,7 +1805,7 @@ If GDN precedes attention, then this construction works for binary-encoded point
 
 First, we describe padding in a little more detail. Given a function $t : \mathbb { N } \rightarrow \mathbb { N } ,$ a model is run with $t ( n )$ padding as follows. For any input w, we append $t ( n )$ padding tokens (□) to get a padded input w $\Box ^ { t ( | w | ) }$ . We then interpret the prediction at the final token of this padded input as the prediction for w. We say that a language $L$ can be recognized by a transformer with polynomial padding if there exists c and a transformer T such that T recognizes L with $n ^ { c }$ padding.
 
-先把 padding 说得更细一些. 给定函数 $t : \mathbb{N} \rightarrow \mathbb{N}$, 模型以 $t(n)$ padding 运行的方式如下: 对任意输入 w, 在后面追加 $t(n)$ 个 padding token (□), 得到带 padding 的输入 w $\Box^{t(|w|)}$, 再把这个输入最后一个 token 处的预测当作对 w 的预测. 如果存在 c 和 Transformer T, 使 T 在 $n^c$ padding 下识别 L, 就说语言 $L$ 可以被带多项式 padding 的 Transformer 识别.
+先把 padding 说得更细一些. 给定函数 $t : \mathbb{N} \rightarrow \mathbb{N}$, 模型以 $t(n)$ padding 运行的方式如下: 对任意输入 w, 在后面追加 $t(n)$ 个 padding token (□), 得到带 padding 的输入 w $\Box^{t(|w|)}$, 再把这个输入末尾一个 token 处的预测当作对 w 的预测. 如果存在 c 和 Transformer T, 使 T 在 $n^c$ padding 下识别 L, 就说语言 $L$ 可以被带多项式 padding 的 Transformer 识别.
 
 We show that polynomially-padded hybrid models (with averaging-hard attention) can capture all of $\mathbb { N C } ^ { 1 }$ :
 
@@ -1847,15 +1847,15 @@ All tasks are generated online (no fixed dataset) by sampling code-like strings 
 
 **State Tracking.** Variables are initialized and updated by n swaps/assignments, followed by a query assert v == \_. We evaluate across n ∈ {4, 8, 16, 32, 64, 128}.
 
-**State Tracking.** 先初始化若干变量, 再经过 n 次交换或赋值更新, 最后是一条查询 assert v == \_. 评测覆盖 n ∈ {4, 8, 16, 32, 64, 128}.
+**State Tracking.** 先初始化若干变量, 再经过 n 次交换或赋值更新, 末尾是一条查询 assert v == \_. 评测覆盖 n ∈ {4, 8, 16, 32, 64, 128}.
 
 **State-Based Recall.** A bit array of size m is instantiated; variables are initialized to indices in [0, m−1] and then updated by n swaps. Finally, the model must answer assert bits[v] == \_ for a queried variable v. In the default state-based recall setting used in Section 3.5, we set m = n and evaluate across n ∈ {4, 8, 16, 32, 64, 128}.
 
-**State-Based Recall.** 实例化一个大小为 m 的位数组; 变量先初始化为 [0, m−1] 内的下标, 再经过 n 次交换更新. 最后模型要对被查询的变量 v 回答 assert bits[v] == \_. §3.5 默认的 state-based recall 设置取 m = n, 评测覆盖 n ∈ {4, 8, 16, 32, 64, 128}.
+**State-Based Recall.** 实例化一个大小为 m 的位数组; 变量先初始化为 [0, m−1] 内的下标, 再经过 n 次交换更新. 末尾模型要对被查询的变量 v 回答 assert bits[v] == \_. §3.5 默认的 state-based recall 设置取 m = n, 评测覆盖 n ∈ {4, 8, 16, 32, 64, 128}.
 
 **Metric.** We report next-token accuracy on the final answer token (the token immediately following the last ==). Each reported accuracy is computed over 256 freshly generated evaluation samples at the specified difficulty.
 
-**Metric.** 我们报告最终答案 token (紧跟最后一个 == 的那个 token) 上的 next-token 准确率. 每个准确率都在指定难度下, 用 256 条新生成的评测样本算出.
+**Metric.** 我们报告最终答案 token (紧跟末尾一个 == 的那个 token) 上的 next-token 准确率. 每个准确率都在指定难度下, 用 256 条新生成的评测样本算出.
 
 ### C.2 Model Architectures
 
@@ -2170,7 +2170,7 @@ Scaling 阶梯和消融实验中的所有模型, 在每个规模上共享同一�
 
 53
 
-不是同一组. Fig. 1 是 CE loss 与 MMLU; Fig. 15 是另外 6 个下游基准的扩展曲线, 文注写 sorted by token efficiency, 并指向 Fig. 1 看 CE/MMLU.
+并非同一组. Fig. 1 是 CE loss 与 MMLU; Fig. 15 是另外 6 个下游基准的扩展曲线, 文注写 sorted by token efficiency, 并指向 Fig. 1 看 CE/MMLU.
 
 <!-- page 54 of 70 -->
 
@@ -2190,7 +2190,7 @@ Figure 17 Evaluation metrics vs. training FLOPs for pure architectures (Transfor
 
 layer is an attention layer and the remaining layers are GDN layers, where r is the transformer ratio (default $r = 4$, i.e., a 3:1 linear layer to attention ratio). We additionally enforce the final layer be an attention layer; if it is not already selected by the every-rth rule, it is added.
 
-(接上页) 层是注意力层, 其余是 GDN 层, 其中 r 是 Transformer 比例 (默认 $r = 4$, 即线性层与注意力层之比为 3:1). 另外我们强制最后一层为注意力层; 如果按每第 r 层的规则它没有被选中, 就额外加上.
+(接上页) 层是注意力层, 其余是 GDN 层, 其中 r 是 Transformer 比例 (默认 $r = 4$, 即线性层与注意力层之比为 3:1). 另外我们强制末尾一层为注意力层; 如果按每第 r 层的规则它没有被选中, 就额外加上.
 
 Each GDN sub-layer computes query, key, and value projections with head dimension $h _ { \mathrm { G D N } } = \lceil 0 . 7 5 \cdot d / h \rceil _ { 1 2 8 }$ yielding a key dimension of $k = h \cdot h _ { \mathrm { G D N } }$ and value dimension $v = h \cdot 2 h _ { \mathrm { G D N } } \mathrm { ( i . e . }$ , the value dimension is expanded by a factor of 2). The GDN sub-layer further includes two scalar per-head parameters $( A _ { \mathrm { l o g } }$ and $\mathrm { d t _ { b i a s } ) }$ , short depthwise convolutions (kernel size 4) over the $q ,   k ,$ and v streams, a gate projection, and an output projection. Each GDN layer retains the same SwiGLU MLP and two RMSNorms as in the Olmo 3 block.
 
@@ -2198,11 +2198,11 @@ Each GDN sub-layer computes query, key, and value projections with head dimensio
 
 **Pure GDN.** Pure GDN models replace all attention layers with GDN layers $( \mathrm { i . e . , ~ } r \mathrm { = } 0 )$ and do not force a final attention layer. All other hyperparameters are identical to the hybrid variant.
 
-**纯 GDN.** 纯 GDN 模型把所有注意力层都换成 GDN 层 (即 $r = 0$), 也不强制最后一层为注意力层. 其余超参数与 hybrid 版本完全相同.
+**纯 GDN.** 纯 GDN 模型把所有注意力层都换成 GDN 层 (即 $r = 0$), 也不强制末尾一层为注意力层. 其余超参数与 hybrid 版本完全相同.
 
 **Hybrid Mamba2 (Mamba2–Transformer).** Hybrid Mamba2 models follow the same layer interleaving scheme as Hybrid GDN (r=4 by default with a forced final attention layer), but substitute Mamba2 (Dao and Gu, 2024) for the non-attention layers. The Mamba2 sub-layer uses an expansion factor of 2 (intermediate size = 2d), state size $n = 1 2 8 ,   n _ { \mathrm { g r o u p s } } = 1$ , and a depthwise convolution with kernel size 4. In our hybrid Mamba2 configuration, the Mamba2 layers retain the full MLP from the attention blocks.
 
-**Hybrid Mamba2 (Mamba2–Transformer).** Hybrid Mamba2 模型沿用 Hybrid GDN 的层交错方案 (默认 r=4, 强制最后一层为注意力层), 但把非注意力层换成 Mamba2 (Dao and Gu, 2024). Mamba2 子层的扩展因子为 2 (中间维度 = 2d), 状态大小 $n = 128$, $n_{\mathrm{groups}} = 1$, depthwise 卷积的 kernel size 为 4. 在我们的 hybrid Mamba2 配置中, Mamba2 层保留注意力块里的完整 MLP.
+**Hybrid Mamba2 (Mamba2–Transformer).** Hybrid Mamba2 模型沿用 Hybrid GDN 的层交错方案 (默认 r=4, 强制末尾一层为注意力层), 但把非注意力层换成 Mamba2 (Dao and Gu, 2024). Mamba2 子层的扩展因子为 2 (中间维度 = 2d), 状态大小 $n = 128$, $n_{\mathrm{groups}} = 1$, depthwise 卷积的 kernel size 为 4. 在我们的 hybrid Mamba2 配置中, Mamba2 层保留注意力块里的完整 MLP.
 
 ### D.4 Parameter Count and FLOP Computations
 
@@ -2354,7 +2354,7 @@ where $M _ { \mathrm { p r o j , c o n v , M L P } }$ represents the cost of pro
 
 For **Mamba2 layers**, utilizing the sequential chunkwise algorithm (instead of parallel scan) reduces the state-passing overhead to simple unidirectional updates:
 
-对 **Mamba2 层**, 使用顺序 chunkwise 算法 (而不是并行 scan) 可以把状态传递的开销降为简单的单向更新:
+对 **Mamba2 层**, 使用顺序 chunkwise 算法 (而并非并行 scan) 可以把状态传递的开销降为简单的单向更新:
 
 $$
 M_{\text{mamba2, train}} = \underbrace{M_{\text{proj, conv, MLP}}}_{\text{sequence - independent}} + \underbrace{2\cdot L_{\text{chunk}}\cdot e}_{\substack{\text{intra - chunk}\\ \text{SSD mixing}}} + \underbrace{2\cdot e\cdot n}_{\substack{\text{inter - chunk}\\ \text{state passing}}},\tag{11}
@@ -2734,7 +2734,7 @@ $$
 
 This final expression is $L ( D )$ , our desired approximation to the expected loss.
 
-最后这个表达式就是 $L(D)$, 也就是我们要的期望 loss 近似.
+末尾这个表达式就是 $L(D)$, 也就是我们要的期望 loss 近似.
 
 The irreducible loss here is the same as that of the task scaling law. The scaling coefficient changes from the expressivity-unaware case by a factor of $B _ { \epsilon } / B _ { 0 }$ . Moreover, we see that increasing expressivity improves the loss curve:
 
@@ -2800,7 +2800,7 @@ Finally, the irreducible loss $L_{\infty}^{\epsilon}$ for both power laws depend
     $L_{\infty}^{\epsilon} = L_0 - (1 - \epsilon)\Delta - \epsilon\Delta'$.
 </div>
 
-**定理 4: 考虑表达力的 Scaling Laws** 考虑用假设 1 到假设 3 扩充后的神经 Scaling Laws quantization model. 那么作为参数量 N 的函数, loss $\tilde{L}(N)$ 可以由幂律 $L(N)$ 很好地近似, 即 $\tilde{L}(N) \approx L(N)$, 其中 $L(N) - L_{\infty}^{\epsilon} \propto A_{\epsilon} \cdot N^{-\alpha}$, $A_{\epsilon} = (L_0 - L_{\infty}^{\epsilon}) \cdot (C + \epsilon(C' - C))^{\alpha}$. 同样, 作为 token 预算 D 的函数, loss $\tilde{L}(D)$ 可以由幂律 $L(D)$ 很好地近似, 即 $\tilde{L}(D) \approx L(D)$, 其中 $L(D) - L_{\infty}^{\epsilon} \propto B_{\epsilon} \cdot D^{-\alpha/(\alpha+1)}$, $B_{\epsilon} = (1 - \epsilon)\Delta T^{\alpha/(\alpha+1)} + \epsilon\Delta' T'^{\alpha/(\alpha+1)}$. 最后, 两个幂律共同的不可约 loss $L_{\infty}^{\epsilon}$ 通过 $L_{\infty}^{\epsilon} = L_0 - (1 - \epsilon)\Delta - \epsilon\Delta'$ 依赖表达力.
+**定理 4: 考虑表达力的 Scaling Laws** 考虑用假设 1 到假设 3 扩充后的神经 Scaling Laws quantization model. 那么作为参数量 N 的函数, loss $\tilde{L}(N)$ 可以由幂律 $L(N)$ 很好地近似, 即 $\tilde{L}(N) \approx L(N)$, 其中 $L(N) - L_{\infty}^{\epsilon} \propto A_{\epsilon} \cdot N^{-\alpha}$, $A_{\epsilon} = (L_0 - L_{\infty}^{\epsilon}) \cdot (C + \epsilon(C' - C))^{\alpha}$. 同样, 作为 token 预算 D 的函数, loss $\tilde{L}(D)$ 可以由幂律 $L(D)$ 很好地近似, 即 $\tilde{L}(D) \approx L(D)$, 其中 $L(D) - L_{\infty}^{\epsilon} \propto B_{\epsilon} \cdot D^{-\alpha/(\alpha+1)}$, $B_{\epsilon} = (1 - \epsilon)\Delta T^{\alpha/(\alpha+1)} + \epsilon\Delta' T'^{\alpha/(\alpha+1)}$. 末尾, 两个幂律共同的不可约 loss $L_{\infty}^{\epsilon}$ 通过 $L_{\infty}^{\epsilon} = L_0 - (1 - \epsilon)\Delta - \epsilon\Delta'$ 依赖表达力.
 
 Combining Corollary 5.2 and Corollary 7.1 yields:
 
@@ -2819,7 +2819,7 @@ If and only if $\Delta' &lt; \Delta$, irreducible loss $L_{\infty}^{\epsilon}$ s
 
 **Future Work.** There are several extensions to this analysis worth pursuing. First, we have assumed learnable tasks are prioritized in order of frequency, whereas a more optimal policy would order them by parameter efficiency $p _ { n } / C _ { n }$ . It would also be interesting to consider joint parameter-data scaling $L ( N , D )$ rather than scaling laws derived in isolation. On the empirical side, one could test whether these scaling laws match real LMs in controlled settings where ϵ is known, or whether it is possible to isolate tasks in the data in practical settings. All of these directions would close the gap between the idealized quantization model and practical training, and could inform choices about the interaction between data and architecture during pretraining.
 
-**后续工作.** 这一分析有几个值得推进的扩展方向. 第一, 我们假设可学任务按频率排定优先级, 更优的策略应当按参数效率 $p_n / C_n$ 排序. 第二, 可以考虑参数与数据联合的 Scaling $L(N, D)$, 而不是分别推出的两条 Scaling Law. 实证方面, 可以在 ϵ 已知的受控设置中检验这些 Scaling Law 是否符合真实 LM, 或者看在实际设置中能否把数据里的任务分离出来. 这些方向都能缩小理想化 quantization model 与实际训练之间的差距, 也可能为预训练中数据与架构如何相互作用提供选型依据.
+**后续工作.** 这一分析有几个值得推进的扩展方向. 第一, 我们假设可学任务按频率排定优先级, 更优的策略应当按参数效率 $p_n / C_n$ 排序. 第二, 可以考虑参数与数据联合的 Scaling $L(N, D)$, 而并非分别推出的两条 Scaling Law. 实证方面, 可以在 ϵ 已知的受控设置中检验这些 Scaling Law 是否符合真实 LM, 或者看在实际设置中能否把数据里的任务分离出来. 这些方向都能缩小理想化 quantization model 与实际训练之间的差距, 也可能为预训练中数据与架构如何相互作用提供选型依据.
 
 <!-- page 69 of 70 -->
 

@@ -1,9 +1,9 @@
 ---
-title: "OLMoASR?????????????????????"
-category: "???? OCR"
-tags: ["OLMoASR", "ASR", "Whisper", "????", "????"]
+title: "OLMoASR：开放鲁棒语音识别模型与训练数据 · 对照译稿"
+category: "多模态与 OCR"
+tags: ["OLMoASR", "ASR", "Whisper", "语音识别", "开放数据"]
 published: true
-excerpt: "OLMoASR ???????????????????????? 3900 ?? 15.5 ????????"
+excerpt: "OLMoASR 公开大规模语音数据、过滤管线与多档模型，用受控实验研究数据规模和质量如何影响零样本语音识别。"
 ---
 
 <!-- arXiv 2508.20869; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/olmoasr/latex/ 的 LaTeX 源码为准 -->
@@ -24,7 +24,7 @@ ABSTRACT
 
 Improvements in training data scale and quality have led to significant advances, yet its influence in speech recognition remains underexplored. In this paper, we present a large-scale dataset, OLMOASR-POOL, and series of models, OL- MOASR, to study and develop robust zero-shot speech recognition models. Be- ginning from OLMOASR-POOL, a collection of 3M hours of English audio and 17M transcripts, we design text heuristic filters to remove low-quality or mistran- scribed data. Our curation pipeline produces a new dataset containing 1M hours of high-quality audio-transcript pairs, which we call OLMOASR-MIX. We use OLMOASR-MIX to train the OLMOASR suite of models, ranging from 39M (tiny.en) to 1.5B (large.en) parameters. Across all model scales, OLMOASR achieves comparable average performance to OpenAI’s Whisper on short and long-form speech recognition benchmarks. Notably, OLMOASR-medium.en attains a 12.8% and 11.0% word error rate (WER) that is on par with Whis- per’s largest English-only model Whisper-medium.en’s 12.4% and 10.5% WER for short and long-form recognition respectively (at equivalent parameter count). OLMOASR-POOL, OLMOASR-MIX, OLMOASR models, and filtering, train- ing and evaluation code will be made publicly available to further research on robust speech processing.
 
-训练数据规模和质量的改进带来了重大进步，但其对语音识别的影响仍未得到充分探索。在本文中，我们提出了一个大规模数据集 OLMOASR-POOL 和一系列模型 OL-MOASR，以研究和开发鲁棒的零样本语音识别模型。从 OLMOASR-POOL（300 万小时的英语音频和 1700 万份转录本的集合）开始，我们设计了文本启发式过滤器来删除低质量或错误转录的数据。我们的管理管道生成一个新数据集，其中包含 100 万小时的高质量音频转录对，我们将其称为 OLMOASR-MIX。我们使用 OLMOASR-MIX 来训练 OLMOASR 模型套件，参数范围从 39M (tiny.en) 到 1.5B (large.en)。在所有模型规模上，OLMOASR 在短格式和长格式语音识别基准测试中实现了与 OpenAI 的 Whisper 相当的平均性能。值得注意的是，OLMOASR-medium.en 的单词错误率 (WER) 达到了 12.8% 和 11.0%，与 Whisper 最大的纯英语模型 Whisper-medium.en 的短形式和长形式识别的 WER 分别为 12.4% 和 10.5%（参数数量相同）相当。 OLMOASR-POOL、OLMOASR-MIX、OLMOASR 模型以及过滤、训练和评估代码将公开，以进一步研究鲁棒语音处理。
+训练数据规模和质量的改进带来了重大进步，但其对语音识别的影响仍未得到充分探索。在本文中，我们提出了一个大规模数据集 OLMOASR-POOL 和一系列模型 OL-MOASR，以研究和开发鲁棒的零样本语音识别模型。从 OLMOASR-POOL（300 万小时的英语音频和 1700 万份转录本的集合）开始，我们设计了文本启发式过滤器来删除低质量或错误转录的数据。我们的管理管道生成一个新数据集，其中包含 100 万小时的高质量音频转录对，我们将其称为 OLMOASR-MIX。我们使用 OLMOASR-MIX 来训练 OLMOASR 模型套件，参数范围从 39M (tiny.en) 到 1.5B (large.en)。在所有模型规模上，OLMOASR 在短格式和长格式语音识别基准测试中实现了与 OpenAI 的 Whisper 相当的平均性能。其中，OLMOASR-medium.en 的单词错误率 (WER) 达到了 12.8% 和 11.0%，与 Whisper 最大的纯英语模型 Whisper-medium.en 的短形式和长形式识别的 WER 分别为 12.4% 和 10.5%（参数数量相同）相当。 OLMOASR-POOL、OLMOASR-MIX、OLMOASR 模型以及过滤、训练和评估代码将公开，以进一步研究鲁棒语音处理。
 
 1 INTRODUCTION · 引言
 
@@ -144,7 +144,7 @@ To address this knowledge gap, we conduct experiments on a collection of weakly-
 
 In this section, we describe the curation choices made to achieve OLMOASR-MIX and quantify the impact of the curation layer. Firstly, to ensure that the audio and text language matches, we perform audio-text language alignment (Section 2.2.1). Next, we experiment with different text- based heuristics (Section 2.2.2) to remove low-quality audio-text pairs. We will also explain what type of low-quality data we are targeting at each layer. Finally, we perform fuzzy decontamination and deduplication (Appendix C) on the transcripts to remove contaminated or duplicated audio-text pairs. Figure 2 visually illustrates each step in removing low quality data and denotes their respective percentages of data removed.
 
-在本节中，我们将描述为实现 OLMOASR-MIX 所做的管理选择，并量化管理层的影响。首先，为了确保音频和文本语言匹配，我们执行音频-文本语言对齐（第 2.2.1 节）。接下来，我们尝试使用不同的基于文本的启发式方法（第 2.2.2 节）来删除低质量的音频文本对。我们还将解释我们针对每一层的低质量数据类型。最后，我们对转录本进行模糊去污和重复数据删除（附录 C），以删除受污染或重复的音频文本对。图 2 直观地说明了删除低质量数据的每个步骤，并表示了它们各自删除的数据的百分比。
+在本节中，我们将描述为实现 OLMOASR-MIX 所做的管理选择，并量化管理层的影响。第一步，为了确保音频和文本语言匹配，我们执行音频-文本语言对齐（第 2.2.1 节）。接下来，我们尝试使用不同的基于文本的启发式方法（第 2.2.2 节）来删除低质量的音频文本对。我们还将解释我们针对每一层的低质量数据类型。末尾，我们对转录本进行模糊去污和重复数据删除（附录 C），以删除受污染或重复的音频文本对。图 2 直观地说明了删除低质量数据的每个步骤，并表示了它们各自删除的数据的百分比。
 
 All experiments are performed on the OLMOASR-tiny.en model and compared to a baseline that has only been trained on data filtered with the audio-text language alignment filter. We use this baseline as it does not target the quality of transcripts. This will be referred to as the ”no quality filtering” baseline from this point onward. To assess them, we use the word error rate (WER) metric which calculates the percentage of words that were incorrectly predicted when compared to a reference text.
 
@@ -344,7 +344,7 @@ For long-form transcription, OLMOASR-tiny.en and OLMOASR-base.en outperform Whis
 
 Data curation is vital to achieve strong zero-shot generalization. OLMOASR on all model scales benefits from data curation, especially OLMOASR-tiny.en for short-form and long-form,
 
-数据管理对于实现强大的零样本泛化至关重要。所有模型规模的 OLMOASR 都受益于数据管理，尤其是针对短格式和长格式的 OLMOASR-tiny.en，
+数据管理对于实现强大的零样本泛化很关键。所有模型规模的 OLMOASR 都受益于数据管理，尤其是针对短格式和长格式的 OLMOASR-tiny.en，
 
 6
 
@@ -876,7 +876,7 @@ C DEDUPLICATION AND DECONTAMINATION · 去重与去污染
 
 We performed transcript level fuzzy deduplication using minhash. We used the parameters from FineWeb (Penedo et al., 2024b), where we used 5-grams of tokens and computed 112 hash functions, split into 14 buckets of 8 hashes each. If any pair of transcripts has the same 8 hashes in any one bucket, they are marked as duplicates. This procedure targets documents that have a Jaccard similarity of 75%. We performed this on 17M total transcripts and removed 505K transcripts for a total deduplication removal rate of 3%. Decontamination was performed by a simple n-gram search. In particular, we decontaminate the evaluation datasets of TED-LIUM3 against our training corpus. First we collect all n-grams of size 10 from the evaluation dataset and check for their presence in each training dataset transcript. If any n-gram is present, we mark the training document as contaminated and do not include it in our training sets. We apply this procedure to 17M transcripts and find only 286 contaminated transcripts.
 
-我们使用 minhash 执行了转录本级别的模糊去重。我们使用 FineWeb 的参数（Penedo 等人，2024b），其中我们使用 5 克令牌并计算 112 个哈希函数，分为 14 个桶，每个桶有 8 个哈希值。如果任何一对转录本在任意一个存储桶中具有相同的 8 个哈希值，则它们将被标记为重复项。此过程针对 Jaccard 相似度为 75% 的文档。我们对 17M 总转录本执行此操作，并删除了 505K 转录本，总重复数据删除去除率为 3%。通过简单的 n 元搜索来进行净化。特别是，我们根据我们的训练语料库净化了 TED-LIUM3 的评估数据集。首先，我们从评估数据集中收集所有大小为 10 的 n 元模型，并检查它们是否存在于每个训练数据集转录本中。如果存在任何 n-gram，我们会将训练文档标记为受污染，并且不将其包含在我们的训练集中。我们将此程序应用于 17M 转录本，仅发现 286 个受污染的转录本。
+我们使用 minhash 执行了转录本级别的模糊去重。我们使用 FineWeb 的参数（Penedo 等人，2024b），其中我们使用 5 克令牌并计算 112 个哈希函数，分为 14 个桶，每个桶有 8 个哈希值。如果任何一对转录本在任意一个存储桶中具有相同的 8 个哈希值，则它们将被标记为重复项。此过程针对 Jaccard 相似度为 75% 的文档。我们对 17M 总转录本执行此操作，并删除了 505K 转录本，总重复数据删除去除率为 3%。通过简单的 n 元搜索来进行净化。特别是，我们根据我们的训练语料库净化了 TED-LIUM3 的评估数据集。第一步，我们从评估数据集中收集所有大小为 10 的 n 元模型，并检查它们是否存在于每个训练数据集转录本中。如果存在任何 n-gram，我们会将训练文档标记为受污染，并且不将其包含在我们的训练集中。我们将此程序应用于 17M 转录本，仅发现 286 个受污染的转录本。
 
 D OWSM VS. OLMOASR PERFORMANCE TABLE · OWSM 与 OLMoASR 表现对比
 

@@ -43,7 +43,7 @@ Access to clean, coherent textual data is a crucial component in the life cycle 
 
 While the internet remains a valuable source of textual content for language models, large amounts of content are not readily available through web pages. Electronic documents (e.g., PDF, PS, DjVu formats) and word processing files (e.g., DOC, ODT, RTF) are widely-used formats to store textual content. However, these formats present a unique challenge: unlike modern web standards, they encode content to facilitate rendering on fixed-size physical pages, at the expense of preserving logical text structure. For example, consider the PDF format, which originated as a means to specify how digital documents should be printed onto physical paper. As seen in Figure 2, PDFs store not units of text—headings, paragraphs, or other meaningful prose elements—but single characters alongside their spacing, placement, and any metadata used for visual rendering on a page. As more and more documents became digital, users have relied this file format to create trillions of documents (PDF Association staff, 2015); yet, these documents remain difficult to leverage in LM pipelines because PDFs lack basic structure necessary for coherent prose, such as ground truth reading order.
 
-互联网仍是语言模型文本内容的重要来源, 但大量内容并不能直接从网页上拿到. 电子文档 (如 PDF, PS, DjVu 格式) 和文字处理文件 (如 DOC, ODT, RTF) 是存储文本的常用格式. 这些格式带来一个特有的难题: 与现代 Web 标准不同, 它们编码内容的目的是方便在固定尺寸的物理页面上渲染, 代价是丢掉了逻辑上的文本结构. 以 PDF 为例, 它最初就是用来规定数字文档如何打印到纸上的. 如 Figure 2 所示, PDF 存的不是标题, 段落这类有意义的文本单元, 而是单个字符, 外加间距, 位置以及页面渲染用到的各种元数据. 随着越来越多的文档数字化, 用户已用这种格式创建了数万亿份文档 (PDF Association staff, 2015); 然而 PDF 缺少连贯文本所需的基本结构 (比如真实的阅读顺序), 这些文档在 LM 管线里仍然很难利用.
+互联网仍是语言模型文本内容的重要来源, 但大量内容并不能直接从网页上拿到. 电子文档 (如 PDF, PS, DjVu 格式) 和文字处理文件 (如 DOC, ODT, RTF) 是存储文本的常用格式. 这些格式带来一个特有的难题: 与现代 Web 标准不同, 它们编码内容的目的是方便在固定尺寸的物理页面上渲染, 代价是丢掉了逻辑上的文本结构. 以 PDF 为例, 它最初就是用来规定数字文档如何打印到纸上的. 如 Figure 2 所示, PDF 存的并非标题, 段落这类有意义的文本单元, ；实际是单个字符, 外加间距, 位置以及页面渲染用到的各种元数据. 随着越来越多的文档数字化, 用户已用这种格式创建了数万亿份文档 (PDF Association staff, 2015); 然而 PDF 缺少连贯文本所需的基本结构 (比如真实的阅读顺序), 这些文档在 LM 管线里仍然很难利用.
 
 Faithful content extraction and representation of digitized print documents has long been of interest, with early research efforts in the 1950s, and first commercial optical character recognition (OCR) tools debuting in the late 1970s (Mori et al., 1992). The release of Tesseract in 2006 represented a significant milestone, as the first high-quality, open-source OCR toolkit (Smith, 2013). The current landscape of PDF extraction toolkits
 
@@ -156,7 +156,7 @@ We use the pypdf (PyPDF, 2012–2025) library to extract a representation of the
 
 Finally, we instruct GPT-4o to respond with structured output to our requests. We report the full JSON schema in Appendix E.1. This forces the model to first extract page metadata, such as language, page orientation, and presence of tables, before generating the text of the page in a natural reading order. This format allows for more efficient processing of output; further, we found it crucial to ensure that GPT-4o does not generate captions of images when no text is present on the page. Overall, we find document-anchoring indeed improves the output quality of GPT-4o according to our benchmark (§3) reported in Table 4.
 
-最后, 我们要求 GPT-4o 以结构化输出回应请求, 完整 JSON schema 见附录 E.1. 这种格式迫使模型先抽取页面元数据, 如语言, 页面朝向, 是否含表格, 然后才按自然阅读顺序生成页面文字. 这种格式让输出处理更高效; 我们还发现, 它对确保 GPT-4o 在页面没有文字时不去给图片写说明至关重要. 总的来说, 按我们的基准 (§3) 在 Table 4 中的结果, document-anchoring 确实提升了 GPT-4o 的输出质量.
+末尾, 我们要求 GPT-4o 以结构化输出回应请求, 完整 JSON schema 见附录 E.1. 这种格式迫使模型先抽取页面元数据, 如语言, 页面朝向, 是否含表格, 然后才按自然阅读顺序生成页面文字. 这种格式让输出处理更高效; 我们还发现, 它对确保 GPT-4o 在页面没有文字时不去给图片写说明很关键. 总的来说, 按我们的基准 (§3) 在 Table 4 中的结果, document-anchoring 确实提升了 GPT-4o 的输出质量.
 
 ### 2.3 Model Training · 模型训练
 
@@ -267,7 +267,7 @@ We define 7 distinct document types that we found olmOCR (or its earlier iterati
 
 • Headers Footers (HF) We sampled documents from the same internally crawled PDF repository as olmOCR-mix-0225. We used DocLayout-YOLO (Zhao et al., 2024) to identify page regions labeled as headers or footers using the abandon category. To extract the text from these header/footer regions, we visually mask out the rest of the document and prompt Gemini-Flash-2.0 for the content. These extracted snippets are added as test cases that should be absent in linearized output. We manually reviewed to remove mistakenly filtered text and to set conditions such as limiting the search area to the first N or last N characters. For example, if a page number "5" appears at the bottom of a page, we test to ensure that output plain text does not contain "5" in the last 20 characters, but still allow for a "5" that may appear earlier in the text.
 
-• Headers Footers (HF) 我们从与 olmOCR-mix-0225 相同的内部 PDF 爬取库中采样文档. 用 DocLayout-YOLO (Zhao et al., 2024) 的 abandon 类别识别被标为页眉或页脚的页面区域. 为了取出这些区域的文字, 我们在视觉上遮住文档其余部分, 再提示 Gemini-Flash-2.0 读出内容. 抽出的片段作为「线性化输出中应当缺失」的测试用例. 我们人工审核, 删掉误筛的文字, 并设置条件, 比如把检索范围限定在前 N 个或后 N 个字符. 例如页面底部有页码「5」, 我们测试输出纯文本的最后 20 个字符里不含「5」, 但允许文中更靠前的位置出现「5」.
+• Headers Footers (HF) 我们从与 olmOCR-mix-0225 相同的内部 PDF 爬取库中采样文档. 用 DocLayout-YOLO (Zhao et al., 2024) 的 abandon 类别识别被标为页眉或页脚的页面区域. 为了取出这些区域的文字, 我们在视觉上遮住文档其余部分, 再提示 Gemini-Flash-2.0 读出内容. 抽出的片段作为「线性化输出中应当缺失」的测试用例. 我们人工审核, 删掉误筛的文字, 并设置条件, 比如把检索范围限定在前 N 个或后 N 个字符. 例如页面底部有页码「5」, 我们测试输出纯文本的末尾 20 个字符里不含「5」, 但允许文中更靠前的位置出现「5」.
 
 • Multi Column (MC) We visually sample documents from our internal crawled PDF repository to find documents with multi-column layouts and multiple articles on one page. We use Claude-Sonnet-3.7 to render those pages to HTML, and from that HTML, we extract text segments before/after one another. We manually review each entry for accuracy. We purposely select simple text blocks from coherent regions of the document, and avoid including any math formulas, superscripts, or subscripts in these tests.
 
@@ -299,7 +299,7 @@ $$
 
 First, we evaluate olmOCR on olmOCR-Bench against a range of linearization tools and VLMs (Section §4.1). We then quantify the usefulness olmOCR for language modeling by continued pretraining on an OLMo 2 checkpoint (OLMo et al., 2024) on content extracted and linearized with our toolkit (Section §4.2). Additional evaluations, studying how faithful olmOCR is to its teacher model (Section §C.1), and pairwise ELO comparison (Section §C.2) are available in the appendix.
 
-首先, 我们在 olmOCR-Bench 上把 olmOCR 与一系列线性化工具和 VLM 对比 (§4.1). 然后, 用我们工具包抽取并线性化的内容在一个 OLMo 2 检查点 (OLMo et al., 2024) 上继续预训练, 量化 olmOCR 对语言建模的用处 (§4.2). 附录里还有其他评估: olmOCR 对教师模型的忠实程度 (§C.1), 以及两两对比的 ELO 评分 (§C.2).
+第一步, 我们在 olmOCR-Bench 上把 olmOCR 与一系列线性化工具和 VLM 对比 (§4.1). 然后, 用我们工具包抽取并线性化的内容在一个 OLMo 2 检查点 (OLMo et al., 2024) 上继续预训练, 量化 olmOCR 对语言建模的用处 (§4.2). 附录里还有其他评估: olmOCR 对教师模型的忠实程度 (§C.1), 以及两两对比的 ELO 评分 (§C.2).
 
 ### 4.1 olmOCR-Bench Results · olmOCR-Bench 结果
 
@@ -349,7 +349,7 @@ Table 5 Comparison on OLMo 2 (OLMo et al., 2024) downstream evaluation tasks of 
 
 Finally, when considering real-world use, cost efficiency is just as important as performance. We present a summary of inference costs in Table 6. To contextualize the value of olmOCR, at 1,000 tokens per page, to process all of peS2o PDFs can already cost $10.3M in H100 usage. In comparison, Mistral OCR is a commercial API tool specializing in this task, yet is over five times more expensive, making it even more prohibitive to use for language modeling. See Appendix B for details on pricing and cost calculations.
 
-最后, 考虑实际使用时, 成本效率和性能同样重要. Table 6 汇总了推理成本. 为了说明 olmOCR 的价值: 按每页 1,000 token 计, 处理 peS2o 的全部 PDF 光 H100 用量就要 1,030 万美元. 相比之下, Mistral OCR 是专做这项任务的商用 API 工具, 却贵五倍以上, 用于语言建模就更承受不起. 定价与成本计算细节见附录 B.
+末尾, 考虑实际使用时, 成本效率和性能同样重要. Table 6 汇总了推理成本. 为了说明 olmOCR 的价值: 按每页 1,000 token 计, 处理 peS2o 的全部 PDF 光 H100 用量就要 1,030 万美元. 相比之下, Mistral OCR 是专做这项任务的商用 API 工具, 却贵五倍以上, 用于语言建模就更承受不起. 定价与成本计算细节见附录 B.
 
 复算不出来. Table 6 的 H100 吞吐是 3,050 token/s, 单价 2.69 美元/小时, 每个输出 token 的成本是 $2.69/(3600\times3050)=2.45\times10^{-7}$ 美元. 1,030 万美元对应约 $4.2\times10^{13}$ 个 token, 按每页 1,000 token 是约 $4.2\times10^{10}$ 页, 分到 §1 所说的 790 万份 PDF 上, 每份约 5,300 页. 反过来按 peS2o 本身 58B token 估算页数 (每页 1,000 token 约 5,800 万页), H100 成本只有约 1.4 万美元. 文中没有给出 peS2o 的总页数, 也没有给出 1,030 万美元的算式, 这个数与 Table 6 差了两到三个数量级.
 

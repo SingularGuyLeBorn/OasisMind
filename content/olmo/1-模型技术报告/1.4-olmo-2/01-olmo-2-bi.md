@@ -247,7 +247,7 @@ When building OLMo-0424, we made modifications for training stability and downst
 
 Finally, this work introduces OLMo 2 which made further modifications:
 
-最后, 本文提出的 OLMo 2 做了进一步的修改:
+末尾, 本文提出的 OLMo 2 做了进一步的修改:
 
 • **RMSNorm:** We use the RMSNorm (Zhang and Sennrich, 2019) variant of LayerNorm (Ba et al., 2016) without a bias term to normalize activations, instead of nonparametric LayerNorm.
 
@@ -390,7 +390,7 @@ Table 4 Composition of the pretraining data for OLMo 2. The OLMo 2 1124 Mix is c
 
 The mix used for this stage is shown in Table 4. It consists of approximately 3.9 trillion tokens, with over 95% derived from web data. We refer to this set as OLMo 2 Mix 1124. This is the same pretraining data used in OLMoE (Muennighoff et al., 2024): We combine data from DCLM (Li et al., 2024) and Dolma 1.7 (Soldaini et al., 2024). From DCLM, we use the “baseline 1.0 ” mix. From Dolma, we use the arXiv (Together AI, 2023), OpenWebMath (Paster et al., 2023), Algebraic Stack, peS2o (Soldaini and Lo, 2023), and Wikipedia subsets. arXiv, OpenWebMath, and Algebraic Stack were originally part of ProofPile II (Azerbayev et al., 2023). Finally, we include code from StarCoder (Li et al., 2023b), which is derived from permissively-licensed repositories from GitHub (Kocetkov et al., 2022). In an attempt to include higher quality code, we remove any document from a repository with fewer than 2 stars on GitHub. Further, through manual inspection of this source, we found it to contain documents encoded in binary format or containing mostly numerical
 
-此阶段使用的数据混合配方如表 4 所示. 它包含约 3.9 万亿 token, 其中超过 95% 来自网页数据. 我们将该数据集称为 OLMo 2 Mix 1124. 这与 OLMoE (Muennighoff et al., 2024) 使用的预训练数据相同: 我们结合了来自 DCLM (Li et al., 2024) 和 Dolma 1.7 (Soldaini et al., 2024) 的数据. 从 DCLM 中, 我们使用 「baseline 1.0」 混合配方. 从 Dolma 中, 我们使用 arXiv (Together AI, 2023), OpenWebMath (Paster et al., 2023), Algebraic Stack, peS2o (Soldaini and Lo, 2023) 和 Wikipedia 子集. arXiv, OpenWebMath 和 Algebraic Stack 最初都是 ProofPile II (Azerbayev et al., 2023) 的一部分. 最后, 我们纳入了来自 StarCoder (Li et al., 2023b) 的代码, 它源自 GitHub 上以宽松许可证发布的仓库 (Kocetkov et al., 2022). 为了纳入更高质量的代码, 我们删除了来自 GitHub 上星标少于 2 的仓库的所有文档.
+此阶段使用的数据混合配方如表 4 所示. 它包含约 3.9 万亿 token, 其中超过 95% 来自网页数据. 我们将该数据集称为 OLMo 2 Mix 1124. 这与 OLMoE (Muennighoff et al., 2024) 使用的预训练数据相同: 我们结合了来自 DCLM (Li et al., 2024) 和 Dolma 1.7 (Soldaini et al., 2024) 的数据. 从 DCLM 中, 我们使用 「baseline 1.0」 混合配方. 从 Dolma 中, 我们使用 arXiv (Together AI, 2023), OpenWebMath (Paster et al., 2023), Algebraic Stack, peS2o (Soldaini and Lo, 2023) 和 Wikipedia 子集. arXiv, OpenWebMath 和 Algebraic Stack 最初都是 ProofPile II (Azerbayev et al., 2023) 的一部分. 末尾, 我们纳入了来自 StarCoder (Li et al., 2023b) 的代码, 它源自 GitHub 上以宽松许可证发布的仓库 (Kocetkov et al., 2022). 为了纳入更高质量的代码, 我们删除了来自 GitHub 上星标少于 2 的仓库的所有文档.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>5</sup>Available at [mlfoundations/dclm-baseline-1.0](https://huggingface.co/datasets/mlfoundations/dclm-baseline-1.0)</span></small>
 
@@ -426,7 +426,7 @@ Table 6 Evaluations comparing OLMo 2 to other base models on a subset of the OLM
 
 表 6｜Evaluations comparing OLMo 2 to other base models on a subset of the OLMES suite (full suite details and results in Appendix $\mathrm { A . 1 ) }$ . Training FLOPs are computed usi
 
-> Figure 1 把性能对预训练 FLOPs 画成 Pareto 前沿; Table 6 给分项. 主张是同性能档用更少 FLOPs, 且数据/代码全开, 不是宣称每一格都绝对第一.
+> Figure 1 把性能对预训练 FLOPs 画成 Pareto 前沿; Table 6 给分项. 主张是同性能档用更少 FLOPs, 且数据/代码全开, 并非宣称每一格都绝对第一.
 
 
 **Base Model Evaluation:** We evaluated OLMo 2 and other baseline models using the OLMES evaluation suite (Gu et al., 2024), which includes a range of benchmark datasets for both multiple-choice and generative tasks, using standardized prompts and in-context examples for few shot predictions. Full descriptions of benchmark tasks in Appendix A.1. For multiple-choice tasks, we evaluate accuracy; for generative tasks, we evaluate F1 to account for partial matches. Additionally, to avoid overfitting our recipe to these benchmarks,
@@ -510,7 +510,7 @@ Figure 2 Training loss and gradient norm curves (over training steps) for OLMo-0
 
 图 2｜OLMo-0424 与 OLMo 2 的训练 loss 与梯度范数曲线 (横轴为 step). 稳定性干预后尖峰明显减少.
 
-> §3 列: 重复 n-gram 过滤 (§3.1), 初始化改 std=0.02 (§3.2), RMSNorm + 重排 norm + QK-norm (§3.3), AdamW ε→1e-8 与 embedding 不去 weight decay (§3.4). Figure 2 是组合干预后的曲线, 不是单因子消融.
+> §3 列: 重复 n-gram 过滤 (§3.1), 初始化改 std=0.02 (§3.2), RMSNorm + 重排 norm + QK-norm (§3.3), AdamW ε→1e-8 与 embedding 不去 weight decay (§3.4). Figure 2 是组合干预后的曲线, 并非单因子消融.
 
 
 • **QK-norm:** We normalize the key and query projections with RMSNorm before calculating attention (§3.3.2).
@@ -570,7 +570,7 @@ Figure 3 Comparison of the gradient norm for two runs, one without n-gram filter
 
 Nevertheless, we have found evidence that broad removal of such sequences across training decreases the frequency of spikes, on average. At data curation time (Section §2.4), we apply a filter that removes all documents with a sequence of 32 or more repeated n-grams, where an n-gram is any span of 1 to 13 tokens. We also implement an additional safeguard in the trainer that detects these sequences during data loading and masks them when computing the loss. Figure 3 shows the effect of masking the loss of input sequences containing repeated n-grams. This intervention results in a clear mitigation—though not complete elimination—of gradient spikes. It had no effect on the slow growth in gradient norm.
 
-尽管如此, 我们发现了证据表明, 在训练中广泛去除此类序列平均会降低尖峰的频率. 在数据整理阶段(第 2.4 节), 我们应用了一个过滤器, 去除所有包含 32 个或更多重复 n-gram 序列的文档, 其中 n-gram 是任意长度为 1 到 13 个词元的片段. 我们还在训练器中实现了一个额外的安全保障, 在数据加载期间检测这些序列并在计算损失时将其掩码. 图 3 展示了掩码包含重复 n-gram 的输入序列损失的效果. 这一干预措施导致梯度尖峰的明显缓解 -- 尽管不是完全消除. 它对梯度范数的缓慢增长没有影响.
+尽管如此, 我们发现了证据表明, 在训练中广泛去除此类序列平均会降低尖峰的频率. 在数据整理阶段(第 2.4 节), 我们应用了一个过滤器, 去除所有包含 32 个或更多重复 n-gram 序列的文档, 其中 n-gram 是任意长度为 1 到 13 个词元的片段. 我们还在训练器中实现了一个额外的安全保障, 在数据加载期间检测这些序列并在计算损失时将其掩码. 图 3 展示了掩码包含重复 n-gram 的输入序列损失的效果. 这一干预措施导致梯度尖峰的明显缓解 -- 尽管并非完全消除. 它对梯度范数的缓慢增长没有影响.
 
 ### 3.2 Model Initialization 3.2 模型初始化
 
@@ -584,7 +584,7 @@ We perform several analyses to study the impact of initialization, showing that 
 
 **Gradient and activation growth** A fundamental concern for training deep networks is ensuring that the activations and gradients do not blow up or vanish across layers, causing learning to become unstable or stagnate. Rather, we want the scale of the activations and gradients to remain roughly the same from layer to layer. Inspired by recent related work (Cowsik et al., 2024), we evaluate different candidate initializations in terms of how they affect the 2-norm of the activations and gradients across layers. Concretely, we randomly initialize a model, pass 50 random documents from The Pile (Gao et al., 2021) through it, and collect the activations and gradients (of loss with respect to the activations) at the initial and final layers (ignoring embeddings). We then average these tensors across documents and time steps to get vectors v at the initial layer and $v ^ { i }$ at the final layer, both of length $d _ { \mathrm { m o d e l } }$ . Finally, we compute the following measure of expansion or contraction across layers, which we call the growth exponent:
 
-训练深层网络的一个基本关切是确保激活值和梯度不会在各层之间爆炸或消失, 导致学习变得不稳定或停滞. 相反, 我们希望激活值和梯度的尺度从一层到下一层大致保持不变. 受到近期相关工作 (Cowsik et al., 2024) 的启发, 我们评估了不同的候选初始化方案, 看它们如何影响各层之间激活值和梯度的 2-范数. 具体而言, 我们随机初始化一个模型, 将来自 The Pile (Gao et al., 2021) 的 50 个随机文档传过模型, 并在初始层和最终层收集激活值和梯度(损失相对于激活值的梯度, 忽略嵌入层). 然后我们在文档和时间步上对这些张量取平均, 得到初始层的向量 $v$ 和最终层的向量 $v'$, 两者长度均为 $d_{\text{model}}$. 最后, 我们计算以下跨层的扩展或收缩度量, 称之为增长指数 (growth exponent):
+训练深层网络的一个基本关切是确保激活值和梯度不会在各层之间爆炸或消失, 导致学习变得不稳定或停滞. 相反, 我们希望激活值和梯度的尺度从一层到下一层大致保持不变. 受到近期相关工作 (Cowsik et al., 2024) 的启发, 我们评估了不同的候选初始化方案, 看它们如何影响各层之间激活值和梯度的 2-范数. 具体而言, 我们随机初始化一个模型, 将来自 The Pile (Gao et al., 2021) 的 50 个随机文档传过模型, 并在初始层和最终层收集激活值和梯度(损失相对于激活值的梯度, 忽略嵌入层). 然后我们在文档和时间步上对这些张量取平均, 得到初始层的向量 $v$ 和最终层的向量 $v'$, 两者长度均为 $d_{\text{model}}$. 末尾, 我们计算以下跨层的扩展或收缩度量, 称之为增长指数 (growth exponent):
 
 $$
 \lambda = \frac {1}{n _ {\text {layers}}} \log \left(\frac {\| \boldsymbol {v} ^ {\prime} \|}{\| \boldsymbol {v} \|}\right)
@@ -620,7 +620,7 @@ Crucially, the growth exponent for OLMo 2 is closer to 0 than for OLMo-0424 acro
 
 **Empirical results** To experiment with model initialization, we first create a baseline run that reproduces spikes quickly. We do so by mainly reducing the warmup period. The effect was immediate and dramatic (Figure 4), and persists across model scales and token counts. In our ablation, the new initialization had no loss spikes, and the spike score for the L2 norm of the gradient went from 0.40 to 0.03. The new initialization converges slightly slower; we make up for this difference by improving other hyperparameter settings (Section §3.4).
 
-为了实验模型初始化, 我们首先创建了一个能快速复现尖峰的基线运行. 我们主要通过减少 Warmup 期来实现. 效果是即时且显著的(图 4), 并且在不同模型规模和 token 数上持续存在. 在我们的消融实验中, 新初始化没有损失尖峰, 且梯度的 L2 范数的尖峰分数从 0.40 降至 0.03. 新初始化收敛稍慢; 我们通过改进其他超参数设置来弥补这一差异(第 3.4 节).
+为了实验模型初始化, 我们第一步创建了一个能快速复现尖峰的基线运行. 我们主要通过减少 Warmup 期来实现. 效果是即时且显著的(图 4), 并且在不同模型规模和 token 数上持续存在. 在我们的消融实验中, 新初始化没有损失尖峰, 且梯度的 L2 范数的尖峰分数从 0.40 降至 0.03. 新初始化收敛稍慢; 我们通过改进其他超参数设置来弥补这一差异(第 3.4 节).
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">8Spike score is conceptually similar to spike mitigation proposed by Karpathy (2024).</span></small>
 
@@ -668,7 +668,7 @@ x is the input to the layer, h is an intermediate hidden state, and $h _ { \math
 
 Liu et al. (2021) first introduced layer norm the idea of reordering layer norm. It was subsequently picked up by Chameleon Team (2024). QK-norm was first developed in Dehghani et al. (2023a).
 
-Liu 等人 (2021) 首先提出了重排序层归一化的想法. 随后 Chameleon Team (2024) 采用了这一做法. QK-归一化最初由 Dehghani 等人 (2023a) 开发.
+Liu 等人 (2021) 第一步提出了重排序层归一化的想法. 随后 Chameleon Team (2024) 采用了这一做法. QK-归一化最初由 Dehghani 等人 (2023a) 开发.
 
 ![Chart block](images/p16-figure-7-applying-layer-norm-after-the-attention-and.png)
 
@@ -695,7 +695,7 @@ Figure 8 Flash Attention’s implementation of z-loss does not match a manual im
 
 图 8｜Flash Attention 库的 z-loss 实现与手工 PyTorch 不一致 (反向尤甚).
 
-> §3.3.3: 前向可能接近, 但反向不匹配. 他们采用与手工实现一致的 z-loss (权重 10^{-5}, 见表 1), 并指出流行库实现不能直接当正确公式用. 问的是数值一致性, 不是「要不要 z-loss」本身.
+> §3.3.3: 前向可能接近, 但反向不匹配. 他们采用与手工实现一致的 z-loss (权重 10^{-5}, 见表 1), 并指出流行库实现不能直接当正确公式用. 问的是数值一致性, 并非「要不要 z-loss」本身.
 
 
 <!-- page 17 of 58 -->
@@ -716,7 +716,7 @@ Figure 9 Setting AdamW’s ϵ to ${ 1 0 } ^ { - 8 }$ lowers and stabilizes the n
 
 图 9｜把 AdamW 的 ε 设为 $10^{-8}$ 可降低并稳住训练早期的梯度范数.
 
-不是. §3.4.1 只动 ε; 10^{-8} 是 PyTorch AdamW 默认. 图表现的是早期梯度范数更低更稳. 不要把它说成换了整套 AdamW 超参表.
+并非. §3.4.1 只动 ε; 10^{-8} 是 PyTorch AdamW 默认. 图表现的是早期梯度范数更低更稳. 不要把它说成换了整套 AdamW 超参表.
 
 
 #### 3.4.2 Weight decay on embeddings 3.4.2 Embedding 的 weight decay
@@ -752,7 +752,7 @@ From afar, our approach is simple: after the pretraining stage, we generate doma
 
 Our starting point for learning rate experiments was the setting from Grattafiori et al. (2024). To initialize the optimizer state for the 7B variant, we linearly warm up the learning rate to its peak of $3 \cdot { { \mathrm { 1 0 } } ^ { - 4 } }$ over the first 2000 steps. Then, we use a standard cosine decay over 5T tokens. Previous experience with OLMo-0424 suggests that the last part of a cosine decay schedule can be cut off and replaced by a linear decay to zero with little loss of performance. Accordingly, for the 7B variant, we stop the schedule at 4T tokens and then switch to mid-training as described in Section $\S 4$ . The 13B ran with a higher peak learning rate from the start, so we decided to run it to 5T tokens before moving to the mid-training stage.
 
-我们学习率实验的起点是 Grattafiori 等人 (2024) 的设置. 为了初始化 7B 变体的优化器状态, 我们在前 2000 步将学习率线性 Warmup 到峰值 $3 \times 10^{-4}$. 然后, 我们在 5T token 上使用标准的余弦衰减. 此前 OLMo-0424 的经验表明, 余弦衰减调度的最后部分可以被截断并替换为线性衰减至零, 而性能损失很小. 因此, 对于 7B 变体, 我们在 4T token 处停止调度, 然后切换到第 4 节描述的中期训练. 13B 从一开始就使用更高的峰值学习率运行, 因此我们决定将其运行到 5T token 后再进入中期训练阶段.
+我们学习率实验的起点是 Grattafiori 等人 (2024) 的设置. 为了初始化 7B 变体的优化器状态, 我们在前 2000 步将学习率线性 Warmup 到峰值 $3 \times 10^{-4}$. 然后, 我们在 5T token 上使用标准的余弦衰减. 此前 OLMo-0424 的经验表明, 余弦衰减调度的末尾部分可以被截断并替换为线性衰减至零, 而性能损失很小. 因此, 对于 7B 变体, 我们在 4T token 处停止调度, 然后切换到第 4 节描述的中期训练. 13B 从一开始就使用更高的峰值学习率运行, 因此我们决定将其运行到 5T token 后再进入中期训练阶段.
 
 Figure 11 shows different runs with four additional learning rate values: $6 \cdot { 1 0 } ^ { - 4 } ,   9 \cdot { 1 0 } ^ { - 4 } ,   { 1 2 } \cdot { 1 0 } ^ { - 4 }$ , and $\mathrm { 3 0 \cdot 1 0 ^ { - 4 } }$ . In particular, we tried double, triple, quadruple, 10×, and 30× the original learning rate. The last, $\mathrm { 3 0 \cdot { 1 0 } ^ { - 4 } }$ , showed training instabilities already during learning rate warm-up, with several loss spikes that did not recover fully, so we abandoned this variant quickly. The other values trained normally and showed an interesting pattern. Looking purely at training loss, higher learning rates universally perform better early on (as long as they avoid loss spikes), but eventually the lower learning rate setting overtakes the others (Figure 11). Notably, when comparing $3 \cdot { { \mathrm { 1 0 } } ^ { - 4 } }$ and $6  \cdot  10 ^{- 4 }$ , the cross-over point is well past 200B tokens. A shorter hyperparameter experiment might come to the wrong conclusion.
 
@@ -811,7 +811,7 @@ Table 8 Results on 9 multiple-choice tasks from the validation subset of OLMES (
 
 Finally, we wanted to see if a higher learning rate during the pretraining stage would result in a more effective mid-training stage when switching to higher quality data. To match our training setup as much as possible within the available compute budget, we took the same two settings $( 3 \cdot { 1 0 } ^ { - 4 } ]$ and $\mathrm { \tilde { 6 } \cdot 1 0 ^ { - 4 } ) }$ , and linearly decayed the learning rate to 0 over 100B high quality tokens. Once again, the results show little difference. The final scores on the OLMES evaluation suite are within 0.1 points of each other. However, looking at other metrics may still reveal a meaningful difference between the two settings. The mix of high quality tokens targets math specifically, and on GSM8K (which is not part of the OLMES suite), the high learning rate setting is 2.8 points better than the lower learning rate. More study is needed to turn this interesting data point into a dependable result.
 
-最后, 我们想看看在预训练阶段使用较高的学习率是否在切换到更高质量数据时会导致更有效的中期训练阶段. 为了在可用计算预算内尽可能匹配我们的训练设置, 我们取相同的两个设置($3 \times 10^{-4}$ 和 $6 \times 10^{-4}$), 并在 100B 高质量 token 上将学习率线性衰减至 0. 再一次, 结果显示差异很小. OLMES 评测套件的最终分数相差不到 0.1 点. 然而, 查看其他指标可能仍能揭示两个设置之间的有意义的差异. 高质量 token 的混合专门针对数学, 在 GSM8K 上(这不是 OLMES 套件的一部分), 高学习率设置比低学习率好 2.8 点. 需要更多研究才能将这个有趣的数据点转化为可靠的结果.
+末尾, 我们想看看在预训练阶段使用较高的学习率是否在切换到更高质量数据时会导致更有效的中期训练阶段. 为了在可用计算预算内尽可能匹配我们的训练设置, 我们取相同的两个设置($3 \times 10^{-4}$ 和 $6 \times 10^{-4}$), 并在 100B 高质量 token 上将学习率线性衰减至 0. 再一次, 结果显示差异很小. OLMES 评测套件的最终分数相差不到 0.1 点. 然而, 查看其他指标可能仍能揭示两个设置之间的有意义的差异. 高质量 token 的混合专门针对数学, 在 GSM8K 上(这并非 OLMES 套件的一部分), 高学习率设置比低学习率好 2.8 点. 需要更多研究才能将这个有趣的数据点转化为可靠的结果.
 
 This finding contradicts machine learning folk wisdoms such as “higher learning rates are always better” or “area under the learning curve matters” (McCandlish et al., 2018). It expands on Wortsman et al. (2023), who observed that smaller models’ performance is largely invariant to learning rate over several orders of magnitude when trained to the end of a cosine schedule, and further found that QK-norm (section 3.3.2) and z-loss (section 3.3.3), which we use as well, enhance this effect. We find that these results still hold even at much larger scales of tokens and parameters, and, crucially for our training efforts, with our modified learning rate schedule.
 
@@ -847,7 +847,7 @@ Table 9 Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraini
 
 表 9｜Evaluations comparing OLMo 2 1B, 7B, 13B and 32B at the end of pretraining and mid-training stages (setup mirrors Table 6). Pretrain checkpoints have been trained on 4 trillion (1B
 
-附录 B / 正文引用: Dolmino Mix 1124 对 1B 的收益约 +37.0%, 高于更大模型. Table 9 是各档 pretrain 终点 vs mid-train 终点的对照. 口径是同一 OLMES 设定下的相对抬升, 不是 FLOPs 归一化后的另一张表.
+附录 B / 正文引用: Dolmino Mix 1124 对 1B 的收益约 +37.0%, 高于更大模型. Table 9 是各档 pretrain 终点 vs mid-train 终点的对照. 口径是同一 OLMES 设定下的相对抬升, 并非 FLOPs 归一化后的另一张表.
 
 
 Table 9 summarizes the dramatic impact of this mid-training phase on both development and held-out evals. OLMo 2 7B model improves, on average by 10.6 points, surpassing the larger 13B model after the pretraining stage. For its part, OLMo 2 13B benefits equally from mid-training, improving its average performance by 10.3 points. Both models see improvements in knowledge-intensive, multiple-choice (Arc challenge: 72.6 → 79.8 for 7B, 80.2 → 83.5 for 13B; MMLU: 59.8 → 63.7 for 7B, 63.4 → 67.5 for 13B; AGIEval: 44.6 → 50.4 for 7B, 48.2 → 54.2 for 13B), reading comprehension (Natural Questions: 29.0 → 36.9 for 7B, 34.6 → 46.7 for 13B; DROP: 40.7 → 60.8 for 7B, 49.6 → 70.7 for 13B), and math skills (GSM8K: 24.1 → 67.5 for 7B, 37.3 → 75.1 for 13B) benchmarks.
@@ -942,7 +942,7 @@ Results of mixes shown in Table 10 are summarized in Table 11. All results corre
 
 We find that, as noted in Section §4.1, learning rate anneal (PT Mix) alone yields notable improvements across all averages (OLMES +4.4; OLMES-Gen +1.3; MMLU +20), but not on our math development set (GSM\* −1.5). Switching to mixes that contain higher quality web data and reference content further improves performance: Web $^ { \mathsf { F T } _ { 7 } } _ { \mathsf { F W } _ { 2 } }$ further improves +1.2 points over PT Mix in OLMES and +1.3 in MMLU; it is slightly worse on OLMES-Gen (−0.4) and within margin of error on GSM\* (+1.5). Finally including instruction data
 
-我们发现, 正如第 4.1 节所指出的, 仅学习率退火(PT Mix)就在所有平均分上产生了显著的提升(OLMES +4.4; OLMES-Gen +1.3; MMLU +2.0), 但在我们的数学开发集上没有提升(GSM* −1.5). 切换到包含更高质量网页数据和参考内容的混合配方进一步提升了性能: Web FT7 + FW2 在 OLMES 上比 PT Mix 进一步提升了 +1.2 点, 在 MMLU 上提升了 +1.3; 它在 OLMES-Gen 上稍差(−0.4), 在 GSM* 上在误差范围内(+1.5). 最后在混合配方中纳入指令数据和数学来源产生了最佳性能. Web FT7 + FW2 + Math + Ins 混合配方取得了最佳总体结果, OLMES +1.7, 生成任务 +5.7, MMLU +1.3, GSM* +19.5. 我们注意到 Web FT7 + FW2 + Math 混合配方在数学任务上表现稍好, 这促使我们在第 4.4 节中研究与其他高质量来源更好地结合的数学子集.
+我们发现, 正如第 4.1 节所指出的, 仅学习率退火(PT Mix)就在所有平均分上产生了显著的提升(OLMES +4.4; OLMES-Gen +1.3; MMLU +2.0), 但在我们的数学开发集上没有提升(GSM* −1.5). 切换到包含更高质量网页数据和参考内容的混合配方进一步提升了性能: Web FT7 + FW2 在 OLMES 上比 PT Mix 进一步提升了 +1.2 点, 在 MMLU 上提升了 +1.3; 它在 OLMES-Gen 上稍差(−0.4), 在 GSM* 上在误差范围内(+1.5). 末尾在混合配方中纳入指令数据和数学来源产生了最佳性能. Web FT7 + FW2 + Math + Ins 混合配方取得了最佳总体结果, OLMES +1.7, 生成任务 +5.7, MMLU +1.3, GSM* +19.5. 我们注意到 Web FT7 + FW2 + Math 混合配方在数学任务上表现稍好, 这促使我们在第 4.4 节中研究与其他高质量来源更好地结合的数学子集.
 
 <!-- page 23 of 58 -->
 
@@ -966,7 +966,7 @@ We describe both the data sources and their generation/filtration procedure in S
 
 **DolminoSynthMath** This is a collection of 28M synthetic math tokens designed specifically to improve performance on GSM8K as well as raw mathematical calculations. It is composed of three parts: first we generate 11M tokens of basic mathematical question and answer pairs such as $`` 77 \;  *  \; 14 = 1078  ''$ and pair each of these with a variety of prompts. We find that including such data dramatically mitigates the mistakes our model makes within individual CoT reasoning steps at inference time. Next we include a custom collection of 7,924 synthetic GSM8K examples, which are produced by consuming a GSM8K training example and replacing all of its numbers in both the provided question and answer, with the hope that this would provide signal to the model to extract the computation graph from a word problem and ignore irrelevant semantic features. Finally we include a MIND-rewriting (Akter et al., 2024) of each of the GSM8K training examples, where the synthetic data was generated using Qwen2.5-7B-Instruct (Qwen et al., 2024).
 
-这是一个包含 2800 万个合成数学 token 的集合, 专门设计用于提升 GSM8K 以及原始数学计算的性能. 它由三部分组成: 首先, 我们生成 1100 万个基本数学问答对 token, 例如「77 × 14 = 1078」, 并将每个问答对与多种提示配对. 我们发现, 包含此类数据极大地缓解了我们模型在推理时单个 CoT 推理步骤中犯的错误. 接下来, 我们包含一个自定义的 7,924 个合成 GSM8K 示例集合, 这些示例通过获取一个 GSM8K 训练示例并替换所提供问题和答案中的所有数字来生成, 目的是为模型提供从文字问题中提取计算图并忽略不相关语义特征的信号. 最后, 我们包含每个 GSM8K 训练示例的 MIND 重写 (Akter et al., 2024), 其中合成数据使用 Qwen2.5-7B-Instruct (Qwen et al., 2024) 生成.
+这是一个包含 2800 万个合成数学 token 的集合, 专门设计用于提升 GSM8K 以及原始数学计算的性能. 它由三部分组成: 第一步, 我们生成 1100 万个基本数学问答对 token, 例如「77 × 14 = 1078」, 并将每个问答对与多种提示配对. 我们发现, 包含此类数据极大地缓解了我们模型在推理时单个 CoT 推理步骤中犯的错误. 接下来, 我们包含一个自定义的 7,924 个合成 GSM8K 示例集合, 这些示例通过获取一个 GSM8K 训练示例并替换所提供问题和答案中的所有数字来生成, 目的是为模型提供从文字问题中提取计算图并忽略不相关语义特征的信号. 末尾, 我们包含每个 GSM8K 训练示例的 MIND 重写 (Akter et al., 2024), 其中合成数据使用 Qwen2.5-7B-Instruct (Qwen et al., 2024) 生成.
 
 **TinyGSM-MIND** We generated approximately 6.5B tokens of synthetic math data from rewritten versions of Tiny-GSM (Liu et al., 2023a). Tiny-GSM is a collection of 11M synthetic GSM8K-like questions, where the answers are provided in the form of python code. We filter this set to only include answers that have code that is executable and only contains statements that are variable assignments. We then annotate each line of the code that is an assignment operator with the numerical value of the resulting variable. Then we pass all of these annotated examples to Qwen2.5-7B-Instruct to be rewritten in the style of MIND (Akter et al., 2024) using the ‘Two Students’ and ‘Problem Solving’ prompts.
 
@@ -993,7 +993,7 @@ OpenWebMath examples (Paster et al., 2023) as either math-related or non-math-re
 
 **GSM8K-Train** Finally, we include the training split of GSM8K (Cobbe et al., 2021).
 
-最后, 我们包含 GSM8K (Cobbe et al., 2021) 的训练拆分.
+末尾, 我们包含 GSM8K (Cobbe et al., 2021) 的训练拆分.
 
 #### 4.4.2 Evaluating Math Data with Microanneals 4.4.2 用 microanneal 评数学数据
 
@@ -1102,7 +1102,7 @@ Based on this evidence, we extensively use model merging to obtain our final OLM
 
 To adapt OLMo 2 to downstream generative tasks, we follow the Tülu 3 recipe (Lambert et al., 2024) with an increased focus on permissive licenses and suitable adjustments to hyperparameters. The Tülu 3 approach involves three phases of training: supervised finetuning (SFT), preference tuning with Direct Preference Optimization (DPO; Rafailov et al., 2024) and on-policy preference data, and finally Reinforcement Learning with Verifiable Rewards (RLVR). We find that all of the stages in the Tülu 3 Recipe easily translate to the OLMo 2 models. This section focuses on the development of our 7B and 13B models, where the 1B and 32B models followed very similar recipes.
 
-为了使 OLMo 2 适应下游生成任务, 我们遵循 Tülu 3 配方 (Lambert et al., 2024), 并更加注重宽松许可证和对超参数的适当调整. Tülu 3 方法涉及三个训练阶段: 监督微调 (SFT, Supervised Fine-Tuning), 使用直接偏好优化 (DPO, Direct Preference Optimization; Rafailov et al., 2024) 和 on-policy 偏好数据的偏好调优, 最后是可验证奖励的强化学习 (RLVR, Reinforcement Learning with Verifiable Rewards). 我们发现 Tülu 3 配方的所有阶段都可以轻松迁移到 OLMo 2 模型. 本节重点介绍我们 7B 和 13B 模型的开发, 其中 1B 和 32B 模型遵循非常相似的配方.
+为了使 OLMo 2 适应下游生成任务, 我们遵循 Tülu 3 配方 (Lambert et al., 2024), 并更加注重宽松许可证和对超参数的适当调整. Tülu 3 方法涉及三个训练阶段: 监督微调 (SFT, Supervised Fine-Tuning), 使用直接偏好优化 (DPO, Direct Preference Optimization; Rafailov et al., 2024) 和 on-policy 偏好数据的偏好调优, 末尾是可验证奖励的强化学习 (RLVR, Reinforcement Learning with Verifiable Rewards). 我们发现 Tülu 3 配方的所有阶段都可以轻松迁移到 OLMo 2 模型. 本节重点介绍我们 7B 和 13B 模型的开发, 其中 1B 和 32B 模型遵循非常相似的配方.
 
 **Supervised Finetuning (SFT)** The SFT training of OLMo 2-Instruct from Tülu 3 relies on selecting the highest-quality, existing instruction datasets and complementing them with scaled synthetic data for Supervised Finetuning based on the PersonaHub method (Chan et al., 2024). We develop two SFT mixes— tulu-3-sft-olmo-2-mixture which we used for our 7B and 13B models and tulu-3-sft-olmo-2-mixture-0225 which includes minor modifications and applied to our 1B and 32B models.
 
@@ -1110,7 +1110,7 @@ OLMo 2-Instruct 的 SFT 训练基于 Tülu 3, 依赖于选择最高质量的现�
 
 For tulu-3-sft-olmo-2-mixture, given that OLMo 2 is not trained for multilingual tasks, we experimented with removing all multilingual data from the SFT stage. When removing the entire Aya split and the multilingual samples of Wildchat from Tülu 3, we saw a degradation of ∼ 0.5 points on average, indicating that the Tülu 3 dataset is balanced and cannot be easily improved by removing irrelevant subsets. In total, this SFT mix contains 939,104 prompts.
 
-对于 tulu-3-sft-olmo-2-mixture, 鉴于 OLMo 2 不是为多语言任务训练的, 我们尝试从 SFT 阶段移除所有多语言数据. 当从 Tülu 3 中移除整个 Aya 拆分和 Wildchat 的多语言样本时, 我们看到平均约 0.5 点的下降, 这表明 Tülu 3 数据集是平衡的, 不能通过移除不相关的子集来轻易改进. 总计, 该 SFT 混合配方包含 939,104 个提示.
+对于 tulu-3-sft-olmo-2-mixture, 鉴于 OLMo 2 并非为多语言任务训练的, 我们尝试从 SFT 阶段移除所有多语言数据. 当从 Tülu 3 中移除整个 Aya 拆分和 Wildchat 的多语言样本时, 我们看到平均约 0.5 点的下降, 这表明 Tülu 3 数据集是平衡的, 不能通过移除不相关的子集来轻易改进. 总计, 该 SFT 混合配方包含 939,104 个提示.
 
 <!-- page 27 of 58 -->
 
@@ -1184,7 +1184,7 @@ Table 16 Comparison of performance for OLMo 2 Instruct after different training 
 
 表 16｜Comparison of performance for OLMo 2 Instruct after different training stages. The final Instruct model is from the RLVR stage. The following evaluation names are abbreviated: AVG 
 
-> §5 / Table 16: 最终 Instruct 来自在偏好调优之后继续做可验证奖励强化学习 (RLVR). 流水是叠加阶段, 不是「RLVR 替换 DPO」. 多阶段 RLVR 曲线见 Figure 13 / 14.
+> §5 / Table 16: 最终 Instruct 来自在偏好调优之后继续做可验证奖励强化学习 (RLVR). 流水是叠加阶段, 并非「RLVR 替换 DPO」. 多阶段 RLVR 曲线见 Figure 13 / 14.
 
 
 prompts from several sources listed in Table 27, resulting in datasets of 366.7k prompts for 7B and 377.7k prompts for 13B. Given this set of prompts, we generate responses from a pool of 20 models of different families and sizes.
@@ -1212,7 +1212,7 @@ For the 1B and 32B model, we performed RLVR with Group Relative Policy Optimizat
 
 **Hyperparameter selection** We perform the following hyperparameter tuning for the 7 and 13B models. At each stage we experiment with 1 random seed initially to arrive on a configuration and up to 4 with final hyperparameters. The final hyperparameters are marked with (♥):
 
-我们对 7B 和 13B 模型进行以下超参数调优. 在每个阶段, 我们首先用 1 个随机种子实验以确定配置, 最终超参数最多用 4 个随机种子. 最终超参数标记为 ():
+我们对 7B 和 13B 模型进行以下超参数调优. 在每个阶段, 我们第一步用 1 个随机种子实验以确定配置, 最终超参数最多用 4 个随机种子. 最终超参数标记为 ():
 
 1. **SFT:** We sweep over learning rates $1 \times { 1 0 } ^ { - 5 } , \; 2 \times { 1 0 } ^ { - 5 } ( \mathbb { P } ) , \; 3 \times { 1 0 } ^ { - 5 }$ for the 7B model and $1 \times { { 1 0 } ^ { - 6 } }$ $$4 \times 1 0 ^ { ^ { - 6 } } \text {, } 5 \times \bar { 1 0 } ^ { ^ { - 6 } }$ ( 即 ), $\overset { \sim } { 7 . 5 \times 1 0 } ^ { - 6 } \text {, } 8 \times 1 0 ^ { ^ { - 6 } }$$ for the 13B model.
 
@@ -1240,7 +1240,7 @@ Figure 13 The scores from our evaluation suites for OLMo-2-1124-13B-Instruct tra
 
 We conducted a hyperparameter sweep for SFT and DPO, using earlier development checkpoints, with results detailed in Table 17 and Figure 12. A key finding was that OLMo 2 required significantly higher learning rates compared to the Llama 3.1 training recipe described by Lambert et al. (2024). Finally, the optimized hyperparameters for our final model are presented in Table 17 and Table 18.
 
-我们使用早期的开发检查点对 SFT 和 DPO 进行了超参数扫描, 结果详见表 17 和图 12. 一个关键发现是, 与 Lambert 等人 (2024) 描述的 Llama 3.1 训练配方相比, OLMo 2 需要显著更高的学习率. 最后, 我们最终模型的优化超参数呈现在表 17 和表 18 中.
+我们使用早期的开发检查点对 SFT 和 DPO 进行了超参数扫描, 结果详见表 17 和图 12. 一个关键发现是, 与 Lambert 等人 (2024) 描述的 Llama 3.1 训练配方相比, OLMo 2 需要显著更高的学习率. 末尾, 我们最终模型的优化超参数呈现在表 17 和表 18 中.
 
 The post-training for the 32B model occurred after the release of the 7 and 13B models, so the hyperparameter selection proceeded independently. For SFT, we swept over a learning rate of $\mathrm { 1 \times 1 0 ^ { \bar { ~ } ^ { 6 } } , 2 \times 1 0 ^ { \bar { ~ } ^ { 6 } } , 3 \times 1 0 ^ { \bar { ~ } ^ { 6 } } , } 4 \times$ $\mathrm { 1 0 ^ { - 6 } , } 5   \times   \mathrm { \dot { 1 0 } ^ { - 6 } }$ , with the best performance as $\overset { \cdot } { 4 } \times { 1 0 } ^ { - 6 }$ where we ran one additional seed to compare performance. For DPO, we swept over learning rates again, from $\mathrm { 8 \times 1 0 ^ { - 7 } ,   1 \times 1 0 ^ { - 6 } ,   1 . 5 \times 1 0 ^ { - 6 } ,   2 \times 1 0 ^ { - 6 } ,   2 . 5 \times 1 0 ^ { - 6 } }$ , and the best performance was $2  \times  10 ^{ \overset{\sim}{-}  6  }$ For RLVR, the 32B does not need a reward model due to the change to GRPO. Beyond that, the final model was trained with a learning rate of $5  \times  10 ^{-7}$ , with a KL beta of 0.1, and 16 samples per prompt.
 
@@ -1248,7 +1248,7 @@ The post-training for the 32B model occurred after the release of the 7 and 13B 
 
 **Evaluation of OLMo 2-Instruct** Following Tülu 3 (Lambert et al., 2024), we evaluate OLMo 2-Instruct on five categories listed in Table 15. Although Tülu 3 uses six categories including code-related tasks, we exclude this category since code was not a target skill during the development of OLMo 2. For each of the remaining categories, we use the same evaluations as those used for developing the Tülu 3 recipe. Table 15 also shows the settings and metrics used for each of the evaluations. These match those recommended in Lambert et al. (2024) for the non-code categories.
 
-遵循 Tülu 3 (Lambert et al., 2024), 我们在表 15 中列出的五个类别上评估 OLMo 2-Instruct. 虽然 Tülu 3 使用六个类别(包括代码相关任务), 但我们排除了这一类别, 因为代码不是 OLMo 2 开发期间的目标技能. 对于剩余的每个类别, 我们使用与开发 Tülu 3 配方时相同的评测. 表 15 还显示了每个评测使用的设置和指标. 这些与 Lambert 等人 (2024) 为非代码类别推荐的设置一致.
+遵循 Tülu 3 (Lambert et al., 2024), 我们在表 15 中列出的五个类别上评估 OLMo 2-Instruct. 虽然 Tülu 3 使用六个类别(包括代码相关任务), 但我们排除了这一类别, 因为代码并非 OLMo 2 开发期间的目标技能. 对于剩余的每个类别, 我们使用与开发 Tülu 3 配方时相同的评测. 表 15 还显示了每个评测使用的设置和指标. 这些与 Lambert 等人 (2024) 为非代码类别推荐的设置一致.
 
 Table 16 presents the performance of OLMo 2 Instruct variants across different training stages. A comparative analysis of OLMo 2-Instruct’s performance against similarly-sized open models can be found in Table 7. Furthermore, Figures 13 and 15 present the training trajectories and key performance metrics for the 13B and 7B models, respectively.
 
@@ -1268,7 +1268,7 @@ OLMo 2-Instruct 模型展示了与领域内领先开源权重模型相当的性�
 
 Finally, we evaluate OLMo 2-Instruct on the unseen evaluation suite from Lambert et al. (2024) without the code evaluation tasks. The Instruct scores on the unseen evaluation suite are shown in Table 24.
 
-最后, 我们在 Lambert 等人 (2024) 的未见评测套件上评估 OLMo 2-Instruct(不含代码评测任务). Instruct 在未见评测套件上的分数见表 24.
+末尾, 我们在 Lambert 等人 (2024) 的未见评测套件上评估 OLMo 2-Instruct(不含代码评测任务). Instruct 在未见评测套件上的分数见表 24.
 
 | Hyperparameter | RLVR value |
 | --- | --- |
@@ -1411,7 +1411,7 @@ Beaker 的架构可以利用跨 3 个不同数据中心的 GPU, 只需最少的�
 
 **Isolation** Beaker workloads are containerized, providing some isolation guarantees. This allows OLMo 2 workloads to run simultaneously with other jobs on the same cluster, each with unique environments and dependencies, with minimal conflicts. Notably, the Beaker executor allocates host resources in a fashion that minimizes (but doesn’t completely avoid) performance problems caused by noisy-neighbors. Containers further capture software dependencies and the runtime details of workloads. This helps run repeatable experiments, and makes it possible to replay old results even months after they happened. This stands in contrast to the more common Slurm-based setup where all workloads, whether they relate to OLMo 2 or not, share the same underlying operating system, CUDA libraries, and environment resulting in instability that makes experiments unreproducible after system changes.
 
-Beaker 工作负载是容器化的, 提供一些隔离保证. 这允许 OLMo 2 工作负载与其他作业在同一集群上同时运行, 每个作业有独特的环境和依赖, 冲突最小. 值得注意的是, Beaker 执行器以最小化(但不能完全避免)由 noisy-neighbors 引起的性能问题的方式分配主机资源. 容器进一步捕获软件依赖和工作负载的运行时细节. 这有助于运行可重复的实验, 并使得即使在数月后也能重放旧结果. 这与更常见的基于 Slurm 的设置形成对比, 后者所有工作负载(无论是否与 OLMo 2 相关)共享相同的底层操作系统, CUDA 库和环境, 导致系统更改后实验无法复现.
+Beaker 工作负载是容器化的, 提供一些隔离保证. 这允许 OLMo 2 工作负载与其他作业在同一集群上同时运行, 每个作业有独特的环境和依赖, 冲突最小. 其中, Beaker 执行器以最小化(但不能完全避免)由 noisy-neighbors 引起的性能问题的方式分配主机资源. 容器进一步捕获软件依赖和工作负载的运行时细节. 这有助于运行可重复的实验, 并使得即使在数月后也能重放旧结果. 这与更常见的基于 Slurm 的设置形成对比, 后者所有工作负载(无论是否与 OLMo 2 相关)共享相同的底层操作系统, CUDA 库和环境, 导致系统更改后实验无法复现.
 
 Beaker also made it possible for us to take advantage of new compute sources that became available throughout the evolution of the project. Its operational simplicity made it possible for a small team of operators to quickly onboard new sources of compute.
 
@@ -1445,7 +1445,7 @@ Beaker 支持将节点隔离作为自动健康检查的覆盖机制. 被隔离�
 
 Ai2’s hardware infrastructure (§6.1) has to be complemented by good model training software that gets the most out of the available resources. Increased efficiency not only lets us train larger models for more tokens, but it also improves the environmental impact of model training (§6.5), and raises experimental velocity. Further, OLMo is not the only Ai2 project, and being responsible with our resource use minimizes the disruption that large model training causes for other teams.
 
-Ai2 的硬件基础设施(§6.1)需要由良好的模型训练软件来补充, 以充分利用可用资源. 提高效率不仅使我们能够用更多 token 训练更大的模型, 还改善了模型训练的环境影响(§6.5), 并提高了实验速度. 此外, OLMo 不是 Ai2 唯一的项目, 负责任地使用资源可以最小化大模型训练对其他团队造成的干扰.
+Ai2 的硬件基础设施(§6.1)需要由良好的模型训练软件来补充, 以充分利用可用资源. 提高效率不仅使我们能够用更多 token 训练更大的模型, 还改善了模型训练的环境影响(§6.5), 并提高了实验速度. 此外, OLMo 并非 Ai2 唯一的项目, 负责任地使用资源可以最小化大模型训练对其他团队造成的干扰.
 
 Below we describe several PyTorch optimizations<sup>27</sup> that had a big impact towards reducing training time of LMs on our infrastructure without any apparent loss in the speed of convergence.
 
@@ -1546,7 +1546,7 @@ Table 19 $\mathrm { C O _ { 2 } }$ emissions and water consumption during pretra
 
 Following our analysis in Groeneveld et al. (2024) and previous literature (Patterson et al., 2021; Dodge et al., 2022; Luccioni et al., 2022; Li et al., 2023a), we estimate the environmental impact of training our final models by first calculating the total energy consumed during pretraining, and multiplying it by the carbon intensity of the local grid to estimate the amount of carbon released. We additionally extend our previous analysis to also estimate water consumption, calculated by multiplying the power consumed by the water usage efficiency of both the power generation and the cooling hardware. As in Groeneveld et al. (2024), we emphasize that while our reporting is standard practice, it does not account for other environmental impacts such as embodied emissions and water consumption of the hardware during manufacturing, transportation, and eventual disposal, and other lifetime operational impacts such as deployment and inference, and thus our estimates should be viewed as lower bounds. We report detailed results for our models in Table 19.
 
-遵循我们在 Groeneveld 等人 (2024) 中的分析和先前文献 (Patterson et al., 2021; Dodge et al., 2022; Luccioni et al., 2022; Li et al., 2023a), 我们通过首先计算预训练期间消耗的总能量, 然后乘以当地电网的碳强度来估计训练我们最终模型的环境影响, 以估算释放的碳量. 我们还扩展了先前的分析, 增加了水消耗估算, 通过将消耗的功率乘以发电和冷却硬件的水使用效率来计算. 与 Groeneveld 等人 (2024) 一样, 我们强调虽然我们的报告是标准做法, 但它没有考虑其他环境影响, 如硬件在制造, 运输和最终处置过程中的隐含排放和水消耗, 以及其他生命周期运营影响(如部署和推理), 因此我们的估计应被视为下限. 我们在表 19 中报告了我们模型的详细结果.
+遵循我们在 Groeneveld 等人 (2024) 中的分析和先前文献 (Patterson et al., 2021; Dodge et al., 2022; Luccioni et al., 2022; Li et al., 2023a), 我们通过第一步计算预训练期间消耗的总能量, 然后乘以当地电网的碳强度来估计训练我们最终模型的环境影响, 以估算释放的碳量. 我们还扩展了先前的分析, 增加了水消耗估算, 通过将消耗的功率乘以发电和冷却硬件的水使用效率来计算. 与 Groeneveld 等人 (2024) 一样, 我们强调虽然我们的报告是标准做法, 但它没有考虑其他环境影响, 如硬件在制造, 运输和最终处置过程中的隐含排放和水消耗, 以及其他生命周期运营影响(如部署和推理), 因此我们的估计应被视为下限. 我们在表 19 中报告了我们模型的详细结果.
 
 As in Groeneveld et al. (2024), we calculate the total power consumption for each model by measuring the power consumption of an individual node every 25ms, calculating the average consumption throughout training, and multiplying by the total number of nodes. We then multiply this quantity by the power usage effectiveness (PUE) factor for the data center we use to train a model to account for the overall energy efficiency of the data center. As the majority of training for OLMo 2 7B is done on the Jupiter cluster, we use Jupiter’s efficiency metrics for our analysis of the 7B model. OLMo 2 13B is trained on Augusta; therefore, we use its efficiency metrics instead. We estimate consumption at about **391 MWh of energy** by pretraining OLMo 2 7B and 13B.
 
@@ -1612,7 +1612,7 @@ A successful team project like OLMo would not be possible without the fluid cont
 
 Authorship for this work was determined by those making direct contributions to the OLMo 2 models, related artifacts, and their release. Core contributors are recognized for their sustained, significant contributions critical to the success of the OLMo 2 project.
 
-本工作的作者身份由对 OLMo 2 模型, 相关产物及其发布做出直接贡献的人员确定. 核心贡献者因其对 OLMo 2 项目成功至关重要的持续, 重大贡献而受到认可.
+本工作的作者身份由对 OLMo 2 模型, 相关产物及其发布做出直接贡献的人员确定. 核心贡献者因其对 OLMo 2 项目成功很关键的持续, 重大贡献而受到认可.
 
 ## Acknowledgments
 

@@ -111,7 +111,7 @@ While popular OCR benchmarks often use a form of edit distance (Ouyang et al., 2
 - **Continuous score doesn't necessarily measure "correctness".** The use of edit distance as a continuous scoring function rewards/penalizes OCR output in a manner that doesn't correlate with practical notions of correctness, such as placing greater emphasis on correct ordering of main body text rather than caption placement or post-rendered correctness of a LaTeX formula rather than the LaTeX form itself.
 
 - **对「并列正确」一视同仁.** 表格, 插图这类浮动元素没有唯一确定的真值写法. 同一内容的几种写法不同但同样正确, 单元测试可以给它们相近的分数, 编辑距离则常常对它们奖罚不一.
-- **连续分数不一定衡量「正确与否」.** 把编辑距离当连续评分函数时, 它的奖罚方式与实际意义上的正确性对不上. 例如实际更看重正文顺序对不对, 而不是图注放在哪里; 更看重 LaTeX 公式渲染出来对不对, 而不是 LaTeX 字面写法.
+- **连续分数不一定衡量「正确与否」.** 把编辑距离当连续评分函数时, 它的奖罚方式与实际意义上的正确性对不上. 例如实际更看重正文顺序对不对, 而并非图注放在哪里; 更看重 LaTeX 公式渲染出来对不对, 而并非 LaTeX 字面写法.
 
 We include two key motivating examples in Figures 1 and 2 to further illustrate.
 
@@ -181,7 +181,7 @@ document image, and ask it to "render this document as clean, semantic HTML" fit
 
 Alongside olmOCR2-synthmix-1025, we use a refreshed mix for supervised fine-tuning, olmOCR-mix-1025. The dataset contains 267,962 pages from over 100,000 PDFs sampled from diverse sources, including 9,828 pages from national archives. Compared to olmOCR-mix-0225, the new mix has been re-processed using GPT-4.1 instead of GPT-4o, has more consistent equation formatting (with `\[` and `\(` for block and inline math), uses HTML format for tables, and includes basic alt text for images. See Table 2 for SFT results using these two training sets.
 
-除了 olmOCR2-synthmix-1025, 我们还更新了监督微调用的数据 olmOCR-mix-1025. 它包含来自 10 万多份 PDF 的 267,962 页, 来源多样, 其中 9,828 页来自国家档案馆. 与 olmOCR-mix-0225 相比, 新数据改用 GPT-4.1 而不是 GPT-4o 重新处理, 公式格式更统一 (块级公式用 `\[`, 行内公式用 `\(`), 表格改用 HTML 格式, 图片带有基本的 alt 文本. 两套训练集的 SFT 结果见 Table 2.
+除了 olmOCR2-synthmix-1025, 我们还更新了监督微调用的数据 olmOCR-mix-1025. 它包含来自 10 万多份 PDF 的 267,962 页, 来源多样, 其中 9,828 页来自国家档案馆. 与 olmOCR-mix-0225 相比, 新数据改用 GPT-4.1 而并非 GPT-4o 重新处理, 公式格式更统一 (块级公式用 `\[`, 行内公式用 `\(`), 表格改用 HTML 格式, 图片带有基本的 alt 文本. 两套训练集的 SFT 结果见 Table 2.
 
 | | ArXiv | Old scans math | Tables | Old scans | Headers & footers | Multi column | Long tiny text | Base | Overall |
 |---|---|---|---|---|---|---|---|---|---|
@@ -206,7 +206,7 @@ Besides the unit test above, we include two additional rewards to ensure correct
 
 We use the Hugging Face TRL library (von Werra et al., 2020), with KL divergence $\beta = 0.01$. To maximize performance, we found it beneficial to train multiple models, and average, or *soup* (Wortsman et al., 2022), their weights. In detail, we train six models with different random seeds, and soup their weights at the end.
 
-训练用 Hugging Face TRL 库 (von Werra et al., 2020), KL 散度系数 $\beta = 0.01$. 为了把性能做到最好, 我们发现训练多个模型再把权重平均 (即 *soup*, Wortsman et al., 2022) 有好处. 具体做法是用六个不同的随机种子训练六个模型, 最后把它们的权重平均.
+训练用 Hugging Face TRL 库 (von Werra et al., 2020), KL 散度系数 $\beta = 0.01$. 为了把性能做到最好, 我们发现训练多个模型再把权重平均 (即 *soup*, Wortsman et al., 2022) 有好处. 具体做法是用六个不同的随机种子训练六个模型, 末尾把它们的权重平均.
 
 Footnote 3: [github.com/allenai/olmocr/olmocr/bench/synth/mine_html_templates.py#L510-L546](https://github.com/allenai/olmocr/blob/f5fad405c0bc47ce7196fad5b9f2c69d33da4ef2/olmocr/bench/synth/mine_html_templates.py#L510-L546)
 
@@ -230,7 +230,7 @@ Table 3 汇总了从最初的 olmOCR 到 olmOCR 2 之间的主要开发节点, �
 
 **动态温度.** 第一版 olmOCR 的默认采样温度是 0.8. 我们发现低温采样往往效果更好, 但 VLM 推理更容易陷入重复循环. 为了既用上低温又缓解重复, 我们采用动态温度: 从 0.1 开始, 逐步升到 0.2, 0.3, 依此类推, 最高到 0.8. 每次升温都由模型没能生成 EOS token (因而无限重复) 触发. 这一改动让基准总分显著提高.
 
-论文给的固定 commit (f5fad405) 与 main 分支的 `pipeline.py` 都写着 `TEMPERATURE_BY_ATTEMPT = [0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0]`, 第 $k$ 次尝试 ($k$ 从 0 起) 取第 $k$ 项, 超出表长取最后一项; `--max_page_retries` 默认 8, 所以一页最多尝试 8 次, 温度依次是 0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0. 与论文描述有三处不同: 0.1 用两次, 0.3 之后跳到 0.5, 上限是 1.0 而不是 0.8. 重试的触发条件是返回的 `finish_reason` 不是 `stop` (没生成 EOS) 或总 token 超过 16384. 8 次都失败时, 这一页退回 `pdftotext` 抽取的文本层.
+论文给的固定 commit (f5fad405) 与 main 分支的 `pipeline.py` 都写着 `TEMPERATURE_BY_ATTEMPT = [0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0]`, 第 $k$ 次尝试 ($k$ 从 0 起) 取第 $k$ 项, 超出表长取末尾一项; `--max_page_retries` 默认 8, 所以一页最多尝试 8 次, 温度依次是 0.1, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 1.0. 与论文描述有三处不同: 0.1 用两次, 0.3 之后跳到 0.5, 上限是 1.0 而并非 0.8. 重试的触发条件是返回的 `finish_reason` 并非 `stop` (没生成 EOS) 或总 token 超过 16384. 8 次都失败时, 这一页退回 `pdftotext` 抽取的文本层.
 
 **Better prompting.** We found an unintended bug in which order of image and the text was mismatched between training and inference prompts. We standardize prompt order by always including text first in all settings; matching the order in training and inference improved benchmark performance substantially. We experimented with the reverse order and found no meaningful difference in OCR performance, however placing any fixed text first allows for prompt caching by the inference engine.
 
@@ -263,7 +263,7 @@ Table 3 OCR model performance comparison. Results are reproduced in-house, excep
 
 表 3: OCR 模型成绩对比. 下半部分逐行累加 olmOCR 的开发改动.
 
-两行逐项相同 (78.6 / 79.9 / 72.9 / 43.9 / 95.1 / 77.3 / 81.2 / 98.9), 说明「Handle blank pages」这个模型就是在 olmOCR-mix-0225 上微调一个 epoch 的结果. §3.2 和 §4 末尾都写明 RL 从 olmOCR-mix-1025 上的 SFT 模型出发, 也就是 Table 2 中 78.3 那一行. 所以 Table 3 最后一步其实同时换了三样东西: SFT 数据 (0225 换成 1025), RL 训练, 六模型 soup, 行名只写了后两样. 按真实起点算, RL 加 soup 的增益是 $82.4-78.3=4.1$ 分, ArXiv 从 70.8 到 83.0 涨了 12.2 分, Tables 从 77.9 到 84.9 涨 7.0 分, Multi column 从 81.3 到 83.7 只涨 2.4 分; 按表中相邻两行算则是 Tables +12.0, Multi column +6.4, ArXiv +4.4. 两种算法给出的「RL 主要改善了什么」并不相同, 前者把 Tables 和 Multi column 的一部分提升归给了 1025 数据本身. 单独的「1025 SFT + RL, 不 soup」或「0225 SFT + RL」的成绩文中没有给出.
+两行逐项相同 (78.6 / 79.9 / 72.9 / 43.9 / 95.1 / 77.3 / 81.2 / 98.9), 说明「Handle blank pages」这个模型就是在 olmOCR-mix-0225 上微调一个 epoch 的结果. §3.2 和 §4 末尾都写明 RL 从 olmOCR-mix-1025 上的 SFT 模型出发, 也就是 Table 2 中 78.3 那一行. 所以 Table 3 末尾一步其实同时换了三样东西: SFT 数据 (0225 换成 1025), RL 训练, 六模型 soup, 行名只写了后两样. 按真实起点算, RL 加 soup 的增益是 $82.4-78.3=4.1$ 分, ArXiv 从 70.8 到 83.0 涨了 12.2 分, Tables 从 77.9 到 84.9 涨 7.0 分, Multi column 从 81.3 到 83.7 只涨 2.4 分; 按表中相邻两行算则是 Tables +12.0, Multi column +6.4, ArXiv +4.4. 两种算法给出的「RL 主要改善了什么」并不相同, 前者把 Tables 和 Multi column 的一部分提升归给了 1025 数据本身. 单独的「1025 SFT + RL, 不 soup」或「0225 SFT + RL」的成绩文中没有给出.
 
 **YAML.** The first olmOCR was trained to output JSON objects. We switched to YAML, which reduced the retry rate dramatically. We speculate this is because the model does not need to remember how many open quotes there are currently in the JSON and can simply output an EOS token as soon as it is done. With JSON, we also found more incidences of repetition loops. We found no benchmark score difference, but with fewer need for retries, this improved our inference efficiency.
 
@@ -283,7 +283,7 @@ Table 3 OCR model performance comparison. Results are reproduced in-house, excep
 
 **olmOCR 2.** Finally, our latest release olmOCR 2 demonstrates a significant improvement in benchmark performance. Our best model, reported here, is the result of:
 
-**olmOCR 2.** 最后, 最新发布的 olmOCR 2 在基准上有显著提升. 这里报告的最佳模型由以下步骤得到:
+**olmOCR 2.** 末尾, 最新发布的 olmOCR 2 在基准上有显著提升. 这里报告的最佳模型由以下步骤得到:
 
 1. A single epoch of SFT training on olmOCR-mix-1025,
 2. A single epoch of RL training over our synthetic data olmOCR2-synthmix-1025,

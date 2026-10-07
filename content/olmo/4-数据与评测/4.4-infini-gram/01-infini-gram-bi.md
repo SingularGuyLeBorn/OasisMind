@@ -1,9 +1,9 @@
 ---
-title: "Infini-gram????? token ?????? n-gram ??"
-category: "?????"
-tags: ["Infini-gram", "n-gram", "????", "????", "????"]
+title: "Infini-gram：把无界 n-gram 语言模型扩展到万亿 Token · 对照译稿"
+category: "数据与评测"
+tags: ["Infini-gram", "n-gram", "后缀数组", "语言模型", "文本检索"]
 published: true
-excerpt: "Infini-gram ?????????????? token ???????????????????? n-gram ???"
+excerpt: "Infini-gram 用后缀数组在万亿 Token 语料上执行无界 n-gram 查询，并把最长可用上下文用于语言建模和训练数据分析。"
 ---
 
 <!-- arXiv 2401.17377; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/infini-gram/latex/ 的 LaTeX 源码为准 -->
@@ -26,7 +26,7 @@ Abstract
 
 Are n-gram language models still relevant in this era of neural large lan- guage models (LLMs)? Our answer is yes, and we showcase their values in both text analysis and improving neural LLMs. This was done by mod- ernizing n-gram LMs in two aspects. First, we train them at the same data scale as neural LLMs—5 trillion tokens. This is the largest n-gram LM ever built. Second, existing n-gram LMs use small n which hinders their performance; we instead allow n to be arbitrarily large, by introducing a new ∞-gram LM with backoff. Instead of pre-computing n-gram count tables (which would be very expensive), we develop an engine named infini-gram—powered by suffix arrays—that can compute ∞-gram (as well as n-gram with arbitrary n) probabilities with millisecond-level latency. The ∞-gram framework and infini-gram engine enable us to conduct many novel and interesting analyses of human-written and machine-generated text: we find that the ∞-gram LM has fairly high accuracy for next-token prediction (47%), and can complement neural LLMs to greatly reduce their perplexity. When analyzing machine-generated text, we also observe ir- regularities in the machine–∞-gram agreement level with respect to the suffix length, which indicates deficiencies in neural LLM pretraining and the positional embeddings of Transformers.
 
-在这个神经大语言模型（LLM）时代，n-gram 语言模型仍然相关吗？我们的答案是肯定的，我们展示了它们在文本分析和改进神经法学硕士方面的价值。这是通过在两个方面对 n-gram LM 进行现代化来实现的。首先，我们以与神经 LLM 相同的数据规模（5 万亿个代币）训练它们。这是有史以来最大的 n 元语言模型。其次，现有的 n 元语言模型使用较小的 n，这会影响其性能；相反，我们通过引入带有退避功能的新 ∞-gram LM 来允许 n 任意大。我们开发了一个名为 infini-gram 的引擎（由后缀数组提供支持），而不是预先计算 n-gram 计数表（这会非常昂贵），该引擎可以以毫秒级延迟计算 Infini-gram（以及具有任意 n 的 n-gram）概率。 Infini-gram 框架和 infini-gram 引擎使我们能够对人类编写的和机器生成的文本进行许多新颖且有趣的分析：我们发现 Infini-gram LM 对于下一个标记预测具有相当高的准确度（47％），并且可以补充神经 LLM 以大大降低其困惑度。在分析机器生成的文本时，我们还观察到机器-∞-gram一致性水平在后缀长度方面的不规则性，这表明神经LLM预训练和Transformer的位置嵌入存在缺陷。
+在这个神经大语言模型（LLM）时代，n-gram 语言模型仍然相关吗？我们的答案是肯定的，我们展示了它们在文本分析和改进神经法学硕士方面的价值。这是通过在两个方面对 n-gram LM 进行现代化来实现的。第一步，我们以与神经 LLM 相同的数据规模（5 万亿个代币）训练它们。这是有史以来最大的 n 元语言模型。第二步，现有的 n 元语言模型使用较小的 n，这会影响其性能；相反，我们通过引入带有退避功能的新 ∞-gram LM 来允许 n 任意大。我们开发了一个名为 infini-gram 的引擎（由后缀数组提供支持），而并非预先计算 n-gram 计数表（这会非常昂贵），该引擎可以以毫秒级延迟计算 Infini-gram（以及具有任意 n 的 n-gram）概率。 Infini-gram 框架和 infini-gram 引擎使我们能够对人类编写的和机器生成的文本进行许多新颖且有趣的分析：我们发现 Infini-gram LM 对于下一个标记预测具有相当高的准确度（47％），并且可以补充神经 LLM 以大大降低其困惑度。在分析机器生成的文本时，我们还观察到机器-∞-gram一致性水平在后缀长度方面的不规则性，这表明神经LLM预训练和Transformer的位置嵌入存在缺陷。
 
 Project Homepage infini-gram.io Web Interface infini-gram.io/demo API Endpoint api.infini-gram.io Python Package pypi.org/project/infini-gram Source Code github.com/liujch1998/infini-gram
 
@@ -46,15 +46,15 @@ Published as a conference paper at COLM 2024
 
 When pretrained on trillion-token corpora, neural large language models (LLMs) achieve groundbreaking performance (Touvron et al., 2023a; Geng & Liu, 2023; Groeneveld et al., 2024). However, we do not yet know how such data scale would benefit other language modeling approaches. In particular, how well does the classical, n-gram language model (LM) perform if estimated from such massive corpora? In other words, are n-gram LMs still relevant in this era of neural LLMs?
 
-当在万亿代币语料库上进行预训练时，神经大型语言模型 (LLM) 实现了突破性的性能（Touvron 等人，2023a；Geng & Liu，2023；Groeneveld 等人，2024）。然而，我们还不知道这样的数据规模将如何有利于其他语言建模方法。特别是，如果根据如此庞大的语料库进行估计，经典的 n-gram 语言模型 (LM) 的表现如何？换句话说，n-gram LM 在这个神经 LLM 时代仍然有意义吗？
+当在万亿代币语料库上进行预训练时，神经大型语言模型 (LLM) 实现了突破性的性能（Touvron 等人，2023a；Geng & Liu，2023；Groeneveld 等人，2024）。然而，我们还不知道这样的数据规模将如何有利于其他语言建模方法。特别是，如果根据如此庞大的语料库进行估计，经典的 n-gram 语言模型 (LM) 的表现如何？也就是说，n-gram LM 在这个神经 LLM 时代仍然有意义吗？
 
 Our answer is yes. As we will show, n-gram LMs are useful for both text analysis and improving neural LLMs. Yet we need to first modernize the canonical n-gram LM in two aspects: the training data size, and the value of n. To achieve broader data coverage, we scale up the training data for n-gram LMs to 5 trillion tokens, by combining some of the largest open-source text corpora. This is the largest n-gram LM ever built. Historically, n-gram indexes have been built only for small n’s (e.g., n ≤5; Brants et al. (2007)), because the size of naive n-gram count table grows almost exponentially wrt n. We instead find significant value in increasing the value of n. As illustrated in Figure 1, a 5-gram LM is poorly predictive of the next token, because it discards the rich context in the prompt; meanwhile, if we can use a larger n (in this case n = 16), the prediction becomes much more accurate. As such, we develop our n-gram LM with unbounded n, or in other words, an ∞-gram LM. We use a variant of backoff (Jurafsky & Martin, 2000), where we resort to smaller n when longer n-grams have a zero count. Due to sparsity in the ∞-gram estimates, in some of the later experiments (§5), we will interpolate between the ∞-gram LM and neural LMs to yield a hybrid LM upon which perplexity can be computed.
 
-我们的答案是肯定的。正如我们将要展示的，n-gram LM 对于文本分析和改进神经 LLM 都很有用。然而，我们首先需要在两个方面对规范的 n-gram LM 进行现代化改造：训练数据大小和 n 的值。为了实现更广泛的数据覆盖，我们通过结合一些最大的开源文本语料库，将 n-gram LM 的训练数据扩展到 5 万亿个标记。这是有史以来最大的 n 元语言模型。从历史上看，n-gram 索引仅针对较小的 n（例如，n ≤ 5；Brants 等人（2007））构建，因为朴素 n-gram 计数表的大小几乎随 n 呈指数增长。相反，我们发现增加 n 值具有重要价值。如图 1 所示，5 克 LM 很难预测下一个标记，因为它丢弃了提示中的丰富上下文；同时，如果我们可以使用更大的n（在本例中n = 16），预测就会变得更加准确。因此，我们开发了具有无界 n 的 n-gram LM，或者换句话说，一个 ∞-gram LM。我们使用退避的变体（Jurafsky & Martin，2000），当较长的 n-gram 计数为零时，我们采用较小的 n。由于 ∞-gram 估计的稀疏性，在后面的一些实验（第 5 节）中，我们将在 ∞-gram LM 和神经 LM 之间进行插值，以生成可以计算困惑度的混合 LM。
+我们的答案是肯定的。正如我们将要展示的，n-gram LM 对于文本分析和改进神经 LLM 都很有用。然而，我们第一步需要在两个方面对规范的 n-gram LM 进行现代化改造：训练数据大小和 n 的值。为了实现更广泛的数据覆盖，我们通过结合一些最大的开源文本语料库，将 n-gram LM 的训练数据扩展到 5 万亿个标记。这是有史以来最大的 n 元语言模型。从历史上看，n-gram 索引仅针对较小的 n（例如，n ≤ 5；Brants 等人（2007））构建，因为朴素 n-gram 计数表的大小几乎随 n 呈指数增长。相反，我们发现增加 n 值具有重要价值。如图 1 所示，5 克 LM 很难预测下一个标记，因为它丢弃了提示中的丰富上下文；同时，如果我们可以使用更大的n（在本例中n = 16），预测就会变得更加准确。因此，我们开发了具有无界 n 的 n-gram LM，或者也就是说，一个 ∞-gram LM。我们使用退避的变体（Jurafsky & Martin，2000），当较长的 n-gram 计数为零时，我们采用较小的 n。由于 ∞-gram 估计的稀疏性，在后面的一些实验（第 5 节）中，我们将在 ∞-gram LM 和神经 LM 之间进行插值，以生成可以计算困惑度的混合 LM。
 
 We develop a low-latency, resource-efficient engine to serve this massive ∞-gram LM. Instead of building an explicit n-gram count table, which is infeasible for arbitrarily large n and such extreme data scale, we power the ∞-gram LM with a suffix array of the dataset – a data structure that supports fast n-gram counting, and is efficient in both storage space and compute. Our index takes 7 bytes of storage per token (3.5x overhead compared to the raw dataset), and on a dataset with 1.4 trillion tokens, it can be built with a single 128-code CPU node in about 2 days, using 10 TB of disk storage. Average inference latency is less than 20 milliseconds for counting an n-gram and finding all positions of its occurrence (regardless of how large n is or how frequently the n-gram appears), and under 200 milliseconds for all other query types including ∞-gram language modeling and decoding. All indexes stay on-disk at inference time. We refer to this engine as infini-gram.
 
-我们开发了一个低延迟、资源高效的引擎来服务这个巨大的 ∞-gram LM。我们没有构建显式的 n 元语法计数表（这对于任意大的 n 和如此极端的数据规模来说是不可行的），而是使用数据集的后缀数组为 ∞ 元语法语言模型提供动力——这是一种支持快速 n 元语法计数的数据结构，并且在存储空间和计算方面都很高效。我们的索引每个令牌占用 7 个字节的存储空间（与原始数据集相比，开销是原始数据集的 3.5 倍），并且在包含 1.4 万亿个令牌的数据集上，可以使用单个 128 代码 CPU 节点在大约 2 天内构建它，并使用 10 TB 磁盘存储。对于计算 n-gram 并查找其出现的所有位置（无论 n 有多大或 n-gram 出现的频率如何），平均推理延迟小于 20 毫秒，对于所有其他查询类型（包括 ∞-gram 语言建模和解码），平均推理延迟低于 200 毫秒。所有索引在推理时都保留在磁盘上。我们将该引擎称为 infini-gram。
+我们开发了一个低延迟、资源高效的引擎来服务这个巨大的 ∞-gram LM。我们没有构建显式的 n 元语法计数表（这对于任意大的 n 和如此极端的数据规模来说是不可行的），；实际是使用数据集的后缀数组为 ∞ 元语法语言模型提供动力——这是一种支持快速 n 元语法计数的数据结构，并且在存储空间和计算方面都很高效。我们的索引每个令牌占用 7 个字节的存储空间（与原始数据集相比，开销是原始数据集的 3.5 倍），并且在包含 1.4 万亿个令牌的数据集上，可以使用单个 128 代码 CPU 节点在大约 2 天内构建它，并使用 10 TB 磁盘存储。对于计算 n-gram 并查找其出现的所有位置（无论 n 有多大或 n-gram 出现的频率如何），平均推理延迟小于 20 毫秒，对于所有其他查询类型（包括 ∞-gram 语言建模和解码），平均推理延迟低于 200 毫秒。所有索引在推理时都保留在磁盘上。我们将该引擎称为 infini-gram。
 
 Analyses with ∞-gram (§4) offers new insights into human-written and machine-generated text. We found that ∞-gram has a fairly high accuracy (47%) when predicting the next token given a prefix of a human-written document, and this accuracy is higher on tokens where the effective n is larger. In contrast, conventional n-grams (with small n) are insufficient in capturing a long enough context to predict the next token (29% accuracy). Moreover, we show that ∞-gram can complement neural LMs and reach better performance when combined: heuristically interpolating between the estimates made by ∞-gram and neural LMs can greatly reduce perplexity (by up to 73%) compared to the neural LMs alone, even when the neural LM is as large as 70B (§5). When analyzing the level of agreement with
 
@@ -162,7 +162,7 @@ Building the suffix array. Suffix arrays can be built in linear time with respec
 
 Inference with the suffix array. Computing the n-gram LM probability involves counting the number of occurrences of a token string, i.e., cnt(x1...xn). By construction, the occurrence positions of strings starting with x1...xn lies in a single, consecutive segment in the suffix array. Thus we only need to find the first and last occurrence positions, and the count would be the difference between them. Beyond counting and n-gram/∞-gram language modeling, infini-gram can also be used to retrieve documents containing an n-gram, or a CNF expression with multiple n-grams (§A.4).
 
-使用后缀数组进行推理。计算 n-gram LM 概率涉及计算标记字符串的出现次数，即 cnt(x1...xn)。通过构造，以 x1...xn 开头的字符串的出现位置位于后缀数组中的单个连续段中。因此我们只需要找到第一个和最后一个出现的位置，计数就是它们之间的差值。除了计数和 n-gram/∞-gram 语言建模之外，infini-gram 还可以用于检索包含 n-gram 的文档，或具有多个 n-gram 的 CNF 表达式（§A.4）。
+使用后缀数组进行推理。计算 n-gram LM 概率涉及计算标记字符串的出现次数，即 cnt(x1...xn)。通过构造，以 x1...xn 开头的字符串的出现位置位于后缀数组中的单个连续段中。因此我们只需要找到第一个和末尾一个出现的位置，计数就是它们之间的差值。除了计数和 n-gram/∞-gram 语言建模之外，infini-gram 还可以用于检索包含 n-gram 的文档，或具有多个 n-gram 的 CNF 表达式（§A.4）。
 
 4
 
@@ -280,7 +280,7 @@ Impact of model size. The bottom row of Figure 5 shows the same analysis for dif
 
 One very curious phenomenon is that, as effective n increases, the agreement level fluctuates greatly in greedy decoding (but not nucleus or temperature sampling, where agreement level almost increases monotonically). Such fluctuation is even more rapid for smaller models (Llama-2 13B/7B and GPT-Neo/J models), and for Llama-2 7B the fluctuation is even periodic (rapidly dropping at effective n = 20, 24, 28, 32; this is statistically significant, a two-proportion z-test gives a p-value of < 10−99). We suspect that this may be caused by the application of positional embeddings when pretraining these Transformer-based models, and we welcome further investigation from the community.
 
-一个非常奇怪的现象是，随着有效 n 的增加，贪婪解码中的一致性水平会大幅波动（但不是核采样或温度采样，其中一致性水平几乎单调增加）。对于较小的模型（Llama-2 13B/7B 和 GPT-Neo/J 模型），这种波动甚至更快，而对于 Llama-2 7B，这种波动甚至是周期性的（在有效 n = 20、24、28、32 时快速下降；这在统计上是显着的，两比例 z 检验给出的 p 值 < 10−99）。我们怀疑这可能是由于在预训练这些基于 Transformer 的模型时应用位置嵌入造成的，我们欢迎社区进一步调查。
+一个非常奇怪的现象是，随着有效 n 的增加，贪婪解码中的一致性水平会大幅波动（但并非核采样或温度采样，其中一致性水平几乎单调增加）。对于较小的模型（Llama-2 13B/7B 和 GPT-Neo/J 模型），这种波动甚至更快，而对于 Llama-2 7B，这种波动甚至是周期性的（在有效 n = 20、24、28、32 时快速下降；这在统计上是显着的，两比例 z 检验给出的 p 值 < 10−99）。我们怀疑这可能是由于在预训练这些基于 Transformer 的模型时应用位置嵌入造成的，我们欢迎社区进一步调查。
 
 7
 
@@ -718,7 +718,7 @@ A.4 Additional details on inference with the infini-gram index
 
 Both the first and last occurrence positions can be found with binary search, with time complexity O(n · log N) and O(log N) random array accesses. The two binary searches can be parallelized, reducing the latency by roughly 2x. The impact of query length n is negligible, because computers usually fetch memory in pages of 4K bytes, and string comparison is much faster than page fetching. Therefore, when we analyze time complexity below, we refer to the number of random array accesses.
 
-第一次和最后一次出现的位置都可以通过二分查找找到，时间复杂度为 O(n·log N) 和 O(log N) 随机数组访问。两个二分搜索可以并行化，从而将延迟减少大约 2 倍。查询长度n的影响可以忽略不计，因为计算机通常以4K字节的页来获取内存，并且字符串比较比页获取快得多。因此，我们下面分析时间复杂度时，指的是随机数组访问的次数。
+第一次和末尾一次出现的位置都可以通过二分查找找到，时间复杂度为 O(n·log N) 和 O(log N) 随机数组访问。两个二分搜索可以并行化，从而将延迟减少大约 2 倍。查询长度n的影响可以忽略不计，因为计算机通常以4K字节的页来获取内存，并且字符串比较比页获取快得多。因此，我们下面分析时间复杂度时，指的是随机数组访问的次数。
 
 Finding occurrence positions and documents. n-gram counting with suffix arrays has a by-product: we also get to know all positions where the n-gram appears in the training data, for free. This position information is implicitly contained in the suffix array segment we obtained during counting, and to retrieve the original documents where the n-gram appears, all we need to do is to follow each pointer within this segment back into the tokenized dataset, and find the starting and ending position of the enclosing document by performing a binary search on the document offset index. (Note that if we don’t have the document offset index, the latency of document search cannot be bounded because we would need to expand the pointer in both directions in the tokenized dataset until hitting the document separator. In practice, we see documents as large as 20M tokens.)
 
@@ -730,7 +730,7 @@ Impact of sharding. When the suffix arrays are built on sharded byte arrays, we 
 
 Speeding up n-gram computation by re-using previous search results. On the suffix array, the segment for x1...xn must be a sub-segment of that for x1...xn−1. Therefore, when computing the n-gram probability Pn(xn | x1...xn−1), we can first count x1...xn−1, and then when counting x1...xn, we only need to search for the first and last occurrence positions within the segment of x1...xn, which reduces the latency by at most 2x.
 
-通过重用以前的搜索结果来加速 n-gram 计算。在后缀数组上，x1...xn 的段必须是 x1...xn−1 的段的子段。因此，在计算n-gram概率Pn(xn | x1...xn−1)时，我们可以先统计x1...xn−1，然后在统计x1...xn时，只需要在x1...xn的段内搜索第一个和最后一个出现的位置，这样最多可以减少2倍的延迟。
+通过重用以前的搜索结果来加速 n-gram 计算。在后缀数组上，x1...xn 的段必须是 x1...xn−1 的段的子段。因此，在计算n-gram概率Pn(xn | x1...xn−1)时，我们可以先统计x1...xn−1，然后在统计x1...xn时，只需要在x1...xn的段内搜索第一个和末尾一个出现的位置，这样最多可以减少2倍的延迟。
 
 On-disk search. The byte array and suffix array may be too large to fit into RAM, so in practice, we keep them on disk and read them as memory-mapped files. However, this creates a significant latency as the binary search requires random access to the byte array and suffix array. To mitigate this, we implemented a memory pre-fetching method that informs the system of the array offsets we will likely be reading in the near future. Pre-fetching reduces average latency by roughly 5x.
 
@@ -794,7 +794,7 @@ To properly evaluate the effectiveness of ∞-gram LM on Pile’s evaluation set
 
 When using BFF, we always remove whole documents, instead of by paragraphs. Following the default settings, we consider n-grams where n = 13, and discard the document if at least 80% of its n-grams are present in the evaluation set. For Pile’s training set, we lowercase all documents to capture more potential contaminations.
 
-使用 BFF 时，我们总是删除整个文档，而不是逐段删除。按照默认设置，我们考虑 n = 13 的 n 元语法，如果评估集中至少有 80% 的 n 元语法，则丢弃该文档。对于 Pile 的训练集，我们将所有文档都小写以捕获更多潜在的污染。
+使用 BFF 时，我们总是删除整个文档，而并非逐段删除。按照默认设置，我们考虑 n = 13 的 n 元语法，如果评估集中至少有 80% 的 n 元语法，则丢弃该文档。对于 Pile 的训练集，我们将所有文档都小写以捕获更多潜在的污染。
 
 PILE (TRAIN)
 
@@ -862,7 +862,7 @@ Table 5: Evaluation on time-shifted data. The evaluation data is taken from newl
 
 • GPT-2 (Radford et al., 2019), one of the earliest autoregressive language models whose sizes range from 117M, 345M, and 774M to 1.6B. Their training data is a diverse set of web text, although is not public. • GPT-Neo (Gao et al., 2020) and GPT-J (Wang & Komatsuzaki, 2021), language models trained on the Pile whose sizes vary from 125M, 1.3B, and 2.7B to 6.7B. • Llama-2 (Touvron et al., 2023b), a subsequent version of LLaMA (Touvron et al., 2023a) trained on two trillion tokens and has sizes of 7B, 13B, and 70B. Llama-2 is one of the most competitive language models whose weights are available at the time of writing the paper. The training data of Llama-2 is unknown, although the precedent version is trained on a large corpus of Common Crawls, Wikipedia and code, which is replicated by RedPajama (Together, 2023). • SILO (Min et al., 2023a), 1.3B language models trained on permissively licensed data only. The original paper showed that training on permissively licensed data leads to the challenge of extreme domain generalization because the training data is skewed to highly specific domains like code and government text. We use three different variants, PD, PDSW and PDSWBY, which are trained on different levels of permissivity, leading to varying levels of the domain generalization challenge.
 
-• GPT-2（Radford et al., 2019），最早的自回归语言模型之一，大小范围从 117M、345M、774M 到 1.6B。他们的训练数据是一组不同的网络文本，尽管不是公开的。 • GPT-Neo (Gao et al., 2020) 和 GPT-J (Wang & Komatsuzaki, 2021)，在大小从 125M、1.3B、2.7B 到 6.7B 不等的 Pile 上训练的语言模型。 • Llama-2（Touvron 等人，2023b），LLaMA（Touvron 等人，2023a）的后续版本，在 2 万亿个代币上进行训练，大小为 7B、13B 和 70B。 Llama-2 是最具竞争力的语言模型之一，其权重在撰写本文时可用。 Llama-2 的训练数据未知，尽管先前版本是在 Common Crawls、维基百科和代码的大型语料库上进行训练的，并由 RedPajama 复制（Together，2023）。 • SILO（Min 等人，2023a），仅在许可数据上训练的 1.3B 语言模型。原始论文表明，对许可数据的训练会导致极端领域泛化的挑战，因为训练数据偏向于代码和政府文本等高度特定的领域。我们使用三种不同的变体：PD、PDSW 和 PDSWBY，它们在不同级别的许可率上进行训练，从而导致不同级别的领域泛化挑战。
+• GPT-2（Radford et al., 2019），最早的自回归语言模型之一，大小范围从 117M、345M、774M 到 1.6B。他们的训练数据是一组不同的网络文本，尽管并非公开的。 • GPT-Neo (Gao et al., 2020) 和 GPT-J (Wang & Komatsuzaki, 2021)，在大小从 125M、1.3B、2.7B 到 6.7B 不等的 Pile 上训练的语言模型。 • Llama-2（Touvron 等人，2023b），LLaMA（Touvron 等人，2023a）的后续版本，在 2 万亿个代币上进行训练，大小为 7B、13B 和 70B。 Llama-2 是最具竞争力的语言模型之一，其权重在撰写本文时可用。 Llama-2 的训练数据未知，尽管先前版本是在 Common Crawls、维基百科和代码的大型语料库上进行训练的，并由 RedPajama 复制（Together，2023）。 • SILO（Min 等人，2023a），仅在许可数据上训练的 1.3B 语言模型。原始论文表明，对许可数据的训练会导致极端领域泛化的挑战，因为训练数据偏向于代码和政府文本等高度特定的领域。我们使用三种不同的变体：PD、PDSW 和 PDSWBY，它们在不同级别的许可率上进行训练，从而导致不同级别的领域泛化挑战。
 
 D.2 Evaluating on time-shifted data
 

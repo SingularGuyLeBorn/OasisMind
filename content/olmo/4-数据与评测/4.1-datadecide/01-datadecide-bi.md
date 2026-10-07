@@ -198,7 +198,7 @@ DataDecide: How to Predict Best Pretraining Data with Small Experiments
 
 cost. To account for step-to-step noise in evaluation we average the last 10% of checkpoints as the final observed loss. Equation 2, however, is fit on all observations includ- ing intermediate checkpoints. We explore variations for a total of 8 multi scale approaches defined in Appendix C; none of these make for substantially better decisions than the method defined in this section.
 
-为处理评测的逐步噪声, 最终观测损失取最后 10% 检查点的平均值. 不过式 (2) 会在包含中间检查点在内的全部观测上拟合. 附录 C 共定义 8 种多规模方法变体, 没有一种能比本节方法作出明显更好的决策.
+为处理评测的逐步噪声, 最终观测损失取末尾 10% 检查点的平均值. 不过式 (2) 会在包含中间检查点在内的全部观测上拟合. 附录 C 共定义 8 种多规模方法变体, 没有一种能比本节方法作出明显更好的决策.
 
 running a grid of model scaling experiments. The model lad- der uses heuristics from the literature (Porian et al., 2024) to set global batch size and learning rate based on scaling fac- tors. The hyperparameters that determine parameter count (layers, hidden dimension, number of heads, MLP dimen- sion) were handpicked by OLMo developers for each scale to achieve the desired number of parameters. Appendix Table 2 details the configurations of all our models.
 
@@ -424,7 +424,7 @@ cost of the model sizes used to make the prediction. We try the following combin
 
 We notice two very distinct types of trends over the different tasks. Either the different proxy metrics are nearly indistin- guishable and increase in decision accuracy with compute or CORRECT PROB and TOTAL PROB are flat with respect to scale and the other metrics only rise up to that level of decision accuracy towards the full target compute budget. In the last order of magnitude below the target compute AC- CURACY and the other metrics tend to overtake CORRECT PROB and TOTAL PROB, while these two metrics some- times even decrease in decision accuracy. Notably these other metrics that trend with ACCURACY include continu- ous metrics that penalize probability assigned to incorrect answers, NORM CORRECT PROB and MARGIN.
 
-不同任务呈现两类明显趋势. 第一类中, 各代理指标几乎无法区分, 决策准确率都随算力增加. 第二类中, CORRECT PROB 与 TOTAL PROB 基本不随规模变化, 其他指标要接近完整目标算力预算时才上升到相同决策准确率. 在低于目标算力的最后一个数量级里, ACCURACY 与其他指标往往超过 CORRECT PROB 和 TOTAL PROB, 后两者的决策准确率有时还会下降. 与 ACCURACY 同趋势的其他指标包括 NORM CORRECT PROB 与 MARGIN, 它们都是会惩罚分配给错误答案概率的连续指标.
+不同任务呈现两类明显趋势. 第一类中, 各代理指标几乎无法区分, 决策准确率都随算力增加. 第二类中, CORRECT PROB 与 TOTAL PROB 基本不随规模变化, 其他指标要接近完整目标算力预算时才上升到相同决策准确率. 在低于目标算力的末尾一个数量级里, ACCURACY 与其他指标往往超过 CORRECT PROB 和 TOTAL PROB, 后两者的决策准确率有时还会下降. 与 ACCURACY 同趋势的其他指标包括 NORM CORRECT PROB 与 MARGIN, 它们都是会惩罚分配给错误答案概率的连续指标.
 
 3.4. How can we make evaluation benchmarks more predictable?
 
@@ -640,7 +640,7 @@ Suites over Data Differences DATADECIDE follows in the footsteps of the Pythia S
 
 The scope of our work is limited to just one ratio of tokens to parameters, 100 or 5× “Chinchilla” optimal ratio (Hoff- mann et al., 2022). We believe this captures the typical case, as most models now favor overtraining for inference savings. Due to compute limitations and the need for a stan- dardized set of model configurations over a long period of time in which compute became available for pretraining, we opt for 14 specific configurations from 4M–1B parameter scale. While observations across more configurations would always be better, this must be traded off with exploring the other dimensions of data recipes and random seed reruns. Likewise, while our 25 data recipes is an order of magnitude more than previous suites, there is always the possibility that findings across these will not be representative of future data recipes. In our evaluations we focus on multiple choice tasks with a “cloze” formulation as we find these to be a good fit for our range of scales. Using DATADECIDE, new evaluations can be assessed easily by others without any additional pretraining.
 
-本文范围只覆盖一种 token—参数比: 100, 即「Chinchilla」最优比率的 5 倍. 作者认为这能代表多数模型为节省推理成本而采用过训练的常见情形. 受算力限制, 同时为了在较长预训练周期内保持标准化模型配置, 研究只选择从 4M 到 1B 参数的 14 个具体配置. 更多配置会带来更充分观测, 但必须与数据配方维度和随机种子复跑作取舍. 25 种数据配方虽比以往套件多一个数量级, 结论仍可能无法代表未来配方. 评测聚焦 cloze 形式的多项选择任务, 因为它们适合当前规模范围. 其他研究者可以直接在 DATADECIDE 检查点上评估新任务, 无需额外预训练.
+本文范围只覆盖一种 token—参数比: 100, 即「Chinchilla」最优比率的 5 倍. 论文认为这能代表多数模型为节省推理成本而采用过训练的常见情形. 受算力限制, 同时为了在较长预训练周期内保持标准化模型配置, 研究只选择从 4M 到 1B 参数的 14 个具体配置. 更多配置会带来更充分观测, 但必须与数据配方维度和随机种子复跑作取舍. 25 种数据配方虽比以往套件多一个数量级, 结论仍可能无法代表未来配方. 评测聚焦 cloze 形式的多项选择任务, 因为它们适合当前规模范围. 其他研究者可以直接在 DATADECIDE 检查点上评估新任务, 无需额外预训练.
 
 scale (Magnusson et al., 2024) and 6 data recipes over a
 
@@ -1020,7 +1020,7 @@ Filtering early checkpoints. We experiment with exclud- ing the first 50% of int
 
 Helpers and > 50% checkpoints. Lastly we experiment with combining the previous two techniques on the baseline 3-parameter fit.
 
-辅助点与后 50% 检查点 最后, 作者在三参数拟合基线上组合前述两种技术.
+辅助点与后 50% 检查点 末尾, 作者在三参数拟合基线上组合前述两种技术.
 
 Prediction Error. We report prediction errors in Table 4 for each setup. As the best scaling laws variants are all roughly comparable to the simple 3-parameter set up, we use this one as our baseline.
 

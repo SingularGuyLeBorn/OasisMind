@@ -1,12 +1,12 @@
 ---
-title: "Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research ? ????"
-category: "OLMo"
-tags: ["Dolma", "??", "?????", "????"]
+title: "Dolma：面向语言模型预训练研究的三万亿 Token 开放语料库 · 对照译稿"
+category: "数据与评测"
+tags: ["Dolma", "预训练数据", "数据治理", "开放语料"]
 published: true
-excerpt: "Dolma ????????????????????????????????????????"
+excerpt: "Dolma 公开三万亿 Token 语料及其收集、过滤、去重与混合流程，使预训练数据配方能够复查和复现。"
 ---
 
-# Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research / Dolma???????????????? Token ?????
+# Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research / Dolma：面向语言模型预训练研究的三万亿 Token 开放语料库
 
 <!-- page 1 of 64 -->
 
@@ -30,7 +30,7 @@ To facilitate scientific research on language model pretraining, we curate and r
 
 We present analyses and experimental results on intermediate states of Dolma to share what we have learned about important data curation practices. Finally, we open-source our data curation toolkit to enable reproduction of our work as well as support further research in large-scale data curation.
 
-我们展示 Dolma 中间状态的分析与实验结果，分享在重要数据整理实践上的经验。最后，我们开源数据整理工具包，使他人能够复现本工作，并支持对大规模数据整理的进一步研究。
+我们展示 Dolma 中间状态的分析与实验结果，分享在重要数据整理实践上的经验。末尾，我们开源数据整理工具包，使他人能够复现本工作，并支持对大规模数据整理的进一步研究。
 
 ## 1 Introduction
 
@@ -237,13 +237,13 @@ Dolma 分三阶段去重：（i）精确 URL 去重删除 53.2% 文档；（ii�
 
 URL dedup is computationally cheap and removes re-crawls. Exact document dedup catches identical pages under different URLs. Both happen early to reduce later work. Paragraph dedup removes boilerplate such as repeated bylines, but because it can disrupt content analysis it runs last. All use the Bloom filter.
 
-URL 去重计算便宜，可移除重复抓取；精确文档去重捕获不同 URL 下的相同页面。二者提前执行以降低后续工作量。段落去重删除重复署名等模板内容，但可能扰乱内容分析，因而最后运行。三者都使用 Bloom filter。
+URL 去重计算便宜，可移除重复抓取；精确文档去重捕获不同 URL 下的相同页面。二者提前执行以降低后续工作量。段落去重删除重复署名等模板内容，但可能扰乱内容分析，因而末尾运行。三者都使用 Bloom filter。
 
 ### 5.5 Putting It All Together
 
 The web pipeline applies URL and document deduplication to CCNet output, then quality/content filtering, and finally paragraph deduplication.
 
-网页管线先对 CCNet 输出做 URL 和文档去重，再做质量与内容过滤，最后做段落去重。
+网页管线先对 CCNet 输出做 URL 和文档去重，再做质量与内容过滤，末尾做段落去重。
 
 **Figure 3.** Stacking quality filters, content filters and paragraph deduplication produces compounding positive effects on 1.2B-model HellaSwag performance over the no-filtering baseline. Other tasks appear in Appendix O.
 
@@ -322,7 +322,7 @@ Comments with fewer than three net votes are removed, because low scores correla
 
 The same content filters as §5.3 are used, but Reddit documents are short, so any PII match removes the whole document rather than masking spans.
 
-内容过滤与 §5.3 相同，但 Reddit 文档较短，因此只要匹配 PII 就删除整篇，而不是遮蔽区间。
+内容过滤与 §5.3 相同，但 Reddit 文档较短，因此只要匹配 PII 就删除整篇，而并非遮蔽区间。
 
 ### 7.4 Deduplication
 
@@ -398,7 +398,7 @@ Pile 尽管规模较小，却因来源丰富而表现良好。更大的多源 Do
 
 Paloma samples marked domains from every source equally rather than according to unequal source proportions. A model trained on Pile fits such data well because Pile is largely composed of many smaller, hand-picked sources. The challenge when scaling a corpus is to integrate more available web data without losing sample efficiency on diverse evaluations. OLMo-1B nearly matches the Pile model's perplexity curve despite including a much larger web fraction.
 
-Paloma 对各来源中标记的领域做等量采样，而不是按来源原本不均衡的比例采样。Pile 由许多较小、人工选择的来源构成，因此在其上训练的模型很适合这类数据。扩大语料规模时，挑战在于如何纳入更多可得网页数据，而不损失 Paloma 等多样评测上的样本效率。尽管 OLMo-1B 的网页占比高得多，其困惑度曲线仍几乎追平 Pile 模型。
+Paloma 对各来源中标记的领域做等量采样，而并非按来源原本不均衡的比例采样。Pile 由许多较小、人工选择的来源构成，因此在其上训练的模型很适合这类数据。扩大语料规模时，挑战在于如何纳入更多可得网页数据，而不损失 Paloma 等多样评测上的样本效率。尽管 OLMo-1B 的网页占比高得多，其困惑度曲线仍几乎追平 Pile 模型。
 
 ## Conclusion
 
@@ -1206,7 +1206,7 @@ Contributors to infrastructure and tooling include Russell Authur, Dirk Groeneve
 
 消融实验贡献者包括 Iz Beltagy、Akshita Bhagia、Jesse Dodge、Dirk Groeneveld、Rodney Kinney、Kyle Lo、Ian Magnusson、Matthew Peters、Kyle Richardson、Dustin Schwenk、Luca Soldaini、Nishant Subramani、Oyvind Tafjord 和 Pete Walsh。工作包括在算力约束下设计实验并确定优先级、实现和运行 10 亿参数模型实验，以及解释结果。Oyvind Tafjord 的评测工具包和 Pete Walsh 的模型实现尤其关键。
 
-我们感谢与 AMD 和 CSC 的合作，使项目得以使用 LUMI 超级计算机。感谢 Jonathan Frankle、Cody Blakeney、Matthew Leavitt、Daniel King 及 MosaicML 团队分享初版数据实验发现；感谢 Vitaliy Chiley 在 Twitter 上建议修复影响数据洗牌的随机数生成器缺陷；感谢 Erfan Al-Hossami、Shayne Longpre 和 Gregory Yauney 分享其大规模预训练数据实验；感谢 Together AI 的 Ce Zhang 与 Maurice Weber 就开放数据集及分发格式展开讨论；感谢 Stella Biderman 与 Aviya Skowron 就数据许可和处理框架进行讨论；感谢 AI2 同事 Nicole DeCario、Matt Latzke、Darrell Plessas、Kelsey MacMillan、Carissa Schoenick、Sam Skjonsberg 与 Michael Schmitz 在网站、设计、内外沟通、预算及其他项目支持方面提供帮助。最后，感谢 AI2 同事及密切合作者 Prithviraj Ammanabrolu、Maria Antoniak、Chris Callison-Burch、Peter Clark、Pradeep Dasigi、Nicole DeCario、Doug Downey、Ali Farhadi、Suchin Gururangan、Sydney Levine、Maarten Sap、Ludwig Schmidt、Will Smith、Yulia Tsvetkov 与 Daniel S. Weld 的讨论和反馈。
+我们感谢与 AMD 和 CSC 的合作，使项目得以使用 LUMI 超级计算机。感谢 Jonathan Frankle、Cody Blakeney、Matthew Leavitt、Daniel King 及 MosaicML 团队分享初版数据实验发现；感谢 Vitaliy Chiley 在 Twitter 上建议修复影响数据洗牌的随机数生成器缺陷；感谢 Erfan Al-Hossami、Shayne Longpre 和 Gregory Yauney 分享其大规模预训练数据实验；感谢 Together AI 的 Ce Zhang 与 Maurice Weber 就开放数据集及分发格式展开讨论；感谢 Stella Biderman 与 Aviya Skowron 就数据许可和处理框架进行讨论；感谢 AI2 同事 Nicole DeCario、Matt Latzke、Darrell Plessas、Kelsey MacMillan、Carissa Schoenick、Sam Skjonsberg 与 Michael Schmitz 在网站、设计、内外沟通、预算及其他项目支持方面提供帮助。末尾，感谢 AI2 同事及密切合作者 Prithviraj Ammanabrolu、Maria Antoniak、Chris Callison-Burch、Peter Clark、Pradeep Dasigi、Nicole DeCario、Doug Downey、Ali Farhadi、Suchin Gururangan、Sydney Levine、Maarten Sap、Ludwig Schmidt、Will Smith、Yulia Tsvetkov 与 Daniel S. Weld 的讨论和反馈。
 
 ## B 作者贡献
 
@@ -1302,7 +1302,7 @@ OpenAI（2023）对 GPT-4 预训练数据披露有限；我们汇总了论文第
 5. **语言识别。** 除说明大部分预训练数据为英语外，未提供。
 6. **质量。** 未提供。
 7. **去重。** 未提供。
-8. **去污染。** 未讨论去污染流程，而是报告事后统计，测量职业与学术考试及多个学术基准的污染程度。识别方法为：移除空白后，对测试样例与预训练样例进行精确子串匹配。报告发现 BIG-Bench（Srivastava 等，2023）存在部分污染。
+8. **去污染。** 未讨论去污染流程，；实际是报告事后统计，测量职业与学术考试及多个学术基准的污染程度。识别方法为：移除空白后，对测试样例与预训练样例进行精确子串匹配。报告发现 BIG-Bench（Srivastava 等，2023）存在部分污染。
 9. **其他。** 许多工作对 GPT-4 进行“数据考古”，即通过记忆探针推断其预训练数据。例如 Chang 等人（2023）表明 GPT-4 能生成受版权保护书籍中的序列。本文不试图综述所有此类调查工作。
 
 ## C 开放与闭源语言模型预训练数据整理细节的（缺失）
@@ -1320,7 +1320,7 @@ Anil 等人（2023）对 PaLM 2 预训练数据披露有限；以下为从论文
 5. **语言识别。** 报告最常见语言及频率，但缺少复现细节（文本单元、工具、阈值）。
 6. **质量。** 报告执行过滤，但无更多细节。
 
-最后，Kyle Lo 与 Luca Soldaini 领导整个 Dolma 项目，参与项目管理、规划设计、与法律和伦理委员会沟通、数据和计算合作、基础设施、工具、实现、实验和写作记录等全部环节。
+末尾，Kyle Lo 与 Luca Soldaini 领导整个 Dolma 项目，参与项目管理、规划设计、与法律和伦理委员会沟通、数据和计算合作、基础设施、工具、实现、实验和写作记录等全部环节。
 <!-- page 27 of 64 -->
 
 C.3 Claude (Anthropic, 2023)
@@ -1631,7 +1631,7 @@ Implementation. To remove toxic content from Dolma, we used the Jigsaw Toxic Com
 
 图 6：分词分析。ID 较小的词元在分词器训练数据中计数较高，在 Dolma 中往往也有较高计数（a）。The Stack 相比其他来源具有显著更高的生育度（b），可由换行符 `\n`、制表符 `\t` 等空白字符的相对频率更高来解释（c）。详见正文。
 
-我们首先全局考察分词器对 Dolma 的适配。在 50,280 个词表词元中，50,057 个出现在分词后的 Dolma 文本里；即有 223 个词元从未使用，约占词表 0.4%。这 223 个词元主要是空白字符组合。若用该分词器在 Dolma 上训练语言模型，对应输入嵌入不会更新。计数分布显示，ID 较小的词元在 Dolma 中往往计数较高（图 6a）；按 Dolma 计数的词元排名与词元 ID 之间有较强 Spearman 相关（$r=0.638,p<0.001$）。按分词器训练方式，较小 ID 对应更早合并、在分词器训练数据中更常见的字节对。总体说明 GPT-NeoX 分词器与 Dolma 适配良好。
+我们第一步全局考察分词器对 Dolma 的适配。在 50,280 个词表词元中，50,057 个出现在分词后的 Dolma 文本里；即有 223 个词元从未使用，约占词表 0.4%。这 223 个词元主要是空白字符组合。若用该分词器在 Dolma 上训练语言模型，对应输入嵌入不会更新。计数分布显示，ID 较小的词元在 Dolma 中往往计数较高（图 6a）；按 Dolma 计数的词元排名与词元 ID 之间有较强 Spearman 相关（$r=0.638,p<0.001$）。按分词器训练方式，较小 ID 对应更早合并、在分词器训练数据中更常见的字节对。总体说明 GPT-NeoX 分词器与 Dolma 适配良好。
 
 不同来源是否同样适配？我们分析“生育度”，即特定数据源上每个词平均生成的词元数。大多数来源相近，从对话论坛的 1.15 到书籍的 1.28；代码子集显著更高，为 2.45（图 6b）。因此处理代码子集的计算或经济成本超过其他来源的两倍。
 
@@ -1781,7 +1781,7 @@ PII 过滤器与移除仇恨言论的过滤器存在一定正相关，可能因�
 
 Dolma 文档来自广泛互联网域名，主要年份为 2020、2022 与 2021。按词元计，最常见域名依次包括 `patents.google.com`、`www.nature.com` 和 `www.frontiersin.org`。与 Elazar 等人（2023）报告的其他语料相似，Dolma 网页文档的 63.6% 来自 `.com` 网站，其后是 `.org` 和 `.co.uk`。
 
-由于所有语言识别工具都不完美，我们还汇总仅保留英语后残留的语言。英语之外最常见类别是无法良好识别的 `un`，占文档 0.86%；其次是被识别为中文的文档，占 0.06%。
+由于所有语言识别工具都不完美，我们还汇总仅保留英语后残留的语言。英语之外最常见类别是无法良好识别的 `un`，占文档 0.86%；第二步是被识别为中文的文档，占 0.06%。
 
 ## L Dolma 中的测试集污染
 
@@ -2118,7 +2118,7 @@ GSM8K+PAL（FT）11.8 ± 0.8｜14.2 ± 1.3｜14.7 ± 0.9
 
 表 3：三个模型分别使用逐步增加代码占比的语料进行预训练后，在三个数据集上的表现；结果覆盖 5 个随机种子。bAbI 和 GSM8K 使用精确匹配，WebNLG 使用 Rouge-2。
 
-图 12 展示了各混合方案的结果。总体来看，不同混合方式会影响所得模型捕捉特定子领域的能力。所有混合方案在从 C4 的 100 个域名中抽取的页面上都呈现相近的困惑度（图 12 左），说明它们对网页文档建模总体有效。另一方面，如果模型没有接触某个专业领域，就很难为其建模。例如，仅网页混合在代码领域数据 HumanEval 上表现困难（图 12 中）。最后，我们用 M2D2 的 S2ORC 子集（由学术论文组成）说明不同数据混合如何影响困惑度。与代码一样，仅网页模型因领域不匹配而具有更高困惑度。使用 Reference+ 和 Gopher-like 混合训练的模型则因包含更多领域内内容而低于 Naïve 混合模型。然而，尽管 Reference+ 与 Gopher-like 中学术论文占比差异显著（4.9% 对 24.2%），二者结果几乎相同，说明相对较少的领域内数据可能已经足以实现良好的领域拟合。
+图 12 展示了各混合方案的结果。总体来看，不同混合方式会影响所得模型捕捉特定子领域的能力。所有混合方案在从 C4 的 100 个域名中抽取的页面上都呈现相近的困惑度（图 12 左），说明它们对网页文档建模总体有效。另一方面，如果模型没有接触某个专业领域，就很难为其建模。例如，仅网页混合在代码领域数据 HumanEval 上表现困难（图 12 中）。末尾，我们用 M2D2 的 S2ORC 子集（由学术论文组成）说明不同数据混合如何影响困惑度。与代码一样，仅网页模型因领域不匹配而具有更高困惑度。使用 Reference+ 和 Gopher-like 混合训练的模型则因包含更多领域内内容而低于 Naïve 混合模型。然而，尽管 Reference+ 与 Gopher-like 中学术论文占比差异显著（4.9% 对 24.2%），二者结果几乎相同，说明相对较少的领域内数据可能已经足以实现良好的领域拟合。
 
 ## N 数据说明表
 
@@ -2517,7 +2517,7 @@ What preprocessing/cleaning was done? (e.g., discretization or bucketing, tokeni
 ### 第 37 页中文译文
 
 - **C4。** 使用带 Git-LFS 扩展的 Git 从 Hugging Face Hub 克隆 C4；仓库克隆于 2023 年 5 月 24 日。
-- **Reddit。** 获取的是 Pushshift 项目收集并发布的评论与投稿月度数据转储。我们使用了从 2005 年 6 月至 2023 年 3 月全部 422 份公开转储（208 份评论、214 份投稿）。大部分转储于 2023 年 3 月获取，最后一批于 2023 年 5 月下载。
+- **Reddit。** 获取的是 Pushshift 项目收集并发布的评论与投稿月度数据转储。我们使用了从 2005 年 6 月至 2023 年 3 月全部 422 份公开转储（208 份评论、214 份投稿）。大部分转储于 2023 年 3 月获取，末尾一批于 2023 年 5 月下载。
 - **Semantic Scholar。** 使用带 Git-LFS 的 Git 从 Hugging Face Hub 克隆 peS2o，采用 peS2o V2；仓库克隆于 2023 年 6 月 30 日。
 - **GitHub。** 使用带 Git-LFS 的 Git 从 Hugging Face Hub 克隆 The Stack（去重版）；仓库克隆于 2023 年 5 月 28 日。
 - **Project Gutenberg。** 数据直接从 `gutenberg.org` 下载，并使用 GutenbergPy（Angelescu, Radu，2013）提取书籍；网站访问于 2023 年 4 月 3 日。
@@ -2640,7 +2640,7 @@ For the Reddit subset, we use the following filters that substantially reduce th
 - **仅 Common Crawl，在 CCNet 流水线中：** 通过在每个快照的小型子集中识别重复段落，删除 Common Crawl 中频繁出现的段落。这会去除许多页面共享的导航页眉等内容。具体操作如下：假设每个快照由编号 1…n…N 的分片组成，把分片组成集合 $S=\{n-k,n\}$，然后删除 S 中完全重复的段落。段落定义为由换行符分隔的文档切片，并通过 SHA1 比较。选择 k，使每个集合最多为 20GB（约删除 70% 的段落）。
 - **仅 Common Crawl，按 URL 去重：** 按 URL 对页面去重（删除 53% 的重复项）。
 - **语言识别：** 根据 FastText 语言识别模型，移除英语得分低于 0.5 的全部文档（按大小计，移除 61.69% 的网页）。
-- **质量过滤器：** 移除超过一半行末尾不是句号、问号、感叹号或引号的文档（标记删除 22.73% 的字符）。
+- **质量过滤器：** 移除超过一半行末尾并非句号、问号、感叹号或引号的文档（标记删除 22.73% 的字符）。
 - **质量过滤器：** 移除不满足任一 Gopher 规则（Rae 等，2021）的文档（标记删除 15.23% 的字符）。规则包括：最常见 n-gram 的字符占比超过阈值；重复 n-gram 的字符占比超过阈值；少于 50 词或多于 10 万词；词长中位数小于 3 或大于 10；符号与词的比率大于 0.10；包含字母字符的词占比小于 0.80；指定常用词集合中出现少于 2 个；以项目符号开头的行占比大于 0.90；以省略号结尾的行占比大于 0.30；重复行占比大于 0.30；重复行字符占比大于 0.30。
 - **质量过滤器：** 移除任何包含某个词元或词元序列重复超过 100 次的文档（标记删除 0.003% 的字符）。
 - **内容过滤器：** 移除被 FastText 分类器评为有毒的句子（得分高于 0.4）。我们在 Jigsaw 数据集（cjadams 等，2017）上训练二元分类器（标记删除 1.01% 的数据）。
@@ -3034,7 +3034,7 @@ Dolma 包含由 Common Crawl 从互联网抓取的网页衍生而来的文本实
 
 **如果数据集涉及人，它是否会不公平地使某些社会群体受益或受损？如何缓解？**
 
-Dolma 不是其任何来源的代表性样本，可能低估或高估互联网上某些社群。peS2o 子集的论文偏向 STEM 学科；Gutenberg 书库主要是公版书籍（论文发表时即 1927 年以前出版的书）；英语版和简单英语版 Wikipedia、Wikibooks 还可能偏向全球北方的事件与人物。
+Dolma 并非其任何来源的代表性样本，可能低估或高估互联网上某些社群。peS2o 子集的论文偏向 STEM 学科；Gutenberg 书库主要是公版书籍（论文发表时即 1927 年以前出版的书）；英语版和简单英语版 Wikipedia、Wikibooks 还可能偏向全球北方的事件与人物。
 
 我们没有尝试改变 Dolma 中社会群体的分布。纠正大型数据集社会偏差的大规模干预仍具挑战，留待未来研究。
 

@@ -136,7 +136,7 @@ Then, estimate the parameters of the RM by optimizing the maximum likelihood los
 
 $$\mathcal{L}(\theta, \mathcal{D}) = \mathbb{E}_{(x,y_\text{chosen}, y_\text{rejected}) \sim \mathcal{D}} \big[ \text{log}( 1+e^{r_\theta(x, y_\text{rejected}) \ - \ r_\theta(x, y_\text{chosen})} ) \big].$$
 
-对语言模型而言, RM 的常见实现是在模型上加一个输出单个 logit 的线性层, 或去掉最后的解码层换成线性层. 推理时, 训练好的奖励模型返回一个标量, 满足 $P(y_1 \succ y_2 \,|\, x) \propto \text{e}^{r(x,y_1)}$ (直观上是该 completion 成为更受偏好回答的概率, 但它经由成对损失间接训练得到). 因此 $y_1$ 对 $y_2$ 获胜当且仅当 $r(x, y_1) > r(x, y_2)$.
+对语言模型而言, RM 的常见实现是在模型上加一个输出单个 logit 的线性层, 或去掉末尾的解码层换成线性层. 推理时, 训练好的奖励模型返回一个标量, 满足 $P(y_1 \succ y_2 \,|\, x) \propto \text{e}^{r(x,y_1)}$ (直观上是该 completion 成为更受偏好回答的概率, 但它经由成对损失间接训练得到). 因此 $y_1$ 对 $y_2$ 获胜当且仅当 $r(x, y_1) > r(x, y_2)$.
 
 式 (1) 经 softmax 只约束 $r^*(x, y_1) - r^*(x, y_2)$ 的相对大小, 对整体加常数不变; 所以单看标量绝对值没有概率含义, 只有同一 prompt 下两个 completion 的分数差有意义. §E.2 进一步指出各 RM 的分数分布形态各异 (图 4-7), 几乎没有以 0 为中心的高斯分布, 说明绝对值确实不可跨模型比较.
 
@@ -162,7 +162,7 @@ In this section, we detail the design philosophy and construction of the evaluat
 
 A good reward function, and therefore a good RM broadly, is one that stably assigns credit to the classes of good or bad content.Given one verified answer that is better than another for factual or clear qualitative reasons (e.g. typos), a good reward model will choose the correct one 100% of the time. To evaluate this, each datapoint consists of a prompt and two completions, chosen and rejected. For each prompt, the score of the reward model is computed. The prompt is then categorized as a win if the score of the prompt with the verified chosen completion is higher than that of the verified rejected completion, as shown in Fig. 1. Finally, we report accuracy for each subset as the percentage of wins. For all the section scores of REWARDBENCH (e.g. Chat or Safety) except Prior Sets, the average score is weighted per-prompt in the requisite subsets.
 
-好的奖励函数, 推而广之好的 RM, 能稳定地给好内容与坏内容分别赋予对应的分数. 给定一个因事实或明确质量原因 (例如错别字) 而更好的已核验答案, 好的奖励模型应当 100% 选中它. 为评测这一点, 每个数据点由一个 prompt 与两个 completion (chosen 与 rejected) 构成. 对每个 prompt 计算奖励模型的分数; 若带已核验 chosen completion 的分数高于带已核验 rejected completion 的分数, 该 prompt 记为一次获胜, 如图 1 所示. 最后, 每个子集按获胜百分比报准确率. REWARDBENCH 的所有分区得分 (如 Chat 或 Safety) 除 Prior Sets 外, 平均分都按所需子集逐 prompt 加权.
+好的奖励函数, 推而广之好的 RM, 能稳定地给好内容与坏内容分别赋予对应的分数. 给定一个因事实或明确质量原因 (例如错别字) 而更好的已核验答案, 好的奖励模型应当 100% 选中它. 为评测这一点, 每个数据点由一个 prompt 与两个 completion (chosen 与 rejected) 构成. 对每个 prompt 计算奖励模型的分数; 若带已核验 chosen completion 的分数高于带已核验 rejected completion 的分数, 该 prompt 记为一次获胜, 如图 1 所示. 末尾, 每个子集按获胜百分比报准确率. REWARDBENCH 的所有分区得分 (如 Chat 或 Safety) 除 Prior Sets 外, 平均分都按所需子集逐 prompt 加权.
 
 ### 4.1 REWARDBENCH Dataset
 
@@ -216,7 +216,7 @@ REWARDBENCH 评测了众多公开奖励模型, 参数量从 4 亿 (PairRM) 到 7
 
 Tab. 2 shows the results for the top 20 models across different model sizes and types. Large models and those trained on Llama 3 are the only models capable of high performance on the Chat Hard and Reasoning sections, with the model ArmoRM-Llama3-8B-v0.1 (89) being state-of-the-art. Across different base models, scale is a crucial property, with Starling-RM-34B (81.4) trained on Yi 34B and Tulu-2-DPO-70B (76.1) on Llama 2 being top models. The best open-weight models for LLM- as-a-judge are Meta-Llama-3-70B-Instruct (75.4) and prometheus-8x7b-v2.0 (75.3) (Kim et al., 2024), though they still fall well below classifier-based RMs. The final category is comprised of the small, most accessible models, where the leading models are StableLM-zephyr-3b (70.6) and oasst-rm-2.1-pythia-1.4b-epoch-2.5 (69.5), but there is substantial room for progress.
 
-表 2 给出不同规模与类型的前 20 个模型的结果. 只有大模型以及基于 Llama 3 训练的模型能在 Chat Hard 与 Reasoning 分区拿到高分, 其中 ArmoRM-Llama3-8B-v0.1 (89 分) 是当前最佳. 跨基座比较时, 规模是关键因素: Starling-RM-34B (81.4, 基于 Yi 34B 训练) 与 Tulu-2-DPO-70B (76.1, 基于 Llama 2) 都是头部模型. 最好的 LLM-as-a-judge 开放权重模型是 Meta-Llama-3-70B-Instruct (75.4) 与 prometheus-8x7b-v2.0 (75.3) (Kim et al., 2024), 但仍明显低于基于分类器的 RM. 最后一类是小而最易得的模型, 领先者 StableLM-zephyr-3b (70.6) 与 oasst-rm-2.1-pythia-1.4b-epoch-2.5 (69.5), 仍有很大进步空间.
+表 2 给出不同规模与类型的前 20 个模型的结果. 只有大模型以及基于 Llama 3 训练的模型能在 Chat Hard 与 Reasoning 分区拿到高分, 其中 ArmoRM-Llama3-8B-v0.1 (89 分) 是当前最佳. 跨基座比较时, 规模是关键因素: Starling-RM-34B (81.4, 基于 Yi 34B 训练) 与 Tulu-2-DPO-70B (76.1, 基于 Llama 2) 都是头部模型. 最好的 LLM-as-a-judge 开放权重模型是 Meta-Llama-3-70B-Instruct (75.4) 与 prometheus-8x7b-v2.0 (75.3) (Kim et al., 2024), 但仍明显低于基于分类器的 RM. 末尾一类是小而最易得的模型, 领先者 StableLM-zephyr-3b (70.6) 与 oasst-rm-2.1-pythia-1.4b-epoch-2.5 (69.5), 仍有很大进步空间.
 
 Table 2: Top-20 open models on REWARDBENCH. Evaluating many RMs shows that there is still large variance in RM training and potential for future improvement across the more challenging instruction and reasoning tasks. Icons refer to model types: Sequence Classifier ( ), Direct Preference Optimization ( ), Custom Classifier ( ), Generative Model ( ), and a random model ( ).
 
@@ -270,7 +270,7 @@ RLHFlow/ArmoRM-Llama3-8B-v0.1 89.0 96.9 76.8 92.2 97.3 74.3 RLHFlow/pair-prefere
 
 The Impacts of Different Base Models In our evaluation there are multiple models trained either with the same or very similar fine-tuning approaches on different base models. We show the impact of scaling across different Llama 2, via Tulu 2 (Ivison et al., 2023), and Qwen 1.5 versions in Tab. 3. In general, Llama 2 shows a clear improvement with scaling across all sections of REWARDBENCH, but Qwen 1.5 shows less monotonic improvement, likely due to out of distribution generalization challenges. Tab. 4 compares the impact of different base models and subtle changes of fine-tuning methods via the Zephyr-class models (Tunstall et al., 2023). Each of these models are fine-tuned on the UltraFeedback dataset via DPO as the final stage, with different base models and instruction- tuning before. zephyr-7b-alpha and zephyr-7b-beta differ by filtering of the UltraFeedback preference dataset only, and this is reflected in zephyr-7b-alpha's higher score on Safety (as refusals were removed from the dataset) and lower score on Chat. tulu-2-dpo-7b highlights the difference from the Mistral 7B to the Llama 2 7B base models and a different supervised fine-tuning dataset pre DPO, as regressions on Chat Hard and Reasoning, but improvements on Safety.
 
-不同基座的影响 我们的评估中有多个模型, 用相同或非常相近的微调方法训练在不同的基座上. 表 3 展示 Tulu 2 (Ivison et al., 2023) 与 Qwen 1.5 两个系列跨 Llama 2 / Qwen 版本 scaling 的影响. 总体看, Llama 2 系列在 REWARDBENCH 所有分区上都随规模清晰提升, 而 Qwen 1.5 的提升不那么单调, 原因可能是分布外泛化的挑战. 表 4 借助 Zephyr 系模型 (Tunstall et al., 2023) 比较不同基座与微调方法上的细微差异: 这些模型都以 UltraFeedback 数据集上 DPO 作为最后一阶段微调, 之前的基座与指令微调各不相同. zephyr-7b-alpha 与 zephyr-7b-beta 的差别仅在于 UltraFeedback 偏好数据的过滤方式, 这反映在 alpha 的 Safety 分更高 (因为数据中的拒答被过滤掉了) 而 Chat 分更低. tulu-2-dpo-7b 则体现了从 Mistral 7B 换成 Llama 2 7B 基座, 且 DPO 前换用不同 SFT 数据集的影响: Chat Hard 与 Reasoning 退步, Safety 提升.
+不同基座的影响 我们的评估中有多个模型, 用相同或非常相近的微调方法训练在不同的基座上. 表 3 展示 Tulu 2 (Ivison et al., 2023) 与 Qwen 1.5 两个系列跨 Llama 2 / Qwen 版本 scaling 的影响. 总体看, Llama 2 系列在 REWARDBENCH 所有分区上都随规模清晰提升, 而 Qwen 1.5 的提升不那么单调, 原因可能是分布外泛化的挑战. 表 4 借助 Zephyr 系模型 (Tunstall et al., 2023) 比较不同基座与微调方法上的细微差异: 这些模型都以 UltraFeedback 数据集上 DPO 作为末尾一阶段微调, 之前的基座与指令微调各不相同. zephyr-7b-alpha 与 zephyr-7b-beta 的差别仅在于 UltraFeedback 偏好数据的过滤方式, 这反映在 alpha 的 Safety 分更高 (因为数据中的拒答被过滤掉了) 而 Chat 分更低. tulu-2-dpo-7b 则体现了从 Mistral 7B 换成 Llama 2 7B 基座, 且 DPO 前换用不同 SFT 数据集的影响: Chat Hard 与 Reasoning 退步, Safety 提升.
 
 Different Shapes of Reward Functions The per-prompt scores demonstrate the different magni- tudes and distributions of rewards assigned to each reward model over the REWARDBENCH evalua- tion dataset. Results shown in Appendix E.1, such as Fig. 7, show these distributions for some RMs trained as a classifier. Few RMs are Gaussian in their scores across the REWARDBENCH datasets, fewer RMs are centered around 0 reward, and none we tested centered Gaussians. Future work should identify a preferred RM output distribution for downstream RL training.
 
@@ -318,7 +318,7 @@ IDEA-CCNL/Ziya-LLaMA-7B-Reward 60.2 39.0 69.0 61.0 90.4 33.8 openbmb/UltraRM-13b
 
 Evaluating across Safety Metrics Tab. 6 (full results in Tab. 12 in Appendix) compares different reward models across different safety categories, indicating challenges on striking a balance between refusing too much or not refusing. Models, such as UltraRM-13b and zephyr-7b-gemma-v0.1 show how a model focused on helpfulness without a strong notion of safety will score poorly on the should-refuse subsets of the safety section, but highly on XSTest Should Respond. Other models, namely those at the top of the overall leaderboard, clearly include safety information in the training process and maintain strong performance on trick questions that could induce false refusals (XSTest Should Respond). Finally, the mirrored behavior, those models that score highly on prompts that they should refuse and poorly on those they should not are present, indicating a model that is likely to falsely refusal queries (e.g. the Qwen chat models). These three behavior modes indicate that REWARDBENCH can be used as a quick check of the safety behavior of a candidate model, especially when trained with DPO (as it will not need further RL training like the classifiers).
 
-按安全指标评估 表 6 (完整结果见附录表 12) 比较不同奖励模型在各安全类别上的表现, 显示出「拒答太多」与「拒答太少」之间的平衡很难把握. UltraRM-13b 与 zephyr-7b-gemma-v0.1 这类模型表明: 只聚焦 helpfulness 而缺少安全观念的模型, 在 Safety 分区的 should-refuse 子集上得分很差, 但在 XSTest Should Respond 上得分很高. 另一些模型, 主要是排行榜头部的那些, 在训练过程中显然加入了安全信息, 即使在可能诱发错误拒答的陷阱问题 (XSTest Should Respond) 上也能保持高分. 最后还存在镜像行为: 有些模型在应当拒答的 prompt 上得分高, 在应当回答的 prompt 上得分低, 说明它们很可能错误拒答用户请求 (Qwen chat 系模型就是例子). 这三种行为模式说明 REWARDBENCH 可以快速检查候选模型的安全行为, 对用 DPO 训练的模型尤其方便 (它们与分类器不同, 不需要再经过 RL 训练).
+按安全指标评估 表 6 (完整结果见附录表 12) 比较不同奖励模型在各安全类别上的表现, 显示出「拒答太多」与「拒答太少」之间的平衡很难把握. UltraRM-13b 与 zephyr-7b-gemma-v0.1 这类模型表明: 只聚焦 helpfulness 而缺少安全观念的模型, 在 Safety 分区的 should-refuse 子集上得分很差, 但在 XSTest Should Respond 上得分很高. 另一些模型, 主要是排行榜头部的那些, 在训练过程中显然加入了安全信息, 即使在可能诱发错误拒答的陷阱问题 (XSTest Should Respond) 上也能保持高分. 末尾还存在镜像行为: 有些模型在应当拒答的 prompt 上得分高, 在应当回答的 prompt 上得分低, 说明它们很可能错误拒答用户请求 (Qwen chat 系模型就是例子). 这三种行为模式说明 REWARDBENCH 可以快速检查候选模型的安全行为, 对用 DPO 训练的模型尤其方便 (它们与分类器不同, 不需要再经过 RL 训练).
 
 ### 5.3 Limitations of Prior Test Sets
 
@@ -719,7 +719,7 @@ There is still a lot that is unknown about the best practices of training RMs: t
 
 16
 
-局限与更广泛影响 奖励模型缺少足量人类偏好数据; 除特定子集外, 本文依赖半自动方式获得 chosen-rejected 对, 再由人工核验. 推理等领域的固定格式可能产生伪相关. 基准成绩与下游训练效果的相关性仍未解决, 直接在 AlpacaEval 或 MT-Bench 上训练还会造成污染. Safety 分区的 rejected 样本会暴露潜在冒犯或敏感文本, 使用者应自行评估风险; 作者认为引出个人身份信息的风险较低.
+局限与更广泛影响 奖励模型缺少足量人类偏好数据; 除特定子集外, 本文依赖半自动方式获得 chosen-rejected 对, 再由人工核验. 推理等领域的固定格式可能产生伪相关. 基准成绩与下游训练效果的相关性仍未解决, 直接在 AlpacaEval 或 MT-Bench 上训练还会造成污染. Safety 分区的 rejected 样本会暴露潜在冒犯或敏感文本, 使用者应自行评估风险; 论文认为引出个人身份信息的风险较低.
 
 讨论长度偏置 RewardBench 让 chosen 与 rejected 长度相近, 或让 chosen 更短. AlpacaEval Length 在平均长度接近时比较能力差异明显的模型. 该子集比其他简单 Chat 子集更难, 但仍有十多个模型超过 90%. 它只检验缺少长度代理信号时的判断, 完整理解偏置仍需更细致的统计检验; 长度分布见附录 H.2.
 
@@ -1181,7 +1181,7 @@ For all MT-Bench subsets, the second turn data was not included due to the out-o
 
 31
 
-所有 MT-Bench 子集都排除第二轮数据. 第二轮样本的整段对话都会变化, 差异不只在最后回答, 对 RM 属于分布外形式; 两轮都带评分也难以组织成对数据. 模型来源和分数分布等细节见 I.2 节.
+所有 MT-Bench 子集都排除第二轮数据. 第二轮样本的整段对话都会变化, 差异不只在末尾回答, 对 RM 属于分布外形式; 两轮都带评分也难以组织成对数据. 模型来源和分数分布等细节见 I.2 节.
 
 <!-- page 32 of 44 -->
 
@@ -1673,7 +1673,7 @@ and selected one response that complied with the instruction and one that errone
 
 AlpacaEval 过滤 作者人工检查配对与标签, 发现多个来源模型存在幻觉. 图 14–17 展示因事实错误、排序明显错误或两个回答都含幻觉而删除的样本; 提示与被试输出按原文保留.
 
-Refusals 数据先由 GPT-4 和 GPT-3.5 基于人工种子生成提示, 再让 Dolphin 生成危险或冒犯回答作 rejected, 让 GPT-3.5 生成较丰富拒答作 chosen, 最后人工核验类别和成对方向.
+Refusals 数据先由 GPT-4 和 GPT-3.5 基于人工种子生成提示, 再让 Dolphin 生成危险或冒犯回答作 rejected, 让 GPT-3.5 生成较丰富拒答作 chosen, 末尾人工核验类别和成对方向.
 
 XSTest 只保留存在合适配对的样本, 并遵循原作者对是否应拒答的判断. 虚构故事中的暴力描写以及一些古怪问题属于应正常回答, 例子见图 18、19. 提示和被试回答是评测样本, 保留英文不译.
 

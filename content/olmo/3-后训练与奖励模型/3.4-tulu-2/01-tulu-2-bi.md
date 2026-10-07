@@ -51,7 +51,7 @@ We additionally explore training with quantized low-rank adaptation (QLoRA), fin
 
 amine long-form text generation such as AlpacaEval. Finally, we apply our mixture to CODE LLAMA [Roziere et al., 2023], resulting in CODE TÜLU 2, which outperforms both the base CODE LLAMAmodel and its instruction-tuned variant CODE LLAMA-Instruct across all model sizes.
 
-比如在 AlpacaEval 上就明显偏弱. 最后, 我们把这套数据混合应用到 CODE LLAMA [Roziere et al., 2023] 上, 得到 CODE TÜLU 2, 它在所有规模上都同时超过 CODE LLAMA 本体和其指令微调版本 CODE LLAMA-Instruct.
+比如在 AlpacaEval 上就明显偏弱. 末尾, 我们把这套数据混合应用到 CODE LLAMA [Roziere et al., 2023] 上, 得到 CODE TÜLU 2, 它在所有规模上都同时超过 CODE LLAMA 本体和其指令微调版本 CODE LLAMA-Instruct.
 
 TÜLU-2 validates and extends the progress seen across many open instruction model recipes released recently, such as those with some RL component, including Zephyr-Beta [Tunstall et al., 2023], LLAMA-2-chat [Touvron et al., 2023a], XWin [Xwin-LM Team, 2023], WizardLM [Xu et al., 2023], and OpenChat [Wang et al., 2023a], and some without, including MISTRAL-Instruct [Jiang et al., 2023] and Mosaic Pretrained Transformer (MPT) [MosaicML, 2023].
 
@@ -223,7 +223,7 @@ Table 2: Results of LLAMA-2 models finetuned on our V1 and V2 data mixtures, and
 
 outperformed in MMLU and CodexEval by TÜLU 2+DPO 70B, in ToxiGen by LLAMA-2-Chat models, and in AlpacaEval by Xwin-LM 70B. We note that the average gap between TÜLU 2 70B and the highest performing model in these 4 tasks is under 1%, highlighting that TÜLU 2 is at least competitive if not outright better than all open models in most evaluations.
 
-在 MMLU 和 CodexEval 上被 TÜLU 2+DPO 70B 超过, 在 ToxiGen 上被 LLAMA-2-Chat 系列超过, 在 AlpacaEval 上被 Xwin-LM 70B 超过. 值得注意的是, 这 4 项上 TÜLU 2 70B 与最好模型的平均差距不到 1%, 说明 TÜLU 2 在多数评测上至少与所有开放模型持平, 甚至更好.
+在 MMLU 和 CodexEval 上被 TÜLU 2+DPO 70B 超过, 在 ToxiGen 上被 LLAMA-2-Chat 系列超过, 在 AlpacaEval 上被 Xwin-LM 70B 超过. 其中, 这 4 项上 TÜLU 2 70B 与最好模型的平均差距不到 1%, 说明 TÜLU 2 在多数评测上至少与所有开放模型持平, 甚至更好.
 
 TÜLU 2 is competitive with GPT 3.5-0301. TÜLU 2 70B achieves similar performance to GPT-3.5-turbo-0301 in MMLU, BBH and TydiQA, and outperforms it in AlpacaEval and ToxiGen. However, there remains a large gap with GPT-4 and a moderate gap with GPT-3.5-turbo-0613 (a more modern variant of the model) in most evaluations.
 
@@ -367,7 +367,7 @@ Table 6: Evaluation results comparing models based on CODE LLAMA with our TÜLU 
 
 Finally, we attempted using CODE LLAMA [Roziere et al., 2023] as a base model instead of LLAMA-2 due to its improved performance on coding tasks. We dub CODE LLAMA models trained on our V2 data mixture as CODE TÜLU 2 models. We present our results comparing CODE LLAMA and LLAMA-2 models fully finetuned on our V2 mixture in Table 6. We find that:
 
-最后, 由于 CODE LLAMA [Roziere et al., 2023] 编码任务更强, 本文尝试用它代替 LLAMA-2 做基座, 把在 V2 数据混合上训练的 CODE LLAMA 模型称为 CODE TÜLU 2. CODE LLAMA 与 LLAMA-2 基座在 V2 混合上全量微调的结果对比见表 6. 发现如下:
+末尾, 由于 CODE LLAMA [Roziere et al., 2023] 编码任务更强, 本文尝试用它代替 LLAMA-2 做基座, 把在 V2 数据混合上训练的 CODE LLAMA 模型称为 CODE TÜLU 2. CODE LLAMA 与 LLAMA-2 基座在 V2 混合上全量微调的结果对比见表 6. 发现如下:
 
 CODE TÜLU 2 models significantly outperform TÜLU 2 models at coding tasks. As expected, CODE TÜLU 2 models report drastically improved Codex-Eval performance compared to TÜLU 2 – in Codex-Eval, our smallest (7B) CODE TÜLU 2 model matches the performance of TÜLU-V2+DPO 70B, our strongest LLAMA-2-based model. This highlights the efficacy of using smaller, domain- specific models when limiting evaluation to that domain alone.
 
@@ -603,7 +603,7 @@ MMLU: 使用 https://github.com/hendrycks/test 上的官方评测脚本与 promp
 
 • GSM: We evaluate models on the test set of GSM. Following Wei et al. [2022], we evaluate with chain-of-thought. We use 8 few-shot in-context examples. Because all answers in GSM are numbers, we extract the last number in the model response as the final answer. We report average accuracy across test examples.
 
-GSM: 在 GSM 测试集上评测, 沿用 Wei et al. [2022] 的思维链方式, 用 8 个 few-shot 示例. GSM 的答案都是数字, 因此取模型回复中最后一个数字作为最终答案, 报告测试样本上的平均准确率.
+GSM: 在 GSM 测试集上评测, 沿用 Wei et al. [2022] 的思维链方式, 用 8 个 few-shot 示例. GSM 的答案都是数字, 因此取模型回复中末尾一个数字作为最终答案, 报告测试样本上的平均准确率.
 
 • BBH: We follow the setup described in the original paper Suzgun et al. [2022], and evaluate with chain-of-thought. The officially provided prompts, which have 3 few-shot in-context examples are used. For the CoT setup, we extract the first word after the phrase ‘So the answer is’, or the entire response if there is no such substring present. We report average accuracy over sub-tasks (all of which use accuracy as the primary metric).
 

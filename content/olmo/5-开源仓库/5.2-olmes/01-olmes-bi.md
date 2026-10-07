@@ -82,13 +82,13 @@ olmes --model google/gemma-2b \
 
 > To define a suite, use `oe_eval/configs/task_suites.py`.
 
-套件配置列出子任务，并指定怎样聚合指标。例如 `mmlu:mc::olmes` 展开所有 MMLU 学科，主指标为 macro。套件不是简单字符串别名，它固定任务集合与汇总语义。
+套件配置列出子任务，并指定怎样聚合指标。例如 `mmlu:mc::olmes` 展开所有 MMLU 学科，主指标为 macro。套件并非简单字符串别名，它固定任务集合与汇总语义。
 
 ## Evaluation output
 
 结果写入 `--output-dir`，详细格式见 `OUTPUT_FORMATS.md`。此外可用 `--gsheet` 写 Google Sheet（认证来自 `GDRIVE_SERVICE_ACCOUNT_JSON`），用 `--hf-save-dir` 写 Hugging Face dataset 目录，用 `--remote-output-dir` 写 S3 等远程位置，用 `--wandb-run-path` 写 W&B 项目。
 
-`OUTPUT_FORMATS.md` 区分运行级配置/汇总、任务级指标与实例级预测。实例记录包含模型输入、目标、预测、logprob 或生成信息及指标细节，因而可以从总分下钻到样本。不同后端或任务不一定填充完全相同字段，消费端应读取 schema/version，而不是假设所有 JSON 行同构。
+`OUTPUT_FORMATS.md` 区分运行级配置/汇总、任务级指标与实例级预测。实例记录包含模型输入、目标、预测、logprob 或生成信息及指标细节，因而可以从总分下钻到样本。不同后端或任务不一定填充完全相同字段，消费端应读取 schema/version，而并非假设所有 JSON 行同构。
 
 ## 译校边界
 

@@ -165,7 +165,7 @@ Figure 1 The model flow encompasses training data, code and intermediate checkpo
 
 In addition, we train Olmo 3 Instruct 7B and 32B models tuned to produce shorter, more direct responses. By avoiding intermediate “thinking” outputs, Olmo 3 Instruct effectively reduces response latency and is optimized for general chat and function calling. Olmo 3 Instruct 7B and 32B surpass other notable open-weight models of comparable size—Qwen 2.5 (Qwen et al., 2024), Gemma 3 (Gemma 3 Team, 2025), IBM Granite 3.3 (Soule and Bergmann, 2025), and Llama 3 (Grattafiori et al., 2024)—and additionally reduces the remaining performance gap to Qwen 3 (Yang et al., 2025a). Finally, we introduce Olmo 3 RL-Zero 7B, a variant of Olmo 3 trained using RL directly from Olmo 3 Base. Olmo 3 RL-Zero enables researchers to study how base model data affects RL performance.
 
-此外训练了 Olmo 3 Instruct 7B 和 32B, 回答更短, 更直接. 不做中间 thinking 输出, 延迟更低, 面向通用对话和 function calling. 这两档超过同规模的一批 open-weight 模型, 包括 Qwen 2.5, Gemma 3, IBM Granite 3.3 和 Llama 3, 并缩小了与 Qwen 3 的剩余差距. 最后是 Olmo 3 RL-Zero 7B, 直接从 Olmo 3 Base 用 RL 训练, 用来看 base 的数据如何影响 RL.
+此外训练了 Olmo 3 Instruct 7B 和 32B, 回答更短, 更直接. 不做中间 thinking 输出, 延迟更低, 面向通用对话和 function calling. 这两档超过同规模的一批 open-weight 模型, 包括 Qwen 2.5, Gemma 3, IBM Granite 3.3 和 Llama 3, 并缩小了与 Qwen 3 的剩余差距. 末尾是 Olmo 3 RL-Zero 7B, 直接从 Olmo 3 Base 用 RL 训练, 用来看 base 的数据如何影响 RL.
 
 <!-- page 4 of 118 -->
 
@@ -175,7 +175,7 @@ Olmo 3 这一族是最强的 fully-open base 集合, 超过 Stanford Marin, Aper
 
 Finally, we develop a set of new algorithmic and infrastructural advances across data processing, evaluation, pretraining, and reinforcement learning. This includes OlmoBaseEval, a benchmark suite tailored to compute-efficient base-model development, and OlmoRL, a reinforcement-learning framework incorporating efficiency optimizations tailored to our thinking models. Taken together, these training recipes are shaped by a development framework that blends distributed experimentation with centralized evaluation, enabling coordinated, capability-driven improvements throughout the model pipeline.
 
-最后在数据处理, 评测, 预训练和强化学习上做了一批新的算法和基础设施. 其中包括 OlmoBaseEval, 面向省算力的 base 开发; 以及 OlmoRL, 按 thinking 模型做了效率优化的强化学习框架. 这些配方把分布式实验和集中评测放在一起, 让整条流水线上的改进可以对齐到能力.
+末尾在数据处理, 评测, 预训练和强化学习上做了一批新的算法和基础设施. 其中包括 OlmoBaseEval, 面向省算力的 base 开发; 以及 OlmoRL, 按 thinking 模型做了效率优化的强化学习框架. 这些配方把分布式实验和集中评测放在一起, 让整条流水线上的改进可以对齐到能力.
 
 ## 2 Model Flow for Olmo 3 (2. Olmo 3 的模型流)
 
@@ -270,7 +270,7 @@ We post-train Olmo 3 Base into three model variants:
 > §2.2 写明在通用聊天与 function calling 场景, 中间思考抬延迟, 收益不足以抵消交互成本.
 
 ◦ We introduce Dolci Instruct SFT, our new dataset enriched with data specifically created for function calling (Section §5.2.1). To directly optimize model interactivity on top of capabilities, we extend our Delta Learning preference pipeline in Dolci Instruct DPO, incorporating multi-turn preference data and targeted data length interventions that encourage concise responses (Section §5.3.1). Finally, we use reinforcement learning with verifiable rewards (Section §5.4) to further refine core capabilities, where preference tuning synergizes with RL to improve model performance while maintaining learned brevity.
-◦ 我们引入 Dolci Instruct SFT, 新数据集特别充实了 function calling 数据 (第 §5.2.1 节). 为在能力之上直接优化交互性, 我们在 Dolci Instruct DPO 中扩展 Delta Learning 偏好流水, 加入多轮偏好数据与鼓励简洁回复的长度干预 (第 §5.3.1 节). 最后用带可验证奖励的强化学习 (第 §5.4 节) 继续打磨核心能力, 使偏好调优与 RL 协同提分, 同时保住已学到的简洁.
+◦ 我们引入 Dolci Instruct SFT, 新数据集特别充实了 function calling 数据 (第 §5.2.1 节). 为在能力之上直接优化交互性, 我们在 Dolci Instruct DPO 中扩展 Delta Learning 偏好流水, 加入多轮偏好数据与鼓励简洁回复的长度干预 (第 §5.3.1 节). 末尾用带可验证奖励的强化学习 (第 §5.4 节) 继续打磨核心能力, 使偏好调优与 RL 协同提分, 同时保住已学到的简洁.
 
 • Olmo 3 RL-Zero (Section §6) To date, all leading open RLVR benchmarks and algorithms train on top of open-weight models that do not reveal their pretraining or mid-training data (Chu et al., 2025; Yang et al., 2025a). This limits the community’s ability to study the role of pretraining data on RLVR performance. It can lead to myriad issues with benchmark evaluations being contaminated, e.g., mid-training data containing the evaluation, which makes spurious rewards as effective as true reward (Shao et al., 2025b; Wu et al., 2025c) or improvements from fixing prompt templates outweighing the improvements from RL (Liu et al., 2025b).
 • Olmo 3 RL-Zero (第 §6 节) 迄今领先的开放 RLVR 基准与算法, 多建立在不公开预训练 / midtraining 数据的 open-weight 模型之上 (Chu et al., 2025; Yang et al., 2025a). 这限制了社区研究预训练数据对 RLVR 表现的作用, 也会带来基准污染等问题, 例如 midtraining 数据含评测集, 使虚假奖励看起来与真奖励一样有效 (Shao et al., 2025b; Wu et al., 2025c), 或修复提示模板的收益盖过 RL 本身 (Liu et al., 2025b).
@@ -284,7 +284,7 @@ Table 1 demonstrates a snapshot of our evaluation for Olmo 3 Think compared to o
 
 Table 1 给出 Olmo 3 Think 相对其他 open-weight 与 fully-open 模型的评测快照. 据我们所知, Olmo 3 Think 是迄今最强的 fully-open thinking 模型. 它优于 Qwen2.5-Instruct, Gemma 2 与 3 27B, DeepSeek R1 以及 Distilled Qwen 32B; 也接近 Qwen 3 与 Qwen 3 VL 32B, 在相近规模最强 open-weight 模型面前收窄差距, 同时训练 token 大约少 6x.
 
-同尺度最强 open-weight thinking (文内与 Qwen 3 / Qwen 3 VL 32B 等对读), 不是 fully-open 旧档.
+同尺度最强 open-weight thinking (文内与 Qwen 3 / Qwen 3 VL 32B 等对读), 并非 fully-open 旧档.
 
 For more details and results of other models along our Olmo 3 model flow, refer to the quick links below.
 
@@ -385,7 +385,7 @@ Tables 2 and 3 compare Olmo 3 Base 32B and 7B with leading fully-open and open-w
 
 Olmo 3 Base is the best fully-open model at 32B parameters, outperforming Stanford Marin 32B and Apertus 70B. On Math and Code evaluation composites, it achieves double-digit improvements over the other fully-open 32B models and is within a few points of strong open-weight baselines. On MCQA benchmarks, its STEM and Non-STEM scores closely track Marin 32B and OLMo 2 32B and sit a few points behind the top open-weight models, while on GenQA Olmo 3 Base forms the top fully-open cluster with Marin 32B and OLMo 2 32B and is only narrowly behind Llama 3.1 70B among the open-weight baselines. At the 7B scale, Olmo 3 Base achieves the strongest Math and Code performance among fully-open models, with sizable margins over Marin 8B, Apertus 8B, and OLMo 2 7B. Compared to open-weight models, it trails only the strongest models such as Qwen and Nemotron Nano on Math and Code. In MCQA, Olmo 3 Base 7B is on par with the strongest fully-open models in both STEM and Non-STEM areas. Finally, on GenQA tasks, Olmo 3 Base outperforms all but Marin among listed fully-open models, and outperforms all but the larger Gemma 2 9B and Llama3.1 8B among listed open-weight models.
 
-Olmo 3 Base 是 32B 参数量级上最好的 fully-open 模型, 超过 Stanford Marin 32B 和 Apertus 70B. 在 Math 与 Code 评测综合分上, 它比其他 fully-open 32B 模型高出两位数, 与强大的 open-weight 基线只差几分. 在 MCQA 基准上, 它的 STEM 与 Non-STEM 分数与 Marin 32B, OLMo 2 32B 相当接近, 比最好的 open-weight 模型低几分; 在 GenQA 上, Olmo 3 Base 与 Marin 32B, OLMo 2 32B 一起构成 fully-open 模型的第一梯队, 在 open-weight 基线中只以微弱差距落后于 Llama 3.1 70B. 在 7B 规模上, Olmo 3 Base 在 fully-open 模型中取得最强的 Math 与 Code 表现, 相对 Marin 8B, Apertus 8B 和 OLMo 2 7B 有明显优势. 与 open-weight 模型相比, 它在 Math 与 Code 上只落后于 Qwen, Nemotron Nano 这类最强模型. 在 MCQA 上, Olmo 3 Base 7B 在 STEM 与 Non-STEM 两个方向上都与最强的 fully-open 模型持平. 最后, 在 GenQA 任务上, Olmo 3 Base 胜过所列 fully-open 模型中除 Marin 以外的全部模型, 也胜过所列 open-weight 模型中除更大的 Gemma 2 9B 和 Llama3.1 8B 以外的全部模型.
+Olmo 3 Base 是 32B 参数量级上最好的 fully-open 模型, 超过 Stanford Marin 32B 和 Apertus 70B. 在 Math 与 Code 评测综合分上, 它比其他 fully-open 32B 模型高出两位数, 与强大的 open-weight 基线只差几分. 在 MCQA 基准上, 它的 STEM 与 Non-STEM 分数与 Marin 32B, OLMo 2 32B 相当接近, 比最好的 open-weight 模型低几分; 在 GenQA 上, Olmo 3 Base 与 Marin 32B, OLMo 2 32B 一起构成 fully-open 模型的第一梯队, 在 open-weight 基线中只以微弱差距落后于 Llama 3.1 70B. 在 7B 规模上, Olmo 3 Base 在 fully-open 模型中取得最强的 Math 与 Code 表现, 相对 Marin 8B, Apertus 8B 和 OLMo 2 7B 有明显优势. 与 open-weight 模型相比, 它在 Math 与 Code 上只落后于 Qwen, Nemotron Nano 这类最强模型. 在 MCQA 上, Olmo 3 Base 7B 在 STEM 与 Non-STEM 两个方向上都与最强的 fully-open 模型持平. 末尾, 在 GenQA 任务上, Olmo 3 Base 胜过所列 fully-open 模型中除 Marin 以外的全部模型, 也胜过所列 open-weight 模型中除更大的 Gemma 2 9B 和 Llama3.1 8B 以外的全部模型.
 
 ### 3.2 Modeling and Architecture (3.2 建模与架构)
 
@@ -455,7 +455,7 @@ Table 2 Results comparing Olmo 3 Base 32B to other base models using the OlmoBas
 表 2｜在 OlmoBaseEval Main 套件上比较 Olmo 3 Base 32B 与其他 base 模型的结果 (细节见第 §3.3 节). 发布前 Olmo 3 未在 held-out 基准上评测.
 
 • To support scalable pretraining at longer sequence lengths, and to keep inference costs manageable, we introduce a sliding window attention (SWA) pattern (Beltagy et al., 2020) in which each token can attend to previous tokens in a window of size 4096. We add SWA at three out of every four layers, and ensure that the last layer always uses full attention.
-• 为了在更长序列上支持可扩展的预训练, 同时把推理成本控制在可接受范围, 我们引入滑动窗口注意力 (SWA) 模式 (Beltagy et al., 2020): 每个 token 只能关注大小为 4096 的窗口内的前序 token. 每四层中有三层使用 SWA, 并保证最后一层始终使用全注意力.
+• 为了在更长序列上支持可扩展的预训练, 同时把推理成本控制在可接受范围, 我们引入滑动窗口注意力 (SWA) 模式 (Beltagy et al., 2020): 每个 token 只能关注大小为 4096 的窗口内的前序 token. 每四层中有三层使用 SWA, 并保证末尾一层始终使用全注意力.
 
 **Training** Olmo 3 Base is trained using the OLMo-core codebase. With this stack, we train the 7B model at 7700 tokens per second per GPU and the 32B model at 1960 tokens per second per GPU at a sequence length of 8192, using bfloat16 precision throughout. This corresponds to roughly 43% and 41% MFU, respectively. We achieve this performance by combining PyTorch’s built-in torch.compile(), custom kernels for operations such as attention (Dao, 2024) and the language modeling head (Hsu et al., 2025), asynchronous and batched gathering of metrics, and asynchronous checkpoint writing, among other optimizations.
 
@@ -537,7 +537,7 @@ Table 3 Results comparing Olmo 3 Base 7B to other base models using the OlmoBase
 
 Model development requires many iterative data and training decisions. However, benchmarks are not perfect decision-making tools: different evaluations are only sensitive for making development decisions across specific ranges of scale and capability (Magnusson et al., 2025). Models trained at small compute scales are known to exhibit random-chance performance on math, code, and multiple-choice question answering (MCQA) tasks (Wei et al., 2022; Gu et al., 2024b), and benchmark noise can reduce the ability to trust small differences in scores (Heineman et al., 2025). To address these problems, we develop OlmoBaseEval, a collection of benchmark suites to support decision-making during base model development. OlmoBaseEval features the following improvements:
 
-模型开发需要大量迭代的数据与训练决策. 然而基准并不是完美的决策工具: 不同评测只在特定的规模与能力区间内对开发决策敏感 (Magnusson et al., 2025). 众所周知, 小算力规模训练出的模型在数学, 代码和多选问答 (MCQA) 任务上表现接近随机 (Wei et al., 2022; Gu et al., 2024b), 基准噪声也会让人难以信任分数上的细小差异 (Heineman et al., 2025). 为了解决这些问题, 我们开发了 OlmoBaseEval, 这是一组用来支撑 base 模型开发决策的基准套件. OlmoBaseEval 有以下改进:
+模型开发需要大量迭代的数据与训练决策. 然而基准并非完美的决策工具: 不同评测只在特定的规模与能力区间内对开发决策敏感 (Magnusson et al., 2025). 众所周知, 小算力规模训练出的模型在数学, 代码和多选问答 (MCQA) 任务上表现接近随机 (Wei et al., 2022; Gu et al., 2024b), 基准噪声也会让人难以信任分数上的细小差异 (Heineman et al., 2025). 为了解决这些问题, 我们开发了 OlmoBaseEval, 这是一组用来支撑 base 模型开发决策的基准套件. OlmoBaseEval 有以下改进:
 
 • We aggregate scores over task clusters that group benchmarks by assessed capability (Section §3.3.1),
 • 按所评估的能力把基准分组成任务簇, 在簇上汇总分数 (第 §3.3.1 节),
@@ -572,7 +572,7 @@ Figure 4 Learning rate schedule and loss for Olmo 3 Base 32B. The learning rate 
 
 We start by targeting a high coverage of capabilities; we select benchmarks to prioritize science knowledge, medical/lab knowledge, math, and code tasks. Because our data interventions are targeted to a core capability rather than a specific benchmark (e.g., “Code” rather than “DS-1000”), we group tasks into clusters, where we expect the benchmarks within a cluster to behave similarly to particular data changes. To handle evaluation of models trained using small compute budgets (e.g., up to our largest experiment scale of 1B parameters at 100B tokens), we perform a scaling analysis to determine which benchmarks show signal at a small scale and find proxy metrics which we use to make decisions. Finally, we analyze the signal-to-noise ratio of each benchmark—we select benchmark metrics to improve SNR, remove benchmarks that were too noisy for making decisions, and move benchmarks out of the average if the noise of one particular benchmark dominated the aggregate scores.
 
-我们首先追求高能力覆盖率, 挑选基准时优先考虑科学知识, 医学/实验知识, 数学和代码任务. 由于我们的数据干预针对的是某项核心能力而非某个具体基准 (例如 「Code」 而不是 「DS-1000」), 我们把任务分组成簇, 预期同一簇内的基准对特定数据变化的反应相似. 为了评测小算力预算训练出的模型 (例如最大到我们实验规模上限的 1B 参数, 100B token), 我们做了 Scaling 分析, 确定哪些基准在小规模下就有信号, 并找到用于决策的代理指标. 最后, 我们分析每个基准的信噪比: 选择能提高 SNR 的基准指标, 移除噪声大到无法用于决策的基准, 若某个基准的噪声主导了汇总分数, 就把它移出平均值.
+我们第一步追求高能力覆盖率, 挑选基准时优先考虑科学知识, 医学/实验知识, 数学和代码任务. 由于我们的数据干预针对的是某项核心能力而非某个具体基准 (例如 「Code」 而并非 「DS-1000」), 我们把任务分组成簇, 预期同一簇内的基准对特定数据变化的反应相似. 为了评测小算力预算训练出的模型 (例如最大到我们实验规模上限的 1B 参数, 100B token), 我们做了 Scaling 分析, 确定哪些基准在小规模下就有信号, 并找到用于决策的代理指标. 末尾, 我们分析每个基准的信噪比: 选择能提高 SNR 的基准指标, 移除噪声大到无法用于决策的基准, 若某个基准的噪声主导了汇总分数, 就把它移出平均值.
 
 #### 3.3.1 Clustering Tasks (3.3.1 任务聚类)
 
@@ -622,13 +622,13 @@ We evaluate on the suite of 25 OLMo 2 scaling law models from Bhagia et al. (202
 
 Figure 7 OlmoBaseEval signal-to-noise analysis on the code multi-task average using intermediate checkpoints from midtraining. First, we aggregate into multi-task averages and remove tasks with high noise, such as CruxEval (left → center). Then, we tune generation hyperparameters to improve SNR, e.g., by increasing the n in pass@k (center $\rightarrow \mathrm { r i g h t ) }$
 
-图 7｜用 midtraining 中间 checkpoint 对代码多任务平均做的 OlmoBaseEval 信噪比分析. 首先汇总为多任务平均, 并移除 CruxEval 等高噪声任务 (左 → 中). 然后调整生成超参数来提高 SNR, 例如增大 pass@k 中的 n (中 $\rightarrow \mathrm { r i g h t ) }$
+图 7｜用 midtraining 中间 checkpoint 对代码多任务平均做的 OlmoBaseEval 信噪比分析. 第一步汇总为多任务平均, 并移除 CruxEval 等高噪声任务 (左 → 中). 然后调整生成超参数来提高 SNR, 例如增大 pass@k 中的 n (中 $\rightarrow \mathrm { r i g h t ) }$
 
 #### 3.3.3 Signal-to-Noise Analysis (3.3.3 信噪比分析)
 
 When reporting a macro-average, we aim to exclude tasks from each cluster that were too noisy to be helpful for development. We calculate the signal-to-noise ratio of each benchmark following the method from Heineman et al. (2025), where we evaluate the final 50 checkpoints of OLMo 2 13B training, and 10 external base models trained at roughly the same compute scale $\bar { ( 4 \cdot 1 0 } ^ { 2 3 } \mathrm { F L O P s ) }$ . From our findings, we transition from using 1K instance subsets to full evaluation sets when available. We remove some benchmarks from our evaluation suite entirely, particularly binary benchmarks such as BoolQ (Clark et al., 2019), as we found that models usually oscillate between predicting the majority and minority class.
 
-报告宏平均时, 我们希望把每个簇里噪声大到没有帮助的任务排除掉. 我们按 Heineman et al. (2025) 的方法计算每个基准的信噪比: 评测 OLMo 2 13B 训练的最后 50 个 checkpoint, 以及 10 个在大致相同算力规模 $\bar { ( 4 \cdot 1 0 } ^ { 2 3 } \mathrm { F L O P s ) }$ 下训练的外部 base 模型. 根据结果, 我们在有完整评测集时, 从使用 1K 样本子集改为使用完整评测集. 我们把一些基准从评测套件中彻底移除, 尤其是 BoolQ (Clark et al., 2019) 这类二分类基准, 因为我们发现模型通常在预测多数类与少数类之间来回摆动.
+报告宏平均时, 我们希望把每个簇里噪声大到没有帮助的任务排除掉. 我们按 Heineman et al. (2025) 的方法计算每个基准的信噪比: 评测 OLMo 2 13B 训练的末尾 50 个 checkpoint, 以及 10 个在大致相同算力规模 $\bar { ( 4 \cdot 1 0 } ^ { 2 3 } \mathrm { F L O P s ) }$ 下训练的外部 base 模型. 根据结果, 我们在有完整评测集时, 从使用 1K 样本子集改为使用完整评测集. 我们把一些基准从评测套件中彻底移除, 尤其是 BoolQ (Clark et al., 2019) 这类二分类基准, 因为我们发现模型通常在预测多数类与少数类之间来回摆动.
 
 We repeat the same analysis for midtraining, instead using intermediate checkpoints from 5 preliminary pretraining runs. One important finding was to separate some benchmarks from the macro-average, like CruxEval (Gu et al., 2024a), which measures a relevant and unique capability (code input/output prediction) but would introduce too much noise into the macro-average. We show an example of the SNR of three individual benchmarks compared to the base main task averages across intermediate checkpoints during midtraining in Figure 7.
 
@@ -648,7 +648,7 @@ The suite includes four new benchmarks: BasicSkills, a set of 6 tasks to isolate
 
 We first train Olmo 3 Base on Dolma 3 Mix, our 6T token pretraining data mix. While Dolma 3 Mix is comprised of largely the same types of data sources used in other open pretraining recipes (Soldaini et al., 2024; Bakouch et al., 2025; OLMo et al., 2024), we demonstrate three key novelties:
 
-我们首先在 Dolma 3 Mix 上训练 Olmo 3 Base, 这是我们 6T token 的预训练数据混合. 虽然 Dolma 3 Mix 的数据来源类型与其他开放预训练配方 (Soldaini et al., 2024; Bakouch et al., 2025; OLMo et al., 2024) 大体相同, 但我们展示了三项关键创新:
+我们第一步在 Dolma 3 Mix 上训练 Olmo 3 Base, 这是我们 6T token 的预训练数据混合. 虽然 Dolma 3 Mix 的数据来源类型与其他开放预训练配方 (Soldaini et al., 2024; Bakouch et al., 2025; OLMo et al., 2024) 大体相同, 但我们展示了三项关键创新:
 
 <!-- page 14 of 118 -->
 
@@ -703,7 +703,7 @@ We took the following steps to curate pretraining data from CommonCrawl (Common 
 
 **Heuristic filtering** We apply a pipeline of heuristic filtering steps to prune our initial collection of 252.6B documents to a size amenable for pretraining. Our process closely follows that of DCLM (Li et al., 2024a) with minor modifications to improve data quality and computational efficiency. We first apply URL filtering to remove spam and adult-content from an expanded blocklist. We then remove documents that were either too short or too long, followed by filtering documents that contain excessive symbols or insufficient quantities of alphabetic characters. Next we remove documents containing large amounts of internal repetition and apply filtering to remove common spam phrases, fully removing any documents that are identify by these heuristics. We then use a fastText classifier to identify the language of each document, keeping only documents that contain English text. As a final step, we apply sentence-level heuristics from Madlad400 (Li et al., 2024a). In aggregate, this process reduces the size of our data pool by 84.6%, yielding a corpus of 38.8B documents. More details are provided in Appendix §A.2.
 
-**启发式过滤** 我们用一条启发式过滤流水线, 把最初收集的 2526 亿篇文档裁剪到适合预训练的规模. 流程基本沿用 DCLM (Li et al., 2024a), 只做了少量修改以提升数据质量和计算效率. 首先用扩充后的屏蔽列表做 URL 过滤, 去除垃圾内容和成人内容. 接着去掉过短或过长的文档, 再过滤掉符号过多或字母字符过少的文档. 然后移除内部重复过多的文档, 并过滤常见垃圾短语, 凡被这些启发式规则识别出的文档都整篇删除. 之后用 fastText 分类器识别每篇文档的语言, 只保留包含英文文本的文档. 最后一步应用来自 Madlad400 (Li et al., 2024a) 的句子级启发式规则. 整体来看, 这一流程把数据池缩小了 84.6%, 得到 388 亿篇文档的语料. 更多细节见附录 §A.2.
+**启发式过滤** 我们用一条启发式过滤流水线, 把最初收集的 2526 亿篇文档裁剪到适合预训练的规模. 流程基本沿用 DCLM (Li et al., 2024a), 只做了少量修改以提升数据质量和计算效率. 第一步用扩充后的屏蔽列表做 URL 过滤, 去除垃圾内容和成人内容. 接着去掉过短或过长的文档, 再过滤掉符号过多或字母字符过少的文档. 然后移除内部重复过多的文档, 并过滤常见垃圾短语, 凡被这些启发式规则识别出的文档都整篇删除. 之后用 fastText 分类器识别每篇文档的语言, 只保留包含英文文本的文档. 末尾一步应用来自 Madlad400 (Li et al., 2024a) 的句子级启发式规则. 整体来看, 这一流程把数据池缩小了 84.6%, 得到 388 亿篇文档的语料. 更多细节见附录 §A.2.
 
 **Deduplication** The web data we collect from CommonCrawl naturally contains an abundance of duplicated documents. This duplication arises from repeated crawls of the same website, near-copies of documents appearing across multiple web pages, and highly-repeated boilerplate text. Our deduplication strategy is motivated by three observations from prior work: 1) deduplication generally leads to more token-efficient training (Lee et al., 2022); 2) duplicate count serves as a weak signal of data quality, with higher duplicate counts indicating higher quality (Fang et al., 2025a); 3) repeating documents more than a handful of times provides rapidly diminishing returns (Muennighoff et al., 2025a).
 
@@ -785,7 +785,7 @@ We curate a novel dataset of academic PDFs, replacing our previous use of peS2o 
 
 First we classify documents using a prompt to Gemma 3 12B (Gemma 3 Team, 2025) on the first page of each document to determine if they contain any sensitive standalone PII, or link sensitive information to an individual. Next, we use Gemma 3 4B on the first 5,000 characters of each document to arrive at a set of flags describing the type of document. From these classification results, we develop a set of rules to identify which types of documents containing PII should be publicly available and which should be filtered. Ultimately this removes 4.9% of the remaining pool and yields a pool of 148 million documents. See Poznanski et al. (2025a) for more a complete overview of the PII removal pipeline.
 
-首先, 我们在每篇文档的第一页上用提示词调用 Gemma 3 12B (Gemma 3 Team, 2025) 对文档分类, 判断其是否含有敏感独立 PII, 或是否把敏感信息关联到某个个人. 接着, 我们在每篇文档的前 5,000 个字符上用 Gemma 3 4B 得到一组描述文档类型的标记. 基于这些分类结果, 我们制定了一套规则, 判断哪些含 PII 的文档类型应当公开可用, 哪些应当过滤. 最终这一步移除了剩余数据池的 4.9%, 得到 1.48 亿篇文档. PII 移除流水线的更完整介绍见 Poznanski et al. (2025a).
+第一步, 我们在每篇文档的第一页上用提示词调用 Gemma 3 12B (Gemma 3 Team, 2025) 对文档分类, 判断其是否含有敏感独立 PII, 或是否把敏感信息关联到某个个人. 接着, 我们在每篇文档的前 5,000 个字符上用 Gemma 3 4B 得到一组描述文档类型的标记. 基于这些分类结果, 我们制定了一套规则, 判断哪些含 PII 的文档类型应当公开可用, 哪些应当过滤. 最终这一步移除了剩余数据池的 4.9%, 得到 1.48 亿篇文档. PII 移除流水线的更完整介绍见 Poznanski et al. (2025a).
 
 **Heuristic filtering** After PII removal, we apply a round of heuristic filtering to further remove low-quality documents. Filters applied in this step include checking for: non-English documents not originally caught by the Lingua filter; documents that were more than 30% tables; and documents that contain more than 20% numbers. Next we apply modifications that convert markdown tables to HTML and remove URL references. The combination of these filtration steps yield a corpus of 108 million documents. This corpus is then partitioned into 24 topical buckets, according to the WebOrganizer topic classifier (Wettig et al., 2025), and passed off to the mixing (Section §3.4.4).
 
@@ -807,7 +807,7 @@ Furthermore, we replace our previous use of OpenWebMath (Paster et al., 2023) wi
 
 **Other** Finally, we include the Wikipedia and Wikibooks sources from Dolma (Soldaini et al., 2024) as base sources of encyclopedic knowledge. These are both the “English” and “Simple” editions of Wikipedia and Wikibooks with a cutoff date of March 2023. These sources were processed using WikiExtractor (Attardi, 2015) to remove markup formatting, and all documents with 25 or fewer words were filtered out to exclude template pages or pages that encountered XML parsing errors.
 
-**其他** 最后, 我们纳入 Dolma (Soldaini et al., 2024) 中的 Wikipedia 和 Wikibooks 来源, 作为百科知识的基础来源. 其中包括 Wikipedia 和 Wikibooks 的 「English」 与 「Simple」 两个版本, 截止日期为 2023 年 3 月. 这些来源用 WikiExtractor (Attardi, 2015) 处理以去除标记格式, 并过滤掉所有不超过 25 个词的文档, 以排除模板页面或 XML 解析出错的页面.
+**其他** 末尾, 我们纳入 Dolma (Soldaini et al., 2024) 中的 Wikipedia 和 Wikibooks 来源, 作为百科知识的基础来源. 其中包括 Wikipedia 和 Wikibooks 的 「English」 与 「Simple」 两个版本, 截止日期为 2023 年 3 月. 这些来源用 WikiExtractor (Attardi, 2015) 处理以去除标记格式, 并过滤掉所有不超过 25 个词的文档, 以排除模板页面或 XML 解析出错的页面.
 
 #### 3.4.4 Sampling and Mixing over Data Pools (3.4.4 在数据池上采样与混合)
 
@@ -875,15 +875,15 @@ architecture for 3B tokens (5x Chinchilla), sampling each mix from a Dirichlet d
 
 The base procedure assumes fixed domains, but real preprocessing workflows evolve continuously as we refine filters, add domains, or discover and mitigate quality issues. Rather than recomputing an entire swarm each time domains change, we introduce a new procedure called conditional mixing to efficiently adapt the base method to an evolving data landscape. The key idea is to treat the existing optimized mix as a single virtual domain with frozen mixing ratios, then re-run the base procedure over this virtual domain plus any new or modified domains. This effectively restricts the base mixing procedure to a lower-dimensional subspace of the mixture weight space, reducing swarm size and computational cost. Further details and justification of this procedure can be found in Chen et al. (2026).
 
-基础流程假设数据域固定, 但真实的预处理工作流在持续演进: 我们会改进过滤器, 新增数据域, 或者发现并缓解质量问题. 我们没有在每次数据域变化时重算整个 swarm, 而是引入一个称为条件混合的新流程, 让基础方法高效适应不断变化的数据版图. 核心思路是把已有的优化混合视为一个混合比例冻结的虚拟数据域, 然后在这个虚拟数据域加上所有新增或修改过的数据域上重新运行基础流程. 这实际上把基础混合流程限制在混合权重空间的一个低维子空间里, 从而减小 swarm 规模和计算成本. 该流程的更多细节与论证见 Chen et al. (2026).
+基础流程假设数据域固定, 但真实的预处理工作流在持续演进: 我们会改进过滤器, 新增数据域, 或者发现并缓解质量问题. 我们没有在每次数据域变化时重算整个 swarm, ；实际是引入一个称为条件混合的新流程, 让基础方法高效适应不断变化的数据版图. 核心思路是把已有的优化混合视为一个混合比例冻结的虚拟数据域, 然后在这个虚拟数据域加上所有新增或修改过的数据域上重新运行基础流程. 这实际上把基础混合流程限制在混合权重空间的一个低维子空间里, 从而减小 swarm 规模和计算成本. 该流程的更多细节与论证见 Chen et al. (2026).
 
 To construct the Dolma 3 Mix weights, we perform three rounds of our conditional mixing procedure, with each stage building incrementally on frozen mixtures from prior stages. We first obtain optimized mixture weights over the 24 WebOrganizer categories within the DCLM Baseline mix as well as the source-level mix. Web text serves as the starting point because it constitutes the largest data pool and because we use it to develop the base mixing methodology. As finalizing the bespoke web data pool described in Section §3.4.1 occurs concurrently with these initial mixing rounds, we perform this first round of mixing on DCLM-Baseline, expecting that learned preferences would transfer to our final web data.
 
-为了构建 Dolma 3 Mix 的权重, 我们做了三轮条件混合, 每一轮都在前几轮冻结的混合之上增量构建. 我们首先在 DCLM Baseline 混合内部的 24 个 WebOrganizer 类别上, 以及在来源层面上, 求得优化的混合权重. 之所以从 Web 文本开始, 是因为它是最大的数据池, 而且我们用它来开发基础混合方法. 由于第 §3.4.1 节所述定制 Web 数据池的最终定稿与这几轮初始混合同时进行, 我们在 DCLM-Baseline 上做第一轮混合, 预期学到的偏好能迁移到最终的 Web 数据上.
+为了构建 Dolma 3 Mix 的权重, 我们做了三轮条件混合, 每一轮都在前几轮冻结的混合之上增量构建. 我们第一步在 DCLM Baseline 混合内部的 24 个 WebOrganizer 类别上, 以及在来源层面上, 求得优化的混合权重. 之所以从 Web 文本开始, 是因为它是最大的数据池, 而且我们用它来开发基础混合方法. 由于第 §3.4.1 节所述定制 Web 数据池的最终定稿与这几轮初始混合同时进行, 我们在 DCLM-Baseline 上做第一轮混合, 预期学到的偏好能迁移到最终的 Web 数据上.
 
 Having frozen a mixture across WebOrganizer categories over web text, we turn our attention to mixtures of programming languages from Stack-Edu. Diverging slightly from the conditional mixing procedure, we fix the web text ratio to be 75% of the pool and force a 25% mixture of Stack-Edu data and only optimize over the composition of programming languages within this 25%. Finally, we perform one more round of conditional mixing to integrate the 24 WebOrganizer categories of the PDF data, conditioned on the DCLM, Stack-Edu, and source-level mixes. This incremental approach towards mixing is essential: for example, we complete PDF curation substantially later than other sources, and conditional mixing enable us to incorporate late-arriving data while reusing prior optimization results rather than restarting the expensive swarm-based base procedure.
 
-在冻结了 Web 文本上各 WebOrganizer 类别的混合之后, 我们转向 Stack-Edu 中编程语言的混合. 这里我们稍微偏离了条件混合流程: 把 Web 文本比例固定为数据池的 75%, 强制 Stack-Edu 数据占 25%, 只优化这 25% 内部的编程语言构成. 最后, 我们再做一轮条件混合, 以 DCLM, Stack-Edu 和来源层面的混合为条件, 纳入 PDF 数据的 24 个 WebOrganizer 类别. 这种增量式的混合方法至关重要: 例如, PDF 策展比其他来源完成得晚得多, 条件混合可以纳入后到的数据, 同时复用之前的优化结果, 而不必重新启动代价高昂的基于 swarm 的基础流程.
+在冻结了 Web 文本上各 WebOrganizer 类别的混合之后, 我们转向 Stack-Edu 中编程语言的混合. 这里我们稍微偏离了条件混合流程: 把 Web 文本比例固定为数据池的 75%, 强制 Stack-Edu 数据占 25%, 只优化这 25% 内部的编程语言构成. 末尾, 我们再做一轮条件混合, 以 DCLM, Stack-Edu 和来源层面的混合为条件, 纳入 PDF 数据的 24 个 WebOrganizer 类别. 这种增量式的混合方法很关键: 例如, PDF 策展比其他来源完成得晚得多, 条件混合可以纳入后到的数据, 同时复用之前的优化结果, 而不必重新启动代价高昂的基于 swarm 的基础流程.
 
 Figure 9 presents mixing outcomes and their performance results relative to the natural data distribution. For web text (top panels), the optimized mixture dramatically upweights STEM domains (e.g. “Science, Math, and Technology” and “Software Development”). On 1B-parameter models trains for 5x Chinchilla, this mixture obtains an average improvement of 0.056 and max of 0.209 (in BPB), while only 13 out of 54 tasks show degradations, none of which exceed 0.035. For rebalancing of programming languages in Stack-Edu (bottom panels), the optimized mix favors Python over Java and Markdown, yielding modest improvements in all but two coding benchmarks. Table 38 further demonstrates our method’s adaptability: swapping development suites to emphasize QA, math, or coding produces mixtures that preferentially optimize these respective capabilities.
 
@@ -937,7 +937,7 @@ Table 5 Composition of the midtraining data (Dolma 3 Dolmino Mix). Here we show 
 
 Figure 11 Flow for midtraining data curation. We employ a distributed system of lightweight feedback loops to explore datasets for targeted boosts across capabilities, and combine these with centralized integration tests and SFT training for assessment of candidate mix quality (discussion in Section §3.5.1). Finally, we incorporate a newly-developed decontamination method, to ensure that our mix is not contaminated with evaluation data (discussion in Section §3.5.1).
 
-图 11｜midtraining 数据策展流程. 我们用一套由轻量反馈回路组成的分布式系统探索数据集, 以便有针对性地提升各项能力, 并把它们与集中式集成测试和 SFT 训练相结合, 评估候选混合的质量 (讨论见第 §3.5.1 节). 最后, 我们纳入一种新开发的去污染方法, 确保混合中不含评测数据 (讨论见第 §3.5.1 节).
+图 11｜midtraining 数据策展流程. 我们用一套由轻量反馈回路组成的分布式系统探索数据集, 以便有针对性地提升各项能力, 并把它们与集中式集成测试和 SFT 训练相结合, 评估候选混合的质量 (讨论见第 §3.5.1 节). 末尾, 我们纳入一种新开发的去污染方法, 确保混合中不含评测数据 (讨论见第 §3.5.1 节).
 
 elements:
 
@@ -966,7 +966,7 @@ For lightweight testing we use the microanneal methodology introduced with OLMo 
 
 轻量测试使用 OLMo 2 中引入的 microanneal 方法, 我们对它做了进一步修改, 让基线对比更系统. 一次标准的 microanneal 设置如下: 1) 选定目标数据集, 2) 采样 5B token, 3) 配上 5B Web token, 4) 在得到的 10B 混合上退火. 然后把得到的 checkpoint 与一个仅在 10B Web 数据上做的基线 microanneal 比较, 以低成本, 高效率地评估该数据集对 base 模型表现的影响, 且这种影响是在仅用 Web 数据继续训练的效果之外的额外影响.<sup>13</sup>
 
-> 5B 目标数据 + 5B Web 退火 10B, 再与 10B web-only 基线比, 衡量的是 「仅用 Web 继续训练」 之外的额外影响, 不是 100B 正式跑. 脚注 13 还列了变体: 只够 2.5B 的数据集用 5B microanneal, 以及省掉算力匹配基线, 直接看单次退火增益的旧式做法.
+> 5B 目标数据 + 5B Web 退火 10B, 再与 10B web-only 基线比, 衡量的是 「仅用 Web 继续训练」 之外的额外影响, 并非 100B 正式跑. 脚注 13 还列了变体: 只够 2.5B 的数据集用 5B microanneal, 以及省掉算力匹配基线, 直接看单次退火增益的旧式做法.
 
 This methodology allows us to make rapid, targeted assessments of the quality of datasets being considered for the midtraining mix, and to iterate on many data domains in parallel. Our workflow operates as follows: for each capability that we target for improvement (in categories of math, code, QA, instruction, and thinking), we generate or collect new datasets as candidates to boost performance for this capability; we assess each via microanneals—if the results are promising, new datasets can be incorporated into the larger integration tests described next.
 
@@ -978,7 +978,7 @@ This methodology allows us to make rapid, targeted assessments of the quality of
 
 Finally, checkpoints from integration runs can be quickly instruction-tuned and evaluated on the post-train eval suite; we use this additional step to verify that gains we observe in midtrain yield improvements beyond base model capabilities.
 
-最后, 集成运行得到的 checkpoint 可以快速做指令微调, 并在后训练评测套件上评测; 我们用这一额外步骤验证 midtrain 中观察到的收益能否带来 base 模型能力之外的提升.
+末尾, 集成运行得到的 checkpoint 可以快速做指令微调, 并在后训练评测套件上评测; 我们用这一额外步骤验证 midtrain 中观察到的收益能否带来 base 模型能力之外的提升.
 
 We run these integration tests periodically as we reach a critical mass of microanneal results for new candidate data sources. For each integration test, new sources that show promise in microanneals are incorporated into an updated 100B mix, retaining strong sources from previous iterations.
 
@@ -1062,7 +1062,7 @@ by weighted random sampling of the upper 20% of buckets from each language subse
 **跨能力指令数据** 为了给后训练打基础, 我们纳入跨领域的指令数据集, 让模型为指令微调做好准备.
 
 • Tulu3 SFT data We sample instruction data from the SFT set from Tülu 3. Compared to dataset released by Lambert et al. (2024), we lightly process these data as follows: 1) we use an expanded set of examples that were created and subsequently filtered out for the final Tülu 3 data, 2) instead of relying on post-train syntax, such as <|im\_start|> and <|im\_end|>, we concatenate messages using double newlines. We choose this format, rather than using special tokens after microanneal experiments comparing them. More details are provided in see discussion of special tokens in Section §3.5.4.
-• Tulu3 SFT 数据 我们从 Tülu 3 的 SFT 集合中采样指令数据. 与 Lambert et al. (2024) 发布的数据集相比, 我们做了如下轻度处理: 1) 使用了一个扩充的样本集, 其中包括当初生成后又在最终 Tülu 3 数据中被过滤掉的样本; 2) 不使用 <|im\_start|> 和 <|im\_end|> 这类后训练语法, 而是用两个换行符拼接消息. 我们在 microanneal 实验中比较了这种格式与特殊 token, 最终选择了前者. 更多细节见第 §3.5.4 节关于特殊 token 的讨论.
+• Tulu3 SFT 数据 我们从 Tülu 3 的 SFT 集合中采样指令数据. 与 Lambert et al. (2024) 发布的数据集相比, 我们做了如下轻度处理: 1) 使用了一个扩充的样本集, 其中包括当初生成后又在最终 Tülu 3 数据中被过滤掉的样本; 2) 不使用 <|im\_start|> 和 <|im\_end|> 这类后训练语法, ；实际是用两个换行符拼接消息. 我们在 microanneal 实验中比较了这种格式与特殊 token, 最终选择了前者. 更多细节见第 §3.5.4 节关于特殊 token 的讨论.
 
 • Flan Through microanneals, we also find the Flan dataset (Wei et al., 2021; Longpre et al., 2023) improves performance in QA tasks, and as a result included a subset of the Flan dataset in the final mix. We use same subset and preprocessing from OLMo 2 (OLMo et al., 2024).
 • Flan 通过 microanneal, 我们还发现 Flan 数据集 (Wei et al., 2021; Longpre et al., 2023) 能提升 QA 任务表现, 因此在最终混合中纳入了 Flan 数据集的一个子集. 我们使用与 OLMo 2 (OLMo et al., 2024) 相同的子集和预处理.
@@ -1079,7 +1079,7 @@ by weighted random sampling of the upper 20% of buckets from each language subse
 • Meta-reasoning 这是本工作引入的两个新数据集中的第一个; 我们构建它是为了针对 Kargupta et al. (2025) 提出的七项核心认知能力, 这些能力是数学和编程专长的基础: 自我觉察 (Toy et al., 2024; Callaway et al., 2022), 评估 (Fleming and Daw, 2017), 目标管理 (Ackerman and Thompson, 2017; Griffiths et al., 2019), 层级组织 (Haupt, 2018), 逆向链推理 (Olieslagers et al., 2024), 回溯 (Joyce, 2009) 和概念推理 (Markovits et al., 2015). 这些类别的灵感来自一些研究, 它们表明 base 模型的元推理能力可能与更好的强化学习轨迹相关 (Kargupta et al., 2025; Gandhi et al., 2025). 我们把这些能力表达为需要调用元推理的任务, 例如从答案回溯到原始数学题, 或者调试程序. 为了给每类任务生成元推理数据, 我们对已有的数学题 (Luo et al., 2025a; Moshkov et al., 2025) 和代码题 (Li et al., 2023a; Hendrycks et al., 2021a; Ahmad et al., 2025) 做合成增强, 仿照 Pandalla-Math 数据集加入详细标注, 例如 '题目分类', '难度分析', '解题思路', '常见陷阱' 和 '验证方法'. 以这些标注为基础, 我们提示 GPT-4.1 和 o4-mini 为每个面向能力的任务生成 thinking traces. microanneal 显示, 纳入这份数据让数学和编码任务显著提升: 相对一个强的数学/代码基线 microanneal, Minerva Math 提升约 14 分, Codex HumanEval 和 MBPP 基准分别提升 14 分和 20 分.
 
 • Program-verifiable data Our second new synthetic reasoning dataset consists of program-verifiable tasks (Zeng et al., 2025b) for which we can use a Python program to deterministically verify whether an answer to a problem is correct. Solving these problems naturally requires a wide range of meta-reasoning strategies that are well-suited to be learned during midtraining. We 1) programmatically generate these problems, 2) distill thinking traces from GPT-4.1 and o4-mini models, and 3) finally filter those for correctness using an output verifier (Python programs). Microanneals show that including about 250M verifiable data tokens (in a 5B microanneal) led to 1-2 points of improvement on math and code tasks, including GSM8K and MBPP, relative to a math/code microanneal baseline.
-• Program-verifiable 数据 我们的第二个新合成推理数据集由可程序验证的任务 (Zeng et al., 2025b) 组成, 可以用 Python 程序确定性地验证某道题的答案是否正确. 解这些题自然需要多种元推理策略, 很适合在 midtraining 中学习. 我们 1) 以程序方式生成这些题目, 2) 从 GPT-4.1 和 o4-mini 模型蒸馏 thinking traces, 3) 最后用输出验证器 (Python 程序) 按正确性过滤. microanneal 显示, (在 5B microanneal 中) 纳入约 250M 可验证数据 token, 相对数学/代码 microanneal 基线, 在包括 GSM8K 和 MBPP 在内的数学与代码任务上提升 1-2 分.
+• Program-verifiable 数据 我们的第二个新合成推理数据集由可程序验证的任务 (Zeng et al., 2025b) 组成, 可以用 Python 程序确定性地验证某道题的答案是否正确. 解这些题自然需要多种元推理策略, 很适合在 midtraining 中学习. 我们 1) 以程序方式生成这些题目, 2) 从 GPT-4.1 和 o4-mini 模型蒸馏 thinking traces, 3) 末尾用输出验证器 (Python 程序) 按正确性过滤. microanneal 显示, (在 5B microanneal 中) 纳入约 250M 可验证数据 token, 相对数学/代码 microanneal 基线, 在包括 GSM8K 和 MBPP 在内的数学与代码任务上提升 1-2 分.
 
 • OMR rewrite full-thoughts We also consider 9 different versions of rewriting<sup>20</sup> of the OpenMathReasoning dataset (Moshkov et al., 2025), and find top performance for what we call the Full-Thoughts rewrite. This is a light rewrite of the OpenMathReasoning dataset, instructing GPT-4.1 to edit items for clarity, flow, and formatting (e.g., converting to LaTeX) while preserving all reasoning, explanations, and thoughts of the original. In microanneals, training on all 850M OMR Full-Thoughts tokens and an equal amount of web text, we see a lift of 5.5 points in the MATH benchmark and a 8.4 lift in GSM8K.
 • OMR rewrite full-thoughts 我们还考察了 OpenMathReasoning 数据集 (Moshkov et al., 2025) 的 9 种不同改写版本<sup>20</sup>, 发现我们称为 Full-Thoughts 的改写表现最好. 这是对 OpenMathReasoning 数据集的轻度改写, 指示 GPT-4.1 在保留原文全部推理, 解释和思路的前提下, 编辑条目以提升清晰度, 连贯性和格式 (例如转换为 LaTeX). 在 microanneal 中, 用全部 850M OMR Full-Thoughts token 加等量 Web 文本训练, MATH 基准提升 5.5 分, GSM8K 提升 8.4 分.
@@ -1093,10 +1093,10 @@ Table 10 provides further results showing the impacts of inclusion of instructio
 
 **High quality web and PDF data** Finally, we include three types of web / pretraining data to avoid skewing too far from the pretraining distribution.
 
-**高质量 Web 与 PDF 数据** 最后, 我们纳入三类 Web/预训练数据, 以免偏离预训练分布太远.
+**高质量 Web 与 PDF 数据** 末尾, 我们纳入三类 Web/预训练数据, 以免偏离预训练分布太远.
 
 • Stage 1 web data We sample documents from the top two quality buckets (top 10% quality). We sample according to natural distribution, not the optimal ratio described in Appendix §A.2.4. In tests, the optimal ratio from the pretrain stage results in no improvement over natural distribution; since it introduce additional implementation complexity, we abandon it for the midtraining stage.
-• 第 1 阶段 Web 数据 我们从质量最高的两个桶 (质量前 10%) 中采样文档. 采样按自然分布进行, 而不是附录 §A.2.4 中描述的最优比例. 测试中, 预训练阶段的最优比例相比自然分布没有带来提升; 而且它会增加实现复杂度, 所以我们在 midtraining 阶段放弃了它.
+• 第 1 阶段 Web 数据 我们从质量最高的两个桶 (质量前 10%) 中采样文档. 采样按自然分布进行, 而并非附录 §A.2.4 中描述的最优比例. 测试中, 预训练阶段的最优比例相比自然分布没有带来提升; 而且它会增加实现复杂度, 所以我们在 midtraining 阶段放弃了它.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">18<sub>See</sub> Appendix Tables 43 and 44 for list of tasks, and [github.com/allenai/dolma3/tree/main/datasets/dolma3\_dolmino\_ mix/meta-reasoning](https://github.com/allenai/dolma3/tree/main/datasets/dolma3_dolmino_mix/meta-reasoning) for the prompts.</span></small>
 
@@ -1156,7 +1156,7 @@ Our two-part methodological framework for evaluating midtraining enables us to t
 
 Table 6 Performance across candidate 100B-token midtraining mixes on the OlmoBaseEval Main suite, and in evals after subsequent SFT. We highlight three of our five total candidate mixes to provide a representative illustration of the improvement trajectory. We see that our data curation framework yields improvements across the board from our first candidate mix to our last. (Discussion in Section §3.5.4.)
 
-表 6｜各候选 100B token midtraining 混合在 OlmoBaseEval Main 套件上的表现, 以及后续 SFT 之后的评测表现. 我们从总共五个候选混合中挑出三个, 以代表性地说明改进轨迹. 可以看到, 我们的数据策展框架从第一个候选混合到最后一个带来了全面提升. (讨论见第 §3.5.4 节.)
+表 6｜各候选 100B token midtraining 混合在 OlmoBaseEval Main 套件上的表现, 以及后续 SFT 之后的评测表现. 我们从总共五个候选混合中挑出三个, 以代表性地说明改进轨迹. 可以看到, 我们的数据策展框架从第一个候选混合到末尾一个带来了全面提升. (讨论见第 §3.5.4 节.)
 
 <table><tr><td rowspan="2">Mix</td><td colspan="6">OlmoBaseEval</td></tr><tr><td> $MC_{STEM}$ </td><td> $MC_{Non-STEM}$ </td><td>GenQA</td><td>Math</td><td>Code</td><td>FIM</td></tr><tr><td>Gen-QA mix</td><td>66.3</td><td>78.1</td><td>72.5</td><td>27.5</td><td>11.9</td><td>0.1</td></tr><tr><td>Math-code-thinking mix</td><td>62.5</td><td>69.6</td><td>65.9</td><td>60.8</td><td>35.6</td><td>37.7</td></tr><tr><td>Round 5 (final mix)</td><td>66.4</td><td>77.4</td><td>73.1</td><td>57.3</td><td>31.2</td><td>31.7</td></tr></table>
 
@@ -1170,7 +1170,7 @@ Table 7 Demonstration of tradeoffs in domain-skewed mixes using the OlmoBaseEval
 
 We see in Table 6 that across all base model metrics, as well as in evaluations of subsequent SFT training, newer candidate mixes consistently improve performance. Notably, between Round 3 and Round 5 we also introduce our decontamination process, which means that the gains of Round 5 relative to Round 1 and Round 3 are likely underestimated in this table, given that only Round 5 reflects decontaminated data.
 
-从表 6 可以看到, 在所有 base 模型指标以及后续 SFT 训练的评测上, 较新的候选混合都持续提升了表现. 值得注意的是, 我们在第 3 轮和第 5 轮之间还引入了去污染流程, 由于只有第 5 轮使用了去污染后的数据, 这张表可能低估了第 5 轮相对第 1 轮和第 3 轮的收益.
+从表 6 可以看到, 在所有 base 模型指标以及后续 SFT 训练的评测上, 较新的候选混合都持续提升了表现. 其中, 我们在第 3 轮和第 5 轮之间还引入了去污染流程, 由于只有第 5 轮使用了去污染后的数据, 这张表可能低估了第 5 轮相对第 1 轮和第 3 轮的收益.
 
 **Performance shows substantial domain tradeoffs** Alongside our central integration tests, we also conduct exploratory 100B anneals with heavy skews toward particular domains, to better understand domain tradeoffs. We treat code/math/thinking capabilities as one domain group, and generative/QA capabilities as another domain group—and create modified mixes each prioritizing one of these groups while omitting the other. Our Gen-QA mix increases proportions of web, QA, and instruction data while omitting math, code, and thinking, and our math-code-thinking mix increases proportions of math, code, and thinking data while omitting QA and instruction data (but keeping web to avoid excessive skew away from pretraining distribution).
 
@@ -1210,7 +1210,7 @@ We also see these domain tradeoffs at the individual source level, observable in
 
 **Leave special tokens for SFT stage** To inform our formatting for instruction datasets, we also conduct an investigation to determine the impacts of inclusion or omission of special chat tokens such as <|im\_start|> and <|im\_end|> in our midtraining data. We test this via microanneals on the Tulu3-SFT data, comparing versions with and without these tokens. Experiments show that when training on data containing chat templates and special tokens, models consistently output these special tokens at inference time, resulting in evaluation scores that are dramatically reduced (e.g. GSM8K drops from 49.43 to 0, and CruxEval drops from 32.89 to 18.91). Further analysis highlights that simply including a chat template, with ordinary text in place of special tokens, did not produce the same performance drop (46.02 on GSM8K and 29.65 on CruxEval), suggesting that this disruption in model behavior is not due to inclusion of a chat template more generally, but is rather due specifically to the introduction of special tokens to the embedding vocabulary when they have not been seen in pretraining.
 
-**把特殊 token 留到 SFT 阶段** 为了确定指令数据集的格式, 我们还研究了在 midtraining 数据中纳入或省略 <|im\_start|> 和 <|im\_end|> 这类特殊聊天 token 的影响. 我们在 Tulu3-SFT 数据上做 microanneal, 比较带与不带这些 token 的版本. 实验表明, 在含有聊天模板和特殊 token 的数据上训练后, 模型在推理时会持续输出这些特殊 token, 导致评测分数大幅下降 (例如 GSM8K 从 49.43 降到 0, CruxEval 从 32.89 降到 18.91). 进一步分析显示, 只保留聊天模板, 但用普通文本代替特殊 token, 并不会造成同样的表现下降 (GSM8K 为 46.02, CruxEval 为 29.65). 这说明模型行为的紊乱并非来自一般意义上的聊天模板, 而是特别来自把预训练中从未见过的特殊 token 引入嵌入词表.
+**把特殊 token 留到 SFT 阶段** 为了确定指令数据集的格式, 我们还研究了在 midtraining 数据中纳入或省略 <|im\_start|> 和 <|im\_end|> 这类特殊聊天 token 的影响. 我们在 Tulu3-SFT 数据上做 microanneal, 比较带与不带这些 token 的版本. 实验表明, 在含有聊天模板和特殊 token 的数据上训练后, 模型在推理时会持续输出这些特殊 token, 导致评测分数大幅下降 (例如 GSM8K 从 49.43 降到 0, CruxEval 从 32.89 降到 18.91). 进一步分析显示, 只保留聊天模板, 但用普通文本代替特殊 token, 并不会造成同样的表现下降 (GSM8K 为 46.02, CruxEval 为 29.65). 这说明模型行为的紊乱并非来自一般意义上的聊天模板, ；实际是特别来自把预训练中从未见过的特殊 token 引入嵌入词表.
 
 Though the degradation in model evaluation scores can be attributed primarily to disruption in answer parsing, these results highlight the broader issue that inclusion of these tokens at midtraining time results in emission of these tokens by the base model at inference time. Since this is an undesirable behavior, we ultimately remove both the chat template and special tokens from our instruct data, and revert to simple newline-based formatting.
 
@@ -1238,11 +1238,11 @@ Figure 12 Occurrences of benchmark instances in 10 most contaminated midtraining
 
 in existing datasets such as Flan and Nemotron. Not all contamination was subtle—we found many templated contamination instances, in which fields from benchmarks were exactly matched, with templated content inserted between them. Furthermore, many of these were not isolated instances, but complete validation or test splits. For instance, Flan is constructed from templates on benchmark data, and can include validation data that is used for model development decisions since test sets are hidden (e.g., DROP)
 
-Flan 和 Nemotron 这类已有数据集中. 并非所有污染都很隐蔽: 我们发现了大量模板化污染实例, 基准中的字段被原样匹配, 字段之间插入了模板内容. 而且其中很多并不是孤立实例, 而是完整的验证集或测试集划分. 例如, Flan 是用模板基于基准数据构建的, 可能包含验证数据; 由于测试集是隐藏的, 这些验证数据正是用来做模型开发决策的 (例如 DROP)
+Flan 和 Nemotron 这类已有数据集中. 并非所有污染都很隐蔽: 我们发现了大量模板化污染实例, 基准中的字段被原样匹配, 字段之间插入了模板内容. 而且其中很多并非孤立实例, ；实际是完整的验证集或测试集划分. 例如, Flan 是用模板基于基准数据构建的, 可能包含验证数据; 由于测试集是隐藏的, 这些验证数据正是用来做模型开发决策的 (例如 DROP)
 
 Performance is sometimes, but not always, inflated by contamination. We investigate this by comparing our final decontaminated 100B anneal with a matched 100B anneal using the non-decontaminated data versions. Figure 12 also shows the extent to which benchmark performance after midtraining drops when contamination is removed (Perf ∆). Some differences are substantial—such as validation or test performance changes in DROP, Minerva, SQuAD. Note that we remove contamination of all splits for all benchmarks, such as for DROP removing over 60,000 training examples from sources such as Flan. So performance differences may indicate that decontamination is preventing memorization or also removing in-distribution training examples. We remove all splits because some of our development benchmarks increase sample size by evaluating on train and held out splits (Figure 12, right) and several of these also show performance overestimation with contamination of any of the evaluated benchmark splits. However, other benchmarks do not show inflated performance, despite contamination: we see that DeepSeek LeetCode performance is close to 0 with or without contamination, and SQuAD under the easier MC metric is saturated in either case. Finally, similarly to reports
 
-污染有时会虚高表现, 但并非总是如此. 我们把最终去污染后的 100B 退火与一个使用未去污染数据版本, 其余条件匹配的 100B 退火做比较来考察这一点. 图 12 也展示了去除污染后, midtraining 之后的基准表现下降了多少 (Perf ∆). 有些差异很大, 例如 DROP, Minerva, SQuAD 的验证或测试表现变化. 注意我们对所有基准的所有划分都去除了污染, 比如对 DROP, 从 Flan 等来源中移除了超过 60,000 个训练样本. 所以表现差异可能说明去污染阻止了记忆, 也可能说明它移除了同分布的训练样本. 我们移除所有划分, 是因为部分开发基准会同时在训练划分和 held-out 划分上评测以扩大样本量 (图 12 右侧), 其中若干基准在任一被评测划分受污染时也表现出高估. 不过, 另一些基准尽管受污染, 表现并没有虚高: DeepSeek LeetCode 无论是否受污染, 表现都接近 0; SQuAD 在更容易的 MC 指标下两种情况都已饱和. 最后, 与
+污染有时会虚高表现, 但并非总是如此. 我们把最终去污染后的 100B 退火与一个使用未去污染数据版本, 其余条件匹配的 100B 退火做比较来考察这一点. 图 12 也展示了去除污染后, midtraining 之后的基准表现下降了多少 (Perf ∆). 有些差异很大, 例如 DROP, Minerva, SQuAD 的验证或测试表现变化. 注意我们对所有基准的所有划分都去除了污染, 比如对 DROP, 从 Flan 等来源中移除了超过 60,000 个训练样本. 所以表现差异可能说明去污染阻止了记忆, 也可能说明它移除了同分布的训练样本. 我们移除所有划分, 是因为部分开发基准会同时在训练划分和 held-out 划分上评测以扩大样本量 (图 12 右侧), 其中若干基准在任一被评测划分受污染时也表现出高估. 不过, 另一些基准尽管受污染, 表现并没有虚高: DeepSeek LeetCode 无论是否受污染, 表现都接近 0; SQuAD 在更容易的 MC 指标下两种情况都已饱和. 末尾, 与
 
 <!-- page 30 of 118 -->
 
@@ -1400,7 +1400,7 @@ For Olmo 3, we use documents where 32, 768 ≤ n < 65, 536 tokens, resulting in 
 
 **Interleaving long- and short-context data** Rather than training on only long-context data, we mix highquality short-context data from midtraining (stage two) to ensure that performance on short-context tasks is not meaningfully degraded. Early experiments on a 10B-token extension show that a 66% / 34% mix of long-context to short-context data drops performance on a subset of OlmoBaseEval by 2.5 points; in comparison, a 34% long-context, 66% short-context mix only drops performance by 0.8 points.
 
-**交错长短上下文数据** 我们不只用长上下文数据训练, 而是混入 midtraining (第二阶段) 的高质量短上下文数据, 以确保短上下文任务的表现不会明显退化. 在 10B token 扩展上的早期实验显示, 长上下文与短上下文数据按 66% / 34% 混合时, OlmoBaseEval 子集上的表现下降 2.5 分; 相比之下, 按 34% 长上下文, 66% 短上下文混合时, 表现只下降 0.8 分.
+**交错长短上下文数据** 我们不只用长上下文数据训练, ；实际是混入 midtraining (第二阶段) 的高质量短上下文数据, 以确保短上下文任务的表现不会明显退化. 在 10B token 扩展上的早期实验显示, 长上下文与短上下文数据按 66% / 34% 混合时, OlmoBaseEval 子集上的表现下降 2.5 分; 相比之下, 按 34% 长上下文, 66% 短上下文混合时, 表现只下降 0.8 分.
 
 **Longer extension helps** Figure 13e shows that allocating more tokens to the long-context extension stage improves performance on long-context tasks, particularly at longer sequence lengths. We extend the context of Olmo 3 7B through a 50B stage 3 training; for Olmo 3 32B, we extend for 100B tokens for better long-context capabilities.
 
@@ -1430,7 +1430,7 @@ For Olmo 3, we use documents where 32, 768 ≤ n < 65, 536 tokens, resulting in 
 
 **Model souping** Following performance improvements from merging midtraining runs for Olmo 3 Base 32B, we experiment with averaging long-context checkpoints. In this case, rather than running long-context extension multiple times with different seeds, we merge the last three checkpoints from the end of the extension run (at steps 10,000, 11,000, and 11,921) to produce our final long-context Olmo 3 Base 32B.
 
-**Model souping** 合并 midtraining 运行为 Olmo 3 Base 32B 带来了表现提升, 受此启发, 我们尝试对长上下文 checkpoint 取平均. 这次我们没有用不同随机种子多次运行长上下文扩展, 而是合并扩展运行末尾的最后三个 checkpoint (第 10,000, 11,000 和 11,921 步), 得到最终的长上下文 Olmo 3 Base 32B.
+**Model souping** 合并 midtraining 运行为 Olmo 3 Base 32B 带来了表现提升, 受此启发, 我们尝试对长上下文 checkpoint 取平均. 这次我们没有用不同随机种子多次运行长上下文扩展, 而是合并扩展运行结束前的三个 checkpoint (第 10,000, 11,000 和 11,921 步), 得到最终的长上下文 Olmo 3 Base 32B.
 
 ### 3.7 Base Model Results (3.7 Base 模型结果)
 
@@ -1686,7 +1686,7 @@ generic phrases, with the irrelevance determined per task based on manual inspec
 
 For supervised finetuning, we switch from Open Instruct to OLMo-core, resulting in an 8× increase in training throughput. See Appendix A.6.1 for more information about our training settings and hyperparameters. We train all models for two epochs to avoid overfitting, and perform a learning-rate sweep to select the best candidate checkpoints based on our evaluation suite. We then test each candidate checkpoint with a series of qualitative “vibe-test” questions to inform our final checkpoint selection. Finally, we explore model souping (Wortsman et al., 2022; Morrison et al., 2024), and our final thinking SFT checkpoint is a linearly weighted merge of two checkpoints trained with different learning rates, merged with mergekit (Goddard et al., 2024).
 
-监督微调方面, 我们从 Open Instruct 切换到 OLMo-core, 训练吞吐量提高了 8 倍. 训练设置和超参数的更多信息见附录 A.6.1. 为避免过拟合, 所有模型都训练两个 epoch, 并做学习率扫描, 根据评测套件选出最佳候选 checkpoint. 然后我们用一系列定性的 「vibe-test」 问题测试每个候选 checkpoint, 以决定最终的 checkpoint. 最后, 我们探索了 model souping (Wortsman et al., 2022; Morrison et al., 2024), 最终的思考 SFT checkpoint 是用 mergekit (Goddard et al., 2024) 对两个不同学习率训练出的 checkpoint 做线性加权合并得到的.
+监督微调方面, 我们从 Open Instruct 切换到 OLMo-core, 训练吞吐量提高了 8 倍. 训练设置和超参数的更多信息见附录 A.6.1. 为避免过拟合, 所有模型都训练两个 epoch, 并做学习率扫描, 根据评测套件选出最佳候选 checkpoint. 然后我们用一系列定性的 「vibe-test」 问题测试每个候选 checkpoint, 以决定最终的 checkpoint. 末尾, 我们探索了 model souping (Wortsman et al., 2022; Morrison et al., 2024), 最终的思考 SFT checkpoint 是用 mergekit (Goddard et al., 2024) 对两个不同学习率训练出的 checkpoint 做线性加权合并得到的.
 
 ### 4.3 Preference Tuning with Delta Learning (4.3 用 Delta Learning 做偏好调优)
 
@@ -1704,7 +1704,7 @@ With these insights in mind, we construct Dolci Think DPO, which we use to impro
 
 **Delta Learning** The intuition behind delta-learning is that the quality of preference data depends primarily on the quality of the delta between chosen and rejected responses rather than the quality of either response individually. By constructing preference pairs $( x , y _ { c } , y _ { r } )$ that exhibit capability-relevant contrasts with $y _ { c } \succ y _ { r } ,$ tuning to prefer $y _ { c }$ over $y _ { r }$ can improve the model even when supervised finetuning on $y _ { c }$ would not help or even actively hurt (Geng et al., 2025; D’Oosterlinck et al., 2025; Kim et al., 2025).
 
-**Delta Learning** delta-learning 背后的直觉是: 偏好数据的质量主要取决于被选回答与被拒回答之间差值的质量, 而不是其中任一回答本身的质量. 通过构造体现能力相关对比的偏好对 $( x , y _ { c } , y _ { r } )$, 其中 $y _ { c } \succ y _ { r } ,$ 调优模型使其偏好 $y _ { c }$ 而非 $y _ { r }$, 即便在 $y _ { c }$ 上做监督微调没有帮助甚至有害, 也能改进模型 (Geng et al., 2025; D’Oosterlinck et al., 2025; Kim et al., 2025).
+**Delta Learning** delta-learning 背后的直觉是: 偏好数据的质量主要取决于被选回答与被拒回答之间差值的质量, 而并非其中任一回答本身的质量. 通过构造体现能力相关对比的偏好对 $( x , y _ { c } , y _ { r } )$, 其中 $y _ { c } \succ y _ { r } ,$ 调优模型使其偏好 $y _ { c }$ 而非 $y _ { r }$, 即便在 $y _ { c }$ 上做监督微调没有帮助甚至有害, 也能改进模型 (Geng et al., 2025; D’Oosterlinck et al., 2025; Kim et al., 2025).
 
 <!-- page 43 of 118 -->
 
@@ -1768,7 +1768,7 @@ We train all models for one epoch following previous work (Lambert et al., 2024)
 
 The third stage of post-training is reinforcement learning with a mixture of verifiable and LM-judge rewards across a variety of domains. We introduce OlmoRL, which includes our algorithm and closely intertwined engineering infrastructure to address challenges for reinforcement learning with long reasoning traces, extending RLVR to include a wider variety of verifiable tasks. We also release Dolci-Think-RL—a large-scale and diverse dataset of roughly 100K prompts across four domains: mathematics, coding, instruction following, and general chat—to support robust reinforcement learning on varied reasoning tasks while maintaining general utility. Next, we describe the RL algorithmic details (§4.4.1), the Dolci Think RL dataset (§4.4.2), and finally OlmoRL infrastructure in Open Instruct (§4.4.3).
 
-后训练的第三阶段是强化学习, 奖励混合了跨多个领域的可验证奖励和 LM 评判奖励. 我们推出 OlmoRL, 它包括我们的算法以及与之紧密交织的工程基础设施, 用来应对长推理轨迹强化学习中的挑战, 并把 RLVR 扩展到更多样的可验证任务. 我们还发布了 Dolci-Think-RL, 这是一个大规模多样数据集, 约含 100K 个提示, 覆盖数学, 编码, 指令遵循和通用对话四个领域, 用于在多样推理任务上做稳健的强化学习, 同时保持通用实用性. 接下来依次介绍 RL 算法细节 (§4.4.1), Dolci Think RL 数据集 (§4.4.2), 最后是 Open Instruct 中的 OlmoRL 基础设施 (§4.4.3).
+后训练的第三阶段是强化学习, 奖励混合了跨多个领域的可验证奖励和 LM 评判奖励. 我们推出 OlmoRL, 它包括我们的算法以及与之紧密交织的工程基础设施, 用来应对长推理轨迹强化学习中的挑战, 并把 RLVR 扩展到更多样的可验证任务. 我们还发布了 Dolci-Think-RL, 这是一个大规模多样数据集, 约含 100K 个提示, 覆盖数学, 编码, 指令遵循和通用对话四个领域, 用于在多样推理任务上做稳健的强化学习, 同时保持通用实用性. 接下来依次介绍 RL 算法细节 (§4.4.1), Dolci Think RL 数据集 (§4.4.2), 末尾是 Open Instruct 中的 OlmoRL 基础设施 (§4.4.3).
 
 #### 4.4.1 OlmoRL Algorithmic Details (4.4.1 OlmoRL 算法细节)
 
@@ -1797,7 +1797,7 @@ We make the following improvements <sup>34</sup> over vanilla GRPO:
 过滤全同奖励组后 batch 变瘦; active sampling 用来维持稳定 batch 大小 (§4.4.1, §4.4.3).
 
 • Token-level loss: We use a token-level loss to normalize the loss by the total number of tokens across the batch (Yu et al., 2025), rather than per-sample to avoid a length bias.
-• Token 级损失: 我们使用 token 级损失, 按整个批次的 token 总数对损失归一化 (Yu et al., 2025), 而不是按样本归一化, 以避免长度偏差.
+• Token 级损失: 我们使用 token 级损失, 按整个批次的 token 总数对损失归一化 (Yu et al., 2025), 而并非按样本归一化, 以避免长度偏差.
 
 • No KL loss: We remove the KL loss as a common practice (GLM-4.5 Team et al., 2025; Yu et al., 2025; Liu et al., 2025b) as it allows less-restricted policy updates, and removing it does not lead to over-optimization or destabilized training.
 • 不用 KL 损失: 按常见做法 (GLM-4.5 Team et al., 2025; Yu et al., 2025; Liu et al., 2025b), 我们去掉 KL 损失, 这样策略更新受到的限制更少, 而且去掉它并不会导致过度优化或训练不稳定.
@@ -1905,7 +1905,7 @@ Coding To construct reinforcement learning (RL) data for code, we required pairs
 
 General chat We sample our general chat instances from three sources: (a) Tülu 3 SFT (Lambert et al., 2024); (b) the new WildChat-4.8M data<sup>37</sup> containing a broad spectrum of user-chatbot interactions on ambiguous requests, code-switching, topic shifts, political debates, and more; and (c) the Multi-subject-RLVR dataset (Su et al., 2025b), consisting of college-level English questions and objective answers written by domain experts for examination purposes. For WildChat, we only sample from instances that are in English and do not require reasoning (such as math and code). For Tülu 3, we first rewrote samples using GPT-4.1 for better clarity and to extract reference answers from the SFT set. We then generated eight samples per prompt with a Qwen 2.5 7B model finetuned on OpenThoughts 2 and computed the F1 score between the reference answer and each response. We then removed all samples with average F1 score < 0.1 and > 0.8. This removes both noisy and overly difficult samples. WildChat in particular has a high prevalence of role-playing and other character-based data. In order to balance the data, we filter any mention of a single character down to a maximum of 10 instances. We then finally performed some post-hoc manual filtering to remove code- and math-centric prompts.
 
-通用对话 我们从三个来源采样通用对话样本: (a) Tülu 3 SFT (Lambert et al., 2024); (b) 新的 WildChat-4.8M 数据<sup>37</sup>, 其中包含大量用户与聊天机器人的交互, 涉及含糊请求, 语码转换, 话题切换, 政治辩论等; (c) Multi-subject-RLVR 数据集 (Su et al., 2025b), 由领域专家为考试编写的大学水平英文题目和客观答案组成. 对 WildChat, 我们只从英文且不需要推理 (例如数学和代码) 的样本中采样. 对 Tülu 3, 我们先用 GPT-4.1 改写样本, 提高清晰度, 并从 SFT 集中抽取参考答案. 然后用一个在 OpenThoughts 2 上微调的 Qwen 2.5 7B 模型为每个提示生成八个样本, 计算参考答案与每个回答之间的 F1 分数. 接着移除平均 F1 分数 < 0.1 和 > 0.8 的所有样本. 这样既去掉了噪声样本, 也去掉了过难的样本. WildChat 中角色扮演和其他以角色为中心的数据尤其多. 为了平衡数据, 我们把提及任一单个角色的样本限制在最多 10 个. 最后我们做了一些事后人工过滤, 去掉以代码和数学为中心的提示.
+通用对话 我们从三个来源采样通用对话样本: (a) Tülu 3 SFT (Lambert et al., 2024); (b) 新的 WildChat-4.8M 数据<sup>37</sup>, 其中包含大量用户与聊天机器人的交互, 涉及含糊请求, 语码转换, 话题切换, 政治辩论等; (c) Multi-subject-RLVR 数据集 (Su et al., 2025b), 由领域专家为考试编写的大学水平英文题目和客观答案组成. 对 WildChat, 我们只从英文且不需要推理 (例如数学和代码) 的样本中采样. 对 Tülu 3, 我们先用 GPT-4.1 改写样本, 提高清晰度, 并从 SFT 集中抽取参考答案. 然后用一个在 OpenThoughts 2 上微调的 Qwen 2.5 7B 模型为每个提示生成八个样本, 计算参考答案与每个回答之间的 F1 分数. 接着移除平均 F1 分数 < 0.1 和 > 0.8 的所有样本. 这样既去掉了噪声样本, 也去掉了过难的样本. WildChat 中角色扮演和其他以角色为中心的数据尤其多. 为了平衡数据, 我们把提及任一单个角色的样本限制在最多 10 个. 末尾我们做了一些事后人工过滤, 去掉以代码和数学为中心的提示.
 
 **Step 2: offline difficulty filtering** As stated previously, to improve the sample efficiency of RL for our reasoner model, we generate eight rollouts for each prompt from the initial checkpoint of the model we train (e.g., if starting from the DPO-trained model, we generate from the DPO checkpoint). We then remove all samples that the model easily solves (that is, those with a pass rate greater than 62.5%). We sample with a temperature of 1.0 and top-p of 1.0, matching how we sample during RL training. We used offline filtering for the 7B Olmo 3 Think to filter out RL problems that are too easy for our models’ training. For the 32B, we rely on active sampling, which fills RL batches only on samples with a non-zero GRPO group gradient, and re-using the 7B DPO-filtered data as the starting point for the model due to compute and time constraints.
 
@@ -2024,7 +2024,7 @@ Table 22 Delta learning provides a stronger initialization for subsequent RLVR t
 
 useful targets for imitation. However, by pairing these chosen responses with rejected responses generated by a weaker model, we construct a useful contrast, enabling preference tuning to drive strong gains beyond the initial SFT model (Table 21). Promisingly, these gains are not merely converting pass@k into pass@1 but rather expanding the reasoning frontier of the model (e.g., improved pass@k on AIME evaluations; Figure 20). These findings highlight contrastive learning with preference tuning as a useful stage for improving capabilities even when imitation is saturated.
 
-有用的模仿目标. 但把这些 chosen 与更弱模型生成的 rejected 配对, 可构造有用对比, 使偏好调优相对初始 SFT 带来强增益 (表 21). 有希望的是, 这些增益不只是把 pass@k 换成 pass@1, 而是扩展推理边界 (例如 AIME 上 pass@k 提升; Figure 20). 这些发现凸显: 即便模仿已饱和, 用偏好调优做对比学习仍是提升能力的有用阶段.
+有用的模仿目标. 但把这些 chosen 与更弱模型生成的 rejected 配对, 可构造有用对比, 使偏好调优相对初始 SFT 带来强增益 (表 21). 有希望的是, 这些增益不只是把 pass@k 换成 pass@1, ；实际是扩展推理边界 (例如 AIME 上 pass@k 提升; Figure 20). 这些发现凸显: 即便模仿已饱和, 用偏好调优做对比学习仍是提升能力的有用阶段.
 
 **DPO and SFT both benefit from RL, but DPO remains a better starting point** Table 22 shows that running our final RL mix on the DPO model consistently yields better performance than running it on the SFT model. We find three primary differences, highlighted in Figure 19: for evaluations that RL does not improve, the DPO model often performs better and maintains its advantage during RL training (e.g., AlpacaEval). For evaluations explicitly targeted by RL (e.g., Omega), both the DPO and SFT models achieve similar end performance. For evaluations targeted by RL but hard to improve further from DPO (e.g., AIME 2025), the SFT model improves to get close to DPO performance. In no situation does the SFT model improve over the DPO model after RL, and as such we opt to focus on applying RL over our DPO model. Curiously, we find that the SFT model performs similarly when trained either with the data offline-filtered using the SFT or DPO model, suggesting that the additional samples filtered out (i.e., solved) by the DPO model do not provide additional signal for improving the SFT model. Further investigating this, we find that while the DPO model does display lower entropy, it in fact has higher pass@K performance on AIME evaluations, as shown in Figure 20. This suggests that the DPO model remains a strong starting point for RL relative to the SFT model, as prior work (Yue et al., 2025; Shao et al., 2024) suggests RLVR, under certain conditions, helps convert pass@K improvements into pass@1 gains.
 
@@ -2075,7 +2075,7 @@ then slowly increase over time. This is likely due to the reasoning SFT and DPO 
 
 **Continuous batching and inflight updates are crucial to training speed** Using a reasoner SFT or DPO as a starting point stresses RL training to its limits, as the model starts with extremely long average generation lengths. Table 23 demonstrates how using continuous batching and inflight updates is crucial to training speed, allowing us to achieve two times faster training on half as many GPUs, making experimentation and long RL runs more tractable. To carefully benchmark this, we ablate the changes to our RL infrastructure between OLMo 2 and Olmo 3. See Table 23. For each ablation, we ran a benchmark experiment for 2 hours using 2 8x A100 nodes. One node was used for training, and one for inference. Since inference is our bottleneck, we report Model FLOPs Utilization (MFU) and Model Bandwidth Utilization (MBU) based solely
 
-**Continuous batching 与 inflight updates 对训练速度至关重要** 以 reasoner SFT 或 DPO 为起点会把 RL 训练推到极限, 因为模型一开始平均生成就极长. 表 23 显示 continuous batching 与 inflight updates 对速度关键: 用一半 GPU 达到两倍训练速度, 使实验与长 RL 更可行. 为仔细基准, 我们消融 OLMo 2 到 Olmo 3 之间的 RL 基础设施改动. 见表 23. 每次消融用 2 个 8x A100 节点跑 2 小时基准: 一节点训练, 一节点推理. 由于推理是瓶颈, 我们只基于
+**Continuous batching 与 inflight updates 对训练速度很关键** 以 reasoner SFT 或 DPO 为起点会把 RL 训练推到极限, 因为模型一开始平均生成就极长. 表 23 显示 continuous batching 与 inflight updates 对速度关键: 用一半 GPU 达到两倍训练速度, 使实验与长 RL 更可行. 为仔细基准, 我们消融 OLMo 2 到 Olmo 3 之间的 RL 基础设施改动. 见表 23. 每次消融用 2 个 8x A100 节点跑 2 小时基准: 一节点训练, 一节点推理. 由于推理是瓶颈, 我们只基于
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">43<sub>While</sub> an initial checkpoint took 14 straight days of training across 9 nodes to achieve 1 epoch, with continuous batching and inflight updates, we could achieve 1 epoch on 5 nodes in 7 days.</span></small>
 
@@ -2290,7 +2290,7 @@ prompts to ensure the dataset contains a variety of interaction patterns includi
 
 **Unified data format** Across all tool-use data, we adopt consistent tool definition and tool-calling formats. We find that unifying format to be crucial for stable and high-quality tool-use behavior. Particularly, we use the OpenAPI specification<sup>50</sup> for all tool definitions and represent all function calls as pythonic code blocks. We provide tool specifications in the system prompt, encapsulate tool calls with XML tags within the assistant role, and present environment outputs to the model within a special environment role. We also extend the tokenizer’s vocabulary with dedicated special tokens corresponding to these tags. Unlike Olmo 3 Think, preliminary suggest this approach to be more effective for tool-use training than encoding &lt;functions&gt;, &lt;/functions&gt;, &lt;function_calls&gt;, and &lt;function_calls&gt; as regular text.
 
-**统一数据格式** 所有工具使用数据采用一致的工具定义与调用格式. 我们发现统一格式对稳定, 高质量工具行为至关重要. 具体地, 全部工具定义用 OpenAPI 规范<sup>50</sup>, 全部函数调用表示为 pythonic 代码块. 工具规格放在系统提示, 助手角色内用 XML 标签封装调用, 环境输出以特殊 environment 角色呈现. 词表也为这些标签扩展专用特殊 token. 与 Olmo 3 Think 不同, 初步显示这对工具训练比把 &lt;functions&gt; 等编码成普通文本更有效.
+**统一数据格式** 所有工具使用数据采用一致的工具定义与调用格式. 我们发现统一格式对稳定, 高质量工具行为很关键. 具体地, 全部工具定义用 OpenAPI 规范<sup>50</sup>, 全部函数调用表示为 pythonic 代码块. 工具规格放在系统提示, 助手角色内用 XML 标签封装调用, 环境输出以特殊 environment 角色呈现. 词表也为这些标签扩展专用特殊 token. 与 Olmo 3 Think 不同, 初步显示这对工具训练比把 &lt;functions&gt; 等编码成普通文本更有效.
 
 **Evaluating function calling** We evaluate the function calling capabilities of Olmo 3 Instruct in terms of intrinsic function calling and extrinsic task completion accuracies using different benchmarks. We use the Berkeley Function Calling Leaderboard (BFCLv3) (Patil et al., 2025) to evaluate intrinsic function calling accuracy. This benchmark focuses on models’ ability to choose the relevant functions and the right values for their arguments to accomplish a given task in settings that require one or more interactions with simulated users and environments. We evaluate task completion accuracy of Olmo 3 Instruct in comparison with similar models when they are deployed as agents with access to tools served via Model Context Protocol (MCP) servers. Particularly, we use the Asta Scientific Corpus (ASC) tool (Bragg et al., 2025) that serves eight functions for accessing scientific literature, and the Serper API which provides Google search tool and web browsing functionalities. To evaluate models’ usage of the ASC tools, following Bragg et al. (2025), we use a subset of 75 questions from LitQA2 (Skarlinski et al., 2024) for which the associated papers can be found in ASC’s index. We evaluate the models’ usage of search and browsing tools using a subset of SimpleQA (Wei et al., 2024).
 
@@ -2397,11 +2397,11 @@ Dolci Instruct DPO 由多种偏好信号复合构成, 以提升能力与通用�
 
 pool do not yield gains and even hurt model performance relative to the OLMo 2 preference dataset baseline. We speculate that this failure is due to the fact that the majority of our data generators are high-quality, very capable models; hence on average there was minimal meaningful contrast between the resulting chosen and rejected pairs. To mitigate this, we explicitly introduce delta-aware interventions designed to lower the quality of the rejected response. We 1) ensure that responses from weaker models are always present in the response set judged for each prompt, and 2) select the worst response as the rejected completion to maximize the resulting delta. We find these “delta-maximizing” interventions to be critical for the quality of preference pair data; see our findings in Section §5.5 for details.
 
-池——相对 OLMo 2 偏好数据基线并未增益甚至受伤. 我们推测失败原因是多数生成器已经很强, 平均而言 chosen/rejected 对比不足. 为缓解, 我们显式引入 delta-aware 干预以降低 rejected 质量: 1) 保证每提示的候选集里总有更弱模型回复; 2) 选最差回复作 rejected 以最大化 delta. 这些 「最大化 delta」 干预对偏好对质量至关重要; 见第 §5.5 节发现.
+池——相对 OLMo 2 偏好数据基线并未增益甚至受伤. 我们推测失败原因是多数生成器已经很强, 平均而言 chosen/rejected 对比不足. 为缓解, 我们显式引入 delta-aware 干预以降低 rejected 质量: 1) 保证每提示的候选集里总有更弱模型回复; 2) 选最差回复作 rejected 以最大化 delta. 这些 「最大化 delta」 干预对偏好对质量很关键; 见第 §5.5 节发现.
 
 **Multi-turn preferences** To ensure Olmo 3’s usability in realistic multi-turn conversations, we further add a multi-turn preference dataset with prompts synthetically extended from the Tülu 3-DPO dataset. Preference pairs differed in only the last turn of the conversation to avoid ambiguity in quality ranking between turns of the same conversation. Synthetic conversations are generated with two methods: 1) self-talk extending the original prompt into a multi-turn conversation with LLM-generated follow-up requests and 2) syntheticcontext created by generating related, independent questions or paraphrases of the initial prompt to use as previous user turns with associated completions. The combination of these generation methods ensures diversity in generated conversations. Final turns are generated with the delta-learning heuristic (Geng et al., 2025); chosen/rejected completion pairs are generated by either GPT-4o and GPT-3.5 or Qwen 3 32B and Qwen 3 0.6B (both no-thinking) respectively.
 
-**多轮偏好** 为保证真实多轮对话可用性, 我们再加入由 Tülu 3-DPO 数据集合成扩展的多轮偏好数据. 偏好对仅在对话最后一轮不同, 以避免同对话轮次间质量排序含糊. 合成对话两种方法: 1) self-talk: 用 LLM 生成后续请求把原提示扩成多轮; 2) synthetic-context: 生成相关独立问题或原提示改写作为先前用户轮并配补全. 二者结合保证对话多样性. 最后一轮用 delta-learning 启发式 (Geng et al., 2025) 生成; chosen/rejected 分别由 GPT-4o 与 GPT-3.5, 或 Qwen 3 32B 与 Qwen 3 0.6B (均 no-thinking) 生成.
+**多轮偏好** 为保证真实多轮对话可用性, 我们再加入由 Tülu 3-DPO 数据集合成扩展的多轮偏好数据. 偏好对仅在对话末尾一轮不同, 以避免同对话轮次间质量排序含糊. 合成对话两种方法: 1) self-talk: 用 LLM 生成后续请求把原提示扩成多轮; 2) synthetic-context: 生成相关独立问题或原提示改写作为先前用户轮并配补全. 二者结合保证对话多样性. 末尾一轮用 delta-learning 启发式 (Geng et al., 2025) 生成; chosen/rejected 分别由 GPT-4o 与 GPT-3.5, 或 Qwen 3 32B 与 Qwen 3 0.6B (均 no-thinking) 生成.
 
 **Controlling length bias** Preference data often has a length bias: the chosen responses are significantly longer than the rejected responses. This comes from sourcing synthetic response pairs where historically more information has been treated as more helpful by both LLM judges and preference heuristics. Namely, LLM judges such as the GPT judge in our pipeline tend to prefer longer responses. Similarly, we empirically observe that preference pairs made with the delta-learning heuristic also exhibit length bias; larger models generate longer responses (Figure 23). Thus, models often learn this length bias in addition to the intended useful quality signal during preference tuning, after which its generation length per prompt increases significantly. While this increased length is empirically useful for reasoning tasks, excessive verbosity can be undesirable for common real-use settings (see an example in Figure 22). We seek to strike a balance by filtering the chat and multi-turn subsets of our preference data to limit the length difference between the chosen and rejected responses to 100 tokens.
 
@@ -2419,7 +2419,7 @@ To determine our final preference-tuning prompt distribution, we begin with near
 
 Notably, prompt-domain distributions do not consistently align with the contrast exhibited in the response pair and thus in improvements in the corresponding downstream evaluation domains. For example, upsampling code prompts led to the counter-intuitive effect of decreasing code benchmark performance (see Table 51 in the Appendix). For determining our final mix, we create nine candidate mixes based on expert intuition gained from our ablations, comparing these hand-crafted mixes against the uniform sampling baseline. Our final mix is determined empirically; we find that our hand-crafted mixes outperformed random sampling.
 
-值得注意的是, 提示域分布并不总与回复对中的对比, 以及对应下游评测域的提升对齐. 例如上采样代码提示反而降低代码基准 (见附录表 51). 确定最终 mix 时, 基于消融直觉手工做九个候选 mix, 与均匀采样基线对比. 最终 mix 由经验决定; 我们发现手工 mix 优于随机采样.
+其中, 提示域分布并不总与回复对中的对比, 以及对应下游评测域的提升对齐. 例如上采样代码提示反而降低代码基准 (见附录表 51). 确定最终 mix 时, 基于消融直觉手工做九个候选 mix, 与均匀采样基线对比. 最终 mix 由经验决定; 我们发现手工 mix 优于随机采样.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">55<sub>We</sub> decided early to truncate the number of Wildchat prompts to be at most 35% of the prompt mix. If you read Wildchat prompts for a month, you would too.</span></small>
 
@@ -2457,7 +2457,7 @@ Following our Olmo 3 Think recipe, we train Olmo 3 Instruct on a mixture of gene
 
 do not scale with test-time compute (e.g., MATH and AIME performance increase with response length) to avoid biasing our selection towards models with overly long responses. Finally, we apply the vibe test to identify regressions or undesirable behaviors that may fall outside the scope of our evaluation suite.
 
-不随 TestingTime 算力缩放的数据集 (例如 MATH 与 AIME 会随响应变长而升分), 以免偏向过长模型. 最后用 vibe test 找出评测套件可能覆盖不到的回退或不良行为.
+不随 TestingTime 算力缩放的数据集 (例如 MATH 与 AIME 会随响应变长而升分), 以免偏向过长模型. 末尾用 vibe test 找出评测套件可能覆盖不到的回退或不良行为.
 
 ### 5.5 Key Findings (5.5 关键发现)
 
@@ -3309,11 +3309,11 @@ The majority of our pretraining corpus comes from CommonCrawl (Common Crawl Foun
 
 Next we apply a pipeline of heuristic filtering steps to further prune down the dataset to a size amenable for pretraining. Our steps essentially follow those of DCLM (Li et al., 2024a), with a few small differences. We start with URL-based filtering, identifying and removing documents that have URLs containing banned words or subwords from the blacklists used by FineWeb (Penedo et al., 2024) and RefinedWeb (Penedo et al., 2023). This step removes roughly 1% of the data pool. Then we apply the DCLM collection of heuristic filters, roughly targeting and removing: i) very short documents, ii) very long documents, iii) documents with not enough alphanumeric characters, and iv) documents with large amounts of internal repetition. Next, we modify and remove any lines or paragraphs in each document that have i) too many numeric characters or ii) any boilerplate phrases such as "items in cart" or "read more...", and then we fully remove any documents that have been obliterated by these line-specific removals. We then apply a FastText English language filter, mirroring DCLM and using a threshold of 0.65 to identify documents as containing English text. Finally, we apply a subset of the rules for identifying questionable sentences from MADLAD-400 (Kudugunta et al., 2023). Ablation tests show that only rules 2 and 5 from MADLAD improve dataset quality, targeting sentences that have a large number of capitalized words or contain a "cursed regex". If the number of sentences in the document is less than 5 or if at least 20% of sentences are questionable, we remove the document from the corpus.
 
-随后, 我们应用一串启发式过滤步骤, 把数据集进一步裁剪到适合预训练的规模. 我们的步骤基本沿用 DCLM (Li et al., 2024a), 仅有少数小的差异. 先做基于 URL 的过滤, 识别并移除 URL 含有 FineWeb (Penedo et al., 2024) 与 RefinedWeb (Penedo et al., 2023) 所用黑名单中的禁用词或子词的文档, 这一步约移除数据池的 1%. 然后应用 DCLM 的启发式过滤器集合, 大致定位并移除: i) 过短的文档, ii) 过长的文档, iii) 字母数字字符不足的文档, iv) 内部重复量大的文档. 接着修改或移除每份文档中行或段落里 i) 数字字符过多, 或 ii) 含有 "items in cart" "read more..." 这类样板短语的行; 若文档被这种行级删除整段毁掉, 则整个移除. 之后应用 FastText 英文语言过滤器, 对齐 DCLM, 以 0.65 为阈值判定文档是否含英文. 最后应用 MADLAD-400 (Kudugunta et al., 2023) 中识别可疑句子规则的一个子集. 消融测试表明, MADLAD 中只有规则 2 与规则 5 能提升数据集质量, 分别针对含大量大写单词的句子与命中 "cursed regex" 的句子. 若文档中句子数少于 5, 或至少 20% 的句子可疑, 就把该文档从语料中移除.
+随后, 我们应用一串启发式过滤步骤, 把数据集进一步裁剪到适合预训练的规模. 我们的步骤基本沿用 DCLM (Li et al., 2024a), 仅有少数小的差异. 先做基于 URL 的过滤, 识别并移除 URL 含有 FineWeb (Penedo et al., 2024) 与 RefinedWeb (Penedo et al., 2023) 所用黑名单中的禁用词或子词的文档, 这一步约移除数据池的 1%. 然后应用 DCLM 的启发式过滤器集合, 大致定位并移除: i) 过短的文档, ii) 过长的文档, iii) 字母数字字符不足的文档, iv) 内部重复量大的文档. 接着修改或移除每份文档中行或段落里 i) 数字字符过多, 或 ii) 含有 "items in cart" "read more..." 这类样板短语的行; 若文档被这种行级删除整段毁掉, 则整个移除. 之后应用 FastText 英文语言过滤器, 对齐 DCLM, 以 0.65 为阈值判定文档是否含英文. 末尾应用 MADLAD-400 (Kudugunta et al., 2023) 中识别可疑句子规则的一个子集. 消融测试表明, MADLAD 中只有规则 2 与规则 5 能提升数据集质量, 分别针对含大量大写单词的句子与命中 "cursed regex" 的句子. 若文档中句子数少于 5, 或至少 20% 的句子可疑, 就把该文档从语料中移除.
 
 Overall, the heuristic steps remove 76% of the total pool, and the English filtering step removes an additional 2.5% of the pool. This leaves a pool of 38.7B documents, attaining a survival rate of 15.1%. While each of these described steps is incorporated into the DCLM processing pipeline, we note that these heuristic filters are commutative and that the English filtering is the slowest step, so efficiency gains can be attained by putting the language-filtering step at the end. We spent a total of 1030 i4i.32xlarge EC2 hours in this step, incurring a cost of approximately \$11,300. An exact breakdown of how much time was spent in each step is provided in Table 36.
 
-总体而言, 启发式步骤移除了总池的 76%, 英文过滤步骤又额外移除了 2.5%. 最终剩下 387 亿份文档, 存活率 15.1%. 虽然上述每一步都已纳入 DCLM 处理流水线, 但我们注意到这些启发式过滤器彼此可交换, 而英文过滤是最慢的一步, 因此把语言过滤放在最后可以获得效率收益. 这一步我们总共花费了 1030 个 i4i.32xlarge EC2 小时, 成本约 \$11,300. 各步骤耗时的精确分解见表 36.
+总体而言, 启发式步骤移除了总池的 76%, 英文过滤步骤又额外移除了 2.5%. 最终剩下 387 亿份文档, 存活率 15.1%. 虽然上述每一步都已纳入 DCLM 处理流水线, 但我们注意到这些启发式过滤器彼此可交换, 而英文过滤是最慢的一步, 因此把语言过滤放在末尾可以获得效率收益. 这一步我们总共花费了 1030 个 i4i.32xlarge EC2 小时, 成本约 \$11,300. 各步骤耗时的精确分解见表 36.
 
 | Pipeline Step | Docs Removed (B) | % of pool removed | % of total time |
 | --- | --- | --- | --- |
@@ -3364,7 +3364,7 @@ After annotating all documents according to their true Jaccard similarity with o
 
 **Suffix Array deduplication** In the final deduplication stage, we employ suffix arrays to identify and remove substrings that appear repeatedly throughout the dataset. We partition the 9.8 billion document corpus into 56 shards of roughly equal size and run suffix array deduplication independently on each shard.
 
-**后缀数组去重** 在最后的去重阶段, 我们使用后缀数组来识别并移除在整个数据集中反复出现的子串. 把 98 亿份文档的语料切成 56 个大小相近的分片, 在每个分片上独立运行后缀数组去重.
+**后缀数组去重** 在末尾的去重阶段, 我们使用后缀数组来识别并移除在整个数据集中反复出现的子串. 把 98 亿份文档的语料切成 56 个大小相近的分片, 在每个分片上独立运行后缀数组去重.
 
 For each shard, we construct a suffix array and identify every byte sequence of length 500 or greater that appears at least twice in the shard. We then apply a novel “fuzzy suffix array” removal strategy that considers contiguous text spans within each document. Specifically, if a text span is bounded on both sides by 500- byte sequences that appear multiple times in the suffix array, and at least 80% of the span is covered by such repeated sequences, we remove the entire span. This strategy targets cases where naive suffix array deduplication would leave short, unique fragments interspersed between removed substrings. For text that does not meet this bookended criterion, we remove all individual occurrences of repeated 500-byte sequences.
 
@@ -3384,13 +3384,13 @@ Table 37 Performance of FastText classifier distilled from WebOrganizer topic la
 
 After strict rounds of deduplication, we partition our data according to topic using the 24 topic categories introduced in WebOrganizer (Wettig et al., 2025). Rather than using the 140M parameter topic classifier used by WebOrganizer, we train a FastText classifier<sup>61</sup> to support cost-effective topic classification at scale. To train this classifier, we use the Llama-labeled training data used to train the original WebOrganizer category as well as an extra 506,746 examples with topics labeled by a combination of gpt-4.1 and o4-mini. The performance of this classifier is outlined in Table 37.
 
-在多轮严格去重之后, 我们按主题划分数据, 使用 WebOrganizer (Wettig et al., 2025) 引入的 24 个主题类别. 我们不使用 WebOrganizer 所用的 1.4 亿参数主题分类器, 而是训练一个 FastText 分类器<sup>61</sup>, 以支持规模化且成本可控的主题分类. 训练该分类器时, 我们既使用训练原始 WebOrganizer 类别所用的 Llama 标注训练数据, 又额外加入 506,746 个由 gpt-4.1 与 o4-mini 组合标注主题的样例. 该分类器的性能见表 37.
+在多轮严格去重之后, 我们按主题划分数据, 使用 WebOrganizer (Wettig et al., 2025) 引入的 24 个主题类别. 我们不使用 WebOrganizer 所用的 1.4 亿参数主题分类器, ；实际是训练一个 FastText 分类器<sup>61</sup>, 以支持规模化且成本可控的主题分类. 训练该分类器时, 我们既使用训练原始 WebOrganizer 类别所用的 Llama 标注训练数据, 又额外加入 506,746 个由 gpt-4.1 与 o4-mini 组合标注主题的样例. 该分类器的性能见表 37.
 
 #### A.2.4 CommonCrawl Mixing
 
 We perform a hierarchical mixing procedure on our data. Our procedure Olmix (Chen et al., 2026) generates prescriptions for which percentage of the training mix should come from each topic or source, but offers no guidance on the quality composition within each topic. While prior works, such as DCLM (Li et al., 2024a) use a quality classifier to flatly filter data as high-quality or not, we take a more fine-grained approach and perform selective up and down-sampling within each WebOrganizer topic depending on the quality signal. This section formalizes the search procedure we use to generate these upsampling curves.
 
-我们对数据执行层级化的混合流程. 我们的流程 Olmix (Chen et al., 2026) 会生成配方, 规定训练混合数据中每个主题或来源应占的百分比, 但不指导同一主题内部的质量构成. 以往的工作 (如 DCLM (Li et al., 2024a)) 用质量分类器把数据一刀切地过滤为高质量或不是, 我们则采取更细粒度的做法: 按质量信号在每个 WebOrganizer 主题内做选择性的上采样与下采样. 本节把我们用于生成这些上采样曲线的搜索过程形式化.
+我们对数据执行层级化的混合流程. 我们的流程 Olmix (Chen et al., 2026) 会生成配方, 规定训练混合数据中每个主题或来源应占的百分比, 但不指导同一主题内部的质量构成. 以往的工作 (如 DCLM (Li et al., 2024a)) 用质量分类器把数据一刀切地过滤为高质量或并非, 我们则采取更细粒度的做法: 按质量信号在每个 WebOrganizer 主题内做选择性的上采样与下采样. 本节把我们用于生成这些上采样曲线的搜索过程形式化.
 
 **Problem formulation** We discuss this procedure in more general terms: consider a category with X tokens, partitioned into Q strictly ordered quality buckets, where the $q ^ { ^ { t h } }$ bucket contains $X _ { q }$ tokens. Further assume that Olmix prescribes that Z tokens be taken from this category, and that at no point do we want to upsample any quality bucket more than M times. This equates to a search problem, where we need to take $Z _ { q }$ tokens from the $q ^ { ^ { t h } }$ bucket such that $\textstyle \sum _ { q } Z _ { q } = Z$ and ∀q, $Z _ { q } / X _ { q } \leq M$
 
@@ -3495,7 +3495,7 @@ Table 40 Different methods of combining quality-aware upsampling and token-const
 
 (topic) constraints only. The quality-aware upsampling experiments in the preceding paragraph impose column-wise (quality) constraints only.
 
-**调和上采样与混合** 最后, 我们评估如何最好地结合混合与上采样两种方法, 它们处理数据选择中互补的两个侧面: 数据混合决定跨主题的分布, 质量上采样决定单一来源内部的分布. 可以这样想: 把数据集想象成一个由桶组成的二维矩阵, 行是 WebOrganizer 主题, 列是质量桶; 混合策略相当于只施加行向 (主题) 约束, 前一段的质量感知上采样实验则只施加列向 (质量) 约束.
+**调和上采样与混合** 末尾, 我们评估如何最好地结合混合与上采样两种方法, 它们处理数据选择中互补的两个侧面: 数据混合决定跨主题的分布, 质量上采样决定单一来源内部的分布. 可以这样想: 把数据集想象成一个由桶组成的二维矩阵, 行是 WebOrganizer 主题, 列是质量桶; 混合策略相当于只施加行向 (主题) 约束, 前一段的质量感知上采样实验则只施加列向 (质量) 约束.
 
 We considered several techniques that did not work quite as well as the truncated power-exponential forms described in § A.2.4. On one hand, the Olmix framework samples data from each topic (row) according only to the natural quality distribution. On the other, quality upsampling samples data from each quality bucket (column) and does not consider reweighting topic distributions. For a theoretical target token yield, each of these strategies prescribes a target token count to be taken from each (topic, quality) bucket. Naive ways to rectify these strategies is to take an arithmetic or geometric mean between the target token counts from each bucket. We also note that the theoretical framework defining upsampling curves above is not necessarily restricted to the concept class of truncated power-exponential families. We could just as easily consider the family of exponential functions like $f _ { \lambda } ( x ) = C e ^ { \lambda ( x - a ) }$ Upon considering each of these techniques on small 1B models, we found that the truncated power-exponential family performed the best. Results are contained in Table 40.
 
@@ -3560,11 +3560,11 @@ that of the MegaMath-Web-Pro quality. Again, unfortunately, MegaMath-Web-Pro-Max
 
 **Key Findings and Results** We summarize the annealing results for the math datasets in Table 41. Each value reflects the change in the evaluation score relative to the pre-anneal baseline, normalized by the number of training tokens. Presenting the results this way highlights several distinct tiers of math-data quality, stratified by the effect-per-token. Notably, these quality tiers anticorrelate with the number of available tokens: the highest-quality sources are also the smallest. While it is true that there are diminishing returns of evaluation scores as more tokens are added, we claim that amongst these high-quality data sources, some higher quality than others.
 
-**关键发现与结果** 数学数据集的退火结果汇总于表 41. 每个数值反映评测分数相对退火前基线的变化, 按训练 token 数归一化. 这样呈现结果突出了数学数据质量几个明显层级, 按每 token 效果分层. 值得注意的是, 这些质量层级与可用 token 数负相关: 质量最高的来源同时规模最小. 随着 token 增多, 评测分数收益递减固然属实, 但我们主张, 在这些高质量数据源之间, 质量仍有高下之分.
+**关键发现与结果** 数学数据集的退火结果汇总于表 41. 每个数值反映评测分数相对退火前基线的变化, 按训练 token 数归一化. 这样呈现结果突出了数学数据质量几个明显层级, 按每 token 效果分层. 其中, 这些质量层级与可用 token 数负相关: 质量最高的来源同时规模最小. 随着 token 增多, 评测分数收益递减固然属实, 但我们主张, 在这些高质量数据源之间, 质量仍有高下之分.
 
 At the top of the quality-spectrum are the tinyMATH variants. Although each contains less than a billion tokens, they deliver the strongest improvement per token – this is perhaps not surprising as these tokens were specifically crafted to augment the MATH evaluation score. Next in the tier-list of quality are the synthetic rewrites of natural high-quality data: the Crane, SwallowMath and MegaMatt sources which are each rewrites of FineMath4+ and MegaMathWeb-Pro. These provide a markedly weaker lift to the math evaluation metrics than the tinyMATH variants but also have a much larger pool of tokens to draw from. Finally, the largest data sources, including those of naturally occurring data such as FineMath4+ and MegamathWeb, also yield improvements, but their effect-per-token is noticeably smaller than that of the highly curated synthetic data. Finally we note that the effect of math midtraining on MMLU is generally neutral to negative, but is more strongly negative the more targeted the data pool is to Math evals, suggesting “overcooking”, where increased specialization comes at the expense of broader general-purpose performance.
 
-质量谱顶端是 tinyMATH 变体. 虽然每个都不足 10 亿 token, 但每 token 带来的提升最强 —— 这并不奇怪, 因为这些 token 是专门为提升 MATH 评测分数而精心构造的. 质量层级紧随其后的是对天然高质量数据的合成改写: Crane, SwallowMath 与 MegaMatt, 它们分别是 FineMath4+ 与 MegaMathWeb-Pro 的改写. 它们对数学评测指标的提升明显弱于 tinyMATH 变体, 但可用 token 池大得多. 最后是规模最大的数据源, 包括 FineMath4+ 与 MegamathWeb 这类天然数据, 它们也能带来提升, 但每 token 效果明显小于高度甄选的合成数据. 最后我们注意到, 数学 midtraining 对 MMLU 的影响总体中性偏负, 且数据池越是针对数学评测, 负向影响越强, 这暗示了 "过度烹饪" 现象: 专业化程度的提升以牺牲更广的通用性能为代价.
+质量谱顶端是 tinyMATH 变体. 虽然每个都不足 10 亿 token, 但每 token 带来的提升最强 —— 这并不奇怪, 因为这些 token 是专门为提升 MATH 评测分数而精心构造的. 质量层级紧随其后的是对天然高质量数据的合成改写: Crane, SwallowMath 与 MegaMatt, 它们分别是 FineMath4+ 与 MegaMathWeb-Pro 的改写. 它们对数学评测指标的提升明显弱于 tinyMATH 变体, 但可用 token 池大得多. 末尾是规模最大的数据源, 包括 FineMath4+ 与 MegamathWeb 这类天然数据, 它们也能带来提升, 但每 token 效果明显小于高度甄选的合成数据. 末尾我们注意到, 数学 midtraining 对 MMLU 的影响总体中性偏负, 且数据池越是针对数学评测, 负向影响越强, 这暗示了 "过度烹饪" 现象: 专业化程度的提升以牺牲更广的通用性能为代价.
 
 #### A.3.2 Code Capabilities
 
@@ -3594,7 +3594,7 @@ Table 42 Microanneal results for CraneCode ablations. For each annealing run, we
 
 reasoning tasks. Gandhi et al. (2025) showed that models exhibiting verification and backtracking behaviors during base training achieved dramatically superior performance trajectories during mathematical reasoning RL. Therefore, we begin by identifying structured reasoning capabilities that are critical for mathematical problem-solving. We select seven core capabilities that are foundational to mathematical and programming expertise: self-awareness (Toy et al., 2024; Callaway et al., 2022), self-evaluation (Fleming and Daw, 2017), goal management (Ackerman and Thompson, 2017; Griffiths et al., 2019), hierarchical organization (Haupt, 2018), backward chaining (Olieslagers et al., 2024), backtracking and conceptual reasoning (Markovits et al., 2015). We then design specific tasks that systematically target these capabilities, as shown in Table 43, and 44. For instance, Math Error Recovery specifically targets self-awareness, verification, and backtracking by requiring models to experience authentic mistakes and demonstrate recovery processes. Strategy Selection focuses purely on meta-cognitive choice processes, while Conversation Generation integrates all capabilities through educational dialogue. For data generation, we start with existing math (Luo et al., 2025a; Moshkov et al., 2025) and coding (Li et al., 2023a; Hendrycks et al., 2021a; Ahmad et al., 2025) problems and their corresponding correct answers. Following Pandalla dataset, we automatically augment each problem with detailed annotations covering ‘problem classification’, ‘difficulty analysis’, ‘solution approaches’, ‘common pitfalls’, and ‘verification methods’. These rich annotations serve as inputs for our capability-targeted tasks. For example, the ‘common pitfalls’ field directly informs math error recovery generation, while steps in ‘solution approach’ provides structure for backward chaining tasks. Using the annotated datasets as foundation, we employ GPT-4.1 and o4-mini to generate training data at scale for each capability-targeted task.
 
-**元推理** 近期研究表明, 预训练与 midtraining 中呈现的结构化元推理能力, 是在复杂推理任务上成功进行强化学习的基础. Gandhi et al. (2025) 显示, 基座训练阶段表现出验证与回溯行为的模型, 在数学推理 RL 中取得明显更优的性能轨迹. 因此, 我们先识别对数学解题至关重要的结构化推理能力, 选定七项构成数学与编程专长的核心能力: 自我意识 (Toy et al., 2024; Callaway et al., 2022), 自我评估 (Fleming and Daw, 2017), 目标管理 (Ackerman and Thompson, 2017; Griffiths et al., 2019), 层级组织 (Haupt, 2018), 反向链推理 (Olieslagers et al., 2024), 回溯与概念推理 (Markovits et al., 2015). 然后我们设计系统针对这些能力的具体任务, 见表 43 与表 44. 例如, 数学错误恢复专门瞄准自我意识, 验证与回溯 —— 它要求模型经历真实错误并展示恢复过程. 策略选择纯粹聚焦元认知的抉择过程, 对话生成则通过教学式对话整合全部能力. 数据生成方面, 我们从已有的数学 (Luo et al., 2025a; Moshkov et al., 2025) 与代码 (Li et al., 2023a; Hendrycks et al., 2021a; Ahmad et al., 2025) 题目及其正确答案出发. 沿用 Pandalla 数据集的做法, 我们为每道题自动加上覆盖 "题目分类", "难度分析", "解法路径", "常见陷阱" 与 "验证方法" 的详细标注. 这些丰富标注作为能力导向任务的输入: 例如 "常见陷阱" 字段直接用于数学错误恢复的生成, "解法路径" 中的步骤为反向链任务提供结构. 以标注数据集为基础, 我们用 GPT-4.1 与 o4-mini 为每个能力导向任务规模化生成训练数据.
+**元推理** 近期研究表明, 预训练与 midtraining 中呈现的结构化元推理能力, 是在复杂推理任务上成功进行强化学习的基础. Gandhi et al. (2025) 显示, 基座训练阶段表现出验证与回溯行为的模型, 在数学推理 RL 中取得明显更优的性能轨迹. 因此, 我们先识别对数学解题很关键的结构化推理能力, 选定七项构成数学与编程专长的核心能力: 自我意识 (Toy et al., 2024; Callaway et al., 2022), 自我评估 (Fleming and Daw, 2017), 目标管理 (Ackerman and Thompson, 2017; Griffiths et al., 2019), 层级组织 (Haupt, 2018), 反向链推理 (Olieslagers et al., 2024), 回溯与概念推理 (Markovits et al., 2015). 然后我们设计系统针对这些能力的具体任务, 见表 43 与表 44. 例如, 数学错误恢复专门瞄准自我意识, 验证与回溯 —— 它要求模型经历真实错误并展示恢复过程. 策略选择纯粹聚焦元认知的抉择过程, 对话生成则通过教学式对话整合全部能力. 数据生成方面, 我们从已有的数学 (Luo et al., 2025a; Moshkov et al., 2025) 与代码 (Li et al., 2023a; Hendrycks et al., 2021a; Ahmad et al., 2025) 题目及其正确答案出发. 沿用 Pandalla 数据集的做法, 我们为每道题自动加上覆盖 "题目分类", "难度分析", "解法路径", "常见陷阱" 与 "验证方法" 的详细标注. 这些丰富标注作为能力导向任务的输入: 例如 "常见陷阱" 字段直接用于数学错误恢复的生成, "解法路径" 中的步骤为反向链任务提供结构. 以标注数据集为基础, 我们用 GPT-4.1 与 o4-mini 为每个能力导向任务规模化生成训练数据.
 
 | Task | Meta Capabilities |
 | --- | --- |
@@ -3891,11 +3891,11 @@ An eval instance can be described as having a Q, QA, QP, or QAP composition.
 
 • Answer While the answer of an eval is important for measuring whether a model has learned a specific task, in the context of decontamination the answer primarily serves to provide supporting evidence of contamination. This is particularly important for questions with low information content or those that have edits.
 
-- 答案: 答案对衡量模型是否学会某任务固然重要, 但在去污染语境下, 答案主要提供污染的支持性证据, 这对信息量低或经过编辑的问题尤为重要.
+- 答案: 答案对衡量模型是否学会某任务固然重要, 但在去污染语境下, 答案主要提供污染的支持性证据, 这对信息量低或经过编辑的问题尤其重要.
 
 • Passage The passage, often derived from reference documents, is not a strong indicator of contamination, but in conjunction with a substantial question and answer match, further supports a contamination call.
 
-- 篇章: 篇章常衍生自参考文档, 本身不是污染的强指标, 但与强的问题, 答案匹配相结合时, 能进一步支持污染判定.
+- 篇章: 篇章常衍生自参考文档, 本身并非污染的强指标, 但与强的问题, 答案匹配相结合时, 能进一步支持污染判定.
 
 #### A.5.4 Decon Implementation
 
@@ -3965,7 +3965,7 @@ Figure 36 Example of trigram processing for decon pipeline.
 
 **Hot n-grams** Cluster discovery begins with an initial hit in the inverted index. While the supermajority of ngrams samples are misses, there are some extremely common ngrams present in the eval texts. Because the ngrams are so common, the probability of a initial hit leading to a true instance of contamination is low. As an optimization we do not start contamination cluster expansion on hot ngram hits, but rather switch our sampling rate to 1, and traverse the training document by single tokens until we observe a miss or non-hot ngram hit.
 
-**热 n-gram** 簇发现始于倒排索引中的一次命中. 采样的 ngram 绝大多数是 miss, 但评测文本中也存在极常见的 ngram; 由于它们太常见, 由这类命中启动的簇扩展最终指向真实污染的概率很低. 作为优化, 热 ngram 命中时不启动污染簇扩展, 而是把采样率切到 1, 改为逐 token 遍历训练文档, 直到遇到 miss 或非热 ngram 命中.
+**热 n-gram** 簇发现始于倒排索引中的一次命中. 采样的 ngram 绝大多数是 miss, 但评测文本中也存在极常见的 ngram; 由于它们太常见, 由这类命中启动的簇扩展最终指向真实污染的概率很低. 作为优化, 热 ngram 命中时不启动污染簇扩展, ；实际是把采样率切到 1, 改为逐 token 遍历训练文档, 直到遇到 miss 或非热 ngram 命中.
 
 #### A.5.5 Scoring System
 
@@ -4124,7 +4124,7 @@ We also compare Olmo 3 RL-Zero 7B to one of the more common benchmarks in RLVR, 
 
 Finally, we compare Olmo RL-Zero 3.1 to the initially released, RL-Zero 3.0 in Figure 39 and see a sizable improvement. There were some minor fixes to loss calculation but the major improvement comes from 1. setting completion length to 16k instead of 12k and 2. not masking truncated sequences, one of the components of DAPO (Yu et al., 2025). Despite initial results suggesting this masking improved the speed of the trainer (by having fewer completions to train on), we ultimately found that variations in batch size caused by some examples masked out to reduce stability. And without training on overlong negative sequences, completion lengths were higher, on average. We therefore found that any efficiency gains in training speed from masking were outweighed by slowdowns from generating longer sequence lengths.
 
-最后, 我们把 Olmo RL-Zero 3.1 与最初发布的 RL-Zero 3.0 对比 (图 39), 看到明显提升. 损失计算有一些小的修正, 但主要改进来自两点: 1. 把 completion 长度从 12k 改为 16k; 2. 不再掩码截断序列 —— 这是 DAPO (Yu et al., 2025) 的组件之一. 尽管初步结果显示这种掩码能提升训练器速度 (要训练的 completion 更少), 但我们最终发现, 部分样例被掩码导致的批大小波动会降低稳定性; 而且不在过长的负样本序列上训练后, completion 的平均长度反而更高. 因此我们确认, 掩码带来的训练速度收益, 被生成更长序列造成的减速抵消了.
+末尾, 我们把 Olmo RL-Zero 3.1 与最初发布的 RL-Zero 3.0 对比 (图 39), 看到明显提升. 损失计算有一些小的修正, 但主要改进来自两点: 1. 把 completion 长度从 12k 改为 16k; 2. 不再掩码截断序列 —— 这是 DAPO (Yu et al., 2025) 的组件之一. 尽管初步结果显示这种掩码能提升训练器速度 (要训练的 completion 更少), 但我们最终发现, 部分样例被掩码导致的批大小波动会降低稳定性; 而且不在过长的负样本序列上训练后, completion 的平均长度反而更高. 因此我们确认, 掩码带来的训练速度收益, 被生成更长序列造成的减速抵消了.
 
 ![Image block](images/p106-figure-37-rl-zero-prompt-for-math-task.png)
 
@@ -4363,7 +4363,7 @@ Following DeepSeek R1 report (Guo et al., 2025) and Nvidia Nemotron (Adler et al
 
 It’s not a broken evaluation, it’s a trade-off. It’s well established that most people enjoy reading language model completions that have a bit of flair to them. In fact, the style of bold, lists, etc. can be very helpful when skimming information. It just can often go over the top—such as when too many emoji’s are included!
 
-这不是一个坏掉的评测, 而是一种取舍. 众所周知, 大多数人喜欢读带点风格的语言模型补全. 粗体, 列表这类风格在扫读信息时往往很有帮助; 只是它常常做得过火, 比如塞进太多 emoji!
+这并非一个坏掉的评测, ；实际是一种取舍. 众所周知, 大多数人喜欢读带点风格的语言模型补全. 粗体, 列表这类风格在扫读信息时往往很有帮助; 只是它常常做得过火, 比如塞进太多 emoji!
 
 Pro: Ease-of-reading and flair
 

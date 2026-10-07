@@ -110,7 +110,7 @@ RLVR 使用 `open_instruct/grpo_fast.py` 训练。通过 `scripts/train/build_im
 
 > This codebase is licensed under Apache 2.0. V1 model licenses ... V2 models are licensed under the low-risk AI2 ImpACT license.
 
-代码库按 Apache 2.0 许可。V1 模型还要结合基础模型许可与 `assets/model_licenses/tulu_license.txt`；V2 模型使用低风险 AI2 ImpACT 许可。代码许可与模型许可不是同一个判断。
+代码库按 Apache 2.0 许可。V1 模型还要结合基础模型许可与 `assets/model_licenses/tulu_license.txt`；V2 模型使用低风险 AI2 ImpACT 许可。代码许可与模型许可并非同一个判断。
 
 > Open Instruct benefited from many open-source projects and libraries.
 

@@ -1,9 +1,9 @@
 ---
-title: "Signal and Noise?????????????"
-category: "?????"
-tags: ["????", "???", "??????", "????", "OLMo"]
+title: "Signal and Noise：降低语言模型评测不确定性的框架 · 对照译稿"
+category: "数据与评测"
+tags: ["语言模型评测", "信号", "噪声", "缩放预测", "OLMo"]
 published: true
-excerpt: "Signal and Noise ????????????????????????????????????????????"
+excerpt: "论文把基准区分模型的能力定义为信号，把训练步骤间的随机波动定义为噪声，并研究提高信噪比如何改善小规模决策与缩放预测。"
 ---
 
 <!-- arXiv 2508.13144; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/signal-and-noise/latex/ 的 LaTeX 源码为准 -->
@@ -28,7 +28,7 @@ Abstract
 
 Developing large language models is expensive and involves making decisions with small experiments, typically by evaluating on large, multi-task evaluation suites. In this work, we analyze specific properties which make a benchmark more reliable for such decisions, and interventions to design higher-quality evaluation bench- marks. We introduce two key metrics that show differences in current benchmarks: signal, a benchmark’s ability to separate better models from worse models, and noise, a benchmark’s sensitivity to random variability between training steps. We demonstrate that benchmarks with a better signal-to-noise ratio are more reliable when making decisions at small scale, and those with less noise have lower scaling law prediction error. These results suggest that improving signal or noise will lead to more useful benchmarks, so we introduce three interventions designed to directly affect signal or noise. For example, we propose that switching to a metric that has better signal and noise (e.g., perplexity rather than accuracy) leads to better reliability and improved scaling law error. We also find that filtering noisy subtasks, to improve an aggregate signal-to-noise ratio, leads to more reliable multi-task evaluations. We also find that averaging the output of a model’s intermediate checkpoints to reduce noise leads to consistent improvements. We conclude by recommending that those creating new benchmarks, or selecting which existing benchmarks to use, aim for high signal and low noise. We use 30 bench- marks for these experiments, and 375 open-weight language models from 60M to 32B parameters, resulting in a new, publicly available dataset of 900K evaluation benchmark results, totaling 200M instances.
 
-开发大型语言模型成本高昂，并且涉及通过小型实验做出决策，通常是通过对大型多任务评估套件进行评估。在这项工作中，我们分析了使此类决策的基准更加可靠的特定属性，以及设计更高质量评估基准的干预措施。我们引入了两个关键指标来显示当前基准的差异：信号，基准将更好的模型与更差的模型分开的能力；噪声，基准对训练步骤之间随机变异的敏感性。我们证明，在小规模决策时，具有更好信噪比的基准更加可靠，而那些噪声较小的基准具有较低的缩放定律预测误差。这些结果表明，改善信号或噪声将带来更有用的基准，因此我们引入了三种旨在直接影响信号或噪声的干预措施。例如，我们建议切换到具有更好信号和噪声（例如，困惑度而不是准确性）的度量可以带来更好的可靠性和改进的标度律误差。我们还发现，过滤噪声子任务以提高总体信噪比可以带来更可靠的多任务评估。我们还发现，对模型中间检查点的输出进行平均以减少噪声可以带来持续的改进。最后，我们建议那些创建新基准或选择使用现有基准的人以高信号和低噪声为目标。我们使用 30 个基准进行这些实验，以及 375 个开放权重语言模型（从 60M 到 32B 参数），产生一个包含 900K 评估基准结果的新的公开数据集，总计 200M 个实例。
+开发大型语言模型成本高昂，并且涉及通过小型实验做出决策，通常是通过对大型多任务评估套件进行评估。在这项工作中，我们分析了使此类决策的基准更加可靠的特定属性，以及设计更高质量评估基准的干预措施。我们引入了两个关键指标来显示当前基准的差异：信号，基准将更好的模型与更差的模型分开的能力；噪声，基准对训练步骤之间随机变异的敏感性。我们证明，在小规模决策时，具有更好信噪比的基准更加可靠，而那些噪声较小的基准具有较低的缩放定律预测误差。这些结果表明，改善信号或噪声将带来更有用的基准，因此我们引入了三种旨在直接影响信号或噪声的干预措施。例如，我们建议切换到具有更好信号和噪声（例如，困惑度而并非准确性）的度量可以带来更好的可靠性和改进的标度律误差。我们还发现，过滤噪声子任务以提高总体信噪比可以带来更可靠的多任务评估。我们还发现，对模型中间检查点的输出进行平均以减少噪声可以带来持续的改进。末尾，我们建议那些创建新基准或选择使用现有基准的人以高信号和低噪声为目标。我们使用 30 个基准进行这些实验，以及 375 个开放权重语言模型（从 60M 到 32B 参数），产生一个包含 900K 评估基准结果的新的公开数据集，总计 200M 个实例。
 
 allenai/signal-and-noise datasets/allenai/signal-and-noise
 
@@ -190,7 +190,7 @@ To illustrate the connection from signal and noise to an experimental setting, c
 
 Based on these observations, in Section 5 we propose a set of interventions designed to reduce noise or increase signal, and then we measure their impact on our experimental setups of decision accuracy and scaling law error. For example, we show that by averaging out the checkpoint-to- checkpoint noise for a model, we improve our ability to predict performance of large models from small models. We also show that it is possible to find subsets of existing benchmarks that have higher signal-to-noise ratios than the full evaluation sets, and that even though those subsets can have fewer than half as many instances, they improve both experimental setups. Finally, we show that SNR can be used to improve metric construction, where choosing a metric that has better SNR leads to consistent improvements on a wide variety of benchmarks.
 
-基于这些观察结果，在第 5 节中，我们提出了一组旨在减少噪声或增加信号的干预措施，然后我们测量它们对决策准确性和标度律误差的实验设置的影响。例如，我们表明，通过对模型的检查点到检查点噪声进行平均，我们提高了从小模型预测大模型性能的能力。我们还表明，可以找到比完整评估集具有更高信噪比的现有基准子集，并且即使这些子集的实例数量不到一半，它们也改进了两种实验设置。最后，我们表明 SNR 可用于改进指标构建，其中选择具有更好 SNR 的指标可以在各种基准上实现一致的改进。
+基于这些观察结果，在第 5 节中，我们提出了一组旨在减少噪声或增加信号的干预措施，然后我们测量它们对决策准确性和标度律误差的实验设置的影响。例如，我们表明，通过对模型的检查点到检查点噪声进行平均，我们提高了从小模型预测大模型性能的能力。我们还表明，可以找到比完整评估集具有更高信噪比的现有基准子集，并且即使这些子集的实例数量不到一半，它们也改进了两种实验设置。末尾，我们表明 SNR 可用于改进指标构建，其中选择具有更好 SNR 的指标可以在各种基准上实现一致的改进。
 
 Our core contributions are as follows: (i) we introduce definitions for signal, noise, and signal- to-noise ratio in the setting of evaluating language models, and show this framework is useful for measuring the utility of benchmarks, and (ii) we demonstrate interventions based on this framework which improve both prediction settings. Our core results evaluate 465 language models on 30 benchmarks across 14 model sizes. We release our data, evaluation results, and trained models.
 
@@ -234,7 +234,7 @@ We use models of 7 sizes (from 60M parameters up to 1B parameters) trained on 25
 
 Scaling Law Prediction Error. Scaling laws [27, 24, inter alia] have been used extensively to predict the validation loss of a large model using a set of smaller “scaling law” models. Recent work has also used scaling laws to predict downstream task performance [19, 3] by first predicting task loss then using the predicted loss to predict task performance (e.g., accuracy); this is the setup we use in this work. The prediction error for the scaling law fit is defined as the relative error between the predicted and true performance of the large model: Prediction Error = |Measured Value−True Value|
 
-缩放定律预测误差。缩放定律[27、24等]已被广泛用于使用一组较小的“缩放定律”模型来预测大型模型的验证损失。最近的工作还使用缩放定律来预测下游任务性能 [19, 3]，首先预测任务损失，然后使用预测损失来预测任务性能（例如，准确性）；这是我们在这项工作中使用的设置。缩放定律拟合的预测误差定义为大型模型的预测性能与真实性能之间的相对误差： 预测误差 = |测量值−真实值|
+缩放定律预测误差。缩放定律[27、24等]已被广泛用于使用一组较小的“缩放定律”模型来预测大型模型的验证损失。最近的工作还使用缩放定律来预测下游任务性能 [19, 3]，第一步预测任务损失，然后使用预测损失来预测任务性能（例如，准确性）；这是我们在这项工作中使用的设置。缩放定律拟合的预测误差定义为大型模型的预测性能与真实性能之间的相对误差： 预测误差 = |测量值−真实值|
 
 |True Value| .
 
@@ -284,11 +284,11 @@ To illustrate the impact of noise on a decision-making setup, Figure 1 shows tra
 
 There are numerous sources of noise in the language model development pipeline. Previous work has shown multiple training runs under the same configuration can lead to different performance as a result of a different initialization or data order [14, 13]. In addition, as illustrated in Figure 1, performance can even vary significantly from one checkpoint to the next: within the final 30 checkpoints of training for 1B models on ARC Challenge, we observe a range of 1.7% accuracy. With these motivations, we consider four potential noise measurements, each calculated on using evaluation on a single benchmark: (i) training multiple models and varying only the random initialization, (ii) training models and varying the training data order, (iii) measuring the total checkpoint-to-checkpoint noise across a full, single training run, and (iv) measuring the checkpoint-to-checkpoint noise of the final n checkpoints of a single training run. We formalize these definitions in App. A.3.
 
-语言模型开发流程中有许多噪音源。先前的工作表明，由于不同的初始化或数据顺序，同一配置下的多次训练运行可能会导致不同的性能 [14, 13]。此外，如图 1 所示，一个检查点与下一个检查点之间的性能甚至可能存在显着差异：在 ARC Challenge 上 1B 模型训练的最后 30 个检查点中，我们观察到准确度范围为 1.7%。出于这些动机，我们考虑了四种潜在的噪声测量，每种测量都使用单个基准的评估来计算：（i）训练多个模型并仅改变随机初始化，（ii）训练模型并改变训练数据顺序，（iii）测量整个完整的单次训练运行中的总检查点到检查点噪声，以及（iv）测量单次训练运行的最后 n 个检查点的检查点到检查点噪声。我们在 App 中正式化了这些定义。 A.3.
+语言模型开发流程中有许多噪音源。先前的工作表明，由于不同的初始化或数据顺序，同一配置下的多次训练运行可能会导致不同的性能 [14, 13]。此外，如图 1 所示，一个检查点与下一个检查点之间的性能甚至可能存在显着差异：在 ARC Challenge 上 1B 模型训练的末尾 30 个检查点中，我们观察到准确度范围为 1.7%。出于这些动机，我们考虑了四种潜在的噪声测量，每种测量都使用单个基准的评估来计算：（i）训练多个模型并仅改变随机初始化，（ii）训练模型并改变训练数据顺序，（iii）测量整个完整的单次训练运行中的总检查点到检查点噪声，以及（iv）测量单次训练运行的末尾 n 个检查点的检查点到检查点噪声。我们在 App 中正式化了这些定义。 A.3.
 
 To get estimates for four potential sources of noise, we train 10 different 1B-5xC models varying the initialization and data orders, and evaluate all intermediate checkpoints. We find that the initialization noise, data order noise, and checkpoint-to-checkpoint noise across the whole training run all correlate highly with the relative standard deviation of the final n checkpoints (R2 of 0.82, 0.86, and 0.95, respectively, see Figure 7; and see the training curves in Figure 19). These results lead us to define noise as the relative standard deviation of the final n checkpoints, as this requires no additional training cost and only uses the final n checkpoints rather than the full training curve. We define
 
-为了估计四种潜在噪声源，我们训练了 10 个不同的 1B-5xC 模型，改变了初始化和数据顺序，并评估所有中间检查点。我们发现整个训练过程中的初始化噪声、数据顺序噪声和检查点到检查点噪声都与最终 n 个检查点的相对标准差高度相关（R2 分别为 0.82、0.86 和 0.95，见图 7；并见图 19 中的训练曲线）。这些结果使我们将噪声定义为最终 n 个检查点的相对标准偏差，因为这不需要额外的训练成本，并且仅使用最终 n 个检查点而不是完整的训练曲线。我们定义
+为了估计四种潜在噪声源，我们训练了 10 个不同的 1B-5xC 模型，改变了初始化和数据顺序，并评估所有中间检查点。我们发现整个训练过程中的初始化噪声、数据顺序噪声和检查点到检查点噪声都与最终 n 个检查点的相对标准差高度相关（R2 分别为 0.82、0.86 和 0.95，见图 7；并见图 19 中的训练曲线）。这些结果使我们将噪声定义为最终 n 个检查点的相对标准偏差，因为这不需要额外的训练成本，并且仅使用最终 n 个检查点而并非完整的训练曲线。我们定义
 
 q
 
@@ -656,7 +656,7 @@ In the following section we introduce signal-to-noise ratio, and find that this 
 
 Using our measures of signal (§3.2) and noise (§3.1), we propose measuring the signal-to-noise ratio. For both measures, we first divide by the average to be independent of particular units (e.g., to compare accuracy to unbounded task perplexity). We define the signal-to-noise ratio:
 
-使用我们的信号（§3.2）和噪声（§3.1）测量，我们建议测量信噪比。对于这两种度量，我们首先除以独立于特定单位的平均值（例如，将准确性与无限的任务困惑度进行比较）。我们定义信噪比：
+使用我们的信号（§3.2）和噪声（§3.1）测量，我们建议测量信噪比。对于这两种度量，我们第一步除以独立于特定单位的平均值（例如，将准确性与无限的任务困惑度进行比较）。我们定义信噪比：
 
 Signal-to-Noise Ratio = Rel. Dispersion(final train checkpoint)
 
@@ -664,7 +664,7 @@ Rel. Std.(final n train checkpoints) (2)
 
 where signal (Rel. Dispersion) is measured over a population of models trained using a similar compute budget, and noise (Rel. Std.) is measured over the final n intermediate training checkpoints of a single model. We emphasize that, while this is one particular instantiation of the signal-to- noise ratio, our framework is designed to be independent of a particular metric: we find many other measures of signal produce similar results in Appendix A.4 and measures of noise have high correlation in Appendix A.3.
 
-其中信号（相对分散）是在使用类似计算预算训练的模型群体上测量的，噪声（相对标准）是在单个模型的最后 n 个中间训练检查点上测量的。我们强调，虽然这是信噪比的一个特定实例，但我们的框架设计为独立于特定指标：我们发现许多其他信号测量在附录 A.4 中产生类似的结果，而噪声测量在附录 A.3 中具有高度相关性。
+其中信号（相对分散）是在使用类似计算预算训练的模型群体上测量的，噪声（相对标准）是在单个模型的末尾 n 个中间训练检查点上测量的。我们强调，虽然这是信噪比的一个特定实例，但我们的框架设计为独立于特定指标：我们发现许多其他信号测量在附录 A.4 中产生类似的结果，而噪声测量在附录 A.3 中具有高度相关性。
 
 4 Signal and Noise Correlate with Better Predictions · 信号与噪声同更好预测相关
 
@@ -676,7 +676,7 @@ In this section, we show that the signal-to-noise ratio correlates with decision
 
 Setup. We hypothesize that a higher signal-to-noise ratio makes it easier to distinguish between models. To test this, we measure decision accuracy using the ranking of the small DataDecide models (60M to 750M) to predict the ranking of the large DataDecide model (1B). To calculate signal we use the final checkpoint of each of the 25 small models, and to calculate noise, we use the standard deviation around the final 5 checkpoints of the small-scale models. Since we have a measure of noise for each model, we use the average of the noise across the small models.
 
-设置。我们假设较高的信噪比使得更容易区分模型。为了测试这一点，我们使用小型 DataDecide 模型（60M 到 750M）的排名来测量决策准确性，以预测大型 DataDecide 模型 (1B) 的排名。为了计算信号，我们使用 25 个小模型中每个模型的最终检查点，为了计算噪声，我们使用小规模模型最后 5 个检查点周围的标准差。由于我们对每个模型都有噪声测量，因此我们使用小模型的噪声平均值。
+设置。我们假设较高的信噪比使得更容易区分模型。为了测试这一点，我们使用小型 DataDecide 模型（60M 到 750M）的排名来测量决策准确性，以预测大型 DataDecide 模型 (1B) 的排名。为了计算信号，我们使用 25 个小模型中每个模型的最终检查点，为了计算噪声，我们使用小规模模型末尾 5 个检查点周围的标准差。由于我们对每个模型都有噪声测量，因此我们使用小模型的噪声平均值。
 
 5
 
@@ -754,7 +754,7 @@ Signal-to-noise is predictive of decision accuracy. Figure 2 shows the signal, n
 
 Setup. We fit scaling laws to predict the performance of OLMo 2 13B using final checkpoint of the set of scaling models trained by Bhagia et al. [3]. We calculate the scaling law prediction error as the relative error of the predicted and final 13B checkpoint. To estimate the noise, we calculate the relative standard deviation of the final 30 checkpoints of the 13B training run, each spaced 1000 training steps until the end of training.4 We hypothesize that the range of the final k checkpoints of the prediction target (the large, 13B model) acts as an lower-bound on the true minimum scaling law prediction error. An example of the prediction error and noise around the prediction target is illustraed using SocialIQA in Figure 3 (right). Assuming a scaling law with no bias, we expect tasks with a lower standard deviation of the prediction target to also have a lower prediction error. Noise measures the reliability of scaling law prediction errors. In Figure 3 (left), we show the scaling law error and standard deviation for predicting the 13B model performance over 30 tasks. We observe a correlation between the standard deviation of the prediction target and the prediction error across tasks (R = 0.653, R2 = 0.426), however the fit is not perfect. For example, we observe four tasks (MBPP+, SocialIQA, MMLU and TriviaQA) which exhibit similar error (around 2–3%), but exhibit different amounts of noise around the prediction target. For these benchmarks with similar error but lower noise, we can be confident that the error we observe from the single scaling law fit is the result of the true error of the scaling law fit rather than random chance. In practice, we recommend practitioners prefer making decisions based on scaling law predictions using tasks with low error and low noise. Previous work has fit multi-task averages to predict scaling laws. In particular, Gadre et al. [19] find that the error from the individual tasks in their work to be too difficult to predict accurately. In Figure
 
-设置。我们使用 Bhagia 等人训练的缩放模型集的最终检查点来拟合缩放定律来预测 OLMo 2 13B 的性能。 [3]。我们将缩放法则预测误差计算为预测的和最终 13B 检查点的相对误差。为了估计噪声，我们计算 13B 训练运行的最后 30 个检查点的相对标准偏差，每个检查点间隔 1000 个训练步骤，直到训练结束。4 我们假设预测目标（大的 13B 模型）的最后 k 个检查点的范围充当真实最小标度律预测误差的下界。图 3（右）中使用 SocialIQA 说明了预测目标周围的预测误差和噪声的示例。假设缩放法则没有偏差，我们预计预测目标标准偏差较低的任务也具有较低的预测误差。噪声衡量标度律预测误差的可靠性。在图 3（左）中，我们显示了预测 30 个任务中 13B 模型性能的标度律误差和标准差。我们观察到预测目标的标准差与跨任务的预测误差之间存在相关性（R = 0.653，R2 = 0.426），但拟合并不完美。例如，我们观察到四个任务（MBPP+、SocialIQA、MMLU 和 TriviaQA）表现出类似的误差（约 2-3%），但在预测目标周围表现出不同量的噪声。对于这些具有相似误差但噪声较低的基准，我们可以确信，我们从单个缩放定律拟合中观察到的误差是缩放定律拟合的真实误差的结果，而不是随机机会的结果。在实践中，我们建议从业者更喜欢使用低误差和低噪声的任务基于标度律预测做出决策。之前的工作已经通过拟合多任务平均值来预测缩放定律。特别是，Gadre 等人。 [19]发现工作中各个任务的错误很难准确预测。图中
+设置。我们使用 Bhagia 等人训练的缩放模型集的最终检查点来拟合缩放定律来预测 OLMo 2 13B 的性能。 [3]。我们将缩放法则预测误差计算为预测的和最终 13B 检查点的相对误差。为了估计噪声，我们计算 13B 训练运行的末尾 30 个检查点的相对标准偏差，每个检查点间隔 1000 个训练步骤，直到训练结束。4 我们假设预测目标（大的 13B 模型）的末尾 k 个检查点的范围充当真实最小标度律预测误差的下界。图 3（右）中使用 SocialIQA 说明了预测目标周围的预测误差和噪声的示例。假设缩放法则没有偏差，我们预计预测目标标准偏差较低的任务也具有较低的预测误差。噪声衡量标度律预测误差的可靠性。在图 3（左）中，我们显示了预测 30 个任务中 13B 模型性能的标度律误差和标准差。我们观察到预测目标的标准差与跨任务的预测误差之间存在相关性（R = 0.653，R2 = 0.426），但拟合并不完美。例如，我们观察到四个任务（MBPP+、SocialIQA、MMLU 和 TriviaQA）表现出类似的误差（约 2-3%），但在预测目标周围表现出不同量的噪声。对于这些具有相似误差但噪声较低的基准，我们可以确信，我们从单个缩放定律拟合中观察到的误差是缩放定律拟合的真实误差的结果，而并非随机机会的结果。在实践中，我们建议从业者更喜欢使用低误差和低噪声的任务基于标度律预测做出决策。之前的工作已经通过拟合多任务平均值来预测缩放定律。特别是，Gadre 等人。 [19]发现工作中各个任务的错误很难准确预测。图中
 
 4We found 30 checkpoints to be an adequate trade-off between sample size and compute cost. We provide guidance on selecting n when calculating noise, and its impact on experimental results, in Appendix A.3.2.
 
@@ -872,7 +872,7 @@ In this section, we introduce three interventions designed to improve the signal
 
 Setup. Many tasks are a macro-average of subtasks. We hypothesize that some subset of subtasks is usually higher quality than the rest of the set, and that the signal-to-noise ratio may be an indicator of high quality subtasks. To test this, we first calculate the signal-to-noise ratio of each subtask, then rank the subtasks by signal-to-noise ratio and greedily add the highest SNR subtasks. As a baseline, we randomly shuffle the subtasks, and report the average of 10 calculations of each metric, with the shading indicating ±1 standard deviation. Results. We show results in Figure 4. For MMLU, using only 16 subtasks had a higher signal-to- noise ratio than using the full test set. For AutoBencher, we observe the same but with only 6 tasks. The lower signal-to-noise ratio also led to a higher decision accuracy: +2.6% for MMLU and +5% for AutoBencher by using the high SNR subset compared to the full benchmark. We hypothesize that the quality of a task subset may influce that task’s signal-to-noise ratio. To test this, we use the data collected from MMLU Redux, which identified MMLU subtasks with high labeling error [21]. We find that out of the 20 MMLU subtasks which contain errors in least 5% of instances, half of these subtasks (10 of 20) are also in the lowest 20 tasks sorted by their signal-to-noise ratio. This presents
 
-设置。许多任务是子任务的宏观平均。我们假设子任务的某些子集通常比其余子任务的质量更高，并且信噪比可能是高质量子任务的指标。为了测试这一点，我们首先计算每个子任务的信噪比，然后根据信噪比对子任务进行排序，并贪婪地添加信噪比最高的子任务。作为基线，我们随机打乱子任务，并报告每个指标 10 次计算的平均值，阴影表示 ±1 个标准差。结果。我们在图 4 中显示结果。对于 MMLU，仅使用 16 个子任务比使用完整测试集具有更高的信噪比。对于 AutoBencher，我们观察到相同的情况，但只有 6 个任务。较低的信噪比还带来了更高的决策精度：与完整基准测试相比，通过使用高 SNR 子集，MMLU 提高了 2.6%，AutoBencher 提高了 5%。我们假设任务子集的质量可能会影响该任务的信噪比。为了测试这一点，我们使用从 MMLU Redux 收集的数据，该数据识别出具有高标签错误的 MMLU 子任务 [21]。我们发现，在至少 5% 的实例中包含错误的 20 个 MMLU 子任务中，这些子任务中有一半（20 个中的 10 个）也属于按信噪比排序的最低 20 个任务。这呈现
+设置。许多任务是子任务的宏观平均。我们假设子任务的某些子集通常比其余子任务的质量更高，并且信噪比可能是高质量子任务的指标。为了测试这一点，我们第一步计算每个子任务的信噪比，然后根据信噪比对子任务进行排序，并贪婪地添加信噪比最高的子任务。作为基线，我们随机打乱子任务，并报告每个指标 10 次计算的平均值，阴影表示 ±1 个标准差。结果。我们在图 4 中显示结果。对于 MMLU，仅使用 16 个子任务比使用完整测试集具有更高的信噪比。对于 AutoBencher，我们观察到相同的情况，但只有 6 个任务。较低的信噪比还带来了更高的决策精度：与完整基准测试相比，通过使用高 SNR 子集，MMLU 提高了 2.6%，AutoBencher 提高了 5%。我们假设任务子集的质量可能会影响该任务的信噪比。为了测试这一点，我们使用从 MMLU Redux 收集的数据，该数据识别出具有高标签错误的 MMLU 子任务 [21]。我们发现，在至少 5% 的实例中包含错误的 20 个 MMLU 子任务中，这些子任务中有一半（20 个中的 10 个）也属于按信噪比排序的最低 20 个任务。这呈现
 
 7
 
@@ -924,7 +924,7 @@ Intuitively, a benchmark developer may increase the statistical power of a compa
 
 Setup. Typically, models are only compared using the evaluation of the final checkpoint. In the previous sections, we argued that noise is a good indicator of whether we can use a benchmark to predict a large scale phenomenon. In this section, we want to measure the effect of averaging this particular source of step-to-step noise, as a way of improving our ability to make a prediction. In the decision accuracy setting, we can average the results of the small model, the large model (in this case, the 1B model), or both. In the prediction error setting, averaging the small models will help in fitting the scaling law, but averaging the target model will just make the result more reliable, so we average the target model in both settings and only change whether we average the models used to fit the scaling law. Finally, we introduce an additional way to average step-to-step noise during a training run, by evaluating whether the ranking of the 1B models during training agrees with the ranking at the end of training. Note, as our measure of noise is between intermediate training checkpoints, we are only reducing one of many sources of modeling noise.
 
-设置。通常，仅使用最终检查点的评估来比较模型。在前面的章节中，我们认为噪声是我们是否可以使用基准来预测大规模现象的一个很好的指标。在本节中，我们希望测量对这种特定的步进噪声源进行平均的效果，作为提高预测能力的一种方法。在决策精度设置中，我们可以对小模型、大模型（在本例中为 1B 模型）或两者的结果进行平均。在预测误差设置中，对小模型进行平均将有助于拟合缩放定律，但对目标模型进行平均只会使结果更加可靠，因此我们在两种设置中对目标模型进行平均，并且仅更改是否对用于拟合缩放定律的模型进行平均。最后，我们引入了另一种方法，通过评估训练期间 1B 模型的排名是否与训练结束时的排名一致，来平均训练运行期间的逐步噪声。由于我们的噪声测量是在中间训练检查点之间，因此我们只是减少了许多建模噪声源之一。
+设置。通常，仅使用最终检查点的评估来比较模型。在前面的章节中，我们认为噪声是我们是否可以使用基准来预测大规模现象的一个很好的指标。在本节中，我们希望测量对这种特定的步进噪声源进行平均的效果，作为提高预测能力的一种方法。在决策精度设置中，我们可以对小模型、大模型（在本例中为 1B 模型）或两者的结果进行平均。在预测误差设置中，对小模型进行平均将有助于拟合缩放定律，但对目标模型进行平均只会使结果更加可靠，因此我们在两种设置中对目标模型进行平均，并且仅更改是否对用于拟合缩放定律的模型进行平均。末尾，我们引入了另一种方法，通过评估训练期间 1B 模型的排名是否与训练结束时的排名一致，来平均训练运行期间的逐步噪声。由于我们的噪声测量是在中间训练检查点之间，因此我们只是减少了许多建模噪声源之一。
 
 Results on Final Checkpoints. In Table 1, we observe averaging the noise improved both measures of error. Averaging noise improved decision accuracy by +2.4% for the 30-task average, this procedure improved decision accuracy in all but two tasks. For reducing the scaling law prediction error, averaging the training checkpoints improved prediction error for 20 of 30 tasks.
 
@@ -1044,21 +1044,21 @@ bytes in the answer string [20, 37]. We compare BPB to the ‘primary’ task me
 
 Results. In Figure 6 we report the signal-to-noise ratio, scaling law error and decision accuracy for benchmarks using BPB instead of the primary metric, along with an example training curves for Minerva. Most benchmarks have higher signal-to-noise ratio when using the BPB, particularly generative math and code benchmarks like GSM8K (1.2 to 7.0) and MBPP (2.0 to 41.8). To verify this improvement in signal-to-noise ratio corresponds to an improvement in our decision-making setups, we observe an improvement in decision accuracy at the small scale for 90.0% of all benchmarks and a lower scaling law prediction error for 73.3% of all benchmarks. We see BPB results in dramatic improvement for tasks that small scale models are not able to accomplish at all, primarily generative tasks. Our results confirm that BPB is a useful metric is both a higher quality development benchmark, particularly for challenging tasks at small scales that do not show above random-chance signal.
 
-结果。在图 6 中，我们报告了使用 BPB 而不是主要指标的基准的信噪比、缩放法则误差和决策准确性，以及 Minerva 的示例训练曲线。使用 BPB 时，大多数基准测试具有更高的信噪比，特别是生成数学和代码基准测试，如 GSM8K（1.2 至 7.0）和 MBPP（2.0 至 41.8）。为了验证信噪比的这种改进与我们的决策设置的改进相对应，我们观察到 90.0% 的所有基准的小规模决策精度有所提高，并且 73.3% 的所有基准的标度律预测误差较低。我们看到 BPB 对小规模模型根本无法完成的任务（主要是生成任务）带来了显着的改进。我们的结果证实，BPB 是一个有用的指标，也是一个更高质量的开发基准，特别是对于不显示随机机会信号的小规模挑战性任务。
+结果。在图 6 中，我们报告了使用 BPB 而并非主要指标的基准的信噪比、缩放法则误差和决策准确性，以及 Minerva 的示例训练曲线。使用 BPB 时，大多数基准测试具有更高的信噪比，特别是生成数学和代码基准测试，如 GSM8K（1.2 至 7.0）和 MBPP（2.0 至 41.8）。为了验证信噪比的这种改进与我们的决策设置的改进相对应，我们观察到 90.0% 的所有基准的小规模决策精度有所提高，并且 73.3% 的所有基准的标度律预测误差较低。我们看到 BPB 对小规模模型根本无法完成的任务（主要是生成任务）带来了显着的改进。我们的结果证实，BPB 是一个有用的指标，也是一个更高质量的开发基准，特别是对于不显示随机机会信号的小规模挑战性任务。
 
 6 Related Work and Discussion · 相关工作与讨论
 
 Predicting model behavior at large scales is crucial aspect to language model development, as discussed in the beginning of §2. Noise within evaluation benchmarks is frequently studied as the intrinsic noise of the dataset [2, 7, 40, 6], rather than the noise as a result of differences in the model during training. Closest to our work is Madaan et al. [36], which report a measure of SNR using the benchmark score of a single model and noise using 10 seed models, rather than a population of models. We find that the noise of a single model alone, while a useful measure of modeling noise, is not sufficient as a measure of correlation to decision accuracy (§4), and show the step-to-step noise is a cheap alternative to seed noise. Similarly, Kydlíˇcek et al. [29] focus on identifying high quality translations of tasks, but do not focus on decision making. Finally, EvalArena [63] also reports a measure of SNR using the final checkpoints of a small/large model pair (e.g., Llama 3 7B vs. 70B). While statistical measures based on intrinsic noise rather than modeling noise are important indicators of dataset noise, we find that many benchmarks may have low statistical variability but high checkpoint-to-checkpoint noise (such as BoolQ, as observed in Figure 9), which can only be captured with a measure of modeling noise.
 
-正如第 2 节开头所讨论的，大规模预测模型行为是语言模型开发的关键方面。评估基准中的噪声经常被研究为数据集的固有噪声 [2,7,40,6]，而不是训练期间模型差异导致的噪声。与我们的工作最接近的是 Madaan 等人。 [36]，该报告使用单个模型的基准分数来衡量 SNR，并使用 10 个种子模型（而不是模型群体）来衡量噪声。我们发现，单个模型的噪声虽然是建模噪声的有用度量，但不足以作为决策准确性相关性的度量（§4），并且表明逐步噪声是种子噪声的廉价替代品。同样，Kydlíˇcek 等人。 [29]专注于识别任务的高质量翻译，但不专注于决策。最后，EvalArena [63] 还使用小/大模型对的最终检查点（例如 Llama 3 7B 与 70B）报告 SNR 的测量。虽然基于内在噪声而不是建模噪声的统计测量是数据集噪声的重要指标，但我们发现许多基准测试可能具有较低的统计变异性，但检查点到检查点的噪声较高（例如 BoolQ，如图 9 所示），这只能通过建模噪声的测量来捕获。
+正如第 2 节开头所讨论的，大规模预测模型行为是语言模型开发的关键方面。评估基准中的噪声经常被研究为数据集的固有噪声 [2,7,40,6]，而并非训练期间模型差异导致的噪声。与我们的工作最接近的是 Madaan 等人。 [36]，该报告使用单个模型的基准分数来衡量 SNR，并使用 10 个种子模型（而并非模型群体）来衡量噪声。我们发现，单个模型的噪声虽然是建模噪声的有用度量，但不足以作为决策准确性相关性的度量（§4），并且表明逐步噪声是种子噪声的廉价替代品。同样，Kydlíˇcek 等人。 [29]专注于识别任务的高质量翻译，但不专注于决策。末尾，EvalArena [63] 还使用小/大模型对的最终检查点（例如 Llama 3 7B 与 70B）报告 SNR 的测量。虽然基于内在噪声而并非建模噪声的统计测量是数据集噪声的重要指标，但我们发现许多基准测试可能具有较低的统计变异性，但检查点到检查点的噪声较高（例如 BoolQ，如图 9 所示），这只能通过建模噪声的测量来捕获。
 
 Interventions to improve evaluation have been well explored, such as constructing higher quality benchmarks by identifying errors [62, 21], expanding test sets [64], selecting high quality instances from benchmarks [45], or generating entirely new synthetic benchmarks from a model [32]. These works typically justify their decisions using inter-annotator agreement, or a high correlation with the original benchmark. We believe this body of work can benefit from verifying their methods using SNR, rather than noise or reconstruction error alone, to indicate whether the benchmark serves as a useful development tool.
 
-改进评估的干预措施已经得到很好的探索，例如通过识别错误构建更高质量的基准[62, 21]、扩展测试集[64]、从基准中选择高质量实例[45]，或从模型生成全新的综合基准[32]。这些作品通常使用注释者间的协议或与原始基准的高度相关性来证明他们的决策是合理的。我们相信，这项工作可以受益于使用 SNR 验证他们的方法，而不是单独使用噪声或重建误差，以表明基准测试是否可以作为有用的开发工具。
+改进评估的干预措施已经得到很好的探索，例如通过识别错误构建更高质量的基准[62, 21]、扩展测试集[64]、从基准中选择高质量实例[45]，或从模型生成全新的综合基准[32]。这些作品通常使用注释者间的协议或与原始基准的高度相关性来证明他们的决策是合理的。我们相信，这项工作可以受益于使用 SNR 验证他们的方法，而并非单独使用噪声或重建误差，以表明基准测试是否可以作为有用的开发工具。
 
 Notably, this scope of our connection between the signal-to-noise ratio and predicting large scale phenomena is limited to the two decision accuracy and prediction error settings, and only studies the noise of the model during training. Future work may explore how signal-to-noise ratio indicates other small-to-large phenomena [65, 57], and the effects of additional sources of noise on the ability to extrapolate from small-scale experiments, such as from the evaluation configuration [55, 22].
 
-值得注意的是，我们的信噪比和预测大规模现象之间的联系范围仅限于决策精度和预测误差两个设置，并且仅研究模型在训练期间的噪声。未来的工作可能会探索信噪比如何指示其他从小到大的现象 [65, 57]，以及额外的噪声源对从小规模实验（例如评估配置）中推断的能力的影响 [55, 22]。
+其中，我们的信噪比和预测大规模现象之间的联系范围仅限于决策精度和预测误差两个设置，并且仅研究模型在训练期间的噪声。未来的工作可能会探索信噪比如何指示其他从小到大的现象 [65, 57]，以及额外的噪声源对从小规模实验（例如评估配置）中推断的能力的影响 [55, 22]。
 
 In this work, we identify signal and noise as a cheap way of estimating whether a benchmark is useful in predicting large-scale phenomena with small scale experiments. We conclude that new benchmark development should use these measures of modeling noise as a guide for building evaluation tools for model developers, and practitioners adopt interventions, such as those introduced in this work, that improve their ability to compare models.
 
@@ -1412,7 +1412,7 @@ N
 
 Kendall’s τ. Here, rather than report Kendall’s τ, we show it is proportional to decision accuracy. Kendall’s τ is defined as the difference between the concordant pairs C and discordant pairs D, divided by the total pairs of models: τ = (C −D)/
 
-肯德尔的 τ。在这里, 我们没有报告 Kendall 的 $\tau$, 而是表明它与决策准确性成正比。Kendall 的 $\tau$ 定义为一致对 $C$ 和不一致对 $D$ 之间的差值除以模型对总数: $\tau=(C-D)/\binom{N}{2}$。
+肯德尔的 τ。在这里, 我们没有报告 Kendall 的 $\tau$, ；实际是表明它与决策准确性成正比。Kendall 的 $\tau$ 定义为一致对 $C$ 和不一致对 $D$ 之间的差值除以模型对总数: $\tau=(C-D)/\binom{N}{2}$。
 
 .
 
@@ -1449,7 +1449,7 @@ A.3 Measures of Modeling Noise
 
 Seed Noise. To measure the noise introduced from changing the random seed initialization between training runs, we can compute the standard deviation of the final checkpoint from multiple training runs with different random seeds. To estimate seed noise, we train M models using the same configuration, and average the scores over the final n checkpoints of T total training checkpoints to smooth the checkpoint-to-checkpoint noise, then compute the standard deviation:
 
-种子噪音。为了测量因改变训练运行之间的随机种子初始化而引入的噪声，我们可以计算使用不同随机种子的多次训练运行的最终检查点的标准偏差。为了估计种子噪声，我们使用相同的配置训练 M 个模型，并对 T 个总训练检查点的最后 n 个检查点的分数进行平均，以平滑检查点到检查点的噪声，然后计算标准差：
+种子噪音。为了测量因改变训练运行之间的随机种子初始化而引入的噪声，我们可以计算使用不同随机种子的多次训练运行的最终检查点的标准偏差。为了估计种子噪声，我们使用相同的配置训练 M 个模型，并对 T 个总训练检查点的末尾 n 个检查点的分数进行平均，以平滑检查点到检查点的噪声，然后计算标准差：
 
 PT
 
@@ -1503,7 +1503,7 @@ The noise calculation introduced in Section 3.1 requires selecting some n interm
 
 We first assume the checkpoint to checkpoint scores are independent and normally distributed (which we observe when computing decision accuracy on intermediate checkpoints in Figure 7). Under this assumption, the ratio between the sample variance and the population variance follows a scaled chi squared distribution: $\frac{(n-1)s_n^2}{\sigma^2}\sim\chi^2_{n-1}$. Therefore we would like to calculate the probability that the sample standard deviation $s_n$ is within one standard deviation of the population standard deviation $\sigma$: $|s_n-\sigma|<\sigma$.
 
-我们首先假设检查点到检查点的分数独立且呈正态分布。在此假设下, 样本方差与总体方差的比率服从缩放的卡方分布: $\frac{(n-1)s_n^2}{\sigma^2}\sim\chi^2_{n-1}$。需要计算样本标准差 $s_n$ 落在总体标准差 $\sigma$ 的一个标准差内的概率, 即 $|s_n-\sigma|<\sigma$。
+我们第一步假设检查点到检查点的分数独立且呈正态分布。在此假设下, 样本方差与总体方差的比率服从缩放的卡方分布: $\frac{(n-1)s_n^2}{\sigma^2}\sim\chi^2_{n-1}$。需要计算样本标准差 $s_n$ 落在总体标准差 $\sigma$ 的一个标准差内的概率, 即 $|s_n-\sigma|<\sigma$。
 
 We can rewrite this inequality:
 
@@ -1837,7 +1837,7 @@ In practice, we find that for a large bound (±1 std. dev.) can be satisfied for
 
 For our experiment on the 1B-5xC checkpoints, we estimate noise using the average noise of the last 5 checkpoints for all 25 models, so our estimate of noise considers 5 · 25 = 125 scores.
 
-对于我们在 1B-5xC 检查点上的实验，我们使用所有 25 个模型的最后 5 个检查点的平均噪声来估计噪声，因此我们的噪声估计考虑了 5 · 25 = 125 分数。
+对于我们在 1B-5xC 检查点上的实验，我们使用所有 25 个模型的末尾 5 个检查点的平均噪声来估计噪声，因此我们的噪声估计考虑了 5 · 25 = 125 分数。
 
 18
 
@@ -2173,7 +2173,7 @@ Figure 8: As the benchmark’s signal-to-noise ratio increases (across histogram
 
 from OLMo 2 [42]. Notably, all tasks use few-shot examples and we evaluate MCQA benchmarks in both the rank choice (RC) and multiple choice (MC) setting, since our small (≤1B parameter) models show random-chance performance on MCQA benchmarks.
 
-来自 OLMo 2 [42]。值得注意的是，所有任务都使用少样本示例，并且我们在排名选择 (RC) 和多项选择 (MC) 设置中评估 MCQA 基准，因为我们的小型（≤1B 参数）模型在 MCQA 基准上显示了随机机会性能。
+来自 OLMo 2 [42]。其中，所有任务都使用少样本示例，并且我们在排名选择 (RC) 和多项选择 (MC) 设置中评估 MCQA 基准，因为我们的小型（≤1B 参数）模型在 MCQA 基准上显示了随机机会性能。
 
 Knowledge QA. MMLU [23], ARC [11], BoolQ [10], CSQA [59], OBQA [39], PiQA [4], SocialIQA [53], HellaSwag [69], WinoGrande [52], DROP [16], CoQA [48], Jeopardy [61], NaturalQs [28], SQuAD [47], TriviaQA [26], MedMCQA [43], MMLU Pro [64], AGI Eval [70], GPQA [49]
 
@@ -2197,7 +2197,7 @@ B.1 Noise measures the reliability of decision accuracy.
 
 As discussed in §3.1, the checkpoint-to-checkpoint noise can change the ranking of models, which may effect the decision accuracy we observe by only evaluating the final DataDecide model. To measure the impact of checkpoint-to-checkpoint noise on decision accuracy, we can estimate the distribution of possible decision accuracies given the step to step noise. To do this, we sample one of the final 5 checkpoints for both the small and large model, and repeatedly sample to estimate the
 
-正如第 3.1 节中所讨论的，检查点到检查点的噪声可以改变模型的排名，这可能会影响我们仅通过评估最终 DataDecide 模型观察到的决策准确性。为了衡量检查点到检查点噪声对决策准确性的影响，我们可以在给定步长噪声的情况下估计可能的决策准确性的分布。为此，我们对小型模型和大型模型的最后 5 个检查点之一进行采样，并重复采样以估计
+正如第 3.1 节中所讨论的，检查点到检查点的噪声可以改变模型的排名，这可能会影响我们仅通过评估最终 DataDecide 模型观察到的决策准确性。为了衡量检查点到检查点噪声对决策准确性的影响，我们可以在给定步长噪声的情况下估计可能的决策准确性的分布。为此，我们对小型模型和大型模型的末尾 5 个检查点之一进行采样，并重复采样以估计
 
 21
 
@@ -2347,7 +2347,7 @@ B.3 Signal-to-Noise Ratio at Large (>32B) Scales
 
 Setup. For models larger than the DataDecide scale (1B-100B), we can rely on the signal-to-noise ratio directly to indicate development benchmarks which may not be useful. We estimate the signal- to-noise ratio at the compute scales used to train the OLMo 2 models: 1.5B-4T, 7B-4T, 13B-5T and 32B-6T. For noise, we use the final 30 intermediate checkpoints, one checkpoint for every 1000 training steps until the end of training. For signal, we do not have access to different data recepies trained on the same model, so instead we use a population of open-weight base models trained to similar compute budget as the OLMo 2 models. We use models trained using ±10% of the estimated FLOPs, which results in a population of at least 8 models for each size.
 
-设置。对于大于 DataDecide 规模（1B-100B）的模型，我们可以直接依靠信噪比来指示可能没有用的开发基准。我们估计了用于训练 OLMo 2 模型的计算规模的信噪比：1.5B-4T、7B-4T、13B-5T 和 32B-6T。对于噪声，我们使用最后 30 个中间检查点，每 1000 个训练步骤一个检查点，直到训练结束。对于信号，我们无法访问在同一模型上训练的不同数据接收，因此我们使用一组开放权重基础模型，训练其计算预算与 OLMo 2 模型相似。我们使用使用估计 FLOP 的 ±10% 进行训练的模型，这导致每个尺寸至少有 8 个模型。
+设置。对于大于 DataDecide 规模（1B-100B）的模型，我们可以直接依靠信噪比来指示可能没有用的开发基准。我们估计了用于训练 OLMo 2 模型的计算规模的信噪比：1.5B-4T、7B-4T、13B-5T 和 32B-6T。对于噪声，我们使用末尾 30 个中间检查点，每 1000 个训练步骤一个检查点，直到训练结束。对于信号，我们无法访问在同一模型上训练的不同数据接收，因此我们使用一组开放权重基础模型，训练其计算预算与 OLMo 2 模型相似。我们使用使用估计 FLOP 的 ±10% 进行训练的模型，这导致每个尺寸至少有 8 个模型。
 
 Results. Table 4 reports the SNR for each compute budget, sorted by SNR at the 1.5B-4T model scale. SNR can indicate when benchmarks saturated, for example ARC Easy and SocialIQA have high SNR at 1.5B-4T, but low SNR at 32B-6T: 7.89 to 5.10 and 8.73 to 1.95 respectively. For these
 

@@ -31,7 +31,7 @@ olmo@allenai.org
 
 Language models (LMs) have become ubiquitous in both NLP research and in commercial product offerings. As their commercial importance has surged, the most powerful models have become closed off, gated behind proprietary interfaces, with important details of their training data, architectures, and development undisclosed. Given the importance of these details in scientifically studying these models, including their biases and potential risks, we believe it is essential for the research community to have access to powerful, truly open LMs. To this end, we have built OLMo, a competitive, truly Open Language **Mo**del, to enable the scientific study of language models. Unlike most prior efforts that have only released model weights and inference code, we release OLMo alongside open training data and training and evaluation code. We hope this release will empower the open research community and inspire a new wave of innovation.
 
-语言模型 (LMs) 已在 NLP 研究与商业产品中无处不在. 随着其商业重要性激增, 最强大的模型却走向封闭, 被锁在专有接口之后, 训练数据, 架构与开发过程等重要细节均不公开. 鉴于这些细节对科学研究这些模型 (包括其偏见与潜在风险) 至关重要, 我们认为研究社区必须能访问强大的, 真正开放的语言模型. 为此, 我们构建了 OLMo —— 一个有竞争力的, 真正开放的语言模型, 以支持对语言模型的科学研究. 不同于多数只发布模型权重与推理代码的先例, 我们随 OLMo 一并发布开放的训练数据以及训练与评测代码. 希望本次发布能赋权开放研究社区, 激发新一轮创新.
+语言模型 (LMs) 已在 NLP 研究与商业产品中无处不在. 随着其商业重要性激增, 最强大的模型却走向封闭, 被锁在专有接口之后, 训练数据, 架构与开发过程等重要细节均不公开. 鉴于这些细节对科学研究这些模型 (包括其偏见与潜在风险) 很关键, 我们认为研究社区必须能访问强大的, 真正开放的语言模型. 为此, 我们构建了 OLMo —— 一个有竞争力的, 真正开放的语言模型, 以支持对语言模型的科学研究. 不同于多数只发布模型权重与推理代码的先例, 我们随 OLMo 一并发布开放的训练数据以及训练与评测代码. 希望本次发布能赋权开放研究社区, 激发新一轮创新.
 
 ## 1 Introduction
 
@@ -59,7 +59,7 @@ With OLMo, we release the whole framework from data to training to evaluation to
 
 The OLMo framework encompasses the tools and resources required for building and researching language models. For training and modeling, it includes full model weights, training code, training logs, and inference code. The released model includes four variants of our language model at the 7B scale corresponding to different architectures, optimizers, and training hardware, and one model at the 1B scale, all trained on at least 2T tokens. We also release hundreds of intermediate checkpoints available as revisions on HuggingFace. For dataset building and analysis, the full training data used for these models is openly available (Dolma; Soldaini et al., 2024), including code that produces the training data, and tools for analyzing pretraining data (Elazar et al., 2024). For evaluation, we build on Catwalk (Groeneveld et al., 2023) for downstream evaluation and Paloma (Magnusson et al., 2023) for perplexity-based evaluation. For adaptation, we use Open Instruct (Ivison et al., 2023; Wang et al., 2023) to train with instruction and feedback data. Finally, all code and weights are released under the Apache 2.0 License.
 
-OLMo 框架涵盖构建与研究语言模型所需的工具与资源. 训练与建模方面, 包括完整模型权重, 训练代码, 训练日志与推理代码. 发布的模型包含 7B 规模下对应不同架构, 优化器与训练硬件的四个语言模型变体, 以及一个 1B 规模模型, 均在至少 2T token 上训练. 我们还发布了数以百计的中间 checkpoint, 以 HuggingFace revision 形式提供. 数据集构建与分析方面, 这些模型所用的完整训练数据公开可用 (Dolma; Soldaini et al., 2024), 包括生成训练数据的代码与分析预训练数据的工具 (Elazar et al., 2024). 评测方面, 我们在下游评测上基于 Catwalk (Groeneveld et al., 2023), 在基于困惑度的评测上基于 Paloma (Magnusson et al., 2023). 适配方面, 我们使用 Open Instruct (Ivison et al., 2023; Wang et al., 2023) 进行指令与反馈数据训练. 最后, 所有代码与权重均以 Apache 2.0 许可证发布.
+OLMo 框架涵盖构建与研究语言模型所需的工具与资源. 训练与建模方面, 包括完整模型权重, 训练代码, 训练日志与推理代码. 发布的模型包含 7B 规模下对应不同架构, 优化器与训练硬件的四个语言模型变体, 以及一个 1B 规模模型, 均在至少 2T token 上训练. 我们还发布了数以百计的中间 checkpoint, 以 HuggingFace revision 形式提供. 数据集构建与分析方面, 这些模型所用的完整训练数据公开可用 (Dolma; Soldaini et al., 2024), 包括生成训练数据的代码与分析预训练数据的工具 (Elazar et al., 2024). 评测方面, 我们在下游评测上基于 Catwalk (Groeneveld et al., 2023), 在基于困惑度的评测上基于 Paloma (Magnusson et al., 2023). 适配方面, 我们使用 Open Instruct (Ivison et al., 2023; Wang et al., 2023) 进行指令与反馈数据训练. 末尾, 所有代码与权重均以 Apache 2.0 许可证发布.
 
 With this release, we hope to catalyze research into as-yet poorly understood aspects of these models, for example, the relationship between pretraining data and model capabilities, the impact of design and hyperparameter choices, and various optimization methods and their impact on model training. In addition, we report on the lessons learned
 
@@ -89,13 +89,13 @@ We generally select hyperparameters by optimizing for training throughput on our
 
 2. **Non-parametric layer norm.** We use the non-parametric formulation of layer norm (Ba et al., 2016) in which there is no affine transformation within the norm, i.e., no “adaptive gain" (or bias). We believe this was the safest option and it was also the fastest compared to the other variants we considered: parametric layer norm and RMSNorm (Zhang and Sennrich, 2019).
 
-2. **非参数 layer norm.** 采用无仿射变换的 LN 形式 (Ba et al., 2016), 即无 「adaptive gain」 (或 bias). 相对我们考虑的 parametric LN 与 RMSNorm (Zhang and Sennrich, 2019), 作者认为这最安全, 也最快.
+2. **非参数 layer norm.** 采用无仿射变换的 LN 形式 (Ba et al., 2016), 即无 「adaptive gain」 (或 bias). 相对我们考虑的 parametric LN 与 RMSNorm (Zhang and Sennrich, 2019), 论文认为这最安全, 也最快.
 
 3. **SwiGLU activation function.** Like LLaMA, PaLM, and others we use the SwiGLU activation function (Shazeer, 2020) instead of ReLU, and following LLaMA the activation hidden size is approximately ${ \frac { 8 } { 3 } } d ,$ but increased to the closest multiple of 128 (e.g. 11,008 for our 7B model) to improve throughput.
 
 3. **SwiGLU 激活.** 与 LLaMA, PaLM 等一样用 SwiGLU (Shazeer, 2020) 替代 ReLU; 跟随 LLaMA, 激活隐宽约 $(8/3)d$, 再增到最近的 128 倍数 (例如 7B 为 11,008) 以抬吞吐.
 
-> Section 2.1 第 3 条: 跟随 LLaMA, 激活隐宽约 (8/3)d, 再增到最近的 128 倍数, 7B 例为 11008. 脚注说明 SwiGLU 为 gated, 输出是输入一半, 故输入维为 2×11008=22016. 数字全部来自正文与脚注, 不是外推.
+> Section 2.1 第 3 条: 跟随 LLaMA, 激活隐宽约 (8/3)d, 再增到最近的 128 倍数, 7B 例为 11008. 脚注说明 SwiGLU 为 gated, 输出是输入一半, 故输入维为 2×11008=22016. 数字全部来自正文与脚注, 并非外推.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>[https://allenai.org/olmo](https://allenai.org/olmo)</span></small>
 
@@ -142,11 +142,11 @@ Table 2: Composition of Dolma. Tokens counts are based on the GPT-NeoX tokenizer
 
 表 2: Dolma 组成. Token 计数基于 GPT-NeoX 分词器.
 
-> Table 2: CC 2180B / Total 2668B ≈ 81.7% (按 Dolma 全库 token). Section 4.2 写 OLMo 预训练里 CC 占 88.8%, 口径是 「训练用 Dolma 子采样后的配方」, 不是直接把 Table 2 全库比例当成训练混合比. 两数都要保留, 并分清全库组成 vs 实际训练混合.
+> Table 2: CC 2180B / Total 2668B ≈ 81.7% (按 Dolma 全库 token). Section 4.2 写 OLMo 预训练里 CC 占 88.8%, 口径是 「训练用 Dolma 子采样后的配方」, 并非直接把 Table 2 全库比例当成训练混合比. 两数都要保留, 并分清全库组成 vs 实际训练混合.
 
 report provides additional analyses and experimental results from training language models on intermediate states of Dolma to share what we learned about important data curation practices, including the role of content or quality filters, deduplication, and mixing data from multiple sources. We keep documents from each source separate, both during curation as well as in the final release. We open-sourced our high-performance data curation tools; this toolkit can be used to further experiment on Dolma, reproduce our work, and enable fast and easy curation of pretraining corpora. Finally, we also open-sourced our WIMBD tool (Elazar et al., 2024) to help with dataset analysis.
 
-该报告还提供在 Dolma 中间状态上训练语言模型的额外分析与实验结果, 分享我们学到的重要数据策展实践, 包括内容或质量过滤, 去重以及多源混合的作用. 策展过程与最终发布中, 我们都保持各源文档分开. 我们开源了高性能数据策展工具; 该工具包可用于在 Dolma 上进一步实验, 复现我们的工作, 并快速便捷地策展预训练语料. 最后, 我们还开源了 WIMBD 工具 (Elazar et al., 2024) 以辅助数据集分析.
+该报告还提供在 Dolma 中间状态上训练语言模型的额外分析与实验结果, 分享我们学到的重要数据策展实践, 包括内容或质量过滤, 去重以及多源混合的作用. 策展过程与最终发布中, 我们都保持各源文档分开. 我们开源了高性能数据策展工具; 该工具包可用于在 Dolma 上进一步实验, 复现我们的工作, 并快速便捷地策展预训练语料. 末尾, 我们还开源了 WIMBD 工具 (Elazar et al., 2024) 以辅助数据集分析.
 
 ### 2.3 Adaptation 适配
 
@@ -208,7 +208,7 @@ We train our models using the ZeRO optimizer strategy (Rajbhandari et al., 2019)
 
 我们通过 PyTorch 的 FSDP 框架 (Zhao et al., 2023) 使用 ZeRO 优化器策略 (Rajbhandari et al., 2019), 把模型权重及其对应优化器状态切分到各 GPU 上以降低显存. 在 7B 尺度上, 这使我们能在硬件上以每 GPU micro-batch 4096 token 训练 (见第 3.4 节). 对 OLMo-1B 与 -7B, 我们使用约 4M token 的恒定全局 batch (2048 条实例, 每条序列长 2048 token).
 
-> Section 3.1: 2048 instances × 序列长度 2048 token ≈ 4M. Table 1 / Table 5 也写 batch size (tokens) ~4M; Table 5 进一步写 instances=2160 (与 ~4M 同量级). 回答应指回实例数 × 序列长, 而不是只背 「~4M」.
+> Section 3.1: 2048 instances × 序列长度 2048 token ≈ 4M. Table 1 / Table 5 也写 batch size (tokens) ~4M; Table 5 进一步写 instances=2160 (与 ~4M 同量级). 回答应指回实例数 × 序列长, 而并非只背 「~4M」.
 
 To improve throughput, we employ mixedprecision training (Micikevicius et al., 2017) through FSDP’s built-in settings and PyTorch’s amp module. The latter ensures that certain operations
 
@@ -220,7 +220,7 @@ like the softmax always run in full precision to improve stability, while all ot
 
 如 softmax 始终以全精度运行以改善稳定性, 其余运算以 bfloat16 半精度运行. 在我们的具体设定下, 各 GPU 本地的分片模型权重与优化器状态保持全精度. 每个 transformer block 内的权重仅在前反向过程中于各 GPU 上物化完整参数时才 cast 为 bfloat16. 梯度跨 GPU 以全精度归约.
 
-> Section 3.1: 分片模型权重与优化器状态在各 GPU 本地保持全精度; 每个 transformer block 前反向物化完整参数时 cast 为 bfloat16; 梯度跨 GPU 以全精度归约; softmax 等经 amp 强制全精度. 这是稳定性设计, 不是 「全程 fp16」.
+> Section 3.1: 分片模型权重与优化器状态在各 GPU 本地保持全精度; 每个 transformer block 前反向物化完整参数时 cast 为 bfloat16; 梯度跨 GPU 以全精度归约; softmax 等经 amp 强制全精度. 这是稳定性设计, 并非 「全程 fp16」.
 
 ### 3.2 Optimizer 优化器
 
@@ -262,7 +262,7 @@ Despite minor differences in batch size to optimize for training throughput, bot
 
 尽管为优化训练吞吐而在 batch size 上有细微差异, 两套 run 到 2T token 时在我们的评测套件上表现几乎相同.
 
-> Section 3.4: LUMI MI250X 与 MosaicML A100 两套 run, batch 略有不同以优吞吐, 但到 2T token 时评测套件几乎相同. 目标是验证代码在 NVIDIA 与 AMD 上均可训练且不掉点, 不是比较两家硬件绝对速度.
+> Section 3.4: LUMI MI250X 与 MosaicML A100 两套 run, batch 略有不同以优吞吐, 但到 2T token 时评测套件几乎相同. 目标是验证代码在 NVIDIA 与 AMD 上均可训练且不掉点, 并非比较两家硬件绝对速度.
 
 ## 4 Results 结果
 
@@ -270,7 +270,7 @@ The checkpoint used for evaluating OLMo-7B is trained until 2.46T tokens on the 
 
 用于评测 OLMo-7B 的 checkpoint 在 Dolma (Soldaini et al., 2024) 上训到 2.46T token, 学习率按第 3.2 节所述线性衰减. 实验中发现, 将该 checkpoint 在 Dolma 上再调 1000 step, 学习率线性收到 0, 能提升第 2.4 节所述困惑度与端任务评测套件上的表现. 我们与公开模型对照, 包括 LLaMA-7B (Touvron et al., 2023a), Llama-2-7B (Touvron et al., 2023b), MPT-7B (MosaicML NLP Team, 2023), Pythia-6.9B (Biderman et al., 2023), Falcon-7B (Almazrouei et al., 2023) 与 RPJ-INCITE-7B (Together Computer, 2023).
 
-不能. Section 3.2 主日程终点是峰值的 1/10; Section 4 开头与 Figure 1 题注另做 1000 step, 把 LR linear 收到 0, 并观察端任务跳升. Table 5 Minimum LR=3.0E-05 对应主日程, 不是 0. 两段操作在文中是衔接但分开写的.
+不能. Section 3.2 主日程终点是峰值的 1/10; Section 4 开头与 Figure 1 题注另做 1000 step, 把 LR linear 收到 0, 并观察端任务跳升. Table 5 Minimum LR=3.0E-05 对应主日程, 并非 0. 两段操作在文中是衔接但分开写的.
 
 ### 4.1 Downstream evaluation 下游评测
 
@@ -324,7 +324,7 @@ Figure 1 画出 8 个核心端任务准确率随训练的进展. 除 OBQA 外, �
 
 OLMo-7B is trained on more tokens. A sharp upward tick in accuracy of many tasks between the last and the second to last step shows us the benefit of linearly reducing the LR to 0 over the final 1000 training steps. See Table 7 in Appendix C for additional evaluation results and discussion.
 
-OLMo-7B 见到更多 token 而呈上升趋势. 许多任务在最后一步与倒数第二步之间准确率明显上跳, 显示最后 1000 训练 step 把 LR 线性收到 0 的收益. 更多评测结果与讨论见附录 C 的 Table 7.
+OLMo-7B 见到更多 token 而呈上升趋势. 许多任务在末尾一步与倒数第二步之间准确率明显上跳, 显示末尾 1000 训练 step 把 LR 线性收到 0 的收益. 更多评测结果与讨论见附录 C 的 Table 7.
 
 ### 4.2 Intrinsic language modeling evaluation 内禀语言建模评测
 
@@ -338,9 +338,9 @@ OLMo-7B 见到更多 token 而呈上升趋势. 许多任务在最后一步与倒
 
 Figure 1: Accuracy score progression of OLMo-7B on 8 core end-tasks score from Catwalk evaluation suite described in Section 2.4. We can see the benefit of decaying LR to 0 in the final 1000 steps of training on most tasks.
 
-图 1: OLMo-7B 在第 2.4 节 Catwalk 评测套件 8 个核心端任务上的准确率进展. 多数任务可见最后 1000 训练 step 将 LR 收到 0 的收益.
+图 1: OLMo-7B 在第 2.4 节 Catwalk 评测套件 8 个核心端任务上的准确率进展. 多数任务可见末尾 1000 训练 step 将 LR 收到 0 的收益.
 
-> Figure 1 题注与 Section 4.1: 多数任务在最后 1000 step 把 LR 收到 0 后准确率明显上跳. 这与主训练阶段 「降到峰值 1/10」 是两段不同的日程, 读图时不要混成一次 decay.
+> Figure 1 题注与 Section 4.1: 多数任务在末尾 1000 step 把 LR 收到 0 后准确率明显上跳. 这与主训练阶段 「降到峰值 1/10」 是两段不同的日程, 读图时不要混成一次 decay.
 
 **Results** In the Sources Combined subplot of Fig ure 2, we show the performance of OLMo-7B against 6 comparably-sized language models on the combination of 11 data sources from Paloma. Overall we find OLMo to have a competitive fit, especially given its training data was explicitly decontaminated against Paloma. As seen through the comparison of final models (see shapes) as well intermediate checkpoints (see dashed lines), the OLMo results follow similar scaling trends of other models. Note that the performance of intermediate checkpoints is influenced by where that checkpoint occurs in the learning rate schedule. So models trained for fewer steps will tend to have steeper training curves without necessarily being more sample efficient if training duration were fixed across all models. MPT-7B, nevertheless, stands out as improving ahead of the other models in this subplot. This could be due to a number of factors, including pretraining data composition and its match to the domains in Paloma (e.g., MPT trains on 27% non-Common Crawl data rather than 18% for LLaMA, 12.2% for RedPajama, and 11.2% for OLMo) as well as various data preprocessing decisions (e.g., MPT’s use of semantic deduplication by Abbas et al., 2023, on C4).
 
@@ -352,7 +352,7 @@ Figure 2 其余子图提供更细分析, 分别报告聚合 Paloma 指标所合�
 
 largely driven by the similarity of training and evaluation distributions. Notably, OLMo-7B fares well on evaluations predominated by Common Crawl, such as C4, though different ways of postprocessing Common Crawl are best fit by models trained with that specific data, such as Falcon-7B on Falcon RefinedWeb. Meanwhile, OLMo-7B is less sample efficient compared to other models on sources less related to scraped web text, such as WikiText-103, M2D2 S2ORC, and M2D2 Wikipedia. The RedPajama evaluation shows a similar pattern, perhaps as only 2 of its 7 domains are from Common Crawl, and Paloma weights domains within each source equally. Since heterogeneous data from curated sources like Wikipedia and ArXiv papers is scarcer than scraped web text, maintaining sample efficiency for fit to these distributions of language will be challenging as pretraining corpora are scaled.
 
-很大程度上由训练与评测分布的相似性驱动. 值得注意的是, OLMo-7B 在以 Common Crawl 为主的评测上表现好, 例如 C4; 不过对 Common Crawl 的不同后处理方式, 仍是用该特定数据训练的模型拟合最好, 例如 Falcon-7B 在 Falcon RefinedWeb 上. 同时, 在与抓取网页文本关系较弱的源上, 如 WikiText-103, M2D2 S2ORC 与 M2D2 Wikipedia, OLMo-7B 相对其他模型样本效率更低. RedPajama 评测呈现类似模式, 或许因其 7 个域中仅 2 个来自 Common Crawl, 且 Paloma 在每个源内部对域等权. 由于维基百科与 ArXiv 论文等策展异质数据比抓取网页更稀缺, 随着预训练语料扩大, 维持对这些语言分布的样本效率拟合将更具挑战.
+很大程度上由训练与评测分布的相似性驱动. 其中, OLMo-7B 在以 Common Crawl 为主的评测上表现好, 例如 C4; 不过对 Common Crawl 的不同后处理方式, 仍是用该特定数据训练的模型拟合最好, 例如 Falcon-7B 在 Falcon RefinedWeb 上. 同时, 在与抓取网页文本关系较弱的源上, 如 WikiText-103, M2D2 S2ORC 与 M2D2 Wikipedia, OLMo-7B 相对其他模型样本效率更低. RedPajama 评测呈现类似模式, 或许因其 7 个域中仅 2 个来自 Common Crawl, 且 Paloma 在每个源内部对域等权. 由于维基百科与 ArXiv 论文等策展异质数据比抓取网页更稀缺, 随着预训练语料扩大, 维持对这些语言分布的样本效率拟合将更具挑战.
 
 > Section 4.2: 样本效率主要由训评分布接近程度驱动; OLMo 在 CC 主导评测 (如 C4) 更强, 题注甚至写在 C4 上 overtakes all other models; 对 WikiText-103, M2D2 S2ORC/Wikipedia 等非 scraped web 分布更弱. 同时写明 CC 占预训练 88.8%, 与现象一致.
 
@@ -360,7 +360,7 @@ largely driven by the similarity of training and evaluation distributions. Notab
 
 **Setup** We evaluate OLMo-7B before adaptation, and after both the supervised fine-tuning and DPO training stage, focusing on the safety and chat evaluations used by Wang et al. (2023). We additionally compare to officially released instruction-tuned variants of the models from Table 3. We finally also compare to TÜLU 2 models to compare against models trained using the same post-training data mixes and procedures.
 
-**设定** 我们评测适配前的 OLMo-7B, 以及监督微调与 DPO 训练两阶段之后的模型, 重点采用 Wang et al. (2023) 使用的安全与聊天评测. 另外与 Table 3 各模型官方发布的指令微调变体对照. 最后也与 TÜLU 2 模型对照, 以比较使用相同后训练数据混合与流程训练的模型.
+**设定** 我们评测适配前的 OLMo-7B, 以及监督微调与 DPO 训练两阶段之后的模型, 重点采用 Wang et al. (2023) 使用的安全与聊天评测. 另外与 Table 3 各模型官方发布的指令微调变体对照. 末尾也与 TÜLU 2 模型对照, 以比较使用相同后训练数据混合与流程训练的模型.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>7</sup>Following Ivison et al. (2023), we do not report TÜLU 2 TruthfulQA scores due to test set contamination.</span></small>
 
@@ -502,13 +502,13 @@ automatic evaluation, and thus comparisons should be taken with a grain of salt.
 
 Through this work, we take the position that increased openness of language models is essential for scientific understanding of their abilities and limitations and for broad participation in the continued development of such models. Training on open data further enhances these benefits. In addition, our open release enables practitioners to take our models and build on them instead of having to train their own from scratch, in which case they would be repeating our work while consuming more resources and leading to an increased environmental impact. Of course, openness is not without risk; the possibility remains that these models will be used in unintended ways that cause harm. We believe that research and development efforts to understand and mitigate those potential harms will also be accelerated by the openness of the models, allowing a diversity of approaches and analyses. Over the past year there have been a number of comparable models released with very permissive licenses, so using a more strict license for our work would not remove the overall risk in the field. We believe this trade-off on the side of being more open is the best option.
 
-通过本工作, 我们主张: 提升语言模型开放度, 对科学理解其能力与局限, 以及对广泛参与此类模型的持续开发至关重要. 在开放数据上训练进一步增强这些益处. 此外, 开放发布使实践者能够接手我们的模型并在其上构建, 而不必从头训练自己的模型——否则他们将重复我们的工作, 消耗更多资源并增加环境影响. 当然, 开放并非没有风险; 这些模型仍可能被用于造成伤害的非预期方式. 我们相信, 理解与缓解这些潜在伤害的研究与开发, 也会因模型开放而加速, 从而允许多样化的方法与分析. 过去一年已有大量可比模型以非常宽松的许可发布, 因此对我们的工作使用更严格许可并不会消除领域的总体风险. 我们相信, 在这一权衡上选择更开放是更好的选项.
+通过本工作, 我们主张: 提升语言模型开放度, 对科学理解其能力与局限, 以及对广泛参与此类模型的持续开发很关键. 在开放数据上训练进一步增强这些益处. 此外, 开放发布使实践者能够接手我们的模型并在其上构建, 而不必从头训练自己的模型——否则他们将重复我们的工作, 消耗更多资源并增加环境影响. 当然, 开放并非没有风险; 这些模型仍可能被用于造成伤害的非预期方式. 我们相信, 理解与缓解这些潜在伤害的研究与开发, 也会因模型开放而加速, 从而允许多样化的方法与分析. 过去一年已有大量可比模型以非常宽松的许可发布, 因此对我们的工作使用更严格许可并不会消除领域的总体风险. 我们相信, 在这一权衡上选择更开放是更好的选项.
 
 ## Acknowledgments 致谢
 
 OLMo would not have been possible without the support of many individuals and institutions. The experimental components of this work were made possible through a partnership with AMD and CSC, enabling use of the LUMI supercomputer, and Kempner Institute at Harvard University. We thank Jonathan Frankle and the team at MosaicML (now Databricks) for sharing their experiences with FSDP, and building the code base that OLMo is based on. We thank our teammates Taira Anderson, Michelle Benedict, Jon Borchardt, Evie Cheng, Arnavi Chheda, Johann Dahm, Matt Latzke, Kelsey MacMillan, Aaron Sarnat, Carissa Schoenick, Sam Skjonsberg, Michael Schmitz, Michael Wilson, Caitlin Wittlif, and the entire IT team, for their help with the website, design, internal and external communications, budgeting, and other activities that supported smooth progress on this project. Finally, we also express gratitude for the helpful discussions and feedback from our teammates at AI2 and close collaborators, including Prithviraj (Raj)
 
-若无众多个人与机构支持, OLMo 不可能完成. 实验部分得益于与 AMD 及 CSC 的合作, 从而得以使用 LUMI 超算, 以及哈佛大学 Kempner Institute. 感谢 Jonathan Frankle 与 MosaicML (现 Databricks) 团队分享 FSDP 经验, 并构建 OLMo 所基于的代码库. 感谢同事 Taira Anderson, Michelle Benedict, Jon Borchardt, Evie Cheng, Arnavi Chheda, Johann Dahm, Matt Latzke, Kelsey MacMillan, Aaron Sarnat, Carissa Schoenick, Sam Skjonsberg, Michael Schmitz, Michael Wilson, Caitlin Wittlif 以及整个 IT 团队, 在网站, 设计, 内外部沟通, 预算及其他保障项目顺利推进的活动上提供帮助. 最后, 也感谢 AI2 同事与紧密合作者的有益讨论与反馈, 包括 Prithviraj (Raj)
+若无众多个人与机构支持, OLMo 不可能完成. 实验部分得益于与 AMD 及 CSC 的合作, 从而得以使用 LUMI 超算, 以及哈佛大学 Kempner Institute. 感谢 Jonathan Frankle 与 MosaicML (现 Databricks) 团队分享 FSDP 经验, 并构建 OLMo 所基于的代码库. 感谢同事 Taira Anderson, Michelle Benedict, Jon Borchardt, Evie Cheng, Arnavi Chheda, Johann Dahm, Matt Latzke, Kelsey MacMillan, Aaron Sarnat, Carissa Schoenick, Sam Skjonsberg, Michael Schmitz, Michael Wilson, Caitlin Wittlif 以及整个 IT 团队, 在网站, 设计, 内外部沟通, 预算及其他保障项目顺利推进的活动上提供帮助. 末尾, 也感谢 AI2 同事与紧密合作者的有益讨论与反馈, 包括 Prithviraj (Raj)
 
 Ammanabrolu, Peter Clark, Nicole DeCario, Doug Downey, Ali Farhadi, Ian Ferreira, Väinö Hatanpää, Sham M. Kakade, Julien Launay, Sydney Levine, Pekka Manninen, Franzi Roessner, Maarten Sap, Ludwig Schmidt, Yulia Tsvetkov, and Daniel S. Weld.
 
@@ -746,7 +746,7 @@ We hope that openly releasing our models can reduce future emissions by allowing
 
 **Additional perplexity results** In Figure 3 we provide results for each of the 7 data sources in Paloma (Magnusson et al., 2023) that are excluded from the combined metric in Figure 2. Some of these sources such as Pile (Gao et al., 2020) and ICE (Greenbaum and Nelson, 1996) are not publicly available at this time. Dolma 100 Programming Languages (Soldaini et al., 2024) consists of code data that is not supported by the decontamination approach used in Paloma. TwitterAAE (Blodgett et al., 2016), along with ICE, are datasets for targeted analyses of disparities in performance between different dialects and as such should be evaluated separately. And finally, the Manosphere, Gab, and 4chan corpora (Ribeiro et al., 2021; Zannettou et al., 2018; Papasavva et al., 2020) are intended to examine model fit to language from fringe online communities that are studied for prevalent hate speech and toxicity. Thus minimizing perplexity on these fringe corpora is not always desirable.
 
-**补充困惑度结果** 图 3 给出了 Paloma (Magnusson et al., 2023) 中被排除在图 2 综合指标之外的 7 个数据源的各自结果. 其中一些数据源, 如 Pile (Gao et al., 2020) 与 ICE (Greenbaum and Nelson, 1996), 目前并不公开. Dolma 100 Programming Languages (Soldaini et al., 2024) 是不受 Paloma 去污染方法支持的代码数据. TwitterAAE (Blodgett et al., 2016) 与 ICE 是用于针对性分析不同方言之间性能差异的数据集, 因此应单独评测. 最后, Manosphere, Gab 与 4chan 语料 (Ribeiro et al., 2021; Zannettou et al., 2018; Papasavva et al., 2020) 意在考察模型对边缘网络社区语言的拟合程度, 这些社区因仇恨言论与毒性盛行而被研究. 因此, 在这类边缘语料上压低困惑度并非总是可取的目标.
+**补充困惑度结果** 图 3 给出了 Paloma (Magnusson et al., 2023) 中被排除在图 2 综合指标之外的 7 个数据源的各自结果. 其中一些数据源, 如 Pile (Gao et al., 2020) 与 ICE (Greenbaum and Nelson, 1996), 目前并不公开. Dolma 100 Programming Languages (Soldaini et al., 2024) 是不受 Paloma 去污染方法支持的代码数据. TwitterAAE (Blodgett et al., 2016) 与 ICE 是用于针对性分析不同方言之间性能差异的数据集, 因此应单独评测. 末尾, Manosphere, Gab 与 4chan 语料 (Ribeiro et al., 2021; Zannettou et al., 2018; Papasavva et al., 2020) 意在考察模型对边缘网络社区语言的拟合程度, 这些社区因仇恨言论与毒性盛行而被研究. 因此, 在这类边缘语料上压低困惑度并非总是可取的目标.
 
 One notable result here is that OLMo-7B is much farther ahead of the other models on Dolma 100 Programming Languages (100 PLs). Note that this effect may be due in part to underestimation from contamination, as decontaminating code data is beyond the scope of the method in Paloma. At the
 

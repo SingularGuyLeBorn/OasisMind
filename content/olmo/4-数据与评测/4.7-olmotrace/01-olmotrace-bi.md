@@ -1,9 +1,9 @@
 ---
-title: "OLMoTrace????????????????????"
-category: "?????"
-tags: ["OLMoTrace", "????", "?????", "????", "OLMo"]
+title: "OLMoTrace：把语言模型输出追溯到万亿训练 Token · 对照译稿"
+category: "数据与评测"
+tags: ["OLMoTrace", "训练数据追溯", "文本匹配", "可解释性", "OLMo"]
 published: true
-excerpt: "OLMoTrace ???????????????????????????????????????????????????"
+excerpt: "OLMoTrace 借助扩展版 infini-gram，在完整训练语料中实时寻找与模型输出逐字匹配的片段，并用于检查事实、幻觉与文本重组。"
 ---
 
 <!-- arXiv 2504.07096; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/olmotrace/latex/ 的 LaTeX 源码为准 -->
@@ -42,7 +42,7 @@ We present OLMOTRACE, the first system that traces the outputs of language model
 
 Tracing the outputs of language models (LMs) back to their training data is an important problem. As LMs gain adoption in higher-stakes scenarios, it is critical to understand why they generate certain responses. However, these modern LMs are trained on massive text corpora with trillions of tokens, which are often proprietary. Fully open LMs (e.g., OLMo; OLMo et al. 2024) enable access to the training data, but existing behavior tracing methods (Koh and Liang, 2017; Khalifa et al., 2024; Huang et al., 2024) have not been scaled to work within this multi-trillion-token setting due to their heavy computational needs.
 
-将语言模型 (LM) 的输出追溯到其训练数据是一个重要的问题。随着 LM 在更高风险的场景中得到采用，了解它们产生某些响应的原因至关重要。然而，这些现代语言模型是在包含数万亿个标记的海量文本语料库上进行训练的，而这些标记通常是专有的。完全开放的语言模型（例如 OLMo；OLMo 等人，2024）可以访问训练数据，但现有的行为追踪方法（Koh 和 Liang，2017；Khalifa 等人，2024；Huang 等人，2024）由于计算需求量大，尚未扩展到在数万亿代币设置中工作。
+将语言模型 (LM) 的输出追溯到其训练数据是一个重要的问题。随着 LM 在更高风险的场景中得到采用，了解它们产生某些响应的原因很关键。然而，这些现代语言模型是在包含数万亿个标记的海量文本语料库上进行训练的，而这些标记通常是专有的。完全开放的语言模型（例如 OLMo；OLMo 等人，2024）可以访问训练数据，但现有的行为追踪方法（Koh 和 Liang，2017；Khalifa 等人，2024；Huang 等人，2024）由于计算需求量大，尚未扩展到在数万亿代币设置中工作。
 
 arXiv:2504.07096v2  [cs.CL]  8 Jul 2025
 
@@ -96,7 +96,7 @@ OLMOTRACE 可在 Ai2 Playground1 中使用，并支持三个旗舰 OLMo 模型�
 
 Step 1: Find maximal matching spans. We find all maximal spans in the LM output that appear verbatim in the training data. Specifically, we first tokenize the LM output with the Llama-2 tokenizer, and find all spans of the token ID list that satisfy the following criteria:
 
-第 1 步：找到最大匹配跨度。我们发现 LM 输出中的所有最大跨度都逐字出现在训练数据中。具体来说，我们首先使用 Llama-2 标记器对 LM 输出进行标记，并找到满足以下条件的标记 ID 列表的所有范围：
+第 1 步：找到最大匹配跨度。我们发现 LM 输出中的所有最大跨度都逐字出现在训练数据中。具体来说，我们第一步使用 Llama-2 标记器对 LM 输出进行标记，并找到满足以下条件的标记 ID 列表的所有范围：
 
 Features of OLMOTRACE. Figure 1 shows OL- MOTRACE applied to an LM response. When OL- MOTRACE is enabled in the Ai2 Playground, it
 
@@ -118,11 +118,11 @@ Figure 2: The OLMOTRACE inference pipeline, as described in §3. For better illu
 
 does not begin or end with incomplete words; 3. Maximality: The span is not a subspan of an- other span that meets the above two criteria.
 
-不以不完整的单词开头或结尾； 3. 极大性：该跨度不是满足上述两个条件的另一个跨度的子跨度。
+不以不完整的单词开头或结尾； 3. 极大性：该跨度并非满足上述两个条件的另一个跨度的子跨度。
 
 spans (see measurement of relevance in App. §C and Table 3), and thus we favored the span unigram probability metric. We chose unigram over bigram or trigram because they computing them (either online or pre-caching) takes a lot of time.
 
-跨度（参见 App.§C 和表 3 中的相关性测量），因此我们倾向于跨度一元概率度量。我们选择一元组而不是二元组或三元组，因为它们计算它们（无论是在线还是预缓存）需要大量时间。
+跨度（参见 App.§C 和表 3 中的相关性测量），因此我们倾向于跨度一元概率度量。我们选择一元组而并非二元组或三元组，因为它们计算它们（无论是在线还是预缓存）需要大量时间。
 
 This is the most compute-heavy step, since naively we need to enumerate all O(L2) spans of the LM output (where L is the length of the LM output in to- kens, and typically L ∈[102, 103]) and scan the en- tire training data (with N tokens where N > 1012). We propose a fast algorithm to compute these max-
 
@@ -152,7 +152,7 @@ Step 5: Rerank and color documents by rele- vance. To prioritize showing the mos
 
 During development, we tried keeping the longest spans instead of those with smallest span unigram probability. However, we found that rank- ing with the span length metric leads to worse rele- vance level on documents retrieved from the filtered
 
-在开发过程中，我们尝试保留最长的跨度，而不是那些具有最小跨度一元概率的跨度。然而，我们发现使用跨度长度度量进行排名会导致从过滤后的文档中检索到的文档的相关性更差。
+在开发过程中，我们尝试保留最长的跨度，而并非那些具有最小跨度一元概率的跨度。然而，我们发现使用跨度长度度量进行排名会导致从过滤后的文档中检索到的文档的相关性更差。
 
 3
 
@@ -184,7 +184,7 @@ to represent its relevance level. High relevance are highlighted with the most s
 
 (l, r) ←FIND(s, T, A) ▷an infini-gram query if l̸ = r then ▷non-empty segment, s is found in T len ←|s| else ▷empty segment, s is not found in T len1 ←LONGESTPREFIXLEN(s, TA[l]:) len2 ←LONGESTPREFIXLEN(s, TA[l+1]:) len ←max(len1, len2) while s:len−1 contains a delimiter token OR slen+1 is not a begin-of-word token do
 
-(l, r) ←FIND(s, T, A) ▷ 无限元语法查询 if l̸ = r then ▷ 非空段，在 T 中找到 s len ←|s| else ▷ 空段，在 T 中找不到 s len1 ←LONGESTPREFIXLEN(s, TA[l]:) len2 ←LONGESTPREFIXLEN(s, TA[l+1]:) len ←max(len1, len2) while s:len−1 包含分隔符标记 OR slen+1 不是词头标记 do
+(l, r) ←FIND(s, T, A) ▷ 无限元语法查询 if l̸ = r then ▷ 非空段，在 T 中找到 s len ←|s| else ▷ 空段，在 T 中找不到 s len1 ←LONGESTPREFIXLEN(s, TA[l]:) len2 ←LONGESTPREFIXLEN(s, TA[l+1]:) len ←max(len1, len2) while s:len−1 包含分隔符标记 OR slen+1 并非词头标记 do
 
 Efficiently identifying all maximal matching spans across multi-trillion-token corpora is a non-trivial challenge. To tackle this, we index the training cor- pora with infini-gram (Liu et al., 2024) and develop a new parallel algorithm for fast span computation.
 
@@ -202,7 +202,7 @@ maxend ←e newspans ←newspans + [(b, e)] return newspans
 
 then one is a subspan of the other and thus is not maximal). The first step consists of multiple inde- pendent tasks that can be parallelized, and as we will show below, each task can be done with one
 
-那么一个是另一个的子跨度，因此不是最大的）。第一步由多个可以并行的独立任务组成，正如我们将在下面展示的，每个任务都可以用一个来完成
+那么一个是另一个的子跨度，因此并非最大的）。第一步由多个可以并行的独立任务组成，正如我们将在下面展示的，每个任务都可以用一个来完成
 
 Infini-gram. Infini-gram is a text search engine. It supports efficiently counting text queries and retrieving matching documents in massive text cor- pora with trillions of tokens. To make operations fast, infini-gram indexes text corpora with the suf- fix array (SA) data structure, and at inference time keeps the huge index files on low-latency SSD disks to avoid loading them into RAM. For OL- MOTRACE, we build an infini-gram index on the tokenized version of the LMs’ training data (using the Llama-2 tokenizer). On top of this index, in this work we devise a novel parallel algorithm to com- pute maximal matching spans with low compute latency (Figure 3 and Algorithm 1); we discuss this algorithm and its implementation below.
 
@@ -292,7 +292,7 @@ We note that inspecting the document context and source can help users make a mo
 
 the top displayed documents to the LM output. We first composed a rubric for scoring document rel- evance on a 0–3 scale (App. Table 2, left), and asked a human expert to annotate the top-5 dis- played documents for each conversation according to this rubric. This human evaluation round was done with OLMOTRACE results under a different hyperparameter setting than our final setting, and we later improved the setting under the guidance of LLM-as-a-Judge evaluation. The first document displayed in each conversation received an average relevance score of 1.90 (roughly meaning “being on the same topic as the LM output), and the top-5 doc- uments scored an average of 1.43 (App. Table 3). We then switched to LLM-as-a-Judge evaluation (Zheng et al., 2023) with gpt-4o, and found that it mostly agrees with human evaluation (with a Spearman correlation coefficient of 0.73). LLM- as-a-Judge assigned slightly lower scores overall, with average scores of 1.73 and 1.28 on first and top-5 documents, respectively. We then used LLM- as-a-Judge to guide the tuning of several hyperpa- rameters in OLMOTRACE, and our final setting achieved average LLM-as-a-Judge scores of 1.82 on first documents and 1.50 on top-5 documents. See App. §C for additional details on relevance evaluation and hyperparameters tuning.
 
-顶部显示文档到 LM 输出。我们首先制定了一个评分标准，以 0-3 的等级对文档相关性进行评分（应用表 2，左），并要求人类专家根据该评分标准对每个对话的前 5 个显示文档进行注释。这一轮人类评估是在与我们的最终设置不同的超参数设置下使用 OLMOTRACE 结果完成的，后来我们在 LLM-as-a-Judge 评估的指导下改进了设置。每个对话中显示的第一个文档的平均相关性得分为 1.90（大致意思是“与 LM 输出处于同一主题），排名前 5 的文档平均得分为 1.43（应用表 3）。然后我们使用 gpt-4o 切换到 LLM-as-a-Judge 评估（Zheng et al., 2023），发现它与人类评估基本一致（Spearman 相关系数为LLM-as-a-Judge 的总体得分稍低，第一个和前 5 个文档的平均得分分别为 1.73 和 1.28。然后，我们使用 LLM-as-a-Judge 来指导 OLMOTRACE 中的几个超参数的调整，我们的最终设置在第一个文档上获得了 1.82 的平均得分，在前 5 个文档上获得了 1.50 的平均得分。 App.§C 了解相关性评估和超参数调整的更多详细信息。
+顶部显示文档到 LM 输出。我们第一步制定了一个评分标准，以 0-3 的等级对文档相关性进行评分（应用表 2，左），并要求人类专家根据该评分标准对每个对话的前 5 个显示文档进行注释。这一轮人类评估是在与我们的最终设置不同的超参数设置下使用 OLMOTRACE 结果完成的，后来我们在 LLM-as-a-Judge 评估的指导下改进了设置。每个对话中显示的第一个文档的平均相关性得分为 1.90（大致意思是“与 LM 输出处于同一主题），排名前 5 的文档平均得分为 1.43（应用表 3）。然后我们使用 gpt-4o 切换到 LLM-as-a-Judge 评估（Zheng et al., 2023），发现它与人类评估基本一致（Spearman 相关系数为LLM-as-a-Judge 的总体得分稍低，第一个和前 5 个文档的平均得分分别为 1.73 和 1.28。然后，我们使用 LLM-as-a-Judge 来指导 OLMOTRACE 中的几个超参数的调整，我们的最终设置在第一个文档上获得了 1.82 的平均得分，在前 5 个文档上获得了 1.50 的平均得分。 App.§C 了解相关性评估和超参数调整的更多详细信息。
 
 Training stage of retrieved documents. Among the retrieved documents, we found the vast major- ity (96.7%) belong to the pre-training data, 0.9% belong to the mid-training data, and 2.4% to the post-training data. Among post-training, 0.9% are from the SFT data, 1.5% are from the DPO data, and none are from the RLVR data. We note that this distribution heavily depends on the topic of the conversation: for example, a math-heavy LM out- put may result in more documents retrieved from
 
@@ -308,7 +308,7 @@ Tracing “creative” expressions. While LMs can be creative in piecing express
 
 ments from a database and condition the LM gen- eration on the retrieved documents. Examples of them include Bing Chat, Google AI Overview, and Perplexity AI. Despite looking similar, OLMO- TRACE is fundamentally different from RAG: OL- MOTRACE retrieves documents post-hoc and does not intervene with the LM generation. The purpose of retrieval in OLMOTRACE is to show the connec- tion between an LM’s output and its training data, not to improve the generation itself.
 
-数据库中的内容，并根据检索到的文档来调节 LM 的生成。其中的例子包括 Bing Chat、Google AI Overview 和 Perplexity AI。尽管看起来很相似，OLMO-TRACE 与 RAG 有本质上的不同：OL-MOTRACE 事后检索文档并且不干预 LM 生成。 OLMOTRACE 中检索的目的是显示 LM 的输出与其训练数据之间的联系，而不是改进生成本身。
+数据库中的内容，并根据检索到的文档来调节 LM 的生成。其中的例子包括 Bing Chat、Google AI Overview 和 Perplexity AI。尽管看起来很相似，OLMO-TRACE 与 RAG 有本质上的不同：OL-MOTRACE 事后检索文档并且不干预 LM 生成。 OLMOTRACE 中检索的目的是显示 LM 的输出与其训练数据之间的联系，而并非改进生成本身。
 
 (a) Fact checking: Inspecting the document (and its source URL) helps verify the factual claim made in the span.
 
@@ -522,7 +522,7 @@ Table 3: Evaluating the relevance level of top documents displayed by OLMOTRACE.
 
 1. Before step 2, it dropped maximal matching spans that appear more than 10 times in the training data (i.e., frequency >10); 2. In step 2, it ranked the spans by descending length instead of ascending span unigram prob- ability; 3. When reranking documents in step 5, the BM25 scorer only considered a context length of 100 tokens around the span instead of 500; 4. The BM25 scorer only considered the LM re- sponse and did not consider the user prompt.
 
-1.在步骤2之前，它丢弃了训练数据中出现超过10次的最大匹配范围（即频率>10）； 2.在步骤2中，它按长度降序排列跨度，而不是按跨度一元概率升序排列； 3. 在第 5 步中对文档进行重新排序时，BM25 评分器仅考虑跨度周围 100 个标记的上下文长度，而不是 500； 4. BM25 评分器只考虑了 LM 响应，没有考虑用户提示。
+1.在步骤2之前，它丢弃了训练数据中出现超过10次的最大匹配范围（即频率>10）； 2.在步骤2中，它按长度降序排列跨度，而并非按跨度一元概率升序排列； 3. 在第 5 步中对文档进行重新排序时，BM25 评分器仅考虑跨度周围 100 个标记的上下文长度，而并非 500； 4. BM25 评分器只考虑了 LM 响应，没有考虑用户提示。
 
 We tuned LLM-as-a-Judge so that it has high agree-
 
