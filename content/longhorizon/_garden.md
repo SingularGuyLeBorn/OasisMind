@@ -5,7 +5,7 @@ published: true
 ---
 # Long-Horizon Agents · 长任务智能体
 
-2025 年 2 月 24 日, Anthropic 发布 [Claude 3.7 Sonnet](https://www.anthropic.com/news/claude-3-7-sonnet), 同时把 Claude Code 作为研究预览推出; 2025 年 7 月, Moonshot AI 发布以 agentic intelligence 为重点的 [Kimi K2](https://github.com/MoonshotAI/Kimi-K2). 日期和产品说明是可核验事实. 从那段时间开始, 我第一次明显觉得模型进入了「聪明, 基本可用」的阶段, 这是我的主观分界, 不是公认的技术标准. 它也不意味着此前模型不能调用工具, 或此后的系统已经可靠.
+2025 年 2 月 24 日, Anthropic 发布 [Claude 3.7 Sonnet](https://www.anthropic.com/news/claude-3-7-sonnet), 同时把 Claude Code 作为研究预览推出; 2025 年 7 月, Moonshot AI 发布以 agentic intelligence 为重点的 [Kimi K2](https://github.com/MoonshotAI/Kimi-K2). 从那段时间开始, 我第一次明显觉得模型进入了「聪明, 基本可用」的阶段.
 
 当时常见 benchmark 仍然倾向把能力压缩成一道题和一次回答: 数学题是否做对, 代码补丁是否通过测试, 一次工具调用是否成功. 这些数字继续上涨当然重要, 但也让我产生了另一个疑问: 单轮回答已经足够好以后, 模型下一阶段的能力还能从哪里提升?
 
