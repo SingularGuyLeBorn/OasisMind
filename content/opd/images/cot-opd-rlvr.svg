@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+  <rect width="1200" height="600" fill="#fbfaf7"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+    <style>.t{font:700 28px sans-serif;fill:#172033}.h{font:700 23px sans-serif;fill:#172033}.p{font:17px sans-serif;fill:#475569}.b{fill:#fff;stroke-width:2;rx:18}.l{stroke:#334155;stroke-width:3;fill:none;marker-end:url(#a)}</style>
+  </defs>
+  <text x="50" y="50" class="t">推理训练的三种信息来源</text>
+  <rect x="60" y="110" width="300" height="260" class="b" stroke="#7c3aed"/>
+  <text x="210" y="155" text-anchor="middle" class="h">CoT SFT</text>
+  <text x="90" y="200" class="p">状态：教师给出的正确前缀</text>
+  <text x="90" y="238" class="p">信号：固定目标 token</text>
+  <text x="90" y="276" class="p">擅长：冷启动、注入可达路线</text>
+  <text x="90" y="314" class="p">盲区：自由生成后的错误状态</text>
+  <rect x="450" y="110" width="300" height="260" class="b" stroke="#2563eb"/>
+  <text x="600" y="155" text-anchor="middle" class="h">OPD</text>
+  <text x="480" y="200" class="p">状态：学生自己的 rollout</text>
+  <text x="480" y="238" class="p">信号：教师条件分布</text>
+  <text x="480" y="276" class="p">擅长：局部纠错、降低状态失配</text>
+  <text x="480" y="314" class="p">盲区：教师盲点、支持集之外</text>
+  <rect x="840" y="110" width="300" height="260" class="b" stroke="#15803d"/>
+  <text x="990" y="155" text-anchor="middle" class="h">RLVR</text>
+  <text x="870" y="200" class="p">状态：学生自己的 rollout</text>
+  <text x="870" y="238" class="p">信号：环境或验证器结果</text>
+  <text x="870" y="276" class="p">擅长：探索教师之外的策略</text>
+  <text x="870" y="314" class="p">盲区：稀疏信用、采样成本</text>
+  <path d="M360 240 L450 240" class="l"/><path d="M750 240 L840 240" class="l"/>
+  <text x="405" y="218" text-anchor="middle" class="p">能偶发成功</text>
+  <text x="795" y="218" text-anchor="middle" class="p">教师增益耗尽</text>
+  <rect x="175" y="435" width="850" height="90" class="b" stroke="#d97706"/>
+  <text x="600" y="475" text-anchor="middle" class="h">切换依据：学生支持集 × 教师 continuation 增益 × 验证器可靠性</text>
+  <text x="600" y="505" text-anchor="middle" class="p">实际训练可以交替或混合三类信号，阶段由任务条件决定。</text>
+</svg>
