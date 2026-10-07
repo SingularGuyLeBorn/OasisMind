@@ -495,7 +495,7 @@ class RMSNorm(torch.nn.Module):
             ![](./images/image_14.jpg)
 
 
-随机初始化两个向量q和k,将q固定在位置0上,k的位置从0开始逐步变大,依次计算q和k之间的内积. 我们发现随着q和k的相对距离的增加,它们之间的内积分数呈现出远程衰减的性质,这正是我们希望的.
+随机初始化两个向量q和k,将q固定在位置0上,k的位置从0开始逐步变大,依次计算q和k之间的内积. 这里发现随着q和k的相对距离的增加,它们之间的内积分数呈现出远程衰减的性质,这正是目标是的.
 
           **RoPE 的 self-attention 操作的流程**: 对于 token 序列中的每个词嵌入向量,先计算其对应的
             query 和 key 向量,然后对每个 token 位置都计算对应的旋转位置编码,接着对每个 token 位置的 query 和 key 向量的元素按照
@@ -589,9 +589,9 @@ def apply_rotary_pos_emb(pos, t):
           其中: \(p(T|S_k)\)和\(p(T)\)都可以直接用现有的LLM进行计算,而且只要是语言模型都行,跟架构无关,也不需要用长文本微调.
             \(p(T|S_k)\)是单个Context所预测的概率,\(p(T)\)则无Context(或者Context为空)的概率,并且多个Context可以放在同一个batch中并行计算,计算量随着Context数的增加是线性增长的.
           但是会出现Greedy Search好而Random Sample差的情况呢？Random Sample是“按照分布采样”,它的效果差说明Max
-            Pooling的结果不是一个合理的分布; 而Greedy Search只关心最大概率者,而不关心分布的合理性,它的效果好告诉我们概率最大的token正确性较高.
+            Pooling的结果不是一个合理的分布; 而Greedy Search只关心最大概率者,而不关心分布的合理性,它的效果好告诉这里概率最大的token正确性较高.
 
-**为了改善Random Sample的效果,我们将Pooling方式改为直接输出不确定性最低的那个分布,即得到NBCE**:
+**为了改善Random Sample的效果,这里将Pooling方式改为直接输出不确定性最低的那个分布,即得到NBCE**:
 
           \(P[logp(T|S)] = logp(T|S_k) \\\)
 
@@ -1211,7 +1211,7 @@ NTK-by-parts(少量微调)、Dynamic NTK(无需微调)
 
 
 
-              随着长度的增加,如果我们要区分出新的距离因素,那么,注意力的 logit 就必须增长到无限大. 即便我们不考虑距离因素,那么当推理长度增加时,attention
+              随着长度的增加,如果需要区分出新的距离因素,那么,注意力的 logit 就必须增长到无限大. 即便这里不考虑距离因素,那么当推理长度增加时,attention
                 score 的分布会趋于平坦,导致信息的丢失. 论文也通过 Attention Entropy 会趋于无限大进行了观点验证.
               *ref:*  [*https://zhuanlan.zhihu.com/p/656709745*](https://zhuanlan.zhihu.com/p/656709745)
 
@@ -1376,7 +1376,7 @@ StreamingLLM和LM-Infinite其实用的基本相同的方法.  仅在最近令牌
               ***Abstract***: papaer提出一种提高语言模型零样本学习能力的简单方法,名为instruction
                 tuning,它在数据集集合上微调语言模型,从而大大提高了unseen 任务上的零样本性能. instruction tuning: 使用超过60个由自然语言指令表达的NLP数据集的混合数据
                 finetune 模型. 这个结果模型称为 FLAN,就是 Finetuned Language Net. 为了评估FLAN在不可见任务上的 zero-shot
-                性能,我们根据NLP数据集的任务类型将其分组,并保留每个组进行评估,同时在所有其他组上对FLAN进行指令调优,这种设置能够保证,在 instruction
+                性能,这里根据NLP数据集的任务类型将其分组,并保留每个组进行评估,同时在所有其他组上对FLAN进行指令调优,这种设置能够保证,在 instruction
                 tuning 的时候,没有见过任何推理时的任务.  instruction tuning中增加任务集群(组)的数量可以提高不可见任务的性能,而且只有在足够的模型规模下,instruction
                 tuning的好处才会显现出来.  Instruction tuning的动机是提高语言模型对NLP指令的响应能力. 其想法是,通过使用监督来教LM执行通过指令描述的任务,LM将学会遵循指令,甚至对不可见任务也会这样做.
               Ref: [https://zhuanlan.zhihu.com/p/538013856](https://zhuanlan.zhihu.com/p/538013856)
@@ -1396,7 +1396,7 @@ StreamingLLM和LM-Infinite其实用的基本相同的方法.  仅在最近令牌
               *Ref:*_ _[*https://blog.csdn.net/buzhidao2333shuosha/article/details/127871722*](https://link.zhihu.com/?target=https%3A//blog.csdn.net/buzhidao2333shuosha/article/details/127871722)
 
 
-**[Paper]: Automatic Chain of Thought Prompting in Large Language Models. 2022.10**
+### 自动构造与分解式 CoT
 
               ***Abstract***: Motivation: Auto-CoT 其实也是受到了 Manual-CoT
                 的启发,既然 Manual-CoT 比 Zero-Shot-CoT 的性能要好,而且性能好的关键就在于人工设计的问题、中间推理步骤和答案的样例,那么就可以考虑将这部分进行自动化,从而节省人工成本.
@@ -1434,7 +1434,7 @@ StreamingLLM和LM-Infinite其实用的基本相同的方法.  仅在最近令牌
 ***Abstract***: 链式思考调优(CoT)是一种通过中间步骤用自然语言形式引导大规模语言模型(LLMs)将复杂任务分解为多步推理的技术. 从链式思考(CoT)的角度来看,CoT的两步推理框架使得MLMs能够实现任务分解,CoT的指令微调允许中间步骤以自然语言形式使用. 通过MLMs,可以将CoT的成功扩展到自然语言理解任务. 在两个自然语言理解任务(层次分类和关系抽取)上对CoT进行实验验证,结果表明CoT优于基线模型,达到了最先进的性能.
 
 
-**[Paper]: Chain of Thought Prompting Elicits Reasoning in Large Language Models. 2022.01**
+### CoT, 校准与 MetaICL
 
               ***Abstract***: CoT的Motivation就是结合in-context few-shot
                 prompting 以及多步中间推理,通过大模型来改善数学计算、常识推理的效果,和传统的prompt相比呢,COT的区别在于在答案之间多了中间推到的逻辑推理过程. 总的来说: 允许语言模型将一个多步骤的问题分解为可以单独解决的中间步骤.
@@ -1457,7 +1457,7 @@ StreamingLLM和LM-Infinite其实用的基本相同的方法.  仅在最近令牌
 **[Paper]: Calibrate Before Use: Improving Few-shot Performance of Language Models. 2021.2**
 
               ***Abstract***: GPT-3通过提供包含一些训练示例的自然语言提示可以执行许多任务. 这种少量学习可能是不稳定的:
-                提示格式的选择,训练示例,甚至示例的顺序都可能导致准确性. 我们证明,这种不稳定性源于语言模型对预测某些答案的偏见,例如,倾向于预测出常见的label或者倾向于预测离结尾最近的样本label,或者倾向于预测一些常见的词. 为了减轻这种情况,本文提出了一种context-free
+                提示格式的选择,训练示例,甚至示例的顺序都可能导致准确性. 这里证明,这种不稳定性源于语言模型对预测某些答案的偏见,例如,倾向于预测出常见的label或者倾向于预测离结尾最近的样本label,或者倾向于预测一些常见的词. 为了减轻这种情况,本文提出了一种context-free
                 input(Contextual Calibration)来解决这个问题.
 
 
