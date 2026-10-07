@@ -182,6 +182,7 @@ function checkStructure(mdFiles) {
 
 const FIRST_NODE_RE = /^\d+-/;
 const SECOND_NODE_RE = /^\d+\.\d+-/;
+const THIRD_NODE_RE = /^\d+\.\d+\.\d+-/;
 
 function checkTree() {
   const issues = [];
@@ -205,17 +206,27 @@ function checkTree() {
       if (!fs.existsSync(firstIndex)) issues.push(`${rel(firstDir)}  TREE_NO_INDEX 一级目录缺同名首页 ${ent.name}.md`);
 
       const secondEntries = fs.readdirSync(firstDir, { withFileTypes: true });
+      let secondNodeCount = 0;
       for (const child of secondEntries) {
         if (child.isFile() && child.name.endsWith(".md") && SECOND_NODE_RE.test(child.name)) {
           issues.push(`${rel(path.join(firstDir, child.name))}  TREE_L2_FILE 二级节点必须放入同名目录`);
         }
         if (!child.isDirectory() || !SECOND_NODE_RE.test(child.name)) continue;
+        secondNodeCount += 1;
         const secondDir = path.join(firstDir, child.name);
         const secondIndex = path.join(secondDir, `${child.name}.md`);
         if (!fs.existsSync(secondIndex)) {
           issues.push(`${rel(secondDir)}  TREE_NO_INDEX 二级目录缺同名首页 ${child.name}.md`);
         }
+        const thirdEntries = fs.readdirSync(secondDir, { withFileTypes: true });
+        const thirdNodeCount = thirdEntries.filter(
+          (item) =>
+            THIRD_NODE_RE.test(item.name) &&
+            (item.isDirectory() || (item.isFile() && item.name.endsWith(".md"))),
+        ).length;
+        if (!thirdNodeCount) issues.push(`${rel(secondDir)}  TREE_NO_LEAF 二级目录至少需要一个三级主题`);
       }
+      if (!secondNodeCount) issues.push(`${rel(firstDir)}  TREE_NO_ROUTE 一级目录至少需要一个二级路线`);
     }
   }
   return issues;
