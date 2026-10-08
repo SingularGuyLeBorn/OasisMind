@@ -1,0 +1,3 @@
+# 内核图 v7 编辑提示词
+
+Precise single connection correction. In attached diagram REMOVE the entire navy line at y609 from x356 to1002 including BOTH its downward arrowheads (to dotproduct x356 and weightedValue x1002). That line is currently disconnected from K and wrongly feeds Value. REPLACE with just ONE continuous navy elbow from K BOX BOTTOM CENTER x1002,y590 down to y603, left to x356,y603, then down ending with arrowhead ON dotproduct box TOP at x356,y664. This K route must touch K at start and QKᵀ box at end, no fork or continuation to weightedValue. Keep the SEPARATE V line x1364→x1032→weightedValue exactly intact. White erase removed branches cleanly. Preserve all other text, equations, colors,cache input connections,indices and numbers.
