@@ -1,0 +1,16 @@
+const assert = require('node:assert/strict');
+const positions = [1, 3, 5, 8, 9, 10, 11];
+const old = [2.4, 1.7, 1.2, 0.3, 0.2, 0, 0];
+const weights = [0.20, 0.05, 0.02, 0.08, 0.15, 0.30, 0.20];
+assert.ok(Math.abs(weights.reduce((a, b) => a + b, 0) - 1) < 1e-12);
+const scores = old.map((v, i) => Math.round((v + weights[i]) * 100) / 100);
+assert.deepEqual(scores, [2.60, 1.75, 1.22, 0.38, 0.35, 0.30, 0.20]);
+const recent = positions.slice(-3);
+const eligible = positions.map((p, i) => ({ p, score: scores[i] })).filter(x => !recent.includes(x.p));
+const victim = eligible.reduce((min, x) => x.score < min.score ? x : min).p;
+assert.equal(victim, 8);
+const retained = positions.filter(p => p !== victim);
+assert.deepEqual(retained, [1, 3, 5, 9, 10, 11]);
+assert.equal(positions.length, 7);
+assert.equal(retained.length, 6);
+console.log('H2O 教学值: 权重总和、累计分数、recent边界和victim均通过');
