@@ -739,6 +739,10 @@
 
 - **crocodil-1** [HTML v3 §3 Eq. (2) 与 §4.1](https://arxiv.org/html/2603.20210v3) 用 $\alpha_t$ 表示 token 保留概率, 后又将 LLaDA 权重引用为 $1/\alpha_t$. [LLaDA v1 Eq. (3)](https://arxiv.org/html/2502.09992v1#S2.SS1) 的 $t$ 是掩码概率, 权重为 $1/t$;在线性日程 $\alpha_t=1-t$ 下应转换为 $1/(1-\alpha_t)$. 教学正文分别说明两种约定, 不据文字冲突推断 CRoCoDiL 实际训练代码采用哪种权重.
 
+### Quest v2
+
+- **quest-1** [PDF v2 §3.5, 第5页](https://arxiv.org/pdf/2406.10774v2) 将64K上下文、每页16个KV及8倍读取减少的例子写成选择“top 4K pages”. 64K/16已经只有4096页, 选择4K页会读取完整KV, 另加摘要读取, 比例为1+1/16. 按同节公式得到1/8要求4096 token预算, 即256页. 教学正文与图按256页计算, 不把原文页数表述作为正确单位.
+
 ### DeepEP
 
 解析：`content/deepseek/4-开源仓库/4.3-deepep/02-deepep-analysis.md`。
