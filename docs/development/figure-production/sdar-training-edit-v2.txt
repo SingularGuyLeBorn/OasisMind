@@ -1,0 +1,5 @@
+Precise edit of provided SDAR training diagram, preserve exact 4x4 matrix and all token cells/formulas/colors/layout.
+Fix 1: replace right-of-matrix label "1：允许块内所有 token 互相读取" with exact "1：行块内 token 可读取列块全部 token". Two or three short lines. This is directional ROW Query to COLUMN Key, not reciprocal across blocks. Do not change matrix digits:
+C1 1000; C2 1100; N1 0010; N2 1001.
+Fix 2: currently top of noisy N2 box has floating downward arrowhead at (834,190) without source. Connect it with a continuous navy orthogonal line from original ABCD source row RIGHT EDGE at (609,130) horizontally right to x834, then vertically downward into N2 box top edge at y198. Erase any previous tiny floating fragment then draw fully connected arrow. Keep other source-to-C1/C2/N1 arrows and four-block-to-concatenated-input wiring unchanged. Wire must not overlap text, no dangling arrows.
+Make no other changes. In particular preserve loss probability B conditioned only N1 and C conditioned C1,N2, masked-only orange B/C labels, no shift.

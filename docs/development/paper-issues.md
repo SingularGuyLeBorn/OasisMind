@@ -8,6 +8,29 @@
 
 ---
 
+## DiffusionLanguageModels 库
+
+### dParallel (arXiv 2509.26488v1)
+
+来源: [2025 年 9 月 30 日 v1](https://arxiv.org/html/2509.26488v1). 以下条目由主代理直接回读主文与附录确认, 不涉及 OCR.
+
+- **dparallel-1** §5.1 Training Data 写过滤后约 92k 样本;附录 D 写目前只用了约 10k 数学题. 两者没有解释题目数与样本数是否采用不同计数口径, 不能自行把 10k 视为口头估数. 求证结果:部分成立, 两处数值描述不同, 尚不能确定是计数单位差异还是版本残留.
+- **dparallel-2** Introduction 写八张 24GB A5000、约十小时;附录 A 写两张 H100、每卡 batch 1、累积 32、有效 batch 64, 显存约 23GB. 两种硬件配置可能分别对应训练与复现实验, 但未提供明确对应关系. 求证结果:部分成立, 硬件与时间不能拼成同一组训练规格.
+- **dparallel-3** Table 2 题注写 Dream-8B-Instruct, §5.1 及表内基线行写 Dream-7B-Instruct. 求证结果:成立, 模型规模标签不一致, 解析按正文模型名使用 7B.
+- **dparallel-4** Table 6 题注与附录 B 写 LLaDA-1.5, 表内基线行仍写 LLaDA-8B-Instruct. 求证结果:成立, 模型标签不一致, 解析将该表归于附录 B 明确说明的 LLaDA-1.5 实验.
+
+### d3LLM (arXiv 2601.07568v1)
+
+来源: [v1 主文 §4.2、§4.3 与 Table 1、2、5](https://arxiv.org/html/2601.07568v1). 以下数值由主代理直接核对 HTML 表格和正文, 解析采用对应表格数据.
+
+- **d3llm-1** §4.2 和 §4.3 写 LLaDA 的 GSM8K-CoT AUP 为 635.7;Table 1 与 Table 5 完整方法行写 637.7 ± 6.8. 求证结果:成立, 同一方法和任务的叙述值与表格不一致.
+- **d3llm-2** §4.2 写 LLaDA 的 MATH AUP 为 111.7, 比 dParallel 的 64.5 高 73.2%;Table 1 写 107.6 ± 3.2. 按表格均值复算 `(107.6 / 64.5 - 1) × 100% ≈ 66.8%`. 求证结果:成立, 正文数值及相应增幅不能用于描述 Table 1.
+- **d3llm-3** §4.2 写 Dream 的 GSM8K-CoT AUP 为 400.4;Table 2 写 391.3 ± 7.9. 求证结果:成立, 正文与表格均值不一致.
+- **d3llm-4** §4.2 写 Dream 的 MBPP-Instruct AUP 为 134.7, 比 dParallel 的 108.0 高 24.7%;Table 2 写 141.4 ± 8.7. 按表格均值复算 `(141.4 / 108.0 - 1) × 100% ≈ 30.9%`. 求证结果:成立, 正文数值及相应增幅与 Table 2 不一致.
+
+- **d3llm-5** §3.1 把窗口写为 `{s,…,s+k}` 并称长度为 k;闭区间实际含 k+1 个整数. 输入分段中「轨迹位置非 MASK」与「位置在窗口之后」也可能同时成立. 官方 LLaDA 训练文件使用半开区间 `[mask_start,mask_end)`, 窗口之后统一 MASK. 求证结果:成立, 正文解析按互斥区间展开.
+- **d3llm-6** §3.1 称 t 为掩码比例, 轨迹按去噪生成顺序记录, 却使用 `s+ceil(kt)` 索引. 官方代码 `select_trajectory_by_ratio` 明确按全掩码到明文排序, 使用 `block_start+int((1-mask_ratio)*block_length)`, 并对列表长度截断. 求证结果:成立, 原文公式与已发布代码的比例方向及取整不同. 代码依据:提交 `e5bfcaccb775ee75759c24ccc9a28218b8372b34` 的 `d3llm/d3llm_LLaDA/distill_2_training/d3llm_llada_train.py` 第135–161行.
+
 ## DeepSeek 库
 
 ### DeepSeekMoE (arXiv 2401.06066)
@@ -690,6 +713,32 @@
 - **deepseek-v3-2-6** 合成 Agent 环境的任务分布、环境失败率和奖励误判率披露有限，工具调用成绩不能直接外推到开放网络环境。求证结果：报告只给环境类别与汇总结果。
 - **deepseek-v3-2-7** Speciale 使用更大推理预算和竞赛专用协议，其结果不能与普通 V3.2 的默认单次回答分数直接横比。求证结果：附录为竞赛任务规定独立评测流程。
 - **deepseek-v3-2-8** 搜索 Agent 的串行上下文扩展同时增加搜索调用、token 和墙钟时间，收益不能只解释为上下文管理策略。求证结果：缺少等工具调用与等 token 对照。
+### LLaDA 1.5 v1
+
+来源: https://arxiv.org/html/2505.19223v1#A2.SS3.SSS2 .
+
+- Appendix B.3.2 首个展开式在失败回答括号内使用策略 ELBO 加参考 ELBO, 与正文式 (8) 及随后定义的 B=策略 ELBO 减参考 ELBO 不一致. 教学正文与图采用正文式 (8) 的四项符号 +、-、-、+. 此项确认范围为 arXiv v1 HTML, 尚未逐字比较 PDF 与 LaTeX.
+
+### SDAR v1
+
+来源: https://arxiv.org/html/2510.06303v1 .
+
+- Table 2 的 30B MBPP 为 71.6 对 75.1, 差值应为 -3.5, 上标却为 +3.5.
+- Table 5 的 Sci 随机采样 GPQA 为 66.0, Table 6 同名行却为 66.7. 正文采用 Table 5 的比较口径.
+- Table 7 的贪心 GPQA 为 66.7 对 61.2, 差值应为 +5.5, 上标却为 +5.9.
+- §5.2.1 动态步数句与 §3.2 填满即结束的描述不一致. 正文按 §3.2 算法解释.
+- Table 2 网页 AIME 行存在额外补位字符, 1.7B AIME-25 列值与差值无法直接一致读取. 正文暂移除该单项比较, 待 PDF 或 LaTeX 表核对.
+
+### DiffuCoder v1
+
+- **diffucoder-1** [HTML v1](https://arxiv.org/html/2506.20639v1) Eq. (1) 定义正交叉熵损失, Eq. (4) 将加权损失写为 log-probability, 附录 Eq. (13) 又将同类表达式记为 probability. 三者的符号与对象不一致. [官方实现](https://github.com/apple-aiml-research/ml-diffucoder/blob/7d983f2769a2b79a8baef344e68f4d760e6e3207/src/open_r1/coupled_grpo.py#L103) 实际提取 log-softmax, 按被掩位置选择后加权, 与全掩 log-probability 合并除以2;概率比使用分数差的指数. 教学正文与图按这一代码约定, 不直接把交叉熵当概率. 本条核对范围为 HTML 与上述代码提交, 未据此声称所有 PDF 版本均存在相同问题.
+
+- **diffucoder-2** [HTML v1 Appendix A.2](https://arxiv.org/html/2506.20639v1#A2) 的局部指标采用集合相等, 但随后声称随k非增. 集合不保留位置顺序, 各k条件也不嵌套. 反例为揭开顺序(3,2,4,1):第3步的k=2条件为{2,3}={3,2}, 成立;k=1条件为{2}={3}, 不成立. 该序列各可比较步的k=1判定均为0, k=2存在1, 即使按相同T分母聚合也不满足非增. 首k步的前驱未定义, 文中对边界的处理也未给出. 教学图只用k=1逐步判定且首步标无前驱, 正文按集合定义解释k>1, 不沿用严格顺序或无条件非增结论. 本项确认范围为HTML v1, 尚未据源码验证实验指标的实际实现.
+
+### CRoCoDiL v3
+
+- **crocodil-1** [HTML v3 §3 Eq. (2) 与 §4.1](https://arxiv.org/html/2603.20210v3) 用 $\alpha_t$ 表示 token 保留概率, 后又将 LLaDA 权重引用为 $1/\alpha_t$. [LLaDA v1 Eq. (3)](https://arxiv.org/html/2502.09992v1#S2.SS1) 的 $t$ 是掩码概率, 权重为 $1/t$;在线性日程 $\alpha_t=1-t$ 下应转换为 $1/(1-\alpha_t)$. 教学正文分别说明两种约定, 不据文字冲突推断 CRoCoDiL 实际训练代码采用哪种权重.
+
 ### DeepEP
 
 解析：`content/deepseek/4-开源仓库/4.3-deepep/02-deepep-analysis.md`。

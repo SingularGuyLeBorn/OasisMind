@@ -1,0 +1,14 @@
+Use case: scientific-educational
+Create a Chinese scientific teaching diagram, white background, crisp rectangular token cells, restrained teal and orange, large readable labels. Landscape approximately 4:3. Reference image 1 is DiffuCoder v1 Figure 1; borrow its idea of visualizing generation order, NOT its experimental plots or numbers. This new diagram illustrates the definitions from Appendix A.2 using a four-position teaching example, k=1, exactly one position revealed each step. Do not reproduce benchmarks.
+Title: 揭开顺序:局部连续与最左优先
+Subtitle: 教学示例 · k=1 · 每步揭开一个位置
+Legend: M:尚未揭开; A–D:四个位置最终的 token. j:生成步; p_j:本步揭开的位置.
+Main grid has four rows, each with: generation step and selected position, pre-step masked set, BEFORE token strip → AFTER token strip, local judgment, global judgment. Number each strip's cells 1 2 3 4. Gray M cells; already revealed token teal; newly revealed token orange. Exact rows:
+row1: j=1, p₁=3; 剩余 {1,2,3,4}; [M M M M] → [M M C M]; local 无前驱; global 3≠1 ×
+row2: j=2, p₂=4; 剩余 {1,2,4}; [M M C M] → [M M C D]; local 4=3+1 ✓; global 4≠1 ×
+row3: j=3, p₃=1; 剩余 {1,2}; [M M C D] → [A M C D]; local 1≠4+1 ×; global 1=1 ✓
+row4: j=4, p₄=2; 剩余 {2}; [A M C D] → [A B C D]; local 2=1+1 ✓; global 2=2 ✓
+Column headings: 本步 / 步前未揭开位置 / 揭开前 → 揭开后 / 局部:紧接上一步? / 全局:选最左剩余?
+Bottom two explanatory lines: 局部检查 p_j=p_(j−1)+1. 全局检查 p_j=min M_(j−1).
+Bottom takeaway: 3→4 局部连续,但位置1仍未揭开.
+Draw solid complete arrows only between the corresponding before/after strips, with clear start and end. No dangling arrows, no distorted or overlapping rectangles. No extra conceptual modules. No English-Chinese translation pairs, no source attribution or production notes on image. No aggregate percentages: first local step has no predecessor. Keep all numbers, cell contents and judgments exactly as specified. Strong alignment, enough spacing to read at article width. Avoid decorative characters, 3D, glow, excessive empty boxes.

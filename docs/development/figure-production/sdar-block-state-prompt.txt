@@ -1,0 +1,10 @@
+Use case: scientific-educational. Reference image is the validated SDAR v5 mechanism diagram. Recompose ONLY the upper token-state sequence and complete-block cache transition into a standalone portrait/square teaching diagram, approximately 1024x1024. White background navy text regular rectangles, clean green/blue/orange accents. Large labels readable at 358px display width, main label size at least 40px on 1024 canvas, secondary at least 34px. No English translations, no sources, no Figure N production text.
+
+Title "SDAR：一个块如何填满".
+Top small legend "教学示例：块长 4；M 表示 MASK". Show separate green historical prefix row [P1 P2 P3 P4] labeled "历史块：KV 已缓存", note "本块去噪期间保持不变". Then vertical centrally aligned current-block rows, each has exactly FOUR regular token cells and left tag:
+"初始" [M M M M]
+downward complete arrow labeled "提交位置 2、3"
+"中间" [M B C M], B C orange outlined
+downward complete arrow labeled "提交位置 1、4"
+"完成" [A B C D], B C retain distinct color and small note "已提交 token 保持不变".
+From completed row clear downward arrow to green box "完整块重新前向 → 生成各层 KV", then arrow to "追加历史缓存", then arrow to final "下一块" [M M M M]. Next-block reads previous cached blocks. Bottom note "部分完成的块不写入前缀缓存". No probability numbers; letters sample token IDs. Do not give submitted token ability to change. Completed forward allows block-internal bidirectional and earlier prefix but not future. Do not include full Q/K/V attention equations here; this is the STATE figure. No arbitrary cards, no empty decoration, no broken or dangling arrows. Make current block row indices 1 2 3 4 directly above token rows if space, not reprint explanatory paragraphs. Large clear labels.

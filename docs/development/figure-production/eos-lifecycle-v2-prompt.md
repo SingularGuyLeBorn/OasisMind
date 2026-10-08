@@ -1,0 +1,7 @@
+# EOS 第二版修订提示词
+
+Edit the provided EOS figure, preserve technical white background, crisp navy Chinese typography, blue and green low saturation. Re-layout as THREE FULL-WIDTH HORIZONTAL PANELS stacked vertically, NOT three columns, 1024x1536 portrait. Title shorter「EOS:监督、去噪与展示」. All arrows MUST touch the actual source and destination rectangular borders, no gaps, no floating endpoints.
+Top panel「1. 训练:批内对齐」. Define「EOS:结束符」「□:掩码」. Two sample rows six cells each: upper sample A「甲 乙 EOS EOS EOS EOS」 and lower sample B「甲 乙 丙 丁 戊 EOS」. Beside them, show an attached arrow FROM SAMPLE A ONLY to masked A「甲 □ EOS □ EOS □」, labeled「随机掩码」. Connect masked A to rectangle「预测位置2、4、6」 then rectangle「监督目标:乙、EOS、EOS」. A second sample is only batch alignment context, NO arrow from B. Note「填充EOS参与掩码监督」.
+Middle panel「2. 推理:六位置画布」. Three six-cell states horizontal with attached arrows between their frames:「□ □ □ □ □ □」→「甲 □ EOS □ □ □」→「甲 乙 EOS EOS EOS EOS」. Labels below states「初始化」「中间状态」「完成状态」, arrows above labeled「去噪」. Note「出现EOS不代表其余位置已完成」「停止计算取决于采样器规则」.
+Bottom panel「3. 展示:去除EOS」. horizontal chain of completed six-cell row「甲 乙 EOS EOS EOS EOS」→rectangle「去除EOS」→two-cell result「甲 乙」. Every arrow begins exactly at source right edge and ends exactly at target left edge. Note「展示两token ≠ 只计算两个位置」「教学轨迹, 无实验数值」.
+Preserve exact token sequences. No cross-panel arrows. Avoid redundant bilingual translations, unexplained concepts, paper source comments, warped/overlapping boxes. Prioritize large readable labels.

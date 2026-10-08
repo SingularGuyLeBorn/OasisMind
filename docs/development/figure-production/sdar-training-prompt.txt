@@ -1,0 +1,15 @@
+Use case scientific-educational. Create a square Chinese technical teaching figure, white background navy text, large readable labels, regular token rectangles and exact 4x4 matrix. Reference image 1 is SDAR Figure 1; use its TWO STREAM training attention mechanism, not its brands/logos or English sentences. Title "SDAR：一次前向训练两个块". No source or Figure N text on canvas. Explain "教学示例：块长 2；M 表示 MASK".
+
+Upper part define four blocks with EXACT tokens:
+green "干净 C1" [A B], green "干净 C2" [C D];
+blue "扰动 N1" [A M], blue "扰动 N2" [M D].
+These derive from clean sequence ABCD; source truth B and C hidden in respective noisy blocks. Draw assembled input row of FOUR block groups in explicit order C1 C2 N1 N2, each group has its two tokens. Label "拼接输入（按块重排展示）". Arrow from assembled row into "同一次 Transformer 前向".
+
+Center principal view: EXACT 4x4 block attention mask. Columns from left C1 C2 N1 N2, rows top C1 C2 N1 N2. Row = Query, col = Key, Chinese axis labels "读取方" rows and "被读取块" columns. Each cell clearly digit 1 (green/blue fill) or 0 (white/gray):
+row C1: 1 0 0 0
+row C2: 1 1 0 0
+row N1: 0 0 1 0
+row N2: 1 0 0 1.
+NO other filled cells. Label "1：允许块内所有 token 相互读取". Explanation adjacent "N1 只读自身；N2 读取 C1 和自身". This avoids masked answer leakage. Clean blocks encode complete earlier prefixes blockwise causally. N1 cannot read C1 because own clean truth B would leak; N2 cannot read C2 because C is target, and cannot read N1.
+
+Bottom loss view: from N1 output two-position row [A B] and N2 output [C D], call "同位置预测". Highlight ONLY B in first row and ONLY C in second row orange. Label "只在 M 位置计算交叉熵", formula "损失 = −(log p(B|N1) + log p(C|C1,N2)) / t" with t defined "t：掩码概率". This is one sampled teaching corruption, no measured data. A and D predictions not counted, clean stream supplies context only. Direct arrows from respective N1,N2 prediction rows to loss box, no labels to unused clean predictions. Point of figure is conditioning/mask and masked-only loss, not AR next-token shift, preserve no logit shift. Every arrow must begin and end on actual modules. Large matrix digits and tokens, no long prose, no decorative cards, no source text, no redundant bilingual labels.

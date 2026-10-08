@@ -1,0 +1,6 @@
+Perform four surgical scientific fixes to supplied image. Keep typography, dimensions, token strips, colors, all unaffected content exactly.
+1. Formula in blue "逐 token 比值" box is wrong addition. Replace entire formula by "ρ_i^k = φθ(o_i^k|q′) / φold(o_i^k|q′)" with a proper fraction bar, numerator current, denominator old. Do NOT use +.
+2. Blue external left lane to "固定 A_i" wrongly begins at clean prompt q. Erase its segment from q to lane, then connect lane from LEFT BORDER OF TOP "优势" box (A_i formula). Route through available white space above batch banner to left lane without crossing any text. Endpoint to fixed A_i must be exact.
+3. Middle input connector currently branches from CLEAN q instead of masked q′. Detach that downward segment from clean prompt box; connect downward from BOTTOM BORDER of masked q′ box to shared input q′⊕M^L. Keep response all-MASK connector joining same input.
+4. KL inputs currently come from old and ref scalars. Move the old scalar's KL outgoing branch to CURRENT phiθ scalar. KL must get φθ and φref only. Current and old still both feed ratio. Use tidy lanes beneath scalar boxes, no crossing text.
+Do not change anything else. No new explanations. Ensure every arrow continuous and touching both source/target border. No floating disconnected line. Title unchanged.

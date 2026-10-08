@@ -1,0 +1,3 @@
+# EOS 第三版局部修订提示词
+
+Edit target: provided EOS v2 PNG. Make ONLY two local changes; preserve all three panels, positions, colors, token sequences, arrows elsewhere, exact Chinese title and labels. 1) Replace top-right definition text under「□:掩码」with EXACT two lines:「训练:目标已知, 输入被遮住.」「推理:该位置尚待预测.」. Do not use the claim that training target is undetermined or every token requires multiple steps. 2) Extend the top panel downward blue arrow FROM masked sample row「甲 □ EOS □ EOS □」so its tail touches the bottom border of that row with zero gap; its arrowhead must touch top border of「预测位置2、4、6」box. Keep rest pixel-consistent. No additional concepts or decorative elements, no overlays, regular boxes.

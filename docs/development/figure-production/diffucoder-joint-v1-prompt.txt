@@ -1,0 +1,13 @@
+Use case: scientific-educational
+Asset type: Chinese technical article teaching diagram. Reference image 1 is ONLY visual style guidance: clear white background, navy typography, muted teal/orange panels, scientific density. Do not copy OPD concepts, terminology, formulas or attribution.
+Title: 同时取首选,可能拼出零概率组合
+Subtitle: 教学分布 · 两个待填位置 X、Y · 候选 token 为 a、b、c
+Use an elegant dense two-tier landscape 4:3 composition with legible Chinese and precise math. Top tier: left a joint probability matrix, right the independent marginal choices. Bottom tier: the same distribution conditioned on the chosen X, with an explicit calculation and the resulting token strip. All shapes rectangular and undistorted; arrows continuous from source panel boundary to destination boundary, no overlap, no dangling arrows.
+Top left panel title 联合分布 P(X,Y). Columns Y=a, Y=b, Y=c, then 行和 P(X). Rows X=a and X=b. Exact table row X=a: 0.40,0,0,0.40. Exact table row X=b: 0,0.35,0.25,0.60. Bottom column sums labeled P(Y):0.40,0.35,0.25. Use orange outlines on row-sum 0.60 and column-sum 0.40 to mark marginal maxima. Highlight the zero at row X=b,column Y=a with a red outline. All matrix probabilities sum to 1. Do not add an X=c row.
+Top right panel title 同一状态,同时确认两个位置. Include exact two probability strips:
+X: a 0.40 | b 0.60 → 首选 b
+Y: a 0.40 | b 0.35 | c 0.25 → 首选 a
+Show final token strip [b][a], red cross and equation P(X=b,Y=a)=0. Explain briefly: 边际首选不保证联合一致.
+Bottom panel title 先确认 X=b,再重新条件化 Y. Show initial mask strip [M][M], connected to [b][M], connected to conditional probability computation (divide selected X=b row by 0.60): P(Y|X=b)=(0,7/12,5/12). Then connect to final [b][b]. The conditional distribution can be shown as three numeric cells labeled a:0, b:7/12≈0.583, c:5/12≈0.417. Emphasize b as conditional maximum. Include formula P(Y=b|X=b)=0.35/0.60=7/12. End with P(X=b,Y=b)=0.35. Ensure distinction between original joint mass 0.35 and conditional probability 7/12, do not equate them. Define M:尚未确认. Label arrow from [b][M] to conditional calculation 新状态重新计算. Do not imply cached old Y marginal is reused.
+Bottom fine but readable note: 按此教学联合分布计算;实际模型的条件预测可能存在误差.
+Do not add extra English-Chinese bilingual labels, source or production text, architecture names, charts with experimental axes, 3D, animation, icons, decorative blank blocks. Use exact content, readable math and clear visual grouping. Joint matrix and conditional row computation are essential, not a few generic boxes.

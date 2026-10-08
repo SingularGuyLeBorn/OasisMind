@@ -1,0 +1,2 @@
+<!doctype html>
+<html lang="zh"><meta charset="utf-8"><title>SDAR 拆分图宽度验收</title><style>body{margin:0;background:white;font-family:sans-serif}main{max-width:800px;margin:24px auto;padding:0 16px}img{width:100%;height:auto;display:block}p{font-size:16px;line-height:1.7}</style><main><img src="sdar-block-state-v1.png" alt="SDAR 块内 token 提交"><p>图 1:当前块从全掩码状态逐步填满，完成后生成各层 KV 并追加前缀缓存。</p><img src="sdar-attention-v2.png" alt="SDAR 历史 KV 与当前块计算"><p>图 2:历史 K 参与分数计算，历史 V 参与概率加权；当前块 Q、K、V 每步重新计算。</p></main></html>
