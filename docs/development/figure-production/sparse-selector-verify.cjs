@@ -18,6 +18,8 @@ for (let i = 0; i < r.length; i++) {
 }
 assert.ok(Math.abs(q.reduce((a, b) => a + b, 0) - 1) < 1e-12);
 assert.equal(Math.max(0, q.reduce((a, b) => a + b, 0) - 2) ** 2, 0);
+const cold = softmax([1, 2, 3].map(x => x / 0.001));
+assert.deepEqual(cold, [0, 0, 1]);
 const values = [2, -1, 4], output = p.reduce((sum, x, i) => sum + x * values[i], 0);
 for (let j = 0; j < p.length; j++) {
   const removed = p.reduce((sum, x, i) => sum + (i === j ? 0 : x * values[i]), 0) / (1 - p[j]);
