@@ -9,3 +9,11 @@ Use case: scientific-educational. Create a dense crisp Chinese technical mechani
 ## v1 复核
 
 候选保留，不进入正文：cross 四组的隐藏状态串行依赖未画出；Full attention 到 gather 的竖线没有明确表达 gather 从持久 KV cache 读取；表格“是否参与 global 竞争”错误地把未选中窗口外位置标为不参与。下版需逐项修正，并去除多余无源说明箭头。
+
+## 第二次编辑提示词
+
+Edit this HySparse2 technical diagram. Preserve all correct existing text, numbers, panels, dense restrained style. Fix scientific connections only: (1) Cross-decoder groups are SERIAL hidden-state computation, NOT parallel. Change parenthesis to '4个串行组，每组6层'. Add explicit dark hidden stream from self top output to group1 FA then group1 SA output to group2 FA then group2 SA to group3 FA then group3 SA to group4 FA and group4 SA final output; separate blue bridging KV arrows into FAs stay and label KV. No hidden source from bridge projection. (2) Right enlarged panel DELETE arrow from Full attention down to gather. Instead route a clear blue arrow from persistent K_j,V_j cache around LEFT of Full attention directly into gather, labeled '读取历史 KV'; keep distinct cache→Full attention input. Indices→gather remains. Remove unsolicited right inward arrow '选出的K,V'; gathered KV are OUTPUT into SA. (3) Toy table '是否参与global竞争' row for positions0..5 ALL checkmarks, positions6,7 recent. Final selected row stays checks0,2,4,6,7 and crosses1,3,5. Preserve all scores and example window/budget. (4) Remove right inward orphan arrow history label at cache; place text without arrow. Right final output arrow must end in a concrete box '后续hidden stream'. Keep source capture at self FA INPUT, each own query, persistent vs temporary lifecycle, 1152 actual config. No decorative additions or formula changes. Complete non-overlapping lines with explicit endpoints.
+
+## v2 复核
+
+候选保留，不进入正文：表格及持久 KV 到 gather 的来源已修正。四组标题仍错误标为并行，新增 hidden stream 从 FA 直接进入下一组 FA，跳过该组 SA；上游 self 隐藏状态的串行起点仍不清楚。还需修正串行链，并检查读取 KV 绕线与 Q 投影是否产生视觉交点。
