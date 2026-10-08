@@ -42,4 +42,9 @@ np.testing.assert_allclose(increment, [[.72, -.66], [.96, -.88]])
 np.testing.assert_allclose(updated, [[1.72, -.66], [.96, 3.12]])
 np.testing.assert_allclose(updated.T @ query, [1.72, -.66])
 np.testing.assert_allclose(updated, (np.eye(2) - rate * np.outer(key, key)) @ np.diag(decay) @ previous + rate * np.outer(key, value))
+# 核验式 (7) 的通用 DPLR 参数映射, 写入项必须包含 beta.
+dplr_a = rate * key
+dplr_b = key * decay
+dplr_value = rate * value
+np.testing.assert_allclose(updated, (np.diag(decay) - np.outer(dplr_a, dplr_b)) @ previous + np.outer(key, dplr_value))
 print('教学图状态与输出手算通过')
