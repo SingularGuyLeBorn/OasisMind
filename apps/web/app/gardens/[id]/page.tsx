@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, PenLine, FileText } from "lucide-react";
@@ -12,9 +13,16 @@ import { CurlyMark } from "@/components/home/accentMark";
 import { Skeleton } from "@/components/ui/skeleton";
 import { postDetailHref } from "@/lib/postHref";
 
+const emptySubscribe = () => () => {};
+
 export default function GardenHomePage() {
   const params = useParams();
   const id = decodeURIComponent(params.id as string);
+  const hydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   const { data: garden, isPending, error } = trpc.garden.getById.useQuery(
     { id },
@@ -32,7 +40,7 @@ export default function GardenHomePage() {
     <div className="om-force-light om-home-surface relative w-full overflow-x-hidden">
       <HomeAmbientBackground density="lite" />
       <div className="relative mx-auto w-full max-w-6xl px-6 py-8 pb-16 lg:px-10 lg:py-12">
-        {isPending && !garden ? (
+        {!hydrated || (isPending && !garden) ? (
           <>
             <Skeleton className="mb-4 h-8 w-48" />
             <Skeleton className="h-40 w-full" />
