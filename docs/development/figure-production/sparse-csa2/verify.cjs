@@ -1,0 +1,12 @@
+const assert = require('node:assert/strict');
+const scores = [9, 1, 8, 2, 7, 0, 3, 4];
+const blocks = Array.from({ length: 4 }, (_, i) => [Math.max(...scores.slice(i * 2, i * 2 + 2)), i]);
+assert.deepEqual(blocks.map(x => x[0]), [9, 8, 7, 4]);
+const selected = blocks.sort((a, b) => b[0] - a[0]).slice(0, 2).map(x => x[1]);
+const pool = selected.flatMap(i => [2 * i, 2 * i + 1]);
+assert.deepEqual(pool, [0, 1, 2, 3]);
+const top = s => s.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]).slice(0, 2).map(x => x[1]).sort((a, b) => a - b);
+assert.deepEqual(top(scores), [0, 2]);
+assert.deepEqual(top([1, 10, 2, 9]), [1, 3]);
+assert.equal(2048 * 8, 16384);
+console.log('块最大值、候选池与两个top-k算例通过');
