@@ -43,3 +43,24 @@ expanded = sum(i in selected for i in loaded) / len(loaded)
 assert reference == masked == 1
 assert expanded == 6 / 128 != reference
 print({'selected': len(selected), 'loaded': len(loaded), 'masked_output': masked, 'expanded_output': expanded, 'status': 'PASS'})
+
+logits = [1000, 999, 1002, 998]
+values = [2, -1, 4, 3]
+maximum = max(logits)
+reference = sum(math.exp(z-maximum)*v for z,v in zip(logits, values)) / sum(math.exp(z-maximum) for z in logits)
+for groups in [[[], [0, 1], [], [2, 3]], [[0], [1], [2], [3]], [[0, 1, 2, 3]]]:
+    state = None
+    for group in groups:
+        if not group:
+            continue
+        local_max = max(logits[i] for i in group)
+        local_sum = sum(math.exp(logits[i]-local_max) for i in group)
+        local_numerator = sum(math.exp(logits[i]-local_max)*values[i] for i in group)
+        if state is None:
+            state = (local_max, local_sum, local_numerator)
+        else:
+            m, l, o = state
+            new_max = max(m, local_max)
+            state = (new_max, math.exp(m-new_max)*l + math.exp(local_max-new_max)*local_sum, math.exp(m-new_max)*o + math.exp(local_max-new_max)*local_numerator)
+    assert math.isclose(state[2]/state[1], reference, rel_tol=1e-14)
+print({'online_softmax_partitions': 3, 'output': reference, 'status': 'PASS'})
