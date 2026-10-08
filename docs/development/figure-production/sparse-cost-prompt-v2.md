@@ -1,0 +1,3 @@
+# 成本图定向编辑
+
+Edit only scientific details of this research diagram, preserve all grids, table, cache strips, typography and layout. Training backward dV→dP→dQ→dK sequence is WRONG: remove all three arrows between these four backward boxes; display four independent parallel labels dV、dP、dQ、dK with no connecting arrows. Add small clear phrase 四项主矩阵乘法 near these labels if space. Forward training firstbox replace QKᵀ with QKᵀ/√d_h (legible formula), retaining forwardarrowsoftmaxPV. Decode first operation replace 与 K₁…K₇ 点积 with 缩放点积 Q₇Kᵀ/√d_h. Keep all other details exactly unchanged. No new arrows.
