@@ -170,6 +170,19 @@ export class GardenService extends BaseService<
         message: `创建花园失败：id "${input.id}" 已存在`,
       });
     }
+    const ids = await this.prisma.garden.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+    });
+    const caseCollision = ids.find(
+      ({ id }) => id !== input.id && id.toLowerCase() === input.id.toLowerCase(),
+    );
+    if (caseCollision) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: `创建花园失败：id "${input.id}" 与已有目录 "${caseCollision.id}" 仅大小写不同`,
+      });
+    }
   }
 
   override async create(input: CreateGardenInput): Promise<OperationResult<GardenEntity>> {

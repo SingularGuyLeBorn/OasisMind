@@ -12,7 +12,7 @@ import { prisma } from "../db.js";
 describe("动态 Garden + 首页", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
   const runId = `g${Date.now().toString(36)}`;
-  const gardenId = `dyn-${runId}`;
+  const gardenId = `Dynamic${runId}`;
 
   beforeAll(async () => {
     const ctx = await createContextInner();
@@ -65,6 +65,16 @@ describe("动态 Garden + 首页", () => {
       where: { garden: gardenId, slug: { contains: "_garden" } },
     });
     expect(posts.length).toBe(0);
+  });
+
+  it("同一活动库不能只换大小写重复创建", async () => {
+    await expect(
+      caller.garden.create({
+        id: gardenId.toLowerCase(),
+        title: "大小写冲突库",
+        homeContent: "",
+      }),
+    ).rejects.toThrow("仅大小写不同");
   });
 
   it("未知花园拒绝 post.create；已有花园可写", async () => {

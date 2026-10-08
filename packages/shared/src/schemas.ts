@@ -68,7 +68,7 @@ export const gardenIdSchema = z
   .min(1)
   .max(63)
   .refine(isValidGardenIdFormat, {
-    message: "花园 id 须为小写字母开头的 [a-z0-9_-]，且不能是 about/uploads",
+    message: "花园 id 须为英文字母开头的 [A-Za-z0-9_-]，且不能是 about/uploads",
   });
 
 /** Post.garden 字段（同 gardenId） */

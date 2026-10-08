@@ -14,7 +14,24 @@ import {
   createPostAnnotationSchema,
   updatePostAnnotationSchema,
   channelAttachmentSchema,
+  gardenIdSchema,
 } from "../schemas.js";
+
+describe("Garden id Schema", () => {
+  it.each(["posts", "sparse-attention", "SparseAttention", "LLMInfrastructure", "StanfordCS336"])(
+    "接受小写 slug 与正式英文目录名：%s",
+    (id) => {
+      expect(gardenIdSchema.safeParse(id).success).toBe(true);
+    },
+  );
+
+  it.each(["about", "About", "uploads", "Uploads", "1Garden", "Garden Notes", "../Garden", "Garden/Notes"])(
+    "拒绝保留名或不安全目录名：%s",
+    (id) => {
+      expect(gardenIdSchema.safeParse(id).success).toBe(false);
+    },
+  );
+});
 
 describe("统一通道附件 Schema", () => {
   const ready = {

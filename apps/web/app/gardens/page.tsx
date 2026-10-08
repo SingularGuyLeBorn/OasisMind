@@ -164,8 +164,8 @@ export default function GardensPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input
                     value={id}
-                    onChange={(e) => setId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
-                    placeholder="短标识（如 research-notes）"
+                    onChange={(e) => setId(e.target.value.replace(/[^A-Za-z0-9_-]/g, ""))}
+                    placeholder="目录标识（如 ResearchNotes）"
                     className="font-mono text-sm"
                   />
                   <Input

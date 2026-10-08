@@ -91,7 +91,7 @@ function pickAccent(id: string, index: number): GardenCard["accent"] {
 
 function toCards(gardens: Garden[]): GardenCard[] {
   if (gardens.length === 0) return FALLBACK_GARDENS;
-  return gardens.slice(0, 6).map((g, i) => ({
+  return gardens.map((g, i) => ({
     id: g.id,
     title: g.title,
     description: g.description?.trim() || "一座本地知识库，文章与首页同根生长。",
@@ -110,7 +110,7 @@ function gardenTags(garden: GardenCard): string[] {
   if (id.includes("interview") || id.includes("面试")) return ["面试", "题集", "刷题"];
   if (id.includes("guide") || id.includes("指南")) return ["指南", "入门", "体系"];
   if (id.includes("daily") || id.includes("碎片")) return ["碎片", "日记", "随记"];
-  if (id.includes("RecursiveSelfImprovement")) return ["研究", "递归", "实验"];
+  if (id.includes("recursiveselfimprovement")) return ["研究", "递归", "实验"];
   const title = displayGardenTitle(garden.title);
   return [title.slice(0, 4), "本地", "Markdown"].filter(Boolean);
 }
@@ -120,10 +120,16 @@ function fillLevel(postCount: number): number {
 }
 
 /** 命中检测用基准 X（不含选中推开），避免 active 循环依赖 */
+function fanStep(total: number, compact: boolean): number {
+  const base = compact ? 72 : 90;
+  const shrinkPerExtraCard = compact ? 3.5 : 4;
+  const minimum = compact ? 16 : 26;
+  return Math.max(minimum, base - Math.max(0, total - 6) * shrinkPerExtraCard);
+}
+
 function baseSlotX(index: number, total: number, compact: boolean): number {
   const mid = (total - 1) / 2;
-  const step = compact ? 72 + 16 : 90 + 20;
-  return (index - mid) * step;
+  return (index - mid) * fanStep(total, compact);
 }
 
 function pickIndexFromClientX(
@@ -179,7 +185,7 @@ function slotTransform(
     };
   }
 
-  const step = compact ? 72 : 90;
+  const step = fanStep(total, compact);
 
   // 默认扇形：无选中推开，鼠标离开卡片区后回这里
   if (activeIndex === null) {

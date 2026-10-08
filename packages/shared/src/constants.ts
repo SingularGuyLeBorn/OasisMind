@@ -1020,15 +1020,16 @@ export const DEFAULT_INBOX_GARDEN = "daily-fragments" as const;
 export const RESERVED_CONTENT_DIRS = ["about", "uploads"] as const;
 
 export function isReservedContentDir(value: string): boolean {
-  return (RESERVED_CONTENT_DIRS as readonly string[]).includes(value);
+  const normalized = value.toLowerCase();
+  return (RESERVED_CONTENT_DIRS as readonly string[]).includes(normalized);
 }
 
 export function isSeedGarden(value: string): value is SeedGarden {
   return (SEED_GARDENS as readonly string[]).includes(value);
 }
 
-/** 花园 id 格式：单段小写字母数字 + -/_，禁保留名（存在性由运行时校验） */
-const GARDEN_ID_RE = /^[a-z][a-z0-9_-]{0,62}$/;
+/** 花园 id 格式：单段英文字母数字 + -/_，保留目录的正式大小写，禁保留名（存在性由运行时校验） */
+const GARDEN_ID_RE = /^[A-Za-z][A-Za-z0-9_-]{0,62}$/;
 export function isValidGardenIdFormat(value: string): boolean {
   if (!value || value !== value.trim()) return false;
   if (isReservedContentDir(value)) return false;
