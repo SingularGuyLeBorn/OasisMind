@@ -1,5 +1,11 @@
 # 跨层共享教学图提示词
 
+## 最终局部编辑
+
+只修三组连接：第一栏 query 指向 score 表；第二栏候选向下进入后层 score 表；第三栏最终 indices 绕开 query 进入 gather，query 独立进入 attention。保留全部数值、集合、公式和底部生命周期。
+
+Edit ONLY three tiny connector areas, keep everything else exactly unchanged, all values and Chinese text. 1 Left panel: the two arrows between blue q boxes and score tables currently point LEFT toward q. Reverse BOTH to point RIGHT from q into score table. 2 Middle panel: extend the vertical downward arrow from candidate slots through the white gap until its arrowhead touches TOP EDGE of lower score table; remove current arrowhead ending at layer title, route line beside title to avoid text. 3 Right panel: shared indices connector from top yellow box to KV gather currently passes through q_b box. Reroute it along left side of q_b so it does NOT touch q_b at all, its endpoint at top edge of teal KV gather. q_b retains its independent downward arrow into attention. All other arrows especially bottom panel remain unchanged. No other edits.
+
 Scientific educational technical diagram for Chinese SparseAttention article, dense useful landscape white navy teal amber crisp flat no cartoons. Title “跨层共享：省下的是状态，还是重新选择？”
 Three side-by-side top panels 1 “共享 indexer key”, 2 “共享候选池”, 3 “共享最终位置”. All examples query fixed same token step t, legal history positions 1 2 3 4; k=2. Distinguish orange indexer key from teal main K/V explicitly legend “indexer key：用于选位置；主 K/V：用于计算 attention”.
 Panel1 a single orange 4-row historical key storage labelled “共享 k^I_1…k^I_4”; two separate per-layer queries “q^I_a” and “q^I_b” connect to two separate score rows. Scores layer a [10,9,1,0] produces top2 {1,2}; layer b [10,1,9.5,0] produces top2 {1,3}. Show “仍扫描 4 个位置 × 2 层”. Emphasize shared key cache does not force shared indices.
