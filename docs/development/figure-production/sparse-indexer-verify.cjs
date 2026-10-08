@@ -33,4 +33,27 @@ assert.equal(N / G + M * H, 557056);
 // 单位置误差小于margin仍可能翻转，必须同时控制边界两侧。
 assert.ok(0.06 < 1 - 0.9);
 assert.ok(1 - 0.06 < 0.9 + 0.06);
-console.log({ decompositions, original: 6, linear: 4.5, residual: 1.5, boxBound: bound, sharedPoolDots: N / G + M * H });
+let routeCases = 0;
+for (const weights of [[1, -2, 0.5], [-1, 2, -3]]) {
+  const queries = [[1, -2], [-2, 1], [3, 1]];
+  const bounds = queries.map((h, i) => Math.abs(weights[i]) * relu(h.reduce((s, x, d) => s - Math.max(x, 0) * lower[d] + Math.max(-x, 0) * upper[d], 0)));
+  for (let budget = 0; budget <= queries.length; budget++) {
+    const routed = bounds.map((_, i) => i).sort((a, b) => bounds[b] - bounds[a] || a - b).slice(0, budget);
+    const omittedBound = bounds.reduce((s, x, i) => s + (routed.includes(i) ? 0 : x), 0);
+    for (let mask = 0; mask < 8; mask++) {
+      const subset = queries.map((_, i) => i).filter(i => mask & (1 << i));
+      if (subset.length !== budget) continue;
+      const alternative = bounds.reduce((s, x, i) => s + (subset.includes(i) ? 0 : x), 0);
+      assert.ok(omittedBound <= alternative);
+    }
+    for (let x = -1; x <= 3; x++) {
+      for (let y = 0; y <= 4; y++) {
+        const key = [x, y];
+        const omitted = queries.reduce((s, h, i) => s + (routed.includes(i) ? 0 : weights[i] * relu(-dot(h, key))), 0);
+        assert.ok(Math.abs(omitted) <= omittedBound);
+        routeCases++;
+      }
+    }
+  }
+}
+console.log({ decompositions, routeCases, original: 6, linear: 4.5, residual: 1.5, boxBound: bound, sharedPoolDots: N / G + M * H });
