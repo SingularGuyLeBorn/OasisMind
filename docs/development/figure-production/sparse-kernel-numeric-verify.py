@@ -64,3 +64,19 @@ for groups in [[[], [0, 1], [], [2, 3]], [[0], [1], [2], [3]], [[0, 1, 2, 3]]]:
             state = (new_max, math.exp(m-new_max)*l + math.exp(local_max-new_max)*local_sum, math.exp(m-new_max)*o + math.exp(local_max-new_max)*local_numerator)
     assert math.isclose(state[2]/state[1], reference, rel_tol=1e-14)
 print({'online_softmax_partitions': 3, 'output': reference, 'status': 'PASS'})
+
+dropout_cases = 0
+for bits in range(16):
+    keep = [(bits >> i) & 1 for i in range(4)]
+    expected = sum(math.exp(z-maximum)*v*a/0.5 for z,v,a in zip(logits, values, keep)) / sum(math.exp(z-maximum) for z in logits)
+    parts = []
+    for group in [[0, 1], [2, 3]]:
+        m = max(logits[i] for i in group)
+        l = sum(math.exp(logits[i]-m) for i in group)
+        o = sum(math.exp(logits[i]-m)*values[i]*keep[i]/0.5 for i in group)
+        parts.append((m,l,o))
+    combined_l = sum(math.exp(m-maximum)*l for m,l,o in parts)
+    combined_o = sum(math.exp(m-maximum)*o for m,l,o in parts)
+    assert math.isclose(combined_o/combined_l, expected, abs_tol=1e-14)
+    dropout_cases += 1
+print({'dropout_masks': dropout_cases, 'status': 'PASS'})
