@@ -1,16 +1,16 @@
-# 知识库收尾与图文并茂目标
+# SparseAttention 图文收尾目标
 
 ## 完成目标
 
-完成 OasisMind 技术知识库目录统一和重点知识库的逐篇配图. 顶级目录使用区分大小写的正式英文全称, LLMInfrastructure 保留行业缩写;同步站内路径、展示配置和写作规范. 随后逐库审查正文与现有图片, 结合论文原图和实际生图, 补足机制、流程、对比与推导中的视觉讲解. 每个可验收切片完成检查和本地提交, 最终工作树完全干净.
+本轮只完成 SparseAttention 的逐篇图文审查、必要配图与验收. 结合论文原图和实际生图, 补足机制、流程、对比与推导中的视觉讲解. 每个可验收切片检查并本地提交, 最终工作树完全干净.
 
-目录工作已有改动仍需按当前文件、配置、链接和检查结果确认, 不凭先前完成记录认定验收通过. 配图范围保留原目标中的全部重点知识库, 当前先收尾 DiffusionLanguageModels, 然后依次完成 SparseAttention、OnPolicyDistillation、LongHorizonTask、RecursiveSelfImprovement, 再处理 ReinforcementLearning、ContinualLearning、LLMInfrastructure、RetrievalAugmentedGeneration 和 Agent. DeepSeek 与 OLMo 正文继续保持用户指定的跳过范围, 仅处理既有授权范围内的图片引用问题.
+SparseAttention 验收结束后停止, 不继续其他知识库. 已完成内容保留, 不因缩小目标删除文章、图片或历史提交. DeepSeek、OLMo 正文与 model-library 不修改. SparseAttention 目录、链接及检查结果按当前文件重新确认.
 
 ## 图片完成条件
 
 1. 逐篇检查核心机制、状态变化、方法对比与推导是否需要图像. 正文已解释的内容可以成为复习卡片或并列比较图;图像应增加对应关系与可读性. 不用固定张数或新增图片数量代替完成标准.
 2. SparseAttention 优先查看论文原图, 按实际覆盖的方法检查 attention mask、压缩窗口、block 或 token 选择、indexer、GQA 共享、跨层共享与 KV 流向. 原图和公式共同决定结构, 图注记录论文版本、图号和来源链接.
-3. OnPolicyDistillation 检查学生与教师的轨迹来源、同一前缀条件、逐 token 概率与反馈、冻结和更新对象、CoT 及现代自蒸馏方法的关键差别. LongHorizonTask 检查动作与环境观察、状态延续、终局奖励、信用分配与长轨迹训练. RecursiveSelfImprovement 检查候选生成、测试与选择、更新对象、反馈闭环及外层迭代关系.
+3. 网络调研结合官方论文、实现及已配置的知乎搜索与正文读取. 抓取正文不入 Git, 正文不出现「知乎上有人说」式转述.
 4. 机制教学图实际经过生图环节, 使用用户指定的 Image 2.5 路线, 并遵循 writing-spec §3.8. 接口无法指定或确认版本时如实记录实际能力. 先提交候选图供查看, 当前已认可的 NSA、OPD、GAE 教学图保存在 `docs/assets/figure-style-references/`, 作为密度与表达方式参照, 不机械复制三栏版式. 需要可编辑源文件时用 AstraDraw 与 PPT 原生对象重建.
 5. 图内展开真实机制, 包括 token 条带、矩阵、概率分布、时间轴、局部细节或必要手算. 使用清楚、克制的技术风格, 正文宽度下能读到关键标签. 不以几个名称方框和箭头结束复杂机制的解释.
 6. 实验结果图由可追溯数据和确定性代码绘制, 参考 figures4papers, 保留 SVG 与 PNG, 正文使用 PNG. 生图中的教学数值先复算并明确标识. 科研 Poster 单独采用 pptx-posters 与 Presentations 工作流.
@@ -20,7 +20,7 @@
 
 ## 执行与验收
 
-- 一次集中处理一个知识库, 完成一个切片后检查并提交. 本轮先提交配图规范与目标文档, 随后继续处理此前未提交的 DiffusionLanguageModels 图片切片.
+- 只集中处理 SparseAttention, 完成一个切片后检查并提交;全库验收后停止, 不启动其他库.
 - 每张图留有科学来源、提示词与需要的计算或编辑源文件, 文章引用使用仓库内稳定路径. 预览候选与正式正文图片分开保存, 只有验收过的图进入文章.
 - 每个切片运行相关内容检查、图注检查、AI 味扫描和 diff 检查;新增或改动的文本文件 NUL 为 0. 技术内容保持术语、公式和数字, 人工回读处理机械句式和元评论.
 - 图片审计 zero / bad_magic / partial_zero_head / wrong_ext 全部为 0, 全库内容检查通过. 每个库的配图审查覆盖全部正文, 并逐篇记录保留、补图、重制或无需新增的判断;无需新增的判断要以实际阅读为依据.
@@ -29,4 +29,4 @@
 
 ## Goal 正文
 
-完成 OasisMind 知识库收尾:将技术知识库顶级目录统一为区分大小写的正式英文全称(LLMInfrastructure 保留行业缩写), 同步全部路径、展示配置与写作规范并验收;随后按 docs/development/knowledge-base-figure-goal.md 和 writing-spec §3.8, 一次处理一个知识库, 逐篇审查正文与图片, 以论文原图为机制依据, 实际加入生图, 为核心机制、状态变化、方法对比和推导补充可读图片与有用复习卡片. 当前收尾 DiffusionLanguageModels, 优先完成 SparseAttention、OnPolicyDistillation、LongHorizonTask、RecursiveSelfImprovement, 并保持原目标中的其余重点库范围. 核对图文一致、科学关系、公式数值与出处, 实验图由数据代码生成;运行内容、图注、AI 味、文本 NUL 和坏图检查, 分片本地提交、不 push, 持续至全部指定重点库验收通过、工作树完全干净.
+只完成 SparseAttention 图文收尾:按本文件与 writing-spec §3.8 逐篇阅读正文和图片, 以论文原图、公式与官方实现为依据, 实际加入生图, 补足核心机制、状态变化、方法对比与推导. 核对科学关系、数值、来源与变量生命周期, 验收桌面和手机实际页面. 运行内容、图注、AI 味、文本 NUL、diff 和坏图检查, 分片本地提交、不 push, 仅保留主分支. 保全已有内容与并发修改. SparseAttention 全部正文覆盖、必要图片及检查通过并且工作树干净后结束目标, 不再继续其他库.
