@@ -35,6 +35,12 @@ selected = {1, 2, 63, 64, 65, 127}
 blocks = {i // 64 for i in selected}
 loaded = {i for block in blocks for i in range(block * 64, (block + 1) * 64)}
 assert blocks == {0, 1} and len(loaded) == 128
+indptr = [0, 2]
+indices = sorted(blocks)
+page_table = [41, 7]
+assert [page_table[b] for b in indices[indptr[0]:indptr[1]]] == [41, 7]
+assert {i % 64 for i in selected if i // 64 == 0} == {1, 2, 63}
+assert {i % 64 for i in selected if i // 64 == 1} == {0, 1, 63}
 # 全部logit为0；六个候选V为1，其余加载槽V为0。
 # 仅加载不应改变定义；整块不加成员资格mask则把分母从6变成128。
 reference = sum(1 for i in selected) / len(selected)
