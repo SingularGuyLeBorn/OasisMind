@@ -31,7 +31,7 @@ export default function GardenHomePage() {
   return (
     <div className="om-force-light om-home-surface relative w-full overflow-x-hidden">
       <HomeAmbientBackground density="lite" />
-      <div className="relative mx-auto w-full max-w-3xl px-6 py-8 pb-16 lg:px-10 lg:py-12">
+      <div className="relative mx-auto w-full max-w-6xl px-6 py-8 pb-16 lg:px-10 lg:py-12">
         {isPending && !garden ? (
           <>
             <Skeleton className="mb-4 h-8 w-48" />
