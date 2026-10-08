@@ -9,3 +9,5 @@
 已实际生成candidate-v1:前向索引、历史KV来源和教学数据正确, 但KL被写为q∥p, 与梯度不一致, 未采用. candidate-v2通过定向编辑改为p∥q, 已实际查看. 两版均保留, 尚需核查反向连线是否充分表达逐算子链路;当前LM到Q及历史KV的线为到达目标的简写, 未完整经过attention、gather各节点, 不能据此认定整图验收. 正文继续保留旧引用, 下一步改进反向链路后再替换.
 
 candidate-v3实际生图编辑后逐项查看:移除跨节点的橙色线, 以完整逐算子文本链表达反向, 蓝色前向端点正确. KL方向、梯度、top-2集合及质量覆盖均与复算一致. 已采用selector-training-flow-v3.png并补充图前变量定义、图注与解析;旧图文件保留. 文本明确共享表示其他可微路径与硬索引边界的差别. 尚待桌面/手机实际页面验收, 不声称全库完成.
+
+已添加sparse-selector/verify-site.cjs并启动当前站点构建, 尚未取得此次页面验收结果. 本轮SparseAttention的17张位图只读检查均通过, 四项计数为0;检查由sparse-raster-audit.py保存, 原img_audit.py未找到, 不把此局部替代检查宣称为原脚本全库结果. 全库content-check五项通过,SparseAttention图注缺失0,AI扫描37文件hard0/soft1. 位图可解析不证明图内科学关系正确, 本页图面仍按上述逐项检查验收.
