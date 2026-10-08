@@ -22,3 +22,11 @@ assert 4 * 32 * 2 * 4 == 1024
 denominator = 12 * math.exp(-1) + 18 * math.exp(-2) + 10 + 20 * math.exp(-3)
 assert round(denominator, 2) == 17.85
 print({'pages': total_pages, 'tiles': tiles, 'capacity': capacity, 'merged_denominator': denominator, 'status': 'PASS'})
+
+# 串行教学模型：T=1 GB，带宽单位GB/s，所得时间单位秒。
+for reuse, expected_direct, expected_gather in [(1, .01, .012), (8, .08, .019)]:
+    direct = reuse / 100
+    gather = 1 / 100 + 1 / 1000 + reuse / 1000
+    assert math.isclose(direct, expected_direct)
+    assert math.isclose(gather, expected_gather)
+print({'gather_cases': 2, 'status': 'PASS'})
