@@ -753,6 +753,8 @@
 
 ### LongLoRA 配套实现
 
+论文语境补充：v2 附录 B.3 主动讨论首尾同组可能与因果 mask 不一致，Variant 2 将首尾分别成组，Variant 3 交换相关位置。Table 8 中 full、原方案、Variant 2 为 8.02、8.04、8.03。所以下项是原位置因果边界与实现差异记录，不应解释为作者未发现的程序错误，也不能以严格因果改写替代论文原方案。配图必须明确展示原方案还是 Variant 2。
+
 - **longlora-code-1** [llama_attn_replace.py，提交 b5c6809515d47ef4be34bd86b2074d540a1b897a](https://github.com/JIA-Lab-research/LongLoRA/blob/b5c6809515d47ef4be34bd86b2074d540a1b897a/llama_attn_replace.py) 的 `forward_noflashattn` 对后一半 heads 循环移位，然后复制组内三角 mask。N=8、G=4 时最后一组原位置为 6、7、0、1，query 0 会被允许读取未来 6、7。此为代码分支的原位置因果问题，不指控论文全部实验；`forward_flashattn` 通过累计长度产生错开的分段边界，不能用非 Flash 的 roll 行为代表该分支。正文区分两条路径，配图应采用原位置因果集合。
 
 ### DeepEP
