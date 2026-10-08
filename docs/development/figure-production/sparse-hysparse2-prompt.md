@@ -17,3 +17,15 @@ Edit this HySparse2 technical diagram. Preserve all correct existing text, numbe
 ## v2 复核
 
 候选保留，不进入正文：表格及持久 KV 到 gather 的来源已修正。四组标题仍错误标为并行，新增 hidden stream 从 FA 直接进入下一组 FA，跳过该组 SA；上游 self 隐藏状态的串行起点仍不清楚。还需修正串行链，并检查读取 KV 绕线与 Q 投影是否产生视觉交点。
+
+## 第三次编辑提示词
+
+Edit only LEFT model overview and connection routing; preserve right enlarged mechanism, bottom table, budget, lifecycle exactly. Change '4个并行组，每组6层' to '4个串行组，每组6层'. REMOVE all three vertical arrows directly from FA1→FA2→FA3→FA4. Instead draw dark serial arrows from SA×5 group1 OUTPUT RIGHT edge, loop through free gutter to INPUT TOP edge FA group2; likewise SA group2→FA group3 and SA group3→FA group4. Each path must start at SA output and end at next FA input, no other endpoints or crossings with labels. Keep FA→SA arrow inside each group. Start hidden stream at TOP OUTPUT of upper self SWA×12, not bridge source bus, route over projection boxes to TOP INPUT of FA group1. Bridge bus remains sourced at self FA INPUT and goes blue into each group's own projection→FA KV input. Distinguish hidden arrows dark black vs bridge blue; add a small clear label 'hidden串行：FA→SA×5→下一组FA'. Final group4 SA output ends at an explicit small box '最终hidden', not at right panel boundary. In right panel the cache→gather path must pass around Q projection with an unambiguous line bridge/crossing gap so no KV→Q connection implied. No other changes, no duplicate arrows, no dangling lines.
+
+## 第四次编辑提示词
+
+Precise text-only edit: in the top heading below cross-decoder 24层, replace '4个并行组，每组6层' with EXACT '4个串行组，每组6层'. Do not alter ANY other pixel content or arrows, boxes, math, table or layout. This one-character change 并→串 is essential. Preserve everything else.
+
+## v3/v4 复核
+
+串行箭头已从各组 SA 输出接到下一组 FA，主链从上方 self SWA 输出进入第一组。第四版标题已改为串行组。候选表格、窗口外选择与生命周期保留。仍需检查右侧 cache 读取线在 Q 投影附近的间隙是否足够清楚，以及 self 输入标注与源节点的连接；尚未放入正文或进行网页验收。
