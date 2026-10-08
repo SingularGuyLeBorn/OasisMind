@@ -747,6 +747,10 @@
 
 - **moba-1** [HTML v1 §3.1](https://arxiv.org/html/2502.13189v1) 的8K scaling配置为block size 512、top-k 3, 同段给出81.25%稀疏率, 随后总结句又写75%. 按 $1-512\times3/8192$ 为81.25%;75%属于另一个固定稀疏率的块粒度消融. 教学正文分开两组条件, 不沿用该总结句的75%. 确认范围为v1 HTML, 没有据此推断所有后续版本都相同.
 
+### Kimi Linear v1
+
+- **kimi-linear-1** [HTML v1 §6.1 Eq. (12)](https://arxiv.org/html/2510.26692v1#S6.SS1) 的求和索引是 i, 乘积结束后的 key 与 value 却仍用 j;转移顺序写为对角衰减乘秩一更新, 与 §3 Eq. (1) 的秩一更新乘对角衰减不一致. 教学正文从 Eq. (1) 递推展开, 明确采用 M_t…M_{i+1}, 并保留写入系数 β_i. Table 6 图注明确为了简洁省去 β, 因而不把该表的省略单独判为错误. 确认范围为 v1 HTML;配套数值检查验证递推、展开与分块形式一致.
+
 ### DeepEP
 
 解析：`content/deepseek/4-开源仓库/4.3-deepep/02-deepep-analysis.md`。
