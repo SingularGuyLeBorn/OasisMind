@@ -751,6 +751,10 @@
 
 - **kimi-linear-1** [HTML v1 §6.1 Eq. (12)](https://arxiv.org/html/2510.26692v1#S6.SS1) 的求和索引是 i, 乘积结束后的 key 与 value 却仍用 j;转移顺序写为对角衰减乘秩一更新, 与 §3 Eq. (1) 的秩一更新乘对角衰减不一致. 教学正文从 Eq. (1) 递推展开, 明确采用 M_t…M_{i+1}, 并保留写入系数 β_i. Table 6 图注明确为了简洁省去 β, 因而不把该表的省略单独判为错误. 确认范围为 v1 HTML;配套数值检查验证递推、展开与分块形式一致.
 
+### LongLoRA 配套实现
+
+- **longlora-code-1** [llama_attn_replace.py，提交 b5c6809515d47ef4be34bd86b2074d540a1b897a](https://github.com/JIA-Lab-research/LongLoRA/blob/b5c6809515d47ef4be34bd86b2074d540a1b897a/llama_attn_replace.py) 的 `forward_noflashattn` 对后一半 heads 循环移位，然后复制组内三角 mask。N=8、G=4 时最后一组原位置为 6、7、0、1，query 0 会被允许读取未来 6、7。此为代码分支的原位置因果问题，不指控论文全部实验；`forward_flashattn` 通过累计长度产生错开的分段边界，不能用非 Flash 的 roll 行为代表该分支。正文区分两条路径，配图应采用原位置因果集合。
+
 ### DeepEP
 
 解析：`content/deepseek/4-开源仓库/4.3-deepep/02-deepep-analysis.md`。
