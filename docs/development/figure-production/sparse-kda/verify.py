@@ -23,3 +23,23 @@ for t in range(T):
         expanded[t] += beta[i] * (q[t] @ propagation @ k[i]) * v[i]
 np.testing.assert_allclose(expanded, namespace['o_rec'], atol=1e-12, rtol=1e-12)
 print('逐步递推、时间有序展开、分块计算一致; 最大输出误差:', np.max(np.abs(expanded - namespace['o_rec'])))
+
+# 教学图二维手算: 衰减状态、旧读数、纠错增量、更新状态与当前输出.
+previous = np.array([[2., 0.], [0., 4.]])
+decay = np.array([.5, 1.])
+key = np.array([.6, .8])
+value = np.array([3., 1.])
+query = np.array([1., 0.])
+rate = .5
+decayed = decay[:, None] * previous
+read = decayed.T @ key
+error = value - read
+increment = rate * np.outer(key, error)
+updated = decayed + increment
+np.testing.assert_allclose(read, [.6, 3.2])
+np.testing.assert_allclose(error, [2.4, -2.2])
+np.testing.assert_allclose(increment, [[.72, -.66], [.96, -.88]])
+np.testing.assert_allclose(updated, [[1.72, -.66], [.96, 3.12]])
+np.testing.assert_allclose(updated.T @ query, [1.72, -.66])
+np.testing.assert_allclose(updated, (np.eye(2) - rate * np.outer(key, key)) @ np.diag(decay) @ previous + rate * np.outer(key, value))
+print('教学图状态与输出手算通过')
