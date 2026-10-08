@@ -30,3 +30,16 @@ for reuse, expected_direct, expected_gather in [(1, .01, .012), (8, .08, .019)]:
     assert math.isclose(direct, expected_direct)
     assert math.isclose(gather, expected_gather)
 print({'gather_cases': 2, 'status': 'PASS'})
+
+selected = {1, 2, 63, 64, 65, 127}
+blocks = {i // 64 for i in selected}
+loaded = {i for block in blocks for i in range(block * 64, (block + 1) * 64)}
+assert blocks == {0, 1} and len(loaded) == 128
+# 全部logit为0；六个候选V为1，其余加载槽V为0。
+# 仅加载不应改变定义；整块不加成员资格mask则把分母从6变成128。
+reference = sum(1 for i in selected) / len(selected)
+masked = sum(1 for i in loaded if i in selected) / sum(i in selected for i in loaded)
+expanded = sum(i in selected for i in loaded) / len(loaded)
+assert reference == masked == 1
+assert expanded == 6 / 128 != reference
+print({'selected': len(selected), 'loaded': len(loaded), 'masked_output': masked, 'expanded_output': expanded, 'status': 'PASS'})
