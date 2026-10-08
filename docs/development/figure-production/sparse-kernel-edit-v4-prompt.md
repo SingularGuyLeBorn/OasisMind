@@ -1,0 +1,3 @@
+# 内核图 v4 局部编辑提示词
+
+Edit ONLY two existing upper-to-lower cache arrows in this diagram. Their arrowheads currently stop at y=524 on the outer panel border. Extend BOTH vertical paths down to y=584 where the actual input rectangles begin: K path x=510 must end ON top border of 来自缓存的K rectangle, V path x=803 must end ON top border of 来自缓存的V rectangle. Route around panel explanatory sentence: if necessary shorten/shift that sentence to right so lines never cover text. Existing arrowheads at panel border must be removed, new arrowheads at K and V input top borders. This is the only change. All numeric slots, equations, Chinese labels, boxes and downstream connections remain exactly unchanged. No disconnected arrow, no gap between arrow tip and consumer.
