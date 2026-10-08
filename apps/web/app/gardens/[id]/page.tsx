@@ -1,23 +1,31 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useRef, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, PenLine, FileText } from "lucide-react";
 import { keepPreviousData } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc";
 import { PostContent } from "@/components/post/PostContent";
+import {
+  buildTocItems,
+  TableOfContents,
+  usePostTocVisible,
+} from "@/components/post/TableOfContents";
 import { ContinueReadingCard } from "@/components/post/ContinueReading";
 import { HomeAmbientBackground } from "@/components/home/HomeAmbientBackground";
 import { CurlyMark } from "@/components/home/accentMark";
 import { Skeleton } from "@/components/ui/skeleton";
 import { postDetailHref } from "@/lib/postHref";
+import { cn } from "@/lib/utils";
 
 const emptySubscribe = () => () => {};
 
 export default function GardenHomePage() {
   const params = useParams();
   const id = decodeURIComponent(params.id as string);
+  const articleRef = useRef<HTMLElement>(null);
+  const tocVisible = usePostTocVisible();
   const hydrated = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -35,11 +43,20 @@ export default function GardenHomePage() {
     orderBy: "updatedAt",
     order: "desc",
   });
+  const homeContent = garden?.homeContent ?? "";
+  const hasToc = useMemo(() => buildTocItems(homeContent).length > 0, [homeContent]);
+  const showToc = hydrated && hasToc && tocVisible;
 
   return (
     <div className="om-force-light om-home-surface relative w-full overflow-x-hidden">
       <HomeAmbientBackground density="lite" />
-      <div className="relative mx-auto w-full max-w-6xl px-6 py-8 pb-16 lg:px-10 lg:py-12">
+      <div
+        className={cn(
+          "relative w-full px-6 py-8 pb-16 lg:px-10 lg:py-12",
+          showToc && "xl:pr-[20rem] 2xl:pr-[22rem]",
+        )}
+      >
+        <div className="mx-auto w-full max-w-6xl">
         {!hydrated || (isPending && !garden) ? (
           <>
             <Skeleton className="mb-4 h-8 w-48" />
@@ -100,9 +117,12 @@ export default function GardenHomePage() {
 
         <ContinueReadingCard garden={id} className="mb-8" />
 
-        <section className="om-card-topline om-card-sheen mb-12 rounded-[1.75rem] border border-white/55 bg-white/55 p-6 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl sm:p-8">
+        <section
+          ref={articleRef}
+          className="om-card-topline om-card-sheen mb-12 rounded-[1.75rem] border border-white/55 bg-white/55 p-6 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl sm:p-8"
+        >
           <PostContent
-            content={garden.homeContent || "_（首页暂无正文，可用 GardenUpdate 编辑）_"}
+            content={homeContent || "_（首页暂无正文，可用 GardenUpdate 编辑）_"}
             postSlug={`${id}/_garden`}
             postGarden={id}
           />
@@ -128,8 +148,11 @@ export default function GardenHomePage() {
             </ul>
           )}
         </section>
+
+        <TableOfContents content={homeContent} containerRef={articleRef} />
           </>
         )}
+        </div>
       </div>
     </div>
   );
