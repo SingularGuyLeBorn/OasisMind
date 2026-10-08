@@ -12,6 +12,8 @@ export const markdownSanitizeSchema: typeof defaultSchema = {
   attributes: {
     ...defaultSchema.attributes,
     "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "id"],
+    // 同一属性的白名单必须合并在一个规则里；拆成两条时 sanitize 只采用首条。
+    code: [["className", /^language-./, "math-inline", "math-display"]],
     mark: [
       ...(defaultSchema.attributes?.mark ?? []),
       "dataAnnotation",

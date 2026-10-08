@@ -15,4 +15,12 @@ describe("Markdown 共享安全边界", () => {
     expect(markAttributes).not.toContain("onClick");
     expect(markdownSanitizeSchema.tagNames).not.toContain("script");
   });
+
+  it("保留公式渲染所需的行内与块级标记", () => {
+    expect(markdownSanitizeSchema.attributes?.code).toEqual(
+      expect.arrayContaining([
+        expect.arrayContaining(["className", expect.any(RegExp), "math-inline", "math-display"]),
+      ]),
+    );
+  });
 });

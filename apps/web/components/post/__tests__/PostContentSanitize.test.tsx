@@ -105,6 +105,17 @@ describe("PostContent sanitize", () => {
     expect(container.querySelector("table")).not.toBeNull();
   });
 
+  it("把行内与块级数学公式渲染为 KaTeX，而不是显示源码", async () => {
+    await act(async () => {
+      root.render(
+        <PostContent content={"行内 $\\sigma\\sqrt{2\\ln N}$\n\n$$\nE = mc^2\n$$"} />,
+      );
+    });
+    expect(container.querySelector("code.language-math")).toBeNull();
+    expect(container.querySelectorAll(".katex").length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelector(".katex-display")).not.toBeNull();
+  });
+
   it("空 alt 裂图仍显示占位而不是空白", async () => {
     await act(async () => {
       root.render(
