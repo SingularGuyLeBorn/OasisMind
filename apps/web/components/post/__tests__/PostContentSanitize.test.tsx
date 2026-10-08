@@ -123,13 +123,23 @@ describe("PostContent sanitize", () => {
     expect(container.textContent).toContain("配图加载失败");
   });
 
-  it("保留 heading id 用于 TOC", async () => {
+  it("按 h1-h6 的真实顺序写入与 TOC 一致的 heading id", async () => {
     await act(async () => {
-      root.render(<PostContent content={"## 标题\n"} />);
+      root.render(
+        <PostContent
+          content={"# 一级\n\n## 二级\n\n### 三级\n\n#### 四级\n\n##### 五级\n\n###### 六级\n"}
+        />,
+      );
     });
-    const h2 = container.querySelector("h2");
-    expect(h2).not.toBeNull();
-    expect(h2!.id).toBeTruthy();
+    const headings = Array.from(container.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+    expect(headings.map((heading) => heading.id)).toEqual([
+      "om-h-0",
+      "om-h-1",
+      "om-h-2",
+      "om-h-3",
+      "om-h-4",
+      "om-h-5",
+    ]);
   });
 
   it("保留手写标注所需属性，同时继续剥离事件处理器", async () => {

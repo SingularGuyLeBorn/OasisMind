@@ -16,7 +16,6 @@ import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
 import { MarkdownTable } from "@/components/post/MarkdownTable";
 import { isMathClassName } from "@/components/post/KatexFormula";
 import { KatexHtml } from "@/components/post/KatexHtml";
-import { buildTocItems, type TocItem } from "@/components/post/TableOfContents";
 import dynamic from "next/dynamic";
 import "highlight.js/styles/github.css";
 
@@ -475,13 +474,11 @@ function rehypeNormalizeCustomTags() {
 }
 
 /**
- * 把 TOC 预计算的 id 写回 h2-h4。
- * 与 TableOfContents 共用 buildTocItems，彻底消除「重复标题 id 冲突」
- * 和「math/特殊字符导致正文与目录 id 不一致」两种跳转失效。
- * index 必须放在返回函数内部：React 严格模式/重渲染时插件会被多次调用，
- * 闭包外的 index 会累加导致第二次调用跳过所有标题。
+ * 按正文 AST 中的真实标题顺序写入 TOC id。
+ * 必须把 transformer 返回给 unified；直接把 transformer 当插件传入会在注册阶段被空调用，
+ * 最终正文没有 om-h-*，目录只能走不可靠的序号兜底。
  */
-function rehypeHeadingIds(items: TocItem[]) {
+function rehypeHeadingIds() {
   return (tree: RehypeRoot) => {
     let index = 0;
     // 防御：某些 rehype 调用链（如空内容/SSR 片段）可能传非 root 或 undefined
@@ -489,11 +486,9 @@ function rehypeHeadingIds(items: TocItem[]) {
     const walk = (node: RehypeNode) => {
       if (!node || node.type !== "element") return;
       const el = node as RehypeElement;
-      if (/^h[2-4]$/.test(el.tagName) && index < items.length) {
-        const item = items[index++];
-        if (item?.id) {
-          el.properties = { ...el.properties, id: item.id };
-        }
+      if (/^h[1-6]$/.test(el.tagName)) {
+        el.properties = { ...el.properties, id: `om-h-${index}` };
+        index += 1;
       }
       if (Array.isArray(el.children)) {
         for (const child of el.children) walk(child);
@@ -537,12 +532,11 @@ export const PostContent = memo(function PostContent({
     [content],
   );
 
-  const tocItems = useMemo(() => buildTocItems(content), [content]);
   const rehypePluginsBeforeSanitize = useMemo(() => [rehypeNormalizeCustomTags], []);
   const rehypePluginsAfterSanitize = useMemo(
     // 本地页用自定义 KaTeX 组件，因此只在共享 sanitize 之后追加标题 id 与代码高亮。
-    () => [rehypeHeadingIds(tocItems), rehypeHighlight],
-    [tocItems],
+    () => [rehypeHeadingIds, rehypeHighlight],
+    [],
   );
 
   const components = useMemo<Components>(

@@ -80,17 +80,21 @@ function scrollToId(id: string, container: HTMLElement | null, attempt = 0) {
     window.setTimeout(() => scrollToId(id, container, attempt + 1), 50);
     return;
   }
-  // 兜底：按索引直接取第 N 个 h2/h3/h4，避免 id 生成/渲染不一致导致点击无响应
+  // 兜底：按索引直接取第 N 个标题；必须覆盖 h1-h6，与 buildTocItems 的编号范围一致。
   const idxMatch = /^om-h-(\d+)$/.exec(id);
   if (!idxMatch) return;
   const targetIndex = Number(idxMatch[1]);
   const headings = container
-    ? Array.from(container.querySelectorAll("h2, h3, h4"))
+    ? Array.from(container.querySelectorAll("h1, h2, h3, h4, h5, h6"))
     : (() => {
         const main = document.querySelector(".om-post-content");
         return main
-          ? Array.from(main.querySelectorAll("h2, h3, h4"))
-          : Array.from(document.querySelectorAll("article.om-post-swap h2, article.om-post-swap h3, article.om-post-swap h4"));
+          ? Array.from(main.querySelectorAll("h1, h2, h3, h4, h5, h6"))
+          : Array.from(
+              document.querySelectorAll(
+                "article.om-post-swap h1, article.om-post-swap h2, article.om-post-swap h3, article.om-post-swap h4, article.om-post-swap h5, article.om-post-swap h6",
+              ),
+            );
       })();
   const target = headings[targetIndex];
   if (target) {
