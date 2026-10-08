@@ -1,0 +1,3 @@
+# 第三版定向编辑
+
+Edit ONLY bottom time-axis panel. Preserve whole top panel, title, correct matrices and layer table exactly. Remove ALL arrows and loose numeric labels between rows. Remove empty dashed rectangular box in gap in upper row. Show time states as explicit comparison, no arrows: t=8 amber cells1,2 then blue6,7,8; t=9 amber1,2 then blue7,8,9. Keep both braces 固定起始 KV and 最近窗口. In whitespace between rows put short statement 新增 9；淘汰 6；1、2、7、8 保留. Remove crossedout6 drawing now redundant. Keep bottom-right equation and both text statements identical. Do not create any new arrows, boxes, or labels. This is a state comparison chart, not flowchart.
