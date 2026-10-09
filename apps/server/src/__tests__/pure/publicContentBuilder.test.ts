@@ -129,6 +129,41 @@ describe("buildPublicContent", () => {
     expect(post.post.content).toMatch(/\/OasisMind\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.webp/);
   });
 
+  it("首页与正文的跨库、前向和锚点链接统一指向已公开路由，草稿不被发布", async () => {
+    const { contentDir, outputDir } = createFixture();
+    fs.mkdirSync(path.join(contentDir, "other"));
+    fs.writeFileSync(path.join(contentDir, "notes", "_garden.md"),
+      "---\npublished: true\n---\n[入口](a.md)\n![首页图](images/home.svg)\n");
+    fs.writeFileSync(path.join(contentDir, "notes", "images", "home.svg"),
+      '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>');
+    fs.writeFileSync(path.join(contentDir, "notes", "a.md"),
+      ["---", "published: true", "---", "[后文](z.md#推导)",
+        "[跨库](../other/公开.md)", "[绝对](/content/other/公开.md?view=1#结果)",
+        "[首页](_garden.md)", "[引用][later]", "[later]: z.md#引用",
+        '<a href="z.md">后文</a>', "[草稿](draft.md)", "[越界](../../private.md)",
+        "[外部](https://example.com/report.md)", "[本页](#本页)", ""].join("\n"));
+    fs.writeFileSync(path.join(contentDir, "notes", "z.md"), "---\npublished: true\n---\n后文\n");
+    fs.writeFileSync(path.join(contentDir, "other", "公开.md"), "---\npublished: true\n---\n跨库\n");
+    fs.writeFileSync(path.join(contentDir, "notes", "draft.md"), "---\npublished: false\n---\n私人正文\n");
+    const result = await buildPublicContent({ contentDir, outputDir, publicBasePath: "/OasisMind" });
+    const post = JSON.parse(fs.readFileSync(path.join(outputDir, "posts", "notes", "a.json"), "utf8")).post;
+    expect(post.content).toContain("[后文](/OasisMind/articles/notes/z#推导)");
+    expect(post.content).toContain("/OasisMind/articles/other/%E5%85%AC%E5%BC%80?view=1#结果");
+    expect(post.content).toContain("[首页](/OasisMind/gardens/notes)");
+    expect(post.content).toContain("[later]: /OasisMind/articles/notes/z#引用");
+    expect(post.content).toContain('href="/OasisMind/articles/notes/z"');
+    expect(post.content).toContain("[草稿](draft.md)");
+    expect(post.content).toContain("[越界](../../private.md)");
+    expect(post.content).toContain("https://example.com/report.md");
+    expect(post.content).toContain("[本页](#本页)");
+    expect(result.warnings).toHaveLength(2);
+    expect(fs.existsSync(path.join(outputDir, "posts", "notes", "draft.json"))).toBe(false);
+    const garden = JSON.parse(fs.readFileSync(path.join(outputDir, "gardens", "notes.json"), "utf8")).garden;
+    expect(garden.homeContent).toContain("[入口](/OasisMind/articles/notes/a)");
+    expect(garden.homeContent).toContain("/OasisMind/api/v1/assets/");
+    expect(verifyPublicContentProjection(contentDir, outputDir)).toMatchObject({ postCount: 3, assetCount: 1 });
+  });
+
   it("视频、音频和普通附件都进入公开白名单，并改写为项目站哈希地址", async () => {
     const { contentDir, outputDir } = createFixture();
     const mediaDir = path.join(contentDir, "notes", "media");

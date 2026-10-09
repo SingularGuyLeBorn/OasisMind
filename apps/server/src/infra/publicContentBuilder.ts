@@ -274,16 +274,32 @@ function resolveLocalAsset(
  * 改写 Markdown 中的本地资源引用，并登记需要复制的文件。
  * 这里只解析常见 Markdown 与 HTML 属性；无法确认的写法保持原文并产生构建警告。
  */
-function rewriteAssetReferences(
+function rewriteLocalReferences(
   content: string,
   articlePath: string,
   contentDir: string,
   publicBasePath: string,
   assets: Map<string, ResolvedAsset>,
   warnings: string[],
+  articleRoutes: ReadonlyMap<string, string>,
 ): string {
   const rewrite = (reference: string): string => {
     try {
+      const unwrapped = reference.trim().replace(/^<|>$/g, "");
+      if (unwrapped && !unwrapped.startsWith("#") && !/^(?:[a-z]+:|\/\/)/i.test(unwrapped)) {
+        const { pathname, suffix } = splitReferenceSuffix(decodeURI(unwrapped));
+        if (/\.md$/i.test(pathname)) {
+          const source = pathname.startsWith("/content/")
+            ? path.resolve(contentDir, pathname.slice("/content/".length))
+            : pathname.startsWith("/api/posts/assets/")
+              ? path.resolve(contentDir, pathname.slice("/api/posts/assets/".length))
+              : pathname.startsWith("/") ? null : path.resolve(path.dirname(articlePath), pathname);
+          const route = source ? articleRoutes.get(source) : undefined;
+          if (route) return `${route}${suffix}`;
+          warnings.push(`文章链接未进入公开索引：${toPosixPath(path.relative(contentDir, articlePath))} -> ${reference}`);
+          return reference;
+        }
+      }
       const resolved = resolveLocalAsset(reference, articlePath, contentDir, publicBasePath);
       if (!resolved) {
         const { pathname: candidate } = splitReferenceSuffix(reference.trim().replace(/^<|>$/g, ""));
@@ -399,14 +415,7 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
         const relativeMarkdownPath = toPosixPath(path.relative(garden.directory, articlePath));
         const slug = relativeMarkdownPath.replace(/\.md$/i, "");
         const title = readString(parsed.data.title) ?? path.basename(slug);
-        const rewrittenContent = rewriteAssetReferences(
-          parsed.content.replace(/^\uFEFF/, ""),
-          articlePath,
-          contentDir,
-          publicBasePath,
-          assets,
-          warnings,
-        );
+        const sourceContent = parsed.content.replace(/^\uFEFF/, "");
         const id = `${garden.id}/${slug}`;
         const apiPath = publicPath(publicBasePath, `/api/v1/posts/${encodePublicPath(id)}.json`);
         const markdownPath = publicPath(publicBasePath, `/api/v1/posts/${encodePublicPath(id)}.md`);
@@ -415,13 +424,13 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
           garden: garden.id,
           slug,
           title,
-          excerpt: readString(parsed.data.excerpt) ?? createExcerpt(rewrittenContent),
+          excerpt: readString(parsed.data.excerpt) ?? createExcerpt(sourceContent),
           category: readString(parsed.data.category),
           tags: readTags(parsed.data.tags),
           apiPath,
           markdownPath,
-          content: rewrittenContent,
-          contentHash: createHash("sha256").update(rewrittenContent).digest("hex"),
+          content: sourceContent,
+          contentHash: "",
         };
         gardenPosts.push(post);
         posts.push(post);
@@ -439,6 +448,30 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
       }
     }
 
+    // 先完整发现严格 published=true 的集合，再统一改写链接；跨库与前向引用不受扫描顺序影响。
+    const articleRoutes = new Map(posts.map((post) => [
+      path.resolve(contentDir, post.garden, `${post.slug}.md`),
+      publicPath(publicBasePath, `/articles/${encodePublicPath(post.id)}`),
+    ]));
+    for (const garden of publicGardens) {
+      articleRoutes.set(
+        path.resolve(contentDir, garden.id, GARDEN_META_FILE),
+        publicPath(publicBasePath, `/gardens/${encodeURIComponent(garden.id)}`),
+      );
+    }
+    for (const post of posts) {
+      post.content = rewriteLocalReferences(
+        post.content, path.resolve(contentDir, post.garden, `${post.slug}.md`),
+        contentDir, publicBasePath, assets, warnings, articleRoutes,
+      );
+      post.contentHash = createHash("sha256").update(post.content).digest("hex");
+    }
+    for (const garden of publicGardens) {
+      garden.homeContent = rewriteLocalReferences(
+        garden.homeContent, path.resolve(contentDir, garden.id, GARDEN_META_FILE),
+        contentDir, publicBasePath, assets, warnings, articleRoutes,
+      );
+    }
     posts.sort((left, right) => left.id.localeCompare(right.id, "zh-CN"));
     const summaries = posts.map(({ content: _content, contentHash: _hash, ...summary }) => summary);
     const manifest: PublicContentManifest = {

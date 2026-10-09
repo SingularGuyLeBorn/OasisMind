@@ -185,6 +185,7 @@ export function verifyPublicContentProjection(
     if (envelope.schemaVersion !== PUBLIC_CONTENT_SCHEMA_VERSION) throw new Error(`${relative} schemaVersion 不受支持`);
     if (envelope.garden.id !== garden.id || envelope.posts.length !== garden.postCount) throw new Error(`${relative} 计数或 id 不一致`);
     envelope.posts.forEach((post) => assertSummaryShape(post, `${relative} 文章 ${post.id}`));
+    for (const asset of collectAssetPaths(garden.homeContent)) expectedAssets.add(asset);
   }
 
   const search = readJson<PublicSearchManifest>(path.join(outputDir, "search.json"));

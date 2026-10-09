@@ -10,3 +10,10 @@ export function articleHref(post: Pick<PublicPostSummary, "garden" | "slug">): s
     .map(encodeURIComponent)
     .join("/")}`;
 }
+
+/** 已发布文章已由投影生成器转为 /articles/；其余本地 .md 引用没有公开目标。 */
+export function isUnpublishedMarkdownReference(href: string | undefined): boolean {
+  if (!href || /^(?:[a-z]+:|\/\/|#)/i.test(href)) return false;
+  if (/(?:^|\/)api\/v1\/posts\//.test(href)) return false;
+  return /\.md(?:[?#].*)?$/i.test(href);
+}

@@ -8,6 +8,7 @@ import { useEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from
 import { MarkdownRendererCore } from "@oasismind/markdown";
 import { annotate } from "rough-notation";
 import { withSiteBasePath } from "@/siteConfig";
+import { isUnpublishedMarkdownReference } from "@/lib/publicRoutes";
 
 type PublicRoughAnnotationType =
   | "underline"
@@ -62,7 +63,10 @@ export function PublicMarkdown({ content }: { content: string }) {
       className="article-prose"
       components={{
         mark: RoughMark,
-        a: ({ href, children, ...props }) => (
+        // [OM-FREEPLAY] 未公开的本地目标显示为文字，保留作者标签并避免让读者点进 404；不自动发布草稿。
+        a: ({ href, children, ...props }) => isUnpublishedMarkdownReference(href) ? (
+          <span title="目标文章尚未公开">{children}</span>
+        ) : (
           <a
             {...props}
             href={href ? withSiteBasePath(href) : href}

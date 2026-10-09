@@ -9,7 +9,7 @@ const base = process.env.PUBLIC_SITE_CHECK_URL || 'https://singularguyleborn.git
 const origin = new URL(base).origin;
 const root = new URL(base).pathname.replace(/\/$/, '');
 const resolve = (p) => new URL(p, origin).href;
-const stats = { pages: 0, articles: 0, resources: 0, browserViews: 0 };
+const stats = { pages: 0, articles: 0, resources: 0, articleLinks: 0, browserViews: 0 };
 
 async function get(p, expected = 200) {
   const response = await fetch(resolve(p), { signal: AbortSignal.timeout(20000) });
@@ -43,13 +43,17 @@ async function main() {
   assert.ok(index.posts.length > 0);
   assert.equal(search.posts.length, index.posts.length);
   const samples = index.posts.filter(p => p.garden === 'SparseAttention');
+  const linkedPost = index.posts.find(p => p.garden === 'model-library' && p.slug.endsWith('deepseek-v4-1-flash-analysis'));
+  assert.ok(linkedPost, 'Cross-article link regression sample missing');
   for (const garden of index.gardens) {
     await get(`${root}/gardens/${encodeURIComponent(garden.id)}`);
     const sample = index.posts.find(p => p.garden === garden.id);
     if (sample && sample.garden !== 'SparseAttention') samples.push(sample);
     stats.pages++;
   }
+  if (!samples.some(p => p.id === linkedPost.id)) samples.push(linkedPost);
   const images = new Set();
+  const articleLinks = new Set();
   await mapBounded(samples, async (p) => {
     const response = await get(p.apiPath);
     const data = await response.json();
@@ -59,11 +63,16 @@ async function main() {
     const html = await (await get(article)).text();
     assert.ok(html.includes('<title>'), `${p.id}: missing document title`);
     assert.ok(!html.includes('localhost:3010'), `${p.id}: backend URL leaked`);
+    for (const match of data.post.content.matchAll(/\]\(([^\s)]*\/articles\/[^\s)]+)\)/g)) {
+      const url = new URL(match[1], origin);
+      if (url.origin === origin) articleLinks.add(url.pathname);
+    }
     if (p.garden === 'SparseAttention') {
       for (const match of data.post.content.matchAll(/\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.[a-z0-9]+/g)) images.add(root + match[0]);
     }
     stats.articles++;
   });
+  await mapBounded([...articleLinks], async p => { await get(p); stats.articleLinks++; });
   assert.ok(images.size > 0, 'SparseAttention resource collection is empty');
   await mapBounded([...images], async (p) => {
     const response = await get(p);
@@ -108,6 +117,14 @@ async function main() {
       await page.close();
       stats.browserViews++;
     }
+    const page = await browser.newPage();
+    await page.goto(resolve(`${root}/articles/${linkedPost.garden}/${linkedPost.slug.split('/').map(encodeURIComponent).join('/')}`), { waitUntil: 'networkidle' });
+    await page.getByRole('link', { name: 'DeepSeek LLM 报告', exact: true }).click();
+    await page.waitForLoadState('networkidle');
+    assert.ok(!page.url().endsWith('.md'), 'Source Markdown link leaked into article navigation');
+    assert.ok((await page.locator('.article-header h1').innerText()).includes('DeepSeek'));
+    await page.close();
+    stats.browserViews++;
   } finally {
     await browser.close();
   }
