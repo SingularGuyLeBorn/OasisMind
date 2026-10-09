@@ -1,0 +1,44 @@
+const { chromium } = require('../../../apps/web/node_modules/@playwright/test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { createHash } = require('node:crypto');
+const sharp = require('../../../apps/server/node_modules/sharp');
+(async () => {
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  try {
+    for (const width of [1280, 390]) {
+      const page = await browser.newPage({ viewport: { width, height: 1000 } });
+      try {
+        const parts = ['articles', 'SparseAttention', '2-动态路由', '2.4-训练原生稀疏', '2.4.1-NSA'];
+        const url = `http://127.0.0.1:3003/${parts.map(encodeURIComponent).join('/')}.html`;
+        assert.equal((await page.goto(url, { waitUntil: 'networkidle' })).status(), 200);
+        const layout = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
+        assert.ok(layout.scrollWidth <= layout.viewport + 1);
+        assert.equal(await page.locator('.katex-error').count(), 0);
+        const body = await page.locator('body').innerText();
+        assert.ok(body.includes('历史长度'));
+        assert.ok(body.includes('4095') || body.includes('5631'));
+        assert.ok(body.includes('门控'));
+        assert.ok(!body.includes('独立 Top-k 的并集是质量上界'));
+        const img = page.getByAltText('NSA 三分支的训练与推理数据流', { exact: true });
+        await img.scrollIntoViewIfNeeded();
+        await img.evaluate(i => i.decode());
+        const state = await img.evaluate(i => ({ width: i.getBoundingClientRect().width, naturalWidth: i.naturalWidth, src: i.currentSrc }));
+        assert.equal(state.naturalWidth, 1536);
+        const asset = await page.request.get(state.src);
+        assert.equal(asset.status(), 200);
+        const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+        const source = fs.readFileSync('content/SparseAttention/2-动态路由/2.4-训练原生稀疏/images/nsa-three-branch-flow-v7.png');
+        assert.ok(state.src.includes(hash(source)));
+        const expected = await sharp(source).rotate().resize({ width: 2400, withoutEnlargement: true }).webp({ quality: 82, effort: 4 }).toBuffer();
+        assert.equal(hash(await asset.body()), hash(expected));
+        const enlarged = new URL(await page.getByRole('link', { name: '放大查看NSA数据流', exact: true }).getAttribute('href'), url).href;
+        const enlargedResponse = await page.request.get(enlarged);
+        assert.equal(enlargedResponse.status(), 200);
+        assert.equal(hash(await enlargedResponse.body()), hash(expected));
+        await page.screenshot({ path: `docs/development/figure-production/sparse-nsa-site-${width}.png` });
+        console.log(JSON.stringify({ articleStatus: 200, assetStatus: 200, enlargedStatus: 200, sourceHashMatches: true, webpBytesMatch: true, katexErrors: 0, ...layout, ...state }));
+      } finally { await page.close(); }
+    }
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });
