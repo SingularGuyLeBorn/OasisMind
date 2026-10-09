@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-R1: 用规则奖励的 RL 训出长推理"
+title: "02 · DeepSeek-R1: 用规则奖励的 RL 训出长推理"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

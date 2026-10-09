@@ -1,5 +1,5 @@
 ---
-title: "TÜLU 2 技术解析: 数据混合、全量微调、DPO 与 QLoRA 的系统对照"
+title: "02 · TÜLU 2 技术解析: 数据混合、全量微调、DPO 与 QLoRA 的系统对照"
 category: "后训练与奖励模型"
 tags: ["TÜLU 2", "指令微调", "DPO", "QLoRA", "数据混合"]
 published: true

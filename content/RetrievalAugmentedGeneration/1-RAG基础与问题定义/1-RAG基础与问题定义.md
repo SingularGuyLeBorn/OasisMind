@@ -1,5 +1,5 @@
 ---
-title: "RAG 基础与问题定义"
+title: "1 · RAG 基础与问题定义"
 category: "大模型应用"
 published: true
 excerpt: "用任务契约、证据需求和最小基线界定 RAG 的适用范围."

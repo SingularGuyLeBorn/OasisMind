@@ -1,5 +1,5 @@
 ---
-title: "mHC: 双随机约束下的超连接, 增益, 开销与实验口径"
+title: "02 · mHC: 双随机约束下的超连接, 增益, 开销与实验口径"
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "残差连接", "Hyper-Connections", "Sinkhorn-Knopp"]
 published: true

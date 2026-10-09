@@ -1,5 +1,5 @@
 ---
-title: "olmOCR 技术解析：从 PDF 页面到可恢复的文档转换流水线"
+title: "02 · olmOCR 技术解析：从 PDF 页面到可恢复的文档转换流水线"
 category: "开源仓库"
 tags: ["OLMo", "olmOCR", "PDF", "VLM", "任务队列", "OCR Benchmark"]
 published: true

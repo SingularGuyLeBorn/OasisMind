@@ -1,5 +1,5 @@
 ---
-title: "高级 RAG 与训练"
+title: "5 · 高级 RAG 与训练"
 category: "大模型应用"
 published: true
 excerpt: "从单次检索扩展到查询改写、多跳控制、自反思和面向证据的训练."

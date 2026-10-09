@@ -1,5 +1,5 @@
 ---
-title: "DSpark 技术解析: 半自回归草稿与置信度调度"
+title: "02 · DSpark 技术解析: 半自回归草稿与置信度调度"
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "投机解码", "DSpark"]
 published: true

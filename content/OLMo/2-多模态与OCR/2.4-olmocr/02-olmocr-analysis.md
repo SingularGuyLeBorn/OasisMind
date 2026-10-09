@@ -1,5 +1,5 @@
 ---
-title: "olmOCR: 用文档锚点把 PDF 页面线性化为训练文本"
+title: "02 · olmOCR: 用文档锚点把 PDF 页面线性化为训练文本"
 category: "多模态与OCR"
 tags: ["OLMo", "OCR", "PDF", "视觉语言模型", "数据工程"]
 published: true

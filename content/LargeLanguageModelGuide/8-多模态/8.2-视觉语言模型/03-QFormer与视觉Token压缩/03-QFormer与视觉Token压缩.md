@@ -1,5 +1,5 @@
 ---
-title: "Q-Former 与视觉 Token 压缩"
+title: "03 · Q-Former 与视觉 Token 压缩"
 category: "视觉语言模型"
 published: true
 excerpt: "从 BLIP-2 原论文出发,区分 Q-Former,Perceiver Resampler,TokenLearner 与普通投影器的压缩机制和边界."

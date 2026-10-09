@@ -1,5 +1,5 @@
 ---
-title: "Engram: 用哈希 N-gram 查表给 MoE 加一条记忆轴"
+title: "02 · Engram: 用哈希 N-gram 查表给 MoE 加一条记忆轴"
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "Engram", "MoE", "条件记忆"]
 published: true

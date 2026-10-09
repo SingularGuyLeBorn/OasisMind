@@ -1,5 +1,5 @@
 ---
-title: "ERNIE 4.5: 异构 MoE 与一套开源部署链"
+title: "4 · ERNIE 4.5: 异构 MoE 与一套开源部署链"
 category: "模型库"
 tags: ["ERNIE", "技术解析"]
 published: true

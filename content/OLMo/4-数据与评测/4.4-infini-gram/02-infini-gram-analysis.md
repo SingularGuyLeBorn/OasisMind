@@ -1,5 +1,5 @@
 ---
-title: "Infini-gram 技术解析：用后缀数组复活无限阶 n-gram"
+title: "02 · Infini-gram 技术解析：用后缀数组复活无限阶 n-gram"
 category: "数据与评测"
 tags: ["Infini-gram", "n-gram", "后缀数组", "语言模型", "数据分析"]
 published: true

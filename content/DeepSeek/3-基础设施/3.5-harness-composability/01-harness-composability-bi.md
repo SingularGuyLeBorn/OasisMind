@@ -1,5 +1,5 @@
 ---
-title: "A Programming Paradigm for Spatiotemporal Composability 论文中英对照"
+title: "01 · A Programming Paradigm for Spatiotemporal Composability 论文中英对照"
 category: "DeepSeek"
 tags:
   - Agent Harness

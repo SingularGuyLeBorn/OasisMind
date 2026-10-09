@@ -1,5 +1,5 @@
 ---
-title: "LLaVA 架构深度解析"
+title: "02 · LLaVA 架构深度解析"
 category: "视觉语言模型"
 published: true
 excerpt: "按原始论文与官方项目区分 LLaVA,LLaVA-1.5,LLaVA-NeXT 和 LLaVA-OneVision 的架构,数据,训练阶段与评测边界."

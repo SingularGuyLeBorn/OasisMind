@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-OCR 2 英中对照"
+title: "01 · DeepSeek-OCR 2 英中对照"
 category: "模型技术报告"
 tags: ["DeepSeek", "OCR", "视觉编码器", "双语对照"]
 published: true

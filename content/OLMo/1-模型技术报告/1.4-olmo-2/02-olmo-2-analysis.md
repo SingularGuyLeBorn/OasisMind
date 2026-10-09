@@ -1,5 +1,5 @@
 ---
-title: "OLMo 2: 先把全开放 dense 线训稳, 再用退火与 RLVR 追上开权重"
+title: "02 · OLMo 2: 先把全开放 dense 线训稳, 再用退火与 RLVR 追上开权重"
 category: "模型库"
 tags: ["OLMo", "技术解析"]
 published: true

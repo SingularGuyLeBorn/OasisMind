@@ -1,5 +1,5 @@
 ---
-title: "Dolma Toolkit 技术解析：从文档流到可审计的训练语料"
+title: "02 · Dolma Toolkit 技术解析：从文档流到可审计的训练语料"
 category: "开源仓库"
 tags: ["OLMo", "Dolma", "数据工程", "过滤", "去重", "数据混合"]
 published: true

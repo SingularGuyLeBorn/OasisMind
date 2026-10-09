@@ -1,5 +1,5 @@
 ---
-title: "ERNIE-3.5-8K: 千帆文档站上的一页对话 API 说明"
+title: "3 · ERNIE-3.5-8K: 千帆文档站上的一页对话 API 说明"
 category: "模型库"
 tags: ["ERNIE", "技术解析"]
 published: true

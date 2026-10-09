@@ -1,5 +1,5 @@
 ---
-title: "olmOCR 2 技术解析：把文档识别变成可验证的单元测试"
+title: "02 · olmOCR 2 技术解析：把文档识别变成可验证的单元测试"
 category: "多模态与 OCR"
 tags: ["olmOCR", "OCR", "RLVR", "GRPO", "文档解析"]
 published: true

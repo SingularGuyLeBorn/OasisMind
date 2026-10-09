@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-GRM: 自生成原则的奖励模型与 TestingTime 投票"
+title: "02 · DeepSeek-GRM: 自生成原则的奖励模型与 TestingTime 投票"
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "奖励模型", "GRM", "SPCT"]
 published: true

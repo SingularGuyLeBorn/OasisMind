@@ -1,5 +1,5 @@
 ---
-title: "Olmo Hybrid: 把 SWA 换成 GDN, 从表达力一路推到 token 效率"
+title: "02 · Olmo Hybrid: 把 SWA 换成 GDN, 从表达力一路推到 token 效率"
 category: "模型库"
 tags: ["OLMo", "技术解析"]
 published: true

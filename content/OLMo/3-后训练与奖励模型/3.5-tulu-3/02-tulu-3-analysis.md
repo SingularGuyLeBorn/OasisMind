@@ -1,5 +1,5 @@
 ---
-title: "Tülu 3 深度解析: 开放后训练如何成为系统工程"
+title: "02 · Tülu 3 深度解析: 开放后训练如何成为系统工程"
 category: "后训练与奖励模型"
 tags: ["Tülu 3", "SFT", "DPO", "RLVR", "评测"]
 published: true

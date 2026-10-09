@@ -1,5 +1,5 @@
 ---
-title: "Runtime可靠性与安全"
+title: "5 · Runtime可靠性与安全"
 category: "Agent"
 published: true
 excerpt: "把模型决策放进状态机、沙箱、权限、预算与可观测性组成的执行控制面。"

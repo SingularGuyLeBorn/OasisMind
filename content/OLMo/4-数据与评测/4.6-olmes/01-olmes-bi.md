@@ -1,5 +1,5 @@
 ---
-title: "OLMES 对照译稿"
+title: "01 · OLMES 对照译稿"
 category: "数据与评测"
 tags: ["OLMES", "语言模型评测", "可复现性", "多项选择"]
 published: true

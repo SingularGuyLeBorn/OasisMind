@@ -1,5 +1,5 @@
 ---
-title: "Olmo 3 · 对照译稿"
+title: "01 · Olmo 3 · 对照译稿"
 category: "模型库"
 tags: ["OLMo", "对照译稿"]
 published: true

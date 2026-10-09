@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-OCR · 对照译稿"
+title: "01 · DeepSeek-OCR · 对照译稿"
 category: "模型技术报告"
 tags: ["DeepSeek", "OCR", "对照译稿"]
 published: true

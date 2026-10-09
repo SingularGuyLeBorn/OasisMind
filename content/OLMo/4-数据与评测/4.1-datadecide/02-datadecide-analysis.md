@@ -1,5 +1,5 @@
 ---
-title: "DataDecide 技术解析: 用小规模实验选择预训练数据"
+title: "02 · DataDecide 技术解析: 用小规模实验选择预训练数据"
 category: "数据与评测"
 tags: ["DataDecide", "预训练数据", "Scaling Laws", "决策准确率", "OLMES"]
 published: true

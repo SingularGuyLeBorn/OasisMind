@@ -1,5 +1,5 @@
 ---
-title: "01 · Sutskever–Carmack 阅读书目"
+title: "2 · Sutskever–Carmack 阅读书目"
 category: "索引"
 published: true
 excerpt: "区分未公开的私人原始清单,27 项社区重建版本与本站主题学习路线,并提供逐项一手资料入口."

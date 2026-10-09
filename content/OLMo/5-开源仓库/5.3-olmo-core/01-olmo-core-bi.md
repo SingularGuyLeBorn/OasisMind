@@ -1,5 +1,5 @@
 ---
-title: "OLMo-core 官方文档对照译稿"
+title: "01 · OLMo-core 官方文档对照译稿"
 category: "开源仓库"
 tags: ["OLMo", "OLMo-core", "对照译稿", "训练框架"]
 published: true

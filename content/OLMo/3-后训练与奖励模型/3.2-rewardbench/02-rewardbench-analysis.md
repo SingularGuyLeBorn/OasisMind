@@ -1,5 +1,5 @@
 ---
-title: "RewardBench: 奖励模型到底学会了怎样的偏好"
+title: "02 · RewardBench: 奖励模型到底学会了怎样的偏好"
 category: "后训练与奖励模型"
 tags: ["OLMo", "技术解析", "RewardBench", "奖励模型", "RLHF", "DPO"]
 published: true

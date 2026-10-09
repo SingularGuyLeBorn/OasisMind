@@ -1,5 +1,5 @@
 ---
-title: "DeepSeekMoE: 细粒度专家切分与共享专家隔离"
+title: "02 · DeepSeekMoE: 细粒度专家切分与共享专家隔离"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析", "MoE", "DeepSeekMoE", "负载均衡"]
 published: true

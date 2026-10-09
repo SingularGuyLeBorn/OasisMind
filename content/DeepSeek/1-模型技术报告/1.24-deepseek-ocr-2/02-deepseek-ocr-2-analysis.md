@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-OCR 2: 用因果 query 重排文档视觉 token"
+title: "02 · DeepSeek-OCR 2: 用因果 query 重排文档视觉 token"
 category: "模型技术报告"
 tags: ["DeepSeek", "OCR", "视觉编码器", "因果注意力", "文档解析"]
 published: true

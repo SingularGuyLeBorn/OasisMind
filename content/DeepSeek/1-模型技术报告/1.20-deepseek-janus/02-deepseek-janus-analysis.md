@@ -1,5 +1,5 @@
 ---
-title: "Janus: 看图和画图各用一套视觉编码"
+title: "02 · Janus: 看图和画图各用一套视觉编码"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

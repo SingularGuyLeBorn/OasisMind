@@ -1,5 +1,5 @@
 ---
-title: "NSA: 从预训练起就稀疏的注意力"
+title: "02 · NSA: 从预训练起就稀疏的注意力"
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "稀疏注意力", "长上下文", "Triton"]
 published: true

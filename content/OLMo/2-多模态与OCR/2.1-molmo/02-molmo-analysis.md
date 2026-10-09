@@ -1,5 +1,5 @@
 ---
-title: "Molmo 与 PixMo: 不经 VLM 蒸馏的开放视觉语言模型"
+title: "02 · Molmo 与 PixMo: 不经 VLM 蒸馏的开放视觉语言模型"
 category: "多模态与OCR"
 tags: ["OLMo", "技术解析", "多模态", "VLM", "Molmo"]
 published: true

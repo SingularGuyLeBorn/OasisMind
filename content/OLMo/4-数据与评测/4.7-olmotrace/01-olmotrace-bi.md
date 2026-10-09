@@ -1,5 +1,5 @@
 ---
-title: "OLMoTrace：把语言模型输出追溯到万亿训练 Token · 对照译稿"
+title: "01 · OLMoTrace：把语言模型输出追溯到万亿训练 Token · 对照译稿"
 category: "数据与评测"
 tags: ["OLMoTrace", "训练数据追溯", "文本匹配", "可解释性", "OLMo"]
 published: true

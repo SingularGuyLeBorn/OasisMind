@@ -1,5 +1,5 @@
 ---
-title: "Karpathy<Deep Dive into LLMs like ChatGPT>3.5 小时全栈科普笔记"
+title: "01 · Karpathy<Deep Dive into LLMs like ChatGPT>3.5 小时全栈科普笔记"
 category: "视频笔记"
 published: true
 excerpt: "Andrej Karpathy 2025 年 6 月发布的 3 小时 31 分科普神作<Deep Dive into LLMs like ChatGPT>结构化中文学习笔记:从 tokenization,预训练,SFT 后训练,RLHF/强化学习,到 LLM「心理学」与使用心法,一次讲透 ChatGPT 背后的完整技术栈."

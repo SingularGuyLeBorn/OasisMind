@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-Prover-V1.5: 证明助手反馈, 截断续写和好奇心搜索"
+title: "02 · DeepSeek-Prover-V1.5: 证明助手反馈, 截断续写和好奇心搜索"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

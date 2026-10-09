@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V3 硬件思考 (ISCA 2025) 对照译稿"
+title: "01 · DeepSeek-V3 硬件思考 (ISCA 2025) 对照译稿"
 category: "基础设施"
 tags: ["DeepSeek", "对照译稿"]
 published: true

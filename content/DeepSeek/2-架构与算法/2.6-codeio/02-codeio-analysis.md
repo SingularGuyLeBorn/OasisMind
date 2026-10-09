@@ -1,5 +1,5 @@
 ---
-title: "CodeI/O: 把代码执行改写成自然语言推理数据"
+title: "02 · CodeI/O: 把代码执行改写成自然语言推理数据"
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "数据合成", "推理", "SFT"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-Coder 技术报告详解"
+title: "02 · DeepSeek-Coder 技术报告详解"
 category: "模型技术报告"
 tags: ["DeepSeek", "代码模型", "仓库级预训练", "FIM"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "DeepGEMM 技术解析: Hopper FP8 GEMM 的二级累加 、 细粒度 scale 布局与持久化调度"
+title: "02 · DeepGEMM 技术解析: Hopper FP8 GEMM 的二级累加 、 细粒度 scale 布局与持久化调度"
 category: "开源仓库"
 tags: ["DeepSeek", "技术解析", "开源仓库", "FP8", "GEMM", "Hopper"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "Signal and Noise：降低语言模型评测不确定性的框架 · 对照译稿"
+title: "01 · Signal and Noise：降低语言模型评测不确定性的框架 · 对照译稿"
 category: "数据与评测"
 tags: ["语言模型评测", "信号", "噪声", "缩放预测", "OLMo"]
 published: true

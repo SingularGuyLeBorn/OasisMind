@@ -1,5 +1,5 @@
 ---
-title: "mHC 对照译稿"
+title: "01 · mHC 对照译稿"
 category: "架构与算法"
 tags: ["DeepSeek", "对照译稿"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "Model Ladders 对照译稿"
+title: "01 · Model Ladders 对照译稿"
 category: "数据与评测"
 tags: ["Model Ladders", "缩放定律", "性能预测", "代理模型"]
 published: true

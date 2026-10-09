@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-OCR: 用视觉 token 压缩文档上下文"
+title: "02 · DeepSeek-OCR: 用视觉 token 压缩文档上下文"
 category: "模型技术报告"
 tags: ["DeepSeek", "OCR", "视觉语言模型", "技术解析"]
 published: true

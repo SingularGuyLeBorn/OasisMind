@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V3.1: 一个检查点如何承载两种推理模式"
+title: "02 · DeepSeek-V3.1: 一个检查点如何承载两种推理模式"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

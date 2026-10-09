@@ -1,5 +1,5 @@
 ---
-title: "RewardBench 2 技术解析: 从静态准确率到 BoN 与 PPO 的下游有效性"
+title: "02 · RewardBench 2 技术解析: 从静态准确率到 BoN 与 PPO 的下游有效性"
 category: "后训练与奖励模型"
 tags: ["RewardBench 2", "奖励模型", "RLHF", "PPO", "Best-of-N"]
 published: true

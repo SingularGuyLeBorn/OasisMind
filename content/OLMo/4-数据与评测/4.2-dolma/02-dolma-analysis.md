@@ -1,5 +1,5 @@
 ---
-title: "Dolma 技术解析：三万亿 Token 开放语料的设计、验证与边界"
+title: "02 · Dolma 技术解析：三万亿 Token 开放语料的设计、验证与边界"
 category: "数据与评测"
 tags: ["OLMo", "Dolma", "预训练数据", "数据过滤", "去重"]
 published: true

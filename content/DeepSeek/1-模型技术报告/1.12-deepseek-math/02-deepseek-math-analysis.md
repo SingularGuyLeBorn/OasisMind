@@ -1,5 +1,5 @@
 ---
-title: "DeepSeekMath: 从网页里挖数学语料, 再用 GRPO 把答题分布拧稳"
+title: "02 · DeepSeekMath: 从网页里挖数学语料, 再用 GRPO 把答题分布拧稳"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

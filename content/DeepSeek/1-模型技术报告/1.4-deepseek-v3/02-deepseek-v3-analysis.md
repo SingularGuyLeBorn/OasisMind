@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V3: 671B 总参, 37B 激活, 14.8T token"
+title: "02 · DeepSeek-V3: 671B 总参, 37B 激活, 14.8T token"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

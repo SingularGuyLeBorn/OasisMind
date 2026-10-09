@@ -1,5 +1,5 @@
 ---
-title: "ESFT: 在细粒度 MoE 上只训与任务相关的路由专家"
+title: "02 · ESFT: 在细粒度 MoE 上只训与任务相关的路由专家"
 category: "架构与算法"
 tags: ["DeepSeek", "技术解析", "MoE", "PEFT", "微调"]
 published: true

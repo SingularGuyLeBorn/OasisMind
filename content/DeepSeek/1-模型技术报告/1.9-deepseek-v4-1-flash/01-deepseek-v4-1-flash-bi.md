@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V4.1-Flash · 对照译稿"
+title: "01 · DeepSeek-V4.1-Flash · 对照译稿"
 category: "模型技术报告"
 tags: ["DeepSeek", "对照译稿"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "应用与 Agent:RAG,工具调用,MCP 与 A2A"
+title: "4 · 应用与 Agent:RAG,工具调用,MCP 与 A2A"
 category: "LLM 面试"
 published: true
 excerpt: "从端到端应用视角复习 RAG,工具调用和 Agent 运行时,区分 MCP 与 A2A 的职责,并覆盖权限,幂等,恢复,评测和提示注入防护."

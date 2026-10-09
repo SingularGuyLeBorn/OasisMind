@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V2: 用 MLA 压推理显存, 用 MoE 压训练算力"
+title: "02 · DeepSeek-V2: 用 MLA 压推理显存, 用 MoE 压训练算力"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

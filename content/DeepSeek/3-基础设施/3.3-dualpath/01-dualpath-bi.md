@@ -1,5 +1,5 @@
 ---
-title: "DualPath 对照译稿"
+title: "01 · DualPath 对照译稿"
 category: "基础设施"
 tags: ["DeepSeek", "对照译稿"]
 published: true

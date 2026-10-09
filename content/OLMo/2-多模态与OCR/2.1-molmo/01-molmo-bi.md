@@ -1,5 +1,5 @@
 ---
-title: "Molmo 对照译稿"
+title: "01 · Molmo 对照译稿"
 category: "多模态与OCR"
 tags: ["OLMo", "对照译稿"]
 published: true

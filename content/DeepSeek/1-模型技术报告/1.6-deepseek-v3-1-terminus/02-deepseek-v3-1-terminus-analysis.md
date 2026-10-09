@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V3.1-Terminus: 后训练修订如何改变输出与 Agent 行为"
+title: "02 · DeepSeek-V3.1-Terminus: 后训练修订如何改变输出与 Agent 行为"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "Janus-Pro · 对照译稿"
+title: "01 · Janus-Pro · 对照译稿"
 category: "模型技术报告"
 tags: ["DeepSeek", "对照译稿"]
 published: true

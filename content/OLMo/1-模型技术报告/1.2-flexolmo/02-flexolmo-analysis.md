@@ -1,5 +1,5 @@
 ---
-title: "FlexOlmo: 数据拥有者各训各的专家, 推理时按许可拼装"
+title: "02 · FlexOlmo: 数据拥有者各训各的专家, 推理时按许可拼装"
 category: "模型技术报告"
 tags: ["OLMo", "技术解析", "MoE", "模型融合", "数据隐私"]
 published: true

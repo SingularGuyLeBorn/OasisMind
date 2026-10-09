@@ -1,5 +1,5 @@
 ---
-title: "文心大模型 4.0: 分析"
+title: "4 · 文心大模型 4.0: 分析"
 category: "模型库"
 tags: ["ERNIE", "技术解析"]
 published: true

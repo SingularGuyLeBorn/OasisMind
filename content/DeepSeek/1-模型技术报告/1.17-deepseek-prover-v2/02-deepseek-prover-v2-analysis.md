@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-Prover-V2: 用子目标课程连接自然语言推理与 Lean 证明"
+title: "02 · DeepSeek-Prover-V2: 用子目标课程连接自然语言推理与 Lean 证明"
 category: "模型技术报告"
 tags: ["DeepSeek", "形式化数学", "Lean 4", "强化学习", "子目标分解"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "OLMES 技术解析：把模型评测变成可版本化实验"
+title: "02 · OLMES 技术解析：把模型评测变成可版本化实验"
 category: "开源仓库"
 tags: ["OLMo", "OLMES", "模型评测", "Prompt", "指标", "可复现性"]
 published: true

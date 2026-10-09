@@ -1,5 +1,5 @@
 ---
-title: "RewardBench 对照译稿"
+title: "01 · RewardBench 对照译稿"
 category: "后训练与奖励模型"
 tags: ["OLMo", "对照译稿"]
 published: true

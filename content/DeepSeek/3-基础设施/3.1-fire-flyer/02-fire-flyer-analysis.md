@@ -1,5 +1,5 @@
 ---
-title: "Fire-Flyer 2 拆解: 一万张 PCIe A100 如何用一半成本接近 DGX-A100"
+title: "02 · Fire-Flyer 2 拆解: 一万张 PCIe A100 如何用一半成本接近 DGX-A100"
 category: "基础设施"
 tags: ["DeepSeek", "技术解析", "AI-HPC", "HFReduce", "3FS", "集群网络"]
 published: true

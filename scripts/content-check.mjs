@@ -13,6 +13,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { rewriteNumberedTitle } from "./content-title-numbering.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT = path.join(ROOT, "content");
@@ -127,6 +128,15 @@ function checkFrontmatter(mdFiles) {
     const m = head.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     if (!m) issues.push(`${rel(f)}  缺 frontmatter`);
     else if (!/^title:\s*\S/m.test(m[1])) issues.push(`${rel(f)}  frontmatter 缺 title`);
+    else {
+      try {
+        if (rewriteNumberedTitle(fs.readFileSync(f), f).changed) {
+          issues.push(`${rel(f)}  title 缺少文件名编号或编号不一致；运行 node scripts/content-title-numbering.mjs --write`);
+        }
+      } catch (error) {
+        issues.push(`${rel(f)}  ${error.message}`);
+      }
+    }
   }
   return issues;
 }

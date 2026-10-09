@@ -1,5 +1,5 @@
 ---
-title: "smallpond 技术解析: 每个分区一个 DuckDB, 中间数据全落 3FS"
+title: "02 · smallpond 技术解析: 每个分区一个 DuckDB, 中间数据全落 3FS"
 category: "开源仓库"
 tags: ["DeepSeek", "技术解析", "开源仓库", "smallpond", "DuckDB", "Ray", "3FS", "数据处理"]
 published: true

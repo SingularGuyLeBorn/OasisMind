@@ -1,5 +1,5 @@
 ---
-title: "OLMo: 全栈公开的 7B Dense 起点"
+title: "02 · OLMo: 全栈公开的 7B Dense 起点"
 category: "模型库"
 tags: ["OLMo", "技术解析"]
 published: true

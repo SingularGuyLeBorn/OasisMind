@@ -1,5 +1,5 @@
 ---
-title: "Janus-Pro: 架构不动, 改训练日程, 数据和规模"
+title: "02 · Janus-Pro: 架构不动, 改训练日程, 数据和规模"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

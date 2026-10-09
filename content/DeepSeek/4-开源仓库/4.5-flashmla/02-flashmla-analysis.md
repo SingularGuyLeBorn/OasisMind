@@ -1,5 +1,5 @@
 ---
-title: "FlashMLA: MLA 解码为什么受计算限制, 以及 seesaw、FP8 KV 与稀疏化怎么落到 kernel"
+title: "02 · FlashMLA: MLA 解码为什么受计算限制, 以及 seesaw、FP8 KV 与稀疏化怎么落到 kernel"
 category: "开源仓库"
 tags: ["DeepSeek", "技术解析", "开源仓库", "MLA", "FlashMLA"]
 published: true

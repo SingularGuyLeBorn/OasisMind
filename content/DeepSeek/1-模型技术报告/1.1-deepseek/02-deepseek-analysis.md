@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek LLM: 在自家数据上重拟 Scaling Laws, 再训 7B 和 67B"
+title: "02 · DeepSeek LLM: 在自家数据上重拟 Scaling Laws, 再训 7B 和 67B"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

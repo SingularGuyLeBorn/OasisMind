@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-VL 技术解析: 混合视觉编码器与先保语言的多模态预训练"
+title: "02 · DeepSeek-VL 技术解析: 混合视觉编码器与先保语言的多模态预训练"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析", "多模态", "视觉语言模型", "SigLIP"]
 published: true

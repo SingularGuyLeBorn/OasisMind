@@ -1,5 +1,5 @@
 ---
-title: "Olmo-core 3: 为 MoE 重写的训练栈, 从 FSDP 换到 DDP 加专家并行"
+title: "02 · Olmo-core 3: 为 MoE 重写的训练栈, 从 FSDP 换到 DDP 加专家并行"
 category: "模型库"
 tags: ["OLMo", "技术解析"]
 published: true

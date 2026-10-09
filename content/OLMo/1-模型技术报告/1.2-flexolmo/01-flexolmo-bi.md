@@ -1,5 +1,5 @@
 ---
-title: "FlexOlmo 对照译稿"
+title: "01 · FlexOlmo 对照译稿"
 category: "模型技术报告"
 tags: ["OLMo", "对照译稿"]
 published: true

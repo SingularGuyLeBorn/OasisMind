@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V3.2: 稀疏注意力, 放大 RL 与合成 Agent 环境"
+title: "02 · DeepSeek-V3.2: 稀疏注意力, 放大 RL 与合成 Agent 环境"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

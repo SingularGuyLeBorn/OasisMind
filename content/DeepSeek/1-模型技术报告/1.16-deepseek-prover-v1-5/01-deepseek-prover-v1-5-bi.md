@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-Prover-V1.5 · 对照译稿"
+title: "01 · DeepSeek-Prover-V1.5 · 对照译稿"
 category: "模型技术报告"
 tags: ["DeepSeek", "对照译稿"]
 published: true

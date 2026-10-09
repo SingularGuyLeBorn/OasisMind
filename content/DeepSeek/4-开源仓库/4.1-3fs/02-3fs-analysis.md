@@ -1,5 +1,5 @@
 ---
-title: "3FS 技术解析: CRAQ 链式复制, FoundationDB 元数据与 USRBIO 客户端"
+title: "02 · 3FS 技术解析: CRAQ 链式复制, FoundationDB 元数据与 USRBIO 客户端"
 category: "开源仓库"
 tags: ["DeepSeek", "技术解析", "开源仓库", "3FS", "分布式文件系统", "CRAQ", "RDMA"]
 published: true

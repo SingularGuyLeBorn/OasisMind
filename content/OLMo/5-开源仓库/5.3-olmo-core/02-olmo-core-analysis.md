@@ -1,5 +1,5 @@
 ---
-title: "OLMo-core 技术解析：把大模型训练拆成可组合、可恢复、可审计的系统"
+title: "02 · OLMo-core 技术解析：把大模型训练拆成可组合、可恢复、可审计的系统"
 category: "开源仓库"
 tags: ["OLMo", "OLMo-core", "训练框架", "分布式训练", "Checkpoint", "数据加载"]
 published: true

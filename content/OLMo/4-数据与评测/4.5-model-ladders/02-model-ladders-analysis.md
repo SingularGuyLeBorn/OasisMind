@@ -1,5 +1,5 @@
 ---
-title: "Model Ladders 深度解析: 用小规模训练预测大模型任务表现"
+title: "02 · Model Ladders 深度解析: 用小规模训练预测大模型任务表现"
 category: "数据与评测"
 tags: ["Model Ladders", "缩放定律", "性能预测", "代理实验"]
 published: true

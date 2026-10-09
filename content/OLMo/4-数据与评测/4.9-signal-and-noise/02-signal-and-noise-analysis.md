@@ -1,5 +1,5 @@
 ---
-title: "Signal and Noise 技术解析：哪些小模型评测能预测大模型"
+title: "02 · Signal and Noise 技术解析：哪些小模型评测能预测大模型"
 category: "数据与评测"
 tags: ["信噪比", "缩放预测", "语言模型评测", "训练动态", "数据决策"]
 published: true

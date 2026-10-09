@@ -1,5 +1,5 @@
 ---
-title: "Open Instruct 技术解析：从数据契约到 SFT、DPO 与在线 RLVR"
+title: "02 · Open Instruct 技术解析：从数据契约到 SFT、DPO 与在线 RLVR"
 category: "开源仓库"
 tags: ["OLMo", "Open Instruct", "SFT", "DPO", "RLVR", "GRPO"]
 published: true

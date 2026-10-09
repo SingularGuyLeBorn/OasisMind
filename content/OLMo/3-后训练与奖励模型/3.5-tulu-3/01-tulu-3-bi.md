@@ -1,5 +1,5 @@
 ---
-title: "Tülu 3 对照译稿"
+title: "01 · Tülu 3 对照译稿"
 category: "后训练与奖励模型"
 tags: ["Tülu 3", "指令微调", "偏好优化", "RLVR", "开放模型"]
 published: true

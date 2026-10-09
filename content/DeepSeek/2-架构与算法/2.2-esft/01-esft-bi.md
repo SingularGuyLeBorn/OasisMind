@@ -1,5 +1,5 @@
 ---
-title: "ESFT 对照译稿"
+title: "01 · ESFT 对照译稿"
 category: "架构与算法"
 tags: ["DeepSeek", "对照译稿"]
 published: true

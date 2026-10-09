@@ -1,5 +1,5 @@
 ---
-title: "Agent基础与行动循环"
+title: "1 · Agent基础与行动循环"
 category: "Agent"
 published: true
 excerpt: "定义目标、状态、动作、观察和终止条件，区分 Agent、工作流与一次模型调用。"

@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V4.1-Flash: 每 token 890 字节的 global KV"
+title: "02 · DeepSeek-V4.1-Flash: 每 token 890 字节的 global KV"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

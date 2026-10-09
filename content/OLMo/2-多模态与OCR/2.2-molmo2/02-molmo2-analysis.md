@@ -1,5 +1,5 @@
 ---
-title: "Molmo2: 开放数据的视频理解与时空 grounding"
+title: "02 · Molmo2: 开放数据的视频理解与时空 grounding"
 category: "多模态与OCR"
 tags: ["OLMo", "技术解析", "Molmo2", "视频理解", "VLM", "grounding"]
 published: true

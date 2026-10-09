@@ -1,5 +1,5 @@
 ---
-title: "OLMoASR：开放鲁棒语音识别模型与训练数据 · 对照译稿"
+title: "01 · OLMoASR：开放鲁棒语音识别模型与训练数据 · 对照译稿"
 category: "多模态与 OCR"
 tags: ["OLMoASR", "ASR", "Whisper", "语音识别", "开放数据"]
 published: true

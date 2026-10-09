@@ -1,5 +1,5 @@
 ---
-title: "ERNIE 5.1 发布博客: 三个比例, 两块榜单, 四段后训练"
+title: "5 · ERNIE 5.1 发布博客: 三个比例, 两块榜单, 四段后训练"
 category: "模型库"
 tags: ["ERNIE", "技术解析"]
 published: true

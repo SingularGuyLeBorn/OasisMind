@@ -1,5 +1,5 @@
 ---
-title: "Agent:从模型调用到可审计的闭环系统"
+title: "13 · Agent:从模型调用到可审计的闭环系统"
 category: "Agent"
 published: true
 excerpt: "把 Agent 视为模型,状态,工具,控制循环,验证器与权限边界的联合系统,建立第 13 章的学习地图和工程验收框架."

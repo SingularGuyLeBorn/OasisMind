@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-Prover: 用 Lean 核验器当过滤器, 合成 800 万条形式证明"
+title: "02 · DeepSeek-Prover: 用 Lean 核验器当过滤器, 合成 800 万条形式证明"
 category: "模型技术报告"
 tags: ["DeepSeek", "技术解析"]
 published: true

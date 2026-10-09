@@ -1,5 +1,5 @@
 ---
-title: "Infini-gram：把无界 n-gram 语言模型扩展到万亿 Token · 对照译稿"
+title: "01 · Infini-gram：把无界 n-gram 语言模型扩展到万亿 Token · 对照译稿"
 category: "数据与评测"
 tags: ["Infini-gram", "n-gram", "后缀数组", "语言模型", "文本检索"]
 published: true

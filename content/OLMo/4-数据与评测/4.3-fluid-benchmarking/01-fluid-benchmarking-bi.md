@@ -1,5 +1,5 @@
 ---
-title: "Fluid Language Model Benchmarking · 对照译稿"
+title: "01 · Fluid Language Model Benchmarking · 对照译稿"
 category: "数据与评测"
 tags: ["Fluid Benchmarking", "IRT", "自适应评测", "语言模型评测", "测量理论"]
 published: true

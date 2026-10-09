@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-V3 硬件思考: 从每 token 的字节数推到芯片与网络建议"
+title: "02 · DeepSeek-V3 硬件思考: 从每 token 的字节数推到芯片与网络建议"
 category: "基础设施"
 tags: ["DeepSeek", "技术解析", "MLA", "专家并行", "FP8", "LogFMT", "网络拓扑"]
 published: true

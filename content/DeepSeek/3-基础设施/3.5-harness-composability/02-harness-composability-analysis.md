@@ -1,5 +1,5 @@
 ---
-title: "Harness Composability 技术解析: 用可撤销 effect 与响应式 coeffect 管理动态组件"
+title: "02 · Harness Composability 技术解析: 用可撤销 effect 与响应式 coeffect 管理动态组件"
 category: "DeepSeek"
 tags:
   - Agent Harness

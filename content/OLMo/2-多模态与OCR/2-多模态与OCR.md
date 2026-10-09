@@ -1,5 +1,5 @@
 ---
-title: "OLMo 多模态、语音与文档理解"
+title: "2 · OLMo 多模态、语音与文档理解"
 category: "OLMo"
 tags: ["Molmo", "视频理解", "OCR", "ASR", "开放数据"]
 published: true

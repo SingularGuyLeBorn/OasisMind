@@ -1,5 +1,5 @@
 ---
-title: "OLMoE: 64 选 8 的细粒度 MoE 与全开放的设计消融"
+title: "02 · OLMoE: 64 选 8 的细粒度 MoE 与全开放的设计消融"
 category: "模型技术报告"
 tags: ["OLMo", "技术解析", "MoE", "负载均衡", "路由"]
 published: true

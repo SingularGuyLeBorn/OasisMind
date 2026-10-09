@@ -1,5 +1,5 @@
 ---
-title: "OLMoTrace 技术解析：从模型回答实时返回多万亿 token 训练语料"
+title: "02 · OLMoTrace 技术解析：从模型回答实时返回多万亿 token 训练语料"
 category: "数据与评测"
 tags: ["OLMoTrace", "数据归因", "预训练数据", "后缀数组", "可解释性"]
 published: true

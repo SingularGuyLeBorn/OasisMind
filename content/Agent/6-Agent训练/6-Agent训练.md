@@ -1,5 +1,5 @@
 ---
-title: "Agent训练"
+title: "6 · Agent训练"
 category: "Agent"
 published: true
 excerpt: "从工具轨迹监督到环境强化学习，连接动作表示、信用分配、训练分布与部署 Runtime。"

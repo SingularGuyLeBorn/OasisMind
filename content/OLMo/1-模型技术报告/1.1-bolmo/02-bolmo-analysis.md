@@ -1,5 +1,5 @@
 ---
-title: "Bolmo: 把 Olmo 3 字节化"
+title: "02 · Bolmo: 把 Olmo 3 字节化"
 category: "模型技术报告"
 tags: ["OLMo", "技术解析", "字节级模型", "分词", "蒸馏"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "Fluid Benchmarking 技术解析：让评测题目随模型能力流动"
+title: "02 · Fluid Benchmarking 技术解析：让评测题目随模型能力流动"
 category: "数据与评测"
 tags: ["Fluid Benchmarking", "项目反应理论", "自适应测试", "语言模型评测", "基准饱和"]
 published: true

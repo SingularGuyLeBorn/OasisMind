@@ -1,5 +1,5 @@
 ---
-title: "Dolma：面向语言模型预训练研究的三万亿 Token 开放语料库 · 对照译稿"
+title: "01 · Dolma：面向语言模型预训练研究的三万亿 Token 开放语料库 · 对照译稿"
 category: "数据与评测"
 tags: ["Dolma", "预训练数据", "数据治理", "开放语料"]
 published: true

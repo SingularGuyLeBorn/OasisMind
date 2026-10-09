@@ -1,5 +1,5 @@
 ---
-title: "Tulu 2 对照译稿"
+title: "01 · Tulu 2 对照译稿"
 category: "后训练与奖励模型"
 tags: ["OLMo", "对照译稿"]
 published: true

@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-Coder-V2 技术报告详解"
+title: "02 · DeepSeek-Coder-V2 技术报告详解"
 category: "模型技术报告"
 tags: ["DeepSeek", "代码模型", "MoE", "GRPO", "长上下文"]
 published: true

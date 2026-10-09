@@ -1,5 +1,5 @@
 ---
-title: "CoT 蒸馏与 RL：从模仿推理到探索策略"
+title: "5 · CoT 蒸馏与 RL：从模仿推理到探索策略"
 published: true
 category: "5-CoT蒸馏与RL"
 tags: ["CoT", "OPD", "RLVR", "推理训练"]

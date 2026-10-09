@@ -1,5 +1,5 @@
 ---
-title: "olmOCR 官方文档对照译稿"
+title: "01 · olmOCR 官方文档对照译稿"
 category: "开源仓库"
 tags: ["OLMo", "olmOCR", "对照译稿", "PDF OCR"]
 published: true

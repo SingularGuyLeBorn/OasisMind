@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-Prover-V2 英中对照"
+title: "01 · DeepSeek-Prover-V2 英中对照"
 category: "模型技术报告"
 tags: ["DeepSeek", "形式化数学", "Lean 4", "双语对照"]
 published: true

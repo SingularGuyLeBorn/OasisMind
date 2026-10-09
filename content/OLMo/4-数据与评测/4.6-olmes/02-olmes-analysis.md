@@ -1,5 +1,5 @@
 ---
-title: "OLMES 深度解析: 把评测配置变成可复现的实验对象"
+title: "02 · OLMES 深度解析: 把评测配置变成可复现的实验对象"
 category: "数据与评测"
 tags: ["OLMES", "语言模型评测", "可复现性", "多项选择"]
 published: true

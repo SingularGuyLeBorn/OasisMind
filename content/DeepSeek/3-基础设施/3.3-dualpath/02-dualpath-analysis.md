@@ -1,5 +1,5 @@
 ---
-title: "DualPath: 让 decode 节点的存储网卡也去读 KV cache"
+title: "02 · DualPath: 让 decode 节点的存储网卡也去读 KV cache"
 category: "基础设施"
 tags: ["DeepSeek", "技术解析", "KV Cache", "PD 分离", "推理系统", "3FS"]
 published: true

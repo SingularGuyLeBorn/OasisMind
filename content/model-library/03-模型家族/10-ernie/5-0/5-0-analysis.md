@@ -1,5 +1,5 @@
 ---
-title: "ERNIE 5.0: 万亿级统一自回归与弹性训练"
+title: "5 · ERNIE 5.0: 万亿级统一自回归与弹性训练"
 category: "模型库"
 tags: ["ERNIE", "技术解析"]
 published: true

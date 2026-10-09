@@ -1,5 +1,5 @@
 ---
-title: "JanusFlow 技术解析: 在同一 LLM 中协调自回归理解与 Rectified Flow 生成"
+title: "02 · JanusFlow 技术解析: 在同一 LLM 中协调自回归理解与 Rectified Flow 生成"
 category: "DeepSeek"
 tags:
   - JanusFlow

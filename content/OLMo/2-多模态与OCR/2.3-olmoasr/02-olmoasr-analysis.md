@@ -1,5 +1,5 @@
 ---
-title: "OLMoASR 技术解析：开放百万小时语音数据如何逼近 Whisper"
+title: "02 · OLMoASR 技术解析：开放百万小时语音数据如何逼近 Whisper"
 category: "多模态与 OCR"
 tags: ["OLMoASR", "ASR", "Whisper", "语音识别", "数据治理"]
 published: true

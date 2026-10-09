@@ -1,5 +1,5 @@
 ---
-title: "DeepSeek-VL2: 动态切图与稀疏语言模型怎样协同"
+title: "02 · DeepSeek-VL2: 动态切图与稀疏语言模型怎样协同"
 category: "模型技术报告"
 tags: ["DeepSeek", "多模态", "MoE", "技术解析"]
 published: true

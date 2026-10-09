@@ -1,5 +1,5 @@
 ---
-title: "DR Tulu：用于深度研究的演化评分细则强化学习"
+title: "01 · DR Tulu：用于深度研究的演化评分细则强化学习"
 slug: dr-tulu
 type: paper
 status: complete

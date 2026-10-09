@@ -1,5 +1,5 @@
 ---
-title: "DeepEP: 节点受限路由下的 MoE all-to-all, 从 NVLink/RDMA 转发到 IBGDA 与 hook 重叠"
+title: "02 · DeepEP: 节点受限路由下的 MoE all-to-all, 从 NVLink/RDMA 转发到 IBGDA 与 hook 重叠"
 category: "开源仓库"
 tags: ["DeepSeek", "技术解析", "开源仓库", "MoE", "专家并行", "DeepEP"]
 published: true

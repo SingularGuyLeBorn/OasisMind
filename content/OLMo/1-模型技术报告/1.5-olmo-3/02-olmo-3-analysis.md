@@ -1,5 +1,5 @@
 ---
-title: "Olmo 3: 为长推理重排的全开放模型流"
+title: "02 · Olmo 3: 为长推理重排的全开放模型流"
 category: "模型库"
 tags: ["OLMo", "技术解析"]
 published: true

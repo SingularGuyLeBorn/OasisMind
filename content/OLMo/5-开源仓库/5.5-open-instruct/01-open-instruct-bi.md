@@ -1,5 +1,5 @@
 ---
-title: "Open Instruct 官方文档对照译稿"
+title: "01 · Open Instruct 官方文档对照译稿"
 category: "开源仓库"
 tags: ["OLMo", "Open Instruct", "对照译稿", "后训练"]
 published: true

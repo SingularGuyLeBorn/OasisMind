@@ -1,5 +1,5 @@
 ---
-title: "DeepSeekMath-V2: 用元验证训练可自检的自然语言证明模型"
+title: "02 · DeepSeekMath-V2: 用元验证训练可自检的自然语言证明模型"
 category: "模型技术报告"
 tags: ["DeepSeek", "数学推理", "定理证明", "强化学习", "元验证"]
 published: true

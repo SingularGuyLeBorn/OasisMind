@@ -1,5 +1,5 @@
 ---
-title: "Paloma 技术解析：把单一困惑度拆成数百个语言领域"
+title: "02 · Paloma 技术解析：把单一困惑度拆成数百个语言领域"
 category: "数据与评测"
 tags: ["Paloma", "困惑度", "领域评测", "去污染", "语言模型"]
 published: true

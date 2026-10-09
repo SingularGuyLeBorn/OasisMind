@@ -1,5 +1,5 @@
 ---
-title: "DeepSeekMath-V2 英中对照"
+title: "01 · DeepSeekMath-V2 英中对照"
 category: "模型技术报告"
 tags: ["DeepSeek", "数学推理", "定理证明", "双语对照"]
 published: true

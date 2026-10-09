@@ -1,5 +1,5 @@
 ---
-title: "Paloma：评估语言模型分布拟合能力的基准 · 对照译稿"
+title: "01 · Paloma：评估语言模型分布拟合能力的基准 · 对照译稿"
 category: "数据与评测"
 tags: ["Paloma", "领域评测", "困惑度", "数据分布", "语言模型"]
 published: true
