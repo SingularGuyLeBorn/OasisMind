@@ -1,0 +1,169 @@
+/* [OM-FREEPLAY] 纸白、深青、铜色与小幅翻页建立立体感；动画只改变 transform。
+   所有内容先显示，装饰没有交互焦点。无脚本、减少动效时仍保留静态立体书页。 */
+.om-knowledge-sculpture {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+  height: 300px;
+  flex: none;
+  perspective: 1000px;
+  pointer-events: none;
+  user-select: none;
+}
+.om-sculpture-book {
+  position: absolute;
+  width: 184px;
+  height: 230px;
+  left: calc(50% - 92px);
+  top: 28px;
+  transform-style: preserve-3d;
+  transform: rotateX(48deg) rotateZ(-28deg);
+}
+.om-sculpture-shadow {
+  position: absolute;
+  width: 185px;
+  height: 140px;
+  left: calc(50% - 92px);
+  top: 130px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #163d4024, transparent 68%);
+}
+.om-sculpture-sheet {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #cfdbd2;
+  border-radius: 3px 10px 10px 3px;
+  backface-visibility: hidden;
+  transform-origin: left center;
+  box-shadow: 3px 5px 0 #e5e9de, 5px 8px 0 #ccd4ca;
+}
+.om-sculpture-sheet--back { background: #d0b38a; transform: translateZ(-18px) translate(10px, 12px); }
+.om-sculpture-sheet--notes { padding: 28px 24px; background: #fcfcf3; transform: translateZ(5px) translate(14px, -6px); }
+.om-sculpture-sheet--cover {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 25px;
+  color: #fcfcf3;
+  border-color: #214d50;
+  border-left: 9px solid #102d31;
+  background: #183c40;
+  transform: translateZ(28px) translate(-12px, -20px);
+  transition: transform .65s cubic-bezier(.22, 1, .36, 1);
+  box-shadow: 2px 3px 0 #285052;
+}
+.om-sculpture-edition { font: 9px/1.4 system-ui, sans-serif; letter-spacing: .2em; color: #bdcfc6; }
+.om-sculpture-title { margin-top: 22px; font: 40px/1.4 "Songti SC", "SimSun", serif; letter-spacing: .12em; }
+.om-sculpture-rule { width: 34px; height: 2px; margin-top: 20px; background: #d0b38a; }
+.om-sculpture-caption { margin-top: 16px; white-space: nowrap; font: 10px/1.5 system-ui, sans-serif; letter-spacing: .07em; }
+.om-sculpture-bookmark { position: absolute; right: 22px; top: -1px; width: 13px; height: 43px; background: #d0b38a; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); }
+.om-sculpture-lines { display: grid; gap: 12px; }
+.om-sculpture-lines i { height: 3px; background: #cedbd2; }
+.om-sculpture-lines i:nth-child(2) { width: 65%; }
+.om-sculpture-lines i:last-child { width: 80%; }
+.om-sculpture-diagram { display: flex; align-items: end; gap: 12px; margin-top: 26px; height: 55px; }
+.om-sculpture-diagram i { width: 24px; height: 30px; background: #afc6b8; border-radius: 2px; }
+.om-sculpture-diagram i:nth-child(2) { height: 45px; background: #d0b38a; }
+.om-sculpture-diagram i:last-child { height: 55px; background: #497876; }
+.om-knowledge-sculpture--compact { width: 92px; height: 86px; }
+.om-knowledge-sculpture--compact .om-sculpture-book { width: 54px; height: 65px; left: calc(50% - 27px); top: 8px; }
+.om-knowledge-sculpture--compact .om-sculpture-sheet { border-radius: 2px 4px 4px 2px; box-shadow: 2px 2px 0 #dce4d8; }
+.om-knowledge-sculpture--compact .om-sculpture-sheet--back { transform: translateZ(-5px) translate(3px, 4px); }
+.om-knowledge-sculpture--compact .om-sculpture-sheet--notes { padding: 8px; transform: translateZ(3px) translate(4px, -2px); }
+.om-knowledge-sculpture--compact .om-sculpture-sheet--cover { padding: 8px; border-left-width: 3px; transform: translateZ(9px) translate(-4px, -6px); }
+.om-knowledge-sculpture--compact .om-sculpture-edition,
+.om-knowledge-sculpture--compact .om-sculpture-caption,
+.om-knowledge-sculpture--compact .om-sculpture-diagram { display: none; }
+.om-knowledge-sculpture--compact .om-sculpture-title { font-size: 14px; margin-top: 3px; }
+.om-knowledge-sculpture--compact .om-sculpture-rule { width: 16px; margin-top: 8px; height: 1px; }
+.om-knowledge-sculpture--compact .om-sculpture-bookmark { right: 6px; width: 4px; height: 15px; }
+.om-knowledge-sculpture--compact .om-sculpture-lines { gap: 5px; }
+.om-knowledge-sculpture--compact .om-sculpture-lines i { height: 1px; }
+.om-knowledge-sculpture--compact .om-sculpture-shadow { width: 60px; height: 45px; left: calc(50% - 30px); top: 36px; }
+
+/* [OM-FREEPLAY] 进入时仅一次短展开，不持续漂浮；桌面悬停才轻微翻页。 */
+@keyframes om-book-unfold {
+  from { transform: translateZ(9px) translate(-2px, -4px); }
+  to { transform: translateZ(28px) translate(-12px, -20px); }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .om-knowledge-sculpture:not(.om-knowledge-sculpture--compact) .om-sculpture-sheet--cover { animation: om-book-unfold 1.2s cubic-bezier(.22, 1, .36, 1) 1; }
+  .om-sculpture-interactive:hover .om-sculpture-sheet--cover,
+  .om-sculpture-interactive:focus-within .om-sculpture-sheet--cover { transform: translateZ(38px) translate(-19px, -26px) rotateY(-8deg); }
+  .om-sculpture-interactive:hover .om-knowledge-sculpture--compact .om-sculpture-sheet--cover,
+  .om-sculpture-interactive:focus-within .om-knowledge-sculpture--compact .om-sculpture-sheet--cover { transform: translateZ(13px) translate(-7px, -9px) rotateY(-8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .om-knowledge-sculpture *, .om-knowledge-sculpture { animation: none !important; transition: none !important; }
+}
+
+/* [OM-FREEPLAY] 每个库的图形对应不同阅读主题；静态布局先成立，悬停仅展开层次。
+   所有图形有固定占位，不驱动内容布局，也没有持续计时器或逐帧脚本。 */
+.om-garden-art { width: 128px; height: 92px; position: relative; flex: none; perspective: 600px; pointer-events: none; user-select: none; }
+.om-garden-art-stage { position: absolute; inset: 14px 10px; transform-style: preserve-3d; transform: rotateX(20deg) rotateY(-18deg); transition: transform .45s ease-out; }
+.om-garden-art i { position: absolute; display: block; background: var(--art-paper); border: 1px solid color-mix(in srgb, var(--art-ink) 45%, transparent); box-shadow: 2px 3px 0 color-mix(in srgb, var(--art-ink) 18%, white); transition: transform .5s cubic-bezier(.22, 1, .36, 1); }
+.om-garden-art[data-motif="sparse"] .om-garden-art-stage { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; transform: rotateX(34deg) rotateZ(-12deg); }
+.om-garden-art[data-motif="sparse"] i { position: relative; }
+.om-garden-art[data-motif="sparse"] i:nth-child(7n + 1), .om-garden-art[data-motif="sparse"] i:nth-child(11n) { background: var(--art-ink); transform: translateZ(8px); }
+.om-garden-art[data-motif="diffusion"] i { width: 8px; height: 8px; border-radius: 50%; left: calc(var(--scatter-x) * 1%); top: calc(var(--scatter-y) * 1px); transform: translateZ(calc(var(--mod4) * 4px)); background: var(--art-ink); }
+.om-garden-art[data-motif="steps"] i { width: 15px; height: calc(14px + var(--piece) * 10px); left: calc(var(--piece) * 20px); bottom: 0; border-radius: 3px 3px 0 0; background: color-mix(in srgb, var(--art-ink) calc(20% + var(--piece) * 15%), white); }
+.om-garden-art[data-motif="retrieval"] i { width: 25px; height: 40px; left: calc(var(--mod3) * 33px); top: calc(var(--row3) * 27px); border-radius: 3px; transform: translateZ(calc(var(--piece) * 4px)); }
+.om-garden-art[data-motif="retrieval"] i:last-child { width: 22px; height: 22px; left: 76px; top: 37px; border: 4px solid var(--art-ink); border-radius: 50%; background: transparent; }
+.om-garden-art[data-motif="retrieval"] i:last-child::after { content: ""; position: absolute; width: 17px; height: 3px; right: -15px; bottom: -7px; transform: rotate(45deg); background: var(--art-ink); }
+.om-garden-art[data-motif="hub"] i { width: 22px; height: 22px; border-radius: 5px; left: 44px; top: 22px; transform: rotate(calc(var(--piece) * 90deg)) translateX(38px); }
+.om-garden-art[data-motif="hub"] i:first-child { transform: translateZ(14px); background: var(--art-ink); }
+.om-garden-art[data-motif="constellation"] i { width: 14px; height: 14px; border-radius: 50%; top: 25px; left: 45px; transform: rotate(calc(var(--piece) * 51.43deg)) translateX(39px); }
+.om-garden-art[data-motif="paired"] i { width: 30px; height: 40px; border-radius: 3px; left: calc(var(--mod2) * 63px); top: calc(var(--row2) * 7px); transform: translateZ(calc(var(--piece) * 3px)); }
+.om-garden-art[data-motif="paired"] i:nth-child(even) { background: color-mix(in srgb, var(--art-ink) 55%, white); }
+.om-garden-art[data-motif="timeline"] i { width: 25px; height: 25px; border-radius: 50%; top: 18px; left: calc(var(--piece) * 20px); transform: translateZ(calc(var(--piece) * 3px)); }
+.om-garden-art[data-motif="timeline"] i:last-child { background: var(--art-ink); }
+.om-garden-art[data-motif="recursive"] i { width: calc(96px - var(--piece) * 23px); height: calc(62px - var(--piece) * 15px); top: calc(var(--piece) * 8px); left: calc(var(--piece) * 12px); border: 2px solid var(--art-ink); border-radius: 50%; background: transparent; transform: translateZ(calc(var(--piece) * 10px)); }
+.om-garden-art[data-motif="path"] i { width: 14px; height: 14px; left: calc(var(--piece) * 12px); top: calc(var(--mod3) * 16px + 8px); border-radius: 3px; }
+.om-garden-art[data-motif="path"] i:last-child { background: var(--art-ink); transform: translateZ(12px); }
+.om-garden-art[data-motif="rack"] i { width: 88px; height: 16px; top: calc(var(--piece) * 23px); left: 10px; border-radius: 4px; background: var(--art-ink); transform: translateZ(calc(var(--piece) * 6px)); }
+.om-garden-art[data-motif="rack"] i::after { content: ""; position: absolute; inset: 5px 9px; background: repeating-linear-gradient(90deg, #e3eee6 0 4px, transparent 4px 10px); }
+.om-garden-art[data-motif="shelf"] i { width: 12px; height: calc(42px + var(--mod3) * 8px); left: calc(var(--piece) * 17px); bottom: 0; border-radius: 3px 3px 1px 1px; border-left: 3px solid var(--art-ink); transform: rotateY(-22deg); }
+.om-garden-art[data-motif="compressed"] i { width: 76px; height: 32px; top: calc(var(--piece) * 8px); left: calc(var(--piece) * 6px); border-radius: 5px; transform: translateZ(calc(var(--piece) * 6px)); }
+.om-garden-art[data-motif="compressed"] i:last-child { background: var(--art-ink); }
+.om-garden-art[data-motif="openbook"] i { width: 42px; height: 57px; left: calc(var(--mod2) * 44px + 12px); top: 4px; border-radius: 3px; transform: translateZ(calc(var(--piece) * 4px)) rotateY(calc(var(--mod2) * 24deg - 12deg)); }
+.om-garden-art[data-motif="papers"] i { width: 54px; height: 66px; left: 27px; top: 0; border-radius: 3px; transform: rotateZ(calc(var(--piece) * 14deg - 14deg)) translateZ(calc(var(--piece) * 6px)); }
+.om-garden-art[data-motif="papers"] i::after, .om-garden-art[data-motif="columns"] i::after { content: ""; position: absolute; inset: 12px 8px; background: repeating-linear-gradient(0deg, transparent 0 6px, color-mix(in srgb, var(--art-ink) 35%, white) 6px 8px); }
+.om-garden-art[data-motif="matrix"] .om-garden-art-stage { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-inline: 16px; transform: rotateX(28deg) rotateZ(12deg); }
+.om-garden-art[data-motif="matrix"] i { position: relative; border-radius: 2px; }
+.om-garden-art[data-motif="matrix"] i:nth-child(3n + 1) { background: var(--art-ink); }
+.om-garden-art[data-motif="chapters"] i { width: 70px; height: 18px; left: calc(var(--piece) * 7px); top: calc(var(--piece) * 11px); transform: translateZ(calc(var(--piece) * 5px)); border-radius: 2px; }
+.om-garden-art[data-motif="chapters"] i:last-child { background: var(--art-ink); }
+.om-garden-art[data-motif="dialogue"] i { width: 63px; height: 31px; left: calc(var(--piece) * 35px); top: calc(var(--piece) * 29px); border-radius: 12px 12px 12px 0; transform: translateZ(calc(var(--piece) * 10px)); }
+.om-garden-art[data-motif="dialogue"] i:last-child { background: var(--art-ink); border-radius: 12px 12px 0 12px; }
+.om-garden-art[data-motif="pen"] i:first-child { width: 55px; height: 60px; left: 20px; border-radius: 3px; transform: rotateZ(-10deg); }
+.om-garden-art[data-motif="pen"] i:nth-child(2) { width: 7px; height: 67px; left: 67px; top: 0; background: var(--art-ink); transform: rotateZ(25deg) translateZ(12px); border-radius: 3px; }
+.om-garden-art[data-motif="pen"] i:last-child { width: 22px; height: 22px; top: 43px; left: 14px; border-radius: 50%; background: color-mix(in srgb, var(--art-ink) 50%, white); }
+.om-garden-art[data-motif="calendar"] .om-garden-art-stage { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; transform: rotateX(18deg) rotateZ(-8deg); }
+.om-garden-art[data-motif="calendar"] i { position: relative; border-radius: 4px; }
+.om-garden-art[data-motif="calendar"] i:nth-child(5n + 1) { background: var(--art-ink); }
+.om-garden-art[data-motif="columns"] i { width: 20px; height: 58px; left: calc(var(--piece) * 25px); top: calc(var(--mod2) * 7px); border-radius: 2px; }
+
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .om-sculpture-interactive:hover .om-garden-art-stage, .om-sculpture-interactive:focus-within .om-garden-art-stage { transform: rotateX(8deg) rotateY(-8deg) translateY(-3px); }
+  .om-sculpture-interactive:hover [data-motif="sparse"] i:nth-child(7n + 1) { transform: translateZ(18px); }
+  .om-sculpture-interactive:hover [data-motif="diffusion"] i { transform: translate(calc(var(--mod4) * 2px), calc(var(--mod3) * -3px)) translateZ(12px); }
+  .om-sculpture-interactive:hover [data-motif="steps"] i { transform: translateZ(calc(var(--piece) * 5px)); }
+  .om-sculpture-interactive:hover [data-motif="retrieval"] i:not(:last-child) { transform: translateZ(calc(var(--piece) * 8px + 6px)); }
+  .om-sculpture-interactive:hover [data-motif="hub"] i:first-child { transform: translateZ(24px) rotateZ(12deg); }
+  .om-sculpture-interactive:hover [data-motif="constellation"] i { transform: rotate(calc(var(--piece) * 51.43deg + 12deg)) translateX(43px); }
+  .om-sculpture-interactive:hover [data-motif="paired"] i { transform: translateZ(calc(var(--piece) * 6px)) translateX(calc(var(--mod2) * -10px)); }
+  .om-sculpture-interactive:hover [data-motif="timeline"] i { transform: translateZ(calc(var(--piece) * 5px)) translateX(calc(var(--piece) * 2px)); }
+  .om-sculpture-interactive:hover [data-motif="recursive"] i { transform: translateZ(calc(var(--piece) * 18px)) rotateY(calc(var(--piece) * 12deg)); }
+  .om-sculpture-interactive:hover [data-motif="path"] i { transform: translateZ(calc(var(--piece) * 3px)); }
+  .om-sculpture-interactive:hover [data-motif="rack"] i { transform: translateZ(calc(var(--piece) * 12px + 8px)); }
+  .om-sculpture-interactive:hover [data-motif="shelf"] i { transform: rotateY(-32deg) translateZ(calc(var(--piece) * 3px)); }
+  .om-sculpture-interactive:hover [data-motif="compressed"] i { transform: translateZ(calc(var(--piece) * 10px)); }
+  .om-sculpture-interactive:hover [data-motif="openbook"] i { transform: translateZ(calc(var(--piece) * 6px)) rotateY(calc(var(--mod2) * 50deg - 25deg)); }
+  .om-sculpture-interactive:hover [data-motif="papers"] i { transform: rotateZ(calc(var(--piece) * 25deg - 25deg)) translateZ(calc(var(--piece) * 12px)); }
+  .om-sculpture-interactive:hover [data-motif="matrix"] i:nth-child(3n + 1) { transform: translateZ(12px); }
+  .om-sculpture-interactive:hover [data-motif="chapters"] i { transform: translateZ(calc(var(--piece) * 10px)); }
+  .om-sculpture-interactive:hover [data-motif="dialogue"] i { transform: translateZ(calc(var(--piece) * 18px + 4px)); }
+  .om-sculpture-interactive:hover [data-motif="pen"] i:nth-child(2) { transform: rotateZ(15deg) translateZ(20px); }
+  .om-sculpture-interactive:hover [data-motif="calendar"] i:nth-child(5n + 1) { transform: translateZ(12px); }
+  .om-sculpture-interactive:hover [data-motif="columns"] i { transform: translateZ(calc(var(--piece) * 5px)); }
+}
+@media (prefers-reduced-motion: reduce) { .om-garden-art, .om-garden-art * { animation: none !important; transition: none !important; } }

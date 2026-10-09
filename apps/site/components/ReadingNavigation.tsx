@@ -46,14 +46,15 @@ export function ReadingNavigation({ garden, title, posts, headings, currentId }:
           className={heading.level === 3 ? "toc-child" : ""}>{heading.text}</ReadingOutlineLink>)}</nav>
       </details>
     </aside>}
-    {/* [OM-FREEPLAY] 底部四个入口方便拇指操作；使用原生链接保留无脚本阅读。 */}
+    {/* [OM-FREEPLAY] 目录入口只开侧栏，不以锚点滚走正文；无脚本入口单独说明。 */}
     <nav className="mobile-reading-bar" aria-label="阅读导航">
       <a href={withSiteBasePath(location.parent.href!)} title={`上一级：${location.parent.title}`}><ArrowLeft size={20} /><span>上一级</span></a>
-      <a href="#knowledge-navigation" data-navigation-open="documents"><PanelLeft size={20} /><span>文档目录</span></a>
-      {outline.length > 0 ? <a href="#page-navigation" data-navigation-open="outline"><List size={20} /><span>本页目录</span></a>
+      <button type="button" data-navigation-open="documents" aria-haspopup="dialog" aria-controls="reading-navigation-dialog" aria-expanded="false"><PanelLeft size={20} /><span>文档目录</span></button>
+      {outline.length > 0 ? <button type="button" data-navigation-open="outline" aria-haspopup="dialog" aria-controls="reading-navigation-dialog" aria-expanded="false"><List size={20} /><span>本页目录</span></button>
         : <a href={home}><BookOpen size={20} /><span>知识库首页</span></a>}
       <a href={withSiteBasePath("/")}><Home size={20} /><span>首页</span></a>
     </nav>
+    <noscript><p className="no-script-navigation">浏览器已禁用脚本，可查看 <a href="#knowledge-navigation">文档目录</a>{outline.length > 0 && <> 或 <a href="#page-navigation">本页目录</a></>}；重新启用脚本后可使用侧栏导航。</p></noscript>
     <dialog className="reading-drawer" id="reading-navigation-dialog" aria-labelledby="reading-navigation-title">
       <div className="drawer-heading"><div><p id="reading-navigation-title">阅读导航</p><span>{location.currentTitle}</span></div>
         <button type="button" data-navigation-close aria-label="关闭阅读导航"><X size={22} /></button></div>

@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useSyncExternalStore } from "react";
 
 const Particles = dynamic(
   () => import("@/components/magicui/particles").then((m) => m.Particles),
@@ -8,6 +9,16 @@ const Particles = dynamic(
 );
 
 type AmbientDensity = "home" | "lite";
+
+// [OM-FREEPLAY] 星尘只在桌面首页启用；手机、知识库阅读与减少动效时保留静态底色。
+const ambientQuery = "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
+function subscribeAmbient(onChange: () => void) {
+  const query = window.matchMedia(ambientQuery);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+const ambientEnabled = () => window.matchMedia(ambientQuery).matches;
+const ambientServerSnapshot = () => false;
 
 const DENSITY: Record<
   AmbientDensity,
@@ -22,6 +33,7 @@ const DENSITY: Record<
 /** 全页动态星尘底（透出 body 光晕之上），不抢内容层 */
 export function HomeAmbientBackground({ density = "home" }: { density?: AmbientDensity }) {
   const cfg = DENSITY[density];
+  const enabled = useSyncExternalStore(subscribeAmbient, ambientEnabled, ambientServerSnapshot);
   return (
     <div
       aria-hidden
@@ -35,7 +47,7 @@ export function HomeAmbientBackground({ density = "home" }: { density?: AmbientD
             "radial-gradient(ellipse 65% 45% at 10% 90%, color-mix(in srgb, var(--om-glow-blue) 65%, transparent), transparent 55%)",
         }}
       />
-      <Particles
+      {enabled && density === "home" && <Particles
         className="h-full min-h-[100%] w-full"
         quantity={cfg.quantity}
         size={cfg.size}
@@ -48,7 +60,7 @@ export function HomeAmbientBackground({ density = "home" }: { density?: AmbientD
         vx={0.08}
         vy={0.05}
         refresh={false}
-      />
+      />}
     </div>
   );
 }

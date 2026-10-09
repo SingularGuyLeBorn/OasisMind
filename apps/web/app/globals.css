@@ -1,4 +1,11 @@
 @import "tailwindcss";
+
+/* [OM-FREEPLAY] 首页立体书页留在独立视觉区，移动端缩小，不遮住链接和正文。 */
+.om-owner-book-scene { display: grid; justify-items: center; align-content: center; min-width: 0; }
+.om-owner-card-art { width: 110px; }
+.om-themed-garden-card { background-image: linear-gradient(135deg, var(--art-paper), #fff 60%); border-top: 3px solid var(--art-ink); }
+@media (max-width: 480px) { .om-owner-card-art { width: 82px; transform: scale(.85); transform-origin: right top; margin-left: -18px; } }
+@media (max-width: 1023px) { .om-owner-book-scene .om-knowledge-sculpture { height: 220px; transform: scale(.8); margin-block: -28px; } }
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 

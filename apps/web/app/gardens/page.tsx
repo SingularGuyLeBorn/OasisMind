@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { GardenArtwork, gardenArtworkPalette } from "@oasismind/brand";
 import { ArrowRight, ChevronRight, FileText, Layers, Plus, Trash2 } from "lucide-react";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ const spring = { type: "spring" as const, stiffness: 260, damping: 26 };
 const easeOut = [0.22, 1, 0.36, 1] as const;
 
 export default function GardensPage() {
+  const reducedMotion = useReducedMotion();
   const utils = trpc.useUtils();
   const { data, isLoading, isError, refetch } = trpc.garden.list.useQuery(
     { page: 1, pageSize: 100 },
@@ -240,11 +242,12 @@ export default function GardensPage() {
               return (
                 <motion.article
                   key={g.id}
-                  initial={{ opacity: 0, y: 28 }}
+                  style={gardenArtworkPalette(g.id)}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, delay: 0.08 + index * 0.08, ease: easeOut }}
-                  whileHover={{ y: -8 }}
-                  className="om-card-topline om-card-sheen group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 p-6 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--om-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]"
+                  transition={{ duration: reducedMotion ? 0 : 0.35, ease: easeOut }}
+                  whileHover={reducedMotion ? undefined : { y: -4 }}
+                  className="om-themed-garden-card om-sculpture-interactive om-card-topline om-card-sheen group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 p-6 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--om-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]"
                 >
                   <div
                     aria-hidden
@@ -267,11 +270,12 @@ export default function GardensPage() {
                       </div>
                       <Link
                         href={homeHref}
-                        className="block truncate text-xl font-semibold tracking-tight text-[var(--om-text-1)] transition-colors group-hover:text-[var(--om-brand)]"
+                        className="block break-words text-xl font-semibold tracking-tight text-[var(--om-text-1)] transition-colors group-hover:text-[var(--om-brand)]"
                       >
                         {g.title}
                       </Link>
                     </div>
+                    <GardenArtwork gardenId={g.id} className="om-owner-card-art" />
                     {!isSeed && (
                       <button
                         type="button"

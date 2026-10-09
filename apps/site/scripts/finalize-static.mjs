@@ -12,7 +12,7 @@ const site = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const root = path.join(site, "out");
 const basePath = (process.env.NEXT_PUBLIC_SITE_BASE_PATH ?? "").replace(/\/$/, "");
 const result = await build({
-  entryPoints: [path.join(site, "scripts/reading-widgets.tsx")],
+  entryPoints: [path.join(site, "scripts/reading-navigation.ts"), path.join(site, "scripts/reading-widgets.tsx")],
   outdir: path.join(root, "_reading"),
   entryNames: "[name]-[hash]", chunkNames: "chunks/[name]-[hash]",
   bundle: true, splitting: true, format: "esm", minify: true, metafile: true,
@@ -26,6 +26,9 @@ const result = await build({
 const entry = Object.entries(result.metafile.outputs).find(([, value]) => value.entryPoint?.endsWith("reading-widgets.tsx"))?.[0];
 if (!entry) throw new Error("缺少公开阅读控件入口");
 const scriptUrl = basePath + "/" + path.relative(root, path.resolve(entry)).replace(/\\/g, "/");
+const navigation = Object.entries(result.metafile.outputs).find(([, value]) => value.entryPoint?.endsWith("reading-navigation.ts"))?.[0];
+if (!navigation) throw new Error("缺少公开阅读导航入口");
+const navigationUrl = basePath + "/" + path.relative(root, path.resolve(navigation)).replace(/\\/g, "/");
 let removed = 0;
 let pages = 0;
 function remove(file) {
@@ -46,7 +49,7 @@ function walk(directory, inNextSegment = false) {
     }
     if (!item.name.endsWith(".html")) continue;
     const original = fs.readFileSync(file, "utf8");
-    const html = finalizeReadingHtml(original, scriptUrl);
+    const html = finalizeReadingHtml(original, scriptUrl, navigationUrl);
     fs.writeFileSync(file, html);
     removed += Buffer.byteLength(original) - Buffer.byteLength(html);
     pages += 1;

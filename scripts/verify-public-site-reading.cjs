@@ -59,12 +59,15 @@ async function main() {
         assert.equal(await page.locator('.article-main').evaluate(el => el.getBoundingClientRect().top < 200), true, '正文前面不能再堆目录');
         await page.evaluate(() => window.scrollTo({ top: 1800, behavior: 'instant' }));
         const readingY = await page.evaluate(() => scrollY);
+        const readingHash = new URL(page.url()).hash;
         assert.ok(readingY > 1000);
         const opener = page.locator('[data-navigation-open="documents"]');
         assert.equal(await opener.evaluate(el => el.getBoundingClientRect().bottom <= innerHeight), true);
         await opener.click();
         const dialog = page.getByRole('dialog', { name: '阅读导航' });
         await dialog.waitFor();
+        assert.equal(new URL(page.url()).hash, readingHash, '打开目录不能修改锚点');
+        await page.waitForFunction(() => Math.abs(document.querySelector('dialog').getBoundingClientRect().left) < 1);
         assert.equal(await page.locator('.knowledge-tree a[aria-current="page"]').isVisible(), true);
         assert.equal(await page.evaluate(() => document.activeElement.id), 'documents-tab');
         // 背景不滚、Tab 不跑出面板、方向键能切目录。
@@ -84,7 +87,7 @@ async function main() {
         await opener.focus();
         await page.keyboard.press('Space');
         await dialog.waitFor();
-        await page.mouse.click(10, 125);
+        await page.mouse.click(width - 6, 125);
         await dialog.waitFor({ state: 'hidden' });
         assert.ok(Math.abs(await page.evaluate(() => scrollY) - readingY) < 2);
         const rapidReopen = await page.evaluate(() => new Promise(resolve => {
@@ -102,6 +105,7 @@ async function main() {
         assert.equal(await page.locator('.article-layout > .knowledge-tree').isVisible(), true);
         await page.setViewportSize({ width, height: 900 });
         await page.locator('[data-navigation-open="outline"]').click();
+        await page.waitForFunction(() => Math.abs(document.querySelector('dialog').getBoundingClientRect().right - innerWidth) < 1);
         await page.screenshot({ path: path.join(evidence, 'mobile-reading-drawer.png') });
       }
       await page.locator('.article-toc a').nth(1).click();
@@ -129,11 +133,15 @@ async function main() {
       } else await page.goto(base, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.home-path').count(), 3);
       assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
+      const motifs = await page.locator('.garden-grid [data-motif]').evaluateAll(arts => arts.map(art => art.dataset.motif));
+      assert.equal(new Set(motifs).size, motifs.length, '知识库卡片不能重复同一套图形');
+      assert.equal(await page.locator('.garden-grid [data-garden-art][aria-hidden="true"]').count(), motifs.length);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await page.screenshot({ path: path.join(evidence, `home-${width}.png`), fullPage: false });
 
       await page.goto(new URL('knowledge', base).href, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
+      await page.screenshot({ path: path.join(evidence, `knowledge-${width}.png`), fullPage: false });
       await page.goto(new URL('resources', base).href, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.post-grid .post-card h3 a').count(), index.posts.filter(p => p.garden === 'resources').length);
       await page.goto(new URL('about', base).href, { waitUntil: 'networkidle' });
@@ -182,11 +190,18 @@ async function main() {
     await noJs.goto(article, { waitUntil: 'domcontentloaded' });
     assert.ok((await noJs.locator('.article-prose').innerText()).length > 3000);
     assert.ok(await noJs.locator('.katex').count() > 0);
-    await noJs.locator('[data-navigation-open="outline"]').click();
+    await noJs.locator('.no-script-navigation').getByRole('link', { name: '本页目录', exact: true }).click();
     assert.equal(new URL(noJs.url()).hash, '#page-navigation');
     await noJs.locator('.article-toc a').nth(1).click();
     assert.ok(new URL(noJs.url()).hash);
     await noJs.close();
+    const reduced = await browser.newPage({ reducedMotion: 'reduce' });
+    await reduced.goto(base, { waitUntil: 'networkidle' });
+    assert.equal(await reduced.locator('.om-sculpture-sheet--cover').evaluate(el => getComputedStyle(el).animationName), 'none');
+    await reduced.locator('.garden-card').first().hover();
+    assert.equal(await reduced.locator('.garden-card').first().evaluate(el => getComputedStyle(el).transform), 'none');
+    assert.equal(await reduced.locator('.om-garden-art-stage').first().evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+    await reduced.close();
     const retryPage = await browser.newPage();
     let failures = 0;
     await retryPage.route('**/api/v1/search.json', route => {

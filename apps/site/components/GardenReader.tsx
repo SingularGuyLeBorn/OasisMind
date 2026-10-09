@@ -5,13 +5,14 @@ import { ReadingNavigation } from "@/components/ReadingNavigation";
 import { StaticWidget } from "@/components/StaticWidget";
 import { SiteLink } from "@/components/SiteLink";
 import { ArrowLeft } from "lucide-react";
+import { GardenArtwork } from "@oasismind/brand";
 
 export function GardenReader({ garden, posts }: { garden: PublicGarden; posts: PublicPostSummary[] }) {
   const document = getReadingDocument("gardens", garden.id);
   return <div className="article-layout site-shell">
     <article className="article-main">
       <SiteLink href="/knowledge" className="back-link"><ArrowLeft size={16} />全部知识库</SiteLink>
-      <header className="page-intro garden-intro"><p className="section-kicker">KNOWLEDGE GARDEN</p><h1>{garden.title}</h1>
+      <header className="page-intro garden-intro om-sculpture-interactive"><GardenArtwork gardenId={garden.id} className="garden-intro-sculpture" /><p className="section-kicker">KNOWLEDGE GARDEN</p><h1>{garden.title}</h1>
         {garden.description && <p>{garden.description}</p>}
       </header>
       <PublicMarkdown html={document.html} />

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Garden } from "@oasismind/shared";
+import { GardenArtwork } from "@oasismind/brand";
 import { CurlyMark } from "@/components/home/accentMark";
 import { ScrollReveal } from "@/components/magicui/scroll-reveal";
 import { displayGardenTitle, formatGardenId } from "@/lib/gardenDisplay";
@@ -759,7 +760,7 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                 {current && currentStyle ? (
                   <motion.div
                     key={current.id}
-                    className="relative flex flex-1 flex-col"
+                    className="om-sculpture-interactive relative flex flex-1 flex-col"
                     initial={reduced ? false : { opacity: 0, y: 14, filter: "blur(4px)" }}
                     animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                     exit={reduced ? undefined : { opacity: 0, y: -10, filter: "blur(3px)" }}
@@ -779,6 +780,7 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                         LIVE
                       </motion.span>
                     </div>
+                    <GardenArtwork gardenId={current.id} className="my-2 self-center" />
                     <h3 className="mt-1 text-xl font-black tracking-tight">
                       <span className="opacity-70">{"{"}</span> {displayGardenTitle(current.title)}{" "}
                       <span className="opacity-70">{"}"}</span>

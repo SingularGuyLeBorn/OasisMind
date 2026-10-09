@@ -12,7 +12,9 @@ const resolve = (p) => new URL(p, origin).href;
 const stats = { pages: 0, articles: 0, resources: 0, articleLinks: 0, browserViews: 0 };
 
 async function get(p, expected = 200) {
-  const response = await fetch(resolve(p), { signal: AbortSignal.timeout(20000) });
+  const response = await fetch(resolve(p), { signal: AbortSignal.timeout(20000) }).catch(error => {
+    throw new Error(`${resolve(p)}: ${error.message}${error.cause?.code ? ` (${error.cause.code})` : ''}`, { cause: error });
+  });
   assert.equal(response.status, expected, `${p}: HTTP ${response.status}`);
   assert.equal(new URL(response.url).protocol, 'https:');
   return response;

@@ -1,11 +1,9 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
-import { OasisMindLogo } from "@oasismind/brand";
+import { motion, useReducedMotion } from "framer-motion";
+import { KnowledgeSculpture, OasisMindLogo } from "@oasismind/brand";
 import Link from "next/link";
 import {
-  Activity,
   ArrowRight,
   BookOpen,
   Brain,
@@ -13,14 +11,10 @@ import {
   Fingerprint,
   Hash,
   Image as ImageIcon,
-  KeyRound,
-  Leaf,
   ListChecks,
-  Lock,
   Luggage,
   MessageSquare,
   Mic,
-  Orbit,
   Type,
   UsersRound,
   Video,
@@ -28,11 +22,6 @@ import {
 } from "lucide-react";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
 import { cn } from "@/lib/utils";
-
-const Particles = dynamic(
-  () => import("@/components/magicui/particles").then((m) => m.Particles),
-  { ssr: false, loading: () => <div className="h-full w-full" aria-hidden /> },
-);
 
 const easeSpring = [0.22, 1, 0.36, 1] as const;
 
@@ -59,89 +48,6 @@ const BRAND_ANCHORS = [
   { icon: CircuitBoard, label: "编排引擎", hint: "自动生长知识" },
   { icon: Luggage, label: "随时带走", hint: "文件可移植" },
 ];
-
-const CODE_MAIN = [
-  { c: "kw", t: "const" },
-  { c: "plain", t: " " },
-  { c: "var", t: "job" },
-  { c: "plain", t: " = " },
-  { c: "fn", t: "await" },
-  { c: "plain", t: " " },
-  { c: "fn", t: "spawnSubagent" },
-  { c: "plain", t: "({" },
-  { c: "nl", t: "\n" },
-  { c: "plain", t: "  tier: " },
-  { c: "str", t: '"sub"' },
-  { c: "plain", t: "," },
-  { c: "nl", t: "\n" },
-  { c: "plain", t: "  task: " },
-  { c: "str", t: '"distill notes"' },
-  { c: "plain", t: "," },
-  { c: "nl", t: "\n" },
-  { c: "plain", t: "  waitForResult: " },
-  { c: "kw", t: "false" },
-  { c: "plain", t: "," },
-  { c: "nl", t: "\n" },
-  { c: "plain", t: "});" },
-];
-
-const CODE_SNIPPET = [
-  { c: "cmt", t: "// report back only" },
-  { c: "nl", t: "\n" },
-  { c: "fn", t: "await" },
-  { c: "plain", t: " " },
-  { c: "fn", t: "reportBack" },
-  { c: "plain", t: "({" },
-  { c: "nl", t: "\n" },
-  { c: "plain", t: "  summary: " },
-  { c: "str", t: '"done"' },
-  { c: "plain", t: "," },
-  { c: "nl", t: "\n" },
-  { c: "plain", t: "  jobId: " },
-  { c: "var", t: "job" },
-  { c: "plain", t: ".id," },
-  { c: "nl", t: "\n" },
-  { c: "plain", t: "});" },
-];
-
-/** 浮动气泡：icon / 文案都不与支柱、能力区撞车 */
-const FLOAT_BADGES = [
-  { icon: KeyRound, label: "文件即真相源", className: "bottom-0 left-2", duration: 5.5, delay: 0.3 },
-  { icon: Leaf, label: "种子会发芽", className: "right-0 top-16", duration: 6.2, delay: 0.8 },
-  { icon: Activity, label: "推拉实时", className: "bottom-16 left-[-0.5rem]", duration: 5.8, delay: 1.2 },
-  { icon: Orbit, label: "数字主力", className: "right-10 bottom-28", duration: 6.5, delay: 0.5 },
-] as const;
-
-function CodeToken({ c, t }: { c: string; t: string }) {
-  if (c === "nl") return <br />;
-  const color =
-    c === "kw"
-      ? "text-[#7c6bc4]"
-      : c === "str"
-        ? "text-[#d4884a]"
-        : c === "fn"
-          ? "text-[#0087eb]"
-          : c === "var"
-            ? "text-[#c9a227]"
-            : c === "prop"
-              ? "text-[#0087eb]"
-              : c === "sel"
-                ? "text-[#0a4a85]"
-                : c === "cmt"
-                  ? "text-[var(--om-text-3)]"
-                  : "text-[var(--om-text-1)]";
-  return <span className={color}>{t}</span>;
-}
-
-function MacDots() {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-      <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-      <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-    </div>
-  );
-}
 
 function ModeChip({
   icon: Icon,
@@ -241,6 +147,7 @@ function FactorBlock({
  * O×M 公式同屏融合。icon 与文案在整页尽量只出现一次。
  */
 export function HeroSection() {
+  const reducedMotion = useReducedMotion();
   return (
     <section className="relative overflow-hidden px-6 pb-10 pt-8 lg:px-12 lg:pb-14 lg:pt-10">
       <div
@@ -253,27 +160,12 @@ export function HeroSection() {
             "radial-gradient(ellipse 40% 35% at 45% 45%, color-mix(in srgb, var(--om-glow-peach) 22%, transparent), transparent 60%)",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <Particles
-          className="h-full w-full"
-          quantity={72}
-          size={1.3}
-          staticity={32}
-          ease={42}
-          color="#0087eb"
-          accentColor="#e8a84a"
-          connectDistance={110}
-          glow={5}
-          vx={0.1}
-          vy={0.06}
-          refresh={false}
-        />
-      </div>
+
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8">
         <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, ease: easeSpring }}
             className="flex min-w-0 flex-col"
@@ -340,88 +232,18 @@ export function HeroSection() {
             </div>
           </motion.div>
 
-          {/* 右侧叠层玻璃窗 */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, x: 20 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ delay: 0.12, duration: 0.9, ease: easeSpring }}
-            className="relative mx-auto hidden h-[380px] w-full max-w-lg lg:block"
-          >
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              whileHover={{ scale: 1.02, rotate: -0.4 }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute left-0 top-4 w-[88%] cursor-default overflow-hidden rounded-2xl border border-white/50 bg-white/55 shadow-[0_20px_50px_-18px_rgba(0,80,160,0.28)] backdrop-blur-xl transition-[border-color,box-shadow] duration-300 hover:border-[var(--om-brand)]/30 hover:shadow-[0_28px_60px_-18px_rgba(0,135,235,0.34)]"
-            >
-              <div className="flex items-center gap-3 border-b border-white/40 px-4 py-3">
-                <MacDots />
-                <span className="font-mono text-[11px] text-[var(--om-text-3)]">spawn.agent.ts</span>
-              </div>
-              <pre className="overflow-x-auto px-5 py-4 font-mono text-[12.5px] leading-6">
-                <code>
-                  {CODE_MAIN.map((tok, i) => (
-                    <CodeToken key={i} c={tok.c} t={tok.t} />
-                  ))}
-                </code>
-              </pre>
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              whileHover={{ scale: 1.04, rotate: 1 }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-              className="absolute bottom-6 right-0 w-[58%] cursor-default overflow-hidden rounded-2xl border border-white/55 bg-white/65 shadow-[0_16px_40px_-14px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow] duration-300 hover:border-[var(--om-accent)]/40 hover:shadow-[0_22px_48px_-14px_rgba(232,168,74,0.3)]"
-            >
-              <div className="flex items-center gap-2 border-b border-white/40 px-3 py-2.5">
-                <MacDots />
-                <span className="font-mono text-[10px] text-[var(--om-text-3)]">report.back.ts</span>
-              </div>
-              <pre className="px-3.5 py-3 font-mono text-[11px] leading-5">
-                <code>
-                  {CODE_SNIPPET.map((tok, i) => (
-                    <CodeToken key={i} c={tok.c} t={tok.t} />
-                  ))}
-                </code>
-              </pre>
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              whileHover={{ scale: 1.12, rotate: -8 }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="absolute right-6 top-0 flex h-12 w-12 cursor-default items-center justify-center rounded-2xl border border-white/60 bg-white/70 shadow-[0_10px_28px_-10px_rgba(0,135,235,0.45)] backdrop-blur-md transition-[box-shadow] duration-300 hover:shadow-[0_14px_32px_-8px_rgba(0,135,235,0.55)]"
-              title="锁在本地"
-            >
-              <Lock className="h-5 w-5 text-[var(--om-brand)]" />
-            </motion.div>
-
-            {FLOAT_BADGES.map((badge) => {
-              const Icon = badge.icon;
-              return (
-                <motion.div
-                  key={badge.label}
-                  animate={{ y: [0, 7, 0] }}
-                  transition={{
-                    duration: badge.duration,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: badge.delay,
-                  }}
-                  className={cn(
-                    "absolute inline-flex items-center gap-1.5 rounded-full border border-white/55 bg-white/70 px-3 py-1.5 text-[11px] font-medium text-[var(--om-text-2)] shadow-sm backdrop-blur-md",
-                    badge.className,
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5 text-[var(--om-brand)]" />
-                  {badge.label}
-                </motion.div>
-              );
-            })}
-          </motion.div>
+          {/* [OM-FREEPLAY] 用共享立体书页替换持续漂浮的代码窗，保留本地产品介绍。 */}
+          <div className="om-owner-book-scene om-sculpture-interactive">
+            <KnowledgeSculpture />
+            <p className="text-center text-sm leading-7 text-[var(--om-text-2)]">
+              一份 Markdown，连接文章、知识与思考。<br />
+              从一页笔记开始，慢慢长成自己的知识库。
+            </p>
+          </div>
         </div>
 
         <motion.div
-          initial={{ opacity: 0, y: 18 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.28, duration: 0.65, ease: easeSpring }}
           className="om-card-premium relative overflow-hidden rounded-[1.5rem] p-4 md:p-5"
@@ -456,7 +278,7 @@ export function HeroSection() {
               =
             </span>
             <motion.div
-              whileHover={{ y: -3, scale: 1.02 }}
+              whileHover={reducedMotion ? undefined : { y: -3, scale: 1.02 }}
               transition={{ type: "spring", stiffness: 320, damping: 24 }}
               className="shrink-0 cursor-default rounded-2xl border border-white/55 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-md transition-[border-color,box-shadow,background-color] duration-300 hover:border-[var(--om-brand)]/30 hover:bg-white/80 hover:shadow-[0_12px_32px_-14px_rgba(0,135,235,0.35)]"
             >

@@ -7,6 +7,7 @@ import { ArrowRight, BookOpen, Search } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
 import { GardenCards } from "@/components/GardenCards";
 import { getManifest } from "@/lib/publicContent";
+import { KnowledgeSculpture } from "@oasismind/brand";
 
 export default function HomePage() {
   const manifest = getManifest();
@@ -38,8 +39,8 @@ export default function HomePage() {
               <Link href="/resources">学习资源 <ArrowRight size={15} /></Link>
             </div>
           </div>
-          <aside className="home-paths" aria-label="阅读入口">
-            <p>从哪里开始？</p>
+          <aside className="home-paths om-sculpture-interactive" aria-label="阅读入口">
+            <div className="home-paths-heading"><p>从哪里开始？</p><KnowledgeSculpture compact /></div>
             {paths.map((route, index) => <Link href={`/gardens/${route.id}`} className="home-path" key={route.id}>
               <span className="path-number">0{index + 1}</span><div><small>{route.label}</small><h2>{route.name}</h2><p>{route.text}</p></div><ArrowRight size={20} />
             </Link>)}

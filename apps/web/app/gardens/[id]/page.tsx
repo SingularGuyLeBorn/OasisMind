@@ -18,6 +18,7 @@ import { CurlyMark } from "@/components/home/accentMark";
 import { Skeleton } from "@/components/ui/skeleton";
 import { postDetailHref } from "@/lib/postHref";
 import { cn } from "@/lib/utils";
+import { GardenArtwork } from "@oasismind/brand";
 
 const emptySubscribe = () => () => {};
 
@@ -100,8 +101,9 @@ export default function GardenHomePage() {
           </div>
         </div>
 
-        <header className="mb-8">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
+        <header className="om-sculpture-interactive relative mb-8">
+          <GardenArtwork gardenId={id} className="absolute -right-2 -top-3" />
+          <p className="mb-1.5 min-h-[76px] pr-32 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
             Garden Home
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-[var(--om-text-1)] md:text-4xl">

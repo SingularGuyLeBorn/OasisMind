@@ -2,10 +2,10 @@
 export function enhanceReadingNavigation(content: HTMLElement): () => void {
   const layout = content.closest<HTMLElement>(".article-layout");
   const dialog = layout?.querySelector<HTMLDialogElement>(".reading-drawer");
-  if (!layout || !dialog || typeof dialog.showModal !== "function") return () => {};
+  if (!layout || !dialog || layout.dataset.navigationReady || typeof dialog.showModal !== "function") return () => {};
   const mobile = matchMedia("(max-width: 900px)");
   const tabs = Array.from(dialog.querySelectorAll<HTMLButtonElement>("[data-navigation-tab]"));
-  const openers = Array.from(layout.querySelectorAll<HTMLAnchorElement>("[data-navigation-open]"));
+  const openers = Array.from(layout.querySelectorAll<HTMLButtonElement>("[data-navigation-open]"));
   const panes = ["documents", "outline"].flatMap(kind => {
     const sidebar = layout.querySelector<HTMLElement>(kind === "documents" ? ".knowledge-tree" : ".article-toc");
     const host = dialog.querySelector<HTMLElement>(`[data-navigation-host="${kind}"]`);
@@ -47,10 +47,11 @@ export function enhanceReadingNavigation(content: HTMLElement): () => void {
   const close = () => { if (dialog.open) dialog.close(); restore(); };
   const onOpen = (event: Event) => {
     if (!mobile.matches) return;
-    const link = event.currentTarget as HTMLAnchorElement;
+    const link = event.currentTarget as HTMLButtonElement;
     const kind = link.dataset.navigationOpen!;
     if (!panes.some(pane => pane.kind === kind)) return;
     event.preventDefault();
+    dialog.dataset.navigationSide = kind === "documents" ? "left" : "right";
     if (dialog.open) { select(kind, true); return; }
     restore();
     opener = link;
@@ -99,19 +100,14 @@ export function enhanceReadingNavigation(content: HTMLElement): () => void {
   const onResize = () => { if (!mobile.matches) close(); };
   // 原生 close 事件可能晚于下一次打开；不能让上一轮事件关闭新面板。
   const onNativeClose = () => { if (!dialog.open) restore(); };
-  const onOpenerKey = (event: KeyboardEvent) => {
-    if (event.key === " " && mobile.matches) onOpen(event);
-  };
+  // Escape 和按钮共用关闭转移点，正文归位不等待原生异步 close 事件。
+  const onCancel = (event: Event) => { event.preventDefault(); close(); };
   openers.forEach(link => {
-    link.setAttribute("role", "button");
-    link.setAttribute("aria-haspopup", "dialog");
-    link.setAttribute("aria-controls", dialog.id);
-    link.setAttribute("aria-expanded", "false");
     link.addEventListener("click", onOpen);
-    link.addEventListener("keydown", onOpenerKey);
   });
   dialog.addEventListener("click", onDialogClick);
   dialog.addEventListener("close", onNativeClose);
+  dialog.addEventListener("cancel", onCancel);
   dialog.addEventListener("keydown", onTabKey);
   mobile.addEventListener("change", onResize);
   layout.dataset.navigationReady = "true";
@@ -120,11 +116,10 @@ export function enhanceReadingNavigation(content: HTMLElement): () => void {
     delete layout.dataset.navigationReady;
     openers.forEach(link => {
       link.removeEventListener("click", onOpen);
-      link.removeEventListener("keydown", onOpenerKey);
-      ["role", "aria-haspopup", "aria-controls", "aria-expanded"].forEach(attribute => link.removeAttribute(attribute));
     });
     dialog.removeEventListener("click", onDialogClick);
     dialog.removeEventListener("close", onNativeClose);
+    dialog.removeEventListener("cancel", onCancel);
     dialog.removeEventListener("keydown", onTabKey);
     mobile.removeEventListener("change", onResize);
   };
