@@ -2,6 +2,7 @@
 title: "Sparse Attention · 稀疏注意力机制"
 description: 从复杂度、拓扑、动态路由到内核实现，理解长上下文注意力为何以及怎样变稀疏
 published: true
+tags: ["Sparse Attention", "Long Context", "Efficient Attention"]
 ---
 # Sparse Attention · 稀疏注意力机制
 

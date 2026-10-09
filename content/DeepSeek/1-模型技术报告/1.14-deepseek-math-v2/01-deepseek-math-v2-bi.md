@@ -1,7 +1,7 @@
 ---
 title: "01 · DeepSeekMath-V2 英中对照"
 category: "模型技术报告"
-tags: ["DeepSeek", "数学推理", "定理证明", "双语对照"]
+tags: ["DeepSeek", "数学推理", "定理证明", "对照译稿"]
 published: true
 excerpt: "DeepSeekMath-V2 通过证明验证, 元验证和自我改进训练, 探索可自验证的自然语言数学推理."
 ---

@@ -1,7 +1,7 @@
 ---
 title: "01 · DeepSeek-Prover-V2 英中对照"
 category: "模型技术报告"
-tags: ["DeepSeek", "形式化数学", "Lean 4", "双语对照"]
+tags: ["DeepSeek", "形式化数学", "Lean 4", "对照译稿"]
 published: true
 excerpt: "DeepSeek-Prover-V2 通过子目标分解、递归证明搜索与强化学习连接自然语言推理和 Lean 4 形式证明."
 ---

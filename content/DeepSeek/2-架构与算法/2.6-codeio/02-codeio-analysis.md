@@ -173,6 +173,7 @@ CoT 对 33B 从 27.8 到 28.9 的变化较小. 它可能帮助规划, 也可能�
 $$
 \widehat{\mathcal L}=\frac{1}{\sum_z k_z|z|}
 \sum_z k_z\sum_t-\log p_\theta(z_t\mid z_{<t}).
+$$
 
 **FIM、AR与模型分流:** **Lite为什么保留FIM**
 

@@ -3,7 +3,7 @@ title: "4 · TestingTime 适应"
 category: "持续学习"
 published: true
 excerpt: "模型部署后遇到分布偏移, 在推理阶段用无标签输入自己更新: 从单张图上的自监督 TTT, 到批上的熵最小化, 再到不重置的长数据流和它带来的误差积累, 遗忘与攻击面."
-tags: ["continual-learning", "test-time-adaptation", "test-time-training", "learning-path"]
+tags: ["Continual Learning", "Test-Time Adaptation", "Test-Time Training"]
 ---
 # TestingTime 适应
 

@@ -2,6 +2,7 @@
 title: "Long-Horizon Agents · 长任务智能体"
 description: 多步骤真实任务中的状态一致、自我评估与跨轮记忆
 published: true
+tags: ["Long-Horizon Agent", "Agent", "长任务", "状态管理", "评测"]
 ---
 # Long-Horizon Agents · 长任务智能体
 

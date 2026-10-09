@@ -171,7 +171,9 @@ An = a 1+录∑(t)k k=1
 
 Response
 
-A\_n = a\_0 \left[ 1 + \frac{3}{4} \sum\_{k=1}^{n} \left( \frac{4}{9} \right)^k \right]
+```latex
+A_n = a_0 \left[ 1 + \frac{3}{4} \sum_{k=1}^{n} \left( \frac{4}{9} \right)^k \right]
+```
 
 Response
 

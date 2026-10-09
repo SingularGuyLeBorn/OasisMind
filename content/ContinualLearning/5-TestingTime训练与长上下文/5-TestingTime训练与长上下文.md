@@ -3,7 +3,7 @@ title: "5 · TestingTime 训练与长上下文"
 category: "持续学习"
 published: true
 excerpt: "把推理阶段的梯度更新写进序列模型本身: TTT layer 的隐状态是一个小模型的权重, LaCT 把更新块放大到上千 token, TTT-E2E 直接在 Transformer 的 MLP 上做下一个 token 预测的梯度步. 以及它们和线性注意力, SSM, RWKV, Titans 的边界."
-tags: ["continual-learning", "test-time-training", "long-context", "fast-weights", "learning-path"]
+tags: ["Continual Learning", "Test-Time Training", "Long Context", "Fast Weights"]
 ---
 # TestingTime 训练与长上下文
 

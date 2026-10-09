@@ -1,7 +1,7 @@
 ---
 title: "01 · DeepSeek-OCR 2 英中对照"
 category: "模型技术报告"
-tags: ["DeepSeek", "OCR", "视觉编码器", "双语对照"]
+tags: ["DeepSeek", "OCR", "视觉编码器", "对照译稿"]
 published: true
 excerpt: "DeepSeek-OCR 2 用双向视觉 token 与因果 query 组成 DeepEncoder V2, 在压缩视觉 token 的同时学习文档阅读顺序."
 ---

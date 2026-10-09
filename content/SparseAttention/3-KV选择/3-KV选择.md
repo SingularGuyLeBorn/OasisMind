@@ -2,6 +2,7 @@
 title: 3 · KV 选择：读取、保留与淘汰
 description: 区分查询稀疏与缓存压缩，建立 KV 生命周期和带宽模型
 published: true
+tags: ["Sparse Attention", "KV Cache"]
 ---
 # KV 选择：读取、保留与淘汰
 

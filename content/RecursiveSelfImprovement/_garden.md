@@ -2,6 +2,7 @@
 title: "RSI · Recursive Self-Improvement · 递归自我改进"
 description: "AI 系统的哪一部分被持久改变, 改进信号可不可信, 改进后的系统是否继续充当改进器"
 published: true
+tags: ["RSI", "自我改进", "Agent", "评测"]
 ---
 # RSI · Recursive Self-Improvement · 递归自我改进
 
