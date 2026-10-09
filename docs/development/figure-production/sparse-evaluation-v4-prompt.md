@@ -1,0 +1,3 @@
+# 联合评测图 v4 提示词
+
+Precise edit ONLY four local corrections to attached diagram. (1) SharedS arrow currently stops at y500 on big rowC outer border; EXTEND it down to y537, touching TOP of the small C box 相同的实际候选S at x565. Remove old arrowhead at y500, new arrowhead at y537, leaving all other edges unchanged. (2) In BOTH6x6 candidate matrices B andC, cell queryrow2,keycol1 currently white but must be colored: B amber,Cgreen. Maintain all other coloredcells, A lowertriangle unchanged. BothB/C identical exactly11 cells. (3) In left lower precisioncard print exactly 输入K/V精度一致 onfirstline, 参考累加用FP32 onsecondline; currently wrongcharacter. (4) B referencebox parenthetical exactly 与A同一参考精度. Preserve numerical table and error formulas. No changes beyond these corrections.

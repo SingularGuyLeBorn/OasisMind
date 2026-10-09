@@ -1,0 +1,3 @@
+# 联合评测图 v6 提示词
+
+Edit ONLY two regions. Bottom-right 同批请求记录: REMOVE the entire 示例数值 column and every fabricated numerical entry (覆盖6页候选3页,36MB,.32ms,1.08ms,1.56ms). Replace area with exactly three full-width text rectangles, no figures: 证据覆盖与候选页数; 实际KV字节; 索引、内核与请求时延. Keep title. Second, move sharedcandidate vertical arrow to far right of tokenstrips: start touching B strip bottom at x825,y390, descend through empty gap to C strip TOP x825,y537, arrowhead touchesC. Label 冻结后复用 in adjacent white gap; do not cross coloredcells or captions. Remove old arrow atx630. All remaining diagram,3stripcells, formulas,26/9 pairedtable,andpercentagesunchanged. Do not add any new numbers or claims.

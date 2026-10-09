@@ -1,0 +1,3 @@
+# 联合评测图 v7 提示词
+
+CRITICAL single arrow fix: attached diagram wrongly connects output o^r to o^k labelled冻结后复用. DELETE that entire vertical output-to-output edge and its label. Outputs are independently computed and never reused. ADD a vertical arrow between the LEFT candidate LABEL BOXES: from bottom boundary of B box 固定候选S={1,3,5} x420,y414 to top boundary of C box 共享同一S={1,3,5} x420,y513, label 共享S. It must connect only these candidate boxes, not outputs, strips, or referencecomputations. All other edges, table, formulas, tokenbars and labels remain unchanged. The three outputs must have connections ONLY to their respective right-hand comparison boxes, never directly to eachother. Keep bottomright metrics without invented numbers.
