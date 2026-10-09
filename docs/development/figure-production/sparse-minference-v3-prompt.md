@@ -1,0 +1,3 @@
+# MInference 候选 v3
+
+Edit ONLY five grid cells of this image. All typography, layout, arrows, dataflow, other cells unchanged. Coordinates specified in original1536x1024. A-shape grid: row i=2 col j=0 centered(x97,y427) mustBLUE, it is wronglywhite now. VS grid: row i=0 col j=0 centered(603,376) mustBLUE; row0 col1 centered(629,376) mustGRAY (futurej>i); row1 col1 centered(629,402) mustBLUE; row1 col2 centered(655,402) mustGRAY (futurej>i). Do not shift any rows or columns. Do not recolor any othercell. Totalblueedge counts A21 VS19 BS20. Precisely repair these five cells, leave everythingelse exactlyunchanged.
