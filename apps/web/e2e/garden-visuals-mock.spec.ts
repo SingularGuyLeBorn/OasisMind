@@ -6,6 +6,7 @@ const fixtures = [
   { id: "SparseAttention", title: "稀疏注意力示例", description: "选择性计算与长上下文。" },
   { id: "OnPolicyDistillation", title: "策略蒸馏示例", description: "教师与学生的训练分布。" },
   { id: "LLMInfrastructure", title: "训练基础设施示例", description: "算子、并行与资源约束。" },
+  { id: "ClassicPapers", title: "经典论文示例", description: "基础论文与完整推导。" },
 ];
 
 test.describe("本地知识库视觉", () => {
@@ -23,13 +24,16 @@ test.describe("本地知识库视觉", () => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/gardens");
     const motifs = [];
+    const compositions = [];
     for (const garden of fixtures) {
       const art = page.locator(`[data-garden-art="${garden.id}"]`);
       await expect(art).toBeVisible();
       await expect(art).toHaveAttribute("aria-hidden", "true");
       motifs.push(await art.getAttribute("data-motif"));
+      compositions.push(await art.locator("xpath=ancestor::article").getAttribute("data-composition"));
     }
     expect(new Set(motifs).size).toBe(fixtures.length);
+    expect(new Set(compositions).size).toBe(fixtures.length);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`gardens-${width}.png`) });
     await page.getByRole("link", { name: fixtures[0].title, exact: true }).click();

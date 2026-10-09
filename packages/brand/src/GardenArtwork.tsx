@@ -27,6 +27,21 @@ const scenes: Record<string, GardenScene> = {
   posts: { motif: "columns", pieces: 4, ink: "#6c8190", paper: "#e9eef2" },
 };
 
+// [OM-FREEPLAY] 不按列表位置轮换皮肤；构图由各库的阅读主题决定。
+const compositions: Record<string, string> = {
+  SparseAttention: "atlas", DiffusionLanguageModels: "mist", StanfordCS336: "atlas",
+  Agent: "orbit", MultiAgentSystems: "orbit", RetrievalAugmentedGeneration: "folio",
+  OnPolicyDistillation: "duet", ContinualLearning: "timeline", LongHorizonTask: "timeline",
+  ReinforcementLearning: "timeline", RecursiveSelfImprovement: "orbit",
+  LLMInfrastructure: "rack", "model-library": "cover", DeepSeek: "cover", OLMo: "folio",
+  ClassicPapers: "folio", LargeLanguageModelGuide: "cover",
+  LargeLanguageModelInterview: "duet", essays: "folio", "daily-fragments": "ledger", posts: "ledger",
+};
+
+export function gardenCardComposition(gardenId: string): string {
+  return compositions[gardenId] ?? "ledger";
+}
+
 /** [OM-FREEPLAY] 卡片边线与底色跟随各库的图形配色，不按列表序号随机换色。 */
 export function gardenArtworkPalette(gardenId: string): CSSProperties {
   const scene = scenes[gardenId] ?? scenes.posts;

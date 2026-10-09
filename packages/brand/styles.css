@@ -167,3 +167,54 @@
   .om-sculpture-interactive:hover [data-motif="columns"] i { transform: translateZ(calc(var(--piece) * 5px)); }
 }
 @media (prefers-reduced-motion: reduce) { .om-garden-art, .om-garden-art * { animation: none !important; transition: none !important; } }
+
+/* [OM-FREEPLAY] 九种编辑式构图共用阅读层级，但不共用右上角贴图模板。
+   展示面与文字区始终分离；重新排版不改变 DOM 阅读顺序或链接行为。 */
+.om-library-card { display: flex; flex-direction: column; isolation: isolate; }
+.om-library-card .om-card-body { position: relative; flex: 1; min-width: 0; padding: 26px; }
+.om-library-card .om-card-visual { position: relative; flex: none; min-width: 0; height: 150px; overflow: hidden; background: var(--art-paper); border-bottom: 1px solid color-mix(in srgb, var(--art-ink) 15%, transparent); }
+.om-library-card .om-card-visual > .om-garden-art { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1.45); }
+.om-library-card .om-card-visual::before, .om-library-card .om-card-visual::after { content: ""; position: absolute; pointer-events: none; transition: transform .6s ease; }
+.om-library-card[data-composition="atlas"] .om-card-visual { height: 180px; background-image: linear-gradient(color-mix(in srgb, var(--art-ink) 10%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--art-ink) 10%, transparent) 1px, transparent 1px); background-size: 22px 22px; }
+.om-library-card[data-composition="atlas"] .om-card-visual::before { width: 220px; height: 220px; left: calc(50% - 110px); top: -20px; background: #ffffff70; border: 1px solid #ffffffb0; border-radius: 50%; }
+.om-library-card[data-composition="atlas"] .om-card-visual > .om-garden-art { transform: translate(-50%, -50%) scale(1.7); }
+.om-library-card[data-composition="mist"] .om-card-visual { height: 180px; background: radial-gradient(ellipse at 25% 30%, #fff, transparent 55%), radial-gradient(ellipse at 75% 80%, color-mix(in srgb, var(--art-ink) 25%, white), transparent 70%), var(--art-paper); }
+.om-library-card[data-composition="mist"] .om-card-visual > .om-garden-art { width: 170px; transform: translate(-50%, -50%) scale(1.65); }
+.om-library-card[data-composition="orbit"] .om-card-visual { height: 155px; background: #f7faf8; }
+.om-library-card[data-composition="orbit"] .om-card-visual::before { width: 260px; height: 260px; top: -53px; left: calc(50% - 130px); border: 1px solid color-mix(in srgb, var(--art-ink) 25%, transparent); border-radius: 50%; }
+.om-library-card[data-composition="orbit"] .om-card-visual::after { width: 190px; height: 190px; top: -18px; left: calc(50% - 95px); border: 1px dashed color-mix(in srgb, var(--art-ink) 35%, transparent); border-radius: 50%; }
+.om-library-card[data-composition="folio"] { display: grid; grid-template-columns: minmax(100px, .34fr) minmax(0, 1fr); }
+.om-library-card[data-composition="folio"] .om-card-visual { height: 100%; min-height: 280px; border-bottom: 0; border-right: 1px solid color-mix(in srgb, var(--art-ink) 20%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--art-ink) 22%, white), var(--art-paper) 14%, #f9f6ef 95%); }
+.om-library-card[data-composition="folio"] .om-card-visual::after { inset: 18px 10px; border-inline: 1px solid color-mix(in srgb, var(--art-ink) 18%, transparent); }
+.om-library-card[data-composition="folio"] .om-card-visual > .om-garden-art { transform: translate(-50%, -50%) rotate(-8deg) scale(1.15); }
+.om-library-card[data-composition="folio"] h3 { font-family: "Songti SC", "SimSun", serif; font-weight: 700; }
+.om-library-card[data-composition="duet"] .om-card-visual { order: 2; height: 115px; border-bottom: 0; border-top: 1px solid color-mix(in srgb, var(--art-ink) 18%, transparent); background: linear-gradient(90deg, var(--art-paper) 49.8%, #fff 50%, color-mix(in srgb, var(--art-ink) 18%, white) 50.2%); }
+.om-library-card[data-composition="duet"] .om-card-body { border-top: 4px solid var(--art-ink); }
+.om-library-card[data-composition="timeline"] .om-card-visual { order: 2; height: 110px; border-bottom: 0; background: linear-gradient(0deg, var(--art-paper), #fff); }
+.om-library-card[data-composition="timeline"] .om-card-visual::before { width: 80%; height: 1px; top: 65%; left: 10%; background: color-mix(in srgb, var(--art-ink) 28%, transparent); }
+.om-library-card[data-composition="timeline"] .om-card-visual > .om-garden-art { transform: translate(-50%, -50%) scale(1.6); }
+.om-library-card[data-composition="rack"] .om-card-visual { height: 175px; background: #203a3a; }
+.om-library-card[data-composition="rack"] .om-card-visual::before { inset: 16px; border: 1px solid #d6e7df2b; }
+.om-library-card[data-composition="rack"] .om-card-visual::after { inset: 26px; background: repeating-linear-gradient(90deg, transparent 0 38px, #d6e7df12 38px 39px); }
+.om-library-card[data-composition="rack"] .om-card-visual > .om-garden-art { --art-ink: #819e93; --art-paper: #bdccc2; transform: translate(-50%, -50%) scale(1.65); }
+.om-library-card[data-composition="cover"] .om-card-visual { height: 140px; background: var(--art-ink); }
+.om-library-card[data-composition="cover"] .om-card-visual > .om-garden-art { --art-ink: #e3cba8; --art-paper: #f5efe5; left: 38%; transform: translate(-50%, -50%) scale(1.35); }
+.om-library-card[data-composition="cover"] .om-card-visual::after { top: 22px; bottom: 22px; right: 22px; width: 22%; border-block: 1px solid #ffffff55; background: repeating-linear-gradient(0deg, transparent 0 17px, #ffffff28 17px 18px); }
+.om-library-card[data-composition="cover"] .garden-index, .om-library-card[data-composition="rack"] .garden-index { color: #fff; }
+.om-library-card[data-composition="ledger"] .om-card-visual { height: 92px; background: #faf9f4; background-image: repeating-linear-gradient(0deg, transparent 0 22px, #b4ad9425 22px 23px); }
+.om-library-card[data-composition="ledger"] .om-card-visual > .om-garden-art { left: 32%; transform: translate(-50%, -50%) scale(.9); }
+.om-library-card[data-composition="ledger"] .om-card-body { background: #fdfcf7; }
+@media (max-width: 480px) {
+  .om-library-card .om-card-body { padding: 22px; }
+  .om-library-card[data-composition="folio"] { grid-template-columns: 92px minmax(0, 1fr); }
+  .om-library-card[data-composition="folio"] .om-card-body { padding: 24px 20px; }
+  .om-library-card[data-composition="folio"] .om-card-visual > .om-garden-art { transform: translate(-50%, -50%) rotate(-8deg) scale(.9); }
+  .om-library-card[data-composition="folio"] h3 { font-size: 21px; }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .om-library-card[data-composition="orbit"]:hover .om-card-visual::after { transform: rotate(24deg); }
+  .om-library-card[data-composition="atlas"]:hover .om-card-visual::before { transform: scale(1.08); }
+  .om-library-card[data-composition="cover"]:hover .om-card-visual::after { transform: translateX(-8px); }
+  .om-library-card[data-composition="timeline"]:hover .om-card-visual::before { transform: scaleX(.85); }
+}
+@media (prefers-reduced-motion: reduce) { .om-library-card .om-card-visual::before, .om-library-card .om-card-visual::after { transition: none; } }

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { GardenArtwork, gardenArtworkPalette } from "@oasismind/brand";
+import { GardenArtwork, gardenArtworkPalette, gardenCardComposition } from "@oasismind/brand";
+import { cn } from "@/lib/utils";
 import { ArrowRight, ChevronRight, FileText, Layers, Plus, Trash2 } from "lucide-react";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
@@ -242,22 +243,16 @@ export default function GardensPage() {
               return (
                 <motion.article
                   key={g.id}
+                  data-composition={gardenCardComposition(g.id)}
                   style={gardenArtworkPalette(g.id)}
                   initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: reducedMotion ? 0 : 0.35, ease: easeOut }}
                   whileHover={reducedMotion ? undefined : { y: -4 }}
-                  className="om-themed-garden-card om-sculpture-interactive om-card-topline om-card-sheen group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 p-6 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--om-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]"
+                  className={cn("om-library-card om-sculpture-interactive group relative overflow-hidden rounded-[1.5rem] border border-[var(--om-divider)] bg-white shadow-sm", "transition-[border-color,box-shadow] duration-300 hover:border-[var(--om-brand)]/35 hover:shadow-lg")}
                 >
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-[var(--om-glow-peach)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--om-glow-peach)]/45"
-                  />
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -bottom-10 -left-8 h-32 w-32 rounded-full bg-[var(--om-glow-blue)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--om-glow-blue)]/50"
-                  />
-
+                  <div className="om-card-visual"><GardenArtwork gardenId={g.id} /></div>
+                  <div className="om-card-body flex flex-col">
                   <div className="relative mb-4 flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -275,7 +270,6 @@ export default function GardensPage() {
                         {g.title}
                       </Link>
                     </div>
-                    <GardenArtwork gardenId={g.id} className="om-owner-card-art" />
                     {!isSeed && (
                       <button
                         type="button"
@@ -308,7 +302,7 @@ export default function GardensPage() {
                     </ul>
                   )}
 
-                  <div className="relative mt-auto flex items-center justify-between gap-3 pt-1">
+                  <div className="relative mt-auto flex flex-wrap items-center justify-between gap-3 pt-1">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-white/55 px-3 py-1 text-xs text-[var(--om-text-3)]">
                       <FileText className="h-3 w-3 text-[var(--om-brand)]" />
                       <span className="font-semibold tabular-nums text-[var(--om-text-1)]">
@@ -323,6 +317,7 @@ export default function GardensPage() {
                       打开首页
                       <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                     </Link>
+                  </div>
                   </div>
                 </motion.article>
               );

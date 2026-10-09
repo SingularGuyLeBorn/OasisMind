@@ -135,13 +135,20 @@ async function main() {
       assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
       const motifs = await page.locator('.garden-grid [data-motif]').evaluateAll(arts => arts.map(art => art.dataset.motif));
       assert.equal(new Set(motifs).size, motifs.length, '知识库卡片不能重复同一套图形');
+      const compositions = await page.locator('.garden-grid > a').evaluateAll(cards => cards.map(card => card.dataset.composition));
+      assert.equal(new Set(compositions).size, 9, '各库至少使用九种不同构图');
+      assert.equal(await page.locator('.garden-grid > a').evaluateAll(cards => cards.every(card => {
+        const visual = card.querySelector('.om-card-visual').getBoundingClientRect();
+        const body = card.querySelector('.om-card-body').getBoundingClientRect();
+        return visual.right <= body.left + 1 || visual.bottom <= body.top + 1 || body.bottom <= visual.top + 1;
+      })), true, '视觉展示面不能覆盖文字区');
       assert.equal(await page.locator('.garden-grid [data-garden-art][aria-hidden="true"]').count(), motifs.length);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await page.screenshot({ path: path.join(evidence, `home-${width}.png`), fullPage: false });
 
       await page.goto(new URL('knowledge', base).href, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
-      await page.screenshot({ path: path.join(evidence, `knowledge-${width}.png`), fullPage: false });
+      await page.screenshot({ path: path.join(evidence, `knowledge-${width}.png`), fullPage: true });
       await page.goto(new URL('resources', base).href, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.post-grid .post-card h3 a').count(), index.posts.filter(p => p.garden === 'resources').length);
       await page.goto(new URL('about', base).href, { waitUntil: 'networkidle' });
