@@ -1,4 +1,5 @@
 /** 为公开站生成只读内容投影；本脚本只写 apps/site/public/api/v1，不改动 content。 */
+import "dotenv/config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildPublicContent } from "../infra/publicContentBuilder.js";

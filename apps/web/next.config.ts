@@ -6,6 +6,16 @@ import bundleAnalyzer from "@next/bundle-analyzer";
 const require = createRequire(import.meta.url);
 const serverInternal = process.env.SERVER_INTERNAL_URL || "http://127.0.0.1:3010";
 
+const r2Hostname = (() => {
+  const url = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+  if (!url) return null;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+})();
+
 /** 强制整站只用一份 remotion，避免 Player 与 composition 各拿一份 context → useCurrentFrame 报错 */
 const remotionRoot = path.dirname(require.resolve("remotion/package.json"));
 const remotionPlayerRoot = path.dirname(require.resolve("@remotion/player/package.json"));
@@ -103,6 +113,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { hostname: "localhost" },
       { hostname: "**.githubusercontent.com" },
+      ...(r2Hostname ? [{ protocol: "https" as const, hostname: r2Hostname }] : []),
     ],
   },
 };

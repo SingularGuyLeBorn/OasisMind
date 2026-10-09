@@ -22,6 +22,17 @@ import {
 
 const GARDEN_META_FILE = "_garden.md";
 
+function getR2Config(): { publicUrl: string } | null {
+  const publicUrl =
+    process.env.R2_PUBLIC_URL?.replace(/\/$/, "") ||
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "");
+  const enabled =
+    process.env.R2_CDN_ENABLED === "true" ||
+    process.env.NEXT_PUBLIC_R2_CDN_ENABLED === "true";
+  if (!publicUrl || !enabled) return null;
+  return { publicUrl };
+}
+
 /**
  * 公开站允许随文章发布的附件类型。
  * 列表采用 allowlist，未知格式保持在本地，避免把数据库、密钥或可执行文件顺带复制出去。
@@ -258,15 +269,18 @@ function resolveLocalAsset(
   const outputExtension = optimizeAsWebp ? ".webp" : extension;
   // 内容寻址同时去重不同花园里的重复图片，并让浏览器长期缓存不受文章改名影响。
   const outputRelativePath = `${sourceHash.slice(0, 2)}/${sourceHash}${outputExtension}`;
+  const r2 = getR2Config();
   return {
     sourcePath: realSourcePath,
     contentRelativePath,
     outputRelativePath,
     optimizeAsWebp,
-    publicUrl: publicPath(
-      publicBasePath,
-      `/api/v1/assets/${encodePublicPath(outputRelativePath)}${suffix}`,
-    ),
+    publicUrl: r2
+      ? `${r2.publicUrl}/${outputRelativePath}${suffix}`
+      : publicPath(
+          publicBasePath,
+          `/api/v1/assets/${encodePublicPath(outputRelativePath)}${suffix}`,
+        ),
   };
 }
 
