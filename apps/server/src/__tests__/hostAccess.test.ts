@@ -114,6 +114,17 @@ describe("hostAccess", () => {
     await expect(resolveAgentFsPath(ctx, outside, "read")).rejects.toThrow(/不在 hostAccess.roots/);
   });
 
+  it("host: 显示路径可回读，且不放行相对路径或授权根外路径", () => {
+    const config = createTestConfig(project, {
+      hostAccess: { enabled: true, roots: [hostRoot], desktopMcpServers: ["windows-mcp"] },
+    });
+    const target = path.join(hostRoot, "nested", "hello.txt");
+    expect(resolveHostAbsolutePath(config, toHostDisplayPath(target))).toBe(path.resolve(target));
+    expect(() => resolveHostAbsolutePath(config, "host:relative/hello.txt")).toThrow(/绝对路径/);
+    const outside = path.join(os.tmpdir(), "om-host-outside", "hello.txt");
+    expect(resolveHostAbsolutePath(config, toHostDisplayPath(outside))).toBeNull();
+  });
+
   it("主机根覆盖项目时 content/posts 仍走花园禁写", async () => {
     const umbrella = fs.mkdtempSync(path.join(os.tmpdir(), "om-host-umbrella-"));
     const oasis = path.join(umbrella, "oasis");

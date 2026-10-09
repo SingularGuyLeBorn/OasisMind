@@ -150,7 +150,8 @@ export function resolveHostAbsolutePath(config: AppConfig, raw: string): string 
   const p = String(raw ?? "").trim().replace(/\\/g, "/");
   let candidate: string;
   if (p.toLowerCase().startsWith("host:")) {
-    const rest = p.slice(5).replace(/^\/+/, "");
+    // 保留 POSIX / 与 UNC // 根；删除前导斜杠会把绝对路径变成相对路径。
+    const rest = p.slice(5);
     if (!rest) {
       throw new Error("host: 后面需要别名或绝对路径，例如 host:Desktop 或 host:D:/notes");
     }

@@ -28,4 +28,8 @@ Git 用一次不改文件树的合并接回原远程祖先，正常快进推送�
 
 Linux CI 发现一条已有链接的目录大小写错误，`99617be88` 仅将相对链接 `../DeepSeek/deepseek-analysis.md` 修为 `../deepseek/deepseek-analysis.md`，未改动技术论述。
 
+该修正的 Pages 运行 `37880046881` 已完成部署，更新后公网验收再次通过。另逐篇用浏览器检查 SparseAttention 的 36 篇公开正文，未出现公式解析错误、脚本错误或页面横向溢出。
+
+完整 Linux CI 随后发现 Agent 主机路径解析误删 `host:/tmp/...` 的前导斜杠，已修复统一解析入口，并补充显示路径回读、相对路径拒绝与授权根外路径拒绝的回归测试；没有扩大主机授权范围。
+
 三篇原有文章因 YAML 错误被发布关口安全跳过：DeepSeek 的 aux-loss-free analysis、model-library 的 Claude Mythos 5 bi 与 Gemini 1.5 analysis。它们未进入公开产物，本次没有改动其发布状态或正文。
