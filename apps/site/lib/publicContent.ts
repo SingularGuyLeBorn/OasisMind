@@ -15,6 +15,7 @@ import type {
 export { articleHref } from "./publicRoutes";
 
 const API_ROOT = path.join(process.cwd(), "public", "api", "v1");
+let manifestSnapshot: { mtime: number; value: PublicContentManifest } | undefined;
 
 function readJson<T>(filePath: string): T {
   try {
@@ -26,7 +27,12 @@ function readJson<T>(filePath: string): T {
 }
 
 export function getManifest(): PublicContentManifest {
-  return readJson<PublicContentManifest>(path.join(API_ROOT, "index.json"));
+  const file = path.join(API_ROOT, "index.json");
+  const mtime = fs.statSync(file).mtimeMs;
+  if (manifestSnapshot?.mtime !== mtime) {
+    manifestSnapshot = { mtime, value: readJson<PublicContentManifest>(file) };
+  }
+  return manifestSnapshot.value;
 }
 
 export function getSearchManifest(): PublicSearchManifest {

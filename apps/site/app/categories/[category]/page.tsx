@@ -3,7 +3,7 @@
  * 页面只读且没有本地工作台依赖，不存在的分类返回 404，索引损坏时构建失败。
  */
 import type { Metadata } from "next";
-import { ArchiveClient } from "@/components/ArchiveClient";
+import { Archive } from "@/components/Archive";
 import { getManifest, uniqueCategories } from "@/lib/publicContent";
 
 export function generateStaticParams() {
@@ -18,5 +18,5 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
 export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category: rawCategory } = await params;
   const category = decodeURIComponent(rawCategory);
-  return <ArchiveClient kind="category" value={category} />;
+  return <Archive kind="category" value={category} posts={getManifest().posts.filter((post) => post.category === category)} />;
 }

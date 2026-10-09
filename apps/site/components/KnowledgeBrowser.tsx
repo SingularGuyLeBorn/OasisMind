@@ -1,51 +1,48 @@
 "use client";
 
-/**
- * 公开知识索引的本地搜索与筛选 UI；输入数据只来自已导出的 search.json。
- * 搜索不会访问完整 content 或产生写请求，加载失败会保留可见错误态。
- */
-import { useMemo, useState } from "react";
+/** 首屏只携带一页摘要；完整搜索索引按需加载，结果分批渲染。 */
+import { useMemo, useState, useDeferredValue } from "react";
 import { Search, X } from "lucide-react";
-import type { PublicSearchEntry } from "@oasismind/shared";
-import { PostCard } from "@/components/PostCard";
+import type { PublicPostSummary, PublicSearchEntry } from "@oasismind/shared";
+import { PostList } from "@/components/PostList";
 import { usePublicJson } from "@/lib/usePublicJson";
 
-export function KnowledgeBrowser() {
+export function KnowledgeBrowser({ initialPosts, gardens, total }: {
+  initialPosts: PublicPostSummary[]; gardens: Array<{ id: string; title: string }>; total: number;
+}) {
   const [query, setQuery] = useState("");
   const [garden, setGarden] = useState("all");
-  const { data, error, loading } = usePublicJson<{ schemaVersion: number; posts: PublicSearchEntry[] }>("/api/v1/search.json");
-  const posts = useMemo(() => data?.posts ?? [], [data]);
-  const gardens = useMemo(() => [...new Set(posts.map((post) => post.garden))], [posts]);
-  const filtered = useMemo(() => {
-    const keyword = query.trim().toLocaleLowerCase("zh-CN");
-    return posts.filter((post) => {
-      if (garden !== "all" && post.garden !== garden) return false;
-      if (!keyword) return true;
-      return `${post.title}\n${post.excerpt}\n${post.tags.join(" ")}\n${post.category ?? ""}\n${post.searchText}`
-        .toLocaleLowerCase("zh-CN")
-        .includes(keyword);
-    });
-  }, [garden, posts, query]);
+  const [scope, setScope] = useState<"all" | "title" | "tags" | "category">("all");
+  const [requested, setRequested] = useState(false);
+  const keyword = useDeferredValue(query.trim().toLocaleLowerCase("zh-CN"));
+  const enabled = requested || Boolean(query) || garden !== "all" || scope !== "all";
+  const { data, error, loading, retry } = usePublicJson<{ schemaVersion: number; posts: PublicSearchEntry[] }>("/api/v1/search.json", enabled);
+  const indexed = useMemo(() => (data?.posts ?? []).map((post) => ({
+    post, all: `${post.title}\n${post.excerpt}\n${post.tags.join(" ")}\n${post.category ?? ""}\n${post.searchText}`.toLocaleLowerCase("zh-CN"),
+    title: post.title.toLocaleLowerCase("zh-CN"), tags: post.tags.join(" ").toLocaleLowerCase("zh-CN"), category: (post.category ?? "").toLocaleLowerCase("zh-CN"),
+  })), [data]);
+  const filtered = useMemo(() => !data ? initialPosts : indexed
+    .filter((entry) => (garden === "all" || entry.post.garden === garden) && keyword.split(/\s+/).every((term) => entry[scope].includes(term)))
+    .map(({ post }) => post), [data, initialPosts, garden, indexed, keyword, scope]);
 
-  return (
-    <>
-      <div className="knowledge-tools">
-        <label className="search-field">
-          <Search size={18} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索标题、摘要、标签…" />
-          {query && <button type="button" onClick={() => setQuery("")} aria-label="清空搜索"><X size={16} /></button>}
-        </label>
-        <select value={garden} onChange={(event) => setGarden(event.target.value)} aria-label="按花园筛选">
-          <option value="all">全部知识库</option>
-          {gardens.map((item) => <option value={item} key={item}>{item}</option>)}
-        </select>
-      </div>
-      <p className="result-count">{loading ? "正在读取公开索引…" : `找到 ${filtered.length} 篇公开文章`}</p>
-      {error && <div className="load-error">{error}</div>}
-      <div className="post-grid">
-        {filtered.map((post) => <PostCard key={post.id} post={post} />)}
-      </div>
-      {filtered.length === 0 && <div className="empty-state">没有匹配的内容，换个关键词试试。</div>}
-    </>
-  );
+  return <>
+    <div className="knowledge-tools">
+      <label className="search-field"><Search size={18} />
+        <input value={query} onFocus={() => setRequested(true)} onChange={(event) => setQuery(event.target.value)} placeholder="搜索标题、摘要、标签…" />
+        {query && <button type="button" onClick={() => setQuery("")} aria-label="清空搜索"><X size={16} /></button>}
+      </label>
+      <select value={garden} onChange={(event) => setGarden(event.target.value)} aria-label="按花园筛选">
+        <option value="all">全部知识库</option>
+        {gardens.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}
+      </select>
+      <select value={scope} onChange={(event) => setScope(event.target.value as typeof scope)} aria-label="搜索范围">
+        <option value="all">综合搜索</option><option value="title">只搜标题</option><option value="tags">只搜标签</option><option value="category">只搜分类</option>
+      </select>
+    </div>
+    <p className="result-count" role="status">{enabled && loading ? "正在读取完整搜索索引…" : `找到 ${data ? filtered.length : total} 篇公开文章`}</p>
+    {error && <div className="load-error" role="alert">{error} <button type="button" onClick={retry}>重新读取</button></div>}
+    <PostList key={`${garden}:${scope}:${keyword}`} posts={filtered} />
+    {!data && <button className="load-index" type="button" disabled={enabled && loading} onClick={() => setRequested(true)}>浏览全部 {total} 篇文章</button>}
+    {data && filtered.length === 0 && <div className="empty-state">没有匹配的内容，换个关键词试试。</div>}
+  </>;
 }

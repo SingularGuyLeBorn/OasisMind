@@ -3,8 +3,9 @@
  * 未进入公开投影的 slug 返回 404；投影损坏则让构建失败，不回退读取私人数据。
  */
 import type { Metadata } from "next";
-import { ArticleClient } from "@/components/ArticleClient";
-import { getManifest, getPost } from "@/lib/publicContent";
+import { notFound } from "next/navigation";
+import { ArticleReader } from "@/components/ArticleReader";
+import { getGarden, getManifest, getPost } from "@/lib/publicContent";
 
 interface ArticleParams { garden: string; slug: string[] }
 
@@ -25,5 +26,9 @@ export async function generateMetadata({ params }: { params: Promise<ArticlePara
 
 export default async function ArticlePage({ params }: { params: Promise<ArticleParams> }) {
   const value = await params;
-  return <ArticleClient garden={decodeURIComponent(value.garden)} slug={value.slug.map(decodeURIComponent).join("/")} />;
+  const garden = decodeURIComponent(value.garden);
+  const post = getPost(garden, value.slug.map(decodeURIComponent).join("/"));
+  const group = getGarden(garden);
+  if (!post || !group) notFound();
+  return <ArticleReader post={post} gardenTitle={group.garden.title} posts={group.posts} />;
 }

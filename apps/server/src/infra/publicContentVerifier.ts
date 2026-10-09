@@ -20,7 +20,7 @@ import {
 } from "@oasismind/shared";
 
 const SKIPPED_ARTICLE_DIRECTORIES = new Set([".trash", "assets", "images", "public"]);
-const PUBLIC_GARDEN_EXCLUSIONS = new Set(["about", "uploads", "resources"]);
+const PUBLIC_GARDEN_EXCLUSIONS = new Set(["about", "uploads"]);
 const SUMMARY_KEYS = ["apiPath", "category", "excerpt", "garden", "id", "markdownPath", "slug", "tags", "title"];
 const POST_KEYS = [...SUMMARY_KEYS, "content", "contentHash"].sort();
 

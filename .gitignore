@@ -9,6 +9,7 @@ dist/
 *.tsbuildinfo
 out/
 apps/site/public/api/v1/
+apps/site/.reading/
 
 # Environment
 .env

@@ -3,7 +3,7 @@
  * 不存在的标签返回 404，索引异常显示为构建失败，路由不包含任何写能力。
  */
 import type { Metadata } from "next";
-import { ArchiveClient } from "@/components/ArchiveClient";
+import { Archive } from "@/components/Archive";
 import { getManifest, uniqueTags } from "@/lib/publicContent";
 
 export function generateStaticParams() {
@@ -18,5 +18,5 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
 export default async function TagPage({ params }: { params: Promise<{ tag: string }> }) {
   const { tag: rawTag } = await params;
   const tag = decodeURIComponent(rawTag);
-  return <ArchiveClient kind="tag" value={tag} />;
+  return <Archive kind="tag" value={tag} posts={getManifest().posts.filter((post) => post.tags.includes(tag))} />;
 }

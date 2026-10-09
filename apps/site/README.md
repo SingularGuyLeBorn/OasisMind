@@ -19,6 +19,12 @@ pnpm build:site
 
 静态结果位于 `apps/site/out/`。`public/api/v1/` 和 `out/` 都是生成物，不提交 Git。
 
+正文在构建时由共享 Markdown 管线排版为 HTML，缓存于忽略目录 `.reading/`。公开版与本地工作台共用目录树、锚点及公式竖线处理；公开版不挂载编辑器和 Agent。发布阶段移除 Next 客户端路由及 RSC 副本，只给搜索、分页、目录高亮挂载轻量 React 控件。普通文章链接使用原生页面导航。
+
+知识库页显示主题卡片；库首页和文章显示双侧目录，手机目录可以收起。搜索按需读取完整索引，支持多关键词、标题、标签、分类与知识库筛选，每页 24 篇。资源和个人资料分别复用本地的已发布资源与 `content/about/profile.md`。
+
+本机构建后用 `node scripts/verify-public-site-reading.cjs` 验证桌面、手机、无脚本阅读与搜索失败重试。设置 `PUBLIC_SITE_CHECK_URL` 后可验证部署站点。私人划线和评论依赖服务端，不属于静态站写入能力。
+
 ## 只读 API
 
 - `/api/v1/index.json`：花园与文章摘要索引。

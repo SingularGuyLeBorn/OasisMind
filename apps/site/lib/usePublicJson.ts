@@ -14,10 +14,12 @@ interface PublicJsonState<T> {
 }
 
 /** 静态站统一拉取器：请求可取消，失败可见，不依赖本地服务端。 */
-export function usePublicJson<T>(url: string): PublicJsonState<T> {
+export function usePublicJson<T>(url: string, enabled = true): PublicJsonState<T> & { retry: () => void } {
   const [state, setState] = useState<PublicJsonState<T>>({ data: null, error: null, loading: true });
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     let active = true;
     fetch(withSiteBasePath(url), { signal: controller.signal, headers: { accept: "application/json" } })
@@ -37,7 +39,8 @@ export function usePublicJson<T>(url: string): PublicJsonState<T> {
       active = false;
       controller.abort();
     };
-  }, [url]);
+  }, [url, enabled, attempt]);
 
-  return state;
+  // [OM-FREEPLAY] 静态索引读取失败时允许手动重试，不自动循环请求。
+  return { ...state, retry: () => { setState({ data: null, error: null, loading: true }); setAttempt(value => value + 1); } };
 }

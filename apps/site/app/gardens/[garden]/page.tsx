@@ -3,7 +3,8 @@
  * 路由只读，不连接本地服务；未知花园返回 404，投影错误由构建阶段暴露。
  */
 import type { Metadata } from "next";
-import { GardenClient } from "@/components/GardenClient";
+import { notFound } from "next/navigation";
+import { GardenReader } from "@/components/GardenReader";
 import { getGarden, getManifest } from "@/lib/publicContent";
 
 export function generateStaticParams() {
@@ -18,5 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ garden: s
 
 export default async function GardenPage({ params }: { params: Promise<{ garden: string }> }) {
   const { garden: gardenId } = await params;
-  return <GardenClient gardenId={decodeURIComponent(gardenId)} />;
+  const data = getGarden(decodeURIComponent(gardenId));
+  if (!data) notFound();
+  return <GardenReader garden={data.garden} posts={data.posts} />;
 }

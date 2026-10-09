@@ -2,14 +2,16 @@
  * 公开首页服务端组件；精选文章与统计只取公开清单，保持现有亮色品牌视觉。
  * 清单缺失或不合法时静态构建失败，禁止回退连接本地工作台或展示草稿。
  */
-import Link from "next/link";
+import { SiteLink as Link } from "@/components/SiteLink";
 import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
+import { GardenCards } from "@/components/GardenCards";
 import { getManifest } from "@/lib/publicContent";
 
 export default function HomePage() {
   const manifest = getManifest();
   const featured = manifest.posts.slice(0, 6);
+  const gardens = manifest.gardens.filter(garden => garden.id !== "resources");
 
   return (
     <>
@@ -29,7 +31,7 @@ export default function HomePage() {
           </div>
           <div className="hero-stats">
             <div><strong>{manifest.posts.length}</strong><span>篇公开文章</span></div>
-            <div><strong>{manifest.gardens.length}</strong><span>座知识花园</span></div>
+            <div><strong>{gardens.length}</strong><span>座知识花园</span></div>
             <div><strong>∞</strong><span>持续生长</span></div>
           </div>
         </div>
@@ -46,16 +48,7 @@ export default function HomePage() {
       <section className="garden-band">
         <div className="site-shell section-block">
           <div className="section-heading"><div><p className="section-kicker">GARDENS</p><h2>沿着主题漫游</h2></div></div>
-          <div className="garden-grid">
-            {manifest.gardens.map((garden, index) => (
-              <Link href={`/gardens/${encodeURIComponent(garden.id)}`} className="garden-card" key={garden.id}>
-                <span className="garden-index">{String(index + 1).padStart(2, "0")}</span>
-                <h3>{garden.title}</h3>
-                <p>{garden.description || "一组持续整理中的主题笔记。"}</p>
-                <small>{garden.postCount} 篇文章 <ArrowRight size={14} /></small>
-              </Link>
-            ))}
-          </div>
+          <GardenCards gardens={gardens} />
         </div>
       </section>
     </>

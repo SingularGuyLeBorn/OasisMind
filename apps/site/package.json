@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx scripts/compile-reading.tsx && next dev",
     "lint": "eslint . && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "build": "next build",
+    "build": "tsx scripts/compile-reading.tsx && next build && node scripts/finalize-static.mjs",
     "verify:export": "node scripts/verify-export.mjs",
     "verify:pages": "node scripts/verify-pages-artifact.mjs"
   },
@@ -25,8 +25,10 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.4",
+    "esbuild": "0.27.7",
     "eslint-config-next": "16.2.9",
     "typescript": "5.8.3",
+    "tsx": "4.21.0",
     "vitest": "3.2.3"
   }
 }

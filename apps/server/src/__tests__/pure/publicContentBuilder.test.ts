@@ -23,6 +23,18 @@ afterEach(() => {
 });
 
 describe("buildPublicContent", () => {
+  it("资源页只发布明确公开的资源文章，私人 about 草稿仍然不进索引", async () => {
+    const { contentDir, outputDir } = createFixture();
+    fs.mkdirSync(path.join(contentDir, "resources"));
+    fs.mkdirSync(path.join(contentDir, "about"));
+    fs.writeFileSync(path.join(contentDir, "resources", "tool.md"), "---\ntitle: 工具\npublished: true\n---\n资源正文\n");
+    fs.writeFileSync(path.join(contentDir, "resources", "draft.md"), "---\npublished: false\n---\n私人资源\n");
+    fs.writeFileSync(path.join(contentDir, "about", "qa.md"), "---\npublished: true\n---\n问答草稿\n");
+    await buildPublicContent({ contentDir, outputDir });
+    const manifest = JSON.parse(fs.readFileSync(path.join(outputDir, "index.json"), "utf8"));
+    expect(manifest.posts.map((post: { id: string }) => post.id)).toEqual(["resources/tool"]);
+    expect(verifyPublicContentProjection(contentDir, outputDir).postCount).toBe(1);
+  });
   it("只输出显式 published=true 的文章，并剥离全部未声明字段", async () => {
     const { contentDir, outputDir } = createFixture();
     fs.writeFileSync(

@@ -4,14 +4,18 @@
  */
 import type { Metadata } from "next";
 import { KnowledgeBrowser } from "@/components/KnowledgeBrowser";
+import { getManifest } from "@/lib/publicContent";
+import { StaticWidget } from "@/components/StaticWidget";
 
 export const metadata: Metadata = { title: "搜索" };
 
 export default function SearchPage() {
+  const manifest = getManifest();
+  const props = { initialPosts: manifest.posts.slice(0, 24), gardens: manifest.gardens.map(({ id, title }) => ({ id, title })), total: manifest.posts.length };
   return (
     <div className="site-shell page-shell">
-      <header className="page-intro"><p className="section-kicker">SEARCH</p><h1>搜索公开知识</h1><p>在所有已发布文章的标题、摘要和标签中查找。</p></header>
-      <KnowledgeBrowser />
+      <header className="page-intro"><p className="section-kicker">SEARCH</p><h1>搜索公开知识</h1><p>按知识库筛选，搜索标题、摘要、标签与分类；多个关键词用空格分隔。</p></header>
+      <StaticWidget kind="search" props={props}><KnowledgeBrowser {...props} /></StaticWidget>
     </div>
   );
 }

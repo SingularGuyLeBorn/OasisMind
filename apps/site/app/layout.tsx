@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: "见微 · OasisMind",
     description: "把值得留下的思考，整理成可以再次抵达的知识。",
   },
-  alternates: { types: { "application/rss+xml": withSiteBasePath("/feed.xml") } },
+  alternates: { types: { "application/rss+xml": `${getSiteUrl()}/feed.xml` } },
   icons: {
     icon: [{ url: withSiteBasePath("/icons/oasismind.svg"), type: "image/svg+xml" }],
     apple: [{ url: withSiteBasePath("/icons/oasismind.svg"), type: "image/svg+xml" }],

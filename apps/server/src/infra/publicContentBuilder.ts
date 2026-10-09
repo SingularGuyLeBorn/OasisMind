@@ -178,7 +178,7 @@ function discoverGardens(contentDir: string, warnings: string[]): DiscoveredGard
   const gardens: DiscoveredGarden[] = [];
   for (const entry of fs.readdirSync(contentDir, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
-    if (entry.name === "about" || entry.name === "uploads" || entry.name === "resources") continue;
+    if (entry.name === "about" || entry.name === "uploads") continue;
 
     const directory = path.join(contentDir, entry.name);
     const metaPath = path.join(directory, GARDEN_META_FILE);

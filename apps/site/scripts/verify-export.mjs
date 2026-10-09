@@ -76,7 +76,11 @@ const articlePath = `/articles/${encodeURIComponent(sample.garden)}/${sample.slu
   .split("/")
   .map(encodeURIComponent)
   .join("/")}`;
-requireFile(exportedPagePath(articlePath));
+const articleHtml = fs.readFileSync(requireFile(exportedPagePath(articlePath)), "utf8");
+for (const required of ["article-prose", "knowledge-tree", "知识库目录"]) {
+  if (!articleHtml.includes(required)) fail(`文章初始 HTML 缺少 ${required}，正文与导航不能依赖客户端补齐`);
+}
+if (articleHtml.includes("正在展开文章")) fail("文章仍导出为等待客户端取正文的空壳");
 
 const jsFiles = [];
 const walkJs = (directory) => {

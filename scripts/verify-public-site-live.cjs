@@ -26,7 +26,7 @@ async function mapBounded(items, fn) {
 }
 
 async function main() {
-  for (const p of ['/', '/knowledge', '/search', '/about', '/robots.txt', '/sitemap.xml', '/feed.xml', '/manifest.webmanifest']) {
+  for (const p of ['/', '/knowledge', '/resources', '/search', '/about', '/robots.txt', '/sitemap.xml', '/feed.xml', '/manifest.webmanifest']) {
     const response = await get(root + p);
     const text = await response.text();
     assert.ok(text.length > 20, `${p}: empty response`);
@@ -108,8 +108,13 @@ async function main() {
       // 使用正文实际图像定位，兼容图片替换时保留技术主题但调整图像说明。
       const mainImages = page.locator('article img');
       assert.ok(await mainImages.count() > 0);
-      await mainImages.first().scrollIntoViewIfNeeded();
-      await page.waitForFunction(() => [...document.querySelectorAll('article img')].every(i => i.complete && i.naturalWidth > 0));
+      for (const img of await mainImages.all()) {
+        await img.scrollIntoViewIfNeeded();
+        await img.evaluate(i => i.complete && i.naturalWidth > 0 || new Promise((resolve, reject) => {
+          i.addEventListener('load', () => resolve(true), { once: true });
+          i.addEventListener('error', () => reject(new Error('文章图片加载失败')), { once: true });
+        }));
+      }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       assert.deepEqual(errors, []);
       assert.deepEqual(failed, []);
