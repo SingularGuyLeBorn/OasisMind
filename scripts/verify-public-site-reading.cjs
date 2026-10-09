@@ -71,6 +71,7 @@ async function main() {
       assert.equal(await page.locator('nav[aria-label="主导航"] a').count(), 5);
 
       await page.goto(new URL('search', base).href, { waitUntil: 'networkidle' });
+      assert.equal(await page.getByLabel('搜索范围').evaluate(element => getComputedStyle(element).appearance), 'none');
       const beforeSearch = requests.filter(url => url.endsWith('/api/v1/search.json')).length;
       assert.equal(beforeSearch, 0);
       await page.getByRole('button', { name: /浏览全部/ }).click();
