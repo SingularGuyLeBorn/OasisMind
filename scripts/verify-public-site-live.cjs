@@ -1,0 +1,117 @@
+// 公网部署验收：检查真实 HTTPS、公开索引、文章及其资源，再用浏览器验证搜索和阅读。
+// [OM-FREEPLAY] 20 秒网络上限和 6 路读取并发是保守验证设置，不改变产品行为。
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { chromium } = require('../apps/server/node_modules/playwright');
+
+const base = process.env.PUBLIC_SITE_CHECK_URL || 'https://singularguyleborn.github.io/OasisMind/';
+const origin = new URL(base).origin;
+const root = new URL(base).pathname.replace(/\/$/, '');
+const resolve = (p) => new URL(p, origin).href;
+const stats = { pages: 0, articles: 0, resources: 0, browserViews: 0 };
+
+async function get(p, expected = 200) {
+  const response = await fetch(resolve(p), { signal: AbortSignal.timeout(20000) });
+  assert.equal(response.status, expected, `${p}: HTTP ${response.status}`);
+  assert.equal(new URL(response.url).protocol, 'https:');
+  return response;
+}
+
+async function mapBounded(items, fn) {
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(6, items.length) }, async () => {
+    while (next < items.length) await fn(items[next++]);
+  }));
+}
+
+async function main() {
+  for (const p of ['/', '/knowledge', '/search', '/about', '/robots.txt', '/sitemap.xml', '/feed.xml', '/manifest.webmanifest']) {
+    const response = await get(root + p);
+    const text = await response.text();
+    assert.ok(text.length > 20, `${p}: empty response`);
+    if (['/sitemap.xml', '/feed.xml', '/robots.txt'].includes(p)) {
+      assert.ok(text.includes(origin + root), `${p}: deployment URL missing`);
+      assert.ok(!text.includes('localhost:'), `${p}: localhost URL leaked`);
+    }
+    stats.pages++;
+  }
+  await get(root + '/not-a-real-page-deployment-probe', 404);
+  for (const p of ['/chat', '/editor', '/api/trpc', '/data', '/.env']) await get(root + p, 404);
+  const index = await (await get(root + '/api/v1/index.json')).json();
+  const search = await (await get(root + '/api/v1/search.json')).json();
+  assert.ok(index.posts.length > 0);
+  assert.equal(search.posts.length, index.posts.length);
+  const samples = index.posts.filter(p => p.garden === 'SparseAttention');
+  for (const garden of index.gardens) {
+    await get(`${root}/gardens/${encodeURIComponent(garden.id)}`);
+    const sample = index.posts.find(p => p.garden === garden.id);
+    if (sample && sample.garden !== 'SparseAttention') samples.push(sample);
+    stats.pages++;
+  }
+  const images = new Set();
+  await mapBounded(samples, async (p) => {
+    const response = await get(p.apiPath);
+    const data = await response.json();
+    assert.equal(data.post.id, p.id);
+    await get(p.markdownPath);
+    const article = `${root}/articles/${encodeURIComponent(p.garden)}/${p.slug.split('/').map(encodeURIComponent).join('/')}`;
+    const html = await (await get(article)).text();
+    assert.ok(html.includes('<title>'), `${p.id}: missing document title`);
+    assert.ok(!html.includes('localhost:3010'), `${p.id}: backend URL leaked`);
+    if (p.garden === 'SparseAttention') {
+      for (const match of data.post.content.matchAll(/\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.[a-z0-9]+/g)) images.add(root + match[0]);
+    }
+    stats.articles++;
+  });
+  assert.ok(images.size > 0, 'SparseAttention resource collection is empty');
+  await mapBounded([...images], async (p) => {
+    const response = await get(p);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    assert.ok(bytes.length > 32, `${p}: empty resource`);
+    if (p.endsWith('.webp')) {
+      assert.equal(bytes.subarray(0, 4).toString(), 'RIFF');
+      assert.equal(bytes.subarray(8, 12).toString(), 'WEBP');
+    }
+    stats.resources++;
+  });
+
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const evidence = path.resolve('data/deployment-checks');
+  fs.mkdirSync(evidence, { recursive: true });
+  try {
+    for (const width of [1280, 390]) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      const errors = [];
+      page.on('pageerror', e => errors.push(e.message));
+      const failed = [];
+      page.on('response', r => { if (r.status() >= 400 && new URL(r.url()).origin === origin) failed.push(`${r.status()} ${r.url()}`); });
+      await page.goto(base, { waitUntil: 'networkidle', timeout: 60000 });
+      assert.equal(await page.locator('h1').count(), 1);
+      await page.goto(resolve(root + '/search'), { waitUntil: 'networkidle', timeout: 60000 });
+      await page.getByPlaceholder('搜索标题、摘要、标签…').fill('MInference');
+      await page.waitForFunction(() => /找到 \d+ 篇/.test(document.querySelector('.result-count')?.textContent || ''));
+      const card = page.locator('.post-grid a').filter({ hasText: 'MInference: 按 head 模式加速长上下文 Prefill' }).first();
+      await card.click();
+      await page.waitForLoadState('networkidle');
+      assert.ok((await page.locator('.article-header h1').innerText()).includes('MInference'));
+      assert.equal(await page.locator('.katex-error').count(), 0);
+      // 使用正文实际图像定位，兼容图片替换时保留技术主题但调整图像说明。
+      const mainImages = page.locator('article img');
+      assert.ok(await mainImages.count() > 0);
+      await mainImages.first().scrollIntoViewIfNeeded();
+      await page.waitForFunction(() => [...document.querySelectorAll('article img')].every(i => i.complete && i.naturalWidth > 0));
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      assert.deepEqual(errors, []);
+      assert.deepEqual(failed, []);
+      await page.screenshot({ path: path.join(evidence, `public-article-${width}.png`), fullPage: false });
+      await page.close();
+      stats.browserViews++;
+    }
+  } finally {
+    await browser.close();
+  }
+  console.log(JSON.stringify({ result: 'PASS', base, gardens: index.gardens.length, publishedArticles: index.posts.length, ...stats }));
+}
+
+main().catch(error => { console.error(error.message); process.exitCode = 1; });
