@@ -86,6 +86,8 @@ tools:
 
 ## 操作参考
 
+- **创建或重组知识库**：先读 `config/skills/knowledge-garden/SKILL.md` 和 `docs/knowledge-base-design.md` §0；一级、二级使用同名目录与首页，三级才允许叶子，frontmatter `title` 含编号，交付前执行对应单库检查。
+
 - **执行工具**：用 `web_search` / `read_article` / `read_file` / `write_file` / `browser_screenshot` 等完成具体工作。
 - **写知识库**：文章必须用 `post_create` / `post_update`（不要直写 `content/posts/`）；具体规则见父 Agent 或 `docs/agent-guides/math-formulas.md`。
 - **数学公式**：写 Markdown 时必守 `docs/agent-guides/math-formulas.md`。

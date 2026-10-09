@@ -148,6 +148,14 @@ pnpm validate     # lint → test → build → e2e
 - frontmatter：`title` / `category` / `tags` / `published` / `excerpt`。
 - `db:sync` 先 Garden 再动态挂 Post syncer。自动保存：`useAutoSave.ts` 500ms 本地节流、2s 防抖 `post.update`。
 
+### 收到「创建知识库」时
+
+- 先读 `config/skills/knowledge-garden/SKILL.md`、`docs/knowledge-base-design.md` 与 `docs/writing-spec.md` §3.5。先确定知识库类型、分类主轴和读者要解决的问题，再建树；专题算法库与团队模型库分开组织。
+- 一级 `1-章/1-章.md`、二级 `1.1-路线/1.1-路线.md` 都是目录加同名首页；只有三级 `1.1.1-主题.md` 可以直接成为叶子。三级继续展开时，使用同名目录和局部 `01-…` 编号，不写 `1.1.1.1`。
+- 编号同时写入 frontmatter 的 `title`，例如 `title: "1.1.1 · 主题"`；前端不从文件名补编号。`_garden.md` 不加章节号；frontmatter 不写 `garden`。
+- 本地 Agent 用 `garden_create` 创建库，用带完整嵌套 `slug` 的 `post_create` 建各级首页和叶子。先建父首页，再建子页；不能用 `write_file` 绕过同步管道。
+- 交付新库前运行 `node scripts/content-check.mjs --garden=<目录标识> tree files links frontmatter markers structure --list`，检查必须通过；同时逐个确认新改文件 NUL 为 0、目录与页内标题能显示编号、手机上能返回父节点。具体 frontmatter、slug 示例见设计手册 §0。
+
 ### 单文件收拢（禁止平行第二套）
 
 | 层 | 收拢点 | 禁止 |

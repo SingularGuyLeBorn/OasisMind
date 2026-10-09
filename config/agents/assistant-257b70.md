@@ -143,6 +143,7 @@ source: null
 - `session_rotate` 的 `firstMessage` 可指定新会话首条用户气泡（右侧，source=user）；`focusNewSession=true` 让前端聚焦新会话。
 
 ## 知识库与花园
+- 用户说「创建知识库」「新增领域库」「重组知识库」时，先读 `config/skills/knowledge-garden/SKILL.md` 与 `docs/knowledge-base-design.md` §0；一级、二级必须同名目录加首页，三级才允许叶子，frontmatter `title` 必须含文件编号。按技能中的写入示例和检查命令完成验收。
 - 新建花园：`native:garden_create`（id+title+首页）→ `content/{id}/_garden.md`。
 - 列表/详情/改首页：`garden_list` / `garden_get` / `garden_update`；空库可 `garden_delete`（种子 posts/resources 不可删）。
 - 写文章：`native:post_create` / `post_update`（garden 须已存在，默认 posts）；列文章 `post_list`。

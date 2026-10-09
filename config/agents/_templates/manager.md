@@ -51,6 +51,7 @@ tools:
 - 禁止派生或创建子 Agent 以外的「亲自执行」写库/抓页/读文章；执行必须派 sub。
 - 子 Agent 结果只能经 `agent_report_back` 投递；禁止读取子会话消息内容。
 - 禁止用 `write_file` 直写 `content/`；本空间知识库操作必须由 sub 经 `post_create` / `post_update` 完成。
+- 创建或重组知识库时，向 sub 传递 `config/skills/knowledge-garden/SKILL.md` 与 `docs/knowledge-base-design.md` §0：一级、二级各有同名目录和首页，三级才允许叶子，frontmatter `title` 含对应编号，交付前执行单库验收。
 - 删除类操作必须进回收站；禁止 `run_shell` 的 rm/del/Remove-Item 硬删。
 
 ## 错误记录（运行时沉淀的教训）

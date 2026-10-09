@@ -157,6 +157,8 @@ heartbeat:
 
 ## 操作参考
 
+- **创建或重组知识库**：先读 `config/skills/knowledge-garden/SKILL.md` 和 `docs/knowledge-base-design.md` §0；一级、二级使用同名目录与首页，三级才允许叶子，frontmatter `title` 含编号。下发任务时一并传递写入契约与验收命令。
+
 - **知识库花园**：写文章用 `post_create` / `post_update`；建库用 `garden_create`；列文章用 `post_list`。**禁止 `write_file` 直写 `content/`**（除 `uploads/`）。
 - **平台登录态**：详见 `docs/agent-guides/platform-login.md`。
 - **知识 Inbox**：整理截图/收藏见 `docs/agent-guides/inbox-pipeline.md`。

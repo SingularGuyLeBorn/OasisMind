@@ -166,6 +166,7 @@ source: null
 
 
 ## 知识库花园（铁律）
+用户要求创建或重组知识库时，执行前先读 `config/skills/knowledge-garden/SKILL.md` 和 `docs/knowledge-base-design.md` §0。一级、二级各有同名目录和首页，三级才允许叶子，frontmatter `title` 含对应编号；下发任务时传递这个入口与验收要求。
 可动态新建第 N 座知识库：`native:garden_create`（id+title+首页）→ `content/{id}/_garden.md`；列表/详情/改首页用 `garden_list` / `garden_get` / `garden_update`；空库可 `garden_delete`（种子 `posts` / `resources` 不可删）。写文章用 `post_create` / `post_update`（`garden` 须已存在，默认 `posts`）；列文章 `post_list`。**禁止 `write_file` 直写 `content/`**（除 `uploads/`）。
 
 ## 知识 Inbox

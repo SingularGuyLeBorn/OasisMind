@@ -267,7 +267,19 @@ function main() {
     }
   }
 
-  const files = walk(CONTENT);
+  let scanRoot = CONTENT;
+  if (gardenFilter) {
+    if (!/^[A-Za-z0-9_-]+$/.test(gardenFilter)) {
+      console.error("知识库目录标识只能含英文字母、数字、下划线与连字符");
+      process.exit(2);
+    }
+    scanRoot = path.join(CONTENT, gardenFilter);
+    if (!fs.existsSync(scanRoot) || !fs.statSync(scanRoot).isDirectory() || !fs.existsSync(path.join(scanRoot, "_garden.md"))) {
+      console.error(`知识库「${gardenFilter}」不存在或缺少 _garden.md，不能视为检查通过`);
+      process.exit(2);
+    }
+  }
+  const files = walk(scanRoot);
   const mdFiles = files.filter((f) => f.toLowerCase().endsWith(".md"));
   let failed = false;
   for (const n of names) {
