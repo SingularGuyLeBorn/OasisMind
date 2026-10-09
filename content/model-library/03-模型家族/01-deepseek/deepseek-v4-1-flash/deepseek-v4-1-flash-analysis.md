@@ -19,7 +19,7 @@ excerpt: "DeepSeek-V4.1-Flash 用因果 encoder-decoder 和跨层复用的 CSA2 
 
 ### 1.2. 图 1(b): 四代模型的每 token global KV
 
-图 1(b) 给出四代模型每 token 的 global KV 字节数: V1 为 389,120, V3.2 为 48,068, V4-Flash 为 3,514, V4.1-Flash 为 890. 图上标的倍数是 8.1×, 13.7× 和 3.9×, 正文把最后一段写成 「approximately 4-fold」, V1 到 V4.1 是 437 倍. 这几个数都能用各代的公开配置复算. V1 的 67B 模型按 [DeepSeek LLM 报告](../DeepSeek/deepseek-analysis.md) Table 2 有 95 层, GQA 8 个 KV 头, 每头 128 维, K 和 V 各存 BF16, 每层 4096 字节, 95 层正好 389,120 (推导). V3.2 的 cache 布局见 FlashMLA 仓库的说明: 每层存一个 MLA 潜变量, 512 维 FP8 加 4 个 FP32 比例因子加 64 维 BF16 RoPE, 共 656 字节; 再加 indexer K 的 128 维 FP8 和一个 FP32 比例因子, 共 132 字节; 每层 788 字节, 61 层正好 48,068 (推导). indexer K 的 132 字节是按总数反推的, FlashMLA 说明里只写了主 KV 的 656 字节.
+图 1(b) 给出四代模型每 token 的 global KV 字节数: V1 为 389,120, V3.2 为 48,068, V4-Flash 为 3,514, V4.1-Flash 为 890. 图上标的倍数是 8.1×, 13.7× 和 3.9×, 正文把最后一段写成 「approximately 4-fold」, V1 到 V4.1 是 437 倍. 这几个数都能用各代的公开配置复算. V1 的 67B 模型按 [DeepSeek LLM 报告](../deepseek/deepseek-analysis.md) Table 2 有 95 层, GQA 8 个 KV 头, 每头 128 维, K 和 V 各存 BF16, 每层 4096 字节, 95 层正好 389,120 (推导). V3.2 的 cache 布局见 FlashMLA 仓库的说明: 每层存一个 MLA 潜变量, 512 维 FP8 加 4 个 FP32 比例因子加 64 维 BF16 RoPE, 共 656 字节; 再加 indexer K 的 128 维 FP8 和一个 FP32 比例因子, 共 132 字节; 每层 788 字节, 61 层正好 48,068 (推导). indexer K 的 132 字节是按总数反推的, FlashMLA 说明里只写了主 KV 的 656 字节.
 
 ![报告 Figure 1(b): 四代模型每 token global KV 字节数——V1 389,120 → V3.2 48,068 → V4-Flash 3,514 → V4.1-Flash 890](images/p01-b.png)
 
