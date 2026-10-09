@@ -55,6 +55,12 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 
 ---
 
+## 两个使用入口
+
+项目有两个独立构建。`apps/site` 是公开知识库博客，只包含明确发布的文章与其引用资源，支持知识库导航、搜索、数学公式和图片阅读。运行时不依赖数据库，也没有编辑或 Agent 接口。公开地址部署后记录在 [`docs/development/public-site-release.md`](docs/development/public-site-release.md)。
+
+`apps/web` 与 `apps/server` 构成本地工作台，提供文章编辑、私人批注、Agent 对话、审批和自动化。它保留本机数据库与配置，不随公开站上传。日常用 `pnpm dev:mini` 启动工作台；公开站用 `pnpm build:site` 生成 `apps/site/out`，再交给静态托管平台。
+
 ## 核心能力
 
 
@@ -76,8 +82,8 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 
 ### 环境要求
 
-- Node.js 20+
-- pnpm（包管理器，monorepo `workspace:*` 协议）
+- Node.js 24 LTS（依赖要求最低 22.19）
+- pnpm 11.9.0（包管理器，monorepo `workspace:*` 协议）
 
 ### 安装与启动
 

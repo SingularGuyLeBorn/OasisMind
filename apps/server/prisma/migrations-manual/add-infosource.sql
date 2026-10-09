@@ -1,5 +1,20 @@
- --- along with the three rotation angles in radians. (a) Prompt: Please identify all objects belonging to the category furniture and output their 3D bounding boxes in JSON format. (b) Prompt: Please locate the first potted plant's 3D bounding box and output it in JSON format, where the 9 coordinate values correspond to the center point (x, y, z) and the sizes (x_size, y_size, z_size) across three dimensions all in meters, and the three rotation angles in radians.
+CREATE TABLE IF NOT EXISTS "InfoSource" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "name" TEXT NOT NULL,
+  "url" TEXT NOT NULL,
+  "type" TEXT NOT NULL DEFAULT 'general',
+  "description" TEXT NOT NULL DEFAULT '',
+  "reliability" INTEGER NOT NULL DEFAULT 3,
+  "language" TEXT NOT NULL DEFAULT 'auto',
+  "tags" TEXT NOT NULL DEFAULT '',
+  "enabled" BOOLEAN NOT NULL DEFAULT true,
+  "sourceSlug" TEXT,
+  "sourceMtime" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL
+);
 
-(a)
-(b)
-图 24: 展示 3D 定位能力的案例, 我们的模型输出由九个值定义的 3D 边界框: 中心点坐标 (x, y, z) 和尺寸 (x_size, y_size, z_size)---均以米为单位---以及三个以弧度为单位的旋转角. (a) 提示: 请识别所有属于家具类别的物体并以 JSON 格式输出它们的 3D 边界框. (b) 提示: 请定位第一个盆栽植物的 3D 边界�
+CREATE UNIQUE INDEX IF NOT EXISTS "InfoSource_name_key" ON "InfoSource"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "InfoSource_sourceSlug_key" ON "InfoSource"("sourceSlug");
+CREATE INDEX IF NOT EXISTS "InfoSource_type_idx" ON "InfoSource"("type");
+CREATE INDEX IF NOT EXISTS "InfoSource_enabled_idx" ON "InfoSource"("enabled");
