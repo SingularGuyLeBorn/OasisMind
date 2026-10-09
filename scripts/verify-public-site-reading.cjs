@@ -40,9 +40,17 @@ async function main() {
       page.on('pageerror', e => errors.push(e.message));
       page.on('response', r => { if (r.status() >= 400 && r.url().startsWith(base)) failures.push(`${r.status()} ${r.url()}`); });
       page.on('request', r => requests.push(r.url()));
+      const excerptSample = index.posts.find(p => p.garden === 'SparseAttention' && p.title.includes('哈希与聚类'));
+      assert.ok(excerptSample, '缺少摘要公式回归样本');
+      const excerptUrl = new URL(`articles/${encodeURIComponent(excerptSample.garden)}/${excerptSample.slug.split('/').map(encodeURIComponent).join('/')}`, base).href;
+      await page.goto(excerptUrl, { waitUntil: 'networkidle' });
+      assert.ok(await page.locator('.article-excerpt .katex').count() >= 2, '摘要不能露出 LaTeX 源码');
+      assert.equal(await page.locator('.article-excerpt .katex-error').count(), 0);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+      await page.screenshot({ path: path.join(evidence, `excerpt-${width}.png`) });
       const started = Date.now();
       await page.goto(article, { waitUntil: 'domcontentloaded' });
-      await page.locator('.article-prose p').first().waitFor();
+      await page.locator('[data-reading-content] .article-prose p').first().waitFor();
       const visibleMs = Date.now() - started;
       await page.waitForLoadState('networkidle');
       assert.equal(await page.locator('.knowledge-tree').isVisible(), width > 900);
@@ -158,7 +166,7 @@ async function main() {
 
       await page.goto(new URL('search', base).href, { waitUntil: 'networkidle' });
       assert.equal(await page.getByLabel('搜索范围').evaluate(element => getComputedStyle(element).appearance), 'none');
-      const beforeSearch = requests.filter(url => url.endsWith('/api/v1/search.json')).length;
+      const beforeSearch = requests.filter(url => url.endsWith('/reading/search.json')).length;
       assert.equal(beforeSearch, 0);
       await page.getByRole('button', { name: /浏览全部/ }).click();
       await page.getByRole('button', { name: '下一页', exact: true }).waitFor();
@@ -195,7 +203,7 @@ async function main() {
     }
     const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
     await noJs.goto(article, { waitUntil: 'domcontentloaded' });
-    assert.ok((await noJs.locator('.article-prose').innerText()).length > 3000);
+    assert.ok((await noJs.locator('[data-reading-content] .article-prose').innerText()).length > 3000);
     assert.ok(await noJs.locator('.katex').count() > 0);
     await noJs.locator('.no-script-navigation').getByRole('link', { name: '本页目录', exact: true }).click();
     assert.equal(new URL(noJs.url()).hash, '#page-navigation');
@@ -211,7 +219,7 @@ async function main() {
     await reduced.close();
     const retryPage = await browser.newPage();
     let failures = 0;
-    await retryPage.route('**/api/v1/search.json', route => {
+    await retryPage.route('**/reading/search.json', route => {
       if (failures++ === 0) return route.fulfill({ status: 503, body: '测试网络失败' });
       return route.continue();
     });

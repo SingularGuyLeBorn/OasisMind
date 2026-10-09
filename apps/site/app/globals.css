@@ -82,7 +82,9 @@ button, input, select { font: inherit; }
 .post-card-meta { display: flex; gap: 8px; align-items: center; color: var(--om-brand-deep); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .post-card-meta span::before { content: "·"; margin-right: 8px; color: #a7b6c2; }
 .post-card h3 { margin: 18px 0 10px; font-family: Georgia, "Songti SC", serif; font-size: 21px; line-height: 1.45; font-weight: 600; }
-.post-card > p { margin: 0; display: -webkit-box; overflow: hidden; color: var(--om-text-2); font-size: 13px; line-height: 1.75; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.post-card > .post-excerpt { margin: 0; display: -webkit-box; overflow: hidden; color: var(--om-text-2); font-size: 13px; line-height: 1.75; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.post-excerpt .article-prose { font: inherit; line-height: inherit; }
+.post-excerpt .article-prose p { margin: 0; }
 .post-card-bottom { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 22px; }
 .post-card-bottom > a { display: grid; place-items: center; min-width: 32px; height: 32px; border-radius: 50%; color: var(--om-brand); background: var(--om-brand-soft); box-shadow: inset 0 1px 0 var(--om-bg-alt), 0 2px 0 var(--om-divider-light); }
 /* [OM-FREEPLAY] 阅读版采用纸面压边和细线构件，不改品牌色或正文背景。 */
@@ -196,7 +198,9 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 .article-meta { display: flex; gap: 12px; align-items: center; color: var(--om-brand-deep); font-size: 11px; font-weight: 700; letter-spacing: .05em; }
 .article-meta span { display: inline-flex; align-items: center; gap: 5px; }
 .article-header h1 { margin: 18px 0 16px; font-family: Georgia, "Songti SC", serif; font-size: clamp(38px, 5vw, 58px); line-height: 1.2; font-weight: 550; letter-spacing: -.025em; }
-.article-header > p { color: var(--om-text-2); font-size: 16px; line-height: 1.8; }
+.article-header > .article-excerpt { color: var(--om-text-2); font-size: 16px; line-height: 1.8; }
+.article-excerpt .article-prose { font: inherit; line-height: inherit; }
+.article-excerpt .article-prose p { margin: 0; }
 .article-header .tag-row { margin-top: 19px; }
 .article-toc { grid-column: 3; grid-row: 1; padding-left: 18px; border-left: 1px solid var(--om-divider); }
 .article-toc > p { margin: 0 0 12px; color: var(--om-text-1); font-size: 12px; font-weight: 750; }

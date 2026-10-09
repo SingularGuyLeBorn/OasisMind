@@ -7,7 +7,8 @@ import { ArrowUpRight } from "lucide-react";
 import type { PublicPostSummary } from "@oasismind/shared";
 import { articleHref } from "@/lib/publicRoutes";
 
-export function PostCard({ post }: { post: PublicPostSummary }) {
+export function PostCard({ post }: { post: PublicPostSummary & { excerptHtml?: string } }) {
+  if (post.excerptHtml === undefined) throw new Error(`文章摘要尚未编译：${post.id}`);
   return (
     <article className="post-card">
       <div className="post-card-meta">
@@ -15,7 +16,7 @@ export function PostCard({ post }: { post: PublicPostSummary }) {
         {post.category && <span>{post.category}</span>}
       </div>
       <h3><Link href={articleHref(post)}>{post.title}</Link></h3>
-      <p>{post.excerpt}</p>
+      <div className="post-excerpt" dangerouslySetInnerHTML={{ __html: post.excerptHtml }} />
       <div className="post-card-bottom">
         <div className="tag-row">
           {post.tags.slice(0, 3).map((tag) => <span key={tag}>#{tag}</span>)}

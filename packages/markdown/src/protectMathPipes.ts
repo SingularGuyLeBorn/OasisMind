@@ -5,6 +5,15 @@
  */
 
 export function protectMathPipesInTex(tex: string): string {
+  // [OM-FREEPLAY] 仅修复历史导入中的表示层转义，不改运算符、系数或数学含义。
+  tex = tex.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+    .replace(/\\\$/g, "\\text{\\textdollar}")
+    .replace(/\\text\{([^{}]*)\}/g, (_, text: string) => `\\text{${text.replace(/(?<!\\)_/g, "\\_")}}`)
+    .replace(/\\\\gamma\b/g, "\\gamma")
+    .replace(/\\left\{/g, "\\left\\{")
+    .replace(/(?<![\\A-Za-z])left(?=[([])/g, "\\left")
+    .replace(/\\!left(?=[([])/g, "\\!\\left");
+  if (tex.includes("\\left")) tex = tex.replace(/\night(?=[)\]])/g, "\n\\right");
   // `{}` 断开控制字，避免 `\Vertx` 被读成未知命令
   return tex.split(/(\\begin\{array\}\{[^{}]*\})/g).map(part =>
     /^\\begin\{array\}\{/.test(part) ? part : part.replace(/\\\|/g, "\\Vert{}").replace(/\|/g, "\\vert{}")
@@ -66,7 +75,7 @@ function findUnescaped(src: string, token: string, from: number): number {
 }
 
 export function protectMathPipesInMarkdown(src: string): string {
-  if (!src.includes("$") || !src.includes("|")) return src;
+  if (!src.includes("$")) return src;
   let out = "";
   let i = 0;
   const n = src.length;

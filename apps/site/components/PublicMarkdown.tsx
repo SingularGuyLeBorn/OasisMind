@@ -8,6 +8,7 @@ import type { AboutProfile } from "@oasismind/shared";
 
 export function getReadingDocument(kind: "posts" | "gardens" | "pages", id: string): {
   html: string; headings: MarkdownHeading[];
+  excerptHtml: string;
   profile?: Pick<AboutProfile, "name" | "title" | "tagline" | "oneLiner" | "github" | "roles" | "focus" | "projects">;
 } {
   const root = path.resolve(process.cwd(), ".reading", kind);

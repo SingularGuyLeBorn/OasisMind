@@ -19,7 +19,7 @@ export function ArticleReader({ post, gardenTitle, posts }: {
         <span key={index}>{index > 0 && <span aria-hidden="true"> / </span>}{item.href ? <Link href={item.href}>{item.title}</Link> : item.title}</span>)}</nav>
       <header className="article-header">
         <div className="article-meta"><span><FolderOpen size={14} />{gardenTitle}</span>{post.category && <span>{post.category}</span>}</div>
-        <h1>{post.title}</h1><p>{post.excerpt}</p>
+        <h1>{post.title}</h1><div className="article-excerpt" dangerouslySetInnerHTML={{ __html: document.excerptHtml }} />
         <div className="tag-row">{post.tags.map((tag) => <Link href={`/tags/${encodeURIComponent(tag)}`} key={tag}>#{tag}</Link>)}</div>
       </header>
       <PublicMarkdown html={document.html} />

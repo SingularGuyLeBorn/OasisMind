@@ -30,7 +30,14 @@ export function getManifest(): PublicContentManifest {
   const file = path.join(API_ROOT, "index.json");
   const mtime = fs.statSync(file).mtimeMs;
   if (manifestSnapshot?.mtime !== mtime) {
-    manifestSnapshot = { mtime, value: readJson<PublicContentManifest>(file) };
+    const value = readJson<PublicContentManifest>(file);
+    const snippets = path.join(process.cwd(), ".reading/excerpts.json");
+    // 编译正文时摘要缓存尚未生成；页面构建时只读取同次构建生成的安全 HTML。
+    if (fs.existsSync(snippets)) {
+      const excerpts = readJson<Record<string, string>>(snippets);
+      value.posts = value.posts.map(post => ({ ...post, excerptHtml: excerpts[post.id] }));
+    }
+    manifestSnapshot = { mtime, value };
   }
   return manifestSnapshot.value;
 }

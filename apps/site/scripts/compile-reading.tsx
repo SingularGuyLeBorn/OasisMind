@@ -2,23 +2,33 @@
 import fs from "node:fs";
 import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
-import { getManifest, getPost } from "../lib/publicContent";
+import { getManifest, getPost, getSearchManifest } from "../lib/publicContent";
 import { preparePublicMarkdown } from "../lib/markdownDocument";
 import { parseAboutProfile } from "@oasismind/shared";
 
 const output = path.join(process.cwd(), ".reading");
 const manifest = getManifest();
-function compile(relative: string, content: string) {
+const excerpts: Record<string, string> = {};
+function compile(relative: string, content: string, excerptHtml?: string) {
   const file = path.join(output, relative);
   const document = preparePublicMarkdown(content);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify({ html: renderToStaticMarkup(document.body), headings: document.headings }));
+  fs.writeFileSync(file, JSON.stringify({ html: renderToStaticMarkup(document.body), headings: document.headings, excerptHtml }));
 }
 for (const summary of manifest.posts) {
   const post = getPost(summary.garden, summary.slug);
   if (!post) throw new Error(`发布清单中的文章丢失：${summary.id}`);
-  compile(`posts/${summary.garden}/${summary.slug}.json`, post.content);
+  excerpts[summary.id] = renderToStaticMarkup(preparePublicMarkdown(post.excerpt).body);
+  compile(`posts/${summary.garden}/${summary.slug}.json`, post.content, excerpts[summary.id]);
 }
+// 摘要随列表和搜索一起下发，客户端不加载 Markdown/KaTeX 解析器，也不增加请求。
+const search = getSearchManifest();
+const readingRoot = path.join(process.cwd(), "public/reading");
+fs.mkdirSync(readingRoot, { recursive: true });
+fs.writeFileSync(path.join(output, "excerpts.json"), JSON.stringify(excerpts));
+fs.writeFileSync(path.join(readingRoot, "search.json"), JSON.stringify({ ...search,
+  posts: search.posts.map(post => ({ ...post, excerptHtml: excerpts[post.id] })),
+}));
 for (const garden of manifest.gardens) compile(`gardens/${garden.id}.json`, garden.homeContent ?? "");
 // 用户要求公开版“关于我”复用本地资料。只读取这一份指定资料，不读取问答草稿或其它 about 文件。
 const aboutSource = path.resolve(process.cwd(), "../../content/about/profile.md");

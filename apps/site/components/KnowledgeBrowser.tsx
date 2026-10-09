@@ -16,7 +16,7 @@ export function KnowledgeBrowser({ initialPosts, gardens, total }: {
   const [requested, setRequested] = useState(false);
   const keyword = useDeferredValue(query.trim().toLocaleLowerCase("zh-CN"));
   const enabled = requested || Boolean(query) || garden !== "all" || scope !== "all";
-  const { data, error, loading, retry } = usePublicJson<{ schemaVersion: number; posts: PublicSearchEntry[] }>("/api/v1/search.json", enabled);
+  const { data, error, loading, retry } = usePublicJson<{ schemaVersion: number; posts: PublicSearchEntry[] }>("/reading/search.json", enabled);
   const indexed = useMemo(() => (data?.posts ?? []).map((post) => ({
     post, all: `${post.title}\n${post.excerpt}\n${post.tags.join(" ")}\n${post.category ?? ""}\n${post.searchText}`.toLocaleLowerCase("zh-CN"),
     title: post.title.toLocaleLowerCase("zh-CN"), tags: post.tags.join(" ").toLocaleLowerCase("zh-CN"), category: (post.category ?? "").toLocaleLowerCase("zh-CN"),
