@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
+import { enhanceReadingNavigation } from "../lib/readingNavigation";
 
 /** 正文已经排版；这里只增强目录活动项与手写标记，不重新处理全文。 */
 export function ReadingEnhancements() {
   useEffect(() => {
     const content = document.querySelector<HTMLElement>("[data-reading-content]");
     if (!content) return;
+    const cleanupNavigation = enhanceReadingNavigation(content);
     const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".article-toc a"));
     const byId = new Map(links.map((link) => [decodeURIComponent(link.hash.slice(1)), link]));
     // [OM-FREEPLAY] 目录活动项以固定页头下方的可见标题为准，预留底部阅读区域。
@@ -32,7 +34,7 @@ export function ReadingEnhancements() {
         disposals.push(() => { resize.disconnect(); drawing.remove(); });
       }
     }).catch(() => { /* 原生 mark 保留，绘制失败不阻塞正文。 */ });
-    return () => { active = false; observer.disconnect(); disposals.forEach((dispose) => dispose()); };
+    return () => { active = false; cleanupNavigation(); observer.disconnect(); disposals.forEach((dispose) => dispose()); };
   }, []);
   return null;
 }

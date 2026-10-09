@@ -1,10 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-labelledby="title description">
   <title id="title">见微 · OasisMind</title>
-  <desc id="description">微窗：从一个微小观察展开成知识</desc>
-  <rect x="0.5" y="0.5" width="31" height="31" rx="9.5" fill="#eef7fe" stroke="#b9def7"/>
-  <rect x="7.25" y="7" width="17.5" height="13.25" rx="2.25" stroke="#005a9e" stroke-width="2.15"/>
-  <path d="M14.25 20.15C14.05 22.75 12.45 24.45 9.45 25.35" stroke="#005a9e" stroke-width="2.15" stroke-linecap="round"/>
-  <path d="M17.75 20.15C17.95 22.85 19.7 24.55 22.75 25.35" stroke="#005a9e" stroke-width="2.15" stroke-linecap="round"/>
-  <circle cx="16" cy="12.7" r="1.7" fill="#e8a84a"/>
-  <path d="M11.9 16.1C14.15 18.15 17.85 18.15 20.1 16.1" stroke="#0087eb" stroke-width="1.45" stroke-linecap="round"/>
+  <desc id="description">几何书页与微小观察点</desc>
+  <rect width="32" height="32" rx="9" fill="#183c40"/>
+  <path d="M7 10L14 13V25L7 21V10ZM25 10L18 13V25L25 21V10Z" stroke="#fcfcf3" stroke-width="1.8" stroke-linejoin="round"/>
+  <circle cx="16" cy="7" r="1.8" fill="#dfb47e"/>
 </svg>

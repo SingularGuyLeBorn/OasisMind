@@ -3,11 +3,14 @@ import { PostList } from "@/components/PostList";
 import { getReadingDocument, PublicMarkdown } from "@/components/PublicMarkdown";
 import { ReadingNavigation } from "@/components/ReadingNavigation";
 import { StaticWidget } from "@/components/StaticWidget";
+import { SiteLink } from "@/components/SiteLink";
+import { ArrowLeft } from "lucide-react";
 
 export function GardenReader({ garden, posts }: { garden: PublicGarden; posts: PublicPostSummary[] }) {
   const document = getReadingDocument("gardens", garden.id);
   return <div className="article-layout site-shell">
     <article className="article-main">
+      <SiteLink href="/knowledge" className="back-link"><ArrowLeft size={16} />全部知识库</SiteLink>
       <header className="page-intro garden-intro"><p className="section-kicker">KNOWLEDGE GARDEN</p><h1>{garden.title}</h1>
         {garden.description && <p>{garden.description}</p>}
       </header>

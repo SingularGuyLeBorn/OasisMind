@@ -5,14 +5,18 @@ import type { PublicPost, PublicPostSummary } from "@oasismind/shared";
 import { getReadingDocument, PublicMarkdown } from "@/components/PublicMarkdown";
 import { ReadingNavigation } from "@/components/ReadingNavigation";
 import { withSiteBasePath } from "@/siteConfig";
+import { readingLocation } from "@/lib/publicRoutes";
 
 export function ArticleReader({ post, gardenTitle, posts }: {
   post: PublicPost; gardenTitle: string; posts: PublicPostSummary[];
 }) {
   const document = getReadingDocument("posts", post.id);
+  const location = readingLocation(posts, post.garden, gardenTitle, post.id);
   return <div className="article-layout site-shell">
     <article className="article-main">
-      <Link href={`/gardens/${encodeURIComponent(post.garden)}`} className="back-link"><ArrowLeft size={16} />返回知识花园</Link>
+      <Link href={location.parent.href!} className="back-link"><ArrowLeft size={16} />上一级：{location.parent.title}</Link>
+      <nav className="reading-breadcrumbs" aria-label="当前位置">{location.breadcrumbs.map((item, index) =>
+        <span key={index}>{index > 0 && <span aria-hidden="true"> / </span>}{item.href ? <Link href={item.href}>{item.title}</Link> : item.title}</span>)}</nav>
       <header className="article-header">
         <div className="article-meta"><span><FolderOpen size={14} />{gardenTitle}</span>{post.category && <span>{post.category}</span>}</div>
         <h1>{post.title}</h1><p>{post.excerpt}</p>

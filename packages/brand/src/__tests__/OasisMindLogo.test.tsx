@@ -30,9 +30,10 @@ describe("OasisMindLogo", () => {
     const copies = await Promise.all([
       readFile(resolve(repoRoot, "apps/web/public/icons/oasismind.svg"), "utf8"),
       readFile(resolve(repoRoot, "apps/site/public/icons/oasismind.svg"), "utf8"),
+      readFile(resolve(repoRoot, "docs/assets/logo.svg"), "utf8"),
     ]);
 
-    expect(copies).toEqual([canonical, canonical]);
+    expect(copies).toEqual([canonical, canonical, canonical]);
     expect(canonical).not.toContain("linearGradient");
     expect(canonical).not.toContain("filter");
   });

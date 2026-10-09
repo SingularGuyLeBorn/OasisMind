@@ -1,4 +1,4 @@
-// 验收静态阅读版：正文先于脚本、双侧目录、搜索分页、手机布局及真实个人资料。
+// 验收静态阅读版：正文先于脚本、桌面双侧目录、手机中途唤出导航与搜索。
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -35,7 +35,7 @@ async function main() {
   fs.mkdirSync(evidence, { recursive: true });
   try {
     for (const width of [1280, 390]) {
-      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      const page = await browser.newPage({ viewport: { width, height: 900 }, isMobile: width < 901, hasTouch: width < 901 });
       const errors = [], failures = [], requests = [];
       page.on('pageerror', e => errors.push(e.message));
       page.on('response', r => { if (r.status() >= 400 && r.url().startsWith(base)) failures.push(`${r.status()} ${r.url()}`); });
@@ -45,8 +45,8 @@ async function main() {
       await page.locator('.article-prose p').first().waitFor();
       const visibleMs = Date.now() - started;
       await page.waitForLoadState('networkidle');
-      assert.equal(await page.locator('.knowledge-tree').isVisible(), true);
-      assert.equal(await page.locator('.article-toc').isVisible(), true);
+      assert.equal(await page.locator('.knowledge-tree').isVisible(), width > 900);
+      assert.equal(await page.locator('.article-toc').isVisible(), width > 900);
       assert.equal(await page.locator('.knowledge-tree summary').first().evaluate(element => getComputedStyle(element).listStyleType), 'none');
       assert.ok(await page.locator('.knowledge-tree .tree-chevron').count() > 0);
       assert.equal(await page.locator('.katex-error').count(), 0);
@@ -54,12 +54,83 @@ async function main() {
       const outline = await page.locator('.article-toc a').evaluateAll(links => links.map(a => a.getAttribute('href')));
       assert.ok(outline.length > 2);
       assert.equal(await page.evaluate(ids => ids.every(id => Boolean(document.getElementById(decodeURIComponent(id.slice(1))))), outline), true);
+      if (width <= 900) {
+        assert.match(await page.locator('.article-header h1').innerText(), /^\d/);
+        assert.equal(await page.locator('.article-main').evaluate(el => el.getBoundingClientRect().top < 200), true, '正文前面不能再堆目录');
+        await page.evaluate(() => window.scrollTo({ top: 1800, behavior: 'instant' }));
+        const readingY = await page.evaluate(() => scrollY);
+        assert.ok(readingY > 1000);
+        const opener = page.locator('[data-navigation-open="documents"]');
+        assert.equal(await opener.evaluate(el => el.getBoundingClientRect().bottom <= innerHeight), true);
+        await opener.click();
+        const dialog = page.getByRole('dialog', { name: '阅读导航' });
+        await dialog.waitFor();
+        assert.equal(await page.locator('.knowledge-tree a[aria-current="page"]').isVisible(), true);
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'documents-tab');
+        // 背景不滚、Tab 不跑出面板、方向键能切目录。
+        const frozenTop = await page.locator('.article-main').evaluate(el => el.getBoundingClientRect().top);
+        await page.mouse.move(10, 20); await page.mouse.wheel(0, 500);
+        assert.equal(await page.locator('.article-main').evaluate(el => el.getBoundingClientRect().top), frozenTop);
+        await page.keyboard.press('ArrowRight');
+        assert.equal(await page.getByRole('tab', { name: '本页目录', exact: true }).getAttribute('aria-selected'), 'true');
+        await page.keyboard.press('Tab');
+        assert.equal(await page.evaluate(() => document.activeElement.closest('dialog') !== null), true);
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'hidden' });
+        assert.ok(Math.abs(await page.evaluate(() => scrollY) - readingY) < 2, '关闭后必须保住阅读位置');
+        assert.equal(await opener.evaluate(el => document.activeElement === el), true);
+        await opener.click();
+        await page.getByRole('button', { name: '关闭阅读导航' }).click();
+        await opener.focus();
+        await page.keyboard.press('Space');
+        await dialog.waitFor();
+        await page.mouse.click(10, 125);
+        await dialog.waitFor({ state: 'hidden' });
+        assert.ok(Math.abs(await page.evaluate(() => scrollY) - readingY) < 2);
+        const rapidReopen = await page.evaluate(() => new Promise(resolve => {
+          const panel = document.querySelector('dialog');
+          const link = document.querySelector('[data-navigation-open="documents"]');
+          link.click();
+          panel.addEventListener('close', () => resolve({ open: panel.open, locked: document.body.style.position === 'fixed' }), { once: true });
+          panel.close(); link.click();
+        }));
+        assert.deepEqual(rapidReopen, { open: true, locked: true }, '旧 close 事件不能解锁新打开的目录');
+        await page.getByRole('button', { name: '关闭阅读导航' }).click();
+        await opener.click();
+        await page.setViewportSize({ width: 1280, height: 900 });
+        await dialog.waitFor({ state: 'hidden' });
+        assert.equal(await page.locator('.article-layout > .knowledge-tree').isVisible(), true);
+        await page.setViewportSize({ width, height: 900 });
+        await page.locator('[data-navigation-open="outline"]').click();
+        await page.screenshot({ path: path.join(evidence, 'mobile-reading-drawer.png') });
+      }
       await page.locator('.article-toc a').nth(1).click();
+      await page.waitForFunction(() => !document.querySelector('dialog[open]'));
       assert.ok(new URL(page.url()).hash);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       assert.equal(requests.some(url => /\/_next\/.*\.js|\.txt(?:\?|$)/.test(url)), false);
       assert.equal(requests.some(url => /api\/v1\/(?:posts|search)/.test(url)), false);
       await page.screenshot({ path: path.join(evidence, `reading-${width}.png`) });
+
+      if (width <= 900) {
+        const parent = await page.locator('.back-link').getAttribute('href');
+        assert.ok(parent.includes('/articles/'), '样本上一级应为章节而非直接回知识库');
+        await page.locator('.mobile-reading-bar a').first().click();
+        await page.waitForLoadState('networkidle');
+        assert.equal(new URL(page.url()).pathname, parent);
+        await page.locator('[data-navigation-open="documents"]').click();
+        await page.getByRole('navigation', { name: '返回入口' }).getByRole('link', { name: '知识库首页', exact: true }).click();
+        await page.waitForLoadState('networkidle');
+        assert.ok(new URL(page.url()).pathname.includes('/gardens/SparseAttention'));
+        assert.equal(await page.locator('.mobile-reading-bar a').first().getAttribute('href'), new URL('knowledge', base).pathname);
+        await page.locator('.mobile-reading-bar').getByRole('link', { name: '首页', exact: true }).click();
+        await page.waitForLoadState('networkidle');
+        assert.equal(new URL(page.url()).pathname, new URL(base).pathname);
+      } else await page.goto(base, { waitUntil: 'networkidle' });
+      assert.equal(await page.locator('.home-path').count(), 3);
+      assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+      await page.screenshot({ path: path.join(evidence, `home-${width}.png`), fullPage: false });
 
       await page.goto(new URL('knowledge', base).href, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
@@ -94,10 +165,25 @@ async function main() {
       stats.browsers.push({ width, initialBodyVisibleMs: visibleMs });
       await page.close();
     }
-    const noJs = await browser.newPage({ javaScriptEnabled: false });
+    // 320px 窄屏和横屏都必须保留底栏入口，面板内部可滚动。
+    for (const viewport of [{ width: 320, height: 640 }, { width: 844, height: 390 }]) {
+      const phone = await browser.newPage({ viewport, isMobile: true, hasTouch: true });
+      await phone.goto(article, { waitUntil: 'networkidle' });
+      await phone.locator('[data-navigation-open="documents"]').click();
+      assert.equal(await phone.evaluate(() => {
+        const r = document.querySelector('dialog').getBoundingClientRect();
+        return r.width <= innerWidth && r.height <= innerHeight && r.top >= 0;
+      }), true);
+      await phone.getByRole('button', { name: '关闭阅读导航' }).click();
+      assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+      await phone.close();
+    }
+    const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
     await noJs.goto(article, { waitUntil: 'domcontentloaded' });
     assert.ok((await noJs.locator('.article-prose').innerText()).length > 3000);
     assert.ok(await noJs.locator('.katex').count() > 0);
+    await noJs.locator('[data-navigation-open="outline"]').click();
+    assert.equal(new URL(noJs.url()).hash, '#page-navigation');
     await noJs.locator('.article-toc a').nth(1).click();
     assert.ok(new URL(noJs.url()).hash);
     await noJs.close();
