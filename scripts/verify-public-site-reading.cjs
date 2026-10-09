@@ -110,6 +110,8 @@ async function main() {
     await retryPage.goto(new URL('search', base).href, { waitUntil: 'networkidle' });
     await retryPage.getByPlaceholder('搜索标题、摘要、标签…').fill('MInference');
     await retryPage.getByRole('alert').waitFor();
+    assert.equal(await retryPage.locator('.post-card').count(), 0);
+    assert.ok((await retryPage.locator('.result-count').innerText()).includes('暂不可用'));
     await retryPage.getByRole('button', { name: '重新读取' }).click();
     await retryPage.locator('.post-card h3 a').filter({ hasText: 'MInference' }).first().waitFor();
     assert.equal(await retryPage.getByRole('alert').count(), 0);

@@ -39,9 +39,9 @@ export function KnowledgeBrowser({ initialPosts, gardens, total }: {
         <option value="all">综合搜索</option><option value="title">只搜标题</option><option value="tags">只搜标签</option><option value="category">只搜分类</option>
       </select><ChevronDown size={15} aria-hidden="true" /></span>
     </div>
-    <p className="result-count" role="status">{enabled && loading ? "正在读取完整搜索索引…" : `找到 ${data ? filtered.length : total} 篇公开文章`}</p>
+    <p className="result-count" role="status">{error ? "搜索暂不可用，请重试。" : enabled && loading ? "正在读取完整搜索索引…" : `找到 ${data ? filtered.length : total} 篇公开文章`}</p>
     {error && <div className="load-error" role="alert">{error} <button type="button" onClick={retry}>重新读取</button></div>}
-    <PostList key={`${garden}:${scope}:${keyword}`} posts={filtered} />
+    {(!enabled || data) && <PostList key={`${garden}:${scope}:${keyword}`} posts={filtered} />}
     {!data && <button className="load-index" type="button" disabled={enabled && loading} onClick={() => setRequested(true)}>浏览全部 {total} 篇文章</button>}
     {data && filtered.length === 0 && <div className="empty-state">没有匹配的内容，换个关键词试试。</div>}
   </>;
