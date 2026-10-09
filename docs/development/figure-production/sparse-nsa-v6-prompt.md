@@ -1,0 +1,3 @@
+# NSA生图候选v6
+
+Preserve entire NSA diagram. Remove ONLY the extra navy vertical line segment at x334 from y559 down to y612 beside compression-attention box. This wrongly bypasses attention. Keep horizontal compressed-cache-to-attention route from cache at (334,546) leftward to (206,559) then into top of compression attention. Keep independent horizontal p_cmp arrow from RIGHT edge of compression attention (326,612) into window-mapping box (416,612). After change, p_cmp must originate exclusively at compression attention right edge, never directly at compressed KV cache. Every other line/text unchanged.

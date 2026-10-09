@@ -1,0 +1,3 @@
+# NSA生图候选v5
+
+Edit only one broken connector in this NSA figure: compression output o_cmp must have ONE continuous solid navy arrow from compression attention bottom edge (x206,y646), downward to y750, then rightward to x579, then downward into TOP edge of LEFT multiplication circle (x579,y785). Remove old arrow stopping at dashed boundary y735 and remove detached segment above left multiply. Draw this complete elbow route visibly, no gap at panel boundary. Keep o_cmp text. Do not alter any other text, modules, numeric parameters, formulas or connectors, especially gate source boxes and selection/window outputs. Ensure selection multiply also has its visible short output arrow into plus. All same style.
