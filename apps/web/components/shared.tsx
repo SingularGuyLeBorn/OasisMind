@@ -10,10 +10,10 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import ReactDOM from "react-dom";
 import Link from "next/link";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import {
   Check,
   ChevronDown,
@@ -156,14 +156,22 @@ export function EntityCard({
 } & Omit<React.ComponentProps<typeof motion.div>, "children" | "className" | "density">) {
   const { density: densityFromHook } = useCardDensity();
   const density = densityProp ?? densityFromHook;
+  const reducedMotion = useReducedMotion();
+  // [OM-FREEPLAY] 小幅立体倾斜只用于精细指针；手机和减少动效模式保持平面可读。
+  const pointerMotion = useSyncExternalStore(
+    (notify) => { const media = matchMedia("(hover: hover) and (pointer: fine)"); media.addEventListener("change", notify); return () => media.removeEventListener("change", notify); },
+    () => matchMedia("(hover: hover) and (pointer: fine)").matches,
+    () => false,
+  );
+  const canTilt = pointerMotion && !reducedMotion;
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0.5);
   const y = useMotionValue(0.5);
-  const rotateX = useSpring(useTransform(y, [0, 1], [6, -6]), { stiffness: 280, damping: 26 });
-  const rotateY = useSpring(useTransform(x, [0, 1], [-6, 6]), { stiffness: 280, damping: 26 });
+  const rotateX = useSpring(useTransform(y, [0, 1], [1.8, -1.8]), { stiffness: 280, damping: 26 });
+  const rotateY = useSpring(useTransform(x, [0, 1], [-1.8, 1.8]), { stiffness: 280, damping: 26 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+    if (!ref.current || !canTilt) return;
     const rect = ref.current.getBoundingClientRect();
     x.set((e.clientX - rect.left) / rect.width);
     y.set((e.clientY - rect.top) / rect.height);
@@ -177,15 +185,15 @@ export function EntityCard({
     <motion.div
       ref={ref}
       layout
-      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      initial={false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 240, damping: 24 }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-      whileHover={{ scale: 1.015, z: 12 }}
+      style={{ rotateX: canTilt ? rotateX : 0, rotateY: canTilt ? rotateY : 0, transformPerspective: 1200 }}
+      whileHover={canTilt ? { y: -2 } : undefined}
       className={cn(
-        "om-card-sheen group relative overflow-hidden rounded-2xl border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_4px_20px_-8px_rgba(0,135,235,0.14)] transition-shadow hover:shadow-[0_8px_28px_-10px_rgba(0,135,235,0.22)]",
+        "om-card-sheen om-raised-panel group relative overflow-hidden rounded-2xl border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_4px_20px_-8px_rgba(0,135,235,0.14)] transition-shadow hover:shadow-[0_8px_28px_-10px_rgba(0,135,235,0.22)]",
         density === "compact" ? "p-3" : "p-5",
         className,
       )}
@@ -1008,10 +1016,10 @@ export function PageHeader({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8, scale: 0.99 }}
+      initial={false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 260, damping: 24 }}
-      className="flex flex-col gap-3 rounded-2xl border border-white/50 bg-white/45 px-3 py-3 shadow-[0_8px_28px_-18px_rgba(0,80,160,0.2)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-4"
+      className="om-console-heading flex flex-col gap-3 rounded-2xl border border-white/50 bg-white/45 px-3 py-3 shadow-[0_8px_28px_-18px_rgba(0,80,160,0.2)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-4"
     >
       <div className="flex min-w-0 items-center gap-3">
         {Icon && (

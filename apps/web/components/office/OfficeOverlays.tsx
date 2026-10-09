@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, type KeyboardEvent } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ExternalLink, X } from "lucide-react";
 import {
   ABOUT_FACTS,
@@ -22,6 +22,7 @@ import {
 } from "./officeContent";
 import { OfficeFormulaScreen } from "./OfficeFormulaScreen";
 import { OfficeRichMd } from "./OfficeRichMd";
+import { cn } from "@/lib/utils";
 
 interface OfficeOverlaysProps {
   hotspot: OfficeHotspotId | null;
@@ -33,33 +34,48 @@ function kindOf(id: OfficeHotspotId | null): OverlayKind | null {
   return HOTSPOT_META[id].overlay;
 }
 
-export function OfficeOverlays({ hotspot, onClose }: OfficeOverlaysProps) {
+// [OM-FREEPLAY] 显式循环 Tab，避免 Chrome 在末个控件后把焦点移到地址栏。
+export function cycleDialogFocus(event: KeyboardEvent<HTMLDialogElement>) {
+  if (event.key !== "Tab") return;
+  const controls = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input:not([disabled]),[tabindex="0"]')].filter(el => el.getClientRects().length > 0);
+  const first = controls[0], last = controls.at(-1);
+  if (!first || !last) return;
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
+
+export function OfficeOverlays({ hotspot, onClose: notifyClose }: OfficeOverlaysProps) {
   const kind = kindOf(hotspot);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const reduceMotion = useReducedMotion();
+  const onClose = () => { dialogRef.current?.close(); notifyClose(); };
+  // [OM-FREEPLAY] 原生模态框负责焦点隔离、Escape 和关闭后焦点归还，避免键盘控制穿透。
+  useEffect(() => {
+    if (hotspot && !dialogRef.current?.open) dialogRef.current?.showModal();
+  }, [hotspot]);
 
   return (
-    <AnimatePresence>
+    <>
       {kind && hotspot && (
-        <motion.div
+        <dialog
+          ref={dialogRef}
           key={kind + hotspot}
-          className="absolute inset-0 z-30 flex items-end justify-center bg-[#0B3A66]/30 p-4 backdrop-blur-[3px] sm:items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
+          aria-label={HOTSPOT_META[hotspot].label}
+          className="om-workshop-dialog fixed inset-0 m-auto max-h-[92dvh] w-[calc(100%-2rem)] max-w-3xl overflow-visible border-0 bg-transparent p-0"
+          onCancel={e => { e.preventDefault(); onClose(); }}
+          onKeyDown={cycleDialogFocus}
+          onClick={e => { if (e.target === e.currentTarget) onClose(); }}
         >
           <motion.div
-            role="dialog"
-            aria-modal
-            aria-label={HOTSPOT_META[hotspot].label}
-            className={`relative max-h-[88vh] w-full overflow-y-auto shadow-2xl ${
+            className={cn("relative max-h-[88dvh] w-full overflow-y-auto shadow-2xl",
               kind === "knowledge"
                 ? "max-w-2xl rounded-sm border border-[#E2E8F0] bg-[#F8FAFC] p-0"
                 : "max-w-3xl rounded-[28px] border border-white/40 bg-[color-mix(in_srgb,var(--om-glass-bg)_92%,white)] p-5 backdrop-blur-xl sm:p-7"
-            }`}
-            initial={{ y: 28, opacity: 0, scale: 0.98 }}
+            )}
+            initial={{ y: reduceMotion ? 0 : 28, opacity: 0, scale: reduceMotion ? 1 : 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 16, opacity: 0, scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 280, damping: 26 }}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 280, damping: 26 }}
             onClick={(e) => e.stopPropagation()}
           >
             {kind === "knowledge" ? (
@@ -104,15 +120,15 @@ export function OfficeOverlays({ hotspot, onClose }: OfficeOverlaysProps) {
                     className="inline-flex items-center gap-2 rounded-full bg-[var(--om-brand)] px-5 py-2.5 text-sm font-medium text-white shadow-md transition hover:brightness-110"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Back
+                    返回工作室
                   </button>
                 </div>
               </>
             )}
           </motion.div>
-        </motion.div>
+        </dialog>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -207,7 +223,7 @@ function PaperReader({ onClose }: { onClose: () => void }) {
           className="inline-flex items-center gap-2 rounded-full bg-[#111827] px-5 py-2.5 text-sm font-medium text-white shadow-md"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          返回工作室
         </button>
       </div>
     </div>
@@ -217,14 +233,13 @@ function PaperReader({ onClose }: { onClose: () => void }) {
 function ServerPanel() {
   return (
     <div className="space-y-4 text-sm leading-relaxed text-[var(--om-text-2)]">
-      <p className="rounded-2xl bg-[#052E16] px-4 py-3 text-[#A3E635]">
-        NVIDIA DGX 风格机架 · H100 / NVLink 意象。本地优先不等于没有算力想象——见微的 Agent 与
-        vision / embedding 任务可以挂到本机或远端 GPU。
+      <p className="rounded-2xl bg-[var(--om-brand-soft)] px-4 py-3 text-[var(--om-brand-deep)]">
+        机架提供推理与系统管理入口. 在设置中配置模型服务，在运行记录中查看实际执行结果.
       </p>
       <dl className="grid gap-2 sm:grid-cols-2">
         {[
-          ["品牌灯条", "NVIDIA Green #76B900"],
-          ["互联", "双主机网线桥接"],
+          ["模型服务", "在设置中配置本地或远程服务"],
+          ["运行信息", "由运行记录提供实际状态"],
           ["用途", "推理 · 微调草稿 · OCR/Vision"],
           ["原则", "密钥不进 Git · 本地落盘"],
         ].map(([k, v]) => (
@@ -236,6 +251,7 @@ function ServerPanel() {
           </div>
         ))}
       </dl>
+      <div className="flex gap-4"><Link href="/settings" className="text-[var(--om-brand)]">模型与系统设置</Link><Link href="/runs" className="text-[var(--om-brand)]">运行记录</Link></div>
     </div>
   );
 }
@@ -266,20 +282,6 @@ function ArchitecturePanel() {
       <div>
         <h3 className="text-lg font-semibold text-[var(--om-ink)]">{ARCHITECTURE_BOARD.title}</h3>
         <p className="text-sm text-[var(--om-brand)]">{ARCHITECTURE_BOARD.subtitle}</p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={ARCHITECTURE_BOARD.image}
-          alt={ARCHITECTURE_BOARD.imageAlt}
-          className="w-full rounded-xl border border-white/50 bg-white object-contain p-2"
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={ARCHITECTURE_BOARD.imageSecondary}
-          alt="Encoder–Decoder 对照"
-          className="w-full rounded-xl border border-white/50 bg-white object-contain p-2"
-        />
       </div>
       <OfficeRichMd content={ARCHITECTURE_BOARD.markdown} />
       <ol className="space-y-2">
@@ -325,7 +327,7 @@ function FormulasPanel() {
         </div>
       </section>
       <section>
-        <p className="mb-3 text-sm font-semibold text-[var(--om-text-1)]">带鱼屏内容墙</p>
+        <p className="mb-3 text-sm font-semibold text-[var(--om-text-1)]">工作台速查</p>
         <div className="grid gap-4 sm:grid-cols-2">
           {MONITOR_FORMULA_CARDS.map((s) => (
             <OfficeFormulaScreen
@@ -350,7 +352,7 @@ function ProjectsPanel() {
     <div className="space-y-6">
       <section>
         <p className="mb-3 text-sm text-[var(--om-text-2)]">
-          带鱼屏工作墙：运行看板 · 花园 · Attention · Swarm · HITL，主题混排。
+          从工作台进入对话、知识库、Agent 协作与审批，也可以查看下方的计算公式.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {MONITOR_FORMULA_CARDS.slice(0, 4).map((card) => (

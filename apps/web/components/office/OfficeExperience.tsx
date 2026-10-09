@@ -1,189 +1,88 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { Component, useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
-import { KnockKnockIntro } from "./KnockKnockIntro";
-import { OfficeOverlays } from "./OfficeOverlays";
-import { HOTSPOT_META, OFFICE_BRAND, type OfficeHotspotId } from "./officeContent";
+import { ArrowLeft, BookOpen, Cpu, Layers, Monitor, Grid2X2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { OfficeOverlays, cycleDialogFocus } from "./OfficeOverlays";
+import { HOTSPOT_META, type OfficeHotspotId } from "./officeContent";
 import { OFFICE_VIEWS, type OfficeViewId } from "./officeNav";
 
-const OfficeScene = dynamic(
-  () => import("./OfficeScene").then((m) => m.OfficeScene),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-[#F3F6FA] text-sm text-[var(--om-text-2)]">
-        正在渲染办公室…
-      </div>
-    ),
-  },
-);
+const OfficeScene = dynamic(() => import("./OfficeScene").then(m => m.OfficeScene), {
+  ssr: false,
+  loading: () => <div className="om-workshop-loading" role="status">正在打开 3D 工作室…</div>,
+});
+const ENTERED_KEY = "oasismind-office-entered";
+const VIEWS = ["overview", "desk", "board", "server", "shelf"] as const;
+const OBJECTS = [{ id: "monitor", icon: Monitor, label: "工作墙" }, { id: "chalkboard", icon: Layers, label: "架构板" }, { id: "server", icon: Cpu, label: "算力" }, { id: "bookshelf", icon: BookOpen, label: "藏书" }] as const;
+function subscribeEntry() { return () => {}; }
+function readEntry() { try { return sessionStorage.getItem(ENTERED_KEY) === "1"; } catch { return false; } }
 
-const VIEW_ORDER = ["overview", "desk", "board", "server", "shelf"] as const;
-const OFFICE_ENTERED_KEY = "oasismind-office-entered";
-
-function readOfficeEntered(): boolean {
-  try {
-    return sessionStorage.getItem(OFFICE_ENTERED_KEY) === "1";
-  } catch {
-    return false;
-  }
+// [OM-FREEPLAY] WebGL 不可用时保留功能入口，不让整页因图形驱动错误变成空白。
+class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? <div className="om-workshop-loading" role="status">当前设备无法打开 3D 场景，请通过下方物件菜单访问工作室功能。</div> : this.props.children; }
 }
 
+/** [OM-FREEPLAY] 重写办公室入口与控制台；保留已有内容面板，不显示虚构运行数据。 */
 export function OfficeExperience() {
-  /** sessionStorage 用 useSyncExternalStore，避免 effect 内 setState */
-  const storedEntered = useSyncExternalStore(
-    () => () => {},
-    readOfficeEntered,
-    () => false,
-  );
-  const [enteredOverride, setEnteredOverride] = useState<boolean | null>(null);
-  const entered = enteredOverride ?? storedEntered;
+  const storedEntry = useSyncExternalStore(subscribeEntry, readEntry, () => false);
+  const [enteredNow, setEnteredNow] = useState(false);
   const [hotspot, setHotspot] = useState<OfficeHotspotId | null>(null);
-  const [viewId, setViewId] = useState<OfficeViewId>("overview");
-
-  const handleEnter = () => {
-    try {
-      sessionStorage.setItem(OFFICE_ENTERED_KEY, "1");
-    } catch {
-      /* ignore */
-    }
-    setEnteredOverride(true);
-  };
-
+  // [OM-FREEPLAY] 机位选择是显式镜头指令；重复选择当前机位也能复位，长按漫游键不重复发指令。
+  const [view, setView] = useState<{ id: OfficeViewId; revision: number }>({ id: "overview", revision: 0 });
+  const viewId = view.id;
+  const setViewId = useCallback((id: OfficeViewId) => setView(previous => id === "walk" && previous.id === "walk" ? previous : { id, revision: previous.revision + 1 }), []);
+  const objectsRef = useRef<HTMLDialogElement>(null);
+  const entered = enteredNow || storedEntry;
   useEffect(() => {
-    if (!entered) return;
-    const onKey = (e: KeyboardEvent) => {
-      const k = e.key.toLowerCase();
-      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) {
-        setViewId("walk");
-      }
+    if (!entered || hotspot) return;
+    const down = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.closest("input,textarea,[contenteditable=true],dialog,[role=dialog]")) return;
+      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase())) { e.preventDefault(); setViewId("walk"); }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [entered]);
+    window.addEventListener("keydown", down);
+    return () => window.removeEventListener("keydown", down);
+  }, [entered, hotspot, setViewId]);
+  const enter = () => { try { sessionStorage.setItem(ENTERED_KEY, "1"); } catch { /* 当前页仍可进入。 */ } setEnteredNow(true); };
 
-  const hint = hotspot
-    ? HOTSPOT_META[hotspot].hint
-    : viewId === "walk"
-      ? "WASD / 方向键走动 · 拖拽环顾 · 点物件探索"
-      : "选机位或 WASD 走动 · 拖拽环顾 · 点物件探索";
-
-  return (
-    <div className="relative h-[calc(100dvh-3.5rem)] w-full overflow-hidden bg-[#F3F6FA]">
-      {!entered && <KnockKnockIntro onEnter={handleEnter} />}
-
-      {entered && (
-        <>
-          <OfficeScene onSelect={setHotspot} activeId={hotspot} viewId={viewId} />
-
-          <motion.div
-            className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3 sm:p-4"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Link
-              href="/"
-              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-medium text-[var(--om-text-1)] shadow-sm backdrop-blur-md transition hover:bg-white/95"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              首页
-            </Link>
-
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <div className="pointer-events-auto flex flex-wrap items-center gap-1 rounded-full border border-white/70 bg-white/90 p-1 shadow-sm backdrop-blur-md">
-                {VIEW_ORDER.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setViewId(id)}
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                      viewId === id
-                        ? "bg-[var(--om-brand)] text-white"
-                        : "text-[var(--om-text-2)] hover:bg-black/5"
-                    }`}
-                  >
-                    {OFFICE_VIEWS[id].label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setViewId("walk")}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                    viewId === "walk"
-                      ? "bg-[#0F172A] text-white"
-                      : "text-[var(--om-text-2)] hover:bg-black/5"
-                  }`}
-                >
-                  漫游
-                </button>
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-xs font-medium text-[var(--om-text-1)] shadow-sm backdrop-blur-md">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                {OFFICE_BRAND.officeTitle}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* 简易方向键（触控/鼠标） */}
-          <motion.div
-            className="pointer-events-none absolute bottom-20 right-4 z-20 sm:bottom-24"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <div className="pointer-events-auto grid grid-cols-3 gap-1 rounded-2xl border border-white/70 bg-white/90 p-1.5 shadow-lg backdrop-blur-md">
-              <span />
-              <WalkPadKey label="W" code="KeyW" />
-              <span />
-              <WalkPadKey label="A" code="KeyA" />
-              <WalkPadKey label="S" code="KeyS" />
-              <WalkPadKey label="D" code="KeyD" />
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-4"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-          >
-            <div className="max-w-xl rounded-full border border-white/70 bg-white/92 px-4 py-2 text-center text-xs font-medium text-[var(--om-text-1)] shadow-lg backdrop-blur-md sm:text-sm">
-              {hint}
-            </div>
-          </motion.div>
-
-          <OfficeOverlays hotspot={hotspot} onClose={() => setHotspot(null)} />
-        </>
-      )}
-    </div>
-  );
+  return <div className="om-office-workshop relative h-[calc(100dvh-3.5rem)] w-full overflow-hidden bg-[#F3F6FA]">
+    {!entered ? <div className="om-workshop-entry">
+      <div aria-hidden="true" className="om-workshop-emblem"><i /><i /><i /></div>
+      <p>见微 · OasisMind</p><h1>研究工作室</h1>
+      <p className="om-workshop-entry-copy">在工作台上探索知识、模型与工具。</p>
+      <button type="button" onClick={enter}>进入研究工作室 <span aria-hidden="true">→</span></button>
+      <Link href="/">返回首页</Link>
+    </div> : <>
+      <SceneBoundary><OfficeScene onSelect={setHotspot} activeId={hotspot} viewId={viewId} viewRevision={view.revision} /></SceneBoundary>
+      <div aria-hidden="true" className="om-office-frame"><i /><i /><i /><i /></div>
+      <header className="om-workshop-toolbar">
+        <Link href="/" className="om-workshop-home"><ArrowLeft size={15} />首页</Link>
+        <nav aria-label="工作室机位" className="om-workshop-views">
+          {VIEWS.map(id => <button key={id} type="button" aria-pressed={viewId === id} onClick={() => setViewId(id)}>{OFFICE_VIEWS[id].label}</button>)}
+          <button type="button" aria-pressed={viewId === "walk"} onClick={() => setViewId("walk")}>漫游</button>
+        </nav>
+        <span className="om-workshop-title">见微 / 研究工作室</span>
+      </header>
+      <nav aria-label="工作室物件" className="om-office-instruments">
+        <div className="om-office-station"><span>研究工作室</span><strong>{viewId === "walk" ? "自由漫游" : OFFICE_VIEWS[viewId].label}</strong></div>
+        {OBJECTS.map(({ id, icon: Icon, label }) => <button key={id} type="button" aria-label={HOTSPOT_META[id].label} onClick={() => setHotspot(id)} className={cn("om-office-instrument", hotspot === id && "is-selected")}><Icon size={18} /><span>{label}</span></button>)}
+        <button type="button" className="om-office-instrument" onClick={() => objectsRef.current?.showModal()}><Grid2X2 size={18} /><span>全部物件</span></button>
+      </nav>
+      <dialog ref={objectsRef} aria-label="全部工作室物件" className="om-workshop-object-menu" onKeyDown={cycleDialogFocus} onClick={e => { if (e.target === e.currentTarget) objectsRef.current?.close(); }}>
+        <header><h2>工作室物件</h2><button type="button" aria-label="关闭物件菜单" onClick={() => objectsRef.current?.close()}><X size={18} /></button></header>
+        <div>{(Object.keys(HOTSPOT_META) as OfficeHotspotId[]).map(id => <button key={id} type="button" onClick={() => { objectsRef.current?.close(); setHotspot(id); }}><strong>{HOTSPOT_META[id].label}</strong><span>{HOTSPOT_META[id].hint}</span></button>)}</div>
+      </dialog>
+      <div className="om-workshop-walkpad" aria-label="漫游方向控制"><span /><WalkKey label="W" /><span /><WalkKey label="A" /><WalkKey label="S" /><WalkKey label="D" /></div>
+      <p className="om-workshop-hint">拖拽环顾 · 选择机位 · WASD 漫游</p>
+      <OfficeOverlays hotspot={hotspot} onClose={() => setHotspot(null)} />
+    </>}
+  </div>;
 }
 
-/** 屏幕方向垫：按下时派发真实 KeyboardEvent，供 CameraNavigator 消费 */
-function WalkPadKey({ label, code }: { label: string; code: string }) {
-  const fire = (type: "keydown" | "keyup") => {
-    window.dispatchEvent(new KeyboardEvent(type, { code, key: label.toLowerCase(), bubbles: true }));
-  };
-  return (
-    <button
-      type="button"
-      className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-xs font-bold text-[var(--om-text-1)] active:bg-[var(--om-brand)] active:text-white"
-      onPointerDown={(e) => {
-        e.preventDefault();
-        fire("keydown");
-      }}
-      onPointerUp={() => fire("keyup")}
-      onPointerLeave={() => fire("keyup")}
-    >
-      {label}
-    </button>
-  );
+function WalkKey({ label }: { label: string }) {
+  const fire = (type: "keydown" | "keyup") => window.dispatchEvent(new KeyboardEvent(type, { key: label.toLowerCase(), code: `Key${label}`, bubbles: true }));
+  return <button type="button" aria-label={`漫游 ${label}`} onPointerDown={e => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); fire("keydown"); }} onPointerUp={() => fire("keyup")} onPointerCancel={() => fire("keyup")} onLostPointerCapture={() => fire("keyup")}>{label}</button>;
 }

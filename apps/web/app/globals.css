@@ -1,5 +1,81 @@
 @import "tailwindcss";
 
+/* [OM-FREEPLAY] 全站沿用主题变量，用接缝、倒角、高光和薄阴影增加材质；不改调色板。 */
+.om-workbench [data-slot="card"], .om-raised-panel {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--om-bg-alt) 85%, transparent), 0 3px 0 color-mix(in srgb, var(--om-divider) 55%, transparent), 0 12px 30px -22px var(--om-brand);
+}
+.om-console-heading { position: relative; border-left: 3px solid color-mix(in srgb, var(--om-brand) 55%, transparent); }
+.om-console-heading::after { content: ""; position: absolute; right: 16px; bottom: -4px; width: 48px; height: 3px; background: var(--om-brand); opacity: .2; border-radius: 0 0 3px 3px; pointer-events: none; }
+.om-console-heading .om-header-icon { box-shadow: inset 0 1px 0 var(--om-bg-alt), 0 3px 0 color-mix(in srgb, var(--om-brand) 14%, transparent); transform: perspective(400px) rotateY(-9deg); }
+.om-workbench > header { box-shadow: 0 1px 0 color-mix(in srgb, var(--om-bg-alt) 60%, transparent), 0 5px 16px -15px var(--om-brand); }
+.om-office-workshop { isolation: isolate; }
+.om-office-frame { position: absolute; inset: 84px 24px 105px; pointer-events: none; }
+.om-office-frame i { position: absolute; width: 24px; height: 24px; border-color: color-mix(in srgb, var(--om-brand) 38%, transparent); border-style: solid; border-width: 0; }
+.om-office-frame i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.om-office-frame i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.om-office-frame i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.om-office-frame i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+.om-office-instruments { position: absolute; z-index: 20; left: 24px; bottom: 88px; display: flex; gap: 6px; padding: 8px; border: 1px solid var(--om-divider); border-radius: 12px; background: color-mix(in srgb, var(--om-bg-alt) 94%, transparent); box-shadow: inset 0 1px 0 var(--om-bg-alt), 0 4px 0 color-mix(in srgb, var(--om-divider) 65%, transparent), 0 12px 28px -18px var(--om-brand); }
+.om-office-station { display: grid; align-content: center; gap: 4px; padding: 0 18px 0 8px; border-right: 1px solid var(--om-divider); }
+.om-office-station span { font-size: 10px; letter-spacing: .12em; color: var(--om-text-3); }
+.om-office-station strong { font-size: 14px; font-weight: 600; color: var(--om-text-1); }
+.om-office-instrument { min-width: 54px; min-height: 48px; display: grid; justify-items: center; align-content: center; gap: 5px; padding: 7px 10px; border-radius: 8px; font-size: 10px; color: var(--om-text-2); transition: transform .2s, background .2s; }
+.om-office-instrument:hover, .om-office-instrument:focus-visible, .om-office-instrument.is-selected { background: var(--om-brand-soft); color: var(--om-brand); }
+.om-workshop-loading, .om-workshop-entry { display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 20px; color: var(--om-text-1); background: var(--om-bg); }
+.om-workshop-entry { position: relative; background-image: radial-gradient(ellipse at center, var(--om-brand-soft), transparent 65%); }
+.om-workshop-entry h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 600; letter-spacing: .12em; }
+.om-workshop-entry > p { font-size: 12px; letter-spacing: .16em; color: var(--om-text-3); }
+.om-workshop-entry .om-workshop-entry-copy { letter-spacing: 0; font-size: 14px; }
+.om-workshop-entry > button { padding: 14px 26px; background: var(--om-brand); border-radius: 10px; color: var(--om-bg-alt); box-shadow: 0 4px 0 color-mix(in srgb, var(--om-brand) 70%, var(--om-text-1)), 0 15px 30px -20px var(--om-brand); }
+.om-workshop-entry > a { font-size: 12px; margin-top: 12px; }
+.om-workshop-emblem { position: relative; width: 130px; height: 130px; perspective: 700px; margin-bottom: 14px; }
+.om-workshop-emblem i { position: absolute; inset: 12px; border: 1px solid var(--om-brand); border-radius: 50%; transform: rotateX(58deg); opacity: .4; }
+.om-workshop-emblem i:nth-child(2) { transform: rotateX(58deg) rotateY(55deg); }
+.om-workshop-emblem i:nth-child(3) { transform: rotateX(58deg) rotateY(-55deg); }
+.om-workshop-toolbar { position: absolute; top: 16px; inset-inline: 16px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; pointer-events: none; }
+.om-workshop-home, .om-workshop-views { pointer-events: auto; background: var(--om-bg-alt); border: 1px solid var(--om-divider); border-radius: 10px; box-shadow: 0 3px 0 var(--om-divider-light); }
+.om-workshop-home { display: inline-flex; gap: 6px; align-items: center; padding: 12px; font-size: 12px; white-space: nowrap; }
+.om-workshop-views { display: flex; gap: 3px; padding: 4px; overflow-x: auto; max-width: 100%; }
+.om-workshop-views button { flex: none; padding: 10px 13px; font-size: 12px; border-radius: 7px; color: var(--om-text-2); }
+.om-workshop-views button[aria-pressed=true] { background: var(--om-brand); color: var(--om-bg-alt); }
+.om-workshop-title { font-size: 11px; letter-spacing: .1em; color: var(--om-text-3); }
+.om-workshop-screen { display: grid; gap: 14px; width: 450px; height: 278px; padding: 24px 30px; color: var(--om-text-1); background: var(--om-bg-alt); text-align: left; cursor: pointer; }
+.om-workshop-screen[aria-pressed=true] { outline: 3px solid var(--om-brand); outline-offset: -3px; }
+.om-workshop-screen-label { font-size: 24px; font-weight: 600; letter-spacing: .08em; }
+.om-workshop-screen-rule { height: 1px; background: var(--om-divider); }
+.om-workshop-screen-row { font-size: 17px; display: flex; align-items: center; gap: 18px; }
+.om-workshop-screen-row i { font: 12px/1 monospace; color: var(--om-brand); }
+.om-workshop-screen-open { font-size: 12px; color: var(--om-brand); margin-top: 8px; }
+.om-workshop-walkpad { position: absolute; z-index: 20; right: 24px; bottom: 88px; display: grid; grid-template-columns: repeat(3, 34px); gap: 3px; border: 1px solid var(--om-divider); border-radius: 12px; padding: 7px; background: var(--om-bg-alt); box-shadow: 0 3px 0 var(--om-divider-light); }
+.om-workshop-walkpad button { height: 34px; border-radius: 6px; background: var(--om-bg-soft); font-size: 12px; touch-action: none; color: var(--om-text-1); }
+.om-workshop-walkpad button:active { background: var(--om-brand); color: var(--om-bg-alt); }
+.om-workshop-hint { position: absolute; z-index: 20; bottom: 26px; inset-inline: 20px; text-align: center; font-size: 11px; color: var(--om-text-2); pointer-events: none; }
+.om-workshop-dialog::backdrop, .om-workshop-object-menu::backdrop { background: color-mix(in srgb, var(--om-brand-deep) 26%, transparent); backdrop-filter: blur(3px); }
+.om-workshop-object-menu { position: fixed; inset: 0; margin: auto; width: min(560px, calc(100% - 32px)); max-height: 80dvh; border: 1px solid var(--om-divider); border-radius: 16px; padding: 20px; background: var(--om-bg-alt); color: var(--om-text-1); }
+.om-workshop-object-menu header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.om-workshop-object-menu header button { padding: 10px; }
+.om-workshop-object-menu > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.om-workshop-object-menu > div button { text-align: left; padding: 12px; border: 1px solid var(--om-divider); border-radius: 8px; }
+.om-workshop-object-menu strong { display: block; font-size: 13px; font-weight: 500; }
+.om-workshop-object-menu span { display: block; margin-top: 5px; font-size: 10px; color: var(--om-text-3); }
+.om-workshop-object-menu button:hover { background: var(--om-brand-soft); }
+@media (max-width: 640px) {
+  .om-workshop-toolbar { top: 12px; inset-inline: 12px; align-items: flex-start; gap: 8px; }
+  .om-workshop-views { flex: 1; min-width: 0; }
+  .om-workshop-views button { padding-inline: 10px; }
+  .om-workshop-title { display: none; }
+  .om-workshop-walkpad { right: 12px; bottom: 62px; }
+  .om-workshop-hint { bottom: 20px; }
+  .om-office-frame { inset: 115px 12px 155px; }
+  .om-office-instruments { left: 12px; bottom: 140px; gap: 2px; padding: 5px; }
+  .om-office-station { display: none; }
+  .om-office-instrument { min-width: 45px; padding-inline: 7px; }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .om-office-instrument:hover { transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) { .om-office-instrument { transition: none; } }
+
 /* [OM-FREEPLAY] 首页立体书页留在独立视觉区，移动端缩小，不遮住链接和正文。 */
 .om-owner-book-scene { display: grid; justify-items: center; align-content: center; min-width: 0; }
 @media (max-width: 1023px) { .om-owner-book-scene .om-knowledge-sculpture { height: 220px; transform: scale(.8); margin-block: -28px; } }

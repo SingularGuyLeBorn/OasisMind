@@ -65,27 +65,17 @@ export const MONITOR_APPS = [
 /** 整齐知识库板：花园条目 */
 export const KNOWLEDGE_BOARD = [
   { id: "posts", title: "博客花园", meta: "公开长文 · 主展厅" },
-  { id: "knowledge", title: "知识库", meta: "蒸馏笔记 · 可检索" },
+  { id: "RecursiveSelfImprovement", title: "递归自我改进", meta: "模型 · 脚手架 · 改进器" },
   { id: "resources", title: "资源库", meta: "素材索引 · 清单" },
   { id: "LargeLanguageModelGuide", title: "LLM 指南", meta: "体系化入门" },
-  { id: "interview", title: "面试题集", meta: "刷题与复盘" },
-  { id: "daily", title: "每日碎片", meta: "随记沉淀" },
+  { id: "LargeLanguageModelInterview", title: "大模型面试", meta: "原理与实践问题" },
+  { id: "daily-fragments", title: "每日碎片", meta: "随记沉淀" },
 ] as const;
-
-/** 办公室 LLM 配图（content/uploads → /uploads 静态托管） */
-export const LLM_NOTE_IMAGES = {
-  stack: "/uploads/llm-notes/transformer-stack.png",
-  encdec: "/uploads/llm-notes/transformer-encoder-decoder.png",
-  belial: "/uploads/llm-notes/belial-official.png",
-  zero: "/uploads/llm-notes/zero-official.png",
-} as const;
 
 export type OfficeFormulaCard = {
   id: string;
   title: string;
   tint: string;
-  image: string;
-  imageAlt: string;
   /** Markdown：$$ 块级公式 + 列表说明 + 可选配图 */
   markdown: string;
 };
@@ -94,31 +84,30 @@ export type OfficeFormulaCard = {
 export const ARCHITECTURE_BOARD = {
   title: "Transformer Architecture",
   subtitle: "Attention Is All You Need → LLM Stack",
-  image: LLM_NOTE_IMAGES.stack,
-  imageAlt: "Transformer / LLM 层级栈示意图",
-  imageSecondary: LLM_NOTE_IMAGES.encdec,
   /** 黑板右侧 / 弹层正文（Markdown + KaTeX） */
   markdown: `
-### 端到端推导（Decoder-only）
+### Decoder-only 的计算顺序
+
+这里采用加性位置编码、Pre-Norm 与 GELU FFN 的示例结构. 注意力只读取当前及此前的位置.
 
 1. **Embed**：$x_0 = E[\\mathrm{token}] + P_{\\mathrm{pos}}$
-2. **Attn**：$A = \\mathrm{softmax}(QK^{\\top}/\\sqrt{d_k}),\\; H = AV$
+2. **Attn**：由归一化后的输入投影得到 $Q,K,V$, $A = \\mathrm{softmax}(QK^{\\top}/\\sqrt{d_k}+M),\\; H = AV$. 因果掩码 $M$ 在未来位置为 $-\\infty$, 其余为 $0$.
 3. **Resid**：$x' = x + \\mathrm{MultiHead}(\\mathrm{LN}(x))$
-4. **FFN**：$z = \\mathrm{GELU}(x'W_1)W_2,\\; y = x' + z$
-5. **Head**：$p = \\mathrm{softmax}(y_L W_{\\mathrm{out}}),\\; \\mathcal{L}=-\\sum_t \\log p_t$
+4. **FFN**：$z = \\mathrm{GELU}(\\mathrm{LN}(x')W_1)W_2,\\; y = x' + z$
+5. **Head**：最终归一化后, $p_t = \\mathrm{softmax}(\\mathrm{LN}(y_{L,t}) W_{\\mathrm{out}}),\\; \\mathcal{L}=-\\sum_t \\log p_t[\\mathrm{token}_{t+1}]$. $p_t$ 是位置 $t$ 对下一个 token 的类别概率.
 
 $$
-\\mathrm{Attn}(Q,K,V)=\\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d_k}}\\right)V
+\\mathrm{Attn}(Q,K,V)=\\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d_k}}+M\\right)V
 $$
 `.trim(),
   blocks: [
     { label: "Token Embed + Pos", detail: "$x = Ew + P$" },
     { label: "Multi-Head Attn", detail: "$\\mathrm{softmax}(QK^{\\top}/\\sqrt{d})V$" },
-    { label: "FFN", detail: "$\\mathrm{GELU}(xW_1)W_2$" },
+    { label: "FFN", detail: "$\\mathrm{GELU}(\\mathrm{LN}(x')W_1)W_2$" },
     { label: "LayerNorm + Residual", detail: "$x + \\mathrm{Sublayer}(\\mathrm{LN}(x))$" },
     { label: "LM Head", detail: "$\\mathrm{softmax}(h W_{\\mathrm{out}})$" },
   ],
-  stack: ["Embedding", "N × Decoder Block", "RMSNorm", "Vocab Projection"],
+  stack: ["Embedding", "N × Decoder Block", "LayerNorm", "Vocab Projection"],
 };
 
 /**
@@ -128,19 +117,17 @@ $$
 export const MONITOR_FORMULA_CARDS: OfficeFormulaCard[] = [
   {
     id: "ops",
-    title: "见微 · 运行看板",
+    title: "见微 · 工作入口",
     tint: "#0087EB",
-    image: LLM_NOTE_IMAGES.stack,
-    imageAlt: "运行中的数字花园",
     markdown: `
-### Live Ops
+### 工作入口
 
-| 通道 | 状态 |
+| 通道 | 用途 |
 |---|---|
-| Chat SSE | streaming · 2 |
-| Swarm | manager idle |
-| Cron | next 09:00 |
-| HITL | 0 pending |
+| Chat | 与 Agent 对话 |
+| Swarm | 管理 Agent 协作 |
+| Cron | 查看定时任务 |
+| HITL | 处理审批 |
 
 - 推拉结合 · 刷新不丢
 - 本地 Markdown 为真相源
@@ -148,10 +135,8 @@ export const MONITOR_FORMULA_CARDS: OfficeFormulaCard[] = [
   },
   {
     id: "garden",
-    title: "花园 · 今日生长",
+    title: "花园 · 知识组织",
     tint: "#059669",
-    image: LLM_NOTE_IMAGES.encdec,
-    imageAlt: "知识花园索引",
     markdown: `
 ### Gardens
 
@@ -160,18 +145,14 @@ export const MONITOR_FORMULA_CARDS: OfficeFormulaCard[] = [
 3. **资源库** — 素材与清单
 4. **LLM 指南** — 体系化入门
 
-\`post.update\` → FTS5 索引 · 当日 +12
+文章保存后同步本地 Markdown 与搜索索引.
 `.trim(),
   },
   {
     id: "attn",
     title: "Attention · 推导板",
     tint: "#7C3AED",
-    image: LLM_NOTE_IMAGES.encdec,
-    imageAlt: "Scaled Dot-Product Attention",
     markdown: `
-![Attention](${LLM_NOTE_IMAGES.encdec})
-
 $$
 \\mathrm{Attn}(Q,K,V)=\\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d_k}}\\right)V
 $$
@@ -184,8 +165,6 @@ $$
     id: "swarm",
     title: "Swarm · 三层编排",
     tint: "#D97706",
-    image: LLM_NOTE_IMAGES.belial,
-    imageAlt: "多智能体协作",
     markdown: `
 ### Tier
 
@@ -200,8 +179,6 @@ $$
     id: "hitl",
     title: "审批 · HITL",
     tint: "#DB2777",
-    image: LLM_NOTE_IMAGES.zero,
-    imageAlt: "人机协同审批",
     markdown: `
 ### Gate
 
@@ -277,9 +254,6 @@ export const DESK_STICKY_NOTES: DeskStickyNote[] = [
     rotate: 0.05,
   },
 ];
-
-/** @deprecated 弹层仍展示屏幕公式墙；桌面已改用 DESK_STICKY_NOTES */
-export const FORMULA_SHEETS: OfficeFormulaCard[] = MONITOR_FORMULA_CARDS;
 
 export const BOOKSHELF_TITLES = [
   "Deep Learning · Goodfellow",
@@ -392,7 +366,7 @@ export const PROJECTS: OfficeProject[] = [
 
 export const ABOUT_FACTS = [
   { label: "定位", value: "以 Markdown 为原子、AI 为引擎的数字花园" },
-  { label: "工位", value: "L 型电竞桌 · 多屏量化墙 · NVIDIA 推理机架" },
+  { label: "工位", value: "环抱式工作台 · 模型架构屏 · 研究档案" },
   { label: "栈", value: "Next.js 16 · Express · tRPC · Prisma · R3F" },
   { label: "阶段", value: "L1–L5 已落地 · Swarm 心跳就绪" },
   { label: "入口", value: "对话 / 知识库 / Agent 工作台" },
@@ -429,7 +403,7 @@ export const HOTSPOT_META: Record<
   OfficeHotspotId,
   { label: string; overlay: OverlayKind; hint: string }
 > = {
-  monitor: { label: "带鱼屏工作墙", overlay: "projects", hint: "运行看板 · 花园 · Attention · Swarm" },
+  monitor: { label: "研究工作台", overlay: "projects", hint: "应用入口 · 花园 · 模型 · 协作" },
   binder: { label: "速查夹", overlay: "about", hint: "Quick Facts · 关于见微" },
   board: { label: "知识库看板", overlay: "knowledge", hint: "整齐花园目录" },
   map: { label: "旅程地图", overlay: "journey", hint: "L1→Now 演进钉点" },
@@ -438,8 +412,8 @@ export const HOTSPOT_META: Record<
   phone: { label: "手机支架", overlay: "agents", hint: "随时呼叫 Agent" },
   calendar: { label: "台历", overlay: "fun", hint: "今日待办 · 心跳节奏" },
   lamp: { label: "落地灯", overlay: "mood", hint: "切换书房氛围" },
-  server: { label: "NVIDIA 推理机架", overlay: "server", hint: "DGX 风格本地算力" },
+  server: { label: "算力机架", overlay: "server", hint: "本地推理与系统资源" },
   bookshelf: { label: "AI 书架", overlay: "bookshelf", hint: "深度学习与大模型藏书" },
-  chalkboard: { label: "架构黑板", overlay: "architecture", hint: "Transformer 栈板书" },
+  chalkboard: { label: "模型架构屏", overlay: "architecture", hint: "Transformer 的计算顺序" },
   papers: { label: "桌面便签", overlay: "formulas", hint: "手写备忘 · 与屏幕不同源" },
 };

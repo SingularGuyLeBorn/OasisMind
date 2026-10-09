@@ -50,7 +50,7 @@ export function Shell({ children, className }: ShellProps) {
   const showDrawer = mobileMenuOpen && (systemSidebar || postSidebar);
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)]">
+    <div className="om-workbench flex h-[100dvh] flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)]">
       <Navbar mode={mode} onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
 
       <div className="flex min-h-0 flex-1 overflow-hidden">

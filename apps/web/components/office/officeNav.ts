@@ -12,32 +12,32 @@ export const OFFICE_VIEWS: Record<
 > = {
   overview: {
     label: "全景",
-    position: [3.8, 2.9, 5.4],
-    target: [0.3, 1.2, 0],
+    position: [6.2, 4.5, 7.6],
+    target: [0, 1.25, -0.5],
   },
   desk: {
     label: "工位",
-    position: [0.2, 1.55, 2.6],
-    target: [0.1, 1.25, -0.2],
+    position: [0, 2.35, 3.9],
+    target: [0, 1.4, -0.8],
   },
   board: {
-    label: "黑板",
-    position: [1.2, 1.9, -1.8],
-    target: [0.2, 2.4, -4.5],
+    label: "架构",
+    position: [-1.25, 1.9, 1.6],
+    target: [-1.86, 1.65, -0.87],
   },
   server: {
     label: "机架",
-    position: [2.2, 1.6, 2.8],
-    target: [4.0, 1.2, 1.6],
+    position: [2.8, 2, 1.4],
+    target: [3.8, 1.4, -1.7],
   },
   shelf: {
     label: "书架",
-    position: [2.4, 1.7, -1.2],
-    target: [4.5, 1.4, -2.6],
+    position: [-2.7, 2, .4],
+    target: [-3.6, 1.4, -2.65],
   },
 };
 
-/** 房间可行走边界（与 RoomShell 尺寸对齐） */
+/** 房间可行走边界（与新工作室围墙尺寸对齐） */
 export const WALK_BOUNDS = {
   minX: -4.2,
   maxX: 4.2,
