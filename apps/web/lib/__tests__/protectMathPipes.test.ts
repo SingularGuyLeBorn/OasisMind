@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   protectMathPipesInMarkdown,
   protectMathPipesInTex,
-} from "@/lib/protectMathPipes";
+} from "@oasismind/markdown/protectMathPipes";
 
 describe("protectMathPipesInTex", () => {
   it("把 \\| 收成 \\Vert{}，剩余 | 收成 \\vert{}", () => {
     expect(protectMathPipesInTex("\\frac{\\|x\\|^2}{2}")).toBe("\\frac{\\Vert{}x\\Vert{}^2}{2}");
     expect(protectMathPipesInTex("P(a|b)")).toBe("P(a\\vert{}b)");
+  });
+  it("保留 array 的列分隔格式，仍保护单元格中的数学竖线", () => {
+    expect(protectMathPipesInTex("\\begin{array}{c|cc}x|y & a & b\\end{array}"))
+      .toBe("\\begin{array}{c|cc}x\\vert{}y & a & b\\end{array}");
   });
 });
 

@@ -12,7 +12,7 @@ import { RoughAnnotation, type RoughAnnotationProps } from "./RoughAnnotation";
 import { memoizeMarkdownTransform } from "@oasismind/shared";
 import { MarkdownRendererCore } from "@oasismind/markdown";
 import { resolvePostAssetUrl } from "@/lib/postAssetUrl";
-import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
+import { protectMathPipesInMarkdown } from "@oasismind/markdown/protectMathPipes";
 import { MarkdownTable } from "@/components/post/MarkdownTable";
 import { isMathClassName } from "@/components/post/KatexFormula";
 import { KatexHtml } from "@/components/post/KatexHtml";

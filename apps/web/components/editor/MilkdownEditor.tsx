@@ -82,7 +82,7 @@ import {
 } from "@/components/editor/ImageUploadButton";
 import { EditorGenerateImage } from "@/components/editor/EditorGenerateImage";
 import { trpc } from "@/lib/trpc";
-import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
+import { protectMathPipesInMarkdown } from "@oasismind/markdown/protectMathPipes";
 
 export type EditorViewMode = "wysiwyg" | "source";
 

@@ -8,7 +8,7 @@ import { Slice } from "@milkdown/prose/model";
 import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 import type { EditorView } from "@milkdown/prose/view";
 import { $prose } from "@milkdown/utils";
-import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
+import { protectMathPipesInMarkdown } from "@oasismind/markdown/protectMathPipes";
 
 let activeView: EditorView | null = null;
 let editorCtx: Ctx | null = null;

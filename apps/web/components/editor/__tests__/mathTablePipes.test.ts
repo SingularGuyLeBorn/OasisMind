@@ -17,7 +17,7 @@ import {
 } from "@/components/editor/mathBlockNodeView";
 import { mathBlockAlignExtend } from "@/components/editor/mathBlockAlignSchema";
 import { emptyCodeBlockDeleteKeymap } from "@/components/editor/emptyCodeBlockDelete";
-import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
+import { protectMathPipesInMarkdown } from "@oasismind/markdown/protectMathPipes";
 
 function walkMathTex(node: ProseNode, acc: string[]) {
   if (node.type.name === "math_inline") acc.push(node.textContent);

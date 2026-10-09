@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { ReadingOutlineLink } from "@oasismind/markdown/ReadingOutlineLink";
 
 const TOC_VISIBLE_KEY = "om-post-toc-visible";
 const tocListeners = new Set<() => void>();
@@ -285,9 +286,11 @@ export function TableOfContents({
                   ) : (
                     <span className="h-5 w-5 shrink-0" />
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
+                  <ReadingOutlineLink
+                    id={group.heading.id}
+                    active={isActiveGroup}
+                    onClick={(event) => {
+                      event.preventDefault();
                       setActiveId(group.heading.id);
                       scrollToId(group.heading.id, containerRef?.current ?? null);
                     }}
@@ -299,7 +302,7 @@ export function TableOfContents({
                     )}
                   >
                     <span className="line-clamp-2 font-medium">{group.heading.text}</span>
-                  </button>
+                  </ReadingOutlineLink>
                 </div>
 
                 {hasChildren && (
@@ -308,10 +311,12 @@ export function TableOfContents({
                       {group.children.map((child) => {
                         const isActive = activeId === child.id;
                         return (
-                          <button
+                          <ReadingOutlineLink
                             key={child.id}
-                            type="button"
-                            onClick={() => {
+                            id={child.id}
+                            active={isActive}
+                            onClick={(event) => {
+                              event.preventDefault();
                               setActiveId(child.id);
                               scrollToId(child.id, containerRef?.current ?? null);
                             }}
@@ -325,7 +330,7 @@ export function TableOfContents({
                             )}
                           >
                             <span className="line-clamp-2">{child.text}</span>
-                          </button>
+                          </ReadingOutlineLink>
                         );
                       })}
                     </div>

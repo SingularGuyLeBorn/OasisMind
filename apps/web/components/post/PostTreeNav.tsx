@@ -26,29 +26,7 @@ import { VirtualFlatList } from "@/components/post/VirtualFlatList";
 import { isPostPinned, PostTreeDocActions } from "@/components/post/PostTreeDocActions";
 import { flattenVisibleTree, TREE_ROW_HEIGHT } from "@/lib/postTreeFlatten";
 
-interface PostSummary {
-  id: string;
-  slug: string;
-  title: string;
-  garden?: string;
-  published?: boolean;
-}
-
-interface TreeNode {
-  id: string;
-  slug?: string;
-  garden?: string;
-  title: string;
-  key: string;
-  type: "doc" | "group";
-  published?: boolean;
-  children: TreeNode[];
-}
-
-interface TreeItem {
-  post: PostSummary | null;
-  children: Record<string, TreeItem>;
-}
+import { buildReadingTree, type ReadingTreeNode as TreeNode } from "@oasismind/markdown/readingTree";
 
 const EXPANDED_KEY = "om-tree-expanded";
 const SCROLL_KEY = "om-tree-scroll-top";
@@ -60,100 +38,6 @@ const GARDEN_ROOT_LABEL: Record<string, string> = {
   "LargeLanguageModelGuide": "LLM 指南",
   diffusion: "扩散模型",
 };
-
-function buildTree(posts: PostSummary[]): TreeNode[] {
-  const root: Record<string, TreeItem> = {};
-  // 多花园并存时，顶层按花园分组，避免跨花园同 slug 路径撞车
-  const gardens = new Set(posts.map((p) => p.garden ?? "posts"));
-  const multiGarden = gardens.size > 1;
-
-  for (const post of posts) {
-    const garden = post.garden ?? "posts";
-    const parts = multiGarden
-      ? [GARDEN_ROOT_LABEL[garden] ?? garden, ...post.slug.split("/")]
-      : post.slug.split("/");
-    let map = root;
-    let parentItem: TreeItem | null = null;
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-
-      if (
-        i === parts.length - 1 &&
-        parentItem &&
-        (part === "index" || part === parts[i - 1])
-      ) {
-        parentItem.post = post;
-        break;
-      }
-
-      if (!map[part]) {
-        map[part] = { post: null, children: {} };
-      }
-      const item = map[part];
-      if (i === parts.length - 1) {
-        item.post = post;
-      }
-      parentItem = item;
-      map = item.children;
-    }
-  }
-
-  const naturalCompare = (a: string, b: string): number => {
-    const re = /(\d+)|(\D+)/g;
-    const aParts = a.match(re) || [];
-    const bParts = b.match(re) || [];
-    for (let i = 0; i < Math.min(aParts.length, bParts.length); i++) {
-      const aPart = aParts[i];
-      const bPart = bParts[i];
-      const aNum = parseInt(aPart, 10);
-      const bNum = parseInt(bPart, 10);
-      const bothNums = !Number.isNaN(aNum) && !Number.isNaN(bNum);
-      if (bothNums) {
-        if (aNum !== bNum) return aNum - bNum;
-      } else {
-        const cmp = aPart.localeCompare(bPart, "zh-CN");
-        if (cmp !== 0) return cmp;
-      }
-    }
-    return aParts.length - bParts.length;
-  };
-
-  /** 花园同名索引文（如 llm-guide/llm-guide）置顶，其余按自然序 */
-  const isGardenIndex = (n: TreeNode) =>
-    !!n.slug && !!n.garden && n.slug === n.garden;
-
-  const sortNodes = (a: TreeNode, b: TreeNode) => {
-    const ap = isGardenIndex(a) ? 0 : 1;
-    const bp = isGardenIndex(b) ? 0 : 1;
-    if (ap !== bp) return ap - bp;
-    const aPin = a.slug && a.garden && isPostPinned(a.garden, a.slug) ? 0 : 1;
-    const bPin = b.slug && b.garden && isPostPinned(b.garden, b.slug) ? 0 : 1;
-    if (aPin !== bPin) return aPin - bPin;
-    return naturalCompare(a.key, b.key);
-  };
-
-  const convert = (key: string, item: TreeItem): TreeNode => {
-    const children = Object.entries(item.children)
-      .map(([childKey, childItem]) => convert(childKey, childItem))
-      .sort(sortNodes);
-    const post = item.post;
-    return {
-      id: post?.id || `group-${key}`,
-      slug: post?.slug,
-      garden: post?.garden,
-      title: post?.title || key,
-      key,
-      type: post ? "doc" : "group",
-      published: post?.published,
-      children,
-    };
-  };
-
-  return Object.entries(root)
-    .map(([key, item]) => convert(key, item))
-    .sort(sortNodes);
-}
 
 function getPostSlug(pathname: string) {
   const match = pathname.match(/^\/posts\/(.+)$/);
@@ -361,7 +245,7 @@ export function PostTreeNav({
   const [pinTick, setPinTick] = useState(0);
   const tree = useMemo(() => {
     void pinTick;
-    return buildTree(data || []);
+    return buildReadingTree(data || [], { gardenLabels: GARDEN_ROOT_LABEL, isPinned: isPostPinned });
   }, [data, pinTick]);
   const [manuallyExpanded, setManuallyExpanded] = useState<Map<string, boolean>>(() => {
     try {

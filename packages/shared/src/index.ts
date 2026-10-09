@@ -10,3 +10,4 @@ export * from "./displayLabels";
 export * from "./entityTags";
 export * from "./packs";
 export * from "./evalSchemas";
+export * from "./aboutProfile";

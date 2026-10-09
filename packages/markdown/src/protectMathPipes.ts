@@ -6,7 +6,9 @@
 
 export function protectMathPipesInTex(tex: string): string {
   // `{}` 断开控制字，避免 `\Vertx` 被读成未知命令
-  return tex.replace(/\\\|/g, "\\Vert{}").replace(/\|/g, "\\vert{}");
+  return tex.split(/(\\begin\{array\}\{[^{}]*\})/g).map(part =>
+    /^\\begin\{array\}\{/.test(part) ? part : part.replace(/\\\|/g, "\\Vert{}").replace(/\|/g, "\\vert{}")
+  ).join("");
 }
 
 function isLineStart(src: string, i: number): boolean {

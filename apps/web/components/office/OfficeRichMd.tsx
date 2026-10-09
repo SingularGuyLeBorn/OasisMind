@@ -14,7 +14,7 @@ import remarkMath from "remark-math";
 import { isMathClassName } from "@/components/post/KatexFormula";
 import { KatexHtml } from "@/components/post/KatexHtml";
 import { cn } from "@/lib/utils";
-import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
+import { protectMathPipesInMarkdown } from "@oasismind/markdown/protectMathPipes";
 
 function getText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
