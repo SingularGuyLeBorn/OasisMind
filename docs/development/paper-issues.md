@@ -119,6 +119,7 @@
 ### 交接文档里已知的条目
 
 - **nsa-1** NSA (arXiv 2502.11089) 式 (9): 下标有误. 详见 `content/deepseek/2-架构与算法/2.3-nsa/02-nsa-analysis.md`. 求证结果:
+- **nsa-2** NSA arXiv2502.11089v1式(7)写压缩窗口下标从 $i=1$ 开始, 数量为 $\lfloor(t-l)/d\rfloor$; 若采用从第一个token开始、$i=0$ 的完整窗口枚举, 数量应多1. 此处记录下标口径差异, 未根据HTML直接断言实现遗漏窗口. SparseAttention训练原生首页采用零起点教学计数并单独说明, 不能把4095称为论文式(7)原样给出的数量. 来源: https://arxiv.org/html/2502.11089v1#S3.SS3.SSS1 .
 - **engram-1** Engram: 摘要写 MMLU +3.4, 表中为 +3.0. 详见 `content/deepseek/2-架构与算法/2.4-engram/02-engram-analysis.md`. 求证结果:
 - **janusflow-1** JanusFlow (arXiv 2411.07975): Table 6 FID 用 MJHQ-10k, CFG 7.5; 附录 Figure 2 纵轴标 FID-30k. 求证结果:
 - **vl2-1** DeepSeek-VL2 (arXiv 2412.10302): 代码选分辨率是最大化有效像素, 论文写最小化填充. 求证结果:
