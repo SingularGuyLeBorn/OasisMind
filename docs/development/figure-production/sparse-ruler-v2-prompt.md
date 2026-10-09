@@ -1,0 +1,3 @@
+# RULER候选v2局部修订
+
+Edit the technical RULER diagram. Preserve all panels, exact text, all counts and assignments. Fix only two arrow issues: A panel remove the amber upward arrow below beta=23 entirely, retaining the text 相似但不选 as a plain annotation without any arrow. D panel reroute the query-to-yellow-report arrow around the LEFT outside edge of the gray distractor box: start from left edge of teal query, go left, then upward, then right into left edge of yellow report. It must not cross or pass under the gray box, all segments visibly continuous. Preserve the yellow report-to-answer arrow, all B and C arrows, title and style. No new elements.

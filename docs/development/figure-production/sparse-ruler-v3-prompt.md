@@ -1,0 +1,3 @@
+# RULER候选v3局部修订
+
+Edit only panel D of this exact figure. Remove the OLD central vertical arrow path completely: erase the navy line from the TOP CENTER of teal query box at x approx 970,y830 upward to bottom center of gray distractor at y785, AND erase upward arrow segment from gray box top y720 to yellow report bottom y696. There must be absolutely NO central vertical line between teal/gray/yellow. Retain NEW continuous left-side path from query LEFT edge around x787 to yellow report LEFT edge, and retain right-side yellow-report-to-answer path. Preserve gray box and every text. All panels A,B,C unchanged. No other modifications.
