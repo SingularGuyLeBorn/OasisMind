@@ -27,8 +27,12 @@ const sharp = require('../../../apps/server/node_modules/sharp');
         assert.ok(state.src.includes(hash(source)));
         const expected = await sharp(source).rotate().resize({ width: 2400, withoutEnlargement: true }).webp({ quality: 82, effort: 4 }).toBuffer();
         assert.equal(hash(await asset.body()), hash(expected));
+        const enlarged = new URL(await page.getByRole('link', { name: '放大查看内核数据流图', exact: true }).getAttribute('href'), url).href;
+        const enlargedResponse = await page.request.get(enlarged);
+        assert.equal(enlargedResponse.status(), 200);
+        assert.equal(hash(await enlargedResponse.body()), hash(expected));
         await page.screenshot({ path: `docs/development/figure-production/sparse-kernel-site-${width}.png` });
-        console.log(JSON.stringify({ articleStatus: 200, assetStatus: 200, sourceHashMatches: true, webpBytesMatch: true, originalLinkCount: await page.getByRole('link', { name: '查看原尺寸图', exact: true }).count(), katexErrors: 0, ...layout, ...state }));
+        console.log(JSON.stringify({ articleStatus: 200, assetStatus: 200, enlargedStatus: 200, sourceHashMatches: true, webpBytesMatch: true, katexErrors: 0, ...layout, ...state }));
       } finally { await page.close(); }
     }
   } finally { await browser.close(); }
