@@ -18,6 +18,9 @@ function compile(relative: string, content: string, excerptHtml?: string) {
 for (const summary of manifest.posts) {
   const post = getPost(summary.garden, summary.slug);
   if (!post) throw new Error(`发布清单中的文章丢失：${summary.id}`);
+  if (/…\d+ tokens truncated…/.test(post.content) || post.content.includes('\0')) {
+    throw new Error(`文章内容已损坏，停止发布：${summary.id}`);
+  }
   excerpts[summary.id] = renderToStaticMarkup(preparePublicMarkdown(post.excerpt).body);
   compile(`posts/${summary.garden}/${summary.slug}.json`, post.content, excerpts[summary.id]);
 }

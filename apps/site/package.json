@@ -6,7 +6,7 @@
     "dev": "tsx scripts/compile-reading.tsx && next dev",
     "lint": "eslint . && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "build": "tsx scripts/compile-reading.tsx && next build && node scripts/finalize-static.mjs",
+    "build": "tsx scripts/compile-reading.tsx && node scripts/audit-math-errors.mjs && next build && node scripts/finalize-static.mjs",
     "verify:export": "node scripts/verify-export.mjs",
     "verify:pages": "node scripts/verify-pages-artifact.mjs"
   },

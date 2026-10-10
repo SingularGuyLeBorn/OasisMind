@@ -14,6 +14,7 @@ import remarkMath from "remark-math";
 import { markdownSanitizeSchema, safeMarkdownUrlTransform } from "./security";
 import { normalizeMathMarkdown } from "./normalizeMathMarkdown";
 import { protectMathPipesInMarkdown } from "./protectMathPipes";
+import { mathInHtml } from "./mathInHtml";
 
 export interface MarkdownHeading {
   id: string;
@@ -81,7 +82,7 @@ export function buildMarkdownDocument({
   const body = ReactMarkdown({
     children: protectMathPipesInMarkdown(normalizeMathMarkdown(content)),
     remarkPlugins: [remarkMath, remarkGfm],
-    rehypePlugins: [rehypeRaw, ...rehypePluginsBeforeSanitize, [rehypeSanitize, markdownSanitizeSchema], ...afterSanitize],
+    rehypePlugins: [rehypeRaw, mathInHtml, ...rehypePluginsBeforeSanitize, [rehypeSanitize, markdownSanitizeSchema], ...afterSanitize],
     remarkRehypeOptions,
     urlTransform: safeMarkdownUrlTransform,
     components,

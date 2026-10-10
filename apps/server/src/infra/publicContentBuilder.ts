@@ -209,7 +209,7 @@ function discoverGardens(contentDir: string, warnings: string[]): DiscoveredGard
       } catch (error) {
         // 解析失败时不尝试正则提取正文，以免绕开 YAML 发布开关。
         const message = error instanceof Error ? error.message : String(error);
-        warnings.push(`花园元数据无效，首页按未发布处理：${entry.name}/${GARDEN_META_FILE}（${message}）`);
+        throw new Error(`花园元数据无效，停止发布：${entry.name}/${GARDEN_META_FILE}（${message}）`);
       }
     }
 
@@ -417,12 +417,9 @@ export async function buildPublicContent(options: PublicContentBuildOptions): Pr
         try {
           parsed = matter(fs.readFileSync(articlePath, "utf8"));
         } catch (error) {
-          // 无法可靠解析 frontmatter 就无法证明 published 为布尔 true，因此必须跳过。
+          // 用户要求修复缺页；不能因标题格式损坏而静默减少公开页面，也不能猜测发布状态。
           const message = error instanceof Error ? error.message : String(error);
-          warnings.push(
-            `文章 frontmatter 无效，已按未发布跳过：${toPosixPath(path.relative(contentDir, articlePath))}（${message}）`,
-          );
-          continue;
+          throw new Error(`文章 frontmatter 无效，停止发布：${toPosixPath(path.relative(contentDir, articlePath))}（${message}）`);
         }
         if (parsed.data.published !== true) continue;
 

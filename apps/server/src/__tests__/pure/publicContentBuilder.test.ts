@@ -324,7 +324,7 @@ describe("buildPublicContent", () => {
     expect(fs.existsSync(path.join(outputDir, "assets"))).toBe(false);
   });
 
-  it("frontmatter 损坏时安全跳过并报告，不从正文猜测发布状态", async () => {
+  it("花园 frontmatter 损坏时停止发布，不让首页悄悄消失", async () => {
     const { contentDir, outputDir } = createFixture();
     fs.writeFileSync(
       path.join(contentDir, "notes", "_garden.md"),
@@ -339,14 +339,15 @@ describe("buildPublicContent", () => {
       "---\ntitle: 正常文章\npublished: true\n---\n可以公开\n",
     );
 
-    const result = await buildPublicContent({ contentDir, outputDir });
-    expect(result.postCount).toBe(1);
-    expect(result.warnings).toHaveLength(2);
-    expect(result.warnings.join("\n")).toContain("按未发布");
+    await expect(buildPublicContent({ contentDir, outputDir })).rejects.toThrow("花园元数据无效，停止发布");
+    expect(fs.existsSync(path.join(outputDir, "index.json"))).toBe(false);
+  });
 
-    const index = JSON.parse(fs.readFileSync(path.join(outputDir, "index.json"), "utf8"));
-    expect(index.gardens[0].homeContent).toBe("");
-    expect(index.posts.map((post: { id: string }) => post.id)).toEqual(["notes/healthy"]);
+  it("文章 frontmatter 损坏时停止发布，不从坏 YAML 猜测发布状态", async () => {
+    const { contentDir, outputDir } = createFixture();
+    fs.writeFileSync(path.join(contentDir, "notes", "broken.md"), "---\ntitle: 非法: 冒号\npublished: true\n---\n正文\n");
+    await expect(buildPublicContent({ contentDir, outputDir })).rejects.toThrow("文章 frontmatter 无效，停止发布");
+    expect(fs.existsSync(path.join(outputDir, "index.json"))).toBe(false);
   });
 
   it("验证器拒绝生成目录中的额外文件与字段漂移", async () => {
