@@ -26,6 +26,42 @@ async function assertTreeAlignment(page) {
   assert.ok(result.numeric.every(value => value.includes('tabular-nums')), '目录编号使用等宽数字');
 }
 
+async function assertSpatialNavigation(page, screenshot) {
+  const space = page.locator('[data-spatial-navigator]').first();
+  await space.waitFor({ state: 'visible' });
+  const links = space.locator('.om-spatial-volume');
+  assert.ok(await links.count() > 0);
+  const hrefs = await links.evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+  for (const view of ['shelf', 'orbit', 'folio']) {
+    await space.locator(`input[value="${view}"]`).check();
+    assert.equal(await space.locator(`input[value="${view}"]`).isChecked(), true);
+    assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => node.getAttribute('href'))), hrefs, '切视图不能换掉真实阅读入口');
+  }
+  await space.locator('input[value="orbit"]').check();
+  const rotation = space.locator('[data-spatial-rotation]');
+  await rotation.focus();
+  await rotation.press('ArrowRight');
+  await page.waitForFunction(() => document.querySelector('[data-spatial-navigator]').style.getPropertyValue('--spatial-turn') !== '');
+  assert.equal(await rotation.getAttribute('aria-valuetext'), '1 度');
+  await space.evaluate(async element => {
+    getComputedStyle(element.querySelector('.om-spatial-world')).transform;
+    await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {})));
+  });
+  assert.equal(await space.evaluate(element => {
+    const controls = element.querySelector('.om-spatial-turn').getBoundingClientRect();
+    return [...element.querySelectorAll('.om-spatial-volume')].every(link => link.getBoundingClientRect().bottom <= controls.top + 1);
+  }), true, '立体内容不能遮挡旋转控件');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+  if (screenshot) {
+    await space.evaluate(async element => {
+      getComputedStyle(element.querySelector('.om-spatial-world')).transform;
+      await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {})));
+      window.scrollTo({ top: element.getBoundingClientRect().top + scrollY - 130, behavior: 'instant' });
+    });
+    await space.screenshot({ path: screenshot });
+  }
+}
+
 async function main() {
   const server = http.createServer((req, res) => {
     const requestPath = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
@@ -78,6 +114,13 @@ async function main() {
       assert.ok(await page.locator('.knowledge-tree .tree-chevron').count() > 0);
       assert.equal(await page.locator('.katex-error').count(), 0);
       assert.equal(await page.locator('.knowledge-tree a[aria-current="page"]').count(), 1);
+      await page.locator('.om-spatial-disclosure > summary').click();
+      await assertSpatialNavigation(page);
+      const spatialHeading = await page.locator('.om-spatial-volume').first().getAttribute('href');
+      assert.equal(await page.evaluate(href => Boolean(document.getElementById(decodeURIComponent(href.slice(1)))), spatialHeading), true);
+      await page.locator('.om-spatial-volume').first().click();
+      assert.equal(new URL(page.url()).hash, spatialHeading, '立体章节入口应能跳到真实标题');
+      await page.locator('.om-spatial-disclosure > summary').click();
       if (width > 900) await assertTreeAlignment(page);
       const outline = await page.locator('.article-toc a').evaluateAll(links => links.map(a => a.getAttribute('href')));
       assert.ok(outline.length > 2);
@@ -185,6 +228,7 @@ async function main() {
       await page.screenshot({ path: path.join(evidence, `home-${width}.png`), fullPage: false });
 
       await page.goto(new URL('knowledge', base).href, { waitUntil: 'networkidle' });
+      await assertSpatialNavigation(page, path.join(evidence, `knowledge-spatial-${width}.png`));
       assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
       await page.screenshot({ path: path.join(evidence, `knowledge-${width}.png`), fullPage: true });
       await page.goto(new URL('resources', base).href, { waitUntil: 'networkidle' });
@@ -279,6 +323,10 @@ async function main() {
     await noJs.locator('.om-showcase-tabs label').nth(2).click();
     assert.equal(await noJs.locator('.om-showcase-page--3').isVisible(), true, '首页展台禁用脚本仍应可切换');
     assert.equal(await noJs.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    await noJs.goto(new URL('knowledge', base).href, { waitUntil: 'domcontentloaded' });
+    await noJs.locator('[data-spatial-navigator] input[value="orbit"]').check();
+    assert.equal(await noJs.locator('[data-spatial-navigator] input[value="orbit"]').isChecked(), true);
+    assert.ok(await noJs.locator('.om-spatial-volume').count() > 0, '禁用脚本仍能切换视图并进入真实内容');
     await noJs.goto(article, { waitUntil: 'domcontentloaded' });
     assert.ok((await noJs.locator('[data-reading-content] .article-prose').innerText()).length > 3000);
     assert.ok(await noJs.locator('.katex').count() > 0);

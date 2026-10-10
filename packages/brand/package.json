@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./styles.css": "./styles.css",
     "./office": "./src/OfficeScene.tsx",
-    "./office-navigation": "./src/officeNav.ts"
+    "./office-navigation": "./src/officeNav.ts",
+    "./spatial-interactions": "./src/spatialInteractions.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",

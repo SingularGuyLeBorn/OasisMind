@@ -10,6 +10,7 @@ import {
 } from "@/components/home/ArticleUpdateCalendar";
 import { FeatureBento } from "@/components/home/FeatureBento";
 import { GardenCardOrganizer } from "@/components/home/GardenCardOrganizer";
+import { SpatialNavigator } from "@oasismind/brand";
 import { AgentConversationDemo } from "@/components/home/AgentConversationDemo";
 import { TechMarquee } from "@/components/home/TechMarquee";
 import { RecentIntelligence } from "@/components/home/RecentIntelligence";
@@ -84,6 +85,7 @@ export function HomeDataSections() {
       </div>
       <ArticleUpdateCalendar data={activity} />
       <GardenCardOrganizer gardens={gardens} />
+      <SpatialNavigator id="owner-home-library" title="知识库展台" compact entries={gardens.map(garden => ({ title: garden.title, href: `/gardens/${encodeURIComponent(garden.id)}` }))} />
       <FeatureBento />
       <AgentConversationDemo />
       <TechMarquee />

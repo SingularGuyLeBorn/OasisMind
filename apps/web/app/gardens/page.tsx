@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { GardenArtwork, gardenArtworkPalette, gardenCardComposition } from "@oasismind/brand";
+import { GardenArtwork, gardenArtworkPalette, gardenCardComposition, SpatialNavigator } from "@oasismind/brand";
 import { cn } from "@/lib/utils";
 import { ArrowRight, ChevronRight, FileText, Layers, Plus, Trash2 } from "lucide-react";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
@@ -150,6 +150,8 @@ export default function GardensPage() {
             </motion.button>
           </div>
         </motion.header>
+
+        <SpatialNavigator id="owner-library" title="知识库展台" entries={items.map(garden => ({ title: garden.title, href: `/gardens/${encodeURIComponent(garden.id)}`, caption: `${garden.postCount ?? 0} 篇文章` }))} />
 
         <ContinueReadingCard className="mx-auto mb-10 max-w-xl" />
 

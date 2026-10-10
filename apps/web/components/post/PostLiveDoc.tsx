@@ -7,7 +7,7 @@
  * 实时保存与源码→预览切换都基于同一份 markdown 字符串，避免两套渲染逻辑漂移。
  */
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Eye, PenLine } from "lucide-react";
 import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
@@ -16,7 +16,8 @@ import {
   type EditorViewMode,
 } from "@/components/editor/MilkdownEditor";
 import { PostContent } from "@/components/post/PostContent";
-import { TableOfContents, usePostTocVisible } from "@/components/post/TableOfContents";
+import { TableOfContents, usePostTocVisible, buildTocItems } from "@/components/post/TableOfContents";
+import { SpatialNavigator } from "@oasismind/brand";
 import { PageSearch } from "@/components/post/PageSearch";
 import { SelectionExplain } from "@/components/post/SelectionExplain";
 import {
@@ -54,6 +55,7 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
 
   const [title, setTitle] = useState(post.title);
   const [content, setContent] = useState(post.content);
+  const spatialEntries = useMemo(() => buildTocItems(content).filter(heading => heading.level <= 3).map(heading => ({ title: heading.text, href: `#${heading.id}` })), [content]);
   const [mode, setMode] = useState<EditorViewMode>("wysiwyg");
   // 阅读态/编辑态：默认阅读；点「编辑」后编辑器只初始化一次，之后显隐切换
   const [editing, setEditing] = useState(false);
@@ -220,6 +222,8 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
             </div>
           )}
         </header>
+
+        {!editing && <SpatialNavigator id={`owner-article-${post.id}`} title="本篇阅读入口" compact entries={spatialEntries} />}
 
         {/* 阅读态静态渲染（首开零编辑器成本）；点过「编辑」的文档两个渲染面都常驻，显隐切换 */}
         <div ref={readContentRef} hidden={editing}>

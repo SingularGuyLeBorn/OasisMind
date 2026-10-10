@@ -4,7 +4,7 @@ export function finalizeReadingHtml(original, scriptUrl, navigationUrl) {
     /type="application\/(?:json|ld\+json)"/.test(attrs) ? match : "");
   html = html.replace(/<link\b[^>]*(?:as="script"|rel="modulepreload")[^>]*>/g, "");
   const scripts = [];
-  if (html.includes("data-reading-content=")) scripts.push(`<script type="module" src="${navigationUrl}"></script>`);
+  if (html.includes("data-reading-content=") || html.includes("data-spatial-navigator=")) scripts.push(`<script type="module" src="${navigationUrl}"></script>`);
   if (html.includes("data-public-widget=")) scripts.push(`<script type="module" src="${scriptUrl}"></script>`);
   if (scripts.length) html = html.replace("</body>", scripts.join("") + "</body>");
   return html;

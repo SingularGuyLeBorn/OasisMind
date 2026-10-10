@@ -277,3 +277,78 @@
   .om-library-card[data-composition="timeline"]:hover .om-card-visual::before { transform: scaleX(.85); }
 }
 @media (prefers-reduced-motion: reduce) { .om-library-card .om-card-visual::before, .om-library-card .om-card-visual::after { transition: none; } }
+
+/* [OM-FREEPLAY] 阅读空间采用书页、球体与轨道，保留现有主题色；用户操作时才发生运动。 */
+.om-spatial { --spatial-turn: 0deg; position: relative; isolation: isolate; margin: 24px 0 32px; padding: 24px; border: 1px solid var(--om-divider); border-radius: 24px; color: var(--om-text-1); background: radial-gradient(ellipse at 60% 45%, color-mix(in srgb, var(--om-brand) 8%, transparent), transparent 65%), var(--om-bg, #fcfcf9); overflow: hidden; }
+.om-spatial-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; }
+.om-spatial-heading span { font-size: 10px; letter-spacing: .12em; color: var(--om-text-3); }
+.om-spatial-heading h2 { margin: 5px 0 0; font-size: 22px; line-height: 1.5; font-weight: 650; }
+.om-spatial-heading p { margin: 0; font-size: 12px; color: var(--om-text-2); }
+.om-spatial-views { display: flex; gap: 6px; border: 0; margin: 18px 0 0; padding: 0; }
+.om-spatial-views legend { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+.om-spatial-views label { position: relative; cursor: pointer; }
+.om-spatial-views input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.om-spatial-views span { display: block; padding: 8px 18px; border: 1px solid var(--om-divider); border-radius: 99px; font-size: 12px; background: var(--om-bg); }
+.om-spatial-views input:checked + span { color: var(--om-brand-deep); border-color: var(--om-brand); background: var(--om-brand-soft); }
+.om-spatial-views input:focus-visible + span { outline: 2px solid var(--om-brand); outline-offset: 3px; }
+.om-spatial-stage { height: 340px; position: relative; perspective: 1200px; }
+.om-spatial-world { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateY(var(--spatial-turn)); transition: transform .18s ease-out; }
+.om-spatial-plinth { position: absolute; left: 8%; right: 8%; top: 65%; height: 40%; border-radius: 50%; transform: rotateX(72deg); border: 1px solid color-mix(in srgb, var(--om-brand) 22%, transparent); background: radial-gradient(ellipse, color-mix(in srgb, var(--om-brand) 10%, transparent), transparent 72%); box-shadow: 0 16px 25px -18px var(--om-brand); }
+.om-spatial-world nav { transform-style: preserve-3d; position: absolute; inset: 0; }
+.om-spatial-volume { position: absolute; top: calc(25px + var(--volume-row) * 151px); left: calc(5% + var(--volume-column) * 31%); width: 27%; height: 125px; color: var(--om-text-1); text-decoration: none; transform: rotateY(-16deg) rotateZ(-2deg); transform-style: preserve-3d; transition: transform .35s ease, top .35s ease, left .35s ease, box-shadow .25s; }
+.om-spatial-cover { display: flex; flex-direction: column; position: absolute; inset: 0; padding: 14px 15px; border: 1px solid color-mix(in srgb, var(--om-brand) 23%, var(--om-divider)); border-radius: 3px 13px 13px 3px; background: linear-gradient(110deg, color-mix(in srgb, var(--om-brand) 11%, var(--om-bg, white)), var(--om-bg, white) 24%, #f7f5ed); box-shadow: 7px 10px 18px #12332d15; transform: translateZ(10px); }
+.om-spatial-cover small { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--om-text-3); }
+.om-spatial-cover strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; font-size: 14px; line-height: 1.5; font-weight: 650; }
+.om-spatial-cover em { margin-top: auto; font-style: normal; font-size: 10px; color: var(--om-text-3); }
+.om-spatial-spine { position: absolute; left: -9px; top: 0; bottom: 0; width: 20px; transform: rotateY(-90deg); border-radius: 3px; background: color-mix(in srgb, var(--om-brand) 30%, var(--om-bg, white)); }
+.om-spatial-page-edge { position: absolute; inset: 4px -6px 4px 4px; border: 1px solid var(--om-divider); border-radius: 4px 10px 10px 4px; background: repeating-linear-gradient(0deg, #faf9f2 0 3px, #deddd1 3px 4px); }
+.om-spatial-orb { position: absolute; left: calc(50% - 80px); top: 88px; width: 160px; height: 160px; transform-style: preserve-3d; opacity: .12; transition: opacity .35s, transform .35s; }
+.om-spatial-orb i { position: absolute; inset: -20px; border-radius: 50%; border: 1px solid var(--om-brand); transform: rotateX(65deg) rotateZ(-30deg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--om-brand) 4%, transparent); }
+.om-spatial-orb i:nth-child(2) { transform: rotateY(65deg) rotateZ(30deg); }
+.om-spatial-orb i:nth-child(3) { transform: rotateY(-40deg) rotateX(25deg); inset: -35px; }
+.om-spatial-orb b { position: absolute; inset: 20px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #fff, color-mix(in srgb, var(--om-brand) 18%, white) 32%, var(--om-brand-deep) 95%); box-shadow: inset -14px -12px 24px #102c3233, 10px 15px 22px #102c3212; }
+.om-spatial-orb em { position: absolute; inset: 20px; border-radius: 50%; background: repeating-linear-gradient(0deg, transparent 0 13px, #ffffff60 13px 14px); transform: rotateZ(-20deg); }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-orb { opacity: .85; transform: rotateY(calc(var(--spatial-turn) * -1)); }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume { width: 26%; height: 92px; transform: rotateY(0) translateZ(25px); }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(1) { left: 0; top: 35px; }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(2) { left: 37%; top: 0; }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(3) { left: 74%; top: 35px; }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(4) { left: 0; top: 220px; }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(5) { left: 37%; top: 245px; }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(6) { left: 74%; top: 220px; }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-cover { border-radius: 14px; background: var(--om-bg, #fcfcf9); }
+.om-spatial:has(input[value="orbit"]:checked) .om-spatial-cover em { display: none; }
+.om-spatial:has(input[value="folio"]:checked) .om-spatial-volume { transform: rotateZ(calc((var(--volume-column) - 1) * 7deg)) rotateX(16deg) translateZ(calc(var(--volume-row) * 20px)); }
+.om-spatial:has(input[value="folio"]:checked) .om-spatial-cover { border-radius: 1px; border-top: 3px solid var(--om-brand); background: repeating-linear-gradient(0deg, #fcfbf5 0 22px, #e4e7dd55 22px 23px); }
+.om-spatial-turn { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 11px; color: var(--om-text-2); }
+.om-spatial-turn input { width: 150px; height: 28px; accent-color: var(--om-brand); cursor: ew-resize; }
+.om-spatial-turn span { font-size: 10px; color: var(--om-text-3); }
+.om-spatial-disclosure { margin: 16px 0 28px; }
+.om-spatial-disclosure > summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border: 1px solid var(--om-divider); border-radius: 12px; font-size: 12px; cursor: pointer; list-style: none; color: var(--om-brand-deep); background: var(--om-brand-soft); }
+.om-spatial-disclosure > summary::-webkit-details-marker { display: none; }
+.om-spatial-disclosure[open] > summary > span { color: var(--om-text-3); }
+.om-spatial-disclosure .om-spatial { margin-top: 8px; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .om-spatial-volume:hover { transform: rotateY(0) translateZ(35px) translateY(-6px) !important; }
+  .om-library-card:hover .om-card-visual { perspective: 600px; }
+  .om-library-card[data-composition="folio"]:hover .om-card-visual > .om-garden-art { transform: translate(-50%, -50%) rotateY(-22deg) rotateZ(-5deg) scale(1.1); }
+  .om-library-card[data-composition="mist"]:hover .om-card-visual > .om-garden-art { transform: translate(-50%, -50%) rotateX(18deg) rotateZ(12deg) scale(1.6); }
+}
+.om-spatial-volume:focus-visible { outline: 2px solid var(--om-brand); outline-offset: 6px; border-radius: 8px; }
+@media (max-width: 480px) {
+  .om-spatial { padding: 18px 12px; border-radius: 18px; }
+  .om-spatial-heading { display: block; padding-inline: 5px; }
+  .om-spatial-heading h2 { font-size: 19px; }
+  .om-spatial-heading p { margin-top: 6px; }
+  .om-spatial-stage { height: 340px; perspective: 1000px; }
+  .om-spatial-volume { width: 28%; left: calc(3% + var(--volume-column) * 33%); height: 108px; top: calc(28px + var(--volume-row) * 135px); }
+  .om-spatial-cover { padding: 10px 8px; }
+  .om-spatial-cover strong { font-size: 11px; -webkit-line-clamp: 3; }
+  .om-spatial-cover em { display: none; }
+  .om-spatial-orb { width: 110px; height: 110px; left: calc(50% - 55px); top: 100px; }
+  .om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(n+4) { top: 208px; }
+  .om-spatial:has(input[value="orbit"]:checked) .om-spatial-volume:nth-child(5) { top: 228px; }
+  .om-spatial-turn { gap: 8px; }
+  .om-spatial-turn input { width: 100px; }
+}
+@media (prefers-reduced-motion: reduce) { .om-spatial-world, .om-spatial-volume, .om-spatial-orb { transition: none; } }

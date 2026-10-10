@@ -6,6 +6,7 @@ import { getReadingDocument, PublicMarkdown } from "@/components/PublicMarkdown"
 import { ReadingNavigation } from "@/components/ReadingNavigation";
 import { withSiteBasePath } from "@/siteConfig";
 import { readingLocation } from "@/lib/publicRoutes";
+import { SpatialNavigator } from "@oasismind/brand";
 
 export function ArticleReader({ post, gardenTitle, posts }: {
   post: PublicPost; gardenTitle: string; posts: PublicPostSummary[];
@@ -22,6 +23,7 @@ export function ArticleReader({ post, gardenTitle, posts }: {
         <h1>{post.title}</h1><div className="article-excerpt" dangerouslySetInnerHTML={{ __html: document.excerptHtml }} />
         <div className="tag-row">{post.tags.map((tag) => <Link href={`/tags/${encodeURIComponent(tag)}`} key={tag}>#{tag}</Link>)}</div>
       </header>
+      <SpatialNavigator id={`public-article-${post.id}`} title="本篇阅读入口" compact entries={document.headings.filter(heading => heading.level <= 3).map(heading => ({ title: heading.text, href: `#${encodeURIComponent(heading.id)}` }))} />
       <PublicMarkdown html={document.html} />
       <footer className="article-api-note"><Braces size={18} />
         <div><strong>给 Agent 的只读入口</strong><p>这篇文章同时提供稳定的 JSON 和 Markdown。</p></div>

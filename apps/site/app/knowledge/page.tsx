@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { GardenCards } from "@/components/GardenCards";
 import { SiteLink } from "@/components/SiteLink";
 import { getManifest } from "@/lib/publicContent";
+import { SpatialNavigator } from "@oasismind/brand";
+import { withSiteBasePath } from "@/siteConfig";
 
 export const metadata: Metadata = { title: "知识库", description: "先选择知识库，再沿目录阅读。" };
 export default function KnowledgePage() {
@@ -11,6 +13,7 @@ export default function KnowledgePage() {
       <SiteLink href="/search" className="primary-button">搜索所有文章</SiteLink>
       <SiteLink href="/office" className="text-link knowledge-office-link">或在 3D 研究工作室里探索</SiteLink>
     </header>
+    <SpatialNavigator id="public-library" title="知识库展台" entries={gardens.map(garden => ({ title: garden.title, href: withSiteBasePath(`/gardens/${encodeURIComponent(garden.id)}`), caption: `${garden.postCount} 篇文章` }))} />
     <GardenCards gardens={gardens} />
   </div>;
 }

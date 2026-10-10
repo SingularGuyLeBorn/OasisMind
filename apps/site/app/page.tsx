@@ -7,7 +7,8 @@ import { ArrowRight, BookOpen, Search } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
 import { GardenCards } from "@/components/GardenCards";
 import { getManifest } from "@/lib/publicContent";
-import { ReadingShowcase } from "@oasismind/brand";
+import { ReadingShowcase, SpatialNavigator } from "@oasismind/brand";
+import { withSiteBasePath } from "@/siteConfig";
 
 export default function HomePage() {
   const manifest = getManifest();
@@ -55,6 +56,7 @@ export default function HomePage() {
         <div className="site-shell section-block">
           <div className="section-heading"><div><p className="section-kicker">按主题阅读</p><h2>知识库</h2><p className="section-description">从一套基础，到一条研究路线。每个主题都有自己的目录与深入路径。</p></div><Link href="/knowledge">全部知识库 <ArrowRight size={16} /></Link></div>
           <GardenCards gardens={gardens} />
+          <SpatialNavigator id="public-home-library" title="知识库展台" compact entries={gardens.map(garden => ({ title: garden.title, href: withSiteBasePath(`/gardens/${encodeURIComponent(garden.id)}`) }))} />
         </div>
       </section>
       <section className="site-shell section-block">

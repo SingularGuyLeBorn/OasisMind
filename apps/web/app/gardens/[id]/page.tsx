@@ -18,7 +18,7 @@ import { CurlyMark } from "@/components/home/accentMark";
 import { Skeleton } from "@/components/ui/skeleton";
 import { postDetailHref } from "@/lib/postHref";
 import { cn } from "@/lib/utils";
-import { GardenArtwork } from "@oasismind/brand";
+import { GardenArtwork, SpatialNavigator } from "@oasismind/brand";
 
 const emptySubscribe = () => () => {};
 
@@ -116,6 +116,8 @@ export default function GardenHomePage() {
             <p className="mt-3 text-sm text-[var(--om-text-2)]">{garden.description}</p>
           )}
         </header>
+
+        <SpatialNavigator id={`owner-garden-${id}`} title="园中阅读入口" entries={(posts?.items ?? []).map(post => ({ title: post.title, href: postDetailHref(post.slug, post.garden), caption: post.category ?? undefined }))} />
 
         <ContinueReadingCard garden={id} className="mb-8" />
 
