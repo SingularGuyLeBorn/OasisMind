@@ -8,6 +8,24 @@ const THREE = require('../apps/web/node_modules/three');
 const output = path.resolve(__dirname, '../apps/site/out');
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 
+async function assertTreeAlignment(page) {
+  const result = await page.locator('.knowledge-tree nav').evaluate(nav => {
+    // 在真实目录样式下覆盖同级可展开节点、普通文章与换行标题。
+    const fixture = document.createElement('ul');
+    fixture.innerHTML = '<li><details open><summary><svg class="tree-chevron" width="14" height="14" aria-hidden="true"></svg><a>2.2.1 · 可展开的技术路线与较长标题</a></summary></details></li><li><div class="tree-leaf"><a>2.1.2 · 普通文章与较长标题</a></div></li>';
+    nav.append(fixture);
+    try {
+      const links = [...fixture.querySelectorAll('a')];
+      return {
+        left: links.map(link => link.getBoundingClientRect().left),
+        numeric: links.map(link => getComputedStyle(link).fontVariantNumeric),
+      };
+    } finally { fixture.remove(); }
+  });
+  assert.ok(Math.abs(result.left[0] - result.left[1]) < 1, '同级目录的编号必须对齐，展开箭头不能额外挤开标题');
+  assert.ok(result.numeric.every(value => value.includes('tabular-nums')), '目录编号使用等宽数字');
+}
+
 async function main() {
   const server = http.createServer((req, res) => {
     const requestPath = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
@@ -60,6 +78,7 @@ async function main() {
       assert.ok(await page.locator('.knowledge-tree .tree-chevron').count() > 0);
       assert.equal(await page.locator('.katex-error').count(), 0);
       assert.equal(await page.locator('.knowledge-tree a[aria-current="page"]').count(), 1);
+      if (width > 900) await assertTreeAlignment(page);
       const outline = await page.locator('.article-toc a').evaluateAll(links => links.map(a => a.getAttribute('href')));
       assert.ok(outline.length > 2);
       assert.equal(await page.evaluate(ids => ids.every(id => Boolean(document.getElementById(decodeURIComponent(id.slice(1))))), outline), true);
@@ -78,6 +97,7 @@ async function main() {
         assert.equal(new URL(page.url()).hash, readingHash, '打开目录不能修改锚点');
         await page.waitForFunction(() => Math.abs(document.querySelector('dialog').getBoundingClientRect().left) < 1);
         assert.equal(await page.locator('.knowledge-tree a[aria-current="page"]').isVisible(), true);
+        await assertTreeAlignment(page);
         assert.equal(await page.evaluate(() => document.activeElement.id), 'documents-tab');
         // 背景不滚、Tab 不跑出面板、方向键能切目录。
         const frozenTop = await page.locator('.article-main').evaluate(el => el.getBoundingClientRect().top);

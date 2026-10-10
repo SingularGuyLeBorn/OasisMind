@@ -207,16 +207,18 @@ button, input, select { font: inherit; }
 .article-layout { width: min(1600px, calc(100% - 40px)); display: grid; grid-template-columns: 240px minmax(0, 800px) 210px; justify-content: center; gap: 36px; padding-block: 40px 120px; }
 .article-main { min-width: 0; grid-column: 2; grid-row: 1; }
 .reader-sidebar { position: sticky; top: 94px; align-self: start; max-height: calc(100vh - 115px); overflow: auto; font-size: 13px; }
-.knowledge-tree { grid-column: 1; grid-row: 1; padding-right: 16px; border-right: 1px solid var(--om-divider); }
+.knowledge-tree { --tree-toggle-width: 14px; --tree-toggle-gap: 6px; grid-column: 1; grid-row: 1; padding-right: 16px; border-right: 1px solid var(--om-divider); font-variant-numeric: tabular-nums; }
 .navigation-panel > summary { cursor: pointer; font-size: 14px; font-weight: 700; padding-block: 8px 14px; }
 .knowledge-tree ul { list-style: none; margin: 0; padding-left: 12px; }
 .knowledge-tree nav > ul { padding-left: 0; }
 .knowledge-tree li { padding-block: 3px; }
 .knowledge-tree li summary { display: flex; cursor: pointer; line-height: 1.65; }
-.knowledge-tree a { display: inline; overflow-wrap: anywhere; color: var(--om-text-2); }
+.knowledge-tree a { display: inline; min-width: 0; overflow-wrap: anywhere; color: var(--om-text-2); }
 .knowledge-tree a:hover, .knowledge-tree a[aria-current="page"] { color: var(--om-brand-deep); }
 .knowledge-tree a[aria-current="page"] { font-weight: 750; background: var(--om-brand-soft); }
-.tree-leaf { padding-left: 14px; line-height: 1.65; }
+.tree-leaf { padding-left: calc(var(--tree-toggle-width) + var(--tree-toggle-gap)); line-height: 1.65; }
+.knowledge-tree li summary { gap: var(--tree-toggle-gap); }
+.knowledge-tree li summary > .tree-chevron { flex-basis: var(--tree-toggle-width); }
 .tree-home, .tree-all { display: block !important; padding-block: 8px 12px; }
 .tree-all { margin-top: 12px; border-top: 1px solid var(--om-divider); }
 .knowledge-garden-links { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
@@ -260,6 +262,7 @@ button, input, select { font: inherit; }
 .reading-drawer a { scroll-margin-block: 12px; }
 .reading-drawer .tree-leaf a, .reading-drawer .article-toc a { display: block; min-height: 44px; padding-block: 10px; }
 .reading-drawer .knowledge-tree li summary { align-items: center; min-height: 44px; }
+.reading-drawer .knowledge-tree { --tree-toggle-width: 36px; }
 .reading-drawer .knowledge-tree li summary .tree-chevron { align-self: center; margin-top: 0; width: 36px; height: 44px; flex-basis: 36px; padding: 12px 8px; }
 .reading-drawer .article-toc nav { gap: 2px; }
 a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--om-brand); outline-offset: 3px; }
