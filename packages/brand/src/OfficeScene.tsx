@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentRef } from "react";
 import { useReducedMotion } from "framer-motion";
-import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { ContactShadows, Html, OrbitControls } from "@react-three/drei";
+import { Canvas, addAfterEffect, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { ContactShadows, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { OFFICE_VIEWS, WALK_BOUNDS, type OfficeViewId } from "./officeNav";
-import { HOTSPOT_META, type OfficeHotspotId } from "./officeContent";
+import { OFFICE_VIEWS, WALK_BOUNDS, OFFICE_OBJECT_LABELS, type OfficeViewId, type OfficeHotspotId } from "./officeNav";
 
 interface OfficeSceneProps {
   onSelect: (id: OfficeHotspotId) => void;
@@ -50,17 +49,26 @@ function Architecture() {
 }
 
 function Screen({ id, title, rows, position, rotation = 0, onSelect, active }: { id: OfficeHotspotId; title: string; rows: string[]; position: [number, number, number]; rotation?: number; onSelect: OfficeSceneProps["onSelect"]; active: boolean }) {
+  const rowText = rows.join("\n");
+  // 屏幕是场景材质，不再把 DOM 放到独立 React root，避免按需渲染时文字与屏幕脱离。
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas"); canvas.width = 1024; canvas.height = 640;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("无法创建工作室屏幕纹理");
+    context.fillStyle = palette.wall; context.fillRect(0, 0, 1024, 640);
+    context.fillStyle = palette.ink; context.font = '600 54px "Microsoft YaHei", sans-serif'; context.fillText(title, 66, 108);
+    context.fillStyle = palette.metal; context.fillRect(66, 145, 892, 2);
+    rowText.split("\n").forEach((row, index) => {
+      context.fillStyle = "#176665"; context.font = "26px monospace"; context.fillText(String(index + 1).padStart(2, "0"), 66, 240 + index * 100);
+      context.fillStyle = palette.ink; context.font = '40px "Microsoft YaHei", sans-serif'; context.fillText(row, 150, 240 + index * 100);
+    });
+    context.fillStyle = "#176665"; context.font = '28px "Microsoft YaHei", sans-serif'; context.fillText("点击探索 →", 66, 570);
+    const result = new THREE.CanvasTexture(canvas); result.colorSpace = THREE.SRGBColorSpace; return result;
+  }, [title, rowText]);
+  useEffect(() => () => texture.dispose(), [texture]);
   return <group position={position} rotation={[0, rotation, 0]}>
-    <Block position={[0, 0, 0]} size={[1.6, 1.05, .05]} color={palette.metal} metal />
-    <Block position={[0, 0, .031]} size={[1.54, .99, .012]} />
-    <Html transform position={[0, 0, .055]} distanceFactor={1.4} zIndexRange={[10, 0]}>
-      <button type="button" className="om-workshop-screen" onClick={() => onSelect(id)} aria-label={HOTSPOT_META[id].label} aria-pressed={active}>
-        <span className="om-workshop-screen-label">{title}</span>
-        <span className="om-workshop-screen-rule" />
-        {rows.map((row, index) => <span className="om-workshop-screen-row" key={row}><i>{String(index + 1).padStart(2, "0")}</i>{row}</span>)}
-        <span className="om-workshop-screen-open">打开工作面板 →</span>
-      </button>
-    </Html>
+    <Block position={[0, 0, 0]} size={[1.6, 1.05, .05]} color={active ? palette.light : palette.metal} metal />
+    <mesh position={[0, 0, .035]} name={id in OFFICE_OBJECT_LABELS ? OFFICE_OBJECT_LABELS[id as keyof typeof OFFICE_OBJECT_LABELS] : title} onClick={event => { event.stopPropagation(); onSelect(id); }}><planeGeometry args={[1.54, .99]} /><meshBasicMaterial map={texture} /></mesh>
   </group>;
 }
 
@@ -100,15 +108,34 @@ function RobotArm() {
     <Block position={[0, .3, 0]} size={[1.2, .6, 1.05]} color={palette.floor} metal />
     <mesh position={[0, .65, 0]}><cylinderGeometry args={[.26, .3, .12, 24]} /><meshStandardMaterial color={palette.metal} metalness={.7} roughness={.3} /></mesh>
     <group position={[0, .72, 0]} rotation={[0, 0, -.32]}>
-      <Block position={[0, .4, 0]} size={[.16, .8, .22]} color={palette.metal} metal />
+      <mesh position={[0, .4, 0]} castShadow><cylinderGeometry args={[.08, .11, .8, 24]} /><meshStandardMaterial color={palette.metal} metalness={.7} roughness={.25} /></mesh>
       <mesh position={[0, .8, 0]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.17, .17, .28, 20]} /><meshStandardMaterial color={palette.wall} metalness={.5} roughness={.3} /></mesh>
       <group position={[0, .8, 0]} rotation={[0, 0, -1.1]}>
-        <Block position={[0, .3, 0]} size={[.12, .6, .14]} color={palette.metal} metal />
+        <mesh position={[0, .3, 0]} castShadow><cylinderGeometry args={[.06, .08, .6, 24]} /><meshStandardMaterial color={palette.metal} metalness={.7} roughness={.25} /></mesh>
         <mesh position={[0, .6, 0]}><sphereGeometry args={[.105, 12, 12]} /><meshStandardMaterial color={palette.light} metalness={.3} roughness={.3} /></mesh>
         {[-.08, .08].map(z => <Block key={z} position={[0, .71, z]} size={[.055, .2, .035]} color={palette.metal} metal />)}
       </group>
     </group>
     <LightRing radius={.4} position={[0, .607, 0]} />
+  </group>;
+}
+
+// [OM-FREEPLAY] 曲面座椅和有机叶片补足真实空间的轮廓，不引入外部模型或贴图。
+function StudioFurniture() {
+  return <group>
+    <group position={[0, 0, 1.35]} rotation={[0, Math.PI, 0]}>
+      <mesh position={[0, .65, 0]} scale={[.58, .13, .48]} castShadow><sphereGeometry args={[1, 32, 20]} /><meshStandardMaterial color={palette.ink} roughness={.65} /></mesh>
+      <mesh position={[0, 1.08, -.34]} scale={[.55, .52, .1]} rotation={[-.18, 0, 0]} castShadow><sphereGeometry args={[1, 32, 20]} /><meshStandardMaterial color={palette.ink} roughness={.65} /></mesh>
+      <mesh position={[0, .34, 0]}><cylinderGeometry args={[.055, .07, .6, 16]} /><meshStandardMaterial color={palette.metal} metalness={.8} roughness={.22} /></mesh>
+      {[0, 1, 2, 3, 4].map(i => <group key={i} rotation={[0, i * Math.PI * 2 / 5, 0]}><mesh position={[.24, .06, 0]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[.025, .025, .48, 12]} /><meshStandardMaterial color={palette.metal} metalness={.7} /></mesh><mesh position={[.48, .04, 0]}><sphereGeometry args={[.055, 12, 12]} /><meshStandardMaterial color={palette.ink} /></mesh></group>)}
+    </group>
+    <group position={[3.7, 0, 1.6]}>
+      <mesh position={[0, .3, 0]} castShadow><cylinderGeometry args={[.32, .23, .6, 32]} /><meshStandardMaterial color={palette.wall} roughness={.7} /></mesh>
+      {[0, 1, 2, 3, 4, 5, 6].map(i => <group key={i} rotation={[0, i * 2.4, 0]}>
+        <mesh position={[0, .82 + i * .08, 0]}><cylinderGeometry args={[.012, .018, .85 + i * .12, 8]} /><meshStandardMaterial color="#77958a" /></mesh>
+        <mesh position={[.14, 1.03 + i * .1, 0]} rotation={[0, 0, -.65]} scale={[.16, .38, .035]} castShadow><sphereGeometry args={[1, 20, 12]} /><meshStandardMaterial color={i % 2 ? "#8aaa99" : "#638d7d"} roughness={.8} /></mesh>
+      </group>)}
+    </group>
   </group>;
 }
 
@@ -135,12 +162,12 @@ function Equipment({ onSelect }: Pick<OfficeSceneProps, "onSelect">) {
   </group>;
 }
 
-function CameraRig({ viewId, viewRevision, activeId, controlsRef }: { viewId: OfficeViewId; viewRevision: number; activeId: OfficeHotspotId | null; controlsRef: React.RefObject<Controls | null> }) {
+function CameraRig({ viewId, viewRevision, activeId, controlsRef, compact }: { viewId: OfficeViewId; viewRevision: number; activeId: OfficeHotspotId | null; controlsRef: React.RefObject<Controls | null>; compact: boolean }) {
   const { camera, invalidate } = useThree();
   const reduceMotion = useReducedMotion();
   const keys = useRef(new Set<string>());
   const moving = useRef(false);
-  useEffect(() => { moving.current = viewId !== "walk"; invalidate(); }, [viewId, viewRevision, invalidate]);
+  useEffect(() => { moving.current = viewId !== "walk"; invalidate(); }, [viewId, viewRevision, compact, invalidate]);
   // [OM-FREEPLAY] 手动拖动明确取消预设镜头过渡，不让自动镜头与用户争夺控制。
   useEffect(() => {
     const controls = controlsRef.current;
@@ -167,7 +194,7 @@ function CameraRig({ viewId, viewRevision, activeId, controlsRef }: { viewId: Of
     if (document.querySelector("dialog[open]")) { keys.current.clear(); return; }
     if (moving.current && viewId !== "walk") {
       const preset = OFFICE_VIEWS[viewId];
-      const position = new THREE.Vector3(...preset.position), target = new THREE.Vector3(...preset.target);
+      const position = new THREE.Vector3(...(compact && viewId === "overview" ? MOBILE_OVERVIEW : preset.position)), target = new THREE.Vector3(...preset.target);
       const blend = reduceMotion ? 1 : 1 - Math.exp(-Math.min(delta, .05) * 5);
       camera.position.lerp(position, blend); controls.target.lerp(target, blend);
       moving.current = camera.position.distanceTo(position) > .01 || controls.target.distanceTo(target) > .01;
@@ -188,7 +215,15 @@ function CameraRig({ viewId, viewRevision, activeId, controlsRef }: { viewId: Of
   return null;
 }
 
-function Scene(props: OfficeSceneProps) {
+function Scene(props: OfficeSceneProps & { compact: boolean }) {
+  const { gl } = useThree();
+  // 就绪由实际绘制完成确认，不以 DOM 画布挂载或延时猜测替代首帧。
+  useEffect(() => {
+    const unsubscribe = addAfterEffect(() => {
+      if (gl.info.render.calls > 0) { gl.domElement.dataset.officeReady = "true"; unsubscribe(); }
+    });
+    return () => { unsubscribe(); delete gl.domElement.dataset.officeReady; };
+  }, [gl]);
   const controlsRef = useRef<Controls | null>(null);
   const reduceMotion = useReducedMotion();
   return <>
@@ -196,15 +231,17 @@ function Scene(props: OfficeSceneProps) {
     <ambientLight intensity={.85} />
     <hemisphereLight args={[palette.wall, palette.floor, .65]} />
     <directionalLight position={[4, 8, 5]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} shadow-normalBias={.04} />
-    <Architecture /><Workbench {...props} /><RobotArm /><Equipment onSelect={props.onSelect} />
+    <Architecture /><Workbench {...props} /><RobotArm /><StudioFurniture /><Equipment onSelect={props.onSelect} />
     <ContactShadows position={[0, .015, 0]} scale={12} opacity={.2} blur={2} far={4} frames={1} />
     <OrbitControls ref={controlsRef} makeDefault enabled={!props.activeId} enableDamping={!reduceMotion} enablePan={false} minDistance={1.5} maxDistance={12} minPolarAngle={.3} maxPolarAngle={1.45} target={OFFICE_VIEWS.overview.target} />
-    <CameraRig viewId={props.viewId} viewRevision={props.viewRevision} activeId={props.activeId} controlsRef={controlsRef} />
+    <CameraRig viewId={props.viewId} viewRevision={props.viewRevision} activeId={props.activeId} controlsRef={controlsRef} compact={props.compact} />
   </>;
 }
 
 function subscribeVisibility(notify: () => void) { document.addEventListener("visibilitychange", notify); return () => document.removeEventListener("visibilitychange", notify); }
 function subscribeViewport(notify: () => void) { const media = matchMedia("(max-width: 639px)"); media.addEventListener("change", notify); return () => media.removeEventListener("change", notify); }
+// [OM-FREEPLAY] 竖屏全景从正面稍远处看，避免机架与书架被窄视口裁掉。
+const MOBILE_OVERVIEW: [number, number, number] = [0, 3.8, 10];
 
 export function OfficeScene(props: OfficeSceneProps) {
   const visible = useSyncExternalStore(subscribeVisibility, () => document.visibilityState === "visible", () => true);
@@ -219,5 +256,5 @@ export function OfficeScene(props: OfficeSceneProps) {
   });
   if (!supported) return <div className="om-workshop-loading" role="status">当前设备无法打开 3D 场景，请通过下方物件菜单访问工作室功能。</div>;
   // [OM-FREEPLAY] 新场景没有常驻漂浮或闪烁；后台停止绘制，像素比例沿用原来的上限。
-  return <Canvas className="h-full w-full touch-none" shadows="percentage" dpr={[1, 1.5]} frameloop={visible ? "demand" : "never"} camera={{ position: OFFICE_VIEWS.overview.position, fov: compact ? 68 : 44, near: .1, far: 40 }} gl={{ antialias: true, alpha: false }}><Scene {...props} /></Canvas>;
+  return <div className="om-office-viewport"><Canvas style={{ width: "100%", height: "100%", touchAction: "none" }} shadows="percentage" dpr={[1, 1.5]} frameloop={visible ? "demand" : "never"} camera={{ position: compact ? MOBILE_OVERVIEW : OFFICE_VIEWS.overview.position, fov: compact ? 90 : 44, near: .1, far: 40 }} gl={{ antialias: true, alpha: false }}><Scene {...props} compact={compact} /></Canvas><div className="om-office-first-frame" role="status">正在准备工作室画面…</div></div>;
 }

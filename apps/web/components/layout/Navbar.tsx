@@ -145,7 +145,7 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
             eagerPrefetch={false}
             onPrefetch={() => {
               prefetchHref(router, "/office");
-              import("@/components/office/OfficeScene").catch(() => {});
+              import("@oasismind/brand/office").catch(() => {});
             }}
           >
             办公室

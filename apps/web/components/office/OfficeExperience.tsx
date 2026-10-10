@@ -6,10 +6,10 @@ import Link from "next/link";
 import { ArrowLeft, BookOpen, Cpu, Layers, Monitor, Grid2X2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OfficeOverlays, cycleDialogFocus } from "./OfficeOverlays";
-import { HOTSPOT_META, type OfficeHotspotId } from "./officeContent";
-import { OFFICE_VIEWS, type OfficeViewId } from "./officeNav";
+import { HOTSPOT_META } from "./officeContent";
+import { OFFICE_VIEWS, type OfficeViewId, type OfficeHotspotId } from "@oasismind/brand/office-navigation";
 
-const OfficeScene = dynamic(() => import("./OfficeScene").then(m => m.OfficeScene), {
+const OfficeScene = dynamic(() => import("@oasismind/brand/office").then(m => m.OfficeScene), {
   ssr: false,
   loading: () => <div className="om-workshop-loading" role="status">正在打开 3D 工作室…</div>,
 });

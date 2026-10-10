@@ -17,9 +17,9 @@ import {
   MONITOR_WALL,
   OFFICE_BRAND,
   PROJECTS,
-  type OfficeHotspotId,
   type OverlayKind,
 } from "./officeContent";
+import type { OfficeHotspotId } from "@oasismind/brand/office-navigation";
 import { OfficeFormulaScreen } from "./OfficeFormulaScreen";
 import { OfficeRichMd } from "./OfficeRichMd";
 import { cn } from "@/lib/utils";

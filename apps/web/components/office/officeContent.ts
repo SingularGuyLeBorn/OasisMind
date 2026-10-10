@@ -1,19 +1,6 @@
 /** 见微 3D 办公室 · 量化级 AI 工位内容 */
 
-export type OfficeHotspotId =
-  | "monitor"
-  | "binder"
-  | "board"
-  | "map"
-  | "plant"
-  | "dog"
-  | "phone"
-  | "calendar"
-  | "lamp"
-  | "server"
-  | "bookshelf"
-  | "chalkboard"
-  | "papers";
+import type { OfficeHotspotId } from "@oasismind/brand/office-navigation";
 
 export type OverlayKind =
   | "projects"

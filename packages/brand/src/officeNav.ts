@@ -1,4 +1,9 @@
 /** 办公室漫游：预设机位 + 可走范围 */
+export type OfficeHotspotId = "monitor" | "binder" | "board" | "map" | "plant" | "dog" | "phone" | "calendar" | "lamp" | "server" | "bookshelf" | "chalkboard" | "papers";
+
+export const OFFICE_OBJECT_LABELS = {
+  monitor: "研究工作台", board: "知识库看板", server: "算力机架", bookshelf: "AI 书架", chalkboard: "模型架构屏",
+} as const;
 
 export type OfficeViewId = "overview" | "desk" | "board" | "server" | "shelf" | "walk";
 
@@ -12,7 +17,7 @@ export const OFFICE_VIEWS: Record<
 > = {
   overview: {
     label: "全景",
-    position: [6.2, 4.5, 7.6],
+    position: [4, 3.5, 7.5],
     target: [0, 1.25, -0.5],
   },
   desk: {

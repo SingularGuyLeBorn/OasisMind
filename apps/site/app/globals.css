@@ -26,6 +26,40 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 button, input, select { font: inherit; }
+/* [OM-FREEPLAY] 办公室为独立全景页，保留公开站主题；控制栏不遮住中心工作台。 */
+.public-office { position: relative; height: calc(100dvh - 71px); min-height: 580px; isolation: isolate; background: var(--om-bg-soft); overflow: hidden; }
+.public-office-entry { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; padding: 36px 24px; text-align: center; background: radial-gradient(ellipse at center, var(--om-brand-soft), transparent 65%); }
+.public-office-entry .section-kicker { margin: 0; }
+.public-office-entry h1 { font-family: "Songti SC", serif; font-size: clamp(36px, 5vw, 64px); font-weight: 600; line-height: 1.35; margin: 0; }
+.public-office-entry > p:not(.section-kicker) { max-width: 500px; color: var(--om-text-2); font-size: 14px; line-height: 1.9; }
+.public-office button { cursor: pointer; }
+.public-office-status { position: absolute; inset: 0; display: grid; place-items: center; padding: 30px; text-align: center; }
+.public-office-toolbar { position: absolute; z-index: 20; top: 20px; inset-inline: 20px; display: flex; justify-content: space-between; gap: 14px; pointer-events: none; }
+.public-office-toolbar nav, .public-office-home { pointer-events: auto; background: var(--om-bg); border: 1px solid var(--om-divider); border-radius: 12px; padding: 5px; box-shadow: var(--shadow-card); }
+.public-office-home { display: inline-flex; align-items: center; gap: 6px; padding: 12px; font-size: 13px; white-space: nowrap; }
+.public-office-toolbar nav { display: flex; overflow-x: auto; min-width: 0; }
+.public-office-toolbar button { padding: 10px 14px; background: transparent; color: var(--om-text-2); border: 0; border-radius: 8px; white-space: nowrap; }
+.public-office-toolbar button[aria-pressed=true] { background: var(--om-brand); color: white; }
+.public-office-objects { position: absolute; z-index: 20; bottom: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; width: max-content; max-width: calc(100% - 24px); padding: 7px; background: var(--om-bg); border: 1px solid var(--om-divider); border-radius: 12px; overflow-x: auto; box-shadow: var(--shadow-card); }
+.public-office-objects button { flex: none; border: 0; background: transparent; padding: 12px; border-radius: 8px; color: var(--om-text-1); font-size: 12px; }
+.public-office-objects button:hover { background: var(--om-brand-soft); }
+.public-office-hint { position: absolute; z-index: 20; bottom: 10px; left: 0; right: 0; text-align: center; color: var(--om-text-2); font-size: 11px; pointer-events: none; }
+.public-office-dialog { position: fixed; inset: 0; margin: auto; width: min(580px, calc(100% - 28px)); max-height: 80dvh; overflow: auto; border: 1px solid var(--om-divider); border-radius: 18px; padding: 24px; background: var(--om-bg); color: var(--om-text-1); }
+.public-office-dialog::backdrop { background: #1b303360; }
+.public-office-dialog header { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 20px; }
+.public-office-dialog h2 { margin: 0; font-size: 23px; }
+.public-office-dialog button { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: var(--om-brand-soft); border-radius: 50%; color: var(--om-brand-deep); }
+.public-office-dialog > div { display: grid; gap: 9px; }
+.public-office-dialog > div a { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; border: 1px solid var(--om-divider-light); border-radius: 10px; background: white; font-size: 14px; }
+.public-office :focus-visible { outline: 2px solid var(--om-brand); outline-offset: 3px; }
+.knowledge-office-link { display: inline-flex; margin-left: 20px; margin-top: 16px; }
+@media (max-width: 640px) {
+  .public-office { height: calc(100dvh - 109px); min-height: 580px; }
+  .public-office-toolbar { top: 12px; inset-inline: 12px; gap: 8px; }
+  .public-office-toolbar button { padding-inline: 11px; font-size: 12px; }
+  .public-office-hint { font-size: 10px; padding-inline: 10px; }
+  .knowledge-office-link { margin-left: 0; display: flex; }
+}
 .site-shell { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
 
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--om-divider-light); background: #fcfcf9; }

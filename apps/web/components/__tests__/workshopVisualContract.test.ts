@@ -12,11 +12,16 @@ describe("工作室视觉契约", () => {
     expect(css).not.toContain(":root");
   });
   it("工作室重写场景，保留物件选择，不生成虚构监测数字", () => {
-    const scene = read("../office/OfficeScene.tsx");
+    const scene = read("../../../../packages/brand/src/OfficeScene.tsx");
     const ui = read("../office/OfficeExperience.tsx");
     expect(scene).toContain("<Architecture />");
     expect(scene).toContain("<Workbench");
     expect(scene).toContain("<RobotArm");
+    expect(scene).toContain("<StudioFurniture");
+    expect(scene).toContain("new THREE.CanvasTexture(canvas)");
+    expect(scene).not.toContain("<Html");
+    expect(scene).toContain("addAfterEffect");
+    expect(scene).toContain('gl.domElement.dataset.officeReady = "true"');
     expect(scene).not.toContain("GamingDeskSet");
     expect(ui).toContain('aria-label="工作室物件"');
     expect(ui).toContain("onClick={() => setHotspot(id)}");

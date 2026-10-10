@@ -10,7 +10,7 @@ export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const manifest = getManifest();
-  const paths = ["", "/knowledge", "/about", "/resources", "/search"];
+  const paths = ["", "/knowledge", "/about", "/resources", "/search", "/office"];
   manifest.gardens.forEach((garden) => paths.push(`/gardens/${encodeURIComponent(garden.id)}`));
   manifest.posts.forEach((post) => paths.push(articleHref(post)));
   uniqueTags(manifest.posts).forEach(({ name }) => paths.push(`/tags/${encodeURIComponent(name)}`));

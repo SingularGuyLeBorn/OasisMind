@@ -1,3 +1,8 @@
+.om-workshop-loading { display: grid; place-items: center; height: 100%; padding: 24px; color: var(--om-text-1); }
+.om-office-viewport { position: relative; width: 100%; height: 100%; }
+.om-office-first-frame { position: absolute; inset: 0; display: grid; place-items: center; background: var(--om-bg); color: var(--om-text-2); pointer-events: none; }
+.om-office-viewport:has(canvas[data-office-ready="true"]) .om-office-first-frame { display: none; }
+
 /* [OM-FREEPLAY] 阅读展台使用品牌变量；原生单选保留触屏、键盘和无脚本操作。
    首屏不加载图片或 WebGL，不使用自动轮播。 */
 .om-reading-showcase { width: 100%; min-width: 0; border: 1px solid var(--om-divider, #cbd7d1); border-radius: 24px; padding: 22px; background: linear-gradient(145deg, #ffffffb0, var(--om-bg-soft, #edf2ef)); box-shadow: 0 24px 60px -30px #183c4035, inset 0 1px 0 #fff; color: var(--om-text-1); }

@@ -21,6 +21,7 @@ export function SiteHeader() {
           <Link href="/">首页</Link>
           <Link href="/knowledge"><BookOpen size={16} />知识库</Link>
           <Link href="/resources">资源</Link>
+          <Link href="/office">工作室</Link>
           <Link href="/about">关于我</Link>
           <Link href="/search" className="nav-search"><Search size={16} />搜索</Link>
         </nav>

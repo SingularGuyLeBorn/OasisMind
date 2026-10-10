@@ -39,13 +39,6 @@
 .om-workshop-views button { flex: none; padding: 10px 13px; font-size: 12px; border-radius: 7px; color: var(--om-text-2); }
 .om-workshop-views button[aria-pressed=true] { background: var(--om-brand); color: var(--om-bg-alt); }
 .om-workshop-title { font-size: 11px; letter-spacing: .1em; color: var(--om-text-3); }
-.om-workshop-screen { display: grid; gap: 14px; width: 450px; height: 278px; padding: 24px 30px; color: var(--om-text-1); background: var(--om-bg-alt); text-align: left; cursor: pointer; }
-.om-workshop-screen[aria-pressed=true] { outline: 3px solid var(--om-brand); outline-offset: -3px; }
-.om-workshop-screen-label { font-size: 24px; font-weight: 600; letter-spacing: .08em; }
-.om-workshop-screen-rule { height: 1px; background: var(--om-divider); }
-.om-workshop-screen-row { font-size: 17px; display: flex; align-items: center; gap: 18px; }
-.om-workshop-screen-row i { font: 12px/1 monospace; color: var(--om-brand); }
-.om-workshop-screen-open { font-size: 12px; color: var(--om-brand); margin-top: 8px; }
 .om-workshop-walkpad { position: absolute; z-index: 20; right: 24px; bottom: 88px; display: grid; grid-template-columns: repeat(3, 34px); gap: 3px; border: 1px solid var(--om-divider); border-radius: 12px; padding: 7px; background: var(--om-bg-alt); box-shadow: 0 3px 0 var(--om-divider-light); }
 .om-workshop-walkpad button { height: 34px; border-radius: 6px; background: var(--om-bg-soft); font-size: 12px; touch-action: none; color: var(--om-text-1); }
 .om-workshop-walkpad button:active { background: var(--om-brand); color: var(--om-bg-alt); }

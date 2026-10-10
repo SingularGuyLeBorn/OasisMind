@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { chromium } = require('../apps/server/node_modules/playwright');
+const THREE = require('../apps/web/node_modules/three');
 const output = path.resolve(__dirname, '../apps/site/out');
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 
@@ -29,7 +30,7 @@ async function main() {
   const html = await (await fetch(article)).text();
   assert.ok(html.includes('article-prose') && html.includes('knowledge-tree') && html.includes('article-toc'));
   assert.ok(!html.includes('self.__next_f.push') && !html.includes('正在读取文章'));
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-swiftshader'] });
   const stats = { base, articles: index.posts.length, browsers: [], initialHtmlBytes: Buffer.byteLength(html) };
   const evidence = path.resolve(__dirname, '../data/deployment-checks');
   fs.mkdirSync(evidence, { recursive: true });
@@ -171,7 +172,7 @@ async function main() {
       await page.goto(new URL('about', base).href, { waitUntil: 'networkidle' });
       assert.ok((await page.locator('h1').innerText()).includes('应知序'));
       assert.ok((await page.locator('.article-prose').innerText()).length > 200);
-      assert.equal(await page.locator('nav[aria-label="主导航"] a').count(), 5);
+      assert.equal(await page.locator('nav[aria-label="主导航"] a').count(), 6);
 
       await page.goto(new URL('search', base).href, { waitUntil: 'networkidle' });
       assert.equal(await page.getByLabel('搜索范围').evaluate(element => getComputedStyle(element).appearance), 'none');
@@ -209,6 +210,49 @@ async function main() {
       await phone.getByRole('button', { name: '关闭阅读导航' }).click();
       assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await phone.close();
+    }
+    const officeNoJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+    // 公开办公室必须具备独立静态入口，3D 失败或禁用脚本仍可去知识库。
+    await officeNoJs.goto(new URL('office', base).href, { waitUntil: 'domcontentloaded' });
+    assert.equal(await officeNoJs.getByRole('link', { name: '直接浏览知识库' }).count(), 1);
+    await officeNoJs.close();
+    for (const width of [1280, 390]) {
+      const office = await browser.newPage({ viewport: { width, height: 900 }, isMobile: width < 640, hasTouch: width < 640 });
+      const officeErrors = [], officeRequests = [];
+      office.on('pageerror', error => officeErrors.push(error.message));
+      office.on('request', request => officeRequests.push(request.url()));
+      await office.goto(new URL('office', base).href, { waitUntil: 'networkidle' });
+      assert.equal(await office.locator('canvas').count(), 0, '进入前不初始化 3D 场景');
+      await office.getByRole('button', { name: '进入 3D 工作室' }).click();
+      await office.locator('canvas').waitFor();
+      await office.locator('canvas[data-office-ready="true"]').waitFor();
+      // 从实际全景机位投影屏幕中心，验证点击的是场景物件，而非仅验证菜单按钮。
+      const canvas = office.locator('canvas');
+      const bounds = await canvas.boundingBox();
+      const camera = new THREE.PerspectiveCamera(width < 640 ? 90 : 44, bounds.width / bounds.height, .1, 40);
+      if (width < 640) camera.position.set(0, 3.8, 10); else camera.position.set(4, 3.5, 7.5);
+      camera.lookAt(0, 1.25, -.5); camera.updateMatrixWorld();
+      const point = new THREE.Vector3(0, 1.74, -1.615).project(camera);
+      await canvas.click({ position: { x: (point.x + 1) * bounds.width / 2, y: (1 - point.y) * bounds.height / 2 } });
+      const screenPanel = office.getByRole('dialog', { name: '工作室知识入口' });
+      await screenPanel.waitFor();
+      assert.equal(await screenPanel.getByRole('heading').innerText(), '研究工作台');
+      await office.keyboard.press('Escape');
+      await screenPanel.waitFor({ state: 'hidden' });
+      await office.screenshot({ path: path.join(evidence, `office-${width}.png`) });
+      await office.getByRole('button', { name: '工位', exact: true }).click();
+      assert.equal(await office.getByRole('button', { name: '工位', exact: true }).getAttribute('aria-pressed'), 'true');
+      await office.getByRole('navigation', { name: '工作室物件' }).getByRole('button', { name: '算力机架' }).click();
+      const panel = office.getByRole('dialog', { name: '工作室知识入口' });
+      await panel.waitFor();
+      assert.ok(await panel.getByRole('link').count() > 0);
+      assert.equal(await panel.locator('a').evaluateAll(links => links.every(link => link.pathname.includes('/gardens/'))), true);
+      await office.keyboard.press('Escape');
+      await panel.waitFor({ state: 'hidden' });
+      assert.equal(await office.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+      assert.equal(officeRequests.some(url => /api\/trpc|localhost:3010|\/chat(?:\?|$)/.test(url)), false);
+      assert.deepEqual(officeErrors, []);
+      await office.close();
     }
     const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
     await noJs.goto(base, { waitUntil: 'domcontentloaded' });

@@ -4,6 +4,7 @@ import { hydrateRoot } from "react-dom/client";
 import { KnowledgeBrowser } from "../components/KnowledgeBrowser";
 import { PostList } from "../components/PostList";
 import { ReadingEnhancements } from "../components/ReadingEnhancements";
+import { PublicOffice } from "../components/PublicOffice";
 
 for (const container of document.querySelectorAll<HTMLElement>("[data-public-widget]")) {
   const root = container.querySelector<HTMLElement>("[data-widget-root]");
@@ -11,5 +12,5 @@ for (const container of document.querySelectorAll<HTMLElement>("[data-public-wid
   if (!root || !data) continue;
   const props = JSON.parse(data.textContent ?? "{}");
   const kind = container.dataset.publicWidget;
-  hydrateRoot(root, kind === "posts" ? <PostList {...props} /> : kind === "search" ? <KnowledgeBrowser {...props} /> : <ReadingEnhancements />);
+  hydrateRoot(root, kind === "posts" ? <PostList {...props} /> : kind === "search" ? <KnowledgeBrowser {...props} /> : kind === "office" ? <PublicOffice {...props} /> : <ReadingEnhancements />);
 }
