@@ -1,10 +1,10 @@
 ---
-title: "源神启动! DeepSeek"
+title: "DeepSeek 全栈技术图谱"
 description: "DeepSeek 一家的论文与开源仓库: 模型技术报告, 架构与算法论文, 系统论文, 基础设施代码, 每篇都有对照译稿与技术解析"
 published: true
 tags: ["DeepSeek", "模型", "架构与算法", "基础设施"]
 ---
-# 源神启动! DeepSeek
+# DeepSeek 全栈技术图谱
 
 DeepSeek 被戏称为「源神」, 这个称呼多少带点玩笑, 却很贴切. 它开源的不只有模型权重: DeepSeekMoE, MLA, 无辅助损失负载均衡, FP8 训练, DualPipe, 3FS, DeepEP, DeepGEMM, FlashMLA, DSec, 一路从模型结构延伸到集群通信, 文件系统和 Agent 沙箱. 单独看其中一篇论文, 容易把它当成又一个局部改进; 把这些材料按时间和系统层次排在一起, 才能看见 DeepSeek 反复追问的是同一件事: 在硬件, 数据和训练预算已经给定时, 怎样把更多容量, 更长上下文和更多强化学习轨迹塞进可承受的成本里.
 
@@ -12,7 +12,7 @@ DeepSeek 被戏称为「源神」, 这个称呼多少带点玩笑, 却很贴切.
 
 收录范围分成三类: 模型技术报告; 不以发布模型为目的的方法论文 (NSA, mHC, Engram, DSpark 等); 支撑训练和推理的系统论文与开源仓库 (Fire-Flyer, 3FS, DeepEP, DeepGEMM, FlashMLA, DSec 等). 从第一代语言模型一直读到后来的推理, 多模态和 Agent 系统, 可以追踪架构怎样改变计算与状态, Infra 又怎样反过来限定模型可以采用的结构.
 
-每篇论文一个目录, 目录里两篇文章: `-bi` 是原文逐段中英对照, 难懂的地方插有疑惑块; `-analysis` 是读完全文和代码之后写的技术解析, 讲每个机制解决哪项成本, 怎么做, 代价多大, 实验数字在什么设置下得出. 开源仓库没有论文, 只写解析, 对照稿翻译仓库自带的设计文档.
+每篇论文一个二级目录. 同名首页是读完全文和代码之后写的技术解析, 讲每个机制解决哪项成本, 怎么做, 代价多大, 实验数字在什么设置下得出; 编号为 `.1` 的三级文章是原文逐段中英对照, 难懂的地方插有疑惑块. 开源仓库没有论文, 对照稿翻译仓库自带的设计文档.
 
 这两条线并不是后来硬凑到一起的. [DeepSeek-V2](https://github.com/deepseek-ai/DeepSeek-V2) 的官方发布把 MLA 与 DeepSeekMoE 放在同一份架构说明里: 前者压缩推理时的 KV 状态, 后者让总参数增长时每个 token 只激活一部分专家. 到 [DeepSeek-V3 技术报告](https://arxiv.org/abs/2412.19437), MLA 与 MoE 被保留下来, FP8 混合精度, 无辅助损失负载均衡, Multi-Token Prediction 和 DualPipe 又把问题推进到数值格式, 路由稳定性与流水线调度. 模型报告在讲能力, 同时也一直在交代这些能力为何能在给定集群上训练出来.
 
@@ -76,9 +76,9 @@ DeepSeek 的论文有一条贯穿三年的主线: 把计算或存储做稀疏, �
 
 ### 3.1 按主线读
 
-第一次读这个库, 建议沿 MoE 主线按时间读: [DeepSeekMoE](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.2-deepseek-moe/02-deepseek-moe-analysis.md) → [DeepSeek-V2](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.3-deepseek-v2/02-deepseek-v2-analysis.md) → [DeepSeek-V3](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.4-deepseek-v3/02-deepseek-v3-analysis.md) → [DeepSeek-V3.2](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.7-deepseek-v3-2/02-deepseek-v3-2-analysis.md) → [DeepSeek-V4](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.8-deepseek-v4/02-deepseek-v4-analysis.md). 每读完一篇, 去第二章找它引入的机制对应的方法论文, 再去第四章找对应的仓库.
+第一次读这个库, 建议沿 MoE 主线按时间读: [DeepSeekMoE](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.2-deepseek-moe/1.2-deepseek-moe.md) → [DeepSeek-V2](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.3-deepseek-v2/1.3-deepseek-v2.md) → [DeepSeek-V3](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.4-deepseek-v3/1.4-deepseek-v3.md) → [DeepSeek-V3.2](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.7-deepseek-v3-2/1.7-deepseek-v3-2.md) → [DeepSeek-V4](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.8-deepseek-v4/1.8-deepseek-v4.md). 每读完一篇, 去第二章找它引入的机制对应的方法论文, 再去第四章找对应的仓库.
 
-关心 RL 与推理模型的读者, 从 [DeepSeekMath](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.12-deepseek-math/02-deepseek-math-analysis.md) 的 GRPO 开始, 接 [DeepSeek-R1](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.13-deepseek-r1/02-deepseek-r1-analysis.md), 再读第二章的 GRM 和第一章的 Math-V2 与 Prover 系列.
+关心 RL 与推理模型的读者, 从 [DeepSeekMath](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.12-deepseek-math/1.12-deepseek-math.md) 的 GRPO 开始, 接 [DeepSeek-R1](./1-%E6%A8%A1%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/1.13-deepseek-r1/1.13-deepseek-r1.md), 再读第二章的 GRM 和第一章的 Math-V2 与 Prover 系列.
 
 ### 3.2 按问题查
 
