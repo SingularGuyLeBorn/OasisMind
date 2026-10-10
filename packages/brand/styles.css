@@ -10,11 +10,11 @@
 .om-showcase-top > span:last-child { font-variant-numeric: tabular-nums; }
 .om-showcase-views { position: relative; margin: 20px 0 0; padding: 0; border: 0; min-width: 0; }
 .om-visually-hidden, .om-view-input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.om-showcase-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--om-brand-soft, #17666512); }
-.om-showcase-tabs label { flex: 1; min-height: 40px; display: grid; place-items: center; cursor: pointer; border-radius: 999px; font-size: 12px; color: var(--om-text-2); transition: background .2s, color .2s; }
+.om-showcase-tabs { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--om-divider-light, #183c401a); border-radius: 999px; background: var(--om-brand-soft, #17666512); }
+.om-showcase-tabs label { flex: 1; min-height: 44px; display: grid; place-items: center; cursor: pointer; border-radius: 999px; font-size: 12px; color: var(--om-text-2); transition: background .2s, color .2s, box-shadow .2s, transform .2s; }
 .om-view-input:nth-of-type(1):checked ~ .om-showcase-tabs label:nth-child(1),
 .om-view-input:nth-of-type(2):checked ~ .om-showcase-tabs label:nth-child(2),
-.om-view-input:nth-of-type(3):checked ~ .om-showcase-tabs label:nth-child(3) { background: #fff; color: var(--om-brand-deep); box-shadow: 0 2px 8px #183c4010; }
+.om-view-input:nth-of-type(3):checked ~ .om-showcase-tabs label:nth-child(3) { background: #fff; color: var(--om-brand-deep); font-weight: 700; box-shadow: 0 3px 10px color-mix(in srgb, var(--om-text-1) 10%, transparent), inset 0 0 0 1px var(--om-divider-light, #183c401a); transform: translateY(-1px); }
 .om-view-input:nth-of-type(1):focus-visible ~ .om-showcase-tabs label:nth-child(1),
 .om-view-input:nth-of-type(2):focus-visible ~ .om-showcase-tabs label:nth-child(2),
 .om-view-input:nth-of-type(3):focus-visible ~ .om-showcase-tabs label:nth-child(3) { outline: 2px solid var(--om-brand); outline-offset: 2px; }
@@ -23,7 +23,8 @@
 .om-showcase-orbit { position: absolute; width: 310px; height: 145px; border: 1px solid var(--om-divider); border-radius: 50%; left: calc(50% - 155px); top: 75px; transform: rotate(-16deg); }
 .om-showcase-orbit::after { content: ""; position: absolute; inset: 16px -20px; border: 1px dashed var(--om-divider); border-radius: inherit; transform: rotate(28deg); }
 .om-showcase-note { position: absolute; right: 4%; top: 65px; font-size: 12px; line-height: 2.2; color: var(--om-text-3); border-left: 1px solid var(--om-divider); padding-left: 14px; }
-.om-showcase-page { display: none; position: relative; min-height: 211px; padding: 23px; background: #fffffff2; border: 1px solid var(--om-divider-light, #183c401a); border-radius: 12px; box-shadow: 0 5px 0 -2px #d9e1d7, 0 11px 0 -5px #c5d2c7; }
+/* [OM-FREEPLAY] 纸页用现有品牌色的细线和浅层叠影区分层次，不增加图片或持续动画。 */
+.om-showcase-page { display: none; position: relative; min-height: 211px; padding: 23px; background: linear-gradient(150deg, #fff 55%, color-mix(in srgb, var(--om-bg-soft, #edf2ef) 32%, white)); border: 1px solid var(--om-divider-light, #183c401a); border-top: 2px solid color-mix(in srgb, var(--om-brand) 42%, var(--om-divider-light, #183c401a)); border-radius: 12px; box-shadow: 0 5px 0 -2px color-mix(in srgb, var(--om-bg-soft, #edf2ef) 80%, white), 0 11px 0 -5px color-mix(in srgb, var(--om-divider, #cbd7d1) 80%, white), 0 20px 26px -20px color-mix(in srgb, var(--om-text-1) 22%, transparent); }
 .om-view-input:nth-of-type(1):checked ~ .om-showcase-page--1,
 .om-view-input:nth-of-type(2):checked ~ .om-showcase-page--2,
 .om-view-input:nth-of-type(3):checked ~ .om-showcase-page--3 { display: block; }
@@ -31,21 +32,27 @@
 .om-showcase-page h2 { font-size: 20px; line-height: 1.5; margin: 10px 0; font-weight: 650; }
 .om-showcase-page p { font-size: 13px; color: var(--om-text-2); line-height: 1.85; margin: 0; }
 .om-showcase-page footer { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--om-divider-light); font-size: 11px; line-height: 1.7; color: var(--om-text-3); }
-.om-showcase-bottom { margin-top: 24px; font-size: 10px; }
-@media (max-width: 480px) {
-  .om-reading-showcase { padding: 17px; border-radius: 18px; }
-  .om-showcase-stage { height: 190px; }
-  .om-showcase-stage .om-knowledge-sculpture { transform: scale(.75); top: -38px; }
-  .om-showcase-orbit { width: 255px; left: calc(50% - 128px); height: 120px; top: 54px; }
-  .om-showcase-note { right: 0; font-size: 10px; top: 45px; padding-left: 8px; }
-  .om-showcase-page { min-height: 224px; padding: 20px; }
+.om-showcase-bottom { margin-top: 24px; font-size: 10px; align-items: center; }
+.om-showcase-explore { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--om-divider-light, #183c401a); border-radius: 10px; background: var(--om-brand-soft, #17666512); color: var(--om-brand-deep); font-size: 12px; font-weight: 700; letter-spacing: 0; text-decoration: none; transition: border-color .2s, background .2s; }
+.om-showcase-explore:hover { border-color: var(--om-brand); background: color-mix(in srgb, var(--om-brand-soft, #17666512) 68%, white); }
+.om-showcase-explore:focus-visible { outline: 2px solid var(--om-brand); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .om-reading-showcase { padding: 16px; border-radius: 18px; }
+  .om-showcase-views { margin-top: 16px; }
+  .om-showcase-tabs label { padding-inline: 3px; font-size: 11px; }
+  .om-showcase-stage { height: 180px; }
+  .om-showcase-stage .om-knowledge-sculpture { transform: scale(.72); top: -42px; }
+  .om-showcase-orbit { width: 250px; left: calc(50% - 125px); height: 116px; top: 53px; }
+  .om-showcase-note { right: 0; font-size: 10px; top: 43px; padding-left: 8px; }
+  .om-showcase-page { min-height: 216px; padding: 18px; }
   .om-showcase-page h2 { font-size: 18px; }
+  .om-showcase-bottom { flex-wrap: wrap; margin-top: 18px; }
 }
 @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
   .om-showcase-page { animation: om-page-arrive .35s ease-out; }
   @keyframes om-page-arrive { from { transform: translateY(6px); } to { transform: translateY(0); } }
 }
-@media (prefers-reduced-motion: reduce) { .om-showcase-tabs label, .om-showcase-page { transition: none; animation: none; } }
+@media (prefers-reduced-motion: reduce) { .om-showcase-tabs label, .om-showcase-page, .om-showcase-explore { transition: none; animation: none; } }
 
 /* [OM-FREEPLAY] 纸白、深青、铜色与小幅翻页建立立体感；动画只改变 transform。
    所有内容先显示，装饰没有交互焦点。无脚本、减少动效时仍保留静态立体书页。 */

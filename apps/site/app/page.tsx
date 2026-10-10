@@ -7,13 +7,35 @@ import { ArrowRight, BookOpen, Search } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
 import { GardenCards } from "@/components/GardenCards";
 import { getManifest } from "@/lib/publicContent";
+import { articleHref } from "@/lib/publicRoutes";
 import { ReadingShowcase, SpatialNavigator } from "@oasismind/brand";
+import type { PublicPostSummary } from "@oasismind/shared";
 import { withSiteBasePath } from "@/siteConfig";
+
+// [OM-FREEPLAY] 用六个已公开的技术主题展示知识库跨度；缺稿时只从同库已公开的三级文章补位。
+const featuredTopics = [
+  { garden: "LargeLanguageModelGuide", slugTail: "2.2.1-自注意力机制/2.2.1-自注意力机制" },
+  { garden: "ReinforcementLearning", slugTail: "1.2.1-策略梯度定理" },
+  { garden: "DiffusionLanguageModels", slugTail: "2.1.2-离散扩散与转移矩阵" },
+  { garden: "SparseAttention", slugTail: "2.2.1-DSA与索引器" },
+  { garden: "OnPolicyDistillation", slugTail: "1.2.1-学生状态与误差累积" },
+  { garden: "Agent", slugTail: "1.1.1-行动循环与状态转移" },
+] as const;
+
+function selectFeaturedPosts(posts: PublicPostSummary[]): PublicPostSummary[] {
+  return featuredTopics.flatMap(({ garden, slugTail }) => {
+    const candidates = posts.filter((post) => post.garden === garden);
+    const selected = candidates.find((post) => post.slug.endsWith(slugTail))
+      ?? candidates.find((post) => /^\d+\.\d+\.\d+-/.test(post.slug.split("/").at(-1) ?? ""));
+    return selected ? [selected] : [];
+  });
+}
 
 export default function HomePage() {
   const manifest = getManifest();
-  const featured = manifest.posts.slice(0, 6);
+  const featured = selectFeaturedPosts(manifest.posts);
   const gardens = manifest.gardens.filter(garden => garden.id !== "resources");
+  const hasSparseAttention = gardens.some(garden => garden.id === "SparseAttention");
   // [OM-FREEPLAY] 三条入门入口从现有知识库选取，不伪造阅读量或更新时间。
   const paths = [
     { id: "LargeLanguageModelGuide", label: "建立全局认识", name: "大语言模型指南", text: "从架构与训练开始，把分散的概念连起来。" },
@@ -31,7 +53,7 @@ export default function HomePage() {
             <p className="hero-copy">读论文，推公式，理解方法为什么出现、又在哪里失效。从基础概念走进研究细节。</p>
             <div className="hero-actions">
               <Link href="/knowledge" className="primary-button"><BookOpen size={18} />浏览知识库</Link>
-              <Link href="/about" className="text-link">关于我 <ArrowRight size={16} /></Link>
+              {featured[0] && <Link href={articleHref(featured[0])} className="text-link">读一篇完整解析 <ArrowRight size={16} /></Link>}
             </div>
             <Link href="/search" className="home-search"><Search size={20} /><span>搜索论文、算法与模型</span><ArrowRight size={18} /></Link>
             <div className="hero-stats">
@@ -40,7 +62,7 @@ export default function HomePage() {
               <Link href="/resources">学习资源 <ArrowRight size={15} /></Link>
             </div>
           </div>
-          <ReadingShowcase id="public-home" />
+          <ReadingShowcase id="public-home" exploreHref={hasSparseAttention ? withSiteBasePath("/gardens/SparseAttention") : undefined} exploreLabel="进入稀疏注意力知识库" />
         </div>
         <div className="site-shell home-routes" aria-label="阅读入口">
           <div className="home-routes-intro"><p className="section-kicker">找到你的起点</p><h2>从哪里开始？</h2><p>先建立地图，再沿着感兴趣的问题往下读。</p></div>

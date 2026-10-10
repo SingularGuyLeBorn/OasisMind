@@ -1,7 +1,18 @@
 import { KnowledgeSculpture } from "./KnowledgeSculpture";
 
+type ReadingShowcaseProps = {
+  id: string;
+  exploreHref?: string;
+  exploreLabel?: string;
+};
+
 /** 两个首页共用的阅读展台：原生单选切换，无脚本时也完整可用。 */
-export function ReadingShowcase({ id }: { id: string }) {
+export function ReadingShowcase({
+  id,
+  exploreHref,
+  // [OM-FREEPLAY] 调用方只给链接时，用中性文案说明这是阅读入口。
+  exploreLabel = "进入专题阅读",
+}: ReadingShowcaseProps) {
   // [OM-FREEPLAY] 用同一个问题展示三种阅读视角；这不是文章截图或产品能力承诺。
   const views = [
     { key: "question", label: "从问题出发", heading: "上下文变长，计算花在哪里？", text: "每个位置都与历史位置交互。序列越长，需要计算的注意力分数越多。", detail: "先看计算量，再看哪些交互值得保留。", stamp: "问题与动机" },
@@ -19,6 +30,11 @@ export function ReadingShowcase({ id }: { id: string }) {
         <small>{view.stamp}</small><h2>{view.heading}</h2><p>{view.text}</p><footer>{view.detail}</footer>
       </div>)}
     </fieldset>
-    <div className="om-showcase-bottom"><span>沿着问题，把方法读透。</span><span aria-hidden="true">见微 · 知著</span></div>
+    <div className="om-showcase-bottom">
+      <span>沿着问题，把方法读透。</span>
+      {exploreHref
+        ? <a className="om-showcase-explore" href={exploreHref}>{exploreLabel}</a>
+        : <span aria-hidden="true">见微 · 知著</span>}
+    </div>
   </div>;
 }
