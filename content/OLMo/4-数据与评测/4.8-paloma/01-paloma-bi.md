@@ -5,7 +5,6 @@ tags: ["Paloma", "领域评测", "困惑度", "数据分布", "语言模型"]
 published: true
 excerpt: "Paloma 以细粒度领域语料和统一评分协议比较语言模型对不同文本分布的拟合程度，揭示总体平均损失掩盖的领域差异。"
 ---
-
 <!-- arXiv 2312.10523; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/paloma/latex/ 的 LaTeX 源码为准 -->
 
 <!-- page 1 of 39 -->
@@ -574,7 +573,7 @@ International Conference on Machine Learning, 2009. URL https://api.semanticscho
 
 Stella Rose Biderman, Hailey Schoelkopf, Quentin G. Anthony, Herbie Bradley, Kyle O’Brien,
 
-Eric Hallahan, Mohammad Aflah Khan, Shivanshu Purohit, USVSN Sai Prashanth, Edward Raff, Aviya Skowron, Lintang Sutawika, and Oskar van der Wal. Pythia: A suite for analyzing large language models across training and scaling. ArXiv, abs/2304.01373, 2023. URL https: //api.semanticscholar.org/CorpusID:257921893.
+Eric Hallahan, Mohammad Aflah Khan, Shivanshu Purohit, USVSN Sai Prashanth, Edward Raff, Aviya Skowron, Lintang Sutawika, and Oskar van der Wal. Pythia: A suite for analyzing large language models across training and scaling. ArXiv, abs/2304.01373, 2023. URL https://api.semanticscholar.org/CorpusID:257921893.
 
 Yonatan Bisk, Rowan Zellers, Jianfeng Gao, Yejin Choi, et al. Piqa: Reasoning about physical
 
@@ -586,7 +585,7 @@ He, Connor Leahy, Kyle McDonell, Jason Phang, Michael Pieler, Usvsn Sai Prashant
 
 Su Lin Blodgett, Lisa Green, and Brendan O’Connor. Demographic dialectal variation in social
 
-media: A case study of African-American English. In Proceedings of the 2016 Conference on Empirical Methods in Natural Language Processing, pages 1119–1130, Austin, Texas, November 2016. Association for Computational Linguistics. doi: 10.18653/v1/D16-1120. URL https: //aclanthology.org/D16-1120.
+media: A case study of African-American English. In Proceedings of the 2016 Conference on Empirical Methods in Natural Language Processing, pages 1119–1130, Austin, Texas, November 2016. Association for Computational Linguistics. doi: 10.18653/v1/D16-1120. URL https://aclanthology.org/D16-1120.
 
 Burton H. Bloom. Space/time trade-offs in hash coding with allowable errors. Commun. ACM, 13(7):
 
@@ -658,7 +657,7 @@ language models from the loss perspective. ArXiv, abs/2403.15796, 2024. URL http
 
 Yanai Elazar, Akshita Bhagia, Ian H. Magnusson, Abhilasha Ravichander, Dustin Schwenk, Alane
 
-Suhr, Pete Walsh, Dirk Groeneveld, Luca Soldaini, Sameer Singh, Hanna Hajishirzi, Noah A. Smith, and Jesse Dodge. What’s in my big data? ArXiv, abs/2310.20707, 2023. URL https: //api.semanticscholar.org/CorpusID:264803575.
+Suhr, Pete Walsh, Dirk Groeneveld, Luca Soldaini, Sameer Singh, Hanna Hajishirzi, Noah A. Smith, and Jesse Dodge. What’s in my big data? ArXiv, abs/2310.20707, 2023. URL https://api.semanticscholar.org/CorpusID:264803575.
 
 Samir Yitzhak Gadre, Georgios Smyrnis, Vaishaal Shankar, Suchin Gururangan, Mitchell Wortsman,
 
@@ -674,7 +673,7 @@ Phang, Horace He, Anish Thite, Noa Nabeshima, Shawn Presser, and Connor Leahy. T
 
 Sidney Greenbaum and Gerald Nelson. The international corpus of english (ICE) project. World
 
-Englishes, 15(1):3–15, mar 1996. doi: 10.1111/j.1467-971x.1996.tb00088.x. URL https: //doi.org/10.1111%2Fj.1467-971x.1996.tb00088.x.
+Englishes, 15(1):3–15, mar 1996. doi: 10.1111/j.1467-971x.1996.tb00088.x. URL https://doi.org/10.1111%2Fj.1467-971x.1996.tb00088.x.
 
 Dirk Groeneveld, Iz Beltagy, Pete Walsh, Akshita Bhagia, Rodney Kinney, Oyvind Tafjord, A. Jha,
 
@@ -682,7 +681,7 @@ Hamish Ivison, Ian Magnusson, Yizhong Wang, Shane Arora, David Atkinson, Russell
 
 Jordan Hoffmann, Sebastian Borgeaud, Arthur Mensch, Elena Buchatskaya, Trevor Cai, Eliza
 
-Rutherford, Diego de Las Casas, Lisa Anne Hendricks, Johannes Welbl, Aidan Clark, Tom Hennigan, Eric Noland, Katie Millican, George van den Driessche, Bogdan Damoc, Aurelia Guy, Simon Osindero, Karen Simonyan, Erich Elsen, Jack W. Rae, Oriol Vinyals, and L. Sifre. Training compute-optimal large language models. ArXiv, abs/2203.15556, 2022. URL https: //api.semanticscholar.org/CorpusID:247778764.
+Rutherford, Diego de Las Casas, Lisa Anne Hendricks, Johannes Welbl, Aidan Clark, Tom Hennigan, Eric Noland, Katie Millican, George van den Driessche, Bogdan Damoc, Aurelia Guy, Simon Osindero, Karen Simonyan, Erich Elsen, Jack W. Rae, Oriol Vinyals, and L. Sifre. Training compute-optimal large language models. ArXiv, abs/2203.15556, 2022. URL https://api.semanticscholar.org/CorpusID:247778764.
 
 Valentin Hofmann, Janet Pierrehumbert, and Hinrich Schütze. Superbizarre is not superb: Derivational
 
@@ -810,7 +809,7 @@ domain language modeling dataset. In Proceedings of the 2022 Conference on Empir
 
 Manoel Horta Ribeiro, Jeremy Blackburn, Barry Bradlyn, Emiliano De Cristofaro, Gianluca
 
-Stringhini, Summer Long, Stephanie Greenberg, and Savvas Zannettou. The evolution of the manosphere across the web. Proceedings of the International AAAI Conference on Web and Social Media, 15:196–207, may 2021. doi: 10.1609/icwsm.v15i1.18053. URL https: //doi.org/10.1609%2Ficwsm.v15i1.18053.
+Stringhini, Summer Long, Stephanie Greenberg, and Savvas Zannettou. The evolution of the manosphere across the web. Proceedings of the International AAAI Conference on Web and Social Media, 15:196–207, may 2021. doi: 10.1609/icwsm.v15i1.18053. URL https://doi.org/10.1609%2Ficwsm.v15i1.18053.
 
 Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Winogrande: An
 
@@ -826,7 +825,7 @@ Noam M. Shazeer. Glu variants improve transformer. ArXiv, abs/2002.05202, 2020. 
 
 Zhihong Shen, Hao Ma, and Kuansan Wang. A web-scale system for scientific knowledge exploration.
 
-In Proceedings of ACL 2018, System Demonstrations, pages 87–92, Melbourne, Australia, July 2018. Association for Computational Linguistics. doi: 10.18653/v1/P18-4015. URL https: //aclanthology.org/P18-4015.
+In Proceedings of ACL 2018, System Demonstrations, pages 87–92, Melbourne, Australia, July 2018. Association for Computational Linguistics. doi: 10.18653/v1/P18-4015. URL https://aclanthology.org/P18-4015.
 
 Luca Soldaini, Rodney Kinney, Akshita Bhagia, Dustin Schwenk, David Atkinson, Russell Authur,
 
@@ -894,7 +893,7 @@ Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali Farhadi, and Yejin Choi. Hellaswa
 
 罗温·泽勒斯、阿里·霍尔兹曼、尤纳坦·比斯克、阿里·法哈迪和 Yejin Choi。海拉斯瓦格：可以吗
 
-machine really finish your sentence? arXiv preprint arXiv:1905.07830, 2019. URL https: //arxiv.org/abs/1905.07830.
+machine really finish your sentence? arXiv preprint arXiv:1905.07830, 2019. URL https://arxiv.org/abs/1905.07830.
 
 Checklist
 

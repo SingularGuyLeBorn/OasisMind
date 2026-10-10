@@ -1111,7 +1111,7 @@ $$
 
 [34] Jingyuan Liu et al. “Muon is Scalable for LLM Training”. In: arXiv preprint arXiv: 2502.16982 (2025).
 
-[35] Yuliang Liu et al. “OCRBench: on the hidden mystery of OCR in large multimodal models”. In: Science China Information Sciences 67.12 (Dec. 2024). ISSN: 1869-1919. DOI: [10.1007/s11432-024-4235-6](https://doi. org/10.1007/s11432-024-4235-6). URL: [http: //dx. doi. org/10.1007/s11432-024-4235-6](http: //dx. doi. org/10.1007/s11432-024-4235-6).
+[35] Yuliang Liu et al. “OCRBench: on the hidden mystery of OCR in large multimodal models”. In: Science China Information Sciences 67.12 (Dec. 2024). ISSN: 1869-1919. DOI: [10.1007/s11432-024-4235-6](https://doi. org/10.1007/s11432-024-4235-6). URL: [http://dx. doi. org/10.1007/s11432-024-4235-6](http://dx. doi. org/10.1007/s11432-024-4235-6).
 
 [36] Pan Lu et al. MathVista: Evaluating Mathematical Reasoning of Foundation Models in Visual Contexts. 2024. arXiv: [2310.02255 
 $$

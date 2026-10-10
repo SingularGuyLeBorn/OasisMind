@@ -55,6 +55,7 @@ async function main() {
   }
   if (!samples.some(p => p.id === linkedPost.id)) samples.push(linkedPost);
   const images = new Set();
+  const imageArticles = new Map();
   const articleLinks = new Set();
   await mapBounded(samples, async (p) => {
     const response = await get(p.apiPath);
@@ -71,11 +72,15 @@ async function main() {
     }
     if (p.garden === 'SparseAttention') {
       for (const match of data.post.content.matchAll(/\/api\/v1\/assets\/[a-f0-9]{2}\/[a-f0-9]{64}\.[a-z0-9]+/g)) images.add(root + match[0]);
+      // 验证当前正文实际引用的图片，不假定某个固定文章永远包含图片。
+      if (/<img\b[^>]*\bsrc=["'][^"']*\/api\/v1\/assets\//.test(html)) imageArticles.set(p.id, article);
     }
     stats.articles++;
   });
   await mapBounded([...articleLinks], async p => { await get(p); stats.articleLinks++; });
   assert.ok(images.size > 0, 'SparseAttention resource collection is empty');
+  assert.ok(imageArticles.size > 0, 'SparseAttention image article collection is empty');
+  const imageArticle = [...imageArticles.entries()].sort(([a], [b]) => a.localeCompare(b))[0][1];
   await mapBounded([...images], async (p) => {
     const response = await get(p);
     const bytes = Buffer.from(await response.arrayBuffer());
@@ -106,6 +111,8 @@ async function main() {
       await card.click();
       await page.waitForLoadState('networkidle');
       assert.ok((await page.locator('.article-header h1').innerText()).includes('MInference'));
+      assert.equal(await page.locator('.katex-error').count(), 0);
+      await page.goto(resolve(imageArticle), { waitUntil: 'networkidle', timeout: 60000 });
       assert.equal(await page.locator('.katex-error').count(), 0);
       // 使用正文实际图像定位，兼容图片替换时保留技术主题但调整图像说明。
       const mainImages = page.locator('article img');

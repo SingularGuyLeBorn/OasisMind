@@ -5,11 +5,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { getManifest, getPost, getSearchManifest } from "../lib/publicContent";
 import { preparePublicMarkdown } from "../lib/markdownDocument";
 import { parseAboutProfile } from "@oasismind/shared";
+import { assertValidReadingSource } from '../lib/readingSource';
 
 const output = path.join(process.cwd(), ".reading");
 const manifest = getManifest();
 const excerpts: Record<string, string> = {};
 function compile(relative: string, content: string, excerptHtml?: string) {
+  assertValidReadingSource(content, relative);
   const file = path.join(output, relative);
   const document = preparePublicMarkdown(content);
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -18,9 +20,6 @@ function compile(relative: string, content: string, excerptHtml?: string) {
 for (const summary of manifest.posts) {
   const post = getPost(summary.garden, summary.slug);
   if (!post) throw new Error(`发布清单中的文章丢失：${summary.id}`);
-  if (/…\d+ tokens truncated…/.test(post.content) || post.content.includes('\0')) {
-    throw new Error(`文章内容已损坏，停止发布：${summary.id}`);
-  }
   excerpts[summary.id] = renderToStaticMarkup(preparePublicMarkdown(post.excerpt).body);
   compile(`posts/${summary.garden}/${summary.slug}.json`, post.content, excerpts[summary.id]);
 }
@@ -39,6 +38,7 @@ const about = parseAboutProfile(fs.readFileSync(aboutSource, "utf8"));
 const publicProfile = { name: about.name, title: about.title, tagline: about.tagline, oneLiner: about.oneLiner,
   github: about.github, roles: about.roles, focus: about.focus, projects: about.projects };
 const document = preparePublicMarkdown(about.bodyMarkdown);
+assertValidReadingSource(about.bodyMarkdown, 'pages/about');
 fs.mkdirSync(path.join(output, "pages"), { recursive: true });
 fs.writeFileSync(path.join(output, "pages/about.json"), JSON.stringify({
   html: renderToStaticMarkup(document.body), headings: document.headings, profile: publicProfile,

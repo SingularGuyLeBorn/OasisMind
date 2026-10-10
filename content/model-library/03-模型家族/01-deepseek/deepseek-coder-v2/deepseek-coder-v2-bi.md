@@ -29,9 +29,9 @@ We present DeepSeek-Coder-V2, an open-source Mixture-of-Experts (MoE) code langu
 
 DeepSeek-Coder-V2 是开源 **Mixture-of-Experts(MoE)** 代码语言模型, 代码专项任务上接近 GPT4-Turbo. 它从 DeepSeek-V2 的中间 checkpoint 继续预训练, 再喂 6 万亿 token, 显著抬高代码与数学推理, 通用语言能力大体还在. 相对 DeepSeek-Coder-33B, 代码, 推理与通用面都有明显进步; 支持语言从 86 种扩到 338 种, 上下文从 16K 拉到 128K. 标准基准上, 代码与数学评测超过 GPT4-Turbo, Claude 3 Opus, Gemini 1.5 Pro 等闭源模型.
 
-![Chart block](. /images/p01-figure-1-the-performance-of-deepseek-coder-v2-on-math.png)
+![DeepSeek-Coder-V2 原论文第 1 页](../../../../uploads/deepseek-original-pages/deepseek-coder-v2-page-01.png)
 
-![图](. /images/p01-figure-1-the-performance-of-deepseek-coder-v2-on-math.png)
+
 
 Figure 1 | The Performance of DeepSeek-Coder-V2 on math and code benchmarks.
 
@@ -243,9 +243,9 @@ Following DeepSeek-V2, we extend the context length of DeepSeek-Coder-V2 to 128K
 
 (第 6 / 19 页)
 
-![Chart block](. /images/p06-figure-2-evaluation-results-on-the-needle-in-a-haystack.png)
+![DeepSeek-Coder-V2 原论文第 6 页](../../../../uploads/deepseek-original-pages/deepseek-coder-v2-page-06.png)
 
-![图](. /images/p06-figure-2-evaluation-results-on-the-needle-in-a-haystack.png)
+
 
 Figure 2 | Evaluation results on the “Needle In A Haystack” (NIAH) tests. DeepSeek-Coder-V2 performs well across all context window lengths up to 128K.
 
@@ -293,13 +293,13 @@ Reinforcement Learning Algorithm We employ Group Relative Policy Optimization (G
 
 **RL 算法**: 采用与 DeepSeek-V2 相同的 **GRPO**. 相对 PPO 更省: 不必再维护 critic.
 
-![Chart block](. /images/p07-chart.png)
+![DeepSeek-Coder-V2 原论文第 7 页](../../../../uploads/deepseek-original-pages/deepseek-coder-v2-page-07.png)
 
-![图](. /images/p07-chart.png)
 
-![Chart block](. /images/p07-figure-3-performances-of-different-methods.png)
 
-![图](. /images/p07-figure-3-performances-of-different-methods.png)
+
+
+
 
 Figure 3 | Performances of Different Methods
 
@@ -644,7 +644,7 @@ M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. d. O. Pinto, J. Kaplan, H. Edwards, Y
 
 评测在代码上训练的大语言模型(HumanEval).
 
-P. Clark, I. Cowhey, O. Etzioni, T. Khot, A. Sabharwal, C. Schoenick, and O. Tafjord. Think you have solved question answering? try arc, the AI2 reasoning challenge. CoRR, abs/1803.05457, 2018. URL http: //arxiv. org/abs/1803.05457.
+P. Clark, I. Cowhey, O. Etzioni, T. Khot, A. Sabharwal, C. Schoenick, and O. Tafjord. Think you have solved question answering? try arc, the AI2 reasoning challenge. CoRR, abs/1803.05457, 2018. URL http://arxiv. org/abs/1803.05457.
 
 ARC: AI2 推理挑战.
 

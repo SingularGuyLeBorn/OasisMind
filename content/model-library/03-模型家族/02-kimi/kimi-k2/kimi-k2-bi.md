@@ -1191,7 +1191,7 @@ $$
 
 [14] Xinrun Du et al. “Supergpqa: Scaling llm evaluation across 285 graduate disciplines”. In: arXiv preprint arXiv: 2502.14739 (2025).
 
-[15] Dheeru Dua et al. “DROP: A Reading Comprehension Benchmark Requiring Discrete Reasoning Over Paragraphs”. In: CoRR abs/1903.00161 (2019). arXiv: [1903.00161](https://arxiv. org/abs/1903.00161). URL: [http: //arxiv. org/abs/1903.00161](http: //arxiv. org/abs/1903.00161).
+[15] Dheeru Dua et al. “DROP: A Reading Comprehension Benchmark Requiring Discrete Reasoning Over Paragraphs”. In: CoRR abs/1903.00161 (2019). arXiv: [1903.00161](https://arxiv. org/abs/1903.00161). URL: [http://arxiv. org/abs/1903.00161](http://arxiv. org/abs/1903.00161).
 
 [16] Kazuki Fujii et al. Rewriting Pre-Training Data Boosts LLM Performance in Math and Code. 2025. arXiv: [2505.02881 
 $$
@@ -1269,7 +1269,7 @@ $$
 
 [36] Kimi Team. “Kimi k1.5: Scaling reinforcement learning with llms”. In: arXiv preprint arXiv: 2501.12599 (2025).
 
-[37] Diederik P. Kingma and Jimmy Ba. “Adam: A Method for Stochastic Optimization”. In: 3rd International Conference on Learning Representations, ICLR 2015, San Diego, CA, USA, May 7-9, 2015, Conference Track Proceedings. Ed. by Yoshua Bengio and Yann LeCun. 2015. URL: [http: //arxiv. org/abs/1412.6980](http: //arxiv. org/abs/1412.6980).
+[37] Diederik P. Kingma and Jimmy Ba. “Adam: A Method for Stochastic Optimization”. In: 3rd International Conference on Learning Representations, ICLR 2015, San Diego, CA, USA, May 7-9, 2015, Conference Track Proceedings. Ed. by Yoshua Bengio and Yann LeCun. 2015. URL: [http://arxiv. org/abs/1412.6980](http://arxiv. org/abs/1412.6980).
 
 [38] Satyapriya Krishna et al. Fact, Fetch, and Reason: A Unified Evaluation of Retrieval-Augmented Generation. 2025. arXiv: [2409.12941 
 $$
@@ -1303,7 +1303,7 @@ $$
 
 [47] Jingyuan Liu et al. “Muon is scalable for LLM training”. In: arXiv preprint arXiv: 2502.16982 (2025).
 
-[48] Ziming Liu et al. “Hanayo: Harnessing Wave-like Pipeline Parallelism for Enhanced Large Model Training Efficiency”. In: Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis. SC ’23. ACM, Nov. 2023, pp. 1–13. DOI: [10.1145/3581784.3607073](https://doi. org/10.1145/3581784.3607073). URL: [http: //dx. doi. org/10.1145/3581784.3607073](http: //dx. doi. org/10.1145/3581784.3607073).
+[48] Ziming Liu et al. “Hanayo: Harnessing Wave-like Pipeline Parallelism for Enhanced Large Model Training Efficiency”. In: Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis. SC ’23. ACM, Nov. 2023, pp. 1–13. DOI: [10.1145/3581784.3607073](https://doi. org/10.1145/3581784.3607073). URL: [http://dx. doi. org/10.1145/3581784.3607073](http://dx. doi. org/10.1145/3581784.3607073).
 
 [49] Ilya Loshchilov and Frank Hutter. “Decoupled Weight Decay Regularization”. In: International Conference on Learning Representations. 2019. URL: [https://openreview. net/forum? id=Bkg6RiCqY7](https://openreview. net/forum? id=Bkg6RiCqY7).
 

@@ -5,7 +5,6 @@ tags: ["OLMoASR", "ASR", "Whisper", "语音识别", "开放数据"]
 published: true
 excerpt: "OLMoASR 公开大规模语音数据、过滤管线与多档模型，用受控实验研究数据规模和质量如何影响零样本语音识别。"
 ---
-
 <!-- arXiv 2508.20869; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/olmoasr/latex/ 的 LaTeX 源码为准 -->
 
 <!-- page 1 of 17 -->
@@ -702,7 +701,7 @@ search of the next generation of multimodal datasets. Advances in Neural Informa
 
 Daniel Galvez, Greg Diamos, Juan Torres, Keith Achorn, Juan Cer´on, Anjali Gopi, David
 
-Kanter, Max Lam, Mark Mazumder, and Vijay Janapa Reddi. The people’s speech: A large-scale diverse english speech recognition dataset for commercial usage. In J. Vanschoren and S. Yeung (eds.), Proceedings of the Neural Information Process- ing Systems Track on Datasets and Benchmarks, volume 1, 2021. URL https: //datasets-benchmarks-proceedings.neurips.cc/paper_files/paper/ 2021/file/202cb962ac59075b964b07152d234b70-Paper-round1.pdf.
+Kanter, Max Lam, Mark Mazumder, and Vijay Janapa Reddi. The people’s speech: A large-scale diverse english speech recognition dataset for commercial usage. In J. Vanschoren and S. Yeung (eds.), Proceedings of the Neural Information Process- ing Systems Track on Datasets and Benchmarks, volume 1, 2021. URL https://datasets-benchmarks-proceedings.neurips.cc/paper_files/paper/ 2021/file/202cb962ac59075b964b07152d234b70-Paper-round1.pdf.
 
 Leo Gao, Stella Biderman, Sid Black, Laurence Golding, Travis Hoppe, Charles Foster, Jason
 
@@ -784,7 +783,7 @@ Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, et al. Learning transf
 
 Alec Radford, Jong Wook Kim, Tao Xu, Greg Brockman, Christine Mcleavey, and Ilya Sutskever.
 
-Robust speech recognition via large-scale weak supervision. In Andreas Krause, Emma Brun- skill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett (eds.), Pro- ceedings of the 40th International Conference on Machine Learning, volume 202 of Proceed- ings of Machine Learning Research, pp. 28492–28518. PMLR, 23–29 Jul 2023. URL https: //proceedings.mlr.press/v202/radford23a.html.
+Robust speech recognition via large-scale weak supervision. In Andreas Krause, Emma Brun- skill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett (eds.), Pro- ceedings of the 40th International Conference on Machine Learning, volume 202 of Proceed- ings of Machine Learning Research, pp. 28492–28518. PMLR, 23–29 Jul 2023. URL https://proceedings.mlr.press/v202/radford23a.html.
 
 Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi
 

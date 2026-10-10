@@ -5,7 +5,6 @@ tags: ["Infini-gram", "n-gram", "后缀数组", "语言模型", "文本检索"]
 published: true
 excerpt: "Infini-gram 用后缀数组在万亿 Token 语料上执行无界 n-gram 查询，并把最长可用上下文用于语言建模和训练数据分析。"
 ---
-
 <!-- arXiv 2401.17377; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/infini-gram/latex/ 的 LaTeX 源码为准 -->
 
 <!-- page 1 of 26 -->
@@ -592,7 +591,7 @@ Matena, Yanqi Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer l
 
 Ehsan Shareghi, Matthias Petri, Gholamreza Haffari, and Trevor Cohn. Compact, effi-
 
-cient and unlimited capacity: Language modeling with compressed suffix trees. In Conference on Empirical Methods in Natural Language Processing, 2015. URL https: //api.semanticscholar.org/CorpusID:225428.
+cient and unlimited capacity: Language modeling with compressed suffix trees. In Conference on Empirical Methods in Natural Language Processing, 2015. URL https://api.semanticscholar.org/CorpusID:225428.
 
 Weijia Shi, Sewon Min, Michihiro Yasunaga, Minjoon Seo, Rich James, Mike Lewis, Luke
 

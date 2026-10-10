@@ -747,7 +747,7 @@ F. Cassano, J. Gouwar, D. Nguyen, S. Nguyen, L. Phipps-Costin, D. Pinckney, M.-H
 
 M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. de Oliveira Pinto, J. Kaplan, H. Edwards, Y. Burda, N. Joseph, G. Brockman, A. Ray, R. Puri, G. Krueger, M. Petrov, H. Khlaaf, G. Sastry, P. Mishkin, B. Chan, S. Gray, N. Ryder, M. Pavlov, A. Power, L. Kaiser, M. Bavarian, C. Winter, P. Tillet, F. P. Such, D. Cummings, M. Plappert, F. Chantzis, E. Barnes, A. Herbert-Voss, W. H. Guss, A. Nichol, A. Paino, N. Tezak, J. Tang, I. Babuschkin, S. Balaji, S. Jain, W. Saunders, C. Hesse, A. N. Carr, J. Leike, J. Achiam, V. Misra, E. Morikawa, A. Radford, M. Knight, M. Brundage, M. Murati, K. Mayer, P. Welinder, B. McGrew, D. Amodei, S. McCandlish, I. Sutskever, and W. Zaremba. Evaluating large language models trained on code. 2021.
 
-N. Chirkova and S. Troshin. CodeBPE: Investigating subtokenization options for large language model pretraining on source code. In The Eleventh International Conference on Learning Representations, 2023. URL https: //openreview.net/forum?id=htL4UZ344nF.
+N. Chirkova and S. Troshin. CodeBPE: Investigating subtokenization options for large language model pretraining on source code. In The Eleventh International Conference on Learning Representations, 2023. URL https://openreview.net/forum?id=htL4UZ344nF.
 
 P. Clark, I. Cowhey, O. Etzioni, T. Khot, A. Sabharwal, C. Schoenick, and O. Tafjord. Think you have solved question answering? Try ARC, the AI2 reasoning challenge. CoRR, arXiv:1803.05457, 2018.
 
@@ -781,15 +781,15 @@ L. Edman, H. Schmid, and A. Fraser. CUTE: Measuring LLMs’ understanding of the
 
 L. Edman, H. Schmid, and A. Fraser. EXECUTE: A multilingual benchmark for LLM token understanding. In W. Che, J. Nabende, E. Shutova, and M. T. Pilehvar, editors, Findings of the Association for Computational Linguistics: ACL 2025, pages 1878–1887, Vienna, Austria, July 2025. Association for Computational Linguistics. ISBN 979-8- 89176-256-5. doi: 10.18653/v1/2025.findings-acl.95. URL https://aclanthology.org/2025.findings-acl.95/.
 
-D. Feher, I. Vulić, and B. Minixhofer. Retrofitting large language models with dynamic tokenization. In W. Che, J. Nabende, E. Shutova, and M. T. Pilehvar, editors, Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 29866–29883, Vienna, Austria, July 2025. Association for Computational Linguistics. ISBN 979-8-89176-251-0. doi: 10.18653/v1/2025.acl-long.1444. URL https: //aclanthology.org/2025.acl-long.1444/.
+D. Feher, I. Vulić, and B. Minixhofer. Retrofitting large language models with dynamic tokenization. In W. Che, J. Nabende, E. Shutova, and M. T. Pilehvar, editors, Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 29866–29883, Vienna, Austria, July 2025. Association for Computational Linguistics. ISBN 979-8-89176-251-0. doi: 10.18653/v1/2025.acl-long.1444. URL https://aclanthology.org/2025.acl-long.1444/.
 
-W. Fleshman and B. V. Durme. Toucan: Token-aware character level language modeling, 2023. URL https: //arxiv.org/abs/2311.08620.
+W. Fleshman and B. V. Durme. Toucan: Token-aware character level language modeling, 2023. URL https://arxiv.org/abs/2311.08620.
 
 <!-- page 24 of 35 -->
 
 S. Geng, N. Ranchin, Y. Yao, M. Peyrard, C. Wendler, M. Gastpar, and R. West. zip2zip: Inference-time adaptive tokenization via online compression. In The Thirty-ninth Annual Conference on Neural Information Processing Systems, 2025. URL https://openreview.net/forum?id=Hmepi1Fm2g.
 
-F. Gloeckle, B. Y. Idrissi, B. Roziere, D. Lopez-Paz, and G. Synnaeve. Better & faster large language models via multi-token prediction. In Forty-first International Conference on Machine Learning, 2024. URL https: //openreview.net/forum?id=pEWAcejiU2.
+F. Gloeckle, B. Y. Idrissi, B. Roziere, D. Lopez-Paz, and G. Synnaeve. Better & faster large language models via multi-token prediction. In Forty-first International Conference on Machine Learning, 2024. URL https://openreview.net/forum?id=pEWAcejiU2.
 
 A. Grivas, L. Loconte, E. van Krieken, P. Nawrot, Y. Zhao, E. Wielewski, P. Minervini, E. Ponti, and A. Vergari. Fast and expressive multi-token prediction with probabilistic circuits, 2025. URL https://arxiv.org/abs/2511.11346.
 
@@ -815,7 +815,7 @@ A. Holtzman, J. Buys, L. Du, M. Forbes, and Y. Choi. The curious case of neural 
 
 E. J. Hu, yelong shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang, and W. Chen. LoRA: Low-rank adaptation of large language models. In International Conference on Learning Representations, 2022. URL https://openreview. net/forum?id=nZeVKeeFYf9.
 
-H. Huang, D. Zhu, B. Wu, Y. Zeng, Y. Wang, Q. Min, and Z. Xun. Over-tokenized transformer: Vocabulary is generally worth scaling. In A. Singh, M. Fazel, D. Hsu, S. Lacoste-Julien, F. Berkenkamp, T. Maharaj, K. Wagstaff, and J. Zhu, editors, Proceedings of the 42nd International Conference on Machine Learning, volume 267 of Proceedings of Machine Learning Research, pages 26261–26282. PMLR, 13–19 Jul 2025. URL https: //proceedings.mlr.press/v267/huang25bb.html.
+H. Huang, D. Zhu, B. Wu, Y. Zeng, Y. Wang, Q. Min, and Z. Xun. Over-tokenized transformer: Vocabulary is generally worth scaling. In A. Singh, M. Fazel, D. Hsu, S. Lacoste-Julien, F. Berkenkamp, T. Maharaj, K. Wagstaff, and J. Zhu, editors, Proceedings of the 42nd International Conference on Machine Learning, volume 267 of Proceedings of Machine Learning Research, pages 26261–26282. PMLR, 13–19 Jul 2025. URL https://proceedings.mlr.press/v267/huang25bb.html.
 
 S. Hwang, B. Wang, and A. Gu. Dynamic chunking for end-to-end hierarchical sequence modeling, 2025. URL https://arxiv.org/abs/2507.07955.
 
@@ -899,7 +899,7 @@ P. Neitemeier, B. Deiseroth, C. Eichenberg, and L. Balles. Hierarchical autoregr
 
 T. OLMo, P. Walsh, L. Soldaini, D. Groeneveld, K. Lo, S. Arora, A. Bhagia, Y. Gu, S. Huang, M. Jordan, N. Lambert, D. Schwenk, O. Tafjord, T. Anderson, D. Atkinson, F. Brahman, C. Clark, P. Dasigi, N. Dziri, M. Guerquin, H. Ivison, P. W. Koh, J. Liu, S. Malik, W. Merrill, L. J. V. Miranda, J. Morrison, T. Murray, C. Nam, V. Pyatkin, A. Rangapur, M. Schmitz, S. Skjonsberg, D. Wadden, C. Wilhelm, M. Wilson, L. Zettlemoyer, A. Farhadi, N. A. Smith, and H. Hajishirzi. 2 olmo 2 furious, 2024. URL https://arxiv.org/abs/2501.00656.
 
-T. OLMo, P. Walsh, L. Soldaini, D. Groeneveld, K. Lo, S. Arora, A. Bhagia, Y. Gu, S. Huang, M. Jordan, N. Lambert, D. Schwenk, O. Tafjord, T. Anderson, D. Atkinson, F. Brahman, C. Clark, P. Dasigi, N. Dziri, A. Ettinger, M. Guerquin, D. Heineman, H. Ivison, P. W. Koh, J. Liu, S. Malik, W. Merrill, L. J. V. Miranda, J. Morrison, T. Murray, C. Nam, J. Poznanski, V. Pyatkin, A. Rangapur, M. Schmitz, S. Skjonsberg, D. Wadden, C. Wilhelm, M. Wilson, L. Zettlemoyer, A. Farhadi, N. A. Smith, and H. Hajishirzi. 2 olmo 2 furious, 2025. URL https: //arxiv.org/abs/2501.00656.
+T. OLMo, P. Walsh, L. Soldaini, D. Groeneveld, K. Lo, S. Arora, A. Bhagia, Y. Gu, S. Huang, M. Jordan, N. Lambert, D. Schwenk, O. Tafjord, T. Anderson, D. Atkinson, F. Brahman, C. Clark, P. Dasigi, N. Dziri, A. Ettinger, M. Guerquin, D. Heineman, H. Ivison, P. W. Koh, J. Liu, S. Malik, W. Merrill, L. J. V. Miranda, J. Morrison, T. Murray, C. Nam, J. Poznanski, V. Pyatkin, A. Rangapur, M. Schmitz, S. Skjonsberg, D. Wadden, C. Wilhelm, M. Wilson, L. Zettlemoyer, A. Farhadi, N. A. Smith, and H. Hajishirzi. 2 olmo 2 furious, 2025. URL https://arxiv.org/abs/2501.00656.
 
 Olmo Team. Olmo 3, 2025. URL https://allenai.org/papers/olmo3.
 
@@ -927,7 +927,7 @@ P. Rajpurkar, J. Zhang, K. Lopyrev, and P. Liang. SQuAD: 100,000+ questions for 
 
 In J. Su, K. Duh, and X. Carreras, editors, Proceedings of the 2016 Conference on Empirical Methods in Natural Language Processing, pages 2383–2392, Austin, Texas, Nov. 2016. Association for Computational Linguistics. doi: 10.18653/v1/D16-1264. URL https://aclanthology.org/D16-1264.
 
-S. Reddy, D. Chen, and C. D. Manning. CoQA: A conversational question answering challenge. Transactions of the Association for Computational Linguistics, 7:249–266, 2019. doi: 10.1162/tacl_a_00266. URL https: //aclanthology.org/Q19-1016.
+S. Reddy, D. Chen, and C. D. Manning. CoQA: A conversational question answering challenge. Transactions of the Association for Computational Linguistics, 7:249–266, 2019. doi: 10.1162/tacl_a_00266. URL https://aclanthology.org/Q19-1016.
 
 P. Rust, J. F. Lotz, E. Bugliarello, E. Salesky, M. de Lhoneux, and D. Elliott. Language modelling with pixels. In The Eleventh International Conference on Learning Representations, 2023. URL https://openreview.net/forum?id= FkSp8VW8RjH.
 
@@ -959,7 +959,7 @@ org/abs/2002.07306.
 
 O. Uzan and Y. Pinter. Charbench: Evaluating the role of tokenization in character-level tasks, 2025. URL https://arxiv.org/abs/2508.02591.
 
-A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. u. Kaiser, and I. Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc., 2017. URL https: //proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf.
+A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. u. Kaiser, and I. Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc., 2017. URL https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf.
 
 T. Vieira, B. LeBrun, M. Giulianelli, J. L. Gastaldi, B. DuSell, J. Terilla, T. J. O’Donnell, and R. Cotterell. From language models over tokens to language models over characters. In Forty-second International Conference on Machine Learning, 2025. URL https://openreview.net/forum?id=sQS0roNQZR.
 
@@ -977,7 +977,7 @@ S. Yang, J. Kautz, and A. Hatamizadeh. Gated delta networks: Improving mamba2 wi
 
 F. Yergeau. Utf-8, a transformation format of iso 10646. Technical report, 2003.
 
-G.-I. Yu, J. S. Jeong, G.-W. Kim, S. Kim, and B.-G. Chun. Orca: A distributed serving system for Transformer- Based generative models. In 16th USENIX Symposium on Operating Systems Design and Implementation (OSDI 22), pages 521–538, Carlsbad, CA, July 2022. USENIX Association. ISBN 978-1-939133-28-1. URL https: //www.usenix.org/conference/osdi22/presentation/yu.
+G.-I. Yu, J. S. Jeong, G.-W. Kim, S. Kim, and B.-G. Chun. Orca: A distributed serving system for Transformer- Based generative models. In 16th USENIX Symposium on Operating Systems Design and Implementation (OSDI 22), pages 521–538, Carlsbad, CA, July 2022. USENIX Association. ISBN 978-1-939133-28-1. URL https://www.usenix.org/conference/osdi22/presentation/yu.
 
 L. Yu, D. Simig, C. Flaherty, A. Aghajanyan, L. Zettlemoyer, and M. Lewis. MEGABYTE: Predicting million-byte sequences with multiscale transformers. In Thirty-seventh Conference on Neural Information Processing Systems, 2023. URL https://openreview.net/forum?id=JTmO2V9Xpz.
 
@@ -989,7 +989,7 @@ Y. Zhang and Q. Yang. A survey on multi-task learning, 2021. URL https://arxiv.o
 
 B. S. Zheng, A. Liu, O. Ahia, J. Hayase, Y. Choi, and N. A. Smith. Broken tokens? your language model can secretly handle non-canonical tokenizations. In The Thirty-ninth Annual Conference on Neural Information Processing Systems, 2025a. URL https://openreview.net/forum?id=WrYWolqKh3.
 
-L. Zheng, X. Zhao, G. Wang, C. Wu, D. Dong, A. Wang, M. Wang, Y. Du, H. Bo, A. Sharma, B. Li, K. Zhang, C. Hu, U. Thakker, and L. Kong. Evabyte: Efficient byte-level language models at scale, 2025b. URL https: //hkunlp.github.io/blog/2025/evabyte.
+L. Zheng, X. Zhao, G. Wang, C. Wu, D. Dong, A. Wang, M. Wang, Y. Du, H. Bo, A. Sharma, B. Li, K. Zhang, C. Hu, U. Thakker, and L. Kong. Evabyte: Efficient byte-level language models at scale, 2025b. URL https://hkunlp.github.io/blog/2025/evabyte.
 
 T. Y. Zhuo, M. C. Vu, J. Chim, H. Hu, W. Yu, R. Widyasari, I. N. B. Yusuf, H. Zhan, J. He, I. Paul, et al. Bigcodebench: Benchmarking code generation with diverse function calls and complex instructions. arXiv preprint arXiv:2406.15877, 2024.
 <!-- page 29 of 35 -->

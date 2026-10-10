@@ -5,7 +5,6 @@ tags: ["Dolma", "预训练数据", "数据治理", "开放语料"]
 published: true
 excerpt: "Dolma 公开三万亿 Token 语料及其收集、过滤、去重与混合流程，使预训练数据配方能够复查和复现。"
 ---
-
 # Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research / Dolma：面向语言模型预训练研究的三万亿 Token 开放语料库
 
 <!-- page 1 of 64 -->
@@ -492,7 +491,7 @@ statements for natural language processing: Toward mitigating system bias and en
 
 Stella Rose Biderman, Hailey Schoelkopf, Quentin G.
 
-Giuseppe Attardi. 2023. Wikiextractor. https: //github.com/attardi/wikiextractor/tree/ 8f1b434a80608e1e313d38d263ed7c79c9ee75a9. Accessed: 2024-02-15.
+Giuseppe Attardi. 2023. Wikiextractor. https://github.com/attardi/wikiextractor/tree/ 8f1b434a80608e1e313d38d263ed7c79c9ee75a9. Accessed: 2024-02-15.
 
 Tom Ayoola, Shubhi Tyagi, Joseph Fisher, Christos
 

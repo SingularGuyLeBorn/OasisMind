@@ -5,7 +5,6 @@ tags: ["DataDecide", "预训练数据", "Scaling Laws", "数据选择"]
 published: true
 excerpt: "DataDecide 通过 25 种数据配方、14 个模型规模和多个随机种子，研究小规模实验能否可靠预测大规模预训练数据选择。"
 ---
-
 # DataDecide: How to Predict Best Pretraining Data with Small Experiments · 如何用小实验预测最佳预训练数据
 
 <!-- arXiv 2504.11393; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/datadecide/latex/ 的 LaTeX 源码为准 -->
@@ -680,7 +679,7 @@ Training large language models is computationally expen- sive, especially when i
 
 训练大语言模型需要大量算力, 尤其是同时系统研究预训练数据组成、模型规模、随机初始化和数据顺序时. DATADECIDE 的预训练实验约使用 82 万 H100 GPU 小时. 作者发布全部模型、数据与评测, 使其他研究者无需重复这笔开销, 从而共享算力投入的收益. 研究结论还可以用小规模实验支持决策, 引导更高效、更节约成本的模型开发. DATADECIDE 除机会成本外没有直接伦理问题, 但预训练数据决策会显著影响下游模型行为. 作者鼓励后续工作研究数据选择方法的潜在偏差, 以及这些偏差对现实部署模型的影响.
 
-guide to scaling law estimation, 2024. URL https: //arxiv.org/abs/2410.11840.
+guide to scaling law estimation, 2024. URL https://arxiv.org/abs/2410.11840.
 
 References
 
@@ -724,7 +723,7 @@ Common Crawl. Common crawl. URL https:// commoncrawl.org. Accessed: 2025-05-21.
 
 Du, Z., Zeng, A., Dong, Y., and Tang, J. Understanding
 
-emergent abilities of language models from the loss per- spective. In The Thirty-eighth Annual Conference on Neu- ral Information Processing Systems, 2024. URL https: //openreview.net/forum?id=35DAviqMFo.
+emergent abilities of language models from the loss per- spective. In The Thirty-eighth Annual Conference on Neu- ral Information Processing Systems, 2024. URL https://openreview.net/forum?id=35DAviqMFo.
 
 Dubey, A., Jauhri, A., Pandey, A., Kadian, A., Al-Dahle,
 
@@ -764,7 +763,7 @@ H., Brahman, F., Miranda, L. J. V., Liu, A., Dziri, N., Lyu, S., Gu, Y., Malik, 
 
 Lewkowycz, A., Andreassen, A., Dohan, D., Dyer, E.,
 
-Kolter, J. Z. Scaling laws for data filtering - data curation cannot be compute agnostic. CoRR, abs/2404.07177, 2024. doi: 10.48550/ARXIV.2404.07177. URL https: //doi.org/10.48550/arXiv.2404.07177.
+Kolter, J. Z. Scaling laws for data filtering - data curation cannot be compute agnostic. CoRR, abs/2404.07177, 2024. doi: 10.48550/ARXIV.2404.07177. URL https://doi.org/10.48550/arXiv.2404.07177.
 
 Groeneveld, D., Beltagy, I., Walsh, P., Bhagia, A., Kinney,
 

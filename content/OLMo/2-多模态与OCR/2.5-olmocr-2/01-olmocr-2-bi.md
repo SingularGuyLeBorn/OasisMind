@@ -357,7 +357,7 @@ Google. Explore document processing capabilities with the gemini API. https://we
 
 Zhentao He, Can Zhang, Ziheng Wu, Zhenghao Chen, Yufei Zhan, Yifan Li, Zhao Zhang, Xian Wang, and Minghui
 
-Qiu. Seeing is believing? mitigating ocr hallucinations in multimodal large language models, 2025. URL https: //arxiv.org/abs/2506.20168.
+Qiu. Seeing is believing? mitigating ocr hallucinations in multimodal large language models, 2025. URL https://arxiv.org/abs/2506.20168.
 
 Mi Jian, Yumeng Li, Bowen Wang, Xiaomin He, Zheyuan Gu, Qing Yan, Colin Zhang, and Lei Zhang. dots.ocr:
 
@@ -411,7 +411,7 @@ Vik Paruchuri. chandra: OCR model that handles complex tables, forms, handwritin
 
 <!-- page 11 of 11 -->
 
-PDF Association staff. Pdf in 2016: Broader, deeper, richer. PDF Association, December 2015. URL https: //pdfa.org/pdf-in-2016-broader-deeper-richer/.
+PDF Association staff. Pdf in 2016: Broader, deeper, richer. PDF Association, December 2015. URL https://pdfa.org/pdf-in-2016-broader-deeper-richer/.
 
 Jake Poznanski, Jon Borchardt, Jason Dunkelberger, Regan Huff, Daniel Lin, Aman Rangapur, Christopher Wilhelm,
 
@@ -439,7 +439,7 @@ Shang, Bo Zhang, Liqun Wei, Zhihao Sui, Wei Li, Botian Shi, Yu Qiao, Dahua Lin, 
 
 Bin Wang, Fan Wu, Linke Ouyang, Zhuangcheng Gu, Rui Zhang, Renqiu Xia, Bo Zhang, and Conghui He. Image
 
-over text: Transforming formula recognition evaluation with character detection matching, 2025b. URL https: //arxiv.org/abs/2409.03643.
+over text: Transforming formula recognition evaluation with character detection matching, 2025b. URL https://arxiv.org/abs/2409.03643.
 
 Peng Wang, Shuai Bai, Sinan Tan, Shijie Wang, Zhihao Fan, Jinze Bai, Keqin Chen, Xuejing Liu, Jialin Wang, Wenbin
 
@@ -451,7 +451,7 @@ Sun, Yuang Peng, et al. General ocr theory: Towards ocr-2.0 via a unified end-to
 
 Mitchell Wortsman, Gabriel Ilharco, Samir Yitzhak Gadre, Rebecca Roelofs, Raphael Gontijo-Lopes, Ari S. Morcos,
 
-Hongseok Namkoong, Ali Farhadi, Yair Carmon, Simon Kornblith, and Ludwig Schmidt. Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time, 2022. URL https: //arxiv.org/abs/2203.05482.
+Hongseok Namkoong, Ali Farhadi, Yair Carmon, Simon Kornblith, and Ludwig Schmidt. Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time, 2022. URL https://arxiv.org/abs/2203.05482.
 
 Junyu Xiong, Yonghui Wang, Weichao Zhao, Chenyu Liu, Bing Yin, Wengang Zhou, and Houqiang Li. Docr1: Evidence
 

@@ -5,7 +5,6 @@ tags: ["OLMo", "对照译稿"]
 published: true
 excerpt: Tulu 2 用一套 32.6 万条的 V2 指令混合数据微调 LLAMA-2, 并证明 DPO 可以稳定扩展到 70B 规模, 使开放模型在多个基准上达到或超过 GPT-3.5-turbo-0301.
 ---
-
 # Camels in a Changing Climate: Enhancing LM Adaptation with TÜLU 2
 
 <!-- page 1 of 15 -->
@@ -468,7 +467,7 @@ A. Ahern, M. Wang, C. Gu, et al. Reinforced self-training (rest) for language mo
 
 T. Hartvigsen, S. Gabriel, H. Palangi, M. Sap, D. Ray, and E. Kamar. TOXIGEN: Controlling
 
-Language Models to Generate Implied and Adversarial Toxicity. In ACL, 2022. URL https: //arxiv.org/abs/2203.09509.
+Language Models to Generate Implied and Adversarial Toxicity. In ACL, 2022. URL https://arxiv.org/abs/2203.09509.
 
 A. Q. Jiang, A. Sablayrolles, A. Mensch, C. Bamford, D. S. Chaplot, D. d. l. Casas, F. Bressand,
 
@@ -484,7 +483,7 @@ from reports of clinical trials. In Proceedings of the 2019 Conference of the No
 
 B. Lester, R. Al-Rfou, and N. Constant. The power of scale for parameter-efficient prompt tun-
 
-ing. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Pro- cessing, pages 3045–3059, Online and Punta Cana, Dominican Republic, Nov. 2021. Associ- ation for Computational Linguistics. doi: 10.18653/v1/2021.emnlp-main.243. URL https: //aclanthology.org/2021.emnlp-main.243.
+ing. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Pro- cessing, pages 3045–3059, Online and Punta Cana, Dominican Republic, Nov. 2021. Associ- ation for Computational Linguistics. doi: 10.18653/v1/2021.emnlp-main.243. URL https://aclanthology.org/2021.emnlp-main.243.
 
 X. Li, T. Zhang, Y. Dubois, R. Taori, I. Gulrajani, C. Guestrin, P. Liang, and T. B. Hashimoto.
 

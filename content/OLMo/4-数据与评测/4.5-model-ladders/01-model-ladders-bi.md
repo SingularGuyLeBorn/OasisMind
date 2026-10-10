@@ -5,7 +5,6 @@ tags: ["Model Ladders", "缩放定律", "性能预测", "代理模型"]
 published: true
 excerpt: "Model Ladders 通过一组小规模代理训练与分层拟合，在投入完整预训练预算前预测目标模型的下游性能。"
 ---
-
 # Model Ladders for Large Language Models · 大语言模型的模型阶梯
 <!-- arXiv 2412.04403; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/model-ladders/latex/ 的 LaTeX 源码为准 -->
 
@@ -459,7 +458,7 @@ about physical commonsense in natural language. Proceedings of the AAAI Conferen
 
 Yangyi Chen, Binxuan Huang, Yifan Gao, Zhengyang Wang, Jingfeng Yang, and Heng
 
-Ji. Scaling laws for predicting downstream performance in llms. 2024. URL https: //api.semanticscholar.org/CorpusID:273323177.
+Ji. Scaling laws for predicting downstream performance in llms. 2024. URL https://api.semanticscholar.org/CorpusID:273323177.
 
 Christopher Clark, Kenton Lee, Ming-Wei Chang, Tom Kwiatkowski, Michael Collins, and
 
@@ -577,7 +576,7 @@ Commonsense reasoning about social interactions. pp. 4463–4473, Hong Kong, Chi
 
 Rylan Schaeffer, Hailey Schoelkopf, Brando Miranda, Gabriel Mukobi, Varun Madan,
 
-Adam Ibrahim, Herbie Bradley, Stella Biderman, and Sanmi Koyejo. Why has pre- dicting downstream capabilities of frontier AI models with scale remained elusive? In Trustworthy Multi-modal Foundation Models and AI Agents (TiFA), 2024. URL https: //openreview.net/forum?id=AbHHrj9afB.
+Adam Ibrahim, Herbie Bradley, Stella Biderman, and Sanmi Koyejo. Why has pre- dicting downstream capabilities of frontier AI models with scale remained elusive? In Trustworthy Multi-modal Foundation Models and AI Agents (TiFA), 2024. URL https://openreview.net/forum?id=AbHHrj9afB.
 
 Alon Talmor, Jonathan Herzig, Nicholas Lourie, and Jonathan Berant. CommonsenseQA:
 

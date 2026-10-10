@@ -1811,7 +1811,7 @@ K. Sakaguchi, R. L. Bras, C. Bhagavatula, and Y. Choi. Winogrande: An adversaria
 Z. Shao, Y. Luo, C. Lu, Z. Z. Ren, J. Hu, T. Ye, Z. Gou, S. Ma, and X. Zhang. Deepseekmath-v2: Towards self-verifiable mathematical reasoning, 2025. URL [https://arxiv. org/abs/2511.22570](https://arxiv. org/abs/2511.22570).
 
 
-N. Shazeer. Fast transformer decoding: One write-head is all you need. CoRR, abs/1911.02150, 2019. URL [http: //arxiv. org/abs/1911.02150](http: //arxiv. org/abs/1911.02150).
+N. Shazeer. Fast transformer decoding: One write-head is all you need. CoRR, abs/1911.02150, 2019. URL [http://arxiv. org/abs/1911.02150](http://arxiv. org/abs/1911.02150).
 
 
 N. Shazeer. Glu variants improve transformer. arXiv preprint arXiv: 2002.05202, 2020.

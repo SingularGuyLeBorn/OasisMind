@@ -5,7 +5,6 @@ tags: ["OLMo", "对照译稿"]
 published: true
 excerpt: "RewardBench 2 (arXiv 2506.01937, ICLR 2026) 的逐段中英对照译稿: 一个用未见过的人类提示与 best-of-4 格式构建的多技能奖励模型评测基准, 及其与 best-of-N 采样和 PPO 训练的相关性实验."
 ---
-
 <!-- page 1 of 28 -->
 
 Published as a conference paper at ICLR 2026
@@ -587,7 +586,7 @@ Liu, and Yahui Zhou. Skywork-reward: Bag of tricks for reward modeling in llms. 
 
 Jiawei Liu, Chunqiu Steven Xia, Yuyao Wang, and Lingming Zhang. Is your code generated
 
-by chatGPT really correct? rigorous evaluation of large language models for code generation. In Thirty-seventh Conference on Neural Information Processing Systems, 2023. URL https: //openreview.net/forum?id=1qvx610Cu7.
+by chatGPT really correct? rigorous evaluation of large language models for code generation. In Thirty-seventh Conference on Neural Information Processing Systems, 2023. URL https://openreview.net/forum?id=1qvx610Cu7.
 
 Yantao Liu, Zijun Yao, Rui Min, Yixin Cao, Lei Hou, and Juanzi Li. Rm-bench: Benchmarking
 
