@@ -14,6 +14,7 @@ import { AdminPage, LoadingState, NativeCapabilitiesPanel, PageHeader } from "@/
 import { AsyncPoolPanel } from "@/components/asyncPoolPanel";
 import { FreeModelsSummaryCard } from "@/components/freeModelsPanel";
 import { cn } from "@/lib/utils";
+import { AgentWorkspaceScene } from "@/components/agentWorkspaceScene";
 
 function StatCard({
   icon: Icon,
@@ -41,7 +42,7 @@ function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="om-card-premium om-lift rounded-2xl p-5"
+      className="om-agent-metric om-card-premium om-lift rounded-2xl p-5"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -92,6 +93,8 @@ export default function DashboardPage() {
         title="Analytics 概览"
         description="并发池、文章、Agent 运行、Token 与日志错误趋势一览。"
       />
+
+      <AgentWorkspaceScene />
 
       <AsyncPoolPanel workspaceNames={workspaceNames} />
 

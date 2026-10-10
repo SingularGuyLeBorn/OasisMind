@@ -15,6 +15,7 @@ import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { AgentWorkspaceScene } from "@/components/agentWorkspaceScene";
 import { Ban, Check, ChevronDown, FileText, ImageOff, Loader2, Paperclip, RefreshCw, X } from "lucide-react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import {
@@ -1018,12 +1019,13 @@ export const ChatMessageList = memo(function ChatMessageList({
           <Loader2 className="h-6 w-6 animate-spin text-[var(--om-text-3)]" />
         </div>
       ) : !hasDisplay && !backendDown ? (
-        <div className="om-msg-in flex flex-1 flex-col items-center justify-center gap-3 px-4 py-4 text-center md:px-6">
+        <div className="om-msg-in flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto px-4 py-4 text-center md:px-6">
           <p className="om-display-serif text-3xl text-[var(--om-text-1)] md:text-4xl">
             今天想种点什么？
           </p>
           <p className="text-sm text-[var(--om-text-3)]">发送第一条消息，开始浇灌这个想法</p>
           <GardenGreeting />
+          <AgentWorkspaceScene compact />
           {/* #12 Swarm 新手引导：无 Workspace 时展示（可关闭，localStorage 记忆） */}
           {!hasWorkspaces && showOnboarding && (
             <div className="relative max-w-md rounded-2xl border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)] p-4 text-left" data-testid="swarm-onboarding">

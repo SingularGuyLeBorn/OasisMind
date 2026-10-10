@@ -72,6 +72,62 @@
 /* [OM-FREEPLAY] 首页立体书页留在独立视觉区，移动端缩小，不遮住链接和正文。 */
 .om-owner-book-scene { display: grid; justify-items: center; align-content: center; min-width: 0; }
 @media (max-width: 1023px) { .om-owner-book-scene .om-knowledge-sculpture { height: 220px; transform: scale(.8); margin-block: -28px; } }
+/* [OM-FREEPLAY] 本地 Agent 的空间材质与焦点交互，不改变消息、任务或审批状态。 */
+.om-agent-station { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, .85fr) minmax(320px, 1.15fr); align-items: center; gap: 20px; width: 100%; padding: 26px; border: 1px solid var(--om-divider); border-radius: 24px; overflow: hidden; text-align: left; background: radial-gradient(ellipse at 75% 40%, color-mix(in srgb, var(--om-brand) 12%, transparent), transparent 65%), var(--om-bg-soft); }
+.om-agent-station-copy { min-width: 0; }
+.om-agent-station-copy > p:first-child { margin: 0 0 8px; font-size: 10px; color: var(--om-text-3); letter-spacing: .12em; }
+.om-agent-station-copy h2 { margin: 0; font-size: 24px; line-height: 1.5; font-weight: 650; color: var(--om-text-1); }
+.om-agent-station-description { min-height: 42px; margin: 10px 0 16px; font-size: 12px; line-height: 1.75; color: var(--om-text-2); }
+.om-agent-station-perspectives { display: flex; gap: 6px; }
+.om-agent-station-perspectives button { min-height: 36px; padding: 6px 15px; border: 1px solid var(--om-divider); border-radius: 99px; font-size: 12px; background: var(--om-bg); color: var(--om-text-2); cursor: pointer; }
+.om-agent-station-perspectives button[aria-pressed="true"] { color: var(--om-brand-deep); border-color: var(--om-brand); background: var(--om-brand-soft); }
+.om-agent-station-rotation { display: flex; gap: 12px; align-items: center; margin-top: 12px; font-size: 10px; color: var(--om-text-3); }
+.om-agent-station-rotation input { width: 125px; height: 28px; accent-color: var(--om-brand); }
+.om-agent-station-stage { position: relative; height: 240px; perspective: 800px; }
+.om-agent-station-core { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateY(var(--station-turn)); transition: transform .18s ease-out; pointer-events: none; }
+.om-agent-station-globe { position: absolute; left: calc(50% - 57px); top: 59px; width: 114px; height: 122px; border-radius: 45% 45% 48% 48%; background: radial-gradient(circle at 30% 22%, var(--om-bg), color-mix(in srgb, var(--om-brand) 18%, var(--om-bg)) 38%, var(--om-brand-deep)); box-shadow: inset -12px -10px 22px color-mix(in srgb, var(--om-text-1) 25%, transparent), 12px 16px 22px color-mix(in srgb, var(--om-brand) 18%, transparent); transform: translateZ(18px); }
+.om-agent-station-visor { position: absolute; inset: 23px 12px 43px; display: grid; place-items: center; color: var(--om-brand-deep); border: 1px solid color-mix(in srgb, var(--om-brand) 35%, transparent); border-radius: 28px; background: color-mix(in srgb, var(--om-bg) 75%, transparent); box-shadow: inset 0 2px 8px var(--om-bg); }
+.om-agent-station-globe i { position: absolute; top: 91px; width: 15px; height: 5px; border-radius: 5px; left: 35px; background: var(--om-bg); }
+.om-agent-station-globe i:last-child { left: 62px; }
+.om-agent-station-ring { position: absolute; left: calc(50% - 94px); top: 24px; width: 188px; height: 188px; border: 1px solid color-mix(in srgb, var(--om-brand) 35%, transparent); border-radius: 50%; transform: rotateX(65deg) rotateZ(-25deg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--om-brand) 3%, transparent); }
+.om-agent-station-ring:nth-child(2) { transform: rotateY(60deg) rotateZ(20deg); }
+.om-agent-station-ring:nth-child(3) { transform: rotateY(-60deg) rotateZ(-20deg); }
+.om-agent-station[data-view="execution"] .om-agent-station-ring:first-child { transform: rotateX(25deg) rotateZ(45deg); }
+.om-agent-station[data-view="execution"] .om-agent-station-ring:nth-child(2) { transform: rotateY(75deg) rotateZ(-45deg); }
+.om-agent-station[data-view="capability"] .om-agent-station-ring:first-child { transform: rotateX(75deg) rotateZ(15deg); }
+.om-agent-station[data-view="capability"] .om-agent-station-ring:nth-child(3) { transform: rotateY(-35deg) rotateZ(45deg); }
+.om-agent-station-base { position: absolute; left: calc(50% - 72px); top: 193px; width: 144px; height: 26px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--om-brand) 24%, transparent); background: color-mix(in srgb, var(--om-brand) 9%, var(--om-bg)); box-shadow: 0 8px 14px color-mix(in srgb, var(--om-brand) 16%, transparent); }
+.om-agent-station-module { position: absolute; top: calc(28px + var(--module-row) * 72px); left: calc(var(--module-side) * (100% - 110px)); display: flex; align-items: center; gap: 9px; width: 110px; min-height: 42px; padding: 10px; border: 1px solid var(--om-divider); border-radius: 12px; color: var(--om-text-2); background: var(--om-glass-bg); box-shadow: 3px 5px 0 color-mix(in srgb, var(--om-brand) 8%, transparent); font-size: 11px; text-decoration: none; transition: transform .2s, background .2s, border-color .2s; }
+.om-agent-station-module.is-highlighted { border-color: var(--om-brand); color: var(--om-brand-deep); background: var(--om-brand-soft); }
+.om-agent-station-module svg { flex-shrink: 0; }
+.om-agent-station--compact { max-width: 750px; padding: 18px; flex-shrink: 0; }
+.om-agent-station--compact .om-agent-station-copy h2 { font-size: 20px; }
+.om-agent-profile .om-agent-avatar-housing { position: relative; isolation: isolate; box-shadow: 4px 5px 0 color-mix(in srgb, var(--om-brand) 10%, transparent), inset 0 1px 0 var(--om-bg); transform: perspective(500px) rotateY(-12deg); transition: transform .25s; }
+.om-agent-profile[data-agent-tier="super"] .om-agent-avatar-housing { border-radius: 50%; }
+.om-agent-profile[data-agent-tier="manager"] .om-agent-avatar-housing { border-radius: 10px 20px 10px 20px; }
+.om-agent-metric { position: relative; overflow: hidden; }
+.om-agent-metric::after { content: ""; position: absolute; right: -20px; bottom: -35px; width: 110px; height: 110px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--om-brand) 15%, transparent); box-shadow: 0 0 0 12px color-mix(in srgb, var(--om-brand) 3%, transparent); pointer-events: none; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .om-agent-station-module:hover { transform: translateY(-3px) rotateY(-7deg); border-color: var(--om-brand); background: var(--om-bg); }
+  .om-agent-profile:hover .om-agent-avatar-housing { transform: perspective(500px) rotateY(8deg) translateY(-2px); }
+}
+.om-agent-station-module:focus-visible, .om-agent-station button:focus-visible, .om-agent-station input:focus-visible { outline: 2px solid var(--om-brand); outline-offset: 4px; }
+@media (max-width: 850px) {
+  .om-agent-station { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 20px; }
+  .om-agent-station-copy h2 { font-size: 21px; }
+  .om-agent-station-description { min-height: 0; margin-bottom: 12px; }
+  .om-agent-station-stage { width: 100%; max-width: 480px; justify-self: center; }
+}
+@media (max-width: 480px) {
+  .om-agent-station { padding: 16px 12px; border-radius: 18px; }
+  .om-agent-station-module { width: 90px; left: calc(var(--module-side) * (100% - 90px)); gap: 6px; padding: 9px 7px; font-size: 10px; }
+  .om-agent-station-globe { width: 90px; height: 104px; left: calc(50% - 45px); top: 66px; }
+  .om-agent-station-globe i { top: 80px; left: 26px; }
+  .om-agent-station-globe i:last-child { left: 48px; }
+  .om-agent-station-ring { width: 150px; height: 170px; left: calc(50% - 75px); top: 32px; }
+}
+@media (prefers-reduced-motion: reduce) { .om-agent-station-core, .om-agent-station-module, .om-agent-profile .om-agent-avatar-housing { transition: none; } }
+
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 

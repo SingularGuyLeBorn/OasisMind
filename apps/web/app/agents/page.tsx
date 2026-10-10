@@ -41,6 +41,7 @@ import {
   AdminFormShell,
 } from "@/components/shared";
 import { AgentAvatar } from "@/components/agentAvatar";
+import { AgentWorkspaceScene } from "@/components/agentWorkspaceScene";
 import { HomeAmbientBackground } from "@/components/home/HomeAmbientBackground";
 import { CurlyMark } from "@/components/home/accentMark";
 import { cn } from "@/lib/utils";
@@ -208,12 +209,13 @@ const AgentCard = memo(function AgentCard({
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
       className={cn(
-        "om-card-premium om-card-topline om-card-sheen group relative overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color]",
+        "om-agent-profile om-card-premium om-card-topline om-card-sheen group relative overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color]",
         density === "compact" ? "p-3" : "p-5",
         isSuper && "border-amber-200/55 bg-gradient-to-br from-amber-50/70 via-white/55 to-white/40",
         selected && "border-[var(--om-brand)]/45 bg-[color-mix(in_srgb,var(--om-brand-soft)_55%,white)] shadow-[0_18px_48px_-16px_rgba(0,135,235,0.28)]",
         !selected && "hover:border-[var(--om-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]",
       )}
+      data-agent-tier={agent.tier}
     >
       <div className={cn("flex items-start justify-between gap-3", density === "compact" ? "mb-2" : "mb-4")}>
         <div className="flex items-center gap-3">
@@ -230,7 +232,7 @@ const AgentCard = memo(function AgentCard({
           )}
           <div
             className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-xl",
+              "om-agent-avatar-housing flex h-11 w-11 items-center justify-center rounded-xl",
               isSuper
                 ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-md shadow-amber-500/30"
                 : agent.tier === "manager"
@@ -856,6 +858,8 @@ export default function AgentsPage() {
           </button>
         </div>
       </div>
+
+      <AgentWorkspaceScene />
 
       {driftStatus && (
         <AssistantDriftBanner
