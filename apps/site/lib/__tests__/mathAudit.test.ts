@@ -18,6 +18,13 @@ function fixture(html: string) {
  return root;
 }
 describe('发布公式验收',()=>{
+ it('可见公式源码阻止发布，代码示例不误报',()=>{
+  const root=fixture('<p>宽度 \\frac{8}{3}</p>');
+  const result=spawnSync(process.execPath,[script],{cwd:root,encoding:'utf8'});
+  expect(result.status).toBe(1);expect(JSON.parse(result.stdout).rawFormulas).toHaveLength(1);
+  fs.writeFileSync(path.join(root,'.reading/posts/test/article.json'),JSON.stringify({html:'<pre><code>\\frac{8}{3}</code></pre>'}));
+  expect(spawnSync(process.execPath,[script],{cwd:root}).status).toBe(0);
+ });
  it('只检查当前清单，不把旧缓存当作发布文章',()=>{
   const root=fixture('<p>正常正文</p>');
   fs.writeFileSync(path.join(root,'.reading/posts/test/stale.json'),JSON.stringify({html:'<span class="katex-error" title="旧错误">坏公式</span>'}));

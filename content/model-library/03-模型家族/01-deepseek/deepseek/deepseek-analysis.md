@@ -3,7 +3,7 @@ title: "DeepSeek LLM: 在自家数据上重拟 Scaling Laws, 再训 7B 和 67B"
 category: "模型库"
 tags: ["DeepSeek", "技术解析"]
 published: true
-excerpt: "微观结构基本是 LLaMA 的配方: Pre-Norm 加 RMSNorm, FFN 用 SwiGLU, 中间宽度 \\frac{8}{3}d_{\\mathrm{model}}, 位置编码用 RoPE."
+excerpt: "微观结构基本是 LLaMA 的配方: Pre-Norm 加 RMSNorm, FFN 用 SwiGLU, 中间宽度 $\\frac{8}{3}d_{\\mathrm{model}}$, 位置编码用 RoPE."
 ---
 # DeepSeek LLM: 在自家数据上重拟 Scaling Laws, 再训 7B 和 67B
 
