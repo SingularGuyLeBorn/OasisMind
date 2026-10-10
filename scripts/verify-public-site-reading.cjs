@@ -140,6 +140,15 @@ async function main() {
         assert.equal(new URL(page.url()).pathname, new URL(base).pathname);
       } else await page.goto(base, { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.home-path').count(), 3);
+      const showcase = page.locator('.om-reading-showcase');
+      assert.equal(await showcase.count(), 1);
+      await showcase.locator('label').nth(1).click();
+      assert.equal(await showcase.locator('.om-showcase-page--2').isVisible(), true);
+      assert.equal(await showcase.locator('.om-showcase-page--1').isVisible(), false);
+      await showcase.locator('input').nth(1).focus();
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await showcase.locator('.om-showcase-page--3').isVisible(), true, '阅读视角必须支持键盘切换');
+      await showcase.locator('label').first().click();
       assert.equal(await page.locator('.garden-grid > a').count(), index.gardens.filter(g => g.id !== 'resources').length);
       const motifs = await page.locator('.garden-grid [data-motif]').evaluateAll(arts => arts.map(art => art.dataset.motif));
       assert.equal(new Set(motifs).size, motifs.length, '知识库卡片不能重复同一套图形');
@@ -202,6 +211,10 @@ async function main() {
       await phone.close();
     }
     const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+    await noJs.goto(base, { waitUntil: 'domcontentloaded' });
+    await noJs.locator('.om-showcase-tabs label').nth(2).click();
+    assert.equal(await noJs.locator('.om-showcase-page--3').isVisible(), true, '首页展台禁用脚本仍应可切换');
+    assert.equal(await noJs.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
     await noJs.goto(article, { waitUntil: 'domcontentloaded' });
     assert.ok((await noJs.locator('[data-reading-content] .article-prose').innerText()).length > 3000);
     assert.ok(await noJs.locator('.katex').count() > 0);

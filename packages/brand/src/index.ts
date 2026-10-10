@@ -2,3 +2,4 @@
 export * from "./OasisMindLogo";
 export * from "./KnowledgeSculpture";
 export * from "./GardenArtwork";
+export * from "./ReadingShowcase";

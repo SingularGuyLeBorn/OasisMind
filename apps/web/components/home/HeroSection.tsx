@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { KnowledgeSculpture, OasisMindLogo } from "@oasismind/brand";
+import { ReadingShowcase, OasisMindLogo } from "@oasismind/brand";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -232,14 +232,7 @@ export function HeroSection() {
             </div>
           </motion.div>
 
-          {/* [OM-FREEPLAY] 用共享立体书页替换持续漂浮的代码窗，保留本地产品介绍。 */}
-          <div className="om-owner-book-scene om-sculpture-interactive">
-            <KnowledgeSculpture />
-            <p className="text-center text-sm leading-7 text-[var(--om-text-2)]">
-              一份 Markdown，连接文章、知识与思考。<br />
-              从一页笔记开始，慢慢长成自己的知识库。
-            </p>
-          </div>
+          <ReadingShowcase id="owner-home" />
         </div>
 
         <motion.div

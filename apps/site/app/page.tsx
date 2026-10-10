@@ -7,7 +7,7 @@ import { ArrowRight, BookOpen, Search } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
 import { GardenCards } from "@/components/GardenCards";
 import { getManifest } from "@/lib/publicContent";
-import { KnowledgeSculpture } from "@oasismind/brand";
+import { ReadingShowcase } from "@oasismind/brand";
 
 export default function HomePage() {
   const manifest = getManifest();
@@ -39,18 +39,21 @@ export default function HomePage() {
               <Link href="/resources">学习资源 <ArrowRight size={15} /></Link>
             </div>
           </div>
-          <aside className="home-paths om-sculpture-interactive" aria-label="阅读入口">
-            <div className="home-paths-heading"><p>从哪里开始？</p><KnowledgeSculpture compact /></div>
+          <ReadingShowcase id="public-home" />
+        </div>
+        <div className="site-shell home-routes" aria-label="阅读入口">
+          <div className="home-routes-intro"><p className="section-kicker">找到你的起点</p><h2>从哪里开始？</h2><p>先建立地图，再沿着感兴趣的问题往下读。</p></div>
+          <div className="home-route-grid">
             {paths.map((route, index) => <Link href={`/gardens/${route.id}`} className="home-path" key={route.id}>
               <span className="path-number">0{index + 1}</span><div><small>{route.label}</small><h2>{route.name}</h2><p>{route.text}</p></div><ArrowRight size={20} />
             </Link>)}
-          </aside>
+          </div>
         </div>
       </section>
 
-      <section className="garden-band">
+      <section className="garden-band home-library">
         <div className="site-shell section-block">
-          <div className="section-heading"><div><p className="section-kicker">按主题阅读</p><h2>知识库</h2></div><Link href="/knowledge">全部知识库 <ArrowRight size={16} /></Link></div>
+          <div className="section-heading"><div><p className="section-kicker">按主题阅读</p><h2>知识库</h2><p className="section-description">从一套基础，到一条研究路线。每个主题都有自己的目录与深入路径。</p></div><Link href="/knowledge">全部知识库 <ArrowRight size={16} /></Link></div>
           <GardenCards gardens={gardens} />
         </div>
       </section>
