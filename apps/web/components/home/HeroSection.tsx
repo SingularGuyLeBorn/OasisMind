@@ -1,309 +1,74 @@
-"use client";
-
-import { motion, useReducedMotion } from "framer-motion";
 import { ReadingShowcase, OasisMindLogo } from "@oasismind/brand";
 import Link from "next/link";
-import {
-  ArrowRight,
-  BookOpen,
-  Brain,
-  CircuitBoard,
-  Fingerprint,
-  Hash,
-  Image as ImageIcon,
-  ListChecks,
-  Luggage,
-  MessageSquare,
-  Mic,
-  Type,
-  UsersRound,
-  Video,
-  Wand2,
-} from "lucide-react";
-import { CurlyMark, SquareMark } from "@/components/home/accentMark";
-import { cn } from "@/lib/utils";
+import { ArrowRight, BookOpen, MessageSquare } from "lucide-react";
+import { CurlyMark } from "@/components/home/accentMark";
 
-const easeSpring = [0.22, 1, 0.36, 1] as const;
-
-/** O 模态 chips：仅在公式区出现一次 */
-const OMNI_MODES = [
-  { icon: Type, label: "Text" },
-  { icon: ImageIcon, label: "Image" },
-  { icon: Mic, label: "Voice" },
-  { icon: Video, label: "Video" },
-];
-
-/** M 能力 chips：避开 Bot，全页唯一 */
-const AGENT_CAPS = [
-  { icon: UsersRound, label: "Agents" },
-  { icon: Wand2, label: "Skills" },
-  { icon: Brain, label: "Memory" },
-  { icon: ListChecks, label: "Tasks" },
-];
-
-/** 四支柱：icon 全页不复用 */
-const BRAND_ANCHORS = [
-  { icon: Hash, label: "Markdown 原子", hint: "单一事实源" },
-  { icon: Fingerprint, label: "主权在你", hint: "落盘再索引" },
-  { icon: CircuitBoard, label: "编排引擎", hint: "自动生长知识" },
-  { icon: Luggage, label: "随时带走", hint: "文件可移植" },
-];
-
-function ModeChip({
-  icon: Icon,
-  label,
-  side,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  side: "o" | "m";
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
-        side === "o"
-          ? "border-[var(--om-brand)]/25 bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
-          : "border-[var(--om-accent)]/30 bg-[rgba(var(--om-accent-rgb),0.12)] text-[var(--om-accent-deep)]",
-      )}
-    >
-      <Icon className="h-3 w-3" />
-      {label}
-    </span>
-  );
-}
-
-function LetterBadge({ letter, side }: { letter: "O" | "M"; side: "o" | "m" }) {
-  const isO = side === "o";
-  return (
-    <div
-      className={cn(
-        "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border md:h-14 md:w-14",
-        isO
-          ? "border-[var(--om-brand)]/35 bg-[var(--om-brand-soft)] shadow-[0_10px_24px_-12px_rgba(0,135,235,0.45)]"
-          : "border-[var(--om-accent)]/40 bg-[rgba(var(--om-accent-rgb),0.12)] shadow-[0_10px_24px_-12px_rgba(232,168,74,0.4)]",
-      )}
-    >
-      <span
-        className={cn(
-          "bg-gradient-to-br bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl",
-          isO
-            ? "from-[var(--om-brand-light)] to-[var(--om-brand-deep)]"
-            : "from-[var(--om-accent)] to-[var(--om-accent-deep)]",
-        )}
-      >
-        {letter}
-      </span>
-    </div>
-  );
-}
-
-function FactorBlock({
-  letter,
-  side,
-  title,
-  titleAccent,
-  subtitle,
-  chips,
-}: {
-  letter: "O" | "M";
-  side: "o" | "m";
-  title: string;
-  titleAccent: string;
-  subtitle: string;
-  chips: typeof OMNI_MODES;
-}) {
-  const isO = side === "o";
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 cursor-default items-start gap-2.5 rounded-xl border border-transparent bg-transparent p-2.5 transition-[border-color,background-color] duration-200",
-        isO
-          ? "hover:border-[var(--om-brand)]/25 hover:bg-white/55"
-          : "hover:border-[var(--om-accent)]/30 hover:bg-white/55",
-      )}
-    >
-      <LetterBadge letter={letter} side={side} />
-      <div className="min-w-0 flex-1 pt-0.5">
-        <p className="text-sm font-bold leading-tight text-[var(--om-text-1)]">
-          {title}{" "}
-          <span className={isO ? "text-[var(--om-brand)]" : "text-[var(--om-accent-deep)]"}>
-            {titleAccent}
-          </span>
-        </p>
-        <p className="mt-0.5 text-[11px] font-medium text-[var(--om-text-3)]">{subtitle}</p>
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {chips.map((m) => (
-            <ModeChip key={m.label} icon={m.icon} label={m.label} side={side} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * 首页 Hero：Logo + OasisMind 为品牌；LOCAL-FIRST / { Garden } 为描述；
- * O×M 公式同屏融合。icon 与文案在整页尽量只出现一次。
- */
+/** 首页只保留两个主动作；知识库与办公室仍可从全站导航进入。 */
 export function HeroSection() {
-  const reducedMotion = useReducedMotion();
   return (
-    <section className="relative overflow-hidden px-6 pb-10 pt-8 lg:px-12 lg:pb-14 lg:pt-10">
+    <section className="relative overflow-hidden px-5 pb-14 pt-8 sm:px-6 lg:px-12 lg:pb-20 lg:pt-16">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
             "radial-gradient(ellipse 70% 55% at 75% -5%, color-mix(in srgb, var(--om-glow-peach) 70%, transparent), transparent 58%)," +
-            "radial-gradient(ellipse 65% 50% at 5% 100%, color-mix(in srgb, var(--om-glow-blue) 75%, transparent), transparent 55%)," +
-            "radial-gradient(ellipse 40% 35% at 45% 45%, color-mix(in srgb, var(--om-glow-peach) 22%, transparent), transparent 60%)",
+            "radial-gradient(ellipse 65% 50% at 5% 100%, color-mix(in srgb, var(--om-glow-blue) 75%, transparent), transparent 55%)",
         }}
       />
 
-
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8">
-        <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, ease: easeSpring }}
-            className="flex min-w-0 flex-col"
-          >
-            <div className="flex flex-nowrap items-baseline gap-x-2.5">
-              <span className="text-xl font-bold tracking-tight text-[var(--om-text-1)] md:text-2xl">见微</span>
-              <span className="text-sm font-semibold text-[var(--om-brand)] md:text-base">知著</span>
-            </div>
-
-            {/* Logo 在左，OasisMind 在右 */}
-            <div className="mt-2 flex items-center gap-3 md:gap-4">
-              <OasisMindLogo
-                size={56}
-                className="shrink-0 rounded-2xl border border-white/55 shadow-[0_12px_32px_-14px_rgba(0,135,235,0.35)] md:h-16 md:w-16"
-              />
-              <h1
-                className="om-display-serif om-text-gradient inline-block overflow-visible pb-1 pr-[0.35em] text-[clamp(2.4rem,6.5vw,4.2rem)] italic leading-[0.95] tracking-[-0.03em]"
-                aria-label="OasisMind"
-              >
-                OasisMind
-              </h1>
-            </div>
-
-            {/* 描述：GARDEN 可换行、字号更大；混用 {} 与 [] */}
-            <p className="mt-5 text-[clamp(1.25rem,3vw,1.85rem)] font-bold uppercase leading-[1.15] tracking-tight text-[var(--om-text-1)]">
-              <span className="block">Local-first Knowledge</span>
-              <CurlyMark className="mt-1 block text-[clamp(1.6rem,4vw,2.4rem)] font-black normal-case tracking-tight">
-                Garden
-              </CurlyMark>
-            </p>
-
-            <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[var(--om-text-2)] md:text-base">
-              写作、收集、蒸馏品味——把碎片养成文章。数据落在你这边，真相留在文件里。
-            </p>
-
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Link
-                href="/posts"
-                className="group inline-flex h-12 items-center gap-2 rounded-full bg-[var(--om-brand)] px-6 text-sm font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--om-brand-dark)]"
-              >
-                <BookOpen className="h-4 w-4" />
-                读文章
-                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-              </Link>
-              <Link
-                href="/chat"
-                className="group inline-flex h-12 items-center gap-2 rounded-full border border-white/60 bg-white/55 px-6 text-sm font-semibold text-[var(--om-text-1)] shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--om-brand)]/35 hover:bg-white/80"
-              >
-                <MessageSquare className="h-4 w-4 text-[var(--om-brand)]" />
-                开始对话
-              </Link>
-              <Link
-                href="/gardens"
-                className="inline-flex h-12 items-center gap-2 rounded-full px-4 text-sm font-medium text-[var(--om-text-2)] underline-offset-4 transition hover:text-[var(--om-brand)] hover:underline"
-              >
-                知识库
-              </Link>
-              <Link
-                href="/office"
-                className="inline-flex h-12 items-center gap-2 rounded-full px-4 text-sm font-medium text-[var(--om-text-2)] underline-offset-4 transition hover:text-[var(--om-brand)] hover:underline"
-              >
-                3D 办公室
-              </Link>
-            </div>
-          </motion.div>
-
-          <ReadingShowcase id="owner-home" />
-        </div>
-
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.28, duration: 0.65, ease: easeSpring }}
-          className="om-card-premium relative overflow-hidden rounded-[1.5rem] p-4 md:p-5"
-        >
-          <p className="mb-4 w-full text-sm leading-relaxed text-[var(--om-text-2)] lg:text-[15px]">
-            从细微之处照见全局——每一粒种子都被看见、被关联、被养成。名字拆开是
-            <SquareMark className="mx-1 font-semibold">Oasis × Mind</SquareMark>
-            ：一边吃进世界，一边把协作跑起来。
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] lg:gap-14">
+        <div className="flex min-w-0 flex-col items-start">
+          <p className="text-sm font-semibold tracking-[0.16em] text-[var(--om-text-2)]">
+            见微 <span className="mx-1 text-[var(--om-brand)]">·</span> 知著
           </p>
 
-          <div className="grid items-center gap-3 rounded-2xl border border-white/50 bg-white/35 p-3.5 backdrop-blur-md lg:grid-cols-[1fr_auto_1fr_auto_auto] lg:gap-4 lg:p-4">
-            <FactorBlock
-              letter="O"
-              side="o"
-              title="Oasis ·"
-              titleAccent="Omni"
-              subtitle="全模态输入"
-              chips={OMNI_MODES}
+          <div className="mt-4 flex max-w-full items-center gap-3 md:gap-4">
+            <OasisMindLogo
+              size={56}
+              className="shrink-0 rounded-2xl border border-white/55 shadow-[0_12px_32px_-14px_rgba(0,135,235,0.35)] md:h-16 md:w-16"
             />
-            <span aria-hidden className="shrink-0 self-center text-2xl font-light text-[var(--om-text-3)]">
-              ×
-            </span>
-            <FactorBlock
-              letter="M"
-              side="m"
-              title="Mind ·"
-              titleAccent="Multi-Agent"
-              subtitle="多智能体协作"
-              chips={AGENT_CAPS}
-            />
-            <span aria-hidden className="shrink-0 self-center text-2xl font-light text-[var(--om-text-3)]">
-              =
-            </span>
-            <motion.div
-              whileHover={reducedMotion ? undefined : { y: -3, scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 320, damping: 24 }}
-              className="shrink-0 cursor-default rounded-2xl border border-white/55 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-md transition-[border-color,box-shadow,background-color] duration-300 hover:border-[var(--om-brand)]/30 hover:bg-white/80 hover:shadow-[0_12px_32px_-14px_rgba(0,135,235,0.35)]"
+            <h1
+              className="om-display-serif om-text-gradient min-w-0 overflow-visible pb-1 pr-[0.35em] text-[clamp(2.2rem,6vw,4.2rem)] italic leading-[0.95] tracking-[-0.03em]"
+              aria-label="OasisMind"
             >
-              <p className="text-lg font-black tracking-tight md:text-xl">
-                <CurlyMark>全模态</CurlyMark>
-                <span className="mx-1 text-[var(--om-text-3)]">·</span>
-                <SquareMark>多智能体</SquareMark>
-              </p>
-              <p className="mt-1 text-[11px] font-semibold text-[var(--om-text-2)]">AGI 的另一种表述</p>
-            </motion.div>
+              OasisMind
+            </h1>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {BRAND_ANCHORS.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.label}
-                  className="flex cursor-default items-start gap-2.5 rounded-xl border border-white/50 bg-white/40 px-3 py-2.5 backdrop-blur-sm transition-[border-color,background-color] duration-200 hover:border-[var(--om-brand)]/25 hover:bg-white/70"
-                >
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--om-brand)]/20 bg-[var(--om-brand-soft)] text-[var(--om-brand)]">
-                    <Icon className="h-3.5 w-3.5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-[var(--om-text-1)]">{item.label}</p>
-                    <p className="mt-0.5 text-[10px] text-[var(--om-text-3)]">{item.hint}</p>
-                  </div>
-                </div>
-              );
-            })}
+          {/* [OM-FREEPLAY] 用本地工作台的「读文章 → Agent 行动」概括首屏，不改产品能力。 */}
+          <p className="mt-8 max-w-xl text-balance text-[clamp(2rem,4.2vw,3.7rem)] font-bold leading-[1.18] tracking-[-0.045em] text-[var(--om-text-1)]">
+            把大模型 <CurlyMark>读明白</CurlyMark>，
+            <span className="block">然后接着做。</span>
+          </p>
+          <p className="mt-5 max-w-lg text-[15px] leading-8 text-[var(--om-text-2)] md:text-base">
+            论文、公式和图放进知识库；需要行动时，直接打开 Agent。文章留在本地 Markdown 文件里。
+          </p>
+
+          <div className="mt-8 flex w-full flex-wrap items-center gap-3">
+            <Link
+              href="/posts"
+              className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--om-brand)] px-6 text-sm font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-[background-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:bg-[var(--om-brand-dark)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--om-brand)]"
+            >
+              <BookOpen className="h-4 w-4" aria-hidden />
+              读文章
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden />
+            </Link>
+            <Link
+              href="/chat"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/70 bg-white/70 px-6 text-sm font-semibold text-[var(--om-text-1)] shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)] backdrop-blur-md transition-[background-color,border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-[var(--om-brand)]/35 hover:bg-white/90 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--om-brand)]"
+            >
+              <MessageSquare className="h-4 w-4 text-[var(--om-brand)]" aria-hidden />
+              开始对话
+            </Link>
           </div>
-        </motion.div>
+        </div>
+
+        <ReadingShowcase
+          id="owner-home"
+          exploreHref="/gardens/SparseAttention"
+          exploreLabel="进入稀疏注意力知识库"
+        />
       </div>
     </section>
   );

@@ -248,6 +248,12 @@ export const ChatSidebar = memo(function ChatSidebar({
     }
   }, [bulkMode, selectSession, closeLeftOnMobile]);
 
+  // [OM-FREEPLAY] 手机新建对话后收起全屏侧栏，让输入区立即可见。
+  const handleStartNewChat = useCallback(() => {
+    startNewChat();
+    closeLeftOnMobile();
+  }, [startNewChat, closeLeftOnMobile]);
+
   const handleStartRename = useCallback((id: string) => {
     setEditingSessionId(id);
     const s = sessionsQuery.data?.items.find((x) => x.id === id);
@@ -332,8 +338,8 @@ export const ChatSidebar = memo(function ChatSidebar({
     return (
       <>
         {/* 对话历史子标签：与顶层「对话|运行」同款圆角分段 */}
-        <div className="px-3 py-2">
-          <div className="flex gap-1 rounded-xl bg-[var(--om-bg-mute)] p-0.5">
+        <div className="px-3 pb-2 pt-3">
+          <div className="flex gap-1 rounded-xl bg-[var(--om-bg-mute)]/80 p-1">
             <button
               type="button"
               onClick={() => {
@@ -345,7 +351,7 @@ export const ChatSidebar = memo(function ChatSidebar({
               }}
               data-testid="history-subtab-main"
               className={cn(
-                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
+                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-medium transition",
                 isMain
                   ? "om-nav-pill-active"
                   : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
@@ -361,7 +367,7 @@ export const ChatSidebar = memo(function ChatSidebar({
               }}
               data-testid="history-subtab-sub"
               className={cn(
-                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
+                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-medium transition",
                 !isMain
                   ? "om-nav-pill-active"
                   : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
@@ -377,7 +383,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           </div>
         </div>
 
-        <div className="w-64 border-b border-[var(--om-divider)] px-3 py-2">
+        <div className="w-full px-3 pb-3 md:w-64">
           <WorkspaceSelect
             value={selectedWorkspaceId}
             workspaces={workspacesQuery.data?.items ?? []}
@@ -386,7 +392,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           />
         </div>
 
-        <div className="flex w-64 items-center justify-between border-b border-[var(--om-divider)] px-4 py-3">
+        <div className="flex w-full items-center justify-between px-4 pb-2 pt-1 md:w-64">
           <h2 className="text-sm font-semibold text-[var(--om-text-1)]">
             {isMain ? "对话历史" : "子 Agent"}
           </h2>
@@ -412,12 +418,13 @@ export const ChatSidebar = memo(function ChatSidebar({
                 </button>
                 <button
                   type="button"
-                  onClick={startNewChat}
-                  className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8")}
+                  onClick={handleStartNewChat}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)] px-2.5 text-xs font-semibold text-[var(--om-brand-deep)] transition-colors hover:bg-[var(--om-brand-light)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--om-brand)]"
                   aria-label="新建对话"
                   title="新建对话（发送首条消息时创建）"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5" />
+                  新对话
                 </button>
               </>
             ) : (
@@ -468,7 +475,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           </div>
         )}
 
-        <div className="w-64 border-b border-[var(--om-divider)] px-3 py-2">
+        <div className="w-full px-3 pb-3 md:w-64">
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--om-text-3)]" />
             <input
@@ -477,12 +484,12 @@ export const ChatSidebar = memo(function ChatSidebar({
               onChange={(e) => setSessionSearch(e.target.value)}
               placeholder={isMain ? "搜索会话…" : "搜索子 Agent…"}
               data-testid="session-search"
-              className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] py-1.5 pl-8 pr-2 text-xs outline-none focus:border-[var(--om-brand)]"
+              className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] py-2 pl-8 pr-2 text-xs outline-none focus:border-[var(--om-brand)]"
             />
           </div>
         </div>
 
-        <div className="w-64 flex-1 overflow-y-auto p-2" data-testid="session-list">
+        <div className="w-full flex-1 overflow-y-auto border-t border-[var(--om-divider)]/70 p-2 md:w-64" data-testid="session-list">
           {hasWorkspaces ? (
             /* Swarm 模式：当前 Workspace → Agent → Session 树 */
             <WorkspaceTree
@@ -494,7 +501,7 @@ export const ChatSidebar = memo(function ChatSidebar({
               onHoverSession={handleSessionHover}
               onHoverSessionEnd={handleSessionHoverEnd}
               onDeleteSession={handleRequestDelete}
-              onNewChat={startNewChat}
+              onNewChat={handleStartNewChat}
               searchQuery={sessionSearch}
               mode={isMain ? "main" : "sub"}
               bulkMode={isMain && bulkMode}
@@ -583,13 +590,13 @@ export const ChatSidebar = memo(function ChatSidebar({
             : "hidden md:flex",
         )}
       >
-        <div className="w-full shrink-0 border-b border-[var(--om-divider)] px-3 py-2.5 md:w-64" data-testid="chat-left-panel-header">
+        <div className="w-full shrink-0 border-b border-[var(--om-divider)] bg-[linear-gradient(150deg,var(--om-brand-soft),transparent_72%)] px-3 py-3 md:w-64" data-testid="chat-left-panel-header">
           <div className="flex items-center gap-2">
             <span className="om-header-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
               <Bot className="h-3.5 w-3.5" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-semibold text-[var(--om-text-1)]">
+              <div className="truncate text-sm font-semibold text-[var(--om-text-1)]">
                 {selectedAgent?.name ?? "assistant"}
               </div>
             </div>
@@ -608,7 +615,7 @@ export const ChatSidebar = memo(function ChatSidebar({
             </button>
           </div>
           {/* 左栏顶层标签：对话 | 运行 */}
-          <div className="mt-2 flex gap-1 rounded-xl bg-[var(--om-bg-mute)] p-0.5">
+          <div className="mt-3 flex gap-1 rounded-xl bg-[var(--om-bg)]/80 p-1 shadow-[inset_0_0_0_1px_var(--om-divider)]">
             <button
               type="button"
               onClick={() => {
@@ -617,7 +624,7 @@ export const ChatSidebar = memo(function ChatSidebar({
               }}
               data-testid="left-tab-history"
               className={cn(
-                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
+                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-medium transition",
                 leftTab === "history"
                   ? "om-nav-pill-active"
                   : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
@@ -633,7 +640,7 @@ export const ChatSidebar = memo(function ChatSidebar({
               }}
               data-testid="left-tab-runtime"
               className={cn(
-                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
+                "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-medium transition",
                 leftTab === "runtime"
                   ? "om-nav-pill-active"
                   : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",

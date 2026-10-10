@@ -280,7 +280,8 @@ export function WorkspaceTree({
                     role="button"
                     tabIndex={0}
                     title="删除会话"
-                    className="rounded p-0.5 text-[var(--om-text-3)] hover:bg-red-50 hover:text-red-600"
+                    aria-label={`删除会话 ${session.autoName || session.title || "新对话"}`}
+                    className="rounded-md p-2 text-[var(--om-text-3)] hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-[var(--om-brand)]"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteSession(session.id);
@@ -293,7 +294,7 @@ export function WorkspaceTree({
                       }
                     }}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </span>
                 )}
               </div>
@@ -379,13 +380,14 @@ function SessionRow({
         <button
           type="button"
           title="删除会话"
-          className="shrink-0 rounded p-0.5 text-[var(--om-text-3)] opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
+          aria-label={`删除会话 ${session.autoName || session.title || "新对话"}`}
+          className="shrink-0 rounded-md p-2 text-[var(--om-text-3)] opacity-100 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-[var(--om-brand)] md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       )}
     </div>

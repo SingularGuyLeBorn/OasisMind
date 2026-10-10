@@ -132,12 +132,12 @@ export const SessionListItem = memo(function SessionListItem({
           {session.model} · {formatRelativeTime(session.updatedAt)}
         </div>
       </button>
-      <div className="flex shrink-0 items-center gap-0.5 px-1 opacity-0 transition-opacity group-hover/sess:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5 px-1 opacity-100 transition-opacity md:opacity-0 md:group-hover/sess:opacity-100 md:group-focus-within/sess:opacity-100 [@media(hover:none)]:opacity-100">
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onStartRename(session.id)}
-          className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
+          className="rounded-md p-2 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)] focus-visible:outline-2 focus-visible:outline-[var(--om-brand)]"
           aria-label="重命名"
           title="重命名"
         >
@@ -147,7 +147,7 @@ export const SessionListItem = memo(function SessionListItem({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onDelete(session.id)}
-          className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-red-50 hover:text-red-600"
+          className="rounded-md p-2 text-[var(--om-text-3)] hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-[var(--om-brand)]"
           aria-label="删除"
           title="删除"
         >

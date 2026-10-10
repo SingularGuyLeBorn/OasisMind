@@ -633,9 +633,10 @@ export const ChatMessageList = memo(function ChatMessageList({
             data-nav-id={group.userMessage.id}
             data-delivery-job-id={deliveryJobId || undefined}
             className={cn(
-              // 默认接近全宽（对标 Kimi Code）；右对齐消息仍靠右，但内容区拉宽
+              // [OM-FREEPLAY] 用户发言收窄、Agent 结果保留宽幅，长表格与公式仍有空间。
               // scroll-mt-20：点击导航 scrollIntoView(block:start) 时顶部留 80px，避免气泡顶到视口角落
-              "group/msg relative mb-3 flex w-full max-w-[96%] flex-col gap-1 scroll-mt-20",
+              "group/msg relative mb-3 flex w-full flex-col gap-1 scroll-mt-20",
+              msgSource === "user" ? "max-w-full sm:max-w-[84%]" : "max-w-[96%]",
               isRightSide ? "items-stretch self-end" : "items-stretch self-start",
               deliveryJobId &&
                 highlightJobId === deliveryJobId &&
@@ -654,6 +655,7 @@ export const ChatMessageList = memo(function ChatMessageList({
             <div
               className={cn(
                 "relative w-full min-w-[min(100%,6rem)] rounded-[1.4rem] border border-[var(--om-divider)] bg-[var(--om-bg)] px-4 py-3 text-left text-sm text-[var(--om-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]",
+                msgSource === "user" && "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/35",
                 deliveryJobId &&
                   highlightJobId === deliveryJobId &&
                   "border-[var(--om-brand)]/50 bg-[var(--om-brand-soft)]/30",
@@ -1019,33 +1021,40 @@ export const ChatMessageList = memo(function ChatMessageList({
           <Loader2 className="h-6 w-6 animate-spin text-[var(--om-text-3)]" />
         </div>
       ) : !hasDisplay && !backendDown ? (
-        <div className="om-msg-in flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto px-4 py-4 text-center md:px-6">
-          <p className="om-display-serif text-3xl text-[var(--om-text-1)] md:text-4xl">
-            今天想种点什么？
-          </p>
-          <p className="text-sm text-[var(--om-text-3)]">发送第一条消息，开始浇灌这个想法</p>
-          <GardenGreeting />
-          <AgentWorkspaceScene compact />
-          {/* #12 Swarm 新手引导：无 Workspace 时展示（可关闭，localStorage 记忆） */}
-          {!hasWorkspaces && showOnboarding && (
-            <div className="relative max-w-md rounded-2xl border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)] p-4 text-left" data-testid="swarm-onboarding">
-              <button
-                type="button"
-                onClick={dismissSwarmOnboarding}
-                className="absolute right-2 top-2 rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
-                aria-label="关闭引导"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-              <p className="mb-1.5 text-xs font-semibold text-[var(--om-text-1)]">试试 Agent Swarm</p>
-              <ul className="space-y-1 text-[11px] leading-relaxed text-[var(--om-text-2)]">
-                <li>· 右上角选择「见微超级 Agent」，让它替你管理其他 Agent</li>
-                <li>· 对它说「创建一个 XX 工作区」，它会自动生成管理 Agent</li>
-                <li>· 也可以在 <Link href="/workspaces" className="text-[var(--om-brand-deep)] underline">工作区管理页</Link> 手动创建</li>
-                <li>· 长任务会派生子 Agent 后台执行，完成后结果自动回到对话</li>
-              </ul>
-            </div>
-          )}
+        <div className="om-msg-in flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-4 py-4 text-center md:px-6">
+          <div className="my-auto flex w-full max-w-[720px] flex-col items-center gap-3 py-2">
+            <p className="om-display-serif text-3xl text-[var(--om-text-1)] md:text-4xl">
+              今天想种点什么？
+            </p>
+            {/* [OM-FREEPLAY] 空态把输入作为首要动作；链接是补充入口，不再用第二句口号争抢标题。 */}
+            <p className="text-sm text-[var(--om-text-3)]">直接在下方说出目标，或者先去看看工作台。</p>
+            <AgentWorkspaceScene compact />
+            <GardenGreeting />
+            {/* [OM-FREEPLAY] 无 Workspace 时折叠引导，手机先看到输入框；原有步骤与链接仍可展开查看或关闭。 */}
+            {!hasWorkspaces && showOnboarding && (
+              <details className="group relative w-full border-t border-[var(--om-divider)] py-2 pr-7 text-left" data-testid="swarm-onboarding">
+                <summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-[var(--om-text-2)] [&::-webkit-details-marker]:hidden">
+                  <span className="font-semibold text-[var(--om-text-1)]">第一次用 Agent Swarm？</span>
+                  <span className="min-w-0 flex-1 truncate text-[var(--om-text-3)]">展开看看如何创建工作区</span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <button
+                  type="button"
+                  onClick={dismissSwarmOnboarding}
+                  className="absolute right-0 top-1.5 rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
+                  aria-label="关闭引导"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <ul className="mt-2 space-y-1 pl-1 text-[11px] leading-relaxed text-[var(--om-text-2)]">
+                  <li>· 右上角选择「见微超级 Agent」，让它替你管理其他 Agent</li>
+                  <li>· 对它说「创建一个 XX 工作区」，它会自动生成管理 Agent</li>
+                  <li>· 也可以在 <Link href="/workspaces" className="text-[var(--om-brand-deep)] underline">工作区管理页</Link> 手动创建</li>
+                  <li>· 长任务会派生子 Agent 后台执行，完成后结果自动回到对话</li>
+                </ul>
+              </details>
+            )}
+          </div>
         </div>
       ) : (
         <>
