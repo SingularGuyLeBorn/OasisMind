@@ -1238,8 +1238,8 @@ Answer the question using a single word or phrase.
 | Text Processing: - Accurately recognize all text content in the PDF image without guessing or inferring. - Convert the recognized text into Markdown format. - Maintain the original document structure, including headings, paragraphs, lists, etc. |
 | Mathematical Formula Processing: |
 | - Convert all mathematical formulas to LaTeX format. |
-| - Enclose inline formulas with $\). For example: This is an inline formula \(E = mc^2$ |
-| - Enclose block formulas with $\]. For example: \[\frac{-b\pm\sqrt{b^2 - 4ac}}{2a}$ |
+| - Enclose inline formulas with `\(` and `\)`. For example: This is an inline formula $E = mc^2$. |
+| - Enclose block formulas with `\[` and `\]`. For example: $\frac{-b\pm\sqrt{b^2 - 4ac}}{2a}$. |
 | Table Processing: - Convert tables to HTML format. - Wrap the entire table withand |
 | Figure Handling: - Ignore figures in the PDF image. Do not attempt to describe or convert images. |
 | Output Format: - Ensure the output Markdown document has a clear structure with appropriate line breaks between elements. - For complex layouts, try to maintain the original document's structure and format as closely as possible.Please strictly follow these guidelines to ensure accuracy and consistency in the conversion.Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments. |

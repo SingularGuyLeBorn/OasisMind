@@ -1,11 +1,10 @@
 ---
-title: 「Gemini 1.5 报告分析: 百万 token 窗口的数字怎么读」
+title: "「Gemini 1.5 报告分析: 百万 token 窗口的数字怎么读」"
 category: model-library
 tags: [gemini, long-context, evaluation, moe, distillation]
 published: false
 excerpt: 「从评测分母, 针与真实文档, Pro 与 Flash 的关系, 胜率口径, 安全评测和第 7 节的 TestingTime 几个角度, 重读 Gemini 1.5 技术报告.」
 ---
-
 # Gemini 1.5 报告分析: 百万 token 窗口的数字怎么读
 
 对照阅读的双语稿见同目录 `gemini-1-5-bi.md`. 评测方法的一般讨论见 [5.1 评测科学与证据](../../../../LargeLanguageModelGuide/5-评测-安全与治理/5.1-评测科学与证据/5.1-评测科学与证据.md).

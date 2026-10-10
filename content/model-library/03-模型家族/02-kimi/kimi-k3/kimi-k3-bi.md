@@ -2415,7 +2415,7 @@ i.e., the target load minus the observed load of the expert j. A SignSGD step on
 
 
 
-即目标负载减专家 j 的观测负载. 对该目标做 SignSGD 步, 在符号约定 $\pmb{b}=-\beta$ 下恢复无辅助损失均衡的定步长符号更新 [30]: 符号更新只保留式 (27) 负载误差的方向, 而 QB 直接跳到同一对偶目标的精确坐标最小元. 这一视角解释了为何 QB 无需类学习率超参, 以及即便近 $10^3$ 专家也能在少数更新步内均衡. QB 亦相关 BIP [118](不等式约束下的同分配);α,β 上的非负约束给两更新加 max(0,·) 裁剪, 只能压过选专家而不能抬欠选专家, 实验中明显拖慢均衡. 最终固定 Top-k 路由与专家特定阈值路由相关, 但不同于维护 EMA 阈值, 允许每 token 可变专家数的 Expert Threshold routing [114].
+即目标负载减专家 j 的观测负载. 对该目标做 SignSGD 步, 在符号约定 $\pmb{b}=-\beta$ 下恢复无辅助损失均衡的定步长符号更新 [30]: 符号更新只保留式 (27) 负载误差的方向, 而 QB 直接跳到同一对偶目标的精确坐标最小元. 这一视角解释了为何 QB 无需类学习率超参, 以及即便近 $10^3$ 专家也能在少数更新步内均衡. QB 亦相关 BIP [118] (不等式约束下的同分配);α,β 上的非负约束给两更新加 max(0,·) 裁剪, 只能压过选专家而不能抬欠选专家, 实验中明显拖慢均衡. 最终固定 Top-k 路由与专家特定阈值路由相关, 但不同于维护 EMA 阈值, 允许每 token 可变专家数的 Expert Threshold routing [114].
 
 ## D Histogram-Based Quantile Estimation D 基于直方图的分位数估计
 
@@ -2484,7 +2484,7 @@ Let $m _ { r } ( P )$ denote the number of redundant experts placed on rank r un
 **定理 1 证明(一般上界)** 目标证任意路由器输出 I 都有 $M(I)\le E/R$. 关键引理: 存在计划 $P^*$ 使每个 EP rank 收到恰好相同 token 数 $(S\times K)$, 且每 rank 的远端 token 只来自另一个 EP rank. 构造: 初始每 rank 只持本地 token, 并据此标为欠载或过载. 反复挑一个欠载 rank 与一个过载 rank, 从过载迁 token 把欠载恰好填到均衡值 $S\times K$; 过载可能仍过载, 恰均衡或变欠载, 再放回相应集合. 重复至全部完美均衡. 每次填充使一个欠载 rank 均衡且此后不变, 故至多 $R-1$ 次填充终止; 同时每 rank 至多被填一次, 远端 token 来自单一 rank, 引理得证. 因而设 rank r 的全部远端 token 来自 rank s, 这些 token 至多属于 rank s 上 $E/R$ 个本地专家, 故 $m_r(P^*)\le E/R$, 从而
 
 $$
-M (I) = \min _ {P} \max _ {r} \left\{m _ {r} (P) \right\} \leq \max _ {r} \left\{m _ {r} \left(P ^ {*}\right) \right\} \leq \frac {E}{R} \tag {45}\tag{28}
+M (I) = \min _ {P} \max _ {r} \left\{m _ {r} (P) \right\} \leq \max _ {r} \left\{m _ {r} \left(P ^ {*}\right) \right\} \leq \frac {E}{R} \tag{45}
 $$
 
 <!-- page 46 of 47 -->

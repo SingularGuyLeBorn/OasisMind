@@ -5,7 +5,6 @@ tags: ["OLMoTrace", "训练数据追溯", "文本匹配", "可解释性", "OLMo"
 published: true
 excerpt: "OLMoTrace 借助扩展版 infini-gram，在完整训练语料中实时寻找与模型输出逐字匹配的片段，并用于检查事实、幻觉与文本重组。"
 ---
-
 <!-- arXiv 2504.07096; 文字由 PyMuPDF 按页抽取, 公式与表以 data/sources/olmotrace/latex/ 的 LaTeX 源码为准 -->
 
 <!-- page 1 of 11 -->
@@ -336,9 +335,9 @@ Other types of tracing. Khalifa et al. (2024) train LMs to cite documents from t
 
 其他类型的追踪。哈利法等人。 (2024) 训练 LM 引用预训练数据中的文档，这是对 LM 训练过程的干预。有些工作将 LM 行为追踪到训练数据以外的来源。黄等人。 (2024) 将 RAG 扩展为让 LM 引用在上下文中提供的检索文档，而 Chuang 等人。 (2025) 训练 LM 在推理时引用提供给 LM 的长上下文中的内容。高等人。 (2022) 从 Google 搜索中检索 LM 世代的支持证据； Gemini 应用程序具有“双重检查响应”功能，可以突出显示 LM 响应的部分内容，并显示来自 Google 搜索的类似结果，该结果是实时更新的，因此与 Gemini 的训练数据不完全相同，这使得它对于科学探索的用处不大。
 
-Tracing math capabilities. OLMOTRACE helps understanding how LMs learned to carry out arith- metic operations and solve math problems. In Fig- ure 5(d), OLMo correctly answers Problem 4 from the AIME 2024 I exam (a combinatorics problem). OLMOTRACE shows that the calculation step, “\bi- nom{10}{4} = \frac{10!}{4!(10-4)!} = 210” ap- pears verbatim in the post-training dataset.
+Tracing math capabilities. OLMOTRACE helps understanding how LMs learned to carry out arith- metic operations and solve math problems. In Fig- ure 5(d), OLMo correctly answers Problem 4 from the AIME 2024 I exam (a combinatorics problem). OLMOTRACE shows that the calculation step, “$\binom{10}{4} = \frac{10!}{4!(10-4)!} = 210$” ap- pears verbatim in the post-training dataset.
 
-追踪数学能力。 OLMOTRACE 有助于理解 LM 如何学习执行算术运算和解决数学问题。在图 5(d) 中，OLMo 正确回答了 AIME 2024 I 考试的问题 4（组合数学问题）。 OLMOTRACE 显示计算步骤“\binom{10}{4} = \frac{10!}{4!(10-4)!} = 210”在训练后数据集中逐字出现。
+追踪数学能力。 OLMOTRACE 有助于理解 LM 如何学习执行算术运算和解决数学问题。在图 5(d) 中，OLMo 正确回答了 AIME 2024 I 考试的问题 4（组合数学问题）。 OLMOTRACE 显示计算步骤“$\binom{10}{4} = \frac{10!}{4!(10-4)!} = 210$”在训练后数据集中逐字出现。
 
 6 Related Work · 相关工作
 

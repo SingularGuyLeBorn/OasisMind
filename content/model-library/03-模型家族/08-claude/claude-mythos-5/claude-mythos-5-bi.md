@@ -1,9 +1,8 @@
 ---
-title: 「System Card: Claude Fable 5 & Claude Mythos 5 · 中英对照」
+title: "「System Card: Claude Fable 5 & Claude Mythos 5 · 中英对照」"
 source: claude-mythos-5.md
 pages: 317
 ---
-
 # System Card: Claude Fable 5 & Claude Mythos 5 · 中英对照
 
 阅读说明: 页码标记沿用源文件的 `<!-- page N of 317 -->`, 图片路径指向本目录 `images/`. 执行摘要, 引言里的部署安排, 各项风险结论和第 8 章能力表按 「EN / 中」 全文对照. 其余正文译成中文, 小节标题保留英文. 生物, 化学, 核, 网络, 儿童安全, 提示注入六类内容只保留评测名称, 阈值, 总分和结论, 不转述任何操作步骤, 相关页只留页码标记和原图. token, Scaling, CoT 保留英文; TestingTime 指推理阶段多花的算力.

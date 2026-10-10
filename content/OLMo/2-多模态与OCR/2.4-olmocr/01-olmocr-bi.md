@@ -866,11 +866,11 @@ Different output formats are requested by content type: Markdown for general tex
 
 ### F.3 Sample Test Classes · 测试类别样例
 
-Figure 8 Sample visualization from old_scans_math. The OCR output for the highlighted equation should be: 1/|\tau| = \sqrt{\xi_{3}ˆ{2}} = 0
+Figure 8 Sample visualization from old_scans_math. The OCR output for the highlighted equation should be: `1/|\tau| = \sqrt{\xi_{3}ˆ{2}} = 0`
 
 <!-- page 29 of 33 -->
 
-Figure 9 Sample visualization of a math equation from arXiv_math. The OCR output for the highlighted equation should be: u(x_{1},x_{2},t)=tˆ{4} + \text{sin}(x_{1}) \cdot \text{sin}(x_{2}) \cdot \text{sin}(t)
+Figure 9 Sample visualization of a math equation from arXiv_math. The OCR output for the highlighted equation should be: `u(x_{1},x_{2},t)=tˆ{4} + \text{sin}(x_{1}) \cdot \text{sin}(x_{2}) \cdot \text{sin}(t)`
 
 Figure 10 Sample visualization of headers_footers. We want the OCR to skip the document headers and page number.
 

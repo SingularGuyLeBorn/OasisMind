@@ -1214,7 +1214,7 @@ For the 1B and 32B model, we performed RLVR with Group Relative Policy Optimizat
 
 我们对 7B 和 13B 模型进行以下超参数调优. 在每个阶段, 我们首先用 1 个随机种子实验以确定配置, 最终超参数最多用 4 个随机种子. 最终超参数标记为 ():
 
-1. **SFT:** We sweep over learning rates $1 \times { 1 0 } ^ { - 5 } , \; 2 \times { 1 0 } ^ { - 5 } ( \mathbb { P } ) , \; 3 \times { 1 0 } ^ { - 5 }$ for the 7B model and $1 \times { { 1 0 } ^ { - 6 } }$ $$4 \times 1 0 ^ { ^ { - 6 } } \text {, } 5 \times \bar { 1 0 } ^ { ^ { - 6 } }$ ( 即 ), $\overset { \sim } { 7 . 5 \times 1 0 } ^ { - 6 } \text {, } 8 \times 1 0 ^ { ^ { - 6 } }$$ for the 13B model.
+1. **SFT:** We sweep over learning rates $1\times10^{-5}$, $2\times10^{-5}$ (♥), $3\times10^{-5}$ for the 7B model and $1\times10^{-6}$, $4\times10^{-6}$, $5\times10^{-6}$ (♥), $7.5\times10^{-6}$, $8\times10^{-6}$ for the 13B model.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">22<sub>See</sub> [https://huggingface.co/datasets/argilla/ultrafeedback-binarized-preferences](https://huggingface.co/datasets/argilla/ultrafeedback-binarized-preferences).</span></small>
 
@@ -1231,12 +1231,12 @@ Figure 13 The scores from our evaluation suites for OLMo-2-1124-13B-Instruct tra
 
 图 13｜OLMo-2-1124-13B-Instruct 在 RLVR 上的评测套件分数曲线.
 
-2. DPO: We sweep over learning rates $$\mathrm { 5 \times 1 0 ^ { - 7 } , \: 6 \times 1 0 ^ { - 7 } , \: 7 \times 1 0 ^ { - 7 } , \: 8 \times 1 0 ^ { - 7 } }$ ( 带  - 13B)$ , and $1  \times  10 ^{-6} (@ .$ 7B) for both the 7B model and 13B model.
+2. DPO: We sweep over learning rates $5\times10^{-7}$, $6\times10^{-7}$, $7\times10^{-7}$, $8\times10^{-7}$ (♥ - 13B), and $1\times10^{-6}$ (♥ - 7B) for both the 7B model and 13B model.
 
 3. **RM:** We train with $3  \times  10 ^{- 6 }$ learning rate and 1 random seed for the 7B and 13B models, respectively.
 
 
-4. **RLVR:** We sweep over beta values 0.03, 0.05, 0.07 (♥ - 7B), and 0.1 (♥ - 13B). For 13B model, we also sweep over learning rates $$\mathrm { 3 \times 1 0 } ^ { - 7 }$ ( 带  - 13B), $\mathrm { 4 \times 1 0 } ^ { - 7 }$ ( 带  - 7B)$ . For 13B, we run this sweep on the best model at each RLVR stage.
+4. **RLVR:** We sweep over beta values 0.03, 0.05, 0.07 (♥ - 7B), and 0.1 (♥ - 13B). For 13B model, we also sweep over learning rates $3\times10^{-7}$ (♥ - 13B), $4\times10^{-7}$ (♥ - 7B). For 13B, we run this sweep on the best model at each RLVR stage.
 
 We conducted a hyperparameter sweep for SFT and DPO, using earlier development checkpoints, with results detailed in Table 17 and Figure 12. A key finding was that OLMo 2 required significantly higher learning rates compared to the Llama 3.1 training recipe described by Lambert et al. (2024). Finally, the optimized hyperparameters for our final model are presented in Table 17 and Table 18.
 

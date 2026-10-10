@@ -1189,7 +1189,7 @@ $$
 I D = I E = r = \frac {a + b - \sqrt {a ^ {2} + b ^ {2}}}{2}
 $$
 
-**Step 5: Integer Lengths** For $AB,AC,BI,ID,CI,$ and <u>IE t</u>o all be integers, the following must hold: - a and b are integers - $\frac { \sqrt { a ^ { 2 } + b ^ { 2 } } } { 2 }$ is an integer - $- $\frac { a + b - \sqrt { a ^ { 2 } + b ^ { 2 } } } { 2 }$$ is an integer
+**Step 5: Integer Lengths** For $AB,AC,BI,ID,CI,$ and <u>IE t</u>o all be integers, the following must hold: - a and b are integers - $\frac { \sqrt { a ^ { 2 } + b ^ { 2 } } } { 2 }$ is an integer - $-\frac { a + b - \sqrt { a ^ { 2 } + b ^ { 2 } } } { 2 }$ is an integer
 
 **Step 6: Analysis** For $\frac { \sqrt { a ^ { 2 } + b ^ { 2 } } } { 2 }$ to be an integer, $\sqrt { a ^ { 2 } + b ^ { 2 } }$ must be an even integer. Let $\sqrt { a ^ { 2 } + b ^ { 2 } } =$ <u>2</u>k for some integer k. Then:
 
@@ -1277,43 +1277,7 @@ Figure 8: The prompt used in evaluating CMATH on the base models.
 
 <!-- page 36 of 39 -->
 
-<div class="docvortex-algorithm" style="white-space: pre-wrap; font-family:monospace;">
-问题:
-设数列 \$\left\{a_{n}\right\}$ 的前 \$n\$ 项和为 \$S_{n}\$, 且 \$a_{1}=-1, a_{n+1}=S_{n+1} S_{n}\$, 则 \$S_{n}=(\quad)\$.
-
-解析:
-让我们写出这个数列的前n项和:
-\$S_n = a_1 + a_2 + ... + a_n\$ \newline \$S_n = -1 + (S_2 S_1) + (S_3 S_2) + ... + (S_{n+1} S_n)\$ \newline \$S_n = -1 + (S_2 S_1) + (S_3 S_2) + ... + (S_n S_{n-1}) + (S_{n+1} S_n)\$ \newline \$S_n = -1 + S_n (S_{n+1} - S_1)\$ \newline \$S_n - S_n S_{n+1} = -1 - S_n\$ \newline \$S_n (1 - S_{n+1}) = -1 - S_n\$ \newline \$S_n = -\frac{1}{1 - S_{n+1}}\$ \newline因为这个数列后面的所有项都是0, 我们可以看到对于所有\$n\geq 1\$, \$S_{n+1} = 0\$. 因此, 我们有: \newline \$S_n = -\frac{1}{1 - S_{n+1}} = -\frac{1}{1 - 0} = -1\$ \newline这个数列前n项和的公式是\$S_n = -\frac{1}{n}\$. \newline 答案是 \$-\frac{1}{n}\$
-
-问题:
-若 \$\left(x+\frac{1}{x}\right)\$ 的展开式中第 3 项与第 7 项的二项式系数相等, 则该展开式中 \$\frac{1}{x^2}\$ 的系数为 \$(quad)\$.
-
-解析:
-由题意可得, \$c_{n}^2=c_{n}^6\$ \newline \$therefore n=8\$ \newline 展开式的通项 T_{r+1}=C_8^rx^{8-r}\left(\frac{1}{x}\right)^r=C_8^rx^{8-2 r}\$ \newline 令 \$8-2 r=-2\$ 可得 \$r=5\$ \newline此时系数为 \$c_{8}^5=56\$ \newline 答案是 56
-
-问题:
-函数 \$\text{f}$\text{x}$=sin (\text{x}+2\phi)-2 \sin \phi \cos (\text{x}+\phi)\$ 的最大值为 \$(quad)\$.
-
-解析:
-函数 \$f(x)=\sin (x+2\phi)-2 \sin \phi \cos (x+\phi)=\sin [(x+\phi)+\phi]-\$ 2 \sin \phi \cos (x+\phi)\$ \$=\sin (x+\phi)\cos \phi+\cos (x+\phi)\sin \phi-2 \sin \phi \cos (x+\phi)=\sin (x+\phi)\cos \phi-\cos\$(x+\phi)\sin \phi\$ \$=\sin [(x+\phi)-\phi]=\sin x\$ \newline 故函数 \$f(x)\$ 的最大值为 1 \newline 答案是 1
-
-问题:
-已知向量 \$\vec{a}=(3,1), \vec{b}=(1,0), \vec{c}=\vec{a}+k \vec{b}\$. 若 \$\vec{a}\perp \vec{c}\$, 则 \$k=(\quad)\$
-
-解析:
-\because \vec{a}=(3,1), \vec{b}=(1,0), \therefore \vec{c}=\vec{a}+k \vec{b}=(3+k, 1)\$ , \$\because \vec{a}\perp \vec{c}, \therefore \vec{a}\square \vec{c}=3(3+k)+1 \times 1=0\$, 解得 \$k=-\frac{10}{3}\$ \newline 答案是 \$-\frac{10}{3}\$
-
-问题:
-设向量 \$\vec{a}, \vec{b}\$ 不平行, 向量 \$\lambda \vec{a}+\vec{b}\$ 与 \$\vec{a}+2 \vec{b}\$ 平行, 则实数 \$\lambda=(\quad)\$.
-
-解析:
-\$\because\$ 向量 \$\vec{a}, \vec{b}\$ 不平行, 向量 \$\lambda \vec{a}+\vec{b}\$ 与 \$\vec{a}+2 \vec{b}\$ 平行, \$\therefore \lambda \vec{a}+\vec{b}=t(\vec{a}+2 \vec{b})=t \vec{a}+2 t \vec{b}\$
-\$\therefore\left\begin{array}{c}\lambda=\text{t}\ 1=2 \text{t},\end{array}\right.\$ 解得实数 \$\lambda=\frac{1}{2}\$. \newline 答案是 \$\frac{1}{2}\$
-
-问题:
-{question}
-解析:
-</div>
+![GaoKao Math Cloze 的完整评测提示](../../../../uploads/qwen2-5-math/figure-9-page.png)
 
 Figure 9: The prompt used in evaluating GaoKao Math Cloze on the base models.
 
@@ -1354,12 +1318,12 @@ Figure 13: The prompt used in evaluating the MMLU-STEM on the instruct models.
 
 <!-- page 39 of 39 -->
 
-| 已知$\\alpha,\\beta,\\gamma$是互不相同的锐角,则在$\\sin\\alpha\\cos\\beta,\\sin\\beta\\cos\\gamma,\\sin\\gamma\\cos\\alpha$三个值中,大于$\\frac{1}{2}$的个数的最大值是()从以下选项中选择:\\newline(A)0:\\newline(B)1:\\newline(C)2:\\newline(D)31.如果$\\alpha,\\beta,\\gamma$均小于$60^circ$,那么他们的正弦值都小于$\\frac{1}{2}$,因此三个值中不可能有大于$\\frac{1}{2}$的值. \\newline2.如果有一个角大于$60^circ$,假设为$\\alpha$,那么对应的正弦值大于$\\frac{1}{2}$. 此时,由于三角形内角和为$180^circ$,所以$\\beta+\\gamma&lt;120^circ$. 这意味着$\\beta,\\gamma$的余弦值均大于$\\frac{1}{2}$,所以此时$\\sin\\alpha\\cos\\beta>\\frac{1}{2},\\sin\\beta\\cos\\gamma>\\frac{1}{2}$. \\newline3.如果有两个角大于$60^circ$,例如$\\alpha$和$\\beta$,那么由于三角形内角和为$180^circ$,我们可以得到$\\gamma&lt;60^circ$,此时$\\sin\\gamma&lt;\\frac{1}{2}$. 由于$\\alpha$和$\\beta$的余弦值都小于$\\frac{1}{2}$,因此三个值中不可能有大于$\\frac{1}{2}$的值. 4.如果三个角都大于$60^circ$,显然不符合题意. \\newline综上所述,当有一个角大于$60^circ$时,大于$\\frac{1}{2}$的个数的最大值是2. 答案是C |
+| 已知$\alpha,\beta,\gamma$是互不相同的锐角,则在$\sin\alpha\cos\beta,\sin\beta\cos\gamma,\sin\gamma\cos\alpha$三个值中,大于$\frac{1}{2}$的个数的最大值是()从以下选项中选择:<br>(A)0:<br>(B)1:<br>(C)2:<br>(D)31.如果$\alpha,\beta,\gamma$均小于$60^\circ$,那么他们的正弦值都小于$\frac{1}{2}$,因此三个值中不可能有大于$\frac{1}{2}$的值. <br>2.如果有一个角大于$60^\circ$,假设为$\alpha$,那么对应的正弦值大于$\frac{1}{2}$. 此时,由于三角形内角和为$180^\circ$,所以$\beta+\gamma\lt 120^\circ$. 这意味着$\beta,\gamma$的余弦值均大于$\frac{1}{2}$,所以此时$\sin\alpha\cos\beta>\frac{1}{2},\sin\beta\cos\gamma>\frac{1}{2}$. <br>3.如果有两个角大于$60^\circ$,例如$\alpha$和$\beta$,那么由于三角形内角和为$180^\circ$,我们可以得到$\gamma\lt 60^\circ$,此时$\sin\gamma\lt \frac{1}{2}$. 由于$\alpha$和$\beta$的余弦值都小于$\frac{1}{2}$,因此三个值中不可能有大于$\frac{1}{2}$的值. 4.如果三个角都大于$60^\circ$,显然不符合题意. <br>综上所述,当有一个角大于$60^\circ$时,大于$\frac{1}{2}$的个数的最大值是2. 答案是C |
 | --- |
-| 正方体$ABCD-A_{1}B_{1}C_{1}D_{1}$中,$BB_{1}$与平面$ACD_{1}$所成角的余弦值为()从以下选项中选择:\\newline(A)$\\frac{\\sqrt{2}}{3}$\\newline(B)$\\frac{\\sqrt{3}}{3}$\\newline(C)$\\frac{2}{3}$\\newline(D)$\\frac{\\sqrt{6}}{3}$设上下底面的中心分别为$\\mathm{O}_{1},\\mathm{O}$,设正方体的棱长等于1,则$O_{1}O$与平面$ACD_{1}$所成角就是$BB_{1}$与平面$ACD_{1}$所成角,即$\\angle O_{1}OD_{1}$,直角三角形$\\mathm{OO}_{1}\\mathm{D}_{1}$中,$cos\\angle\\mathm{O}_{1}\\mathm{OD}_{1}=\\frac{\\mathm{O}_{1}\\mathm{O}}\\mathm{OD}_{1}=\\frac{\\frac{1}{sqrt{6}}}{2}=\\frac{\\sqrt{6}}{3}$.答案是C |
-| 设函数$f(x)=\\left\\begin{array}{ll}1+\\log_{2}(2-x),&amp;x&lt;1\\2^{x-1},&amp;x\\geqslant 1,\\end{array}\\right.$则$f(-2)+f\\left(\\log_{2}12\\right)=$( )从以下选项中选择:\\newline(A)3:\\newline(B)6:\\newline(C)9:\\newline(D)12首先,我们可以根据定义计算$f(-2)$和$f(-2)=1+\\log_{2}(2-(-2))=1+\\log_{2}4=3$$f(-log_{2}12)=2^{log_{2}12-1}=6$\\newline因此,$f(-2)+f(-log_{2}12)=3+6=9$. 答案是C |
-| 已知函数$f(x)=a x^{3}-3 x^{2}+1$,若$f(x)$存在唯一的零点$x_{0}$,且$x_{0}>$0,则实数$\\mathm{a}$的取值范围是()从以下选项中选择:\\newline(A)$(1,+\\infty$)\\newline(B)$(2,+\\infty$)\\newline(C)$(-\\infty,-1)$\\newline(D)$(-\\infty,-2)$首先,我们可以通过求出函数的导函数$f'(x)$来判断函数在$x>0$区间内的单调性. 在这里,我们求出导函数$f'(x)$为$f'(x)=3ax^{2-6x}. \\newline然后,我们需要求出导函数$f'(x)$的零点,以确定函数$f(x)$在$x>0$区间内的单调性. 导函数$f'(x)$的零点为$x=0$和$x=\\frac{2}{sqrt{a}}$. 注意到$x>0$,所以我们得到$a&lt;0$. 此外,由于函数$f(x)$在$x=0$处的函数值为$1$,因此不能有$a=\\frac{4}{3}$. \\newline综上所述,当$a$的取值范围为$a&lt;-\\frac{4}{3}$时,函数$f(x)$在$x>0$区间内是单调递减的,此时存在唯一的零点$x_0$. 因此,答案为$(-\\infty,-2)$. 答案是D |
-| 设$\\left\\{a_{n}\\right\\}$是公差不为0的无穷等差数列,则「$\\left\\{a_{n}\\right\\}$为递增数列」是「存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$」的()从以下选项中选择:\\newline(A)充分而不必要条件:\\newline(B)必要而不充分条件:\\newline(C)充分必要条件:\\newline(D)既不充分也不必要条件首先,我们可以通过举例来判断该条件是充分还是必要条件. 如果一个数列递增,那么它的公差一定大于0,也就是存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$. 因此,「$\\left\\{a_{n}\\right\\}$为递增数列」是「存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$」的必要条件. \\newline接下来,我们需要判断是否充分. 也就是说,如果存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$,那么能否得出「$\\left\\{a_{n}\\right\\}$为递增数列」这一结论. 答案是肯定的. 因为如果$a_{n}>0$,那么$a_{n+1}-a_{n}>0$,即公差大于0,因此该数列是递增的. 因此,该条件是充分条件. \\newline综上所述,选项为(C)充分必要条件. 答案是C{question} |
+| 正方体$ABCD-A_{1}B_{1}C_{1}D_{1}$中,$BB_{1}$与平面$ACD_{1}$所成角的余弦值为()从以下选项中选择:<br>(A)$\frac{\sqrt{2}}{3}$<br>(B)$\frac{\sqrt{3}}{3}$<br>(C)$\frac{2}{3}$<br>(D)$\frac{\sqrt{6}}{3}$设上下底面的中心分别为$\mathrm{O}_{1},\mathrm{O}$,设正方体的棱长等于1,则$O_{1}O$与平面$ACD_{1}$所成角就是$BB_{1}$与平面$ACD_{1}$所成角,即$\angle O_{1}OD_{1}$,直角三角形$\mathrm{OO}_{1}\mathrm{D}_{1}$中,$cos\angle\mathrm{O}_{1}\mathrm{OD}_{1}=\frac{\mathrm{O}_{1}\mathrm{O}}{\mathrm{OD}_{1}}=\frac{\frac{1}{sqrt{6}}}{2}=\frac{\sqrt{6}}{3}$.答案是C |
+| 设函数$f(x)=\left\{\begin{array}{ll}1+\log_{2}(2-x),&x\lt 1\\ 2^{x-1},&x\geqslant 1,\end{array}\right.$则$f(-2)+f\left(\log_{2}12\right)=$( )从以下选项中选择:<br>(A)3:<br>(B)6:<br>(C)9:<br>(D)12首先,我们可以根据定义计算$f(-2)$和$f(-2)=1+\log_{2}(2-(-2))=1+\log_{2}4=3$; $f(-log_{2}12)=2^{log_{2}12-1}=6$<br>因此,$f(-2)+f(-log_{2}12)=3+6=9$. 答案是C |
+| 已知函数$f(x)=a x^{3}-3 x^{2}+1$,若$f(x)$存在唯一的零点$x_{0}$,且$x_{0}>0$,则实数$\mathrm{a}$的取值范围是()从以下选项中选择:<br>(A)$(1,+\infty$)<br>(B)$(2,+\infty$)<br>(C)$(-\infty,-1)$<br>(D)$(-\infty,-2)$首先,我们可以通过求出函数的导函数$f'(x)$来判断函数在$x>0$区间内的单调性. 在这里,我们求出导函数$f'(x)$为$f'(x)=3ax^{2-6x}$. <br>然后,我们需要求出导函数$f'(x)$的零点,以确定函数$f(x)$在$x>0$区间内的单调性. 导函数$f'(x)$的零点为$x=0$和$x=\frac{2}{sqrt{a}}$. 注意到$x>0$,所以我们得到$a\lt 0$. 此外,由于函数$f(x)$在$x=0$处的函数值为$1$,因此不能有$a=\frac{4}{3}$. <br>综上所述,当$a$的取值范围为$a\lt -\frac{4}{3}$时,函数$f(x)$在$x>0$区间内是单调递减的,此时存在唯一的零点$x_0$. 因此,答案为$(-\infty,-2)$. 答案是D |
+| 设$\left\{a_{n}\right\}$是公差不为0的无穷等差数列,则「$\left\{a_{n}\right\}$为递增数列」是「存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$」的()从以下选项中选择:<br>(A)充分而不必要条件:<br>(B)必要而不充分条件:<br>(C)充分必要条件:<br>(D)既不充分也不必要条件首先,我们可以通过举例来判断该条件是充分还是必要条件. 如果一个数列递增,那么它的公差一定大于0,也就是存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$. 因此,「$\left\{a_{n}\right\}$为递增数列」是「存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$」的必要条件. <br>接下来,我们需要判断是否充分. 也就是说,如果存在正整数$N_{0}$,当$n>N_{0}$时,$a_{n}>0$,那么能否得出「$\left\{a_{n}\right\}$为递增数列」这一结论. 答案是肯定的. 因为如果$a_{n}>0$,那么$a_{n+1}-a_{n}>0$,即公差大于0,因此该数列是递增的. 因此,该条件是充分条件. <br>综上所述,选项为(C)充分必要条件. 答案是C{question} |
 
 Figure 14: The prompt used in evaluating the multiple-choice problems in GaoKao on the instruct models.
 

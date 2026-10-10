@@ -844,8 +844,8 @@ set_option maxHeartbeats 0
 
 open BigOperators Real Nat Topology Rat
 
-/-- Show that $\frac{9x^2\sin^2 x + 4}{x\sin x} \geqslant 12$ for $0 &lt; x &lt; \pi. - /$
-theorem aime_1983_p9 (x : $\mathbb{R}$) ($h_0 : 0 &lt; x \land x &lt; Real. pi$ :
+/-- Show that $\frac{9x^2\sin^2 x + 4}{x\sin x} \geqslant 12$ for $0 \lt  x \lt  \pi$. -/
+theorem aime_1983_p9 (x : $\mathbb{R}$) ($h_0 : 0 \lt  x \land x \lt  Real. pi$ :
 $12 \leqslant (9 * (x ^ 2 * Real. sin x ^ 2) + 4) / (x * Real. sin x) : = by$
 </div>
 
@@ -877,11 +877,11 @@ set_option maxHeartbeats 0
 
 open BigOperators Real Nat Topology Rat
 
-/-- Show that $\frac{9x^2\sin^2 x + 4}{x\sin x} \geqslant 12$ for $0 &lt; x &lt; \pi. - /$
-theorem aime_1983_p9 (x : $\mathbb{R}$) ($h_0 : 0 &lt; x \land x &lt; Real. pi$):
+/-- Show that $\frac{9x^2\sin^2 x + 4}{x\sin x} \geqslant 12$ for $0 \lt  x \lt  \pi$. -/
+theorem aime_1983_p9 (x : $\mathbb{R}$) ($h_0 : 0 \lt  x \land x \lt  Real. pi$):
     $12 \leqslant (9 * (x ^ 2 * Real. sin x ^ 2) + 4) / (x * Real. sin x) : = by$
     /-
-    To find the minimum value of $\frac{9x^2\sin^2 x + 4}{x\sin x}$ for $0 &lt; x &lt; \pi$, we need to show that it is at least 12. We start by noting that the expression can be rewritten using the division property of inequalities. We then use the fact that $\sin x$ and $x$ are positive in the given range to establish the necessary
+    To find the minimum value of $\frac{9x^2\sin^2 x + 4}{x\sin x}$ for $0 \lt  x \lt  \pi$, we need to show that it is at least 12. We start by noting that the expression can be rewritten using the division property of inequalities. We then use the fact that $\sin x$ and $x$ are positive in the given range to establish the necessary
 </div>
 
 <!-- page 25 of 28 -->

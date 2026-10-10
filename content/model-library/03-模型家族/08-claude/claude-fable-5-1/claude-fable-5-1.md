@@ -1886,7 +1886,7 @@ Grader awareness rate in capabilities environments (Claude Mythos 5.1)
 
 highlighted text→ reasoning about a grader
 
-[..] Problem: Given an isosceles trapezoid [.] Prove that $EM) is parallel to \(AC$. [.]
+[..] Problem: Given an isosceles trapezoid [.] Prove that $EM$ is parallel to $AC$. [.]
 
 The prompt lists what will be accepted, but never mentions a grader.
 

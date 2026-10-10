@@ -487,7 +487,7 @@ $$
 最终计算归一化后的点积, 并除以温度参数 $\tau$:
 
 $$
- \text{logits}_{ij} = \frac{z_I_i^\top z_T_j}{\tau} \tag{20}
+ \text{logits}_{ij} = \frac{z_{I,i}^\top z_{T,j}}{\tau} \tag{20}
 $$
 这个 logits 矩阵直接输入 softmax 计算交叉熵损失.
 
