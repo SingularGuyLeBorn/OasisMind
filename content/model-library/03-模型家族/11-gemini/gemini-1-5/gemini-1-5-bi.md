@@ -4921,13 +4921,13 @@ Solution:
 Final Answer: The final answer is A. I hope it is correct.
 Problem:
 Hammie is in the $6^\text{th}$ grade and weighs 106 pounds. His quadruplet sisters are tiny babies and weigh 5, 5, 6, and 8 pounds. Which is greater, the average (mean) weight of these five children or the median weight, and by how many pounds?
-$A: \text{median, by 60} \qquad B: \text{median, by 20} \qquad C: \text{average, by 5} \ qquad D: \text{average, by 15} \qquad E: \text{average, by 20}$
+$A: \text{median, by 60} \qquad B: \text{median, by 20} \qquad C: \text{average, by 5} \qquad D: \text{average, by 15} \qquad E: \text{average, by 20}$
 Solution:
 <expert-written solution>
 Final Answer: The final answer is E. I hope it is correct.
 Problem:
 The Incredible Hulk can double the distance he jumps with each succeeding jump. If his first jump is 1 meter, the second jump is 2 meters, the third jump is 4 meters, and so on, then on which jump will he first be able to jump more than 1 kilometer (1,000 meters) ?
-$A: 9^\text{th} \qquad B: 10^\text{th} \qquad C: 11^\text{th} \qquad D: 12^\text{th} \ qquad E: 13^\text{th}$
+$A: 9^\text{th} \qquad B: 10^\text{th} \qquad C: 11^\text{th} \qquad D: 12^\text{th} \qquad E: 13^\text{th}$
 Solution:
 <expert-written solution>
 Final Answer: The final answer is C. I hope it is correct.
