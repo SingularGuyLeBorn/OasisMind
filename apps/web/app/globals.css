@@ -714,6 +714,21 @@ html.dark .om-card,
   list-style-type: square;
 }
 
+/* 本地文章在类名切换的深色模式下不能继续继承 prose-stone 的浅色正文色。 */
+.prose.om-post-content {
+  color: var(--om-text-1);
+  --tw-prose-body: var(--om-text-1);
+  --tw-prose-headings: var(--om-text-1);
+  --tw-prose-bold: var(--om-text-1);
+  --tw-prose-quotes: var(--om-text-2);
+  --tw-prose-links: var(--om-brand-deep);
+  --tw-prose-bullets: var(--om-text-3);
+  --tw-prose-counters: var(--om-text-2);
+}
+.dark .prose.om-post-content {
+  --tw-prose-links: var(--om-brand-light);
+}
+
 /* Markdown 段落：用 div.om-md-p 代替 p，保留 prose 段落间距 */
 .prose .om-md-p {
   margin-top: 1.25em;

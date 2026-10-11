@@ -31,6 +31,7 @@ import { ReadingProgressTracker } from "@/components/post/ReadingProgressTracker
 import { useAutoSave } from "@/lib/useAutoSave";
 import { cn } from "@/lib/utils";
 import { createPostAnnotationAnchor } from "@/lib/postAnnotationAnchor";
+import { collapseMatchingLeadHeading } from "@/lib/postDisplayContent";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -55,6 +56,7 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
 
   const [title, setTitle] = useState(post.title);
   const [content, setContent] = useState(post.content);
+  const display = useMemo(() => collapseMatchingLeadHeading(content, title), [content, title]);
   const spatialEntries = useMemo(() => buildTocItems(content).filter(heading => heading.level <= 3).map(heading => ({ title: heading.text, href: `#${heading.id}` })), [content]);
   const [mode, setMode] = useState<EditorViewMode>("wysiwyg");
   // 阅读态/编辑态：默认阅读；点「编辑」后编辑器只初始化一次，之后显隐切换
@@ -170,7 +172,7 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
               placeholder="标题"
             />
           ) : (
-            <h1 className="box-border min-h-[1.35em] w-full overflow-visible py-1 text-3xl font-semibold leading-snug tracking-tight text-foreground sm:text-4xl">
+            <h1 id={display.collapsedLeadHeading ? "om-h-0" : undefined} className="box-border min-h-[1.35em] w-full overflow-visible py-1 text-3xl font-semibold leading-snug tracking-tight text-foreground sm:text-4xl">
               {title}
             </h1>
           )}
@@ -227,7 +229,12 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
 
         {/* 阅读态静态渲染（首开零编辑器成本）；点过「编辑」的文档两个渲染面都常驻，显隐切换 */}
         <div ref={readContentRef} hidden={editing}>
-          <PostContent content={content} postSlug={post.slug} postGarden={post.garden} />
+          <PostContent
+            content={display.content}
+            headingIndexOffset={display.collapsedLeadHeading ? 1 : 0}
+            postSlug={post.slug}
+            postGarden={post.garden}
+          />
         </div>
         {editorEverMounted && (
           <div hidden={!editing}>

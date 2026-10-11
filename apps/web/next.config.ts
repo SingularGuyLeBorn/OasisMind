@@ -27,6 +27,8 @@ const withBundleAnalyzer = bundleAnalyzer({
 // 仅 transpile shared（运行时真依赖）；server 只通过 `import type { AppRouter }` 共享类型，
 // type-only import 在编译期被擦除，无需把整个 server 包拉进 Next 编译/打包图（否则 dev/build 都更慢）。
 const nextConfig: NextConfig = {
+  // [OM-FREEPLAY] 本地手机预览时 Next 开发浮标遮住底栏“知识库”；错误仍从终端与浏览器控制台可见。
+  devIndicators: false,
   transpilePackages: [
     "@oasismind/brand",
     "@oasismind/shared",

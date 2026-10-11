@@ -153,6 +153,16 @@ describe("PostContent sanitize", () => {
     ]);
   });
 
+  it("首 H1 并入页头后，正文标题仍沿用原始锚点编号", async () => {
+    await act(async () => {
+      root.render(<PostContent content={"## 第一节\n\n### 细节"} headingIndexOffset={1} />);
+    });
+    expect(Array.from(container.querySelectorAll("h2, h3"), (heading) => heading.id)).toEqual([
+      "om-h-1",
+      "om-h-2",
+    ]);
+  });
+
   it("保留手写标注所需属性，同时继续剥离事件处理器", async () => {
     await act(async () => {
       root.render(

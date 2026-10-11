@@ -92,6 +92,8 @@ interface PostContentProps {
   postSlug?: string;
   /** 当前文章所属花园；内链解析优先同库匹配 */
   postGarden?: string;
+  /** 页头吸收了原文首 H1 时，剩余标题沿用原文中的 om-h-N 编号。 */
+  headingIndexOffset?: number;
 }
 
 /** 可渲染为 iframe 预览的语言（HTML/可独立运行的标记） */
@@ -478,9 +480,9 @@ function rehypeNormalizeCustomTags() {
  * 必须把 transformer 返回给 unified；直接把 transformer 当插件传入会在注册阶段被空调用，
  * 最终正文没有 om-h-*，目录只能走不可靠的序号兜底。
  */
-function rehypeHeadingIds() {
+function rehypeHeadingIds(startAt = 0) {
   return (tree: RehypeRoot) => {
-    let index = 0;
+    let index = startAt;
     // 防御：某些 rehype 调用链（如空内容/SSR 片段）可能传非 root 或 undefined
     if (!tree || !Array.isArray(tree.children)) return;
     const walk = (node: RehypeNode) => {
@@ -523,6 +525,7 @@ export const PostContent = memo(function PostContent({
   className,
   postSlug,
   postGarden,
+  headingIndexOffset = 0,
 }: PostContentProps) {
   const processedContent = useMemo(
     () =>
@@ -535,8 +538,8 @@ export const PostContent = memo(function PostContent({
   const rehypePluginsBeforeSanitize = useMemo(() => [rehypeNormalizeCustomTags], []);
   const rehypePluginsAfterSanitize = useMemo(
     // 本地页用自定义 KaTeX 组件，因此只在共享 sanitize 之后追加标题 id 与代码高亮。
-    () => [rehypeHeadingIds, rehypeHighlight],
-    [],
+    () => [() => rehypeHeadingIds(headingIndexOffset), rehypeHighlight],
+    [headingIndexOffset],
   );
 
   const components = useMemo<Components>(
