@@ -14,9 +14,9 @@ excerpt: "Gemma 3n 公开材料的逐段中英对照译稿,附读报告时的疑
 > **回看:** 图的文件名是 「gemma-4-released-with-text-audio-and-image-input-and」, 画面对得上吗?
 > 对不上. 画面只是一个按钮. PDF 里没有嵌入任何位图, 这张图是 MinerU 从页面上裁下来的一块区域; PDF 文字层在第 1 页末尾有一串 「content_copy arrow_drop_down」, 正是这两个图标的字形名, 左边复制, 右边下拉. MinerU 按图下方最近的一行字给图起名, 那一行恰好是 Gemma 4 的横幅, 于是一个复制按钮挂上了 「Gemma 4 发布」 的名字. 这张图和 Gemma 3n, Gemma 4 都没有关系, 引用时不要把它当成横幅截图.
 
-Gemma 4 released with text, audio and image input and long up to 256K context window![Learn more](https://ai.google.dev/gemma/docs/core)
+Gemma 4 released with text, audio and image input and long up to 256K context window. [Learn more](https://ai.google.dev/gemma/docs/core)
 
-Gemma 4 已发布, 支持文本, 音频和图像输入, 上下文窗口最长 256K![了解详情](https://ai.google.dev/gemma/docs/core) (源文把相对路径 「/gemma/docs/core」 也塞进了链接文字, 这里去掉. 下文的链接一律只留名字, 网址放在链接里.)
+Gemma 4 已发布, 支持文本, 音频和图像输入, 上下文窗口最长 256K. [了解详情](https://ai.google.dev/gemma/docs/core)
 
 > **想:** 这条横幅是不是这张卡的一部分, 256K 能不能算作 Gemma 3n 的上下文长度?
 > 不是, 不能. 横幅开头就是 「Gemma 4 released」, 链接去的是 /gemma/docs/core, 不是本卡的 /gemma/docs/gemma-3n; 它是 ai.google.dev 整站顶部的公告条, 抓取这一页时正挂着. 本卡自己的数写在第 2 页: 输入总上下文 32K token, 输出也受这 32K 约束. 卡末写 「Last updated 2025-06-17」, 横幅说的是之后才发布的 Gemma 4, 时间上就不可能是这张卡的内容. 横幅里的 「text, audio and image input」 也只是在描述 Gemma 4, 3n 的输入种类要看第 1 页 Description, 那里还多了 video. 下文凡说 3n 的上下文, 只用 32K.

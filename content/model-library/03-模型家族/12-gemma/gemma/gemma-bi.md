@@ -14,9 +14,9 @@ excerpt: "Gemma 版本页 公开材料的逐段中英对照译稿,附读报告�
 > **回看:** 这张图的文件名带着 「gemma-4-25-6-token」, 图里有横幅上的内容吗?
 > 没有. 画面只是一个按钮, 没有字, 没有数. MinerU 按图片下方最近的一行文字给图起名, 那一行恰好是 Gemma 4 的横幅, 于是一个按钮图标挂上了 「25.6 万 token」 的名字. 这一页唯一的图和任何模型都没有关系.
 
-Gemma 4 is released with text, audio, and image input and a context window of up to 256K tokens![Learn more](https://ai.google.dev/gemma/docs/core?hl=zh-cn)
+Gemma 4 is released with text, audio, and image input and a context window of up to 256K tokens. [Learn more](https://ai.google.dev/gemma/docs/core?hl=zh-cn)
 
-Gemma 4 发布: 支持文本, 音频和图像输入, 上下文窗口最长 25.6 万 token![了解详情](https://ai.google.dev/gemma/docs/core?hl=zh-cn) (源文把网址也塞进了链接文字, 这里去掉. 下面各条同样处理.)
+Gemma 4 发布: 支持文本, 音频和图像输入, 上下文窗口最长 25.6 万 token. [了解详情](https://ai.google.dev/gemma/docs/core?hl=zh-cn)
 
 (源文只抓到 Google 机翻的中文页, 没有英文原文. 本文件每组的英文行是按中文和链接还原的英文, 不是原页逐字; 中文行按页面事实重写, 不照搬机翻.)
 
