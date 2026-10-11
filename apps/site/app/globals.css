@@ -1,3 +1,5 @@
+@import "./local-annotations.css";
+
 :root {
   /* [OM-FREEPLAY] 亮色纸面、深青与少量铜色建立阅读层次，避免整站同色卡片。 */
   --om-bg: #f7f7f2;
@@ -321,7 +323,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 .article-prose pre { overflow-x: auto; margin: 1.7em 0; padding: 18px; border: 1px solid var(--om-divider); border-radius: 14px; background: #f8fafc; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; line-height: 1.7; }
 .article-prose :not(pre) > code { padding: 2px 5px; border-radius: 5px; color: #b42318; background: #fff1f0; font-size: .86em; }
 .article-prose table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-family: Inter, sans-serif; font-size: 13px; }
-.article-prose th, .article-prose td { padding: 9px 12px; border: 1px solid var(--om-divider); }
+/* 表格仍可横滑；正文的 anywhere 换行不能把英文表头逐字压成竖排。 */
+.article-prose th, .article-prose td { padding: 9px 12px; border: 1px solid var(--om-divider); overflow-wrap: normal; word-break: normal; }
 .rough-mark { position: relative; display: inline; }
 /* 目录使用细线折叠图标，不显示浏览器默认的黑色三角。 */
 .reader-sidebar summary { display: flex; align-items: baseline; gap: 6px; list-style: none; }

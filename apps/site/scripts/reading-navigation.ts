@@ -6,6 +6,17 @@ const content = document.querySelector<HTMLElement>("[data-reading-content]");
 if (content) {
   enhanceReadingNavigation(content);
 
+  const annotationArticle = document.querySelector<HTMLElement>("[data-local-annotation-article]");
+  if (annotationArticle) import("./local-annotations").then(({ enhanceLocalAnnotations }) => {
+    enhanceLocalAnnotations(annotationArticle);
+  }).catch(() => {
+    const notice = document.createElement("p");
+    notice.className = "local-notes-load-error";
+    notice.setAttribute("role", "alert");
+    notice.textContent = "本地笔记暂时无法加载；正文仍可阅读。请检查连接后重新打开此页。";
+    annotationArticle.prepend(notice);
+  });
+
   const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".article-toc a"));
   const byId = new Map(links.map((link) => [decodeURIComponent(link.hash.slice(1)), link]));
   // [OM-FREEPLAY] 页内目录高亮仍以固定页头下方的可见标题为准，不为此启动 React。

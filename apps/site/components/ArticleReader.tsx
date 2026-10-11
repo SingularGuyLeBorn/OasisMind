@@ -14,7 +14,7 @@ export function ArticleReader({ post, gardenTitle, posts }: {
   const document = getReadingDocument("posts", post.id);
   const location = readingLocation(posts, post.garden, gardenTitle, post.id);
   return <div className="article-layout site-shell">
-    <article className="article-main">
+    <article className="article-main" data-local-annotation-article={post.id} data-local-annotation-hash={post.contentHash}>
       <Link href={location.parent.href!} className="back-link"><ArrowLeft size={16} />上一级：{location.parent.title}</Link>
       <nav className="reading-breadcrumbs" aria-label="当前位置">{location.breadcrumbs.map((item, index) =>
         <span key={index}>{index > 0 && <span aria-hidden="true"> / </span>}{item.href ? <Link href={item.href}>{item.title}</Link> : item.title}</span>)}</nav>
