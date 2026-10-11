@@ -7,6 +7,7 @@ import { readPublicImageSize } from "../publicImageSize";
 const roots: string[] = [];
 const hash = "a1" + "b".repeat(62);
 const src = `/api/v1/assets/a1/${hash}.webp`;
+const gifSrc = `/api/v1/assets/a1/${hash}.gif`;
 
 function root() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "om-site-image-size-"));
@@ -36,6 +37,14 @@ function writeWebp(directory: string, chunk: "VP8 " | "VP8X" | "VP8L", width: nu
   fs.writeFileSync(path.join(directory, `api/v1/assets/a1/${hash}.webp`), header);
 }
 
+function writeGif(directory: string, width: number, height: number) {
+  const header = Buffer.alloc(30);
+  header.write("GIF89a", 0, "ascii");
+  header.writeUInt16LE(width, 6);
+  header.writeUInt16LE(height, 8);
+  fs.writeFileSync(path.join(directory, `api/v1/assets/a1/${hash}.gif`), header);
+}
+
 afterEach(() => {
   for (const directory of roots.splice(0)) {
     const target = path.resolve(directory);
@@ -47,7 +56,7 @@ afterEach(() => {
   }
 });
 
-describe("公开 WebP 固有尺寸", () => {
+describe("公开图片固有尺寸", () => {
   it("读取 VP8 文件头，带查询参数的同一图片仍用真实尺寸", () => {
     const directory = root();
     writeWebp(directory, "VP8 ", 1280, 720);
@@ -65,6 +74,13 @@ describe("公开 WebP 固有尺寸", () => {
     const directory = root();
     writeWebp(directory, "VP8L", 12345, 6789);
     expect(readPublicImageSize(src, directory)).toEqual({ width: 12345, height: 6789 });
+  });
+
+  it("读取公开 GIF 文件头，并为 Pages 基路径保留宽高", () => {
+    const directory = root();
+    writeGif(directory, 952, 531);
+    expect(readPublicImageSize(gifSrc, directory)).toEqual({ width: 952, height: 531 });
+    expect(readPublicImageSize(`/OasisMind${gifSrc}`, directory, "/OasisMind")).toEqual({ width: 952, height: 531 });
   });
 
   it("外链不猜尺寸，公开哈希文件丢失则明确失败", () => {
