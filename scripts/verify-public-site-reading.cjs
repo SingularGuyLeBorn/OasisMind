@@ -113,6 +113,12 @@ async function main() {
       assert.equal(await page.locator('.knowledge-tree summary').first().evaluate(element => getComputedStyle(element).listStyleType), 'none');
       assert.ok(await page.locator('.knowledge-tree .tree-chevron').count() > 0);
       assert.equal(await page.locator('.katex-error').count(), 0);
+      const firstFormula = page.locator('.article-prose .katex[role="math"]').first();
+      assert.ok((await firstFormula.getAttribute('aria-label'))?.trim(), '公开公式需要原式可访问名称');
+      assert.match(await firstFormula.ariaSnapshot(), /math/, '浏览器无障碍树需要识别数学内容');
+      const formulaCount = await page.locator('.article-prose .katex').count();
+      assert.equal(await page.locator('.article-prose .katex[role="math"]').count()
+        + await page.locator('.article-prose .katex-mathml').count(), formulaCount, '每式保留可访问名称或结构化 MathML');
       assert.equal(await page.locator('.knowledge-tree a[aria-current="page"]').count(), 1);
       await page.locator('.om-spatial-disclosure > summary').click();
       await assertSpatialNavigation(page);
@@ -318,6 +324,64 @@ async function main() {
       assert.deepEqual(officeErrors, []);
       await office.close();
     }
+    // 最长一类双语论文同时覆盖大量 KaTeX 与懒加载配图；解码前后高度和已到达的锚点必须稳定。
+    const longPost = index.posts.find(p => p.garden === 'model-library' && p.slug.endsWith('olmo-core-3-bi'));
+    assert.ok(longPost, '缺少长文性能回归样本');
+    const longArticle = new URL(`articles/${encodeURIComponent(longPost.garden)}/${longPost.slug.split('/').map(encodeURIComponent).join('/')}`, base).href;
+    const longPage = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const longErrors = [], longFailures = [];
+    longPage.on('pageerror', error => longErrors.push(error.message));
+    longPage.on('response', response => {
+      if (response.status() >= 400 && response.url().startsWith(base)) longFailures.push(`${response.status()} ${response.url()}`);
+    });
+    await longPage.goto(longArticle, { waitUntil: 'domcontentloaded' });
+    await longPage.waitForLoadState('networkidle');
+    await longPage.screenshot({ path: path.join(evidence, 'long-article-mobile-first.png') });
+    await longPage.locator('.article-prose .katex:has(.katex-mathml)').first().scrollIntoViewIfNeeded();
+    await longPage.screenshot({ path: path.join(evidence, 'long-article-mobile-formula.png') });
+    const laterImage = longPage.locator('[data-reading-content] img[src*="/api/v1/assets/"]').nth(10);
+    await laterImage.scrollIntoViewIfNeeded();
+    await laterImage.evaluate(image => image.decode());
+    await longPage.screenshot({ path: path.join(evidence, 'long-article-mobile-image.png') });
+    await longPage.locator('[data-navigation-open="outline"]').click();
+    const longDrawer = longPage.getByRole('dialog', { name: '阅读导航' });
+    await longDrawer.waitFor();
+    await longDrawer.evaluate(async dialog => {
+      await Promise.all(dialog.getAnimations().map(animation => animation.finished.catch(() => {})));
+    });
+    assert.ok(await longDrawer.evaluate(dialog => dialog.getBoundingClientRect().width >= 300), '手机目录展开后应保持可阅读宽度');
+    await longPage.screenshot({ path: path.join(evidence, 'long-article-mobile-drawer.png') });
+    await longPage.getByRole('button', { name: '关闭阅读导航' }).click();
+    const longMetrics = await longPage.evaluate(async () => {
+      const images = [...document.querySelectorAll('[data-reading-content] img[src*="/api/v1/assets/"]')];
+      const formulas = [...document.querySelectorAll('[data-reading-content] .katex')];
+      const heading = [...document.querySelectorAll('[data-reading-content] h2[id]')][10];
+      if (!heading) throw new Error('长文缺少用于滚动稳定性验收的第 11 个二级标题');
+      heading.scrollIntoView();
+      const before = { height: document.body.scrollHeight, scrollY, headingTop: heading.getBoundingClientRect().top };
+      await Promise.all(images.map(async image => { image.loading = 'eager'; await image.decode(); }));
+      return {
+        images: images.length,
+        sized: images.filter(image => image.hasAttribute('width') && image.hasAttribute('height')
+          && Number(image.getAttribute('width')) > 0 && Number(image.getAttribute('height')) > 0).length,
+        formulas: formulas.length,
+        labelled: formulas.filter(formula => formula.getAttribute('role') === 'math' && formula.getAttribute('aria-label')).length,
+        mathml: document.querySelectorAll('[data-reading-content] .katex-mathml').length,
+        before,
+        after: { height: document.body.scrollHeight, scrollY, headingTop: heading.getBoundingClientRect().top },
+      };
+    });
+    assert.ok(longMetrics.images > 10 && longMetrics.formulas > 100);
+    assert.equal(longMetrics.sized, longMetrics.images, '公开图片必须预留真实比例');
+    assert.equal(longMetrics.labelled + longMetrics.mathml, longMetrics.formulas, '长文每式保留可访问名称或结构化 MathML');
+    assert.ok(longMetrics.labelled > 100 && longMetrics.mathml > 0, '简单行内式紧凑化，复杂式仍保留 MathML');
+    assert.ok(Math.abs(longMetrics.after.height - longMetrics.before.height) < 2, '懒加载图片不能撑高长文');
+    assert.ok(Math.abs(longMetrics.after.scrollY - longMetrics.before.scrollY) < 2, '图片加载不能改变当前阅读位置');
+    assert.ok(Math.abs(longMetrics.after.headingTop - longMetrics.before.headingTop) < 2, '图片加载不能推走当前章节');
+    assert.deepEqual(longErrors, [], '长文浏览器运行时不能报错');
+    assert.deepEqual(longFailures, [], '长文公开资产不能返回 HTTP 错误');
+    stats.longArticle = longMetrics;
+    await longPage.close();
     const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
     await noJs.goto(base, { waitUntil: 'domcontentloaded' });
     await noJs.locator('.om-showcase-tabs label').nth(2).click();

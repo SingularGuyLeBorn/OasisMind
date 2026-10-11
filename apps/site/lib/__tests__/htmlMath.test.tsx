@@ -1,6 +1,7 @@
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it} from 'vitest';
 import {preparePublicMarkdown} from '../markdownDocument';
+import { buildMarkdownDocument } from '@oasismind/markdown';
 describe('HTML 表格中的数学',()=>{
  it('负数开头的公式不会误判成 Markdown 列表',()=>{
   const html=renderToStaticMarkup(preparePublicMarkdown('$$\n- 3 D + 5 \\epsilon = - \\frac{5D}{2}\n$$').body);
@@ -22,5 +23,23 @@ describe('HTML 表格中的数学',()=>{
  it('表格仍清除危险脚本和事件属性',()=>{
   const html=renderToStaticMarkup(preparePublicMarkdown('<table><tr><td onclick="alert(1)">$x$<script>alert(2)</script></td></tr></table>').body);
   expect(html).not.toContain('onclick');expect(html).not.toContain('<script');expect(html).toContain('class="katex"');
+ });
+ it('公开站公式保留原 TeX 可访问名称，工作台默认仍保留 MathML',()=>{
+  const source=String.raw`行内 $x_i$。`;
+  const publicHtml=renderToStaticMarkup(preparePublicMarkdown(source).body);
+  const defaultHtml=renderToStaticMarkup(buildMarkdownDocument({content:source}).body);
+  expect(publicHtml).toContain('role="math"');
+  expect(publicHtml).toContain('aria-label="x_i"');
+  expect(publicHtml).not.toContain('katex-mathml');
+  expect(publicHtml).toContain('katex-html');
+  expect(defaultHtml).toContain('katex-mathml');
+ });
+ it('块级、分式、求和、积分和长行内式仍保留结构化 MathML',()=>{
+  const source=String.raw`$\frac{a}{b}$、$\sum_i x_i$、$\int_0^1 f(x)\,dx$ 与 $x_1+x_2+x_3+x_4+x_5+x_6+x_7+x_8+x_9+x_{10}+x_{11}$。
+
+$$x=1$$`;
+  const html=renderToStaticMarkup(preparePublicMarkdown(source).body);
+  expect(html.match(/katex-mathml/g)).toHaveLength(5);
+  expect(html).not.toContain('role="math"');
  });
 });
