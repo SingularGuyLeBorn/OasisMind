@@ -305,6 +305,10 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 .article-prose h2 { margin: 2.5em 0 .8em; font-size: 28px; }
 .article-prose h3 { margin: 2em 0 .65em; font-size: 21px; }
 .article-prose p { margin: 1.15em 0; }
+/* 行内长公式独立横滑，不能撑大移动端视口并把底部目录推到屏幕外。 */
+@media (max-width: 900px) {
+  .article-prose .katex:not(.katex-display > .katex) { display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: middle; }
+}
 /* 长公式只在自身容器横滑;保持内在宽度, 从左端开始可完整读取. */
 .article-prose .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 .article-prose .katex-display > .katex { width: max-content; min-width: 100%; }

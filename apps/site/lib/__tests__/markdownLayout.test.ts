@@ -10,6 +10,10 @@ describe("公开文章公式布局", () => {
     expect(css).toMatch(/\.article-prose \.katex-display > \.katex\s*\{[^}]*width:\s*max-content;[^}]*min-width:\s*100%;/);
   });
 
+  it("手机上的行内长公式也限制在自身横滑，不撑宽阅读视口", () => {
+    expect(css).toMatch(/@media\s*\(max-width:\s*900px\)\s*\{\s*\.article-prose \.katex:not\(\.katex-display > \.katex\)\s*\{[^}]*max-width:\s*100%;[^}]*overflow-x:\s*auto;/);
+  });
+
   it("式号参与公式宽度计算, 不覆盖公式末尾", () => {
     expect(css).toMatch(/\.article-prose \.katex-display > \.katex > \.katex-html > \.tag\s*\{[^}]*position:\s*static;/);
   });

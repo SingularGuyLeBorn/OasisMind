@@ -2,8 +2,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { MarkdownHeading } from "@oasismind/markdown";
-import { ReadingEnhancements } from "@/components/ReadingEnhancements";
-import { StaticWidget } from "@/components/StaticWidget";
 import type { AboutProfile } from "@oasismind/shared";
 
 export function getReadingDocument(kind: "posts" | "gardens" | "pages", id: string): {
@@ -20,6 +18,5 @@ export function getReadingDocument(kind: "posts" | "gardens" | "pages", id: stri
 export function PublicMarkdown({ html }: { html: string }) {
   return <div data-reading-content>
     <div dangerouslySetInnerHTML={{ __html: html }} />
-    <StaticWidget kind="reader"><ReadingEnhancements /></StaticWidget>
   </div>;
 }

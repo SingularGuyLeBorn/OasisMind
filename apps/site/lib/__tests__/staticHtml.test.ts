@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { PublicMarkdown } from "../../components/PublicMarkdown";
 import { finalizeReadingHtml } from "../../scripts/static-html.mjs";
 
 describe("静态阅读页面", () => {
@@ -21,19 +24,19 @@ describe("静态阅读页面", () => {
     expect(output).not.toContain('self.__next_f');
     expect(output.match(/type="module"/g)).toHaveLength(1);
   });
-  it("无交互控件的页面不加载脚本，多次整理不重复添加脚本", () => {
+  it("无交互控件的页面不加载脚本，正文不再携带 React 水合占位", () => {
     expect(finalizeReadingHtml('<html><body>文字</body></html>', '/widgets.js', '/navigation.js')).not.toContain('<script');
-    const html = '<html><body><div data-public-widget="reader"></div></body></html>';
-    const output = finalizeReadingHtml(finalizeReadingHtml(html, '/widgets.js', '/navigation.js'), '/widgets.js', '/navigation.js');
-    expect(output.match(/src="\/widgets.js"/g)).toHaveLength(1);
+    const reading = renderToStaticMarkup(createElement(PublicMarkdown, { html: '<h2 id="part">正文</h2><span class="katex">公式</span>' }));
+    expect(reading).toContain('data-reading-content');
+    expect(reading).toContain('class="katex"');
+    expect(reading).not.toContain('data-public-widget');
   });
-  it("手机侧栏以独立小脚本先启动，不等 React 控件，也不重复注入", () => {
-    const html = '<html><body><article data-reading-content="true">正文</article><div data-public-widget="reader"></div></body></html>';
+  it("手机侧栏与页内高亮只启动阅读脚本，不下载 React 控件", () => {
+    const html = '<html><body><article data-reading-content="true">正文</article></body></html>';
     const once = finalizeReadingHtml(html, '/widgets.js', '/navigation.js');
     const output = finalizeReadingHtml(once, '/widgets.js', '/navigation.js');
     expect(output.match(/src="\/navigation.js"/g)).toHaveLength(1);
-    expect(output.match(/src="\/widgets.js"/g)).toHaveLength(1);
-    expect(output.indexOf('src="/navigation.js"')).toBeLessThan(output.indexOf('src="/widgets.js"'));
+    expect(output).not.toContain('src="/widgets.js"');
     expect(output).toContain('data-reading-content="true">正文');
   });
 });
