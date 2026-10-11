@@ -3,7 +3,7 @@ title: "04 · 从Llama3报告出发的LLM基本技术整理"
 published: true
 excerpt: "The Llama 3 Herd of Models | Research - AI at Metaai."
 ---
-## ![](https://www.yuque.com/attachments/yuque/0/2025/j/42982692/1754092511187-28e1ef2f-3319-4290-b019-621f6eef332d.j)0 开始之前
+## 0 开始之前
 
         本文从Llama 3报告出发,基本整理一些现代LLM的技术. "基本",是说对一些具体细节不会过于详尽,而是希望得到一篇相对全面,包括预训练,后训练,推理,能介绍清楚一些具体技术,例如RM,DPO,KV
           Cache,GQA,PagedAttention,Data Parallelism等等的索引向文章. 由于东西比较多,且无法详尽细节,所以推荐大家二次整理为自己的笔记.
