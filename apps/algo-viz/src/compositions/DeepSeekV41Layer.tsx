@@ -53,6 +53,18 @@ const COLORS = {
   rose: "#9a625d",
 };
 
+// [OM-FREEPLAY] 数值仅展示 Router 排序、选择与加权关系，不代表真实 token 的输出。
+const ROUTED_EXPERTS = [
+  { id: 7, score: ".91" },
+  { id: 31, score: ".86" },
+  { id: 96, score: ".79" },
+  { id: 142, score: ".73" },
+  { id: 228, score: ".69" },
+  { id: 351, score: ".64" },
+] as const;
+
+const ROUTED_HANDLE_LEFT = [21.43, 35.71, 50, 64.29, 78.57, 92.86] as const;
+
 const panel: CSSProperties = {
   width: "100%",
   height: "100%",
@@ -151,25 +163,29 @@ function Head({ index }: { index: number }) {
   return (
     <div style={{ border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
       <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 12 }}>Head {index}</strong>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}><Box><MathFormula tex={`Q_${index}`} /></Box><Box><MathFormula tex={`K_${index}`} /></Box></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 5 }}><Box><MathFormula tex={`Q_{${index}}`} /></Box><Box><MathFormula tex={`K_{${index}}`} /></Box><Box><MathFormula tex={`V_{${index}}`} /></Box></div>
       <Arrow vertical />
-      <Box tone="green"><MathFormula tex={`S_${index}=\\operatorname{softmax}(Q_${index}K_${index}^{\\mathsf T}/\\sqrt{d_k})`} /></Box>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}><Box><MathFormula tex={`S_${index}`} /></Box><Box tone="green"><MathFormula tex="\times" /></Box><Box><MathFormula tex={`V_${index}`} /></Box></div>
+      <Box tone="green"><MathFormula tex={`S_{${index}}=\\operatorname{softmax}(Q_{${index}}K_{${index}}^{\\mathsf T}/\\sqrt{d_k})`} /></Box>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}><Box><MathFormula tex={`S_{${index}}`} /></Box><Box tone="green"><MathFormula tex="\times" /></Box><Box><MathFormula tex={`V_{${index}}`} /></Box></div>
       <Arrow vertical />
-      <Box tone="green"><MathFormula tex={`O_${index}\\in\\mathbb{R}^{N\\times512}`} /></Box>
+      <Box tone="green"><MathFormula tex={`O_{${index}}\\in\\mathbb{R}^{N\\times512}`} /></Box>
     </div>
   );
 }
 
 function Expert({ index, score, shared = false }: { index?: number; score?: string; shared?: boolean }) {
+  const expertTex = shared ? "E_{\\mathrm{shared}}" : `E_{${index}}`;
   return (
     <div style={{ border: `1.5px solid ${shared ? COLORS.blue : COLORS.amber}`, borderRadius: 9, padding: 7, display: "grid", gap: 5, background: COLORS.card, minWidth: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", color: shared ? COLORS.blue : COLORS.amber, fontWeight: 800, fontSize: 11 }}><span>{shared ? "Shared" : `Expert ${index}`}</span><span>{shared ? "always" : score}</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", color: shared ? COLORS.blue : COLORS.amber, fontWeight: 800, fontSize: 11 }}><span>{shared ? "Shared" : `Expert ${index}`}</span><span>{shared ? "权重 1" : <MathFormula tex={`g_{${index}}=${score}`} />}</span></div>
+      <Box tone="blue"><MathFormula tex="Y" /></Box>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 20px 1fr", gap: 3, alignItems: "center", fontSize: 9.5 }}>
         <div style={{ display: "grid", gap: 3 }}><Box><MathFormula tex="YW^{\mathrm{gate}}" /></Box><Box><MathFormula tex="YW^{\mathrm{up}}" /></Box></div>
         <Box tone="amber"><MathFormula tex="\odot" /></Box>
         <div style={{ display: "grid", gap: 3 }}><Box><MathFormula tex="\operatorname{SiLU}" /></Box><Box><MathFormula tex="\times W^{\mathrm{down}}" /></Box></div>
       </div>
+      <Arrow vertical />
+      <Box tone={shared ? "blue" : "amber"}><MathFormula tex={`${expertTex}(Y)\\in\\mathbb{R}^{N\\times5120}`} /></Box>
     </div>
   );
 }
@@ -180,7 +196,7 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
 
   if (kind === "tensor" || kind === "output") {
     const output = kind === "output";
-    return <div style={panel}>{output ? both : <Handle id="main" type="source" position={Position.Bottom} style={handle} />}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape="N\times5120" tone={output ? "green" : "blue"} /></div></div>;
+    return <div style={panel}>{output ? both : <Handle id="main" type="source" position={Position.Bottom} style={handle} />}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}=H_{${layer}}'+O_{${layer}}^{\\mathrm{FFN}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape="N\times5120" tone={output ? "green" : "blue"} /></div></div>;
   }
 
   if (kind === "norm1" || kind === "norm2") {
@@ -206,11 +222,11 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   }
 
   if (kind === "concat") {
-    return <div style={panel}>{both}<Title>Concat：沿特征维拼接，再做输出投影</Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 24px 1.4fr 24px 1fr 24px 1fr", alignItems: "center", gap: 5 }}><Box><MathFormula tex="[O_1\;O_2\;\cdots\;O_{64}]" /></Box><Arrow /><Box tone="green"><MathFormula tex="O_{\mathrm{cat}}\in\mathbb{R}^{N\times(64\cdot512)}" /></Box><Arrow /><Box tone="blue"><MathFormula tex="\times W^O" /></Box><Arrow /><Box tone="green"><MathFormula tex={`O_${layer}`} /></Box></div></div>;
+    return <div style={panel}>{both}<Title>Concat：沿特征维拼接，再做输出投影</Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 24px 1.4fr 24px 1fr 24px 1fr", alignItems: "center", gap: 5 }}><Box><MathFormula tex="[O_1\;O_2\;\cdots\;O_{64}]" /></Box><Arrow /><Box tone="green"><MathFormula tex="O_{\mathrm{cat}}\in\mathbb{R}^{N\times(64\cdot512)}" /></Box><Arrow /><Box tone="blue"><MathFormula tex="\times W^O" /></Box><Arrow /><Box tone="green"><MathFormula tex={`O_{${layer}}`} /></Box></div></div>;
   }
 
   if (kind === "skip1" || kind === "skip2") {
-    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.amber, background: COLORS.amberSoft, fontSize: 16, fontWeight: 800 }}><Handle type="source" position={Position.Right} style={{ ...handle, background: COLORS.amber }} /><MathFormula tex={kind === "skip1" ? `H_${layer}^{\\mathrm{in}}` : `H_${layer}'`} /></div>;
+    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.amber, background: COLORS.amberSoft, fontSize: 16, fontWeight: 800 }}><Handle type="source" position={Position.Right} style={{ ...handle, background: COLORS.amber }} /><MathFormula tex={kind === "skip1" ? `H_{${layer}}^{\\mathrm{in}}` : `H_{${layer}}'`} /></div>;
   }
 
   if (kind === "add1" || kind === "add2") {
@@ -218,24 +234,49 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   }
 
   if (kind === "state1") {
-    return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 18, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle id="main" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`H_${layer}'`} /></div>;
+    return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 18, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle id="main" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`H_{${layer}}'=H_{${layer}}^{\\mathrm{in}}+O_{${layer}}`} /></div>;
   }
 
   if (kind === "router") {
-    // [OM-FREEPLAY] 分数只展示 Top-6 的排序形态，不代表真实 token 的路由输出。
-    const scores = [["7", ".91"], ["31", ".86"], ["96", ".79"], ["142", ".73"], ["228", ".69"], ["351", ".64"]];
-    return <div style={panel}>{both}<Title>Router：384 个分数中选择 Top-6</Title><div style={{ padding: 10, display: "grid", gap: 8 }}><div style={{ display: "grid", gridTemplateColumns: "1fr 34px 1fr 34px 1fr", alignItems: "center", gap: 5 }}><Box tone="blue"><MathFormula tex="Y" /></Box><Box tone="green"><MathFormula tex="\times" /></Box><Box><MathFormula tex="W^R" /></Box><Arrow /><Box tone="green"><MathFormula tex="g\in\mathbb{R}^{N\times384}" /></Box></div><div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 5 }}>{scores.slice(0, 3).map(([i, s]) => <Box key={i} tone="amber"><MathFormula tex={`g_{${i}}=${s}`} /></Box>)}<Box>⋯</Box>{scores.slice(3).map(([i, s]) => <Box key={i} tone="amber"><MathFormula tex={`g_{${i}}=${s}`} /></Box>)}<Box>其余 378</Box></div></div></div>;
+    return <div style={panel}>
+      <Handle type="target" position={Position.Top} style={handle} />
+      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      <Title>Router 只分配 routed experts；Shared 不参与排序</Title>
+      <div style={{ padding: 10, display: "grid", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1.15fr 28px 1fr", alignItems: "center", gap: 5 }}>
+          <Box tone="blue"><MathFormula tex="Y" /></Box><Box tone="green"><MathFormula tex="\times" /></Box><Box><MathFormula tex="W^R" /></Box><Arrow /><Box tone="green"><MathFormula tex="s=YW^R\in\mathbb{R}^{N\times384}" /></Box><Arrow /><Box tone="amber"><MathFormula tex="I=\operatorname{TopK}(s,6)" /></Box>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
+          <Box>其余 378</Box>
+          {ROUTED_EXPERTS.map((expert) => <Box key={expert.id} tone="amber"><MathFormula tex={`g_{${expert.id}}=s_{${expert.id}}=${expert.score}`} /></Box>)}
+        </div>
+      </div>
+    </div>;
   }
 
   if (kind === "experts") {
-    return <div style={panel}>{both}<Title><MathFormula tex="Y" /> 分别进入 Shared 与 Top-6 专家</Title><div style={{ padding: 9, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7 }}><Expert shared /><Expert index={7} score=".91" /><Expert index={31} score=".86" /><Expert index={96} score=".79" /><Expert index={142} score=".73" /><Expert index={228} score=".69" /><Expert index={351} score=".64" /><Box>其余专家<br />不执行</Box></div></div>;
+    return <div style={panel}>
+      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      <Handle type="source" position={Position.Bottom} style={handle} />
+      <Title><MathFormula tex="Y" /> 进入全部执行分支：Shared 直达，Router 只连接六个非共享专家</Title>
+      <div style={{ padding: 9, display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 6 }}>
+        <Expert shared />
+        {ROUTED_EXPERTS.map((expert) => <Expert key={expert.id} index={expert.id} score={expert.score} />)}
+      </div>
+    </div>;
   }
 
   if (kind === "aggregate") {
-    return <div style={panel}>{both}<Title>专家输出加权汇合</Title><div style={{ padding: 9, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 42px 1fr", alignItems: "center", gap: 6 }}><Box tone="blue"><MathFormula tex="E_{\mathrm{shared}}(Y)" /></Box><Box tone="amber"><MathFormula tex="g_7E_7(Y)" /></Box><Box tone="amber"><MathFormula tex="\cdots+g_{351}E_{351}(Y)" /></Box><Box tone="green"><MathFormula tex="\sum" /></Box><Box tone="green"><MathFormula tex={`O_${layer}^{\\mathrm{FFN}}`} /></Box></div></div>;
+    return <div style={panel}>{both}<Title>每个输出向量先乘 Router 权重，再求和</Title><div style={{ padding: 9, display: "grid", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 5 }}>
+        <Box tone="blue"><MathFormula tex="1\cdot E_{\mathrm{shared}}(Y)" /></Box>
+        {ROUTED_EXPERTS.map((expert) => <Box key={expert.id} tone="amber"><MathFormula tex={`g_{${expert.id}}\\cdot E_{${expert.id}}(Y)`} /></Box>)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 34px 1fr", alignItems: "center", gap: 7, width: "58%", margin: "0 auto" }}><Box><MathFormula tex="\sum" /></Box><Arrow /><Box tone="green"><MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb{R}^{N\\times5120}`} /></Box></div>
+    </div></div>;
   }
 
-  return <div style={panel}>{both}<Title><MathFormula tex={`H_${layer}^{\\mathrm{out}}`} /></Title></div>;
+  return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
 }
 
 const NodeView = memo(DiagramNodeView);
@@ -259,12 +300,12 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     node("add1", "add1", layer, mode, 765, 1445, 70, 70),
     node("state1", "state1", layer, mode, 620, 1580, 360, 72),
     node("norm2", "norm2", layer, mode, 620, 1710, 360, 72),
-    node("router", "router", layer, mode, 350, 1845, 900, 190),
-    node("experts", "experts", layer, mode, 230, 2110, 1140, 300),
-    node("aggregate", "aggregate", layer, mode, 350, 2485, 900, 135),
-    node("skip2", "skip2", layer, mode, 555, 2690, 145, 70),
-    node("add2", "add2", layer, mode, 765, 2690, 70, 70),
-    node("output", "output", layer, mode, 610, 2810, 380, 180),
+    node("router", "router", layer, mode, 70, 1845, 1460, 210),
+    node("experts", "experts", layer, mode, 70, 2140, 1460, 300),
+    node("aggregate", "aggregate", layer, mode, 70, 2515, 1460, 170),
+    node("skip2", "skip2", layer, mode, 555, 2755, 145, 70),
+    node("add2", "add2", layer, mode, 765, 2755, 70, 70),
+    node("output", "output", layer, mode, 610, 2890, 380, 180),
   ];
   if (mode !== "swa") nodes.push(node("cache", "cache", layer, mode, 1340, 835, 240, 230));
 
@@ -288,17 +329,19 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     mathEdge("k-heads", "k", "heads", "K_1,K_2,\\ldots,K_{64}", { targetHandle: "k" }),
     mathEdge("v-heads", "v", "heads", "V_1,V_2,\\ldots,V_{64}", { targetHandle: "v" }),
     makeEdge("heads-concat", "heads", "concat"),
-    mathEdge("concat-add1", "concat", "add1", `O_${layer}`),
-    mathEdge("skip1-add1", "skip1", "add1", `H_${layer}^{\\mathrm{in}}`, { targetHandle: "skip", ...skipStyle }),
+    mathEdge("concat-add1", "concat", "add1", `O_{${layer}}`),
+    mathEdge("skip1-add1", "skip1", "add1", `H_{${layer}}^{\\mathrm{in}}`, { targetHandle: "skip", ...skipStyle }),
     makeEdge("add1-state", "add1", "state1"),
     makeEdge("state-norm2", "state1", "norm2", undefined, { sourceHandle: "main" }),
     mathEdge("norm2-router", "norm2", "router", "Y"),
-    makeEdge("router-experts", "router", "experts", "Top-6 + Shared"),
     makeEdge("experts-aggregate", "experts", "aggregate"),
-    mathEdge("aggregate-add2", "aggregate", "add2", `O_${layer}^{\\mathrm{FFN}}`),
-    mathEdge("skip2-add2", "skip2", "add2", `H_${layer}'`, { targetHandle: "skip", ...skipStyle }),
+    mathEdge("aggregate-add2", "aggregate", "add2", `O_{${layer}}^{\\mathrm{FFN}}`),
+    mathEdge("skip2-add2", "skip2", "add2", `H_{${layer}}'`, { targetHandle: "skip", ...skipStyle }),
     makeEdge("add2-output", "add2", "output"),
   ];
+  for (const expert of ROUTED_EXPERTS) {
+    edges.push(mathEdge(`router-expert-${expert.id}`, "router", "experts", `g_{${expert.id}}`, { sourceHandle: `expert-${expert.id}`, targetHandle: `expert-${expert.id}`, type: "straight", style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
+  }
   if (mode !== "swa") {
     makeEdge("cache-heads", "cache", "heads", undefined, { targetHandle: "global", type: "straight" });
   }
