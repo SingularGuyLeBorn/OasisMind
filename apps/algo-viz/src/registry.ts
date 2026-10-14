@@ -55,7 +55,7 @@ export const ALGO_VIZ_REGISTRY: Record<string, AlgoVizEntry> = {
     durationInFrames: 1,
     fps: 30,
     width: 1600,
-    height: 2700,
+    height: 3000,
     defaultProps: {"initialLayer":1} as Record<string, unknown>,
   },
 };
