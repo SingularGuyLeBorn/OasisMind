@@ -26,7 +26,9 @@
     "remotion": "4.0.489"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.489"
+    "@remotion/cli": "4.0.489",
+    "@xyflow/react": "12.9.3",
+    "katex": "0.17.0"
   },
   "devDependencies": {
     "@types/react": "19.2.17",

@@ -7,6 +7,8 @@ export type VizSpec = {
   src?: string;
   title?: string;
   poster?: string;
+  display?: "player" | "static";
+  aspectRatio?: string;
   props: Record<string, unknown>;
 };
 
@@ -65,12 +67,16 @@ export function parseVizFence(raw: string): VizSpec | null {
     "title",
     "caption",
     "poster",
+    "display",
+    "aspect",
   ]);
   const props: Record<string, unknown> = {};
   let composition: string | undefined;
   let src: string | undefined;
   let title: string | undefined;
   let poster: string | undefined;
+  let display: "player" | "static" | undefined;
+  let aspectRatio: string | undefined;
 
   for (const { key, value } of entries) {
     const low = key.toLowerCase();
@@ -90,13 +96,21 @@ export function parseVizFence(raw: string): VizSpec | null {
       poster = value;
       continue;
     }
+    if (low === "display") {
+      display = value.toLowerCase() === "static" ? "static" : "player";
+      continue;
+    }
+    if (low === "aspect" && /^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(value)) {
+      aspectRatio = value;
+      continue;
+    }
     if (reserved.has(low)) continue;
     props[key] = parseScalar(value);
   }
 
   if (!composition && !src) return null;
 
-  return { composition, src, title, poster, props };
+  return { composition, src, title, poster, display, aspectRatio, props };
 }
 
 export function normalizeVizSrc(src: string): string {

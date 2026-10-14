@@ -9,6 +9,7 @@ import type { ComponentType } from "react";
 import { PpoClip } from "./compositions/PpoClip";
 import { ArVsDiffusion } from "./compositions/ArVsDiffusion";
 import { MaskedDiffusion } from "./compositions/MaskedDiffusion";
+import { DeepSeekV41Layer } from "./compositions/DeepSeekV41Layer";
 
 export type AlgoVizEntry = {
   id: string;
@@ -48,6 +49,15 @@ export const ALGO_VIZ_REGISTRY: Record<string, AlgoVizEntry> = {
     height: 720,
     defaultProps: {} as Record<string, unknown>,
   },
+  DeepSeekV41Layer: {
+    id: "DeepSeekV41Layer",
+    component: DeepSeekV41Layer as ComponentType<Record<string, unknown>>,
+    durationInFrames: 1,
+    fps: 30,
+    width: 1600,
+    height: 2700,
+    defaultProps: {"initialLayer":1} as Record<string, unknown>,
+  },
 };
 
 export function getAlgoViz(id: string): AlgoVizEntry | null {
@@ -58,4 +68,5 @@ export {
   PpoClip,
   ArVsDiffusion,
   MaskedDiffusion,
+  DeepSeekV41Layer,
 };

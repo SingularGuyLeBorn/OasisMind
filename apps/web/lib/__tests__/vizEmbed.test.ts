@@ -11,7 +11,24 @@ describe("parseVizFence", () => {
       src: undefined,
       title: "PPO-Clip",
       poster: undefined,
+      display: undefined,
+      aspectRatio: undefined,
       props: { epsilon: 0.2 },
+    });
+  });
+
+  it("解析静态组件与固定宽高比", () => {
+    const s = parseVizFence(
+      `composition: DeepSeekV41Layer\ndisplay: static\naspect: 16 / 27\ninitialLayer: 21`,
+    );
+    expect(s).toEqual({
+      composition: "DeepSeekV41Layer",
+      src: undefined,
+      title: undefined,
+      poster: undefined,
+      display: "static",
+      aspectRatio: "16 / 27",
+      props: { initialLayer: 21 },
     });
   });
 

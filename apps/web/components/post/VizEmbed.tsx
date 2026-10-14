@@ -63,6 +63,8 @@ function VizFrame({
 function CompositionPlayer(props: {
   compositionId: string;
   title?: string;
+  display?: "player" | "static";
+  aspectRatio?: string;
   extraProps: Record<string, unknown>;
 }) {
   // compositionId 变则 remount，loading 初值即可，勿在 effect 里同步 setLoading
@@ -72,10 +74,14 @@ function CompositionPlayer(props: {
 function CompositionPlayerInner({
   compositionId,
   title,
+  display = "player",
+  aspectRatio: requestedAspectRatio,
   extraProps,
 }: {
   compositionId: string;
   title?: string;
+  display?: "player" | "static";
+  aspectRatio?: string;
   extraProps: Record<string, unknown>;
 }) {
   const [Player, setPlayer] = useState<PlayerComponent | null>(null);
@@ -87,10 +93,13 @@ function CompositionPlayerInner({
   useEffect(() => {
     let cancelled = false;
     // 同一次 Promise：Player + registry 共用 webpack 对 remotion 的 alias 解析
-    Promise.all([import("@remotion/player"), import("@oasismind/algo-viz")])
-      .then(([playerMod, algoMod]) => {
+    const playerPromise = display === "static"
+      ? Promise.resolve(null)
+      : import("@remotion/player").then((mod) => mod.Player);
+    Promise.all([playerPromise, import("@oasismind/algo-viz")])
+      .then(([playerComponent, algoMod]) => {
         if (cancelled) return;
-        setPlayer(() => playerMod.Player);
+        setPlayer(() => playerComponent);
         setKnownIds(Object.keys(algoMod.ALGO_VIZ_REGISTRY));
         setEntry(algoMod.getAlgoViz(compositionId));
         setLoading(false);
@@ -103,7 +112,7 @@ function CompositionPlayerInner({
     return () => {
       cancelled = true;
     };
-  }, [compositionId]);
+  }, [compositionId, display]);
 
   const inputProps = useMemo(() => {
     if (!entry) return {};
@@ -111,9 +120,9 @@ function CompositionPlayerInner({
   }, [entry, extraProps]);
 
   // loading 与 Player 共用同一 aspect，避免首次挂载/播放撑高把列表顶飞
-  const aspectRatio = entry
+  const aspectRatio = requestedAspectRatio ?? (entry
     ? `${entry.width} / ${entry.height}`
-    : "16 / 9";
+    : "16 / 9");
 
   if (loading) {
     return (
@@ -133,7 +142,7 @@ function CompositionPlayerInner({
     );
   }
 
-  if (!entry || !Player) {
+  if (!entry || (display === "player" && !Player)) {
     return (
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-[var(--om-text-2)]">
         未知 composition：<code className="font-mono">{compositionId}</code>
@@ -141,6 +150,19 @@ function CompositionPlayerInner({
       </div>
     );
   }
+
+  if (display === "static") {
+    const StaticComposition = entry.component;
+    return (
+      <VizFrame title={title} aspectRatio={aspectRatio}>
+        <div className="absolute inset-0">
+          <StaticComposition {...inputProps} />
+        </div>
+      </VizFrame>
+    );
+  }
+
+  if (!Player) return null;
 
   return (
     <VizFrame title={title} aspectRatio={aspectRatio}>
@@ -177,6 +199,8 @@ export function VizEmbed({ raw }: { raw: string }) {
       <CompositionPlayer
         compositionId={spec.composition}
         title={spec.title}
+        display={spec.display}
+        aspectRatio={spec.aspectRatio}
         extraProps={spec.props}
       />
     );

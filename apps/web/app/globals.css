@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
 
 /* [OM-FREEPLAY] 全站沿用主题变量，用接缝、倒角、高光和薄阴影增加材质；不改调色板。 */
 .om-workbench [data-slot="card"], .om-raised-panel {
