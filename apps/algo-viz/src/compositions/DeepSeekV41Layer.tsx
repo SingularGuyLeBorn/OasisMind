@@ -26,9 +26,13 @@ type NodeKind =
   | "add1"
   | "state1"
   | "norm2"
+  | "moe-input"
   | "router"
+  | "scores"
   | "experts"
   | "aggregate"
+  | "moe-sum"
+  | "moe-output"
   | "skip2"
   | "add2"
   | "output";
@@ -64,6 +68,7 @@ const ROUTED_EXPERTS = [
 ] as const;
 
 const ROUTED_HANDLE_LEFT = [21.43, 35.71, 50, 64.29, 78.57, 92.86] as const;
+const SCORE_HANDLE_LEFT = [8.33, 25, 41.67, 58.33, 75, 91.67] as const;
 
 const panel: CSSProperties = {
   width: "100%",
@@ -175,15 +180,16 @@ function Head({ index }: { index: number }) {
 
 function Expert({ index, score, shared = false }: { index?: number; score?: string; shared?: boolean }) {
   const expertTex = shared ? "E_{\\mathrm{shared}}" : `E_{${index}}`;
+  const weightIndex = shared ? "\\mathrm{shared}" : `${index}`;
   return (
     <div style={{ border: `1.5px solid ${shared ? COLORS.blue : COLORS.amber}`, borderRadius: 9, padding: 7, display: "grid", gap: 5, background: COLORS.card, minWidth: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", color: shared ? COLORS.blue : COLORS.amber, fontWeight: 800, fontSize: 11 }}><span>{shared ? "Shared" : `Expert ${index}`}</span><span>{shared ? "权重 1" : <MathFormula tex={`g_{${index}}=${score}`} />}</span></div>
       <Box tone="blue"><MathFormula tex="Y" /></Box>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 20px 1fr", gap: 3, alignItems: "center", fontSize: 9.5 }}>
-        <div style={{ display: "grid", gap: 3 }}><Box><MathFormula tex="YW^{\mathrm{gate}}" /></Box><Box><MathFormula tex="YW^{\mathrm{up}}" /></Box></div>
-        <Box tone="amber"><MathFormula tex="\odot" /></Box>
-        <div style={{ display: "grid", gap: 3 }}><Box><MathFormula tex="\operatorname{SiLU}" /></Box><Box><MathFormula tex="\times W^{\mathrm{down}}" /></Box></div>
-      </div>
+      <Arrow vertical />
+      <Box><MathFormula tex={`a=\\operatorname{SiLU}(YW_{${weightIndex}}^{\\mathrm{gate}})`} /></Box>
+      <Box><MathFormula tex={`b=YW_{${weightIndex}}^{\\mathrm{up}}`} /></Box>
+      <Box tone="amber"><MathFormula tex="c=a\odot b" /></Box>
+      <Box><MathFormula tex={`${expertTex}(Y)=cW_{${weightIndex}}^{\\mathrm{down}}`} /></Box>
       <Arrow vertical />
       <Box tone={shared ? "blue" : "amber"}><MathFormula tex={`${expertTex}(Y)\\in\\mathbb{R}^{N\\times5120}`} /></Box>
     </div>
@@ -237,19 +243,28 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
     return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 18, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle id="main" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`H_{${layer}}'=H_{${layer}}^{\\mathrm{in}}+O_{${layer}}`} /></div>;
   }
 
+  if (kind === "moe-input") {
+    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.blue, background: COLORS.blueSoft, fontSize: 20, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle id="router" type="source" position={Position.Bottom} style={handle} /><Handle id="shared" type="source" position={Position.Left} style={{ ...handle, background: COLORS.blue }} /><MathFormula tex="Y" /></div>;
+  }
+
   if (kind === "router") {
     return <div style={panel}>
       <Handle type="target" position={Position.Top} style={handle} />
-      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
-      <Title>Router 只分配 routed experts；Shared 不参与排序</Title>
-      <div style={{ padding: 10, display: "grid", gap: 8 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1.15fr 28px 1fr", alignItems: "center", gap: 5 }}>
-          <Box tone="blue"><MathFormula tex="Y" /></Box><Box tone="green"><MathFormula tex="\times" /></Box><Box><MathFormula tex="W^R" /></Box><Arrow /><Box tone="green"><MathFormula tex="s=YW^R\in\mathbb{R}^{N\times384}" /></Box><Arrow /><Box tone="amber"><MathFormula tex="I=\operatorname{TopK}(s,6)" /></Box>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
-          <Box>其余 378</Box>
-          {ROUTED_EXPERTS.map((expert) => <Box key={expert.id} tone="amber"><MathFormula tex={`g_{${expert.id}}=s_{${expert.id}}=${expert.score}`} /></Box>)}
-        </div>
+      <Handle type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
+      <Title>Router · 只选择 routed experts</Title>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1.25fr 28px 1.1fr", alignItems: "center", gap: 5 }}>
+        <Box tone="blue"><MathFormula tex="Y" /></Box><Box tone="green"><MathFormula tex="\times" /></Box><Box><MathFormula tex="W^R" /></Box><Arrow /><Box tone="green"><MathFormula tex="s=YW^R\in\mathbb{R}^{N\times384}" /></Box><Arrow /><Box tone="amber"><MathFormula tex="I=\operatorname{TopK}(s,6)" /></Box>
+      </div>
+    </div>;
+  }
+
+  if (kind === "scores") {
+    return <div style={{ ...panel, borderColor: COLORS.amber }}>
+      <Handle type="target" position={Position.Top} style={{ ...handle, background: COLORS.amber }} />
+      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`score-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${SCORE_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      <Title><MathFormula tex="I" /> 对应的六个 Router 权重</Title>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: 6 }}>
+        {ROUTED_EXPERTS.map((expert) => <Box key={expert.id} tone="amber"><MathFormula tex={`g_{${expert.id}}=s_{${expert.id}}=${expert.score}`} /></Box>)}
       </div>
     </div>;
   }
@@ -257,8 +272,10 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   if (kind === "experts") {
     return <div style={panel}>
       {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
-      <Handle type="source" position={Position.Bottom} style={handle} />
-      <Title><MathFormula tex="Y" /> 进入全部执行分支：Shared 直达，Router 只连接六个非共享专家</Title>
+      <Handle id="shared" type="target" position={Position.Left} style={{ ...handle, top: "50%", background: COLORS.blue }} />
+      <Handle id="shared-out" type="source" position={Position.Bottom} style={{ ...handle, left: "7.14%", background: COLORS.blue }} />
+      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-out-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      <Title>Shared 接收 <MathFormula tex="Y" /> 旁路；六个 routed experts 接收各自的 <MathFormula tex="g_i" /></Title>
       <div style={{ padding: 9, display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 6 }}>
         <Expert shared />
         {ROUTED_EXPERTS.map((expert) => <Expert key={expert.id} index={expert.id} score={expert.score} />)}
@@ -267,13 +284,24 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   }
 
   if (kind === "aggregate") {
-    return <div style={panel}>{both}<Title>每个输出向量先乘 Router 权重，再求和</Title><div style={{ padding: 9, display: "grid", gap: 8 }}>
+    return <div style={panel}>
+      <Handle id="shared" type="target" position={Position.Top} style={{ ...handle, left: "7.14%", background: COLORS.blue }} />
+      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`weighted-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      <Handle type="source" position={Position.Bottom} style={handle} />
+      <Title>各专家输出向量分别加权</Title><div style={{ padding: 9, display: "grid", gap: 8 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 5 }}>
         <Box tone="blue"><MathFormula tex="1\cdot E_{\mathrm{shared}}(Y)" /></Box>
         {ROUTED_EXPERTS.map((expert) => <Box key={expert.id} tone="amber"><MathFormula tex={`g_{${expert.id}}\\cdot E_{${expert.id}}(Y)`} /></Box>)}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 34px 1fr", alignItems: "center", gap: 7, width: "58%", margin: "0 auto" }}><Box><MathFormula tex="\sum" /></Box><Arrow /><Box tone="green"><MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb{R}^{N\\times5120}`} /></Box></div>
     </div></div>;
+  }
+
+  if (kind === "moe-sum") {
+    return <div style={{ width: "100%", height: "100%", borderRadius: "50%", border: `3px solid ${COLORS.green}`, background: COLORS.greenSoft, display: "grid", placeItems: "center", fontSize: 22, color: COLORS.green, fontWeight: 900 }}><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><MathFormula tex="\sum" /></div>;
+  }
+
+  if (kind === "moe-output") {
+    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.green, background: COLORS.greenSoft, fontSize: 16, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb{R}^{N\\times5120}`} /></div>;
   }
 
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
@@ -300,12 +328,16 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     node("add1", "add1", layer, mode, 765, 1445, 70, 70),
     node("state1", "state1", layer, mode, 620, 1580, 360, 72),
     node("norm2", "norm2", layer, mode, 620, 1710, 360, 72),
-    node("router", "router", layer, mode, 70, 1845, 1460, 210),
-    node("experts", "experts", layer, mode, 70, 2140, 1460, 300),
-    node("aggregate", "aggregate", layer, mode, 70, 2515, 1460, 170),
-    node("skip2", "skip2", layer, mode, 555, 2755, 145, 70),
-    node("add2", "add2", layer, mode, 765, 2755, 70, 70),
-    node("output", "output", layer, mode, 610, 2890, 380, 180),
+    node("moe-input", "moe-input", layer, mode, 715, 1840, 170, 80),
+    node("router", "router", layer, mode, 440, 1990, 720, 130),
+    node("scores", "scores", layer, mode, 278, 2190, 1252, 115),
+    node("experts", "experts", layer, mode, 70, 2380, 1460, 480),
+    node("aggregate", "aggregate", layer, mode, 70, 2950, 1460, 125),
+    node("moe-sum", "moe-sum", layer, mode, 765, 3145, 70, 70),
+    node("moe-output", "moe-output", layer, mode, 620, 3285, 360, 72),
+    node("skip2", "skip2", layer, mode, 555, 3430, 145, 70),
+    node("add2", "add2", layer, mode, 765, 3430, 70, 70),
+    node("output", "output", layer, mode, 610, 3565, 380, 180),
   ];
   if (mode !== "swa") nodes.push(node("cache", "cache", layer, mode, 1340, 835, 240, 230));
 
@@ -333,17 +365,23 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     mathEdge("skip1-add1", "skip1", "add1", `H_{${layer}}^{\\mathrm{in}}`, { targetHandle: "skip", ...skipStyle }),
     makeEdge("add1-state", "add1", "state1"),
     makeEdge("state-norm2", "state1", "norm2", undefined, { sourceHandle: "main" }),
-    mathEdge("norm2-router", "norm2", "router", "Y"),
-    makeEdge("experts-aggregate", "experts", "aggregate"),
-    mathEdge("aggregate-add2", "aggregate", "add2", `O_{${layer}}^{\\mathrm{FFN}}`),
+    makeEdge("norm2-moe-input", "norm2", "moe-input"),
+    makeEdge("moe-input-router", "moe-input", "router", undefined, { sourceHandle: "router" }),
+    mathEdge("router-scores", "router", "scores", "I"),
+    makeEdge("moe-input-shared", "moe-input", "experts", undefined, { sourceHandle: "shared", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.blue } }),
+    makeEdge("aggregate-sum", "aggregate", "moe-sum"),
+    makeEdge("sum-moe-output", "moe-sum", "moe-output"),
+    mathEdge("moe-output-add2", "moe-output", "add2", `O_{${layer}}^{\\mathrm{FFN}}`),
     mathEdge("skip2-add2", "skip2", "add2", `H_{${layer}}'`, { targetHandle: "skip", ...skipStyle }),
     makeEdge("add2-output", "add2", "output"),
   ];
   for (const expert of ROUTED_EXPERTS) {
-    edges.push(mathEdge(`router-expert-${expert.id}`, "router", "experts", `g_{${expert.id}}`, { sourceHandle: `expert-${expert.id}`, targetHandle: `expert-${expert.id}`, type: "straight", style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
+    edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", undefined, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, type: "straight", style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
+    edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, type: "straight", style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
   }
+  edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", type: "straight", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.blue } }));
   if (mode !== "swa") {
-    makeEdge("cache-heads", "cache", "heads", undefined, { targetHandle: "global", type: "straight" });
+    edges.push(makeEdge("cache-heads", "cache", "heads", undefined, { targetHandle: "global", type: "straight" }));
   }
   return { nodes, edges };
 }
