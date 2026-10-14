@@ -122,6 +122,26 @@ function modeLabel(mode: LayerMode) {
   return "Reuse";
 }
 
+function globalKvSourceLayer(layer: number) {
+  if (layer < 3) return null;
+  if (layer < 9) return 3;
+  if (layer < 15) return 9;
+  if (layer < 21) return 15;
+  return 21;
+}
+
+function globalIndexSourceLayer(layer: number) {
+  if (layer < 3) return null;
+  if (layer < 9) return 3;
+  if (layer < 15) return 9;
+  if (layer < 21) return 15;
+  if (layer < 25) return 21;
+  if (layer < 29) return 25;
+  if (layer < 33) return 29;
+  if (layer < 37) return 33;
+  return 37;
+}
+
 function Title({ children }: { children: ReactNode }) {
   return <div style={{ padding: "10px 14px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 15, fontWeight: 800 }}>{children}</div>;
 }
@@ -171,7 +191,7 @@ function LocalKvProjection({ layer }: { layer: number }) {
     <div style={panel}>
       <Handle type="target" position={Position.Top} style={handle} />
       <Handle type="source" position={Position.Bottom} style={handle} />
-      <Title>本层 SWA 的共享 KV 潜向量</Title>
+      <Title>本层独立生成 · 仅本层 64 个 Head 共享</Title>
       <div style={{ padding: 10, display: "grid", gap: 7 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}>
           <Box tone="blue"><MathFormula tex={`X_{${layer}}`} /><br /><MathFormula tex="N\times5120" /></Box>
@@ -278,8 +298,9 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
     return <div style={{ ...panel, borderColor: COLORS.green }}>
       <Handle type="target" position={Position.Top} style={handle} />
       <Handle type="source" position={Position.Bottom} style={handle} />
-      <Title>SWA · <MathFormula tex="t" /> 是当前正在计算的 token 在序列中的行号</Title>
-      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.5fr 24px .8fr 24px 1.2fr", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <Title>Layer {layer} 本地 SWA cache · 本层独立拥有，<MathFormula tex="t" /> 是当前 token 行号</Title>
+      <div style={{ padding: 10, display: "grid", gap: 8, minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 24px .8fr 24px 1.2fr", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}><strong>完整 KV 潜向量矩阵</strong><MathFormula tex={`U_{${layer}}\\in\\mathbb{R}^{N\\times512}`} /></div>
           <MatrixBracket layer={layer} rows={[
@@ -309,21 +330,41 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
           <div style={{ textAlign: "center", fontSize: 11 }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}\\in\\mathbb{R}^{\\min(128,t)\\times512}`} /></div>
         </div>
       </div>
+      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 8, alignItems: "center", border: `1.5px solid ${COLORS.green}`, borderRadius: 8, padding: "6px 8px", background: COLORS.greenSoft, minWidth: 0 }}>
+        <strong style={{ fontSize: 11 }}>Decode 环形 cache · 128 槽</strong>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 34px 1fr", gap: 4, minWidth: 0 }}><Box><MathFormula tex={`\\mathbf u_{${layer},t-127}`} /></Box><Box><MathFormula tex={`\\mathbf u_{${layer},t-126}`} /></Box><span style={{ display: "grid", placeItems: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf u_{${layer},t}`} /></Box></div>
+        <span style={{ color: COLORS.muted, fontSize: 10.5 }}>下一个 token 写入，覆盖最旧槽</span>
+      </div>
+      </div>
     </div>;
   }
 
   if (kind === "cache") {
-    const full = mode === "full";
-    return <div style={{ ...panel, borderColor: COLORS.amber }}>{full && <Handle type="target" position={Position.Top} style={handle} />}<Handle type="source" position={Position.Left} style={handle} /><Title>全局 KV · {modeLabel(mode)}</Title><div style={{ padding: 9, display: "grid", gap: 7, fontSize: 11 }}>
-      {full && <Box tone="amber"><MathFormula tex={`G_{${layer}}^{\\mathrm{global}}=H_{\\mathrm{source}(${layer})}W_{${layer}}^{KV}`} /><br />本层生成全局 KV 矩阵</Box>}
-      {mode === "reindex" && <Box tone="amber"><MathFormula tex="XW^{IQ}" /><br />重算 Top-512</Box>}
-      {mode === "reuse" && <Box tone="blue">读取最近索引层</Box>}
-      <Arrow vertical /><Box tone="green"><MathFormula tex={`G_{${layer},t}^{\\mathrm{global}}`} /><br />为当前第 <MathFormula tex="t" /> 行选中 512 行全局 KV</Box>
+    const kvSource = globalKvSourceLayer(layer)!;
+    const indexSource = globalIndexSourceLayer(layer)!;
+    const writesKv = mode === "full";
+    const writesIndex = mode === "full" || mode === "reindex";
+    return <div style={{ ...panel, borderColor: COLORS.amber }}><Handle id="selected-global" type="source" position={Position.Left} style={handle} /><Title>跨层共享的全局压缩 KV · {modeLabel(mode)}</Title><div style={{ padding: 9, display: "grid", gap: 8, fontSize: 11, minWidth: 0 }}>
+      {writesKv ?
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1.15fr 22px 1fr", alignItems: "center", gap: 4, minWidth: 0 }}><Box tone="blue"><MathFormula tex={`X_{${layer}}`} /></Box><Arrow /><Box tone="amber"><MathFormula tex={`\\operatorname{Compressor}_{${layer}}`} /></Box><Arrow /><Box tone="green"><strong>写入共享 cache</strong><br /><MathFormula tex={`G_{${kvSource}}^{\\mathrm{global}}`} /></Box></div>
+        : <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1.2fr", alignItems: "center", gap: 5, minWidth: 0 }}><Box tone="blue">读取 Layer {kvSource}<br />已经生成的结果</Box><Arrow /><Box tone="green"><strong>共享压缩 cache</strong><br /><MathFormula tex={`G_{${kvSource}}^{\\mathrm{global}}`} /></Box></div>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 4 }}><Box><MathFormula tex={`\\mathbf g_{${kvSource},1}`} /></Box><Box><MathFormula tex={`\\mathbf g_{${kvSource},2}`} /></Box><span style={{ display: "grid", placeItems: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf g_{${kvSource},M}`} /></Box></div>
+      <div style={{ height: 1, background: COLORS.line }} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1.15fr 22px 1fr", alignItems: "center", gap: 4, minWidth: 0 }}>
+        <Box tone="blue"><MathFormula tex={`Q_{${layer},t}`} /></Box><Arrow />
+        <Box tone={writesIndex ? "amber" : "blue"}>{writesIndex ? <><MathFormula tex={`\\operatorname{Indexer}_{${layer}}`} /><br />本层重算</> : <>直接读取<br />Layer {indexSource} 的索引</>}</Box><Arrow />
+        <Box tone="amber"><MathFormula tex={`I_{${indexSource},t}`} /><br />Top-512 行号</Box>
+      </div>
+      <Arrow vertical />
+      <Box tone="green"><strong>送给本层 Head 的全局部分</strong><br /><MathFormula tex={`G_{${kvSource}}^{\\mathrm{global}}[I_{${indexSource},t},:]\\in\\mathbb{R}^{512\\times512}`} /></Box>
     </div></div>;
   }
 
   if (kind === "heads") {
-    const kvInput = mode === "swa" ? `\\mathrm{KV}_{${layer},t}=U_{${layer},t}^{\\mathrm{SWA}}` : `\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};G_{${layer},t}^{\\mathrm{global}}]`;
+    const kvSource = globalKvSourceLayer(layer);
+    const indexSource = globalIndexSourceLayer(layer);
+    const globalRows = kvSource && indexSource ? `G_{${kvSource}}^{\\mathrm{global}}[I_{${indexSource},t},:]` : "";
+    const kvInput = mode === "swa" ? `\\mathrm{KV}_{${layer},t}=U_{${layer},t}^{\\mathrm{SWA}}` : `\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};${globalRows}]`;
     return <div style={panel}><Handle id="q" type="target" position={Position.Left} style={handle} /><Handle id="local" type="target" position={Position.Top} style={handle} />{mode !== "swa" && <Handle id="global" type="target" position={Position.Right} style={handle} />}<Handle type="source" position={Position.Bottom} style={handle} /><Title>先定义每个 Head 共用的 KV 输入：<MathFormula tex={kvInput} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
   }
 
@@ -418,7 +459,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   const projectionY = 375;
   const projectionHeight = 330;
   const swaY = projectionY + projectionHeight + mainGap;
-  const swaHeight = 410;
+  const swaHeight = 480;
   const headsY = swaY + swaHeight + mainGap;
   const headsHeight = 420;
   const concatY = headsY + headsHeight + mainGap;
@@ -456,7 +497,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     node("add2", "add2", layer, mode, 765, add2Y, 70, 70),
     node("output", "output", layer, mode, 610, outputY, 380, 180),
   ];
-  if (mode !== "swa") nodes.push(node("cache", "cache", layer, mode, 1340, headsY + 25, 240, 230));
+  if (mode !== "swa") nodes.push(node("cache", "cache", layer, mode, 1305, headsY - 5, 390, 430));
 
   const makeEdge = (id: string, source: string, target: string, label?: ReactNode, extra?: Partial<Edge>): Edge => ({
     id, source, target, type: "smoothstep",
@@ -497,7 +538,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   }
   edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", type: "straight", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.blue } }));
   if (mode !== "swa") {
-    edges.push(makeEdge("cache-heads", "cache", "heads", undefined, { targetHandle: "global", type: "straight" }));
+    edges.push(mathEdge("cache-heads", "cache", "heads", "Top\\text{-}512", { sourceHandle: "selected-global", targetHandle: "global", type: "straight" }));
   }
   return { nodes, edges };
 }
@@ -511,6 +552,6 @@ export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 12 }}><div><strong style={{ fontSize: 21 }}>DeepSeek V4.1-Flash · Layer {layer}</strong><span style={{ marginLeft: 12, color: mode === "full" ? COLORS.green : mode === "reindex" ? COLORS.amber : mode === "reuse" ? COLORS.blue : COLORS.rose, fontWeight: 800 }}>{modeLabel(mode)}</span></div><span style={{ color: COLORS.muted, fontSize: 12 }}>拖动画布 · 控件缩放</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(20,1fr)", gap: 4 }}>{Array.from({ length: 40 }, (_, i) => i + 1).map((value) => { const valueMode = modeForLayer(value); const active = value === layer; const color = valueMode === "full" ? COLORS.green : valueMode === "reindex" ? COLORS.amber : valueMode === "reuse" ? COLORS.blue : COLORS.rose; return <button key={value} type="button" onClick={() => setLayer(value)} aria-pressed={active} style={{ border: `1px solid ${active ? color : COLORS.line}`, background: active ? color : COLORS.card, color: active ? "white" : color, borderRadius: 5, padding: "4px 0", fontWeight: 750, fontSize: 10.5, cursor: "pointer" }}>{value}</button>; })}</div>
     </div>
-    <div style={{ position: "absolute", inset: "122px 0 0" }}><ReactFlow nodes={graph.nodes} edges={graph.edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: .025, minZoom: .18, maxZoom: 1 }} minZoom={.18} maxZoom={1.5} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} panOnDrag zoomOnScroll={false} zoomOnPinch zoomOnDoubleClick preventScrolling={false} proOptions={{ hideAttribution: true }}><Background color="#d7d2c7" gap={28} size={1} /><Controls showInteractive={false} position="top-left" /></ReactFlow></div>
+    <div style={{ position: "absolute", inset: "122px 0 0" }}><ReactFlow key={layer} nodes={graph.nodes} edges={graph.edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: .025, minZoom: .18, maxZoom: 1 }} minZoom={.18} maxZoom={1.5} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} panOnDrag zoomOnScroll={false} zoomOnPinch zoomOnDoubleClick preventScrolling={false} proOptions={{ hideAttribution: true }}><Background color="#d7d2c7" gap={28} size={1} /><Controls showInteractive={false} position="top-left" /></ReactFlow></div>
   </div>;
 };
