@@ -19,7 +19,10 @@ type NodeKind =
   | "projection-q"
   | "projection-kv"
   | "swa-window"
-  | "cache"
+  | "compressor"
+  | "indexer"
+  | "global-select"
+  | "kv-merge"
   | "heads"
   | "concat"
   | "add1"
@@ -142,6 +145,10 @@ function globalIndexSourceLayer(layer: number) {
   return 37;
 }
 
+function compressionRatioForLayer(layer: number) {
+  return layer <= 20 ? 2 : 1;
+}
+
 function Title({ children }: { children: ReactNode }) {
   return <div style={{ padding: "10px 14px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 15, fontWeight: 800 }}>{children}</div>;
 }
@@ -163,24 +170,25 @@ function Matrix({ tex, shape, tone = "blue" }: { tex: string; shape: string; ton
   );
 }
 
-function Projection({ symbol, weight, shape, local, sourcePosition = Position.Bottom }: { symbol: "Q" | "K" | "V"; weight: string; shape: string; local?: boolean; sourcePosition?: Position }) {
+function QueryProjection({ layer }: { layer: number }) {
   return (
     <div style={panel}>
       <Handle type="target" position={Position.Top} style={handle} />
-      <Handle id="output" type="source" position={sourcePosition} style={handle} />
-      <Title><MathFormula tex={`${symbol}=X${weight}`} /></Title>
+      <Handle id="output" type="source" position={Position.Left} style={handle} />
+      <Title>Query 两级投影 · Layer {layer}</Title>
       <div style={{ padding: 10, display: "grid", gap: 7 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}>
-          <Box tone="blue"><MathFormula tex="X" /><br /><MathFormula tex="N\times5120" /></Box>
+          <Box tone="blue"><MathFormula tex={`X_{${layer}}`} /><br /><MathFormula tex="N\times5120" /></Box>
           <Operator tex="\times" />
-          <Box tone={local ? "green" : "blue"}><MathFormula tex={weight} /><br /><MathFormula tex={shape} /></Box>
+          <Box tone="blue"><MathFormula tex={`W_{${layer}}^{Q\\downarrow}`} /><br /><MathFormula tex="5120\times1280" /></Box>
         </div>
         <Arrow vertical />
-        <Box tone="green"><MathFormula tex={`${symbol}\\in\\mathbb{R}^{N\\times64\\times512}`} /></Box>
+        <Box tone="blue"><MathFormula tex={`Q_{${layer}}^r=X_{${layer}}W_{${layer}}^{Q\\downarrow}\\in\\mathbb{R}^{N\\times1280}`} /></Box>
         <Arrow vertical />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 36px 1fr", gap: 5, alignItems: "center" }}>
-          <Box><MathFormula tex={`${symbol}_1`} /></Box><Box><MathFormula tex={`${symbol}_2`} /></Box><span style={{ textAlign: "center" }}>⋯</span><Box><MathFormula tex={`${symbol}_{64}`} /></Box>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1fr", gap: 5, alignItems: "center" }}>
+          <Box><MathFormula tex={`Q_{${layer}}^r`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^{Q\\uparrow}\\in\\mathbb{R}^{1280\\times(64\\cdot512)}`} /></Box>
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 36px 1fr", gap: 5, alignItems: "center" }}><Box><MathFormula tex="Q_1" /></Box><Box><MathFormula tex="Q_2" /></Box><span style={{ textAlign: "center" }}>⋯</span><Box><MathFormula tex="Q_{64}" /></Box></div>
       </div>
     </div>
   );
@@ -190,13 +198,13 @@ function LocalKvProjection({ layer }: { layer: number }) {
   return (
     <div style={panel}>
       <Handle type="target" position={Position.Top} style={handle} />
-      <Handle type="source" position={Position.Bottom} style={handle} />
-      <Title>本层独立生成 · 仅本层 64 个 Head 共享</Title>
+      <Handle id="swa" type="source" position={Position.Right} style={handle} />
+      <Title>本层独立 KV · <MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}\\in\\mathbb{R}^{5120\\times512}`} /></Title>
       <div style={{ padding: 10, display: "grid", gap: 7 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}>
           <Box tone="blue"><MathFormula tex={`X_{${layer}}`} /><br /><MathFormula tex="N\times5120" /></Box>
           <Operator tex="\times" />
-          <Box tone="green"><MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><br /><MathFormula tex="5120\times512" /></Box>
+          <Box tone="green"><MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><br />把每个 5120 维 token 行投影成 512 维窗口 KV 行</Box>
         </div>
         <Arrow vertical />
         <Box tone="green"><MathFormula tex={`U_{${layer}}=\\operatorname{RoPE}(\\operatorname{RMSNorm}(X_{${layer}}W_{${layer}}^{KV,\\mathrm{SWA}}))\\in\\mathbb{R}^{N\\times512}`} /></Box>
@@ -278,6 +286,27 @@ function Expert({ index, score, shared = false }: { index?: number; score?: stri
   );
 }
 
+function SelectedGlobalRows({ kvSource, indexSource }: { kvSource: number; indexSource: number }) {
+  const rows = [
+    { label: "1", selected: false },
+    { label: `i_{${indexSource},t,1}`, selected: true },
+    { label: `i_{${indexSource},t,2}`, selected: true },
+    { label: "\\vdots", selected: true, ellipsis: true },
+    { label: `i_{${indexSource},t,K_t}`, selected: true },
+    { label: "M", selected: false },
+  ];
+  return <div style={{ display: "grid", gap: 5, minWidth: 0 }}>
+    <div style={{ paddingLeft: 52, display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 3, color: COLORS.muted, fontSize: 10, textAlign: "center" }}><span>列 1</span><span>列 2</span><span>⋯</span><span>列 512</span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "44px 8px minmax(0,1fr) 8px", gap: 4, minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateRows: `repeat(${rows.length},1fr)`, gap: 3, color: COLORS.muted, fontSize: 10, textAlign: "right", alignItems: "center" }}>{rows.map((row, index) => <span key={`${row.label}-${index}`} style={{ color: row.selected ? COLORS.amber : COLORS.muted, fontWeight: row.selected ? 800 : 500 }}><MathFormula tex={row.label} /></span>)}</div>
+      <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
+      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>{rows.map((row, rowIndex) => <div key={`${row.label}-values-${rowIndex}`} style={{ minHeight: 28, display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", alignItems: "center", gap: 3, padding: "2px 4px", border: row.selected ? `1.5px solid ${COLORS.green}` : "1px solid transparent", borderRadius: 5, background: row.selected ? COLORS.greenSoft : "transparent", textAlign: "center", fontSize: 9.5 }}>{row.ellipsis ? <span style={{ gridColumn: "1 / -1" }}><MathFormula tex="\\vdots" /></span> : ["1", "2", "\\cdots", "512"].map((column) => <span key={column}><MathFormula tex={`g_{${kvSource},${row.label},${column}}`} /></span>)}</div>)}</div>
+      <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
+    </div>
+    <div style={{ paddingLeft: 52, color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}>绿色高亮行 = 橙色行号指定的整行；四列仅为示意，实际保留 512 列</div>
+  </div>;
+}
+
 function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   const { kind, layer, mode } = data;
   const both = <><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /></>;
@@ -288,19 +317,19 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   }
 
   if (kind === "norm1" || kind === "norm2") {
-    return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 17, fontWeight: 750 }}>{both}<MathFormula tex={kind === "norm1" ? `X=\\operatorname{RMSNorm}(H_{${layer}}^{\\mathrm{in}};\\gamma_{${layer},1})` : `Y=\\operatorname{RMSNorm}(H_{${layer}}';\\gamma_{${layer},2})`} /></div>;
+    return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 17, fontWeight: 750 }}>{both}<MathFormula tex={kind === "norm1" ? `X_{${layer}}=\\operatorname{RMSNorm}(H_{${layer}}^{\\mathrm{in}};\\gamma_{${layer},1})` : `Y=\\operatorname{RMSNorm}(H_{${layer}}';\\gamma_{${layer},2})`} /></div>;
   }
 
-  if (kind === "projection-q") return <Projection symbol="Q" weight="W^{Q\downarrow}W^{Q\uparrow}" shape="5120\times1280\rightarrow64\times512" sourcePosition={Position.Left} />;
+  if (kind === "projection-q") return <QueryProjection layer={layer} />;
   if (kind === "projection-kv") return <LocalKvProjection layer={layer} />;
 
   if (kind === "swa-window") {
     return <div style={{ ...panel, borderColor: COLORS.green }}>
-      <Handle type="target" position={Position.Top} style={handle} />
-      <Handle type="source" position={Position.Bottom} style={handle} />
+      <Handle id="projected-kv" type="target" position={Position.Top} style={{ ...handle, left: mode === "swa" ? "50%" : "90%" }} />
+      <Handle id="local-window" type="source" position={Position.Bottom} style={handle} />
       <Title>Layer {layer} 本地 SWA cache · 本层独立拥有，<MathFormula tex="t" /> 是当前 token 行号</Title>
       <div style={{ padding: 10, display: "grid", gap: 8, minWidth: 0 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 24px .8fr 24px 1.2fr", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 20px 1.1fr 20px 1.15fr", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}><strong>完整 KV 潜向量矩阵</strong><MathFormula tex={`U_{${layer}}\\in\\mathbb{R}^{N\\times512}`} /></div>
           <MatrixBracket layer={layer} rows={[
@@ -339,33 +368,94 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
     </div>;
   }
 
-  if (kind === "cache") {
+  if (kind === "compressor") {
+    const kvSource = globalKvSourceLayer(layer)!;
+    const ratio = compressionRatioForLayer(kvSource);
+    const writesKv = mode === "full";
+    return <div style={{ ...panel, borderColor: COLORS.green }}>
+      <Handle id="input" type="target" position={Position.Top} style={handle} />
+      <Handle id="to-indexer" type="source" position={Position.Bottom} style={handle} />
+      <Title>{writesKv ? <>全局 KV 生成 · Layer {layer} Compressor</> : <>读取 Layer {kvSource} 已生成的全局 KV</>}</Title>
+      <div style={{ padding: 10, display: "grid", gap: 7, fontSize: 11, minWidth: 0 }}>
+        {writesKv ? <>
+          <div style={{ display: "grid", gridTemplateColumns: ratio === 2 ? "1fr 1fr" : "1fr", gap: 7 }}>
+            <div style={{ display: "grid", gap: 5 }}><Box tone="blue"><MathFormula tex={`X_{${layer}}\\in\\mathbb{R}^{N\\times5120}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^{KV,c}\\in\\mathbb{R}^{5120\\times512}`} /><br />生成待压缩 KV 行</Box><Arrow vertical /><Box tone="green"><MathFormula tex={`V=X_{${layer}}W_{${layer}}^{KV,c}\\in\\mathbb{R}^{N\\times512}`} /></Box></div>
+            {ratio === 2 && <div style={{ display: "grid", gap: 5 }}><Box tone="blue"><MathFormula tex={`X_{${layer}}\\in\\mathbb{R}^{N\\times5120}`} /></Box><Operator tex="\times" /><Box tone="amber"><MathFormula tex={`W_{${layer}}^{gate}\\in\\mathbb{R}^{5120\\times512}`} /><br />生成两行之间的逐元素池化分数</Box><Arrow vertical /><Box tone="amber"><MathFormula tex={`A=X_{${layer}}W_{${layer}}^{gate}\\in\\mathbb{R}^{N\\times512}`} /></Box></div>}
+          </div>
+          <Arrow vertical />
+          {ratio === 2 ? <div style={{ display: "grid", gap: 7 }}>
+            <Box tone="amber"><strong>每连续 2 行生成两组逐元素权重</strong><br /><MathFormula tex={`[\\boldsymbol\\alpha_{i,1};\\boldsymbol\\alpha_{i,2}]=\\operatorname{softmax}_{\\mathrm{row}}([\\mathbf a_{2i-1};\\mathbf a_{2i}])`} /></Box>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1fr 42px 1fr", alignItems: "center", gap: 5 }}>
+              <Box><MathFormula tex={`\\mathbf v_{2i-1}\\in\\mathbb{R}^{512}`} /></Box><Operator tex="\odot" /><Box tone="amber"><MathFormula tex={`\\boldsymbol\\alpha_{i,1}\\in\\mathbb{R}^{512}`} /></Box><Operator tex="+" /><Box><MathFormula tex={`\\boldsymbol\\alpha_{i,2}\\odot\\mathbf v_{2i}`} /></Box>
+            </div>
+            <Arrow vertical />
+            <Box tone="green"><MathFormula tex={`\\mathbf g_i=\\operatorname{RMSNorm}(\\boldsymbol\\alpha_{i,1}\\odot\\mathbf v_{2i-1}+\\boldsymbol\\alpha_{i,2}\\odot\\mathbf v_{2i})\\in\\mathbb{R}^{512}`} /></Box>
+          </div> : <Box tone="amber"><strong>压缩比为 1，不做行池化</strong><br /><MathFormula tex={`\\mathbf g_i=\\operatorname{RMSNorm}(\\mathbf v_i)`} /></Box>}
+        </> : <Box tone="blue"><strong>本层不重新计算</strong><br />直接读取源层输出矩阵</Box>}
+        <Box tone="green"><strong>共享全局 KV 矩阵</strong><br /><MathFormula tex={`G_{${kvSource}}\\in\\mathbb{R}^{M\\times512},\\quad M=\\lfloor N/${ratio}\\rfloor`} /></Box>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 5 }}><Box><MathFormula tex={`\\mathbf g_{${kvSource},1}`} /></Box><Box><MathFormula tex={`\\mathbf g_{${kvSource},2}`} /></Box><span style={{ display: "grid", placeItems: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf g_{${kvSource},M}`} /></Box></div>
+      </div>
+    </div>;
+  }
+
+  if (kind === "indexer") {
     const kvSource = globalKvSourceLayer(layer)!;
     const indexSource = globalIndexSourceLayer(layer)!;
-    const writesKv = mode === "full";
     const writesIndex = mode === "full" || mode === "reindex";
-    return <div style={{ ...panel, borderColor: COLORS.amber }}><Handle id="selected-global" type="source" position={Position.Left} style={handle} /><Title>跨层共享的全局压缩 KV · {modeLabel(mode)}</Title><div style={{ padding: 9, display: "grid", gap: 8, fontSize: 11, minWidth: 0 }}>
-      {writesKv ?
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1.15fr 22px 1fr", alignItems: "center", gap: 4, minWidth: 0 }}><Box tone="blue"><MathFormula tex={`X_{${layer}}`} /></Box><Arrow /><Box tone="amber"><MathFormula tex={`\\operatorname{Compressor}_{${layer}}`} /></Box><Arrow /><Box tone="green"><strong>写入共享 cache</strong><br /><MathFormula tex={`G_{${kvSource}}^{\\mathrm{global}}`} /></Box></div>
-        : <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1.2fr", alignItems: "center", gap: 5, minWidth: 0 }}><Box tone="blue">读取 Layer {kvSource}<br />已经生成的结果</Box><Arrow /><Box tone="green"><strong>共享压缩 cache</strong><br /><MathFormula tex={`G_{${kvSource}}^{\\mathrm{global}}`} /></Box></div>}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 4 }}><Box><MathFormula tex={`\\mathbf g_{${kvSource},1}`} /></Box><Box><MathFormula tex={`\\mathbf g_{${kvSource},2}`} /></Box><span style={{ display: "grid", placeItems: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf g_{${kvSource},M}`} /></Box></div>
-      <div style={{ height: 1, background: COLORS.line }} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1.15fr 22px 1fr", alignItems: "center", gap: 4, minWidth: 0 }}>
-        <Box tone="blue"><MathFormula tex={`Q_{${layer},t}`} /></Box><Arrow />
-        <Box tone={writesIndex ? "amber" : "blue"}>{writesIndex ? <><MathFormula tex={`\\operatorname{Indexer}_{${layer}}`} /><br />本层重算</> : <>直接读取<br />Layer {indexSource} 的索引</>}</Box><Arrow />
-        <Box tone="amber"><MathFormula tex={`I_{${indexSource},t}`} /><br />Top-512 行号</Box>
+    return <div style={{ ...panel, borderColor: COLORS.amber }}>
+      <Handle id="global-matrix" type="target" position={Position.Top} style={handle} />
+      <Handle id="matrix" type="source" position={Position.Bottom} style={{ ...handle, left: "30%" }} />
+      <Handle id="indices" type="source" position={Position.Bottom} style={{ ...handle, left: "70%", background: COLORS.amber }} />
+      <Title>{writesIndex ? <>Top-512 行选择 · Layer {layer} Indexer</> : <>复用 Layer {indexSource} 已算出的 Top-512 行号</>}</Title>
+      <div style={{ padding: 10, display: "grid", gap: 7, fontSize: 11, minWidth: 0 }}>
+        {writesIndex ? <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}><Box tone="blue"><MathFormula tex={`Q_{${layer}}^r\\in\\mathbb{R}^{N\\times1280}`} /></Box><Box tone="blue"><MathFormula tex={`X_{${layer}}\\in\\mathbb{R}^{N\\times5120}`} /></Box><Box tone="green"><MathFormula tex={`G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`} /></Box></div>
+          <Arrow vertical />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}><Box><MathFormula tex={`Q_{${layer}}^I=Q_{${layer}}^rW_{${layer}}^{IQ}`} /><br /><MathFormula tex="N\times32\times128" /></Box><Box><MathFormula tex={`\\omega_{${layer}}=X_{${layer}}W_{${layer}}^{IW}`} /><br /><MathFormula tex="N\times32" /></Box><Box><MathFormula tex={`K_{${kvSource}}^I=G_{${kvSource}}W_{${kvSource}}^{IK}`} /><br /><MathFormula tex="M\times128" /></Box></div>
+          <Arrow vertical />
+          <Box tone="amber"><MathFormula tex={`S_{${layer}}=\\sum_{h=1}^{32}\\omega_h\\operatorname{ReLU}(Q_{${layer},h}^I(K_{${kvSource}}^I)^{\\mathsf T}/\\sqrt{128})\\in\\mathbb{R}^{N\\times M}`} /></Box>
+        </> : <Box tone="blue"><strong>本层不重复打分</strong><br /><MathFormula tex={`S_{${indexSource}}\\in\\mathbb{R}^{N\\times M}`} /> 已由 Layer {indexSource} 算好</Box>}
+        <Arrow vertical />
+        <Box tone="amber"><MathFormula tex={`K_t=\\min(512,\\lfloor t/${compressionRatioForLayer(kvSource)}\\rfloor)`} /><br /><MathFormula tex={`I_{${indexSource},t}=\\operatorname{TopK}(S_{${indexSource}}[t,:],K_t)\\in\\mathbb{N}^{K_t}`} /><br />输出是最多 512 个行号，不是 KV 向量</Box>
       </div>
-      <Arrow vertical />
-      <Box tone="green"><strong>送给本层 Head 的全局部分</strong><br /><MathFormula tex={`G_{${kvSource}}^{\\mathrm{global}}[I_{${indexSource},t},:]\\in\\mathbb{R}^{512\\times512}`} /></Box>
-    </div></div>;
+    </div>;
+  }
+
+  if (kind === "global-select") {
+    const kvSource = globalKvSourceLayer(layer)!;
+    const indexSource = globalIndexSourceLayer(layer)!;
+    return <div style={{ ...panel, borderColor: COLORS.green }}>
+      <Handle id="matrix" type="target" position={Position.Top} style={{ ...handle, left: "30%" }} />
+      <Handle id="indices" type="target" position={Position.Top} style={{ ...handle, left: "70%", background: COLORS.amber }} />
+      <Handle id="selected" type="source" position={Position.Bottom} style={handle} />
+      <Title>把 <MathFormula tex={`I_{${indexSource},t}`} /> 中的 <MathFormula tex="K_t\le512" /> 个行号，在 <MathFormula tex={`G_{${kvSource}}\in\mathbb{R}^{M\times512}`} /> 中逐行高亮</Title>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.55fr 34px .8fr", alignItems: "center", gap: 10, minWidth: 0 }}>
+        <SelectedGlobalRows kvSource={kvSource} indexSource={indexSource} />
+        <Arrow />
+        <Box tone="green"><strong>取出高亮的整行</strong><br /><MathFormula tex={`G_{${kvSource},t}^{\\mathrm{selected}}\\in\\mathbb{R}^{K_t\\times512}`} /><br /><br />行数最多 512<br />每行仍是 512 维 KV 向量</Box>
+      </div>
+    </div>;
+  }
+
+  if (kind === "kv-merge") {
+    const kvSource = globalKvSourceLayer(layer);
+    const indexSource = globalIndexSourceLayer(layer);
+    const hasGlobal = kvSource !== null && indexSource !== null;
+    return <div style={{ ...panel, borderColor: COLORS.green }}>
+      <Handle id="local" type="target" position={Position.Top} style={{ ...handle, left: hasGlobal ? "30%" : "50%" }} />
+      {hasGlobal && <Handle id="global" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} />}
+      <Handle id="kv" type="source" position={Position.Bottom} style={handle} />
+      <Title>{hasGlobal ? "沿 KV 行维拼接：本地窗口 + 选中的全局行" : "SWA-only：Head 只读取本地窗口"}</Title>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: hasGlobal ? "1fr 30px 1fr 30px 1.3fr" : "1fr 30px 1.3fr", alignItems: "center", gap: 6, minWidth: 0 }}>
+        <Box tone="green"><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /><br /><MathFormula tex="\min(128,t)\times512" /></Box><Arrow />
+        {hasGlobal && <><Box tone="green"><MathFormula tex={`G_{${kvSource},t}^{\\mathrm{selected}}`} /><br /><MathFormula tex="K_t\times512" /></Box><Arrow /></>}
+        <Box tone="green"><MathFormula tex={hasGlobal ? `\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};G_{${kvSource},t}^{\\mathrm{selected}}]` : `\\mathrm{KV}_{${layer},t}=U_{${layer},t}^{\\mathrm{SWA}}`} /><br />{hasGlobal && <MathFormula tex="(\min(128,t)+K_t)\times512" />}</Box>
+      </div>
+    </div>;
   }
 
   if (kind === "heads") {
-    const kvSource = globalKvSourceLayer(layer);
-    const indexSource = globalIndexSourceLayer(layer);
-    const globalRows = kvSource && indexSource ? `G_{${kvSource}}^{\\mathrm{global}}[I_{${indexSource},t},:]` : "";
-    const kvInput = mode === "swa" ? `\\mathrm{KV}_{${layer},t}=U_{${layer},t}^{\\mathrm{SWA}}` : `\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};${globalRows}]`;
-    return <div style={panel}><Handle id="q" type="target" position={Position.Left} style={handle} /><Handle id="local" type="target" position={Position.Top} style={handle} />{mode !== "swa" && <Handle id="global" type="target" position={Position.Right} style={handle} />}<Handle type="source" position={Position.Bottom} style={handle} /><Title>先定义每个 Head 共用的 KV 输入：<MathFormula tex={kvInput} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
+    return <div style={panel}><Handle id="q" type="target" position={Position.Left} style={handle} /><Handle id="kv" type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>64 个 Head 读取同一个 <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} />，每个 Head 使用自己的 <MathFormula tex={`Q_{h,t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
   }
 
   if (kind === "concat") {
@@ -453,14 +543,22 @@ function node(id: string, kind: NodeKind, layer: number, mode: LayerMode, x: num
 
 function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   const mode = modeForLayer(layer);
-  const mainGap = 30;
+  const hasGlobal = mode !== "swa";
+  const mainGap = 70;
   const inputY = 0;
   const norm1Y = 235;
   const projectionY = 375;
   const projectionHeight = 330;
-  const swaY = projectionY + projectionHeight + mainGap;
   const swaHeight = 480;
-  const headsY = swaY + swaHeight + mainGap;
+  const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
+  const indexerHeight = 450;
+  const globalSelectHeight = 430;
+  const sourceRowHeight = hasGlobal ? Math.max(projectionHeight, compressorHeight) : projectionHeight;
+  const swaY = projectionY + sourceRowHeight + mainGap;
+  const globalSelectY = swaY + indexerHeight + mainGap;
+  const mergeY = hasGlobal ? Math.max(swaY + swaHeight, globalSelectY + globalSelectHeight) + mainGap : swaY + swaHeight + mainGap;
+  const mergeHeight = 200;
+  const headsY = mergeY + mergeHeight + mainGap;
   const headsHeight = 420;
   const concatY = headsY + headsHeight + mainGap;
   const concatHeight = 130;
@@ -479,9 +577,10 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   const nodes: DiagramNode[] = [
     node("input", "tensor", layer, mode, 610, inputY, 380, 180),
     node("norm1", "norm1", layer, mode, 620, norm1Y, 360, 72),
-    node("q", "projection-q", layer, mode, 160, projectionY, 520, projectionHeight),
-    node("kv", "projection-kv", layer, mode, 920, projectionY, 520, projectionHeight),
-    node("swa-window", "swa-window", layer, mode, 280, swaY, 1040, swaHeight),
+    node("q", "projection-q", layer, mode, hasGlobal ? 40 : 160, projectionY, hasGlobal ? 440 : 520, projectionHeight),
+    node("kv", "projection-kv", layer, mode, hasGlobal ? 540 : 920, projectionY, hasGlobal ? 480 : 520, projectionHeight),
+    node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 280, swaY, hasGlobal ? 780 : 1040, swaHeight),
+    node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 400, mergeY, hasGlobal ? 1000 : 800, mergeHeight),
     node("heads", "heads", layer, mode, 240, headsY, 1040, headsHeight),
     node("concat", "concat", layer, mode, 350, concatY, 840, concatHeight),
     node("add1", "add1", layer, mode, 765, add1Y, 70, 70),
@@ -497,7 +596,11 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     node("add2", "add2", layer, mode, 765, add2Y, 70, 70),
     node("output", "output", layer, mode, 610, outputY, 380, 180),
   ];
-  if (mode !== "swa") nodes.push(node("cache", "cache", layer, mode, 1305, headsY - 5, 390, 430));
+  if (hasGlobal) {
+    nodes.push(node("compressor", "compressor", layer, mode, 1080, projectionY, 480, compressorHeight));
+    nodes.push(node("indexer", "indexer", layer, mode, 860, swaY, 700, indexerHeight));
+    nodes.push(node("global-select", "global-select", layer, mode, 860, globalSelectY, 700, globalSelectHeight));
+  }
 
   const makeEdge = (id: string, source: string, target: string, label?: ReactNode, extra?: Partial<Edge>): Edge => ({
     id, source, target, type: "smoothstep",
@@ -512,11 +615,12 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
 
   const edges: Edge[] = [
     makeEdge("input-norm", "input", "norm1", undefined, { sourceHandle: "main" }),
-    mathEdge("norm-q", "norm1", "q", "X"),
+    mathEdge("norm-q", "norm1", "q", `X_{${layer}}`),
     mathEdge("norm-kv", "norm1", "kv", `X_{${layer}}`),
     mathEdge("q-heads", "q", "heads", "Q_1,Q_2,\\ldots,Q_{64}", { sourceHandle: "output", targetHandle: "q" }),
-    mathEdge("kv-swa", "kv", "swa-window", `U_{${layer}}\\in\\mathbb{R}^{N\\times512}`),
-    mathEdge("swa-heads", "swa-window", "heads", `U_{${layer},t}^{\\mathrm{SWA}}`, { targetHandle: "local" }),
+    mathEdge("kv-swa", "kv", "swa-window", `U_{${layer}}\\in\\mathbb{R}^{N\\times512}`, { sourceHandle: "swa", targetHandle: "projected-kv" }),
+    mathEdge("swa-merge", "swa-window", "kv-merge", `U_{${layer},t}^{\\mathrm{SWA}}`, { sourceHandle: "local-window", targetHandle: "local" }),
+    mathEdge("merge-heads", "kv-merge", "heads", `\\mathrm{KV}_{${layer},t}`, { sourceHandle: "kv", targetHandle: "kv" }),
     makeEdge("heads-concat", "heads", "concat"),
     mathEdge("concat-add1", "concat", "add1", `O_{${layer}}`),
     mathEdge("input-add1", "input", "add1", `H_{${layer}}^{\\mathrm{in}}`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle }),
@@ -537,8 +641,14 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, type: "straight", style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
   }
   edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", type: "straight", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.blue } }));
-  if (mode !== "swa") {
-    edges.push(mathEdge("cache-heads", "cache", "heads", "Top\\text{-}512", { sourceHandle: "selected-global", targetHandle: "global", type: "straight" }));
+  if (hasGlobal) {
+    const kvSource = globalKvSourceLayer(layer)!;
+    const indexSource = globalIndexSourceLayer(layer)!;
+    if (mode === "full") edges.push(mathEdge("norm-compressor", "norm1", "compressor", `X_{${layer}}`, { targetHandle: "input" }));
+    edges.push(mathEdge("compressor-indexer", "compressor", "indexer", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "to-indexer", targetHandle: "global-matrix" }));
+    edges.push(mathEdge("indexer-matrix", "indexer", "global-select", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "matrix", targetHandle: "matrix" }));
+    edges.push(mathEdge("indexer-select", "indexer", "global-select", `I_{${indexSource},t}\\in\\mathbb{N}^{K_t}`, { sourceHandle: "indices", targetHandle: "indices", style: { stroke: COLORS.amber, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.amber } }));
+    edges.push(mathEdge("select-merge", "global-select", "kv-merge", `G_{${kvSource},t}^{\\mathrm{selected}}`, { sourceHandle: "selected", targetHandle: "global" }));
   }
   return { nodes, edges };
 }
