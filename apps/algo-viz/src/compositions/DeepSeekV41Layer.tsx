@@ -350,13 +350,21 @@ function Head({ index, layer }: { index: number; layer: number }) {
   return (
     <div style={{ position: "relative", border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
       <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 12 }}>Layer {layer} · Head {index}</strong>
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 5 }}><Box tone="blue"><MathFormula tex={`${queryRow}\\in\\mathbb R^{512}`} /></Box><Box tone="green"><MathFormula tex={attendedKv} /></Box></div>
-      <Box tone="green"><MathFormula tex={`\\mathbf z_{${layer},${index},t}=${queryRow}(${attendedKv})^{\\mathsf T}/\\sqrt{512}`} /><br /><MathFormula tex={`\\mathbf a_{${layer},${index},t}=\\operatorname{softmax}(\\mathbf z_{${layer},${index},t})`} /></Box>
-      <RowMatrix tex={`O_{${layer},${index}}`} shape="N\times512" rows={[
-        `\\mathbf o_{${layer},${index},1}`, `\\mathbf o_{${layer},${index},2}`, "\\vdots",
-        `\\mathbf o_{${layer},${index},t}=\\mathbf a_{${layer},${index},t}\\,${attendedKv}`,
-        "\\vdots", `\\mathbf o_{${layer},${index},N}`,
-      ]} selected={3} />
+      <div data-head-layout={index} style={{ display: "grid", gridTemplateColumns: "minmax(0,1.6fr) 24px minmax(0,1fr)", gap: 6, alignItems: "center" }}>
+        <div data-head-calculation style={{ minWidth: 0, display: "grid", gap: 6 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 5 }}><Box tone="blue"><MathFormula tex={`${queryRow}\\in\\mathbb R^{1\\times512}`} /></Box><Box tone="green"><MathFormula tex={attendedKv} /></Box></div>
+          <Box tone="green"><MathFormula tex={`\\mathbf z_{${layer},${index},t}=${queryRow}(${attendedKv})^{\\mathsf T}/\\sqrt{512}`} /><br /><MathFormula tex={`\\mathbf a_{${layer},${index},t}=\\operatorname{softmax}(\\mathbf z_{${layer},${index},t})`} /></Box>
+          <Box tone="amber"><MathFormula tex={`\\mathbf o_{${layer},${index},t}=\\mathbf a_{${layer},${index},t}\\,${attendedKv}`} /><br /><MathFormula tex="1\times512" /></Box>
+        </div>
+        <Operator tex="\to" />
+        <div data-head-output style={{ minWidth: 0, display: "grid", gap: 4 }}>
+          <span style={{ fontSize: 10, color: COLORS.green, textAlign: "center" }}>每个 token 的输出占一行</span>
+          <RowMatrix tex={`O_{${layer},${index}}`} shape="N\times512" rows={[
+            `\\mathbf o_{${layer},${index},1}`, `\\mathbf o_{${layer},${index},2}`, "\\vdots",
+            `\\mathbf o_{${layer},${index},t}`, "\\vdots", `\\mathbf o_{${layer},${index},N}`,
+          ]} selected={3} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -595,18 +603,18 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "concat") {
-    return <div style={panel}>{both}<Title>Layer {layer} · 64 个 Head 向量块拼成一行，再投影回 5120 维</Title>
-      <div style={{ padding: 9, display: "grid", gridTemplateColumns: "2.1fr 26px .75fr 26px 1.5fr", alignItems: "center", gap: 6 }}>
+    return <div style={panel}>{both}<Title>Layer {layer} · 沿列拼接 64 个 Head 的输出矩阵，再投影到 5120 维</Title>
+      <div style={{ padding: 9, display: "grid", gridTemplateColumns: "2.2fr 26px .85fr 26px 1.05fr", alignItems: "center", gap: 6 }}>
         <div style={{ border: `1.4px solid ${COLORS.green}`, borderRadius: 8, padding: 6, background: COLORS.greenSoft, display: "grid", gap: 5 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`\\mathbf o_{${layer},\\mathrm{cat},t}`} /><MathFormula tex="64\cdot512" /></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`O_{${layer}}^{\\mathrm{cat}}`} /><MathFormula tex="N\times(64\cdot512)" /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .45fr 1fr", gap: 4 }}>
-            <Box><MathFormula tex={`\\mathbf o_{${layer},1,t}`} /></Box><Box><MathFormula tex={`\\mathbf o_{${layer},2,t}`} /></Box><span style={{ display: "grid", placeItems: "center" }}><MathFormula tex="\cdots" /></span><Box><MathFormula tex={`\\mathbf o_{${layer},64,t}`} /></Box>
+            {[1, 2].map(head => <RowMatrix key={head} tex={`O_{${layer},${head}}`} shape="N\times512" rows={[`\\mathbf o_{${layer},${head},1}`, `\\mathbf o_{${layer},${head},2}`, "\\vdots", `\\mathbf o_{${layer},${head},N}`]} />)}<span style={{ display: "grid", placeItems: "center" }}><MathFormula tex="\cdots" /></span><RowMatrix tex={`O_{${layer},64}`} shape="N\times512" rows={[`\\mathbf o_{${layer},64,1}`, `\\mathbf o_{${layer},64,2}`, "\\vdots", `\\mathbf o_{${layer},64,N}`]} />
           </div>
         </div>
         <Operator tex="\times" />
         <div style={{ border: `1.2px solid ${COLORS.blue}`, borderRadius: 7, padding: 6, background: COLORS.blueSoft, textAlign: "center", display: "grid", gap: 4 }}><MathFormula tex={`W_{${layer}}^O`} /><MathFormula tex="(64\cdot512)\times5120" /></div>
         <Operator tex="=" />
-        <VectorStrip name={`\\mathbf o_{${layer},t}`} length="5120" elementTex={(column) => `o_{${layer},t,${column}}`} tone="green" compact />
+        <RowMatrix tex={`O_{${layer}}`} shape="N\times5120" rows={[`\\mathbf o_{${layer},1}`, `\\mathbf o_{${layer},2}`, "\\vdots", `\\mathbf o_{${layer},N}`]} />
       </div>
     </div>;
   }
@@ -794,9 +802,9 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const mergeY = hasGlobal ? Math.max(swaY + swaHeight, globalSelectY + globalSelectHeight) + mainGap : swaY + swaHeight + mainGap;
   const mergeHeight = 200;
   const headsY = mergeY + mergeHeight + mainGap;
-  const headsHeight = 456;
+  const headsHeight = 342;
   const concatY = headsY + headsHeight + mainGap;
-  const concatHeight = 170;
+  const concatHeight = 260;
   const add1Y = concatY + concatHeight + mainGap;
   const state1Y = add1Y + 70 + mainGap;
   const norm2Y = state1Y + 72 + mainGap;
@@ -818,8 +826,8 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("kv", "projection-kv", layer, mode, 850, projectionY, 500, localKvProjectionHeight),
     node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 280, swaY, hasGlobal ? 780 : 1040, swaHeight),
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 400, mergeY, hasGlobal ? 1000 : 800, mergeHeight),
-    node("heads", "heads", layer, mode, 190, headsY, 1140, headsHeight),
-    node("concat", "concat", layer, mode, 350, concatY, 840, concatHeight),
+    node("heads", "heads", layer, mode, 40, headsY, 1800, headsHeight),
+    node("concat", "concat", layer, mode, 190, concatY, 1140, concatHeight),
     node("add1", "add1", layer, mode, 765, add1Y, 70, 70),
     node("state1", "state1", layer, mode, 620, state1Y, 360, 72),
     node("norm2", "norm2", layer, mode, 620, norm2Y, 360, 72),
