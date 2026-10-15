@@ -288,6 +288,26 @@ function LocalKvProjection({ layer }: { layer: number }) {
 
 type MatrixRowSpec = { row: string; selected?: boolean; ellipsis?: boolean };
 
+function RingCache({ layer }: { layer: number }) {
+  const slots = ["t-127", "t-126", "t-125", "\\cdots", "t-3", "t-2", "t-1", "t"];
+  return <div data-ring-cache style={{ width: "100%", maxWidth: 280, aspectRatio: "1", position: "relative", justifySelf: "center" }}>
+    <svg aria-hidden viewBox="0 0 240 240" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+      <defs><marker id={`cache-write-${layer}`} viewBox="0 -5 10 10" refX="9" refY="0" markerWidth="8" markerHeight="8" orient="auto"><path d="M 1 -4 L 9 0 L 1 4" fill="none" stroke={COLORS.amber} strokeWidth="1.5" /></marker></defs>
+      <circle cx="120" cy="120" r="81.6" fill="none" stroke={COLORS.green} strokeWidth="2" />
+      <path d="M 120 95 L 120 56" fill="none" stroke={COLORS.amber} strokeWidth="2" markerEnd={`url(#cache-write-${layer})`} />
+    </svg>
+    {slots.map((row, index) => {
+      const angle = (-90 + index * 45) * Math.PI / 180;
+      const oldest = index === 0;
+      return <div key={index} data-cache-slot={row} style={{ position: "absolute", left: `${50 + 34 * Math.cos(angle)}%`, top: `${50 + 34 * Math.sin(angle)}%`, transform: "translate(-50%,-50%)", width: 72, minHeight: 28, display: "grid", placeItems: "center", border: row === "\\cdots" ? "none" : `1.5px solid ${oldest ? COLORS.amber : COLORS.green}`, borderRadius: 6, background: oldest ? COLORS.amberSoft : COLORS.greenSoft, color: COLORS.green, fontSize: 10 }}>
+        <MathFormula tex={row === "\\cdots" ? row : `\\mathbf u_{${layer},${row}}`} />
+      </div>;
+    })}
+    <div style={{ position: "absolute", left: "50%", top: "52%", width: 100, transform: "translate(-50%,-50%)", display: "grid", gap: 4, textAlign: "center", color: COLORS.green, fontSize: 10 }}><strong>128 槽</strong><MathFormula tex={`\\mathbf u_{${layer},t+1}`} /><span style={{ color: COLORS.amber }}>覆盖最旧槽</span></div>
+    <strong style={{ position: "absolute", bottom: 0, width: "100%", textAlign: "center", fontSize: 11, color: COLORS.green }}>Decode 环形 cache</strong>
+  </div>;
+}
+
 function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: MatrixRowSpec[]; compact?: boolean }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "8px minmax(0,1fr) 8px", gap: 4, alignItems: "stretch", minWidth: 0 }}>
@@ -467,12 +487,10 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
           <span style={{ color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /> = 绿色连续行</span>
         </div>
         <Arrow />
-        <Box tone="amber"><strong>行号</strong><br /><MathFormula tex="r=\max(1,t-127)" /><br /><MathFormula tex="r,\ldots,t" /><br /><br /><strong>形状</strong><br /><MathFormula tex="\min(128,t)\times512" /></Box>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 8, alignItems: "center", border: `1.5px solid ${COLORS.green}`, borderRadius: 8, padding: "6px 8px", background: COLORS.greenSoft, minWidth: 0 }}>
-        <strong style={{ fontSize: 11 }}>Decode 环形 cache · 128 槽</strong>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 34px 1fr", gap: 4, minWidth: 0 }}><Box><MathFormula tex={`\\mathbf u_{${layer},t-127}`} /></Box><Box><MathFormula tex={`\\mathbf u_{${layer},t-126}`} /></Box><span style={{ display: "grid", placeItems: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf u_{${layer},t}`} /></Box></div>
-        <span style={{ color: COLORS.muted, fontSize: 10.5 }}>下一个 token 写入，覆盖最旧槽</span>
+        <div style={{ minWidth: 0, display: "grid", gap: 8 }}>
+          <Box tone="amber"><MathFormula tex="r=\max(1,t-127)" /><br /><MathFormula tex="r,\ldots,t" /><br /><MathFormula tex="\min(128,t)\times512" /></Box>
+          <RingCache layer={layer} />
+        </div>
       </div>
       </div>
     </div>;
@@ -665,7 +683,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
 }
 
-function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
+function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   const compact = data.kind === "add1" || data.kind === "add2" || data.kind === "moe-sum";
   const portColor = data.tone === "amber" ? COLORS.amber : data.tone === "blue" ? COLORS.blue : COLORS.green;
   const minimumWidth = compact ? 60 : data.kind === "structure-operator" ? 36 : 100;
@@ -679,7 +697,7 @@ function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
           ? 96
           : 40;
   return <div data-boundary-connectable={data.kind !== "structure-operator"} style={{ width: "100%", height: "100%", position: "relative" }}>
-    <EightResizeHandles visible={Boolean(selected)} minWidth={minimumWidth} minHeight={minimumHeight} />
+    <EightResizeHandles minWidth={minimumWidth} minHeight={minimumHeight} />
     <EightConnectionPorts color={portColor} />
     <DiagramNodeContent data={data} />
   </div>;

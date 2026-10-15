@@ -121,11 +121,9 @@ const resizeHandleStyle: CSSProperties = {
 };
 
 export function EightResizeHandles({
-  visible,
   minWidth,
   minHeight,
 }: {
-  visible: boolean;
   minWidth: number;
   minHeight: number;
 }) {
@@ -149,7 +147,7 @@ export function EightResizeHandles({
         className="architecture-resize-handle"
         minWidth={minWidth}
         minHeight={minHeight}
-        style={{ ...resizeHandleStyle, opacity: visible ? 1 : 0, zIndex: 4 }}
+        style={{ ...resizeHandleStyle, opacity: 0, zIndex: 4 }}
       />
     ))}
   </>;
