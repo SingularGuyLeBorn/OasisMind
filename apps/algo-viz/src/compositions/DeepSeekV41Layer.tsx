@@ -43,7 +43,7 @@ type NodeKind =
   | "add2"
   | "output";
 
-type DiagramData = { kind: NodeKind; layer: number; mode: LayerMode; editing?: boolean };
+type DiagramData = { kind: NodeKind; layer: number; mode: LayerMode };
 type DiagramNode = Node<DiagramData>;
 type Props = { initialLayer?: number };
 
@@ -96,7 +96,6 @@ const handle: CSSProperties = {
 
 const FIT_VIEW_OPTIONS = { padding: .025, minZoom: .18, maxZoom: 1 } as const;
 const EDIT_DELETE_KEYS = ["Backspace", "Delete"];
-const EDIT_PAN_BUTTONS = [1, 2];
 
 function MathFormula({ tex, display = false }: { tex: string; display?: boolean }) {
   const html = useMemo(
@@ -435,7 +434,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="matrix" type="target" position={Position.Top} style={{ ...handle, left: "30%" }} />
       <Handle id="indices" type="target" position={Position.Top} style={{ ...handle, left: "70%", background: COLORS.amber }} />
       <Handle id="selected" type="source" position={Position.Bottom} style={handle} />
-      <Title>把 <MathFormula tex={`I_{${indexSource},t}`} /> 中的 <MathFormula tex="K_t\le512" /> 个行号，在 <MathFormula tex={`G_{${kvSource}}\in\mathbb{R}^{M\times512}`} /> 中逐行高亮</Title>
+      <Title>把 <MathFormula tex={`I_{${indexSource},t}`} /> 中的 <MathFormula tex="K_t\le512" /> 个行号，在 <MathFormula tex={`G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`} /> 中逐行高亮</Title>
       <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.55fr 34px .8fr", alignItems: "center", gap: 10, minWidth: 0 }}>
         <SelectedGlobalRows kvSource={kvSource} indexSource={indexSource} />
         <Arrow />
@@ -544,7 +543,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
   const compact = data.kind === "add1" || data.kind === "add2" || data.kind === "moe-sum";
   return <div style={{ width: "100%", height: "100%", position: "relative" }}>
-    {data.editing && <NodeResizer isVisible={selected} minWidth={compact ? 60 : 160} minHeight={compact ? 60 : 64} color={COLORS.green} handleStyle={{ width: 10, height: 10, borderRadius: 3 }} lineStyle={{ borderWidth: 1.5 }} />}
+    <NodeResizer isVisible={selected} minWidth={compact ? 60 : 160} minHeight={compact ? 60 : 64} color={COLORS.green} handleStyle={{ width: 10, height: 10, borderRadius: 3 }} lineStyle={{ borderWidth: 1.5 }} />
     <DiagramNodeContent data={data} />
   </div>;
 }
@@ -717,7 +716,6 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const initialGraph = useMemo(() => buildGraph(layer), [layer]);
   const [nodes, setNodes, onNodesChange] = useNodesState<DiagramNode>(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialGraph.edges);
-  const [editing, setEditing] = useState(false);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
   const storageKey = `oasismind:deepseek-v41-layer-layout:v1:${layer}`;
@@ -736,11 +734,6 @@ function DiagramCanvas({ layer }: { layer: number }) {
     setSelectedEdgeIds([]);
     setSaveState("idle");
   }, [initialGraph, storageKey]);
-
-  useEffect(() => {
-    setNodes((current) => current.map((item) => ({ ...item, data: { ...item.data, editing }, selected: editing ? item.selected : false })));
-    if (!editing) setSelectedEdgeIds([]);
-  }, [editing]);
 
   const onConnect = useCallback((connection: Connection) => {
     setEdges((current) => addEdge({
@@ -774,11 +767,11 @@ function DiagramCanvas({ layer }: { layer: number }) {
 
   const resetLayout = useCallback(() => {
     window.localStorage.removeItem(storageKey);
-    setNodes(initialGraph.nodes.map((item) => ({ ...item, data: { ...item.data, editing } })));
+    setNodes(initialGraph.nodes);
     setEdges(initialGraph.edges);
     setSelectedEdgeIds([]);
     setSaveState("idle");
-  }, [editing, initialGraph, setEdges, setNodes, storageKey]);
+  }, [initialGraph, setEdges, setNodes, storageKey]);
 
   const deleteSelectedEdges = useCallback(() => {
     const selected = new Set(selectedEdgeIds);
@@ -789,13 +782,13 @@ function DiagramCanvas({ layer }: { layer: number }) {
 
   const handleNodesChange = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
     onNodesChange(changes);
-    if (editing) setSaveState("idle");
-  }, [editing, onNodesChange]);
+    setSaveState("idle");
+  }, [onNodesChange]);
 
   const handleEdgesChange = useCallback((changes: Parameters<typeof onEdgesChange>[0]) => {
     onEdgesChange(changes);
-    if (editing) setSaveState("idle");
-  }, [editing, onEdgesChange]);
+    setSaveState("idle");
+  }, [onEdgesChange]);
 
   const handleSelectionChange = useCallback(({ edges: selectedEdges }: { edges: Edge[] }) => {
     setSelectedEdgeIds(selectedEdges.map((item) => item.id));
@@ -803,13 +796,10 @@ function DiagramCanvas({ layer }: { layer: number }) {
 
   return <>
     <div style={{ position: "absolute", top: 12, right: 16, zIndex: 8, display: "flex", alignItems: "center", gap: 6, padding: 7, border: `1px solid ${COLORS.line}`, borderRadius: 9, background: "rgba(255,254,250,.96)", boxShadow: "0 4px 14px rgba(42,41,36,.08)" }}>
-      <button type="button" onClick={() => setEditing((value) => !value)} style={{ ...editorButton, borderColor: editing ? COLORS.green : COLORS.line, background: editing ? COLORS.greenSoft : COLORS.card, color: editing ? COLORS.green : COLORS.ink }}>{editing ? "结束编辑" : "编辑布局"}</button>
-      {editing && <>
-        <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
-        <button type="button" onClick={deleteSelectedEdges} disabled={selectedEdgeIds.length === 0} style={{ ...editorButton, opacity: selectedEdgeIds.length ? 1 : .45, cursor: selectedEdgeIds.length ? "pointer" : "default" }}>删除选中连线</button>
-        <button type="button" onClick={resetLayout} style={editorButton}>恢复自动布局</button>
-        <span style={{ color: COLORS.muted, fontSize: 10.5 }}>拖框 · 选框后拉角点 · 从端口拖出连线 · 右键拖动画布</span>
-      </>}
+      <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
+      <button type="button" onClick={deleteSelectedEdges} disabled={selectedEdgeIds.length === 0} style={{ ...editorButton, opacity: selectedEdgeIds.length ? 1 : .45, cursor: selectedEdgeIds.length ? "pointer" : "default" }}>删除选中连线</button>
+      <button type="button" onClick={resetLayout} style={editorButton}>恢复自动布局</button>
+      <span style={{ color: COLORS.muted, fontSize: 10.5 }}>拖空白平移 · 拖框移动 · 选框拉角点 · 从端口拖线</span>
     </div>
     <ReactFlow
       nodes={nodes}
@@ -823,14 +813,14 @@ function DiagramCanvas({ layer }: { layer: number }) {
       fitViewOptions={FIT_VIEW_OPTIONS}
       minZoom={.18}
       maxZoom={1.5}
-      nodesDraggable={editing}
-      nodesConnectable={editing}
-      nodesFocusable={editing}
-      edgesFocusable={editing}
-      edgesReconnectable={editing}
-      elementsSelectable={editing}
-      deleteKeyCode={editing ? EDIT_DELETE_KEYS : null}
-      panOnDrag={editing ? EDIT_PAN_BUTTONS : true}
+      nodesDraggable
+      nodesConnectable
+      nodesFocusable
+      edgesFocusable
+      edgesReconnectable
+      elementsSelectable
+      deleteKeyCode={EDIT_DELETE_KEYS}
+      panOnDrag
       zoomOnScroll={false}
       zoomOnPinch
       zoomOnDoubleClick
@@ -848,7 +838,7 @@ export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
   const mode = modeForLayer(layer);
   return <div style={{ width: "100%", height: "100%", background: COLORS.paper, fontFamily: "Inter, PingFang SC, Microsoft YaHei, system-ui, sans-serif", position: "relative" }}>
     <div style={{ position: "absolute", inset: "0 0 auto 0", zIndex: 10, minHeight: 122, padding: "18px 22px 14px", background: "rgba(247,245,240,.97)", borderBottom: `1px solid ${COLORS.line}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 12 }}><div><strong style={{ fontSize: 21 }}>DeepSeek V4.1-Flash · Layer {layer}</strong><span style={{ marginLeft: 12, color: mode === "full" ? COLORS.green : mode === "reindex" ? COLORS.amber : mode === "reuse" ? COLORS.blue : COLORS.rose, fontWeight: 800 }}>{modeLabel(mode)}</span></div><span style={{ color: COLORS.muted, fontSize: 12 }}>阅读模式可平移缩放 · 编辑模式可拖框、改尺寸、增删连线</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 12 }}><div><strong style={{ fontSize: 21 }}>DeepSeek V4.1-Flash · Layer {layer}</strong><span style={{ marginLeft: 12, color: mode === "full" ? COLORS.green : mode === "reindex" ? COLORS.amber : mode === "reuse" ? COLORS.blue : COLORS.rose, fontWeight: 800 }}>{modeLabel(mode)}</span></div><span style={{ color: COLORS.muted, fontSize: 12 }}>随时平移缩放、拖框、改尺寸、增删连线；与文章编辑状态无关</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(20,1fr)", gap: 4 }}>{Array.from({ length: 40 }, (_, i) => i + 1).map((value) => { const valueMode = modeForLayer(value); const active = value === layer; const color = valueMode === "full" ? COLORS.green : valueMode === "reindex" ? COLORS.amber : valueMode === "reuse" ? COLORS.blue : COLORS.rose; return <button key={value} type="button" onClick={() => setLayer(value)} aria-pressed={active} style={{ border: `1px solid ${active ? color : COLORS.line}`, background: active ? color : COLORS.card, color: active ? "white" : color, borderRadius: 5, padding: "4px 0", fontWeight: 750, fontSize: 10.5, cursor: "pointer" }}>{value}</button>; })}</div>
     </div>
     <div style={{ position: "absolute", inset: "122px 0 0" }}><DiagramCanvas key={layer} layer={layer} /></div>
