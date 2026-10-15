@@ -23,6 +23,7 @@ export type EditableEdgeData = {
   color?: string;
   sourceAnchor?: BoundaryAnchor;
   targetAnchor?: BoundaryAnchor;
+  labelPosition?: number;
 };
 
 export type BoundaryAnchor = { side: Position; offset: number };
@@ -454,6 +455,37 @@ function longestSegmentCenter(points: XYPosition[]) {
   return best;
 }
 
+export function projectLabelOntoPath(points: XYPosition[], pointer: XYPosition) {
+  const lengths = points.slice(1).map((point, index) => Math.hypot(point.x - points[index].x, point.y - points[index].y));
+  const total = lengths.reduce((sum, length) => sum + length, 0);
+  let passed = 0;
+  let best = { ...points[0], fraction: 0, distance: Infinity };
+  lengths.forEach((length, index) => {
+    if (!length) return;
+    const start = points[index];
+    const end = points[index + 1];
+    const ratio = Math.max(0, Math.min(1, ((pointer.x - start.x) * (end.x - start.x) + (pointer.y - start.y) * (end.y - start.y)) / (length * length)));
+    const x = start.x + ratio * (end.x - start.x);
+    const y = start.y + ratio * (end.y - start.y);
+    const distance = Math.hypot(pointer.x - x, pointer.y - y);
+    if (distance < best.distance) best = { x, y, fraction: (passed + length * ratio) / total, distance };
+    passed += length;
+  });
+  return best;
+}
+
+export function labelPointOnPath(points: XYPosition[], fraction: number): XYPosition {
+  const lengths = points.slice(1).map((point, index) => Math.hypot(point.x - points[index].x, point.y - points[index].y));
+  let remaining = lengths.reduce((sum, length) => sum + length, 0) * Math.max(0, Math.min(1, fraction));
+  for (let index = 0; index < lengths.length; index += 1) {
+    const length = lengths[index];
+    if (!length) continue;
+    if (remaining <= length) return { x: points[index].x + (points[index + 1].x - points[index].x) * remaining / length, y: points[index].y + (points[index + 1].y - points[index].y) * remaining / length };
+    remaining -= length;
+  }
+  return points.at(-1) ?? { x: 0, y: 0 };
+}
+
 function moveSegment(
   points: XYPosition[],
   segmentIndex: number,
@@ -555,7 +587,7 @@ function EditableOrthogonalEdgeView({
     return pointsWithDirectedTarget(sourceDirected, targetX, targetY, targetPosition);
   }, [data?.waypoints, obstacles, sourcePosition, sourceX, sourceY, targetPosition, targetX, targetY]);
   const path = pathFromPoints(points);
-  const labelCenter = longestSegmentCenter(points);
+  const labelCenter = data?.labelPosition === undefined ? longestSegmentCenter(points) : labelPointOnPath(points, data.labelPosition);
   const color = data?.color ?? String(style?.stroke ?? "#37685a");
   useEffect(() => {
     if (!selected) return;
@@ -638,6 +670,30 @@ function EditableOrthogonalEdgeView({
     window.addEventListener("pointercancel", finish, { once: true });
   };
 
+  const startLabelDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.focus({ preventScroll: true });
+    setEdges(current => current.map(edge => ({ ...edge, selected: edge.id === id })));
+    let changed = false;
+    const move = (pointerEvent: PointerEvent) => {
+      if (!changed) history?.beginHistory();
+      changed = true;
+      const pointer = screenToFlowPosition({ x: pointerEvent.clientX, y: pointerEvent.clientY });
+      const { fraction } = projectLabelOntoPath(points, pointer);
+      setEdges(current => current.map(edge => edge.id === id ? { ...edge, data: { ...edge.data, labelPosition: fraction } } : edge));
+    };
+    const finish = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      if (changed) history?.commitHistory();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", finish, { once: true });
+    window.addEventListener("pointercancel", finish, { once: true });
+  };
+
   return <>
     <BaseEdge
       id={id}
@@ -665,7 +721,11 @@ function EditableOrthogonalEdgeView({
       {data?.labelTex && (
         <div
           className="nodrag nopan"
+          data-edge-label={id}
+          role="button"
+          tabIndex={0}
           aria-label={data.labelTex}
+          onPointerDown={startLabelDrag}
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelCenter.x}px,${labelCenter.y}px)`,
@@ -676,6 +736,8 @@ function EditableOrthogonalEdgeView({
             fontSize: 12,
             fontWeight: 700,
             pointerEvents: "all",
+            cursor: "grab",
+            userSelect: "none",
           }}
           dangerouslySetInnerHTML={{ __html: latexHtml(data.labelTex) }}
         />

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { Position } from "@xyflow/react";
-import { findBoundaryConnection } from "../../../algo-viz/src/components/EditableArchitectureGraph";
+import { findBoundaryConnection, labelPointOnPath, projectLabelOntoPath } from "../../../algo-viz/src/components/EditableArchitectureGraph";
 
 function addFrame(id: string, left: number, top: number, width: number, height: number) {
   const node = document.createElement("div");
@@ -41,5 +41,24 @@ describe("架构图连续边缘吸附", () => {
     addFrame("inner", 100, 140, 100, 80);
     expect(findBoundaryConnection(document.body, { x: 98, y: 180 })).toMatchObject({ nodeId: "inner" });
     expect(findBoundaryConnection(document.body, { x: 98, y: 180 }, "inner")).toMatchObject({ nodeId: "outer" });
+  });
+});
+
+describe("连线文字沿线路拖动", () => {
+  const path = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }];
+
+  it("离开线路的鼠标位置投影回最近线段", () => {
+    expect(projectLabelOntoPath(path, { x: 50, y: 35 })).toMatchObject({ x: 50, y: 0, fraction: .25 });
+    expect(projectLabelOntoPath(path, { x: 130, y: 60 })).toMatchObject({ x: 100, y: 60, fraction: .8 });
+  });
+
+  it("不会拖出线的两端", () => {
+    expect(projectLabelOntoPath(path, { x: -20, y: -40 })).toMatchObject({ x: 0, y: 0, fraction: 0 });
+    expect(projectLabelOntoPath(path, { x: 130, y: 140 })).toMatchObject({ x: 100, y: 100, fraction: 1 });
+  });
+
+  it("路径改变后保存的相对位置仍位于线上", () => {
+    expect(labelPointOnPath(path, .75)).toEqual({ x: 100, y: 50 });
+    expect(labelPointOnPath([{ x: 0, y: 0 }, { x: 200, y: 0 }, { x: 200, y: 200 }], .75)).toEqual({ x: 200, y: 100 });
   });
 });

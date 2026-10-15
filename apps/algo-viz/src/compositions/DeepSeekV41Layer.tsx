@@ -700,7 +700,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
 }
 
-function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
+function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
   const compact = data.kind === "add1" || data.kind === "add2" || data.kind === "moe-sum";
   const portColor = data.tone === "amber" ? COLORS.amber : data.tone === "blue" ? COLORS.blue : COLORS.green;
   const minimumWidth = compact ? 60 : data.kind === "structure-operator" ? 36 : 100;
@@ -713,7 +713,7 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
         : data.title
           ? 96
           : 40;
-  return <div data-boundary-connectable={data.kind !== "structure-operator"} style={{ width: "100%", height: "100%", position: "relative" }}>
+  return <div data-boundary-connectable={data.kind !== "structure-operator"} data-frame-selected={Boolean(selected)} style={{ width: "100%", height: "100%", position: "relative", borderRadius: compact ? "50%" : 12, outline: selected ? `3px solid ${COLORS.blue}` : undefined, outlineOffset: 2, boxShadow: selected ? "0 0 0 6px rgba(102,124,150,.16)" : undefined }}>
     <EightResizeHandles minWidth={minimumWidth} minHeight={minimumHeight} />
     <EightConnectionPorts color={portColor} />
     <DiagramNodeContent data={data} />
