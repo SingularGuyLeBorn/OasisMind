@@ -49,7 +49,10 @@ type NodeKind =
   | "router"
   | "scores"
   | "experts"
-  | "aggregate"
+  | "expert-output"
+  | "expert-weight"
+  | "expert-scale"
+  | "expert-weighted"
   | "moe-sum"
   | "moe-output"
   | "add2"
@@ -72,6 +75,7 @@ type DiagramData = {
   vectorCells?: string[];
   columnVectors?: boolean;
   matrixSelectedRow?: number;
+  expertId?: number;
 };
 type DiagramNode = Node<DiagramData>;
 type Props = { initialLayer?: number };
@@ -116,6 +120,10 @@ const ROUTED_CONTENT_WIDTH = EXPERTS_WIDTH - 2 * EXPERTS_PADDING - SHARED_GROUP_
 const EXPERT_CARD_WIDTH = (ROUTED_CONTENT_WIDTH - 40 - 3 * EXPERT_CARD_GAP) / VISIBLE_ROUTED_EXPERTS.length;
 const ROUTED_HANDLE_LEFT = VISIBLE_ROUTED_EXPERTS.map((_, index) => 100 * (ROUTED_CONTENT_START + index * (EXPERT_CARD_WIDTH + EXPERT_CARD_GAP) + (index === 2 ? 40 + EXPERT_CARD_GAP : 0) + EXPERT_CARD_WIDTH / 2) / EXPERTS_WIDTH);
 const SHARED_HANDLE_LEFT = 100 * (EXPERTS_PADDING + SHARED_GROUP_WIDTH / 2) / EXPERTS_WIDTH;
+const EXPERT_OUTPUT_BRANCHES = [
+  { key: "shared", expertId: undefined, center: 70 + EXPERTS_WIDTH * SHARED_HANDLE_LEFT / 100, width: SHARED_GROUP_WIDTH - 24 },
+  ...VISIBLE_ROUTED_EXPERTS.map((expert, index) => ({ key: String(expert.id), expertId: expert.id, center: 70 + EXPERTS_WIDTH * ROUTED_HANDLE_LEFT[index] / 100, width: EXPERT_CARD_WIDTH - 24 })),
+];
 const ROUTER_SCORE_COLUMNS = [1, 2, 3, null, 7, null, 31, null, 96, null, 142, null, 228, null, 351, null, 384] as const;
 
 const panel: CSSProperties = {
@@ -139,7 +147,7 @@ const handle: CSSProperties = {
 
 const FIT_VIEW_OPTIONS = { padding: .025, minZoom: .18, maxZoom: 1 } as const;
 const EDIT_DELETE_KEYS = ["Backspace", "Delete"];
-const CONTENT_SIZED_KINDS = new Set<NodeKind>(["projection-kv", "heads", "concat", "compressor", "indexer"]);
+const CONTENT_SIZED_KINDS = new Set<NodeKind>(["projection-kv", "heads", "concat", "compressor", "indexer", "expert-output", "expert-weighted"]);
 
 function MathFormula({ tex, display = false }: { tex: string; display?: boolean }) {
   const html = useMemo(
@@ -929,35 +937,48 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
     </div>;
   }
 
-  if (kind === "aggregate") {
-    return <div style={panel}>
-      <Handle id="shared" type="target" position={Position.Top} style={{ ...handle, left: `${SHARED_HANDLE_LEFT}%`, background: COLORS.blue }} />
-      {VISIBLE_ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`weighted-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
-      <Handle id="main-out" type="source" position={Position.Bottom} style={handle} />
-      <Title>各专家输出向量分别加权</Title><div style={{ padding: EXPERTS_PADDING, display: "grid", gap: 8 }}>
-      <div style={{ display: "grid", gridTemplateColumns: `${SHARED_GROUP_WIDTH}px minmax(0,1fr)`, gap: EXPERT_GROUP_GAP }}>
-        <Box tone="blue"><MathFormula tex={`1\\cdot E_{${layer},\\mathrm{shared}}(Y_{${layer}})`} /></Box>
-        <div style={{ padding: `0 ${EXPERT_GROUP_INSET}px`, display: "grid", gridTemplateColumns: EXPERT_GRID_COLUMNS, gap: EXPERT_CARD_GAP }}>{VISIBLE_ROUTED_EXPERTS.map((expert, index) => <React.Fragment key={expert.id}>{index === 2 && <Operator tex={"\\cdots"} />}<Box tone="amber"><MathFormula tex={`g_{${layer},${expert.id}}\\cdot E_{${layer},${expert.id}}(Y_{${layer}})`} /></Box></React.Fragment>)}</div>
-      </div>
-    </div></div>;
+  if (kind === "expert-output" || kind === "expert-weight" || kind === "expert-scale" || kind === "expert-weighted") {
+    const expert = data.expertId === undefined ? "\\mathrm{shared}" : String(data.expertId);
+    const shared = data.expertId === undefined;
+    const color = shared ? COLORS.blue : COLORS.amber;
+    if (kind === "expert-weight") return <div data-expert-weight={expert} style={{ ...panel, borderColor: color, display: "grid", placeContent: "center", gap: 4, textAlign: "center", fontSize: 14 }}>
+      <Handle id="weight-out" type="source" position={Position.Right} style={{ ...handle, background: color }} />
+      <span style={{ fontSize: 11 }}>{shared ? "共享权重" : "Router · 第 t 行权重"}</span><MathFormula tex={shared ? "1" : `g_{${layer},${expert},t}`} />
+    </div>;
+    if (kind === "expert-scale") return <div data-expert-scale={expert} style={{ width: "100%", height: "100%", borderRadius: "50%", border: `2px solid ${color}`, boxSizing: "border-box", display: "grid", placeItems: "center", background: COLORS.card }}>
+      <Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="weight-in" type="target" position={Position.Left} style={{ ...handle, background: color }} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><Operator tex="\times" />
+    </div>;
+    if (kind === "expert-weighted") return <div data-expert-weighted={expert} style={{ ...panel, height: "auto", borderColor: color }}>{both}
+      <Title><MathFormula tex={`\\mathbf r_{${layer},${expert},t}=${shared ? "1" : `g_{${layer},${expert},t}`}\\,\\mathbf e_{${layer},${expert},t}`} /><span style={{ float: "right", fontSize: 11 }}><MathFormula tex="1\times5120" /></span></Title>
+      <div style={{ padding: 8 }}><VectorStrip name={`\\mathbf r_{${layer},${expert},t}`} nameWidth={110} length="5120" elementTex={column => `r_{${layer},${expert},t,${column}}`} tone={shared ? "blue" : "amber"} compact /></div>
+    </div>;
+    const rows = ["1", "2", "\\vdots", "t", "\\vdots", "N"];
+    return <div data-expert-output={expert} style={{ ...panel, height: "auto", borderColor: color }}>{both}
+      <Title>{shared ? "共享专家输出" : `Expert ${expert} 输出`} · <MathFormula tex={`E_{${layer},${expert}}(Y_{${layer}})`} /><span style={{ float: "right", fontSize: 11 }}><MathFormula tex="N\times5120" /></span></Title>
+      <div style={{ padding: 9, display: "grid", gap: 5 }}>{rows.map((row, index) => row === "\\vdots" ? <div key={index} style={{ textAlign: "center" }}><MathFormula tex={row} /></div> : <VectorStrip key={index} name={`\\mathbf e_{${layer},${expert},${row}}`} nameWidth={110} length="5120" elementTex={column => `e_{${layer},${expert},${row},${column}}`} tone={shared ? "blue" : "green"} selected={row === "t"} compact />)}</div>
+    </div>;
   }
 
   if (kind === "moe-sum") {
-    return <div style={{ width: "100%", height: "100%", borderRadius: "50%", border: `3px solid ${COLORS.green}`, background: COLORS.greenSoft, display: "grid", placeItems: "center", fontSize: 22, color: COLORS.green, fontWeight: 900 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MathFormula tex="\sum" /></div>;
+    return <div data-moe-weighted-sum style={{ width: "100%", height: "100%", borderRadius: 24, border: `3px solid ${COLORS.green}`, boxSizing: "border-box", background: COLORS.greenSoft, display: "grid", placeContent: "center", textAlign: "center", gap: 3, color: COLORS.green }}>
+      {EXPERT_OUTPUT_BRANCHES.map((branch, index) => <Handle key={branch.key} id={`term-${branch.key}`} type="target" position={Position.Top} style={{ ...handle, left: `${(index + 1) * 20}%` }} />)}
+      <Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><span style={{ fontSize: 23 }}><MathFormula tex="\sum" /></span><strong style={{ fontSize: 12 }}>逐元素相加 · 1 路共享 + Top-6</strong>
+    </div>;
   }
 
   if (kind === "moe-output") {
-    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.green, background: COLORS.greenSoft, fontSize: 16, fontWeight: 800 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb{R}^{N\\times5120}`} /></div>;
+    return <div style={{ ...panel, display: "grid", placeContent: "center", textAlign: "center", gap: 7, borderColor: COLORS.green, background: COLORS.greenSoft, fontSize: 14 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`\\mathbf o_{${layer},t}^{\\mathrm{FFN}}=\\mathbf r_{${layer},\\mathrm{shared},t}+\\sum_{i\\in I_{${layer},t}}\\mathbf r_{${layer},i,t}`} /><span style={{ fontSize: 11 }}>各 token 的结果按行组成 <MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb R^{N\\times5120}`} /></span></div>;
   }
 
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
 }
 
 function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
-  const compact = data.kind === "add1" || data.kind === "add2" || data.kind === "moe-sum";
+  const compact = data.kind === "add1" || data.kind === "add2" || data.kind === "moe-sum" || data.kind === "expert-scale";
   const portColor = data.tone === "amber" ? COLORS.amber : data.tone === "blue" ? COLORS.blue : COLORS.green;
-  const minimumWidth = compact ? 60 : data.kind === "structure-operator" ? 36 : 100;
-  const minimumHeight = compact
+  // [OM-FREEPLAY] 求和器保留 320px 最小宽度，让四个入口之间有独立走线净空。
+  const minimumWidth = data.kind === "moe-sum" ? 320 : compact ? 60 : data.kind === "structure-operator" ? 36 : 100;
+  const minimumHeight = data.kind === "moe-sum" ? 100 : compact
     ? 60
     : data.matrixRows?.length
       ? 180
@@ -1025,7 +1046,7 @@ function structureNode({
   };
 }
 
-function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> = new Map()): { nodes: DiagramNode[]; edges: EditableEdge[] } {
+export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> = new Map()): { nodes: DiagramNode[]; edges: EditableEdge[] } {
   const mode = modeForLayer(layer);
   const hasGlobal = mode !== "swa";
   const mainGap = architectureFanoutGap(3);
@@ -1060,10 +1081,14 @@ function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> =
   const scoresHeight = 320;
   const expertsY = scoresY + scoresHeight + mainGap;
   const expertsHeight = 1850;
-  const aggregateY = expertsY + expertsHeight + mainGap;
-  const moeSumY = aggregateY + 125 + mainGap;
-  const moeOutputY = moeSumY + 70 + mainGap;
-  const add2Y = moeOutputY + 72 + mainGap;
+  const expertOutputY = expertsY + expertsHeight + mainGap;
+  const expertOutputHeight = Math.max(...EXPERT_OUTPUT_BRANCHES.map(branch => contentHeights.get(`expert-output-${branch.key}`) ?? 240));
+  const expertScaleY = expertOutputY + expertOutputHeight + mainGap;
+  const weightedY = expertScaleY + 70 + mainGap;
+  const weightedHeight = Math.max(...EXPERT_OUTPUT_BRANCHES.map(branch => contentHeights.get(`expert-weighted-${branch.key}`) ?? 100));
+  const moeSumY = weightedY + weightedHeight + architectureFanoutGap(EXPERT_OUTPUT_BRANCHES.length);
+  const moeOutputY = moeSumY + 100 + mainGap;
+  const add2Y = moeOutputY + 100 + mainGap;
   const outputY = add2Y + 70 + mainGap;
   const nodes: DiagramNode[] = [
     node("input", "tensor", layer, mode, 610, inputY, 380, tensorHeight),
@@ -1082,12 +1107,21 @@ function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> =
     node("router", "router", layer, mode, 320, routerY, 960, routerHeight),
     node("scores", "scores", layer, mode, 70, scoresY, EXPERTS_WIDTH, scoresHeight),
     node("experts", "experts", layer, mode, 70, expertsY, EXPERTS_WIDTH, expertsHeight),
-    node("aggregate", "aggregate", layer, mode, 70, aggregateY, EXPERTS_WIDTH, 125),
-    node("moe-sum", "moe-sum", layer, mode, 765, moeSumY, 70, 70),
-    node("moe-output", "moe-output", layer, mode, 620, moeOutputY, 360, 72),
+    node("moe-sum", "moe-sum", layer, mode, 70 + EXPERTS_WIDTH / 2 - 160, moeSumY, 320, 100),
+    node("moe-output", "moe-output", layer, mode, 70 + EXPERTS_WIDTH / 2 - 320, moeOutputY, 640, 100),
     node("add2", "add2", layer, mode, 765, add2Y, 70, 70),
     node("output", "output", layer, mode, 610, outputY, 380, tensorHeight),
   ];
+  for (const branch of EXPERT_OUTPUT_BRANCHES) {
+    for (const item of [
+      node(`expert-output-${branch.key}`, "expert-output", layer, mode, branch.center - branch.width / 2, expertOutputY, branch.width, expertOutputHeight),
+      node(`expert-weight-${branch.key}`, "expert-weight", layer, mode, branch.center - 265, expertScaleY, 145, 70),
+      node(`expert-scale-${branch.key}`, "expert-scale", layer, mode, branch.center - 35, expertScaleY, 70, 70),
+      node(`expert-weighted-${branch.key}`, "expert-weighted", layer, mode, branch.center - branch.width / 2, weightedY, branch.width, weightedHeight),
+    ]) nodes.push({ ...item, data: { ...item.data, expertId: branch.expertId } });
+  }
+  const omittedX = (EXPERT_OUTPUT_BRANCHES[2].center + EXPERT_OUTPUT_BRANCHES[3].center) / 2;
+  nodes.push({ ...node("weighted-expert-ellipsis", "structure-operator", layer, mode, omittedX - 20, weightedY + 25, 40, 40), data: { kind: "structure-operator", layer, mode, tex: "\\cdots" } });
   nodes.push(
     { ...node("swa-result", "swa-output", layer, mode, 10, 414, ((hasGlobal ? 780 : 900) - 56) * 1.7 / 2.6, 82), parentId: "swa-window", extent: "parent" },
     structureNode({ id: "q-x", parentId: "q", layer, mode, x: 28, y: 68, width: 200, height: 170, title: "输入矩阵", tex: `X_{${layer}}\\in\\mathbb R^{N\\times5120}`, matrixRows: [`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`], tone: "blue" }),
@@ -1169,7 +1203,6 @@ function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> =
     makeEdge("moe-input-router", "moe-input", "router", undefined, { sourceHandle: "router" }),
     mathEdge("router-scores", "router", "scores", `S_{${layer}}`),
     makeEdge("moe-input-shared", "moe-input", "experts", undefined, { sourceHandle: "shared", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.blue } }),
-    makeEdge("aggregate-sum", "aggregate", "moe-sum"),
     makeEdge("sum-moe-output", "moe-sum", "moe-output"),
     mathEdge("moe-output-add2", "moe-output", "add2", `O_{${layer}}^{\\mathrm{FFN}}`),
     mathEdge("state1-add2", "state1", "add2", `H_{${layer}}'`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle, data: { ...skipStyle.data, waypoints: ffnResidualWaypoints } }),
@@ -1177,9 +1210,17 @@ function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> =
   ];
   for (const expert of VISIBLE_ROUTED_EXPERTS) {
     edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", `g_{${layer},${expert.id}}=${expert.score}`, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
-    edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
   }
-  edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.blue } }));
+  for (const branch of EXPERT_OUTPUT_BRANCHES) {
+    const expert = branch.expertId === undefined ? "\\mathrm{shared}" : branch.key;
+    const color = branch.expertId === undefined ? COLORS.blue : COLORS.amber;
+    const branchStyle = { style: { stroke: color, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color }, data: { color } };
+    edges.push(makeEdge(`expert-result-${branch.key}`, "experts", `expert-output-${branch.key}`, undefined, { ...branchStyle, sourceHandle: branch.expertId === undefined ? "shared-out" : `expert-out-${branch.key}` }));
+    edges.push(mathEdge(`expert-row-${branch.key}`, `expert-output-${branch.key}`, `expert-scale-${branch.key}`, `\\mathbf e_{${layer},${expert},t}`, branchStyle));
+    edges.push(makeEdge(`expert-gate-${branch.key}`, `expert-weight-${branch.key}`, `expert-scale-${branch.key}`, undefined, { ...branchStyle, sourceHandle: "weight-out", targetHandle: "weight-in" }));
+    edges.push(makeEdge(`expert-product-${branch.key}`, `expert-scale-${branch.key}`, `expert-weighted-${branch.key}`, undefined, branchStyle));
+    edges.push(makeEdge(`expert-sum-${branch.key}`, `expert-weighted-${branch.key}`, "moe-sum", undefined, { ...branchStyle, targetHandle: `term-${branch.key}` }));
+  }
   if (hasGlobal) {
     const kvSource = globalKvSourceLayer(layer)!;
     const indexSource = globalIndexSourceLayer(layer)!;
@@ -1249,11 +1290,14 @@ function storedDimension(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }, saved: SavedDiagramLayout) {
+export function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }, saved: SavedDiagramLayout) {
   const nodeLayouts = new Map(saved.nodes.map((item) => [item.id, item]));
+  // 插入新阶段后，从该阶段起重新排布；保留此前节点的手动位置。
+  const insertedStageY = Math.min(...graph.nodes.filter(item => !item.parentId && !nodeLayouts.has(item.id)).map(item => item.position.y));
   const nodes = graph.nodes.map((item) => {
     const layout = nodeLayouts.get(item.id);
     if (!layout) return item;
+    if (!item.parentId && item.position.y >= insertedStageY) return item;
     return {
       ...item,
       position: { x: layout.x, y: layout.y },
@@ -1262,7 +1306,7 @@ function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }
   });
   const baselineEdges = new Map(graph.edges.map((item) => [item.id, item]));
   const nodeIds = new Set(nodes.map((item) => item.id));
-  const edges = saved.edges
+  const edges: EditableEdge[] = saved.edges
     .filter((item) => nodeIds.has(item.source) && nodeIds.has(item.target))
     .map((item) => {
       const baseline = baselineEdges.get(item.id);
@@ -1281,6 +1325,10 @@ function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }
         data: { ...baseline?.data, ...item.data },
       } satisfies EditableEdge;
     });
+  const restoredEdgeIds = new Set(edges.map(item => item.id));
+  for (const edge of graph.edges) {
+    if (!restoredEdgeIds.has(edge.id) && (!nodeLayouts.has(edge.source) || !nodeLayouts.has(edge.target))) edges.push(edge);
+  }
   return { nodes, edges };
 }
 
@@ -1358,7 +1406,13 @@ function DiagramCanvas({ layer }: { layer: number }) {
     // [OM-FREEPLAY] 用户要求能自行微调；显式保存到浏览器本机，避免刷新后丢失，同时不改文章事实源。
     try {
       const raw = window.localStorage.getItem(storageKey);
-      if (raw) graph = applySavedLayout(initialGraph, JSON.parse(raw) as SavedDiagramLayout);
+      if (raw) {
+        const saved = JSON.parse(raw) as SavedDiagramLayout;
+        // 保存时的实测高度也是布局基线，避免水合后再次累加同一高度差。
+        const sizedGraph = buildGraph(layer, new Map(saved.nodes.filter(item => item.height).map(item => [item.id, item.height!])));
+        measuredLayoutRef.current = sizedGraph;
+        graph = applySavedLayout(sizedGraph, saved);
+      }
     } catch {
       window.localStorage.removeItem(storageKey);
     }
