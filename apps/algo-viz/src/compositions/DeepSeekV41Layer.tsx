@@ -35,6 +35,7 @@ type NodeKind =
   | "projection-q"
   | "projection-kv"
   | "swa-window"
+  | "swa-output"
   | "compressor"
   | "indexer"
   | "global-select"
@@ -502,10 +503,9 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   if (kind === "swa-window") {
     return <div style={{ ...panel, borderColor: COLORS.green }}>
       <Handle id="projected-kv" type="target" position={Position.Top} style={{ ...handle, left: mode === "swa" ? "50%" : "90%" }} />
-      <Handle id="local-window" type="source" position={Position.Bottom} style={handle} />
       <Title>Layer {layer} 本地 SWA cache · 本层独立拥有，<MathFormula tex="t" /> 是当前 token 行号</Title>
       <div style={{ padding: 10, display: "grid", gap: 8, minWidth: 0 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 20px .9fr", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 20px .9fr", alignItems: "start", gap: 8, minWidth: 0 }}>
         <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}><strong>完整 KV 潜向量矩阵</strong><MathFormula tex={`U_{${layer}}\\in\\mathbb{R}^{N\\times512}`} /></div>
           <MatrixBracket layer={layer} rows={[
@@ -519,9 +519,8 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
             { row: "t+1" },
             { row: "N" },
           ]} compact />
-          <span style={{ color: COLORS.amber, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /> = 虚线标出的连续行</span>
         </div>
-        <Arrow />
+        <span />
         <div style={{ minWidth: 0, display: "grid", gap: 8 }}>
           <div data-window-start style={{ minWidth: 0, width: "fit-content", maxWidth: "100%", boxSizing: "border-box", justifySelf: "center", border: `1.5px solid ${COLORS.amber}`, borderRadius: 8, padding: 6, background: COLORS.amberSoft, display: "grid", gap: 4, fontSize: 11, lineHeight: 1.2 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 5 }}><strong>窗口起点 r</strong><span style={{ fontSize: 8.5 }}><MathFormula tex="\min(128,t)\times512" /></span></div>
@@ -542,6 +541,15 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         </div>
       </div>
       </div>
+      <div data-window-extraction style={{ position: "absolute", left: 10, top: 371, width: "calc((100% - 56px) * .653846)", display: "grid", justifyItems: "center", gap: 1, color: COLORS.amber, fontSize: 11 }}><span>取出虚线内第 r～t 行 · 保留全部 512 列</span><Operator tex="\downarrow" /></div>
+    </div>;
+  }
+
+  if (kind === "swa-output") {
+    return <div data-swa-result style={{ ...panel, borderColor: COLORS.amber, background: COLORS.greenSoft, padding: 9, display: "grid", gap: 6 }}>
+      <Handle id="local-window" type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /><span style={{ fontSize: 10 }}><MathFormula tex="\min(128,t)\times512" /></span></div>
+      <span style={{ fontSize: 11, color: COLORS.green }}>窗口 KV · 送往下方 KV 拼接</span>
     </div>;
   }
 
@@ -922,6 +930,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("output", "output", layer, mode, 610, outputY, 380, tensorHeight),
   ];
   nodes.push(
+    { ...node("swa-result", "swa-output", layer, mode, 10, 414, ((hasGlobal ? 780 : 900) - 56) * 1.7 / 2.6, 82), parentId: "swa-window", extent: "parent" },
     structureNode({ id: "q-x", parentId: "q", layer, mode, x: 28, y: 70, width: 200, height: 190, title: "输入矩阵", tex: `X_{${layer}}\\in\\mathbb R^{N\\times5120}`, matrixRows: [`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`], tone: "blue" }),
     structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 236, y: 143, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
     structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 280, y: 90, width: 230, height: 140, title: "5120 × 1280 · 列向量", tex: `W_{${layer}}^{Q\\downarrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\downarrow}`, `\\mathbf w_{${layer},2}^{Q\\downarrow}`, "\\cdots", `\\mathbf w_{${layer},1280}^{Q\\downarrow}`], tone: "amber" }),
@@ -990,7 +999,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     mathEdge("norm-kv", "norm1", "kv", `X_{${layer}}`, { sourceHandle: "local-kv" }),
     mathEdge("q-heads", "q", "heads", `\\mathbf q_{${layer},h,t}`, { sourceHandle: "port-bottom", targetHandle: "query" }),
     mathEdge("kv-swa", "kv", "swa-window", `U_{${layer}}\\in\\mathbb{R}^{N\\times512}`, { sourceHandle: "swa", targetHandle: "projected-kv" }),
-    mathEdge("swa-merge", "swa-window", "kv-merge", `U_{${layer},t}^{\\mathrm{SWA}}`, { sourceHandle: "local-window", targetHandle: "local" }),
+    mathEdge("swa-merge", "swa-result", "kv-merge", `U_{${layer},t}^{\\mathrm{SWA}}`, { sourceHandle: "local-window", targetHandle: "local" }),
     mathEdge("merge-heads", "kv-merge", "heads", `\\mathrm{KV}_{${layer},t}`, { sourceHandle: "kv", targetHandle: "kv" }),
     makeEdge("heads-concat", "heads", "concat"),
     mathEdge("concat-add1", "concat", "add1", `O_{${layer}}`),
