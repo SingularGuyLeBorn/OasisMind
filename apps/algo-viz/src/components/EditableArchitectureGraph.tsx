@@ -1,4 +1,4 @@
-import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
+import React, { createContext, memo, useContext, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import katex from "katex";
 import {
   BaseEdge,
@@ -670,6 +670,21 @@ function EditableOrthogonalEdgeView({
   const flowNodes = useNodes<Node>();
   const flowEdges = useEdges<EditableEdge>();
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
+  const [labelSize, setLabelSize] = useState({ width: 0, height: 0 });
+  const labelMaskId = `edge-label-${useId().replace(/:/g, "")}`;
+  useEffect(() => {
+    const label = labelRef.current;
+    if (!label) return;
+    const measure = () => setLabelSize(current => {
+      const width = label.offsetWidth, height = label.offsetHeight;
+      return current.width === width && current.height === height ? current : { width, height };
+    });
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(label);
+    return () => observer.disconnect();
+  }, [data?.labelTex]);
   const history = useContext(EditHistoryContext);
   const anchorPoint = (nodeId: string, anchor: BoundaryAnchor | undefined, fallback: XYPosition, handleSide: Position) => {
     const node = getInternalNode(nodeId);
@@ -692,6 +707,12 @@ function EditableOrthogonalEdgeView({
   const points = routes.get(id) ?? automaticOrthogonalPoints(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, []);
   const path = pathFromPoints(points);
   const labelCenter = data?.labelPosition === undefined ? longestSegmentCenter(points) : labelPointOnPath(points, data.labelPosition);
+  const maskBounds = {
+    x: Math.min(...points.map(point => point.x)) - labelSize.width,
+    y: Math.min(...points.map(point => point.y)) - labelSize.height,
+    width: Math.max(...points.map(point => point.x)) - Math.min(...points.map(point => point.x)) + labelSize.width * 2,
+    height: Math.max(...points.map(point => point.y)) - Math.min(...points.map(point => point.y)) + labelSize.height * 2,
+  };
   const color = data?.color ?? String(style?.stroke ?? "#37685a");
   useEffect(() => {
     if (!selected) return;
@@ -801,6 +822,12 @@ function EditableOrthogonalEdgeView({
   };
 
   return <>
+    {data?.labelTex && <defs>
+      <mask id={labelMaskId} maskUnits="userSpaceOnUse" {...maskBounds}>
+        <rect {...maskBounds} fill="white" />
+        <rect data-edge-label-gap={id} x={labelCenter.x - labelSize.width / 2} y={labelCenter.y - labelSize.height / 2} width={labelSize.width} height={labelSize.height} fill="black" />
+      </mask>
+    </defs>}
     <BaseEdge
       id={id}
       path={path}
@@ -809,6 +836,7 @@ function EditableOrthogonalEdgeView({
       style={{
         ...style,
         stroke: color,
+        mask: data?.labelTex && labelSize.width ? `url(#${labelMaskId})` : undefined,
         strokeWidth: selected ? 3.4 : Number(style?.strokeWidth ?? 2.2),
       }}
     />
@@ -826,6 +854,7 @@ function EditableOrthogonalEdgeView({
       ><span style={{ display: "block", width: 10, height: 10, borderRadius: "50%", border: "2px solid #fffefa", background: color, pointerEvents: "none" }} /></button>)}
       {data?.labelTex && (
         <div
+          ref={labelRef}
           className="nodrag nopan"
           data-edge-label={id}
           role="button"
