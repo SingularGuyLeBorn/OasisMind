@@ -824,9 +824,11 @@ function EditableOrthogonalEdgeView({
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelCenter.x}px,${labelCenter.y}px)`,
+            // 选中连线会升至 1000 层；标签必须高于线与端点，底色也不能透出线条。
+            zIndex: 1002,
             padding: "3px 7px",
             borderRadius: 5,
-            background: "rgba(247,245,240,.96)",
+            background: "#f7f5f0",
             color: "#716d63",
             fontSize: 12,
             fontWeight: 700,
