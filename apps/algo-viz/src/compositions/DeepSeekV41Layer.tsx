@@ -3,19 +3,26 @@ import katex from "katex";
 import {
   addEdge,
   Background,
+  ConnectionMode,
   Controls,
   Handle,
   MarkerType,
-  NodeResizer,
   Position,
   ReactFlow,
+  reconnectEdge,
   useEdgesState,
   useNodesState,
   type Connection,
-  type Edge,
   type Node,
   type NodeProps,
 } from "@xyflow/react";
+import {
+  EditableOrthogonalEdge,
+  EightConnectionPorts,
+  EightResizeHandles,
+  type EditableEdge,
+  type EditableEdgeData,
+} from "../components/EditableArchitectureGraph";
 
 type LayerMode = "swa" | "full" | "reindex" | "reuse";
 type NodeKind =
@@ -41,9 +48,22 @@ type NodeKind =
   | "moe-sum"
   | "moe-output"
   | "add2"
-  | "output";
+  | "output"
+  | "structure"
+  | "structure-group"
+  | "structure-operator";
 
-type DiagramData = { kind: NodeKind; layer: number; mode: LayerMode };
+type DiagramTone = "neutral" | "green" | "amber" | "blue";
+type DiagramData = {
+  kind: NodeKind;
+  layer: number;
+  mode: LayerMode;
+  title?: string;
+  tex?: string;
+  subtitle?: string;
+  tone?: DiagramTone;
+  matrixRows?: string[];
+};
 type DiagramNode = Node<DiagramData>;
 type Props = { initialLayer?: number };
 
@@ -113,7 +133,8 @@ function Box({ children, tone = "neutral" }: { children: ReactNode; tone?: "neut
 }
 
 function Arrow({ vertical = false }: { vertical?: boolean }) {
-  return <span aria-hidden style={{ color: COLORS.faint, fontWeight: 900, textAlign: "center" }}>{vertical ? "↓" : "→"}</span>;
+  if (vertical) return <span aria-hidden style={{ width: 2, height: 12, justifySelf: "center", borderRadius: 2, background: COLORS.faint }} />;
+  return <span aria-hidden style={{ color: COLORS.faint, fontWeight: 900, textAlign: "center" }}>→</span>;
 }
 
 function Operator({ tex }: { tex: string }) {
@@ -179,27 +200,8 @@ function Matrix({ tex, shape, rowTex, tone = "blue" }: { tex: string; shape: str
 function QueryProjection({ layer }: { layer: number }) {
   return (
     <div style={panel}>
-      <Handle type="target" position={Position.Top} style={handle} />
-      <Handle id="output" type="source" position={Position.Left} style={handle} />
       <Title>Query 两级投影 · Layer {layer}</Title>
-      <div style={{ padding: 10, display: "grid", gap: 7 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}>
-          <Box tone="blue"><MathFormula tex={`X_{${layer}}`} /><br /><MathFormula tex="N\times5120" /></Box>
-          <Operator tex="\times" />
-          <Box tone="blue"><MathFormula tex={`W_{${layer}}^{Q\\downarrow}`} /><br /><MathFormula tex="5120\times1280" /></Box>
-        </div>
-        <Arrow vertical />
-        <Box tone="blue"><MathFormula tex={`Q_{${layer}}^r=X_{${layer}}W_{${layer}}^{Q\\downarrow}\\in\\mathbb{R}^{N\\times1280}`} /></Box>
-        <Arrow vertical />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1fr", gap: 5, alignItems: "center" }}>
-          <Box><MathFormula tex={`Q_{${layer}}^r`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^{Q\\uparrow}\\in\\mathbb{R}^{1280\\times(64\\cdot512)}`} /></Box>
-        </div>
-        <Arrow vertical />
-        <Box tone="blue"><strong>第二次投影输出 · 二维矩阵</strong><br /><MathFormula tex={`\\widetilde Q_{${layer}}=Q_{${layer}}^rW_{${layer}}^{Q\\uparrow}\\in\\mathbb{R}^{N\\times(64\\cdot512)}`} /></Box>
-        <Arrow vertical />
-        <Box tone="blue"><strong>把最后一维重排成 64 个 head</strong><br /><MathFormula tex={`Q_{${layer}}=\\operatorname{reshape}_{64\\times512}(\\widetilde Q_{${layer}})\\in\\mathbb{R}^{N\\times64\\times512}`} /></Box>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 36px 1fr", gap: 5, alignItems: "center" }}><Box><MathFormula tex={`Q_{${layer},1}\\in\\mathbb{R}^{N\\times512}`} /></Box><Box><MathFormula tex={`Q_{${layer},2}\\in\\mathbb{R}^{N\\times512}`} /></Box><span style={{ textAlign: "center" }}>⋯</span><Box><MathFormula tex={`Q_{${layer},64}\\in\\mathbb{R}^{N\\times512}`} /></Box></div>
-      </div>
+      <div style={{ position: "absolute", right: 14, top: 13, color: COLORS.muted, fontSize: 10.5 }}>内部矩阵、参数、运算与向量均可单独拖动、缩放和连线</div>
     </div>
   );
 }
@@ -268,9 +270,9 @@ function Head({ index, layer }: { index: number; layer: number }) {
   const attendedKv = `\\mathrm{KV}_{${layer},t}`;
   const queryRow = `\\mathbf q_{${layer},${index},t}`;
   return (
-    <div style={{ border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
+    <div style={{ position: "relative", border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
+      <Handle id={`q-head-${index}`} type="target" position={Position.Top} style={handle} />
       <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 12 }}>Layer {layer} · Head {index}</strong>
-      <Box tone="blue"><MathFormula tex={`Q_{${layer},${index}}=[\\mathbf q_{${layer},${index},1};\\ldots;\\mathbf q_{${layer},${index},N}]\\in\\mathbb{R}^{N\\times512}`} /></Box>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.55fr", gap: 5 }}><Box><MathFormula tex={`${queryRow}\\in\\mathbb{R}^{512}`} /></Box><Box><MathFormula tex={attendedKv} /></Box></div>
       <Arrow vertical />
       <Box tone="green"><MathFormula tex={`A_{${layer},${index},t}=\\operatorname{softmax}(Z_{${layer},${index},t})`} /><br /><MathFormula tex={`Z_{${layer},${index},t}=${queryRow}\\left(${attendedKv}\\right)^{\\mathsf T}/\\sqrt{d_h}`} /></Box>
@@ -324,6 +326,40 @@ function SelectedGlobalRows({ kvSource, indexSource }: { kvSource: number; index
 function DiagramNodeContent({ data }: { data: DiagramData }) {
   const { kind, layer, mode } = data;
   const both = <><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /></>;
+
+  if (kind === "structure-group") {
+    return <div style={{ ...panel, borderColor: data.tone === "green" ? COLORS.green : COLORS.blue, boxShadow: "none", background: "rgba(255,254,250,.66)" }}>
+      <Title>{data.tex && <><MathFormula tex={data.tex} /> · </>}{data.title}</Title>
+    </div>;
+  }
+
+  if (kind === "structure-operator") {
+    return <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: COLORS.green, fontSize: 22, fontWeight: 900 }}>
+      <MathFormula tex={data.tex ?? ""} />
+    </div>;
+  }
+
+  if (kind === "structure") {
+    const tone = data.tone ?? "neutral";
+    const color = tone === "green" ? COLORS.green : tone === "amber" ? COLORS.amber : tone === "blue" ? COLORS.blue : COLORS.line;
+    const background = tone === "green" ? COLORS.greenSoft : tone === "amber" ? COLORS.amberSoft : tone === "blue" ? COLORS.blueSoft : COLORS.card;
+    return <div style={{ ...panel, borderColor: color, borderRadius: 10, background, boxShadow: "0 3px 10px rgba(42,41,36,.06)", display: "grid", gridTemplateRows: data.title ? "auto 1fr" : "1fr" }}>
+      {data.title && <div style={{ padding: "6px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 10.5, fontWeight: 800, color }}>{data.title}</div>}
+      <div style={{ padding: 7, display: "grid", placeItems: "center", gap: 4, minWidth: 0, textAlign: "center" }}>
+        {data.matrixRows?.length ? (
+          <div style={{ width: "100%", display: "grid", gap: 5 }}>
+            {data.tex && <div style={{ color, fontWeight: 800 }}><MathFormula tex={data.tex} /></div>}
+            <div style={{ display: "grid", gridTemplateColumns: "7px minmax(0,1fr) 7px", gap: 4 }}>
+              <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
+              <div style={{ display: "grid", gap: 3 }}>{data.matrixRows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 22, border: `1px solid ${COLORS.line}`, borderRadius: 5, background: COLORS.card, display: "grid", placeItems: "center", fontSize: 10 }}><MathFormula tex={row} /></div>)}</div>
+              <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
+            </div>
+          </div>
+        ) : <MathFormula tex={data.tex ?? ""} />}
+        {data.subtitle && <span style={{ color: COLORS.muted, fontSize: 10.5 }}>{data.subtitle}</span>}
+      </div>
+    </div>;
+  }
 
   if (kind === "tensor" || kind === "output") {
     const output = kind === "output";
@@ -417,7 +453,8 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
     const indexSource = globalIndexSourceLayer(layer)!;
     const writesIndex = mode === "full" || mode === "reindex";
     return <div style={{ ...panel, borderColor: COLORS.amber }}>
-      <Handle id="global-matrix" type="target" position={Position.Top} style={handle} />
+      <Handle id="query" type="target" position={Position.Top} style={{ ...handle, left: "30%", background: COLORS.blue }} />
+      <Handle id="global-matrix" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} />
       <Handle id="matrix" type="source" position={Position.Bottom} style={{ ...handle, left: "30%" }} />
       <Handle id="indices" type="source" position={Position.Bottom} style={{ ...handle, left: "70%", background: COLORS.amber }} />
       <Title>{writesIndex ? <>Top-512 行选择 · Layer {layer} Indexer</> : <>复用 Layer {indexSource} 已算出的 Top-512 行号</>}</Title>
@@ -469,7 +506,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "heads") {
-    return <div style={panel}><Handle id="q" type="target" position={Position.Left} style={handle} /><Handle id="kv" type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} 的 64 个 Head 读取同一个 <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} />；Head <MathFormula tex="h" /> 使用矩阵 <MathFormula tex={`Q_{${layer},h}`} /> 的第 <MathFormula tex="t" /> 行 <MathFormula tex={`\\mathbf q_{${layer},h,t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
+    return <div style={panel}><Handle id="kv" type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 每个 Head 直接接收自己的 <MathFormula tex={`\\mathbf q_{${layer},h,t}`} />，并读取同一个 <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
   }
 
   if (kind === "concat") {
@@ -550,20 +587,73 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 
 function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
   const compact = data.kind === "add1" || data.kind === "add2" || data.kind === "moe-sum";
+  const portColor = data.tone === "amber" ? COLORS.amber : data.tone === "blue" ? COLORS.blue : COLORS.green;
+  const minimumWidth = compact ? 60 : data.kind === "structure-operator" ? 36 : 100;
+  const minimumHeight = compact
+    ? 60
+    : data.matrixRows?.length
+      ? 180
+      : data.kind === "structure-group"
+        ? 120
+        : data.title
+          ? 96
+          : 40;
   return <div style={{ width: "100%", height: "100%", position: "relative" }}>
-    <NodeResizer isVisible={selected} minWidth={compact ? 60 : 160} minHeight={compact ? 60 : 64} color={COLORS.green} handleStyle={{ width: 10, height: 10, borderRadius: 3 }} lineStyle={{ borderWidth: 1.5 }} />
+    <EightResizeHandles visible={Boolean(selected)} minWidth={minimumWidth} minHeight={minimumHeight} />
+    <EightConnectionPorts color={portColor} />
     <DiagramNodeContent data={data} />
   </div>;
 }
 
 const NodeView = memo(DiagramNodeView);
 const nodeTypes = { diagram: NodeView };
+const edgeTypes = { "editable-orthogonal": EditableOrthogonalEdge };
 
 function node(id: string, kind: NodeKind, layer: number, mode: LayerMode, x: number, y: number, width: number, height: number): DiagramNode {
   return { id, type: "diagram", position: { x, y }, data: { kind, layer, mode }, style: { width, height }, deletable: false };
 }
 
-function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
+function structureNode({
+  id,
+  parentId,
+  layer,
+  mode,
+  x,
+  y,
+  width,
+  height,
+  kind = "structure",
+  ...data
+}: {
+  id: string;
+  parentId: string;
+  layer: number;
+  mode: LayerMode;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  kind?: "structure" | "structure-group" | "structure-operator";
+  title?: string;
+  tex?: string;
+  subtitle?: string;
+  tone?: DiagramTone;
+  matrixRows?: string[];
+}): DiagramNode {
+  return {
+    id,
+    type: "diagram",
+    parentId,
+    extent: "parent",
+    expandParent: true,
+    position: { x, y },
+    data: { kind, layer, mode, ...data },
+    style: { width, height },
+    deletable: false,
+  };
+}
+
+function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[] } {
   const mode = modeForLayer(layer);
   const hasGlobal = mode !== "swa";
   const mainGap = 70;
@@ -571,7 +661,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   const tensorHeight = 230;
   const norm1Y = inputY + tensorHeight + 55;
   const projectionY = norm1Y + 72 + mainGap;
-  const queryProjectionHeight = 600;
+  const queryProjectionHeight = 720;
   const localKvProjectionHeight = 430;
   const swaHeight = 480;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
@@ -603,8 +693,8 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   const nodes: DiagramNode[] = [
     node("input", "tensor", layer, mode, 610, inputY, 380, tensorHeight),
     node("norm1", "norm1", layer, mode, 620, norm1Y, 360, 72),
-    node("q", "projection-q", layer, mode, hasGlobal ? 20 : 160, projectionY, hasGlobal ? 500 : 520, queryProjectionHeight),
-    node("kv", "projection-kv", layer, mode, hasGlobal ? 550 : 920, projectionY, hasGlobal ? 500 : 520, localKvProjectionHeight),
+    node("q", "projection-q", layer, mode, 20, projectionY, 800, queryProjectionHeight),
+    node("kv", "projection-kv", layer, mode, 850, projectionY, 500, localKvProjectionHeight),
     node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 280, swaY, hasGlobal ? 780 : 1040, swaHeight),
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 400, mergeY, hasGlobal ? 1000 : 800, mergeHeight),
     node("heads", "heads", layer, mode, 190, headsY, 1140, headsHeight),
@@ -622,34 +712,91 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     node("add2", "add2", layer, mode, 765, add2Y, 70, 70),
     node("output", "output", layer, mode, 610, outputY, 380, tensorHeight),
   ];
+  nodes.push(
+    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 42, y: 66, width: 190, height: 100, title: "本层输入矩阵", tex: `X_{${layer}}`, subtitle: "N × 5120", tone: "blue" }),
+    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 292, y: 66, width: 220, height: 100, title: "第一次投影参数", tex: `W_{${layer}}^{Q\\downarrow}`, subtitle: "5120 × 1280" }),
+    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 548, y: 82, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 628, y: 66, width: 142, height: 100, title: "低秩 Query", tex: `Q_{${layer}}^r`, subtitle: "N × 1280", tone: "green" }),
+    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 292, y: 184, width: 220, height: 100, title: "第二次投影参数", tex: `W_{${layer}}^{Q\\uparrow}`, subtitle: "1280 × (64·512)" }),
+    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 548, y: 200, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({
+      id: "q-wide-matrix",
+      parentId: "q",
+      layer,
+      mode,
+      x: 38,
+      y: 318,
+      width: 286,
+      height: 246,
+      title: "第二次投影输出矩阵",
+      tex: `\\widetilde Q_{${layer}}\\in\\mathbb{R}^{N\\times(64\\cdot512)}`,
+      subtitle: "N × (64·512)",
+      tone: "blue",
+      matrixRows: [
+        `\\widetilde{\\mathbf q}_{${layer},1}`,
+        `\\widetilde{\\mathbf q}_{${layer},2}`,
+        "\\vdots",
+        `\\widetilde{\\mathbf q}_{${layer},N}`,
+      ],
+    }),
+    structureNode({ id: "q-equals", parentId: "q", layer, mode, x: 350, y: 410, width: 48, height: 48, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 430, y: 292, width: 340, height: 370, kind: "structure-group", title: "当前 token 的 64 个 Query 向量", tex: `Q_{${layer}}[t,:,:]\\in\\mathbb{R}^{64\\times512}`, tone: "green" }),
+    structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 18, y: 64, width: 138, height: 100, title: "Head 1", tex: `\\mathbf q_{${layer},1,t}`, subtitle: "512 维向量", tone: "green" }),
+    structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 184, y: 64, width: 138, height: 100, title: "Head 2", tex: `\\mathbf q_{${layer},2,t}`, subtitle: "512 维向量", tone: "green" }),
+    structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 119, y: 184, width: 102, height: 44, kind: "structure-operator", tex: "\\vdots" }),
+    structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 101, y: 246, width: 138, height: 100, title: "Head 64", tex: `\\mathbf q_{${layer},64,t}`, subtitle: "512 维向量", tone: "green" }),
+  );
   if (hasGlobal) {
-    nodes.push(node("compressor", "compressor", layer, mode, 1080, projectionY, 480, compressorHeight));
-    nodes.push(node("indexer", "indexer", layer, mode, 860, swaY, 700, indexerHeight));
-    nodes.push(node("global-select", "global-select", layer, mode, 860, globalSelectY, 700, globalSelectHeight));
+    nodes.push(node("compressor", "compressor", layer, mode, 1380, projectionY, 480, compressorHeight));
+    nodes.push(node("indexer", "indexer", layer, mode, 1160, swaY, 700, indexerHeight));
+    nodes.push(node("global-select", "global-select", layer, mode, 1160, globalSelectY, 700, globalSelectHeight));
   }
 
-  const makeEdge = (id: string, source: string, target: string, label?: ReactNode, extra?: Partial<Edge>): Edge => ({
-    id, source, target, type: "smoothstep",
-    markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
-    style: { stroke: COLORS.green, strokeWidth: 2.2 },
-    label, labelStyle: { fill: COLORS.muted, fontSize: 12, fontWeight: 700 },
-    labelBgStyle: { fill: COLORS.paper, fillOpacity: .96 }, labelBgPadding: [6, 3], labelBgBorderRadius: 5,
-    ...extra,
-  });
-  const mathEdge = (id: string, source: string, target: string, tex: string, extra?: Partial<Edge>) => makeEdge(id, source, target, <MathFormula tex={tex} />, extra);
-  const skipStyle = { type: "smoothstep", pathOptions: { borderRadius: 8, offset: 560 }, style: { stroke: COLORS.amber, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.amber } } as Partial<Edge>;
+  const makeEdge = (id: string, source: string, target: string, labelTex?: string, extra?: Partial<EditableEdge>): EditableEdge => {
+    const base: EditableEdge = {
+      id,
+      source,
+      target,
+      type: "editable-orthogonal",
+      reconnectable: true,
+      markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
+      style: { stroke: COLORS.green, strokeWidth: 2.2 },
+      data: { labelTex },
+    };
+    return {
+      ...base,
+      ...extra,
+      type: "editable-orthogonal",
+      style: { ...base.style, ...extra?.style },
+      data: { ...base.data, ...extra?.data },
+    };
+  };
+  const mathEdge = (id: string, source: string, target: string, tex: string, extra?: Partial<EditableEdge>) => makeEdge(id, source, target, tex, extra);
+  const inputResidualWaypoints = [{ x: -30, y: inputY + tensorHeight / 2 }, { x: -30, y: add1Y + 35 }];
+  const ffnResidualWaypoints = [{ x: 30, y: state1Y + 36 }, { x: 30, y: add2Y + 35 }];
+  const skipStyle = { style: { stroke: COLORS.amber, strokeWidth: 2.2 }, data: { color: COLORS.amber }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.amber } } as Partial<EditableEdge>;
 
-  const edges: Edge[] = [
+  const edges: EditableEdge[] = [
     makeEdge("input-norm", "input", "norm1", undefined, { sourceHandle: "main" }),
-    mathEdge("norm-q", "norm1", "q", `X_{${layer}}`),
+    mathEdge("norm-q", "norm1", "q-x", `X_{${layer}}`, { targetHandle: "port-top" }),
     mathEdge("norm-kv", "norm1", "kv", `X_{${layer}}`),
-    mathEdge("q-heads", "q", "heads", `Q_{${layer},1},Q_{${layer},2},\\ldots,Q_{${layer},64}`, { sourceHandle: "output", targetHandle: "q" }),
+    makeEdge("q-x-mul-down", "q-x", "q-mul-down", undefined, { sourceHandle: "port-right", targetHandle: "port-left" }),
+    makeEdge("q-wdown-mul-down", "q-wdown", "q-mul-down", undefined, { sourceHandle: "port-right", targetHandle: "port-top" }),
+    mathEdge("q-mul-down-low-rank", "q-mul-down", "q-low-rank", `Q_{${layer}}^r`, { sourceHandle: "port-right", targetHandle: "port-left" }),
+    makeEdge("q-low-rank-mul-up", "q-low-rank", "q-mul-up", undefined, { sourceHandle: "port-bottom-left", targetHandle: "port-right" }),
+    makeEdge("q-wup-mul-up", "q-wup", "q-mul-up", undefined, { sourceHandle: "port-right", targetHandle: "port-left" }),
+    mathEdge("q-mul-up-wide", "q-mul-up", "q-wide-matrix", `\\widetilde Q_{${layer}}`, { sourceHandle: "port-bottom", targetHandle: "port-top" }),
+    makeEdge("q-wide-equals", "q-wide-matrix", "q-equals", undefined, { sourceHandle: "port-right", targetHandle: "port-left", markerEnd: undefined }),
+    mathEdge("q-equals-head-slice", "q-equals", "q-head-slice", "\\operatorname{reshape}_{64\\times512}", { sourceHandle: "port-right", targetHandle: "port-left", markerEnd: undefined }),
+    mathEdge("q-head-1-attn", "q-head-1", "heads", `\\mathbf q_{${layer},1,t}`, { sourceHandle: "port-bottom", targetHandle: "q-head-1" }),
+    mathEdge("q-head-2-attn", "q-head-2", "heads", `\\mathbf q_{${layer},2,t}`, { sourceHandle: "port-bottom", targetHandle: "q-head-2" }),
+    mathEdge("q-head-64-attn", "q-head-64", "heads", `\\mathbf q_{${layer},64,t}`, { sourceHandle: "port-bottom", targetHandle: "q-head-64" }),
     mathEdge("kv-swa", "kv", "swa-window", `U_{${layer}}\\in\\mathbb{R}^{N\\times512}`, { sourceHandle: "swa", targetHandle: "projected-kv" }),
     mathEdge("swa-merge", "swa-window", "kv-merge", `U_{${layer},t}^{\\mathrm{SWA}}`, { sourceHandle: "local-window", targetHandle: "local" }),
     mathEdge("merge-heads", "kv-merge", "heads", `\\mathrm{KV}_{${layer},t}`, { sourceHandle: "kv", targetHandle: "kv" }),
     makeEdge("heads-concat", "heads", "concat"),
     mathEdge("concat-add1", "concat", "add1", `O_{${layer}}`),
-    mathEdge("input-add1", "input", "add1", `H_{${layer}}^{\\mathrm{in}}`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle }),
+    mathEdge("input-add1", "input", "add1", `H_{${layer}}^{\\mathrm{in}}`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle, data: { ...skipStyle.data, waypoints: inputResidualWaypoints } }),
     makeEdge("add1-state", "add1", "state1"),
     makeEdge("state-norm2", "state1", "norm2", undefined, { sourceHandle: "main" }),
     makeEdge("norm2-moe-input", "norm2", "moe-input"),
@@ -659,18 +806,19 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     makeEdge("aggregate-sum", "aggregate", "moe-sum"),
     makeEdge("sum-moe-output", "moe-sum", "moe-output"),
     mathEdge("moe-output-add2", "moe-output", "add2", `O_{${layer}}^{\\mathrm{FFN}}`),
-    mathEdge("state1-add2", "state1", "add2", `H_{${layer}}'`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle }),
+    mathEdge("state1-add2", "state1", "add2", `H_{${layer}}'`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle, data: { ...skipStyle.data, waypoints: ffnResidualWaypoints } }),
     makeEdge("add2-output", "add2", "output"),
   ];
   for (const expert of ROUTED_EXPERTS) {
-    edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", undefined, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, type: "straight", style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
-    edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, type: "straight", style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
+    edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", undefined, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
+    edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
   }
-  edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", type: "straight", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.blue } }));
+  edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.blue } }));
   if (hasGlobal) {
     const kvSource = globalKvSourceLayer(layer)!;
     const indexSource = globalIndexSourceLayer(layer)!;
     if (mode === "full") edges.push(mathEdge("norm-compressor", "norm1", "compressor", `X_{${layer}}`, { targetHandle: "input" }));
+    if (mode === "full" || mode === "reindex") edges.push(mathEdge("q-low-rank-indexer", "q-low-rank", "indexer", `Q_{${layer}}^r`, { sourceHandle: "port-right", targetHandle: "query" }));
     edges.push(mathEdge("compressor-indexer", "compressor", "indexer", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "to-indexer", targetHandle: "global-matrix" }));
     edges.push(mathEdge("indexer-matrix", "indexer", "global-select", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "matrix", targetHandle: "matrix" }));
     edges.push(mathEdge("indexer-select", "indexer", "global-select", `I_{${indexSource},t}\\in\\mathbb{N}^{K_{${indexSource},t}}`, { sourceHandle: "indices", targetHandle: "indices", style: { stroke: COLORS.amber, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.amber } }));
@@ -681,7 +829,14 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
 
 type SavedDiagramLayout = {
   nodes: Array<{ id: string; x: number; y: number; width?: number; height?: number }>;
-  edges: Array<{ id: string; source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null; type?: string }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
+    data?: EditableEdgeData;
+  }>;
 };
 
 const editorButton: CSSProperties = {
@@ -699,7 +854,7 @@ function storedDimension(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function applySavedLayout(graph: { nodes: DiagramNode[]; edges: Edge[] }, saved: SavedDiagramLayout) {
+function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }, saved: SavedDiagramLayout) {
   const nodeLayouts = new Map(saved.nodes.map((item) => [item.id, item]));
   const nodes = graph.nodes.map((item) => {
     const layout = nodeLayouts.get(item.id);
@@ -714,22 +869,31 @@ function applySavedLayout(graph: { nodes: DiagramNode[]; edges: Edge[] }, saved:
   const nodeIds = new Set(nodes.map((item) => item.id));
   const edges = saved.edges
     .filter((item) => nodeIds.has(item.source) && nodeIds.has(item.target))
-    .map((item) => baselineEdges.get(item.id) ?? ({
-      ...item,
-      type: item.type ?? "smoothstep",
-      markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
-      style: { stroke: COLORS.green, strokeWidth: 2.2 },
-    } satisfies Edge));
+    .map((item) => {
+      const baseline = baselineEdges.get(item.id);
+      return {
+        ...(baseline ?? {
+          id: item.id,
+          type: "editable-orthogonal" as const,
+          markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
+          style: { stroke: COLORS.green, strokeWidth: 2.2 },
+          reconnectable: true,
+        }),
+        ...item,
+        type: "editable-orthogonal" as const,
+        data: { ...baseline?.data, ...item.data },
+      } satisfies EditableEdge;
+    });
   return { nodes, edges };
 }
 
 function DiagramCanvas({ layer }: { layer: number }) {
   const initialGraph = useMemo(() => buildGraph(layer), [layer]);
   const [nodes, setNodes, onNodesChange] = useNodesState<DiagramNode>(initialGraph.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialGraph.edges);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<EditableEdge>(initialGraph.edges);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
-  const storageKey = `oasismind:deepseek-v41-layer-layout:v1:${layer}`;
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v2:${layer}`;
 
   useEffect(() => {
     let graph = initialGraph;
@@ -750,10 +914,17 @@ function DiagramCanvas({ layer }: { layer: number }) {
     setEdges((current) => addEdge({
       ...connection,
       id: `manual-${Date.now()}`,
-      type: "smoothstep",
+      type: "editable-orthogonal",
+      reconnectable: true,
       markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
       style: { stroke: COLORS.green, strokeWidth: 2.2 },
+      data: { labelTex: "" },
     }, current));
+    setSaveState("idle");
+  }, [setEdges]);
+
+  const onReconnect = useCallback((oldEdge: EditableEdge, connection: Connection) => {
+    setEdges((current) => reconnectEdge(oldEdge, connection, current));
     setSaveState("idle");
   }, [setEdges]);
 
@@ -766,7 +937,14 @@ function DiagramCanvas({ layer }: { layer: number }) {
         width: storedDimension(item.style?.width) ?? storedDimension(item.measured?.width),
         height: storedDimension(item.style?.height) ?? storedDimension(item.measured?.height),
       })),
-      edges: edges.map((item) => ({ id: item.id, source: item.source, target: item.target, sourceHandle: item.sourceHandle, targetHandle: item.targetHandle, type: item.type })),
+      edges: edges.map((item) => ({
+        id: item.id,
+        source: item.source,
+        target: item.target,
+        sourceHandle: item.sourceHandle,
+        targetHandle: item.targetHandle,
+        data: item.data,
+      })),
     };
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(payload));
@@ -801,24 +979,51 @@ function DiagramCanvas({ layer }: { layer: number }) {
     setSaveState("idle");
   }, [onEdgesChange]);
 
-  const handleSelectionChange = useCallback(({ edges: selectedEdges }: { edges: Edge[] }) => {
+  const handleSelectionChange = useCallback(({ edges: selectedEdges }: { edges: EditableEdge[] }) => {
     setSelectedEdgeIds(selectedEdges.map((item) => item.id));
   }, []);
+
+  const selectedEdge = selectedEdgeIds.length === 1
+    ? edges.find((item) => item.id === selectedEdgeIds[0])
+    : undefined;
+
+  const updateSelectedEdgeLabel = useCallback((labelTex: string) => {
+    if (!selectedEdge) return;
+    setEdges((current) => current.map((item) => item.id === selectedEdge.id
+      ? { ...item, data: { ...item.data, labelTex } }
+      : item));
+  }, [selectedEdge, setEdges]);
+
+  useEffect(() => {
+    setSaveState("idle");
+  }, [edges]);
 
   return <>
     <div style={{ position: "absolute", top: 12, right: 16, zIndex: 8, display: "flex", alignItems: "center", gap: 6, padding: 7, border: `1px solid ${COLORS.line}`, borderRadius: 9, background: "rgba(255,254,250,.96)", boxShadow: "0 4px 14px rgba(42,41,36,.08)" }}>
       <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
       <button type="button" onClick={deleteSelectedEdges} disabled={selectedEdgeIds.length === 0} style={{ ...editorButton, opacity: selectedEdgeIds.length ? 1 : .45, cursor: selectedEdgeIds.length ? "pointer" : "default" }}>删除选中连线</button>
       <button type="button" onClick={resetLayout} style={editorButton}>恢复自动布局</button>
-      <span style={{ color: COLORS.muted, fontSize: 10.5 }}>拖空白平移 · 拖框移动 · 选框拉角点 · 从端口拖线</span>
+      {selectedEdge && <label style={{ display: "flex", alignItems: "center", gap: 5, color: COLORS.muted, fontSize: 10.5 }}>
+        线条文字（LaTeX）
+        <input
+          className="nodrag nopan"
+          value={selectedEdge.data?.labelTex ?? ""}
+          onChange={(event) => updateSelectedEdgeLabel(event.target.value)}
+          placeholder="例如 Q_{3,1}"
+          style={{ width: 150, border: `1px solid ${COLORS.line}`, borderRadius: 6, padding: "5px 7px", background: COLORS.card, color: COLORS.ink, fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace", fontSize: 10.5 }}
+        />
+      </label>}
+      <span style={{ color: COLORS.muted, fontSize: 10.5 }}>点线后拖方块改每一段 · 拖线端点改连接 · 八点缩放</span>
     </div>
     <ReactFlow
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       onNodesChange={handleNodesChange}
       onEdgesChange={handleEdgesChange}
       onConnect={onConnect}
+      onReconnect={onReconnect}
       onSelectionChange={handleSelectionChange}
       fitView
       fitViewOptions={FIT_VIEW_OPTIONS}
@@ -829,6 +1034,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
       nodesFocusable
       edgesFocusable
       edgesReconnectable
+      connectionMode={ConnectionMode.Loose}
       elementsSelectable
       deleteKeyCode={EDIT_DELETE_KEYS}
       panOnDrag
