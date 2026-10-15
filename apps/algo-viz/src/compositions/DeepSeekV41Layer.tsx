@@ -143,7 +143,8 @@ function MathFormula({ tex, display = false }: { tex: string; display?: boolean 
     () => katex.renderToString(tex, { displayMode: display, throwOnError: false, strict: false }),
     [display, tex],
   );
-  return <span aria-label={tex} dangerouslySetInnerHTML={{ __html: html }} />;
+  // [OM-FREEPLAY] 小字号下限取 10.5px，放大矩阵元素而不缩小已有的大公式。
+  return <span aria-label={tex} style={{ fontSize: "max(1em, 10.5px)" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function Box({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "green" | "amber" | "blue" }) {
@@ -848,7 +849,7 @@ function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
         : data.title
           ? 96
           : 40;
-  return <div data-boundary-connectable={data.kind !== "structure-operator"} data-frame-selected={Boolean(selected)} style={{ width: "100%", height: "100%", position: "relative", borderRadius: compact ? "50%" : 12, outline: selected ? `3px solid ${COLORS.blue}` : undefined, outlineOffset: 2, boxShadow: selected ? "0 0 0 6px rgba(102,124,150,.16)" : undefined }}>
+  return <div data-boundary-connectable={data.kind !== "structure-operator"} data-frame-selected={Boolean(selected)} style={{ width: "100%", height: "100%", position: "relative", borderRadius: compact ? "50%" : 12 }}>
     <EightResizeHandles minWidth={minimumWidth} minHeight={minimumHeight} />
     <EightConnectionPorts color={portColor} />
     <DiagramNodeContent data={data} />
@@ -916,7 +917,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const norm1Y = inputY + tensorHeight + 55;
   const projectionY = norm1Y + 72 + mainGap;
   const queryProjectionHeight = 670;
-  const localKvProjectionHeight = 440;
+  const localKvProjectionHeight = 464;
   const swaHeight = 530;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
   const indexerHeight = 450;
@@ -927,11 +928,11 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const swaY = projectionY + sourceRowHeight + mainGap;
   const globalSelectY = swaY + indexerHeight + mainGap;
   const mergeY = hasGlobal ? Math.max(swaY + swaHeight, globalSelectY + globalSelectHeight) + mainGap : swaY + swaHeight + mainGap;
-  const mergeHeight = 200;
+  const mergeHeight = hasGlobal ? 200 : 220;
   const headsY = mergeY + mergeHeight + mainGap;
   const headsHeight = 374;
   const concatY = headsY + headsHeight + mainGap;
-  const concatHeight = 260;
+  const concatHeight = 276;
   const add1Y = concatY + concatHeight + mainGap;
   const state1Y = add1Y + 70 + mainGap;
   const norm2Y = state1Y + 72 + mainGap;
@@ -954,13 +955,13 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("kv", "projection-kv", layer, mode, 920, projectionY, 500, localKvProjectionHeight),
     node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 350, swaY, hasGlobal ? 780 : 900, swaHeight),
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 480, mergeY, hasGlobal ? 1000 : 640, mergeHeight),
-    node("heads", "heads", layer, mode, 40, headsY, 1900, headsHeight),
-    node("concat", "concat", layer, mode, 190, concatY, 1140, concatHeight),
+    node("heads", "heads", layer, mode, 40, headsY, 2160, headsHeight),
+    node("concat", "concat", layer, mode, 150, concatY, 1220, concatHeight),
     node("add1", "add1", layer, mode, 765, add1Y, 70, 70),
     node("state1", "state1", layer, mode, 620, state1Y, 360, 72),
     node("norm2", "norm2", layer, mode, 620, norm2Y, 360, 72),
     node("moe-input", "moe-input", layer, mode, 715, moeInputY, 170, 80),
-    node("router", "router", layer, mode, 380, routerY, 840, routerHeight),
+    node("router", "router", layer, mode, 320, routerY, 960, routerHeight),
     node("scores", "scores", layer, mode, 70, scoresY, EXPERTS_WIDTH, scoresHeight),
     node("experts", "experts", layer, mode, 70, expertsY, EXPERTS_WIDTH, expertsHeight),
     node("aggregate", "aggregate", layer, mode, 70, aggregateY, EXPERTS_WIDTH, 125),
@@ -988,7 +989,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
       x: 562,
       y: 274,
       width: 210,
-      height: 220,
+      height: 232,
       title: "升维输出矩阵",
       tex: `\\widetilde Q_{${layer}}\\in\\mathbb R^{N\\times(64\\cdot512)}`,
       tone: "green",
@@ -1004,7 +1005,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   if (hasGlobal) {
     nodes.push(node("compressor", "compressor", layer, mode, 1450, projectionY, 480, compressorHeight));
     nodes.push(node("indexer", "indexer", layer, mode, 1160, swaY, 700, indexerHeight));
-    nodes.push(node("global-select", "global-select", layer, mode, 1160, globalSelectY, 700, globalSelectHeight));
+    nodes.push(node("global-select", "global-select", layer, mode, 1160, globalSelectY, 820, globalSelectHeight));
   }
 
   const makeEdge = (id: string, source: string, target: string, labelTex?: string, extra?: Partial<EditableEdge>): EditableEdge => {
@@ -1409,6 +1410,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
     }}
   >
     <style>{`
+      .architecture-flow [data-boundary-connectable="true"][data-frame-selected="true"] > :last-child { border-color: ${COLORS.blue} !important; box-shadow: inset 0 0 0 1px ${COLORS.blue} !important; }
       .architecture-flow .react-flow__handle-top { top: 0; }
       .architecture-flow .react-flow__handle-bottom { bottom: 0; }
       .architecture-flow .react-flow__handle-left { left: 0; }

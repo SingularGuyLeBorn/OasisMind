@@ -841,7 +841,7 @@ function EditableOrthogonalEdgeView({
             borderRadius: 5,
             background: "transparent",
             color: "#716d63",
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 700,
             pointerEvents: "all",
             cursor: "grab",
