@@ -1,12 +1,17 @@
-import React, { memo, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import katex from "katex";
 import {
+  addEdge,
   Background,
   Controls,
   Handle,
   MarkerType,
+  NodeResizer,
   Position,
   ReactFlow,
+  useEdgesState,
+  useNodesState,
+  type Connection,
   type Edge,
   type Node,
   type NodeProps,
@@ -38,7 +43,7 @@ type NodeKind =
   | "add2"
   | "output";
 
-type DiagramData = { kind: NodeKind; layer: number; mode: LayerMode };
+type DiagramData = { kind: NodeKind; layer: number; mode: LayerMode; editing?: boolean };
 type DiagramNode = Node<DiagramData>;
 type Props = { initialLayer?: number };
 
@@ -88,6 +93,10 @@ const handle: CSSProperties = {
   border: `2px solid ${COLORS.card}`,
   background: COLORS.green,
 };
+
+const FIT_VIEW_OPTIONS = { padding: .025, minZoom: .18, maxZoom: 1 } as const;
+const EDIT_DELETE_KEYS = ["Backspace", "Delete"];
+const EDIT_PAN_BUTTONS = [1, 2];
 
 function MathFormula({ tex, display = false }: { tex: string; display?: boolean }) {
   const html = useMemo(
@@ -153,18 +162,15 @@ function Title({ children }: { children: ReactNode }) {
   return <div style={{ padding: "10px 14px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 15, fontWeight: 800 }}>{children}</div>;
 }
 
-function Matrix({ tex, shape, tone = "blue" }: { tex: string; shape: string; tone?: "blue" | "green" | "amber" }) {
+function Matrix({ tex, shape, rowTex, tone = "blue" }: { tex: string; shape: string; rowTex: (row: string) => string; tone?: "blue" | "green" | "amber" }) {
+  const rows = ["1", "2", "\\vdots", "N"];
   return (
     <div style={{ border: `1.5px solid ${tone === "green" ? COLORS.green : tone === "amber" ? COLORS.amber : COLORS.blue}`, borderRadius: 9, overflow: "hidden" }}>
       <div style={{ padding: "6px 9px", background: tone === "green" ? COLORS.greenSoft : tone === "amber" ? COLORS.amberSoft : COLORS.blueSoft, display: "flex", justifyContent: "space-between", gap: 8 }}>
         <MathFormula tex={tex} /><MathFormula tex={shape} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", fontSize: 9.5 }}>
-        {["1,1", "1,2", "\\cdots", "1,d", "\\vdots", "2,1", "2,2", "\\cdots", "2,d", "N,d"].map((index, i) => (
-          <span key={`${index}-${i}`} style={{ padding: 4, borderTop: `1px solid ${COLORS.line}`, borderLeft: i % 5 ? `1px solid ${COLORS.line}` : undefined, textAlign: "center", color: index.includes("\\") ? COLORS.faint : COLORS.ink }}>
-            <MathFormula tex={index.includes("\\") ? index : `{${tex}}_{${index}}`} />
-          </span>
-        ))}
+      <div style={{ padding: 6, display: "grid", gap: 3, borderTop: `1px solid ${COLORS.line}`, fontSize: 9.5 }}>
+        {rows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 21, display: "grid", placeItems: "center", border: row === "\\vdots" ? "none" : `1px solid ${COLORS.line}`, borderRadius: 5, background: row === "\\vdots" ? "transparent" : COLORS.card }}><MathFormula tex={row === "\\vdots" ? row : `${rowTex(row)}\\in\\mathbb{R}^{5120}`} /></div>)}
       </div>
     </div>
   );
@@ -188,6 +194,7 @@ function QueryProjection({ layer }: { layer: number }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1fr", gap: 5, alignItems: "center" }}>
           <Box><MathFormula tex={`Q_{${layer}}^r`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^{Q\\uparrow}\\in\\mathbb{R}^{1280\\times(64\\cdot512)}`} /></Box>
         </div>
+        <Box tone="blue"><MathFormula tex={`Q_{${layer}}=[Q_1;Q_2;\\ldots;Q_{64}]\\in\\mathbb{R}^{N\\times64\\times512}`} /></Box>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 36px 1fr", gap: 5, alignItems: "center" }}><Box><MathFormula tex="Q_1" /></Box><Box><MathFormula tex="Q_2" /></Box><span style={{ textAlign: "center" }}>⋯</span><Box><MathFormula tex="Q_{64}" /></Box></div>
       </div>
     </div>
@@ -208,6 +215,7 @@ function LocalKvProjection({ layer }: { layer: number }) {
         </div>
         <Arrow vertical />
         <Box tone="green"><MathFormula tex={`U_{${layer}}=\\operatorname{RoPE}(\\operatorname{RMSNorm}(X_{${layer}}W_{${layer}}^{KV,\\mathrm{SWA}}))\\in\\mathbb{R}^{N\\times512}`} /></Box>
+        <Box tone="green"><MathFormula tex={`U_{${layer}}=[\\mathbf u_{${layer},1};\\mathbf u_{${layer},2};\\ldots;\\mathbf u_{${layer},N}]`} /></Box>
         <Arrow vertical />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 36px 1fr", gap: 5, alignItems: "center" }}>
           <Box><MathFormula tex={`\\mathbf u_{${layer},1}`} /></Box><Box><MathFormula tex={`\\mathbf u_{${layer},2}`} /></Box><span style={{ textAlign: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf u_{${layer},N}`} /></Box>
@@ -231,7 +239,7 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
               minWidth: 0,
               minHeight: compact ? 20 : 22,
               display: "grid",
-              gridTemplateColumns: item.ellipsis ? "1fr" : "repeat(4,minmax(0,1fr))",
+              gridTemplateColumns: "1fr",
               alignItems: "center",
               gap: 3,
               padding: item.ellipsis ? "1px 4px" : "2px 4px",
@@ -244,7 +252,7 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
               overflow: "hidden",
             }}
           >
-            {item.ellipsis ? <MathFormula tex="\vdots" /> : ["1", "2", "\\cdots", "512"].map((column) => <span key={column} style={{ minWidth: 0 }}><MathFormula tex={`u_{${layer},${item.row},${column}}`} /></span>)}
+            <MathFormula tex={item.ellipsis ? "\\vdots" : `\\mathbf u_{${layer},${item.row}}\\in\\mathbb{R}^{512}`} />
           </div>
         ))}
       </div>
@@ -296,24 +304,23 @@ function SelectedGlobalRows({ kvSource, indexSource }: { kvSource: number; index
     { label: "M", selected: false },
   ];
   return <div style={{ display: "grid", gap: 5, minWidth: 0 }}>
-    <div style={{ paddingLeft: 52, display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 3, color: COLORS.muted, fontSize: 10, textAlign: "center" }}><span>列 1</span><span>列 2</span><span>⋯</span><span>列 512</span></div>
     <div style={{ display: "grid", gridTemplateColumns: "44px 8px minmax(0,1fr) 8px", gap: 4, minWidth: 0 }}>
       <div style={{ display: "grid", gridTemplateRows: `repeat(${rows.length},1fr)`, gap: 3, color: COLORS.muted, fontSize: 10, textAlign: "right", alignItems: "center" }}>{rows.map((row, index) => <span key={`${row.label}-${index}`} style={{ color: row.selected ? COLORS.amber : COLORS.muted, fontWeight: row.selected ? 800 : 500 }}><MathFormula tex={row.label} /></span>)}</div>
       <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
-      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>{rows.map((row, rowIndex) => <div key={`${row.label}-values-${rowIndex}`} style={{ minHeight: 28, display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", alignItems: "center", gap: 3, padding: "2px 4px", border: row.selected ? `1.5px solid ${COLORS.green}` : "1px solid transparent", borderRadius: 5, background: row.selected ? COLORS.greenSoft : "transparent", textAlign: "center", fontSize: 9.5 }}>{row.ellipsis ? <span style={{ gridColumn: "1 / -1" }}><MathFormula tex="\\vdots" /></span> : ["1", "2", "\\cdots", "512"].map((column) => <span key={column}><MathFormula tex={`g_{${kvSource},${row.label},${column}}`} /></span>)}</div>)}</div>
+      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>{rows.map((row, rowIndex) => <div key={`${row.label}-values-${rowIndex}`} style={{ minHeight: 28, display: "grid", placeItems: "center", padding: "2px 4px", border: row.selected ? `1.5px solid ${COLORS.green}` : "1px solid transparent", borderRadius: 5, background: row.selected ? COLORS.greenSoft : "transparent", textAlign: "center", fontSize: 9.5 }}>{row.ellipsis ? <MathFormula tex="\\vdots" /> : <MathFormula tex={`\\mathbf g_{${kvSource},${row.label}}\\in\\mathbb{R}^{512}`} />}</div>)}</div>
       <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
     </div>
-    <div style={{ paddingLeft: 52, color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}>绿色高亮行 = 橙色行号指定的整行；四列仅为示意，实际保留 512 列</div>
+    <div style={{ paddingLeft: 52, color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}>绿色高亮框 = 被行号选中的整条 512 维行向量</div>
   </div>;
 }
 
-function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
+function DiagramNodeContent({ data }: { data: DiagramData }) {
   const { kind, layer, mode } = data;
   const both = <><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /></>;
 
   if (kind === "tensor" || kind === "output") {
     const output = kind === "output";
-    return <div style={panel}>{output ? both : <><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /></>}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}=H_{${layer}}'+O_{${layer}}^{\\mathrm{FFN}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape="N\times5120" tone={output ? "green" : "blue"} /></div></div>;
+    return <div style={panel}>{output ? both : <><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /></>}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}=H_{${layer}}'+O_{${layer}}^{\\mathrm{FFN}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape="N\times5120" rowTex={(row) => output ? `\\mathbf h_{${layer},${row}}^{\\mathrm{out}}` : `\\mathbf h_{${layer},${row}}^{\\mathrm{in}}`} tone={output ? "green" : "blue"} /></div></div>;
   }
 
   if (kind === "norm1" || kind === "norm2") {
@@ -392,7 +399,7 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
             <Box tone="green"><MathFormula tex={`\\mathbf g_i=\\operatorname{RMSNorm}(\\boldsymbol\\alpha_{i,1}\\odot\\mathbf v_{2i-1}+\\boldsymbol\\alpha_{i,2}\\odot\\mathbf v_{2i})\\in\\mathbb{R}^{512}`} /></Box>
           </div> : <Box tone="amber"><strong>压缩比为 1，不做行池化</strong><br /><MathFormula tex={`\\mathbf g_i=\\operatorname{RMSNorm}(\\mathbf v_i)`} /></Box>}
         </> : <Box tone="blue"><strong>本层不重新计算</strong><br />直接读取源层输出矩阵</Box>}
-        <Box tone="green"><strong>共享全局 KV 矩阵</strong><br /><MathFormula tex={`G_{${kvSource}}\\in\\mathbb{R}^{M\\times512},\\quad M=\\lfloor N/${ratio}\\rfloor`} /></Box>
+        <Box tone="green"><strong>共享全局 KV 矩阵</strong><br /><MathFormula tex={`G_{${kvSource}}=[\\mathbf g_{${kvSource},1};\\mathbf g_{${kvSource},2};\\ldots;\\mathbf g_{${kvSource},M}]\\in\\mathbb{R}^{M\\times512}`} /><br /><MathFormula tex={`M=\\lfloor N/${ratio}\\rfloor`} /></Box>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 5 }}><Box><MathFormula tex={`\\mathbf g_{${kvSource},1}`} /></Box><Box><MathFormula tex={`\\mathbf g_{${kvSource},2}`} /></Box><span style={{ display: "grid", placeItems: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf g_{${kvSource},M}`} /></Box></div>
       </div>
     </div>;
@@ -534,11 +541,19 @@ function DiagramNodeView({ data }: NodeProps<DiagramNode>) {
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
 }
 
+function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
+  const compact = data.kind === "add1" || data.kind === "add2" || data.kind === "moe-sum";
+  return <div style={{ width: "100%", height: "100%", position: "relative" }}>
+    {data.editing && <NodeResizer isVisible={selected} minWidth={compact ? 60 : 160} minHeight={compact ? 60 : 64} color={COLORS.green} handleStyle={{ width: 10, height: 10, borderRadius: 3 }} lineStyle={{ borderWidth: 1.5 }} />}
+    <DiagramNodeContent data={data} />
+  </div>;
+}
+
 const NodeView = memo(DiagramNodeView);
 const nodeTypes = { diagram: NodeView };
 
 function node(id: string, kind: NodeKind, layer: number, mode: LayerMode, x: number, y: number, width: number, height: number): DiagramNode {
-  return { id, type: "diagram", position: { x, y }, data: { kind, layer, mode }, style: { width, height }, draggable: false, selectable: false };
+  return { id, type: "diagram", position: { x, y }, data: { kind, layer, mode }, style: { width, height }, deletable: false };
 }
 
 function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
@@ -546,9 +561,10 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   const hasGlobal = mode !== "swa";
   const mainGap = 70;
   const inputY = 0;
-  const norm1Y = 235;
-  const projectionY = 375;
-  const projectionHeight = 330;
+  const tensorHeight = 230;
+  const norm1Y = inputY + tensorHeight + 55;
+  const projectionY = norm1Y + 72 + mainGap;
+  const projectionHeight = 430;
   const swaHeight = 480;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
   const indexerHeight = 450;
@@ -575,7 +591,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   const add2Y = moeOutputY + 72 + mainGap;
   const outputY = add2Y + 70 + mainGap;
   const nodes: DiagramNode[] = [
-    node("input", "tensor", layer, mode, 610, inputY, 380, 180),
+    node("input", "tensor", layer, mode, 610, inputY, 380, tensorHeight),
     node("norm1", "norm1", layer, mode, 620, norm1Y, 360, 72),
     node("q", "projection-q", layer, mode, hasGlobal ? 40 : 160, projectionY, hasGlobal ? 440 : 520, projectionHeight),
     node("kv", "projection-kv", layer, mode, hasGlobal ? 540 : 920, projectionY, hasGlobal ? 480 : 520, projectionHeight),
@@ -594,7 +610,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
     node("moe-sum", "moe-sum", layer, mode, 765, moeSumY, 70, 70),
     node("moe-output", "moe-output", layer, mode, 620, moeOutputY, 360, 72),
     node("add2", "add2", layer, mode, 765, add2Y, 70, 70),
-    node("output", "output", layer, mode, 610, outputY, 380, 180),
+    node("output", "output", layer, mode, 610, outputY, 380, tensorHeight),
   ];
   if (hasGlobal) {
     nodes.push(node("compressor", "compressor", layer, mode, 1080, projectionY, 480, compressorHeight));
@@ -653,15 +669,188 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: Edge[] } {
   return { nodes, edges };
 }
 
+type SavedDiagramLayout = {
+  nodes: Array<{ id: string; x: number; y: number; width?: number; height?: number }>;
+  edges: Array<{ id: string; source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null; type?: string }>;
+};
+
+const editorButton: CSSProperties = {
+  border: `1px solid ${COLORS.line}`,
+  borderRadius: 7,
+  background: COLORS.card,
+  color: COLORS.ink,
+  padding: "6px 9px",
+  fontSize: 11,
+  fontWeight: 750,
+  cursor: "pointer",
+};
+
+function storedDimension(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function applySavedLayout(graph: { nodes: DiagramNode[]; edges: Edge[] }, saved: SavedDiagramLayout) {
+  const nodeLayouts = new Map(saved.nodes.map((item) => [item.id, item]));
+  const nodes = graph.nodes.map((item) => {
+    const layout = nodeLayouts.get(item.id);
+    if (!layout) return item;
+    return {
+      ...item,
+      position: { x: layout.x, y: layout.y },
+      style: { ...item.style, ...(layout.width ? { width: layout.width } : {}), ...(layout.height ? { height: layout.height } : {}) },
+    };
+  });
+  const baselineEdges = new Map(graph.edges.map((item) => [item.id, item]));
+  const nodeIds = new Set(nodes.map((item) => item.id));
+  const edges = saved.edges
+    .filter((item) => nodeIds.has(item.source) && nodeIds.has(item.target))
+    .map((item) => baselineEdges.get(item.id) ?? ({
+      ...item,
+      type: item.type ?? "smoothstep",
+      markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
+      style: { stroke: COLORS.green, strokeWidth: 2.2 },
+    } satisfies Edge));
+  return { nodes, edges };
+}
+
+function DiagramCanvas({ layer }: { layer: number }) {
+  const initialGraph = useMemo(() => buildGraph(layer), [layer]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<DiagramNode>(initialGraph.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialGraph.edges);
+  const [editing, setEditing] = useState(false);
+  const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
+  const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v1:${layer}`;
+
+  useEffect(() => {
+    let graph = initialGraph;
+    // [OM-FREEPLAY] 用户要求能自行微调；显式保存到浏览器本机，避免刷新后丢失，同时不改文章事实源。
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) graph = applySavedLayout(initialGraph, JSON.parse(raw) as SavedDiagramLayout);
+    } catch {
+      window.localStorage.removeItem(storageKey);
+    }
+    setNodes(graph.nodes);
+    setEdges(graph.edges);
+    setSelectedEdgeIds([]);
+    setSaveState("idle");
+  }, [initialGraph, storageKey]);
+
+  useEffect(() => {
+    setNodes((current) => current.map((item) => ({ ...item, data: { ...item.data, editing }, selected: editing ? item.selected : false })));
+    if (!editing) setSelectedEdgeIds([]);
+  }, [editing]);
+
+  const onConnect = useCallback((connection: Connection) => {
+    setEdges((current) => addEdge({
+      ...connection,
+      id: `manual-${Date.now()}`,
+      type: "smoothstep",
+      markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
+      style: { stroke: COLORS.green, strokeWidth: 2.2 },
+    }, current));
+    setSaveState("idle");
+  }, [setEdges]);
+
+  const saveLayout = useCallback(() => {
+    const payload: SavedDiagramLayout = {
+      nodes: nodes.map((item) => ({
+        id: item.id,
+        x: item.position.x,
+        y: item.position.y,
+        width: storedDimension(item.style?.width) ?? storedDimension(item.measured?.width),
+        height: storedDimension(item.style?.height) ?? storedDimension(item.measured?.height),
+      })),
+      edges: edges.map((item) => ({ id: item.id, source: item.source, target: item.target, sourceHandle: item.sourceHandle, targetHandle: item.targetHandle, type: item.type })),
+    };
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(payload));
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+    }
+  }, [edges, nodes, storageKey]);
+
+  const resetLayout = useCallback(() => {
+    window.localStorage.removeItem(storageKey);
+    setNodes(initialGraph.nodes.map((item) => ({ ...item, data: { ...item.data, editing } })));
+    setEdges(initialGraph.edges);
+    setSelectedEdgeIds([]);
+    setSaveState("idle");
+  }, [editing, initialGraph, setEdges, setNodes, storageKey]);
+
+  const deleteSelectedEdges = useCallback(() => {
+    const selected = new Set(selectedEdgeIds);
+    setEdges((current) => current.filter((item) => !selected.has(item.id)));
+    setSelectedEdgeIds([]);
+    setSaveState("idle");
+  }, [selectedEdgeIds, setEdges]);
+
+  const handleNodesChange = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
+    onNodesChange(changes);
+    if (editing) setSaveState("idle");
+  }, [editing, onNodesChange]);
+
+  const handleEdgesChange = useCallback((changes: Parameters<typeof onEdgesChange>[0]) => {
+    onEdgesChange(changes);
+    if (editing) setSaveState("idle");
+  }, [editing, onEdgesChange]);
+
+  const handleSelectionChange = useCallback(({ edges: selectedEdges }: { edges: Edge[] }) => {
+    setSelectedEdgeIds(selectedEdges.map((item) => item.id));
+  }, []);
+
+  return <>
+    <div style={{ position: "absolute", top: 12, right: 16, zIndex: 8, display: "flex", alignItems: "center", gap: 6, padding: 7, border: `1px solid ${COLORS.line}`, borderRadius: 9, background: "rgba(255,254,250,.96)", boxShadow: "0 4px 14px rgba(42,41,36,.08)" }}>
+      <button type="button" onClick={() => setEditing((value) => !value)} style={{ ...editorButton, borderColor: editing ? COLORS.green : COLORS.line, background: editing ? COLORS.greenSoft : COLORS.card, color: editing ? COLORS.green : COLORS.ink }}>{editing ? "结束编辑" : "编辑布局"}</button>
+      {editing && <>
+        <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
+        <button type="button" onClick={deleteSelectedEdges} disabled={selectedEdgeIds.length === 0} style={{ ...editorButton, opacity: selectedEdgeIds.length ? 1 : .45, cursor: selectedEdgeIds.length ? "pointer" : "default" }}>删除选中连线</button>
+        <button type="button" onClick={resetLayout} style={editorButton}>恢复自动布局</button>
+        <span style={{ color: COLORS.muted, fontSize: 10.5 }}>拖框 · 选框后拉角点 · 从端口拖出连线 · 右键拖动画布</span>
+      </>}
+    </div>
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      onNodesChange={handleNodesChange}
+      onEdgesChange={handleEdgesChange}
+      onConnect={onConnect}
+      onSelectionChange={handleSelectionChange}
+      fitView
+      fitViewOptions={FIT_VIEW_OPTIONS}
+      minZoom={.18}
+      maxZoom={1.5}
+      nodesDraggable={editing}
+      nodesConnectable={editing}
+      nodesFocusable={editing}
+      edgesFocusable={editing}
+      edgesReconnectable={editing}
+      elementsSelectable={editing}
+      deleteKeyCode={editing ? EDIT_DELETE_KEYS : null}
+      panOnDrag={editing ? EDIT_PAN_BUTTONS : true}
+      zoomOnScroll={false}
+      zoomOnPinch
+      zoomOnDoubleClick
+      preventScrolling={false}
+      proOptions={{ hideAttribution: true }}
+    >
+      <Background color="#d7d2c7" gap={28} size={1} />
+      <Controls showInteractive={false} position="top-left" />
+    </ReactFlow>
+  </>;
+}
+
 export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
   const [layer, setLayer] = useState(() => Math.min(40, Math.max(1, Math.round(initialLayer))));
   const mode = modeForLayer(layer);
-  const graph = useMemo(() => buildGraph(layer), [layer]);
   return <div style={{ width: "100%", height: "100%", background: COLORS.paper, fontFamily: "Inter, PingFang SC, Microsoft YaHei, system-ui, sans-serif", position: "relative" }}>
     <div style={{ position: "absolute", inset: "0 0 auto 0", zIndex: 10, minHeight: 122, padding: "18px 22px 14px", background: "rgba(247,245,240,.97)", borderBottom: `1px solid ${COLORS.line}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 12 }}><div><strong style={{ fontSize: 21 }}>DeepSeek V4.1-Flash · Layer {layer}</strong><span style={{ marginLeft: 12, color: mode === "full" ? COLORS.green : mode === "reindex" ? COLORS.amber : mode === "reuse" ? COLORS.blue : COLORS.rose, fontWeight: 800 }}>{modeLabel(mode)}</span></div><span style={{ color: COLORS.muted, fontSize: 12 }}>拖动画布 · 控件缩放</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 12 }}><div><strong style={{ fontSize: 21 }}>DeepSeek V4.1-Flash · Layer {layer}</strong><span style={{ marginLeft: 12, color: mode === "full" ? COLORS.green : mode === "reindex" ? COLORS.amber : mode === "reuse" ? COLORS.blue : COLORS.rose, fontWeight: 800 }}>{modeLabel(mode)}</span></div><span style={{ color: COLORS.muted, fontSize: 12 }}>阅读模式可平移缩放 · 编辑模式可拖框、改尺寸、增删连线</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(20,1fr)", gap: 4 }}>{Array.from({ length: 40 }, (_, i) => i + 1).map((value) => { const valueMode = modeForLayer(value); const active = value === layer; const color = valueMode === "full" ? COLORS.green : valueMode === "reindex" ? COLORS.amber : valueMode === "reuse" ? COLORS.blue : COLORS.rose; return <button key={value} type="button" onClick={() => setLayer(value)} aria-pressed={active} style={{ border: `1px solid ${active ? color : COLORS.line}`, background: active ? color : COLORS.card, color: active ? "white" : color, borderRadius: 5, padding: "4px 0", fontWeight: 750, fontSize: 10.5, cursor: "pointer" }}>{value}</button>; })}</div>
     </div>
-    <div style={{ position: "absolute", inset: "122px 0 0" }}><ReactFlow key={layer} nodes={graph.nodes} edges={graph.edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: .025, minZoom: .18, maxZoom: 1 }} minZoom={.18} maxZoom={1.5} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} panOnDrag zoomOnScroll={false} zoomOnPinch zoomOnDoubleClick preventScrolling={false} proOptions={{ hideAttribution: true }}><Background color="#d7d2c7" gap={28} size={1} /><Controls showInteractive={false} position="top-left" /></ReactFlow></div>
+    <div style={{ position: "absolute", inset: "122px 0 0" }}><DiagramCanvas key={layer} layer={layer} /></div>
   </div>;
 };
