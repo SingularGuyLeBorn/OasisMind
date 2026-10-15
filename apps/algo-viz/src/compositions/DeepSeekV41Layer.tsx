@@ -641,13 +641,16 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         <RowMatrix tex={`Y_{${layer}}`} shape="N\times5120" rows={[`\\mathbf y_{${layer},1}`, `\\mathbf y_{${layer},2}`, "\\vdots", `\\mathbf y_{${layer},N}`]} tone="blue" />
         <Operator tex="\times" />
         <div style={{ minWidth: 0, border: `1.3px solid ${COLORS.amber}`, background: COLORS.amberSoft, borderRadius: 7, padding: 7, display: "grid", gap: 6, textAlign: "center" }}>
-          <MathFormula tex={`W_{${layer}}^R`} /><MathFormula tex="5120\times384" />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}><MathFormula tex={`W_{${layer}}^R`} /><span style={{ fontSize: 10 }}><MathFormula tex="5120\times384" /></span></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .45fr 1fr", gap: 5, fontSize: 10, alignItems: "center" }}>
             {["1", "2", "\\cdots", "384"].map(expert => expert === "\\cdots" ? <MathFormula key={expert} tex={expert} /> : <div key={expert} style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "22px 2px" }}><MathFormula tex={`\\mathbf w_{${layer},${expert}}^R`} /></div>)}
           </div>
         </div>
         <Operator tex="=" />
-        <Box tone="green"><MathFormula tex={`S_{${layer}}`} /><br /><MathFormula tex="N\times384" /></Box>
+        <div style={{ position: "relative", minWidth: 0, minHeight: 64, display: "grid", placeItems: "center", padding: "18px 7px 7px", border: `1.3px solid ${COLORS.green}`, borderRadius: 7, background: COLORS.greenSoft }}>
+          <span style={{ position: "absolute", top: 5, right: 6, fontSize: 9 }}><MathFormula tex="N\times384" /></span>
+          <MathFormula tex={`S_{${layer}}`} />
+        </div>
       </div>
     </div>;
   }
