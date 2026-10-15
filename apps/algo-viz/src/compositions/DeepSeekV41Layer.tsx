@@ -67,6 +67,8 @@ type DiagramData = {
   matrixRows?: string[];
   matrixRowCells?: string[][];
   vectorCells?: string[];
+  columnVectors?: boolean;
+  matrixSelectedRow?: number;
 };
 type DiagramNode = Node<DiagramData>;
 type Props = { initialLayer?: number };
@@ -267,8 +269,8 @@ function QueryProjection({ layer }: { layer: number }) {
     <div style={panel}>
       <Title>Layer {layer} · Query</Title>
       <div style={{ position: "absolute", left: 28, top: 47, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>① 5120 → 1280</div>
-      <div style={{ position: "absolute", left: 278, top: 166, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>② 1280 → 64 × 512</div>
-      <div style={{ position: "absolute", left: 42, top: 292, color: COLORS.green, fontSize: 10.5, fontWeight: 800 }}>③ 投影输出行按 Head 分块</div>
+      <div style={{ position: "absolute", left: 28, top: 270, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>② 1280 → 64 × 512</div>
+      <div style={{ position: "absolute", left: 28, top: 560, color: COLORS.green, fontSize: 10.5, fontWeight: 800 }}>③ 高亮第 t 行，按每 512 个元素分成一个 Head</div>
     </div>
   );
 }
@@ -411,22 +413,22 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
     const background = tone === "green" ? COLORS.greenSoft : tone === "amber" ? COLORS.amberSoft : tone === "blue" ? COLORS.blueSoft : COLORS.card;
     return <div style={{ ...panel, borderColor: color, borderRadius: 10, background, boxShadow: "0 3px 10px rgba(42,41,36,.06)", display: "grid", gridTemplateRows: data.title ? "auto 1fr" : "1fr" }}>
       {data.title && <div style={{ padding: "6px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 10.5, fontWeight: 800, color }}>{data.title}</div>}
-      <div style={{ padding: 7, display: "grid", placeItems: "center", gap: 4, minWidth: 0, textAlign: "center" }}>
+      <div style={{ padding: 7, display: "grid", placeItems: "center", alignContent: "center", gap: 6, minWidth: 0, textAlign: "center" }}>
         {data.matrixRows?.length ? (
           <div style={{ width: "100%", display: "grid", gap: 5 }}>
             {data.tex && <div style={{ color, fontWeight: 800 }}><MathFormula tex={data.tex} /></div>}
             <div style={{ display: "grid", gridTemplateColumns: "7px minmax(0,1fr) 7px", gap: 4 }}>
               <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
-              <div style={{ display: "grid", gap: 3 }}>{data.matrixRows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 24, border: `1px solid ${COLORS.line}`, borderRadius: 5, background: COLORS.card, display: "grid", gridTemplateColumns: data.matrixRowCells?.[index] ? "70px minmax(0,1fr)" : "1fr", alignItems: "center", gap: 3, padding: 3, fontSize: 9.5 }}>
+              <div style={{ display: "grid", gap: 3 }}>{data.matrixRows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 18, border: `1px solid ${data.matrixSelectedRow === index ? COLORS.amber : color}`, borderRadius: 5, background: data.matrixSelectedRow === index ? COLORS.amberSoft : background, display: "grid", gridTemplateColumns: data.matrixRowCells?.[index] ? "70px minmax(0,1fr)" : "1fr", alignItems: "center", gap: 3, padding: 2, fontSize: 9.5 }}>
                 <MathFormula tex={row} />
                 {data.matrixRowCells?.[index] && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .5fr 1fr", gap: 2 }}>{data.matrixRowCells[index].map((cell, cellIndex) => cell === "\\cdots" ? <span key={`${cell}-${cellIndex}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={`${cell}-${cellIndex}`} style={{ padding: "2px 1px", border: `1px solid ${color}`, borderRadius: 3, background, textAlign: "center", overflow: "hidden" }}><MathFormula tex={cell} /></span>)}</div>}
               </div>)}</div>
               <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
             </div>
           </div>
-        ) : data.vectorCells?.length ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "minmax(48px,.7fr) minmax(0,1.8fr)", alignItems: "center", gap: 4 }}>
+        ) : data.vectorCells?.length ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: data.columnVectors ? "1fr" : "minmax(48px,.7fr) minmax(0,1.8fr)", alignItems: "center", gap: 4 }}>
           <MathFormula tex={data.tex ?? ""} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>{data.vectorCells.map((cell, index) => cell === "\\cdots" ? <span key={`${cell}-${index}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={`${cell}-${index}`} style={{ padding: "3px 2px", border: `1px solid ${color}`, borderRadius: 4, background, fontSize: 9, overflow: "hidden" }}><MathFormula tex={cell} /></span>)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>{data.vectorCells.map((cell, index) => cell === "\\cdots" ? <span key={`${cell}-${index}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={`${cell}-${index}`} style={{ minHeight: data.columnVectors ? 60 : undefined, display: "grid", placeItems: "center", padding: "3px 2px", border: `1px solid ${color}`, borderRadius: 4, background, fontSize: 9 }}><MathFormula tex={cell} /></span>)}</div>
         </div> : <MathFormula tex={data.tex ?? ""} />}
         {data.subtitle && <span style={{ color: COLORS.muted, fontSize: 10.5 }}>{data.subtitle}</span>}
       </div>
@@ -732,6 +734,8 @@ function structureNode({
   matrixRows?: string[];
   matrixRowCells?: string[][];
   vectorCells?: string[];
+  columnVectors?: boolean;
+  matrixSelectedRow?: number;
 }): DiagramNode {
   return {
     id,
@@ -754,7 +758,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const tensorHeight = 270;
   const norm1Y = inputY + tensorHeight + 55;
   const projectionY = norm1Y + 72 + mainGap;
-  const queryProjectionHeight = 720;
+  const queryProjectionHeight = 750;
   const localKvProjectionHeight = 470;
   const swaHeight = 550;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
@@ -806,34 +810,35 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("output", "output", layer, mode, 610, outputY, 380, tensorHeight),
   ];
   nodes.push(
-    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 42, y: 66, width: 190, height: 100, title: "输入行", tex: `\\mathbf x_{${layer},t}`, vectorCells: [`x_{${layer},t,1}`, `x_{${layer},t,2}`, "\\cdots", `x_{${layer},t,5120}`], tone: "blue" }),
-    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 244, y: 88, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
-    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 300, y: 66, width: 210, height: 100, title: "投影列", tex: `W_{${layer}}^{Q\\downarrow}`, vectorCells: [`\\mathbf w_{:,1}`, `\\mathbf w_{:,2}`, "\\cdots", `\\mathbf w_{:,1280}`], tone: "amber" }),
-    structureNode({ id: "q-equals-down", parentId: "q", layer, mode, x: 522, y: 88, width: 44, height: 44, kind: "structure-operator", tex: "=" }),
-    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 578, y: 66, width: 192, height: 100, title: "低秩输出行", tex: `\\mathbf q_{${layer},t}^{r}`, vectorCells: [`q_{${layer},t,1}^{r}`, `q_{${layer},t,2}^{r}`, "\\cdots", `q_{${layer},t,1280}^{r}`], tone: "green" }),
-    structureNode({ id: "q-low-rank-up", parentId: "q", layer, mode, x: 42, y: 184, width: 190, height: 100, title: "同一低秩行", tex: `\\mathbf q_{${layer},t}^{r}`, vectorCells: [`q_{${layer},t,1}^{r}`, `q_{${layer},t,2}^{r}`, "\\cdots", `q_{${layer},t,1280}^{r}`], tone: "green" }),
-    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 244, y: 206, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
-    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 300, y: 184, width: 210, height: 100, title: "投影列", tex: `W_{${layer}}^{Q\\uparrow}`, vectorCells: [`\\mathbf w_{:,1}`, `\\mathbf w_{:,2}`, "\\cdots", `\\mathbf w_{:,64\\cdot512}`], tone: "amber" }),
+    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 28, y: 70, width: 200, height: 190, title: "输入矩阵", tex: `X_{${layer}}\\in\\mathbb R^{N\\times5120}`, matrixRows: [`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`], tone: "blue" }),
+    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 236, y: 143, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 280, y: 90, width: 230, height: 140, title: "5120 × 1280 · 列向量", tex: `W_{${layer}}^{Q\\downarrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\downarrow}`, `\\mathbf w_{${layer},2}^{Q\\downarrow}`, "\\cdots", `\\mathbf w_{${layer},1280}^{Q\\downarrow}`], tone: "amber" }),
+    structureNode({ id: "q-equals-down", parentId: "q", layer, mode, x: 518, y: 143, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 562, y: 70, width: 210, height: 190, title: "低秩矩阵", tex: `Q_{${layer}}^{r}\\in\\mathbb R^{N\\times1280}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
+    structureNode({ id: "q-low-rank-up", parentId: "q", layer, mode, x: 28, y: 294, width: 200, height: 190, title: "同一低秩矩阵", tex: `Q_{${layer}}^{r}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
+    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 236, y: 360, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 280, y: 314, width: 230, height: 140, title: "1280 × (64 · 512) · 列向量", tex: `W_{${layer}}^{Q\\uparrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\uparrow}`, `\\mathbf w_{${layer},2}^{Q\\uparrow}`, "\\cdots", `\\mathbf w_{${layer},64\\cdot512}^{Q\\uparrow}`], tone: "amber" }),
+    structureNode({ id: "q-equals-up", parentId: "q", layer, mode, x: 518, y: 360, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
     structureNode({
       id: "q-wide-matrix",
       parentId: "q",
       layer,
       mode,
-      x: 38,
-      y: 350,
-      width: 286,
-      height: 126,
-      title: "第二次投影输出行",
-      tex: `\\widetilde{\\mathbf q}_{${layer},t}`,
+      x: 562,
+      y: 294,
+      width: 210,
+      height: 250,
+      title: "升维输出矩阵",
+      tex: `\\widetilde Q_{${layer}}\\in\\mathbb R^{N\\times(64\\cdot512)}`,
       tone: "green",
-      vectorCells: [`\\widetilde q_{${layer},t,1}`, `\\widetilde q_{${layer},t,2}`, "\\cdots", `\\widetilde q_{${layer},t,64\\cdot512}`],
+      matrixRows: [`\\mathbf{\\widetilde q}_{${layer},1}`, `\\mathbf{\\widetilde q}_{${layer},2}`, "\\vdots", `t\\quad\\mathbf{\\widetilde q}_{${layer},t}`, "\\vdots", `\\mathbf{\\widetilde q}_{${layer},N}`],
+      matrixSelectedRow: 3,
     }),
-    structureNode({ id: "q-equals", parentId: "q", layer, mode, x: 350, y: 388, width: 48, height: 48, kind: "structure-operator", tex: "=" }),
-    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 430, y: 318, width: 340, height: 370, kind: "structure-group", title: "64 个 Head 向量", tone: "green" }),
-    structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 18, y: 54, width: 304, height: 80, title: "Head 1", tex: `\\mathbf q_{${layer},1,t}`, vectorCells: [`q_{${layer},1,t,1}`, `q_{${layer},1,t,2}`, "\\cdots", `q_{${layer},1,t,512}`], tone: "green" }),
-    structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 18, y: 142, width: 304, height: 80, title: "Head 2", tex: `\\mathbf q_{${layer},2,t}`, vectorCells: [`q_{${layer},2,t,1}`, `q_{${layer},2,t,2}`, "\\cdots", `q_{${layer},2,t,512}`], tone: "green" }),
-    structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 119, y: 226, width: 102, height: 56, kind: "structure-operator", tex: "\\vdots" }),
-    structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 18, y: 274, width: 304, height: 80, title: "Head 64", tex: `\\mathbf q_{${layer},64,t}`, vectorCells: [`q_{${layer},64,t,1}`, `q_{${layer},64,t,2}`, "\\cdots", `q_{${layer},64,t,512}`], tone: "green" }),
+    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 28, y: 590, width: 744, height: 144, kind: "structure-group", tex: `\\mathbf{\\widetilde q}_{${layer},t}`, title: "64 个连续分块 · 每块 512 维", tone: "green" }),
+    structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 12, y: 48, width: 210, height: 80, title: "Head 1 · 元素 1–512", tex: `\\mathbf q_{${layer},1,t}`, tone: "green" }),
+    structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 234, y: 48, width: 210, height: 80, title: "Head 2 · 元素 513–1024", tex: `\\mathbf q_{${layer},2,t}`, tone: "green" }),
+    structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 451, y: 60, width: 36, height: 44, kind: "structure-operator", tex: "\\cdots" }),
+    structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 496, y: 48, width: 234, height: 80, title: "Head 64 · 元素 32257–32768", tex: `\\mathbf q_{${layer},64,t}`, tone: "green" }),
   );
   if (hasGlobal) {
     nodes.push(node("compressor", "compressor", layer, mode, 1380, projectionY, 480, compressorHeight));
@@ -1010,7 +1015,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const futureRef = useRef<DiagramSnapshot[]>([]);
   const pendingHistoryRef = useRef<DiagramSnapshot | null>(null);
   const resizeHistoryActiveRef = useRef(false);
-  const storageKey = `oasismind:deepseek-v41-layer-layout:v6:${layer}`;
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v7:${layer}`;
 
   nodesRef.current = nodes;
   edgesRef.current = edges;
