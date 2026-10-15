@@ -225,6 +225,29 @@ function pointsWithAnchoredEndpoints(
   return [{ x: sourceX, y: sourceY }, ...adjusted, { x: targetX, y: targetY }];
 }
 
+function pointsWithDirectedTarget(
+  points: XYPosition[],
+  targetX: number,
+  targetY: number,
+  targetPosition: Position,
+) {
+  const lead = 18;
+  const approach = targetPosition === Position.Top
+    ? { x: targetX, y: targetY - lead }
+    : targetPosition === Position.Bottom
+      ? { x: targetX, y: targetY + lead }
+      : targetPosition === Position.Left
+        ? { x: targetX - lead, y: targetY }
+        : { x: targetX + lead, y: targetY };
+  const body = points.slice(0, -1);
+  while (body.length > 1 && body.at(-1)?.x === targetX && body.at(-1)?.y === targetY) body.pop();
+  const previous = body.at(-1) ?? points[0];
+  const elbow = targetPosition === Position.Top || targetPosition === Position.Bottom
+    ? { x: previous.x, y: approach.y }
+    : { x: approach.x, y: previous.y };
+  return simplifyOrthogonalPoints([...body, elbow, approach, { x: targetX, y: targetY }]);
+}
+
 function pathFromPoints(points: XYPosition[]) {
   return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 }
@@ -288,6 +311,7 @@ function EditableOrthogonalEdgeView({
   sourceY,
   targetX,
   targetY,
+  targetPosition,
   source,
   target,
   markerEnd,
@@ -317,12 +341,12 @@ function EditableOrthogonalEdgeView({
       return [{ left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding }];
     });
   }, [getInternalNode, getNodes, source, sourceX, sourceY, target, targetX, targetY]);
-  const points = useMemo(
-    () => data?.waypoints?.length
+  const points = useMemo(() => {
+    const rawPoints = data?.waypoints?.length
       ? pointsWithAnchoredEndpoints(sourceX, sourceY, targetX, targetY, data.waypoints)
-      : defaultOrthogonalPoints(sourceX, sourceY, targetX, targetY, obstacles),
-    [data?.waypoints, obstacles, sourceX, sourceY, targetX, targetY],
-  );
+      : defaultOrthogonalPoints(sourceX, sourceY, targetX, targetY, obstacles);
+    return pointsWithDirectedTarget(rawPoints, targetX, targetY, targetPosition);
+  }, [data?.waypoints, obstacles, sourceX, sourceY, targetPosition, targetX, targetY]);
   const path = pathFromPoints(points);
   const labelCenter = longestSegmentCenter(points);
   const color = data?.color ?? String(style?.stroke ?? "#37685a");

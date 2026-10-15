@@ -134,8 +134,7 @@ function Box({ children, tone = "neutral" }: { children: ReactNode; tone?: "neut
 }
 
 function Arrow({ vertical = false }: { vertical?: boolean }) {
-  if (vertical) return <span aria-hidden style={{ width: 2, height: 12, justifySelf: "center", borderRadius: 2, background: COLORS.faint }} />;
-  return <span aria-hidden style={{ color: COLORS.faint, fontWeight: 900, textAlign: "center" }}>→</span>;
+  return <span aria-hidden style={vertical ? { width: 2, height: 12, justifySelf: "center" } : { minWidth: 12, minHeight: 2 }} />;
 }
 
 function Operator({ tex }: { tex: string }) {
@@ -272,7 +271,6 @@ function Head({ index, layer }: { index: number; layer: number }) {
   const queryRow = `\\mathbf q_{${layer},${index},t}`;
   return (
     <div style={{ position: "relative", border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
-      <Handle id={`q-head-${index}`} type="target" position={Position.Top} style={handle} />
       <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 12 }}>Layer {layer} · Head {index}</strong>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.55fr", gap: 5 }}><Box><MathFormula tex={`${queryRow}\\in\\mathbb{R}^{512}`} /></Box><Box><MathFormula tex={attendedKv} /></Box></div>
       <Arrow vertical />
@@ -507,7 +505,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "heads") {
-    return <div style={panel}><Handle id="kv" type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 每个 Head 直接接收自己的 <MathFormula tex={`\\mathbf q_{${layer},h,t}`} />，并读取同一个 <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
+    return <div style={panel}><Handle id="query" type="target" position={Position.Top} style={{ ...handle, left: "30%", background: COLORS.blue }} /><Handle id="kv" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 每个 Head 直接接收自己的 <MathFormula tex={`\\mathbf q_{${layer},h,t}`} />，并读取同一个 <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
   }
 
   if (kind === "concat") {
@@ -760,7 +758,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
       target,
       type: "editable-orthogonal",
       reconnectable: true,
-      markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
+      markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.green },
       style: { stroke: COLORS.green, strokeWidth: 2.2 },
       data: { labelTex },
     };
@@ -775,23 +773,13 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const mathEdge = (id: string, source: string, target: string, tex: string, extra?: Partial<EditableEdge>) => makeEdge(id, source, target, tex, extra);
   const inputResidualWaypoints = [{ x: -30, y: inputY + tensorHeight / 2 }, { x: -30, y: add1Y + 35 }];
   const ffnResidualWaypoints = [{ x: 30, y: state1Y + 36 }, { x: 30, y: add2Y + 35 }];
-  const skipStyle = { style: { stroke: COLORS.amber, strokeWidth: 2.2 }, data: { color: COLORS.amber }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.amber } } as Partial<EditableEdge>;
+  const skipStyle = { style: { stroke: COLORS.amber, strokeWidth: 2.2 }, data: { color: COLORS.amber }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.amber } } as Partial<EditableEdge>;
 
   const edges: EditableEdge[] = [
     makeEdge("input-norm", "input", "norm1", undefined, { sourceHandle: "main" }),
-    mathEdge("norm-q", "norm1", "q-x", `X_{${layer}}`, { targetHandle: "port-top" }),
+    mathEdge("norm-q", "norm1", "q", `X_{${layer}}`, { targetHandle: "port-top" }),
     mathEdge("norm-kv", "norm1", "kv", `X_{${layer}}`),
-    makeEdge("q-x-mul-down", "q-x", "q-mul-down", undefined, { sourceHandle: "port-right", targetHandle: "port-left" }),
-    makeEdge("q-wdown-mul-down", "q-wdown", "q-mul-down", undefined, { sourceHandle: "port-right", targetHandle: "port-top" }),
-    mathEdge("q-mul-down-low-rank", "q-mul-down", "q-low-rank", `Q_{${layer}}^r`, { sourceHandle: "port-right", targetHandle: "port-left" }),
-    makeEdge("q-low-rank-mul-up", "q-low-rank", "q-mul-up", undefined, { sourceHandle: "port-bottom-left", targetHandle: "port-right" }),
-    makeEdge("q-wup-mul-up", "q-wup", "q-mul-up", undefined, { sourceHandle: "port-right", targetHandle: "port-left" }),
-    mathEdge("q-mul-up-wide", "q-mul-up", "q-wide-matrix", `\\widetilde Q_{${layer}}`, { sourceHandle: "port-bottom", targetHandle: "port-top" }),
-    makeEdge("q-wide-equals", "q-wide-matrix", "q-equals", undefined, { sourceHandle: "port-right", targetHandle: "port-left", markerEnd: undefined }),
-    mathEdge("q-equals-head-slice", "q-equals", "q-head-slice", "\\operatorname{reshape}_{64\\times512}", { sourceHandle: "port-right", targetHandle: "port-left", markerEnd: undefined }),
-    mathEdge("q-head-1-attn", "q-head-1", "heads", `\\mathbf q_{${layer},1,t}`, { sourceHandle: "port-bottom", targetHandle: "q-head-1" }),
-    mathEdge("q-head-2-attn", "q-head-2", "heads", `\\mathbf q_{${layer},2,t}`, { sourceHandle: "port-bottom", targetHandle: "q-head-2" }),
-    mathEdge("q-head-64-attn", "q-head-64", "heads", `\\mathbf q_{${layer},64,t}`, { sourceHandle: "port-bottom", targetHandle: "q-head-64" }),
+    mathEdge("q-heads", "q", "heads", `\\mathbf q_{${layer},h,t}`, { sourceHandle: "port-bottom", targetHandle: "query" }),
     mathEdge("kv-swa", "kv", "swa-window", `U_{${layer}}\\in\\mathbb{R}^{N\\times512}`, { sourceHandle: "swa", targetHandle: "projected-kv" }),
     mathEdge("swa-merge", "swa-window", "kv-merge", `U_{${layer},t}^{\\mathrm{SWA}}`, { sourceHandle: "local-window", targetHandle: "local" }),
     mathEdge("merge-heads", "kv-merge", "heads", `\\mathrm{KV}_{${layer},t}`, { sourceHandle: "kv", targetHandle: "kv" }),
@@ -803,7 +791,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     makeEdge("norm2-moe-input", "norm2", "moe-input"),
     makeEdge("moe-input-router", "moe-input", "router", undefined, { sourceHandle: "router" }),
     mathEdge("router-scores", "router", "scores", `I_{${layer}}`),
-    makeEdge("moe-input-shared", "moe-input", "experts", undefined, { sourceHandle: "shared", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.blue } }),
+    makeEdge("moe-input-shared", "moe-input", "experts", undefined, { sourceHandle: "shared", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.blue } }),
     makeEdge("aggregate-sum", "aggregate", "moe-sum"),
     makeEdge("sum-moe-output", "moe-sum", "moe-output"),
     mathEdge("moe-output-add2", "moe-output", "add2", `O_{${layer}}^{\\mathrm{FFN}}`),
@@ -811,18 +799,18 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     makeEdge("add2-output", "add2", "output"),
   ];
   for (const expert of ROUTED_EXPERTS) {
-    edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", undefined, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
-    edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.amber } }));
+    edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", undefined, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
+    edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
   }
-  edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: COLORS.blue } }));
+  edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.blue } }));
   if (hasGlobal) {
     const kvSource = globalKvSourceLayer(layer)!;
     const indexSource = globalIndexSourceLayer(layer)!;
     if (mode === "full") edges.push(mathEdge("norm-compressor", "norm1", "compressor", `X_{${layer}}`, { targetHandle: "input" }));
-    if (mode === "full" || mode === "reindex") edges.push(mathEdge("q-low-rank-indexer", "q-low-rank", "indexer", `Q_{${layer}}^r`, { sourceHandle: "port-right", targetHandle: "query" }));
+    if (mode === "full" || mode === "reindex") edges.push(mathEdge("q-low-rank-indexer", "q", "indexer", `Q_{${layer}}^r`, { sourceHandle: "port-right", targetHandle: "query" }));
     edges.push(mathEdge("compressor-indexer", "compressor", "indexer", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "to-indexer", targetHandle: "global-matrix" }));
     edges.push(mathEdge("indexer-matrix", "indexer", "global-select", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "matrix", targetHandle: "matrix" }));
-    edges.push(mathEdge("indexer-select", "indexer", "global-select", `I_{${indexSource},t}\\in\\mathbb{N}^{K_{${indexSource},t}}`, { sourceHandle: "indices", targetHandle: "indices", style: { stroke: COLORS.amber, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.amber } }));
+    edges.push(mathEdge("indexer-select", "indexer", "global-select", `I_{${indexSource},t}\\in\\mathbb{N}^{K_{${indexSource},t}}`, { sourceHandle: "indices", targetHandle: "indices", style: { stroke: COLORS.amber, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.amber } }));
     edges.push(mathEdge("select-merge", "global-select", "kv-merge", `G_{${kvSource},t}^{\\mathrm{selected}}`, { sourceHandle: "selected", targetHandle: "global" }));
   }
   return { nodes, edges };
@@ -900,7 +888,7 @@ function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }
         ...(baseline ?? {
           id: item.id,
           type: "editable-orthogonal" as const,
-          markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
+          markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.green },
           style: { stroke: COLORS.green, strokeWidth: 2.2 },
           reconnectable: true,
         }),
@@ -925,7 +913,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const futureRef = useRef<DiagramSnapshot[]>([]);
   const pendingHistoryRef = useRef<DiagramSnapshot | null>(null);
   const resizeHistoryActiveRef = useRef(false);
-  const storageKey = `oasismind:deepseek-v41-layer-layout:v2:${layer}`;
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v3:${layer}`;
 
   nodesRef.current = nodes;
   edgesRef.current = edges;
@@ -999,7 +987,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
       id: `manual-${Date.now()}`,
       type: "editable-orthogonal",
       reconnectable: true,
-      markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: COLORS.green },
+      markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.green },
       style: { stroke: COLORS.green, strokeWidth: 2.2 },
       data: { labelTex: "" },
     }, current));
