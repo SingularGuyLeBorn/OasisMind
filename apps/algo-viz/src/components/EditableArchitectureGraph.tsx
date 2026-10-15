@@ -248,6 +248,29 @@ function pointsWithDirectedTarget(
   return simplifyOrthogonalPoints([...body, elbow, approach, { x: targetX, y: targetY }]);
 }
 
+function pointsWithDirectedSource(
+  points: XYPosition[],
+  sourceX: number,
+  sourceY: number,
+  sourcePosition: Position,
+) {
+  const lead = 18;
+  const departure = sourcePosition === Position.Top
+    ? { x: sourceX, y: sourceY - lead }
+    : sourcePosition === Position.Bottom
+      ? { x: sourceX, y: sourceY + lead }
+      : sourcePosition === Position.Left
+        ? { x: sourceX - lead, y: sourceY }
+        : { x: sourceX + lead, y: sourceY };
+  const body = points.slice(1);
+  while (body.length > 1 && body[0]?.x === sourceX && body[0]?.y === sourceY) body.shift();
+  const next = body[0] ?? points.at(-1) ?? departure;
+  const elbow = sourcePosition === Position.Top || sourcePosition === Position.Bottom
+    ? { x: next.x, y: departure.y }
+    : { x: departure.x, y: next.y };
+  return simplifyOrthogonalPoints([{ x: sourceX, y: sourceY }, departure, elbow, ...body]);
+}
+
 function pathFromPoints(points: XYPosition[]) {
   return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 }
@@ -312,6 +335,7 @@ function EditableOrthogonalEdgeView({
   targetX,
   targetY,
   targetPosition,
+  sourcePosition,
   source,
   target,
   markerEnd,
@@ -345,8 +369,9 @@ function EditableOrthogonalEdgeView({
     const rawPoints = data?.waypoints?.length
       ? pointsWithAnchoredEndpoints(sourceX, sourceY, targetX, targetY, data.waypoints)
       : defaultOrthogonalPoints(sourceX, sourceY, targetX, targetY, obstacles);
-    return pointsWithDirectedTarget(rawPoints, targetX, targetY, targetPosition);
-  }, [data?.waypoints, obstacles, sourceX, sourceY, targetPosition, targetX, targetY]);
+    const sourceDirected = pointsWithDirectedSource(rawPoints, sourceX, sourceY, sourcePosition);
+    return pointsWithDirectedTarget(sourceDirected, targetX, targetY, targetPosition);
+  }, [data?.waypoints, obstacles, sourcePosition, sourceX, sourceY, targetPosition, targetX, targetY]);
   const path = pathFromPoints(points);
   const labelCenter = longestSegmentCenter(points);
   const color = data?.color ?? String(style?.stroke ?? "#37685a");
