@@ -33,7 +33,7 @@ gather(matrix, indices)
 4. 独立的输出矩阵框，写清输出行数、列数和每一行的语义。
 5. 源矩阵过大时，可以展示普通首行、至少两个被选行、被选区中的省略号、最后一个被选行和普通末行；省略号不参与连接。
 
-Top-K 取行应让读者看见 `I_t=(i_{t,1},i_{t,2},\ldots,i_{t,K_t})` 与源矩阵外侧行号对应，高亮 `i_{t,1}`、`i_{t,2}`、`i_{t,K_t}` 所在的整行。最终结果可命名为 `G_t^{\mathrm{selected}}`，不要继续用代码式的 `G[I_t,:]` 充当结构。
+Top-K 取行应让读者看见 `I_{l,t}=(i_{l,t,1},i_{l,t,2},\ldots,i_{l,t,K_{l,t}})` 与源矩阵外侧行号对应，高亮 `i_{l,t,1}`、`i_{l,t,2}`、`i_{l,t,K_{l,t}}` 所在的整行。最终结果可命名为 `G_{l,t}^{\mathrm{selected}}`，不要继续用代码式的 `G_l[I_{l,t},:]` 充当结构。
 
 矩阵首次出现时同时给出整体组成式，例如 `G_l=[\mathbf g_{l,1};\mathbf g_{l,2};\ldots;\mathbf g_{l,M}]`、`U_l=[\mathbf u_{l,1};\ldots;\mathbf u_{l,N}]`。这比只写形状更能说明“大框由哪些行向量组成”。
 
@@ -42,6 +42,8 @@ Top-K 取行应让读者看见 `I_t=(i_{t,1},i_{t,2},\ldots,i_{t,K_t})` 与源�
 ## 变量、参数与阶段命名
 
 - 同一个张量全图使用同一名称。第 `l` 层归一化输出写成 `X_l` 后，下游不能省略成 `X`。
+- 大写字母用于矩阵/张量，小写粗体用于向量，普通小写用于标量。以 Query 为例：`Q_l\in\mathbb R^{N\times H\times d_h}` 是整层张量，`Q_{l,h}\in\mathbb R^{N\times d_h}` 是第 `h` 个 head 的矩阵，`\mathbf q_{l,h,t}\in\mathbb R^{d_h}` 是 token `t` 的行向量。
+- 所有层内对象都带层号；同一张图切换到 Layer 3 时应出现 `Q_{3,1}`、`\mathbf q_{3,1,t}`、`O_{3,1}`、`Y_3`、`s_3`，不能继续显示每层都一样的 `Q_1`、`Y`、`s`。
 - 新对象第一次出现时写清：它是标量、向量、矩阵还是张量；形状；由什么输入乘什么参数得到；送往哪里。
 - 参数矩阵使用独立数据框并写出形状，例如 `W_l\in\mathbb R^{d_{in}\times d_{out}}`。旁边用短句说明“每个输入行从 `d_in` 维映射到 `d_out` 维”。
 - 两个参数即使在代码中合并存储，若语义不同也应分开展示；反之，官方实现确实用一个共享潜向量投影时，不得凭习惯虚构独立 `W^K/W^V`。
@@ -52,28 +54,30 @@ Top-K 取行应让读者看见 `I_t=(i_{t,1},i_{t,2},\ldots,i_{t,K_t})` 与源�
 投影阶段至少表达：
 
 1. 输入张量 `X` 与彼此独立的 `W^Q`、`W^K`、`W^V` 运算。
-2. 生成 `Q`、`K`、`V` 张量后，在内部显示 `Q_1,Q_2,\ldots,Q_H` 等切片。
-3. 已展示的切片从自身端口分别出线：`Q_1/K_1/V_1` 进入 Head 1，`Q_2/K_2/V_2` 进入 Head 2，`Q_H/K_H/V_H` 进入 Head H。
+2. 生成 `Q_l`、`K_l`、`V_l` 张量后，在内部显示 `Q_{l,1},Q_{l,2},\ldots,Q_{l,H}` 等带层号的切片。
+3. 已展示的切片从自身端口分别出线：`Q_{l,1}/K_{l,1}/V_{l,1}` 进入 Head 1，`Q_{l,2}/K_{l,2}/V_{l,2}` 进入 Head 2，`Q_{l,H}/K_{l,H}/V_{l,H}` 进入 Head H。
 4. 一条“大框到大框”的总线不能替代上述对应关系。
 
 每个 head 内至少展示：
 
 ```tex
-Q_h,K_h,V_h
-\rightarrow S_h=\operatorname{softmax}(Q_hK_h^{\mathsf T}/\sqrt{d_k})
-\rightarrow O_h=S_hV_h
+\mathbf q_{l,h,t},K_{l,h},V_{l,h}
+\rightarrow A_{l,h,t}=\operatorname{softmax}(\mathbf q_{l,h,t}K_{l,h}^{\mathsf T}/\sqrt{d_k})
+\rightarrow \mathbf o_{l,h,t}=A_{l,h,t}V_{l,h}
 ```
 
 乘法由两个输入汇入运算关系表示；不要把孤立的 `\times` 放进和向量相同的普通矩形框。
 
-Concat 要让读者看出 `O_1,O_2,\ldots,O_H` 沿 head 维拼接后进入输出投影，不能只写一个孤立的 `Concat` 单词。
+Concat 要让读者看出 `O_{l,1},O_{l,2},\ldots,O_{l,H}` 沿 head 维拼接后进入本层输出投影 `W_l^O`，不能只写一个孤立的 `Concat` 单词。
 
 若 Query 使用两级投影，先显示低秩中间量，再拆 head：
 
 ```tex
 X_lW_l^{Q\downarrow}=Q_l^r
 \qquad
-Q_l^rW_l^{Q\uparrow}\rightarrow Q_1,Q_2,\ldots,Q_H
+Q_l^rW_l^{Q\uparrow}=\widetilde Q_l\in\mathbb R^{N\times(Hd_h)}
+\qquad
+\operatorname{reshape}(\widetilde Q_l)=Q_l\rightarrow Q_{l,1},Q_{l,2},\ldots,Q_{l,H}
 ```
 
 Indexer 若读取 `Q_l^r`，必须从这个中间量出线，或使用同色同名代理；不能凭空在 Indexer 内出现 `Q^r`。
@@ -91,7 +95,7 @@ Indexer 若读取 `Q_l^r`，必须从这个中间量出线，或使用同色同�
 2. `X_l` 乘 gate 参数矩阵，得到同形状的逐元素分数。
 3. 将连续 `R` 行的分数沿“行”方向做 Softmax。
 4. 每个候选 KV 行乘对应逐元素权重，再相加并归一化，输出一个压缩行。
-5. 在输出矩阵中展示 `g_1,g_2,\ldots,g_M`，并定义 `M` 与输入长度、压缩比的关系。
+5. 在输出矩阵中展示 `g_{l,1},g_{l,2},\ldots,g_{l,M}`，并定义 `M` 与输入长度、压缩比的关系。
 
 压缩比为 1 时必须明确写“只有投影和归一化，不做行池化，也没有 gate 分支”。不得让不存在的 gate 继续出现在图里。
 
@@ -119,22 +123,22 @@ H_l^{\mathrm{out}}=H_l'+O_l^{\mathrm{FFN}}
 
 MoE 按以下阶段画，不能合并成一个大公式框：
 
-1. `Y` 分叉：一路进入 Router，一路绕过 Router 进入共享专家。
-2. Router 计算 `s=YW^R`，再由 `I=\operatorname{TopK}(s,k)` 选出 routed experts。
-3. 独立分数区横向展示选中的 `g_i=s_i=0.xx`。分数是示例值时必须说明是示意。
+1. `Y_l` 分叉：一路进入本层 Router，一路绕过 Router 进入本层共享专家。
+2. Router 计算 `s_l=Y_lW_l^R`，再由 `I_l=\operatorname{TopK}(s_l,k)` 选出 routed experts。
+3. 独立分数区横向展示选中的 `g_{l,i}=s_{l,i}=0.xx`。分数是示例值时必须说明是示意。
 4. 每个分数框单独连接对应非共享专家。
-5. Shared 与 routed experts 横向排列。每个专家顶部都有清晰 `Y` 输入；为避免长线交叉，可以使用同色 `Y` 输入代理。
+5. Shared 与 routed experts 横向排列。每个专家顶部都有清晰 `Y_l` 输入；为避免长线交叉，可以使用同色 `Y_l` 输入代理。
 6. 专家内部展示完整 gated FFN：
 
 ```tex
-a_i=\operatorname{SiLU}(YW_i^{\mathrm{gate}})
-b_i=YW_i^{\mathrm{up}}
-c_i=a_i\odot b_i
-E_i(Y)=c_iW_i^{\mathrm{down}}
+a_{l,i}=\operatorname{SiLU}(Y_lW_{l,i}^{\mathrm{gate}})
+b_{l,i}=Y_lW_{l,i}^{\mathrm{up}}
+c_{l,i}=a_{l,i}\odot b_{l,i}
+E_{l,i}(Y_l)=c_{l,i}W_{l,i}^{\mathrm{down}}
 ```
 
-7. 每个专家底部有独立、带边框的输出向量 `E_i(Y)\in\mathbb{R}^{N\times d}`，并从该向量直接出线。
-8. Routed 输出先乘对应 `g_i`；共享专家权重按模型定义表达，不能含糊套用 routed 分数。
+7. 每个专家底部有独立、带边框的输出矩阵 `E_{l,i}(Y_l)\in\mathbb{R}^{N\times d}`，并从该矩阵直接出线；若只画当前 token 的一行，则改写为粗体小写向量并标出 `t`。
+8. Routed 输出先乘对应 `g_{l,i}`；共享专家权重按模型定义表达，不能含糊套用 routed 分数。
 9. 所有加权输出进入求和器；求和器输出 `O_l^{\mathrm{FFN}}` 后才进入残差加法器。
 
 ## 文案与颜色
