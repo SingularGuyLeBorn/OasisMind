@@ -20,7 +20,8 @@ describe("Token 来源与 Prefill / Decode 粒度", () => {
       const graph = buildGraph(layer);
       const has = (source: string, target: string) => graph.edges.some(edge => edge.source === source && edge.target === target);
       expect(has("tokenizer", "embedding")).toBe(true);
-      expect(has("embedding", layer === 1 ? "input" : "first-input")).toBe(true);
+      expect(has("embedding", "hc-expand")).toBe(true);
+      expect(has("hc-expand", layer === 1 ? "input" : "first-input")).toBe(true);
       if (layer > 1) {
         expect(graph.nodes.find(node => node.id === "first-input")!.data.layer).toBe(1);
         expect(has("first-input", "prior-layers")).toBe(true);
