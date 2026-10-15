@@ -17,6 +17,17 @@ function addFrame(id: string, left: number, top: number, width: number, height: 
 afterEach(() => document.body.replaceChildren());
 
 describe("自动连线分配独立通道", () => {
+  it("内部小框出线先离开父框安全区，再转弯", () => {
+    const parent = { left: -8, top: 477, right: 848, bottom: 1283 };
+    const neighbor = { left: 892, top: 477, right: 1448, bottom: 973 };
+    const path = automaticOrthogonalPoints(792, 651, 1370, 1363, Position.Right, Position.Top, [parent, neighbor], [], [parent]);
+    expect(path[1].y).toBe(651);
+    expect(path[1].x).toBeGreaterThanOrEqual(parent.right);
+    for (let i = 2; i < path.length; i += 1) {
+      const a = path[i - 1], b = path[i];
+      if (a.x === b.x && Math.max(a.y, b.y) > 505 && Math.min(a.y, b.y) < 1255) expect(Math.abs(a.x - 820)).toBeGreaterThanOrEqual(28);
+    }
+  });
   it("六路扇出不共用折线段，且上下端保持垂直", () => {
     const paths: Array<Array<{ x: number; y: number }>> = [];
     const reserved: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }> = [];

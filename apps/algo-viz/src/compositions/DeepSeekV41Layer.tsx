@@ -847,7 +847,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("input", "tensor", layer, mode, 610, inputY, 380, tensorHeight),
     node("norm1", "norm1", layer, mode, 620, norm1Y, 360, 72),
     node("q", "projection-q", layer, mode, 20, projectionY, 800, queryProjectionHeight),
-    node("kv", "projection-kv", layer, mode, 850, projectionY, 500, localKvProjectionHeight),
+    node("kv", "projection-kv", layer, mode, 920, projectionY, 500, localKvProjectionHeight),
     node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 350, swaY, hasGlobal ? 780 : 900, swaHeight),
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 400, mergeY, hasGlobal ? 1000 : 800, mergeHeight),
     node("heads", "heads", layer, mode, 40, headsY, 1800, headsHeight),
@@ -897,7 +897,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 496, y: 48, width: 234, height: 80, title: "Head 64 · 元素 32257–32768", tex: `\\mathbf q_{${layer},64,t}`, tone: "green" }),
   );
   if (hasGlobal) {
-    nodes.push(node("compressor", "compressor", layer, mode, 1380, projectionY, 480, compressorHeight));
+    nodes.push(node("compressor", "compressor", layer, mode, 1450, projectionY, 480, compressorHeight));
     nodes.push(node("indexer", "indexer", layer, mode, 1160, swaY, 700, indexerHeight));
     nodes.push(node("global-select", "global-select", layer, mode, 1160, globalSelectY, 700, globalSelectHeight));
   }

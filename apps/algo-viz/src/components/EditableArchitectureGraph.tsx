@@ -472,9 +472,22 @@ export function automaticOrthogonalPoints(
   targetPosition: Position,
   obstacles: Obstacle[],
   reserved: ReservedSegment[] = [],
+  sourceFrames: Obstacle[] = [],
+  targetFrames: Obstacle[] = [],
 ) {
-  const departure = portLeadPoint(sourceX, sourceY, sourcePosition);
-  const approach = portLeadPoint(targetX, targetY, targetPosition);
+  // 内部端口先沿法向穿出自己的分组安全区，不能在外框边缘转弯。
+  const outsideFrames = (x: number, y: number, side: Position, frames: Obstacle[]) => {
+    const lead = portLeadPoint(x, y, side);
+    for (const frame of frames) {
+      if (side === Position.Right) lead.x = Math.max(lead.x, frame.right);
+      if (side === Position.Left) lead.x = Math.min(lead.x, frame.left);
+      if (side === Position.Bottom) lead.y = Math.max(lead.y, frame.bottom);
+      if (side === Position.Top) lead.y = Math.min(lead.y, frame.top);
+    }
+    return lead;
+  };
+  const departure = outsideFrames(sourceX, sourceY, sourcePosition, sourceFrames);
+  const approach = outsideFrames(targetX, targetY, targetPosition, targetFrames);
   const routedBody = defaultOrthogonalPoints(departure.x, departure.y, approach.x, approach.y, obstacles, reserved);
   return simplifyOrthogonalPoints([
     { x: sourceX, y: sourceY },
@@ -598,24 +611,30 @@ function planArchitectureRoutes(nodes: Node[], edges: EditableEdge[], getInterna
     return source && target ? [{ edge, source, target }] : [];
   }).sort((a, b) => Number(Boolean(b.edge.data?.waypoints?.length)) - Number(Boolean(a.edge.data?.waypoints?.length)) || a.source.y - b.source.y || a.source.x - b.source.x || a.edge.id.localeCompare(b.edge.id));
   for (const { edge, source, target } of items) {
-    const excluded = new Set([edge.source, edge.target]);
-    for (const id of [edge.source, edge.target]) {
+    const ancestors = (id: string) => {
+      const ids = new Set<string>();
       let node = nodes.find(item => item.id === id);
-      while (node?.parentId) { excluded.add(node.parentId); node = nodes.find(item => item.id === node?.parentId); }
-    }
+      while (node?.parentId) { ids.add(node.parentId); node = nodes.find(item => item.id === node?.parentId); }
+      return ids;
+    };
+    const sourceAncestors = ancestors(edge.source), targetAncestors = ancestors(edge.target);
+    const sourceFrames: Obstacle[] = [], targetFrames: Obstacle[] = [];
     const obstacles = nodes.flatMap(node => {
       const internal = getInternalNode(node.id);
       const position = internal?.internals.positionAbsolute;
       const width = internal?.measured.width, height = internal?.measured.height;
       if (!position || !width || !height || node.hidden) return [];
-      if (excluded.has(node.id) && node.id !== edge.source && node.id !== edge.target) return [];
+      if (sourceAncestors.has(node.id) && targetAncestors.has(node.id)) return [];
       const padding = node.id === edge.source || node.id === edge.target ? 8 : EDGE_NODE_CLEARANCE;
-      return [{ left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding }];
+      const bounds = { left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding };
+      if (sourceAncestors.has(node.id)) sourceFrames.push(bounds);
+      if (targetAncestors.has(node.id)) targetFrames.push(bounds);
+      return [bounds];
     });
     const waypoints = edge.data?.waypoints;
     const points = waypoints?.length
       ? pointsWithDirectedTarget(pointsWithDirectedSource(pointsWithAnchoredEndpoints(source.x, source.y, target.x, target.y, waypoints), source.x, source.y, source.side), target.x, target.y, target.side)
-      : automaticOrthogonalPoints(source.x, source.y, target.x, target.y, source.side, target.side, obstacles, reserved);
+      : automaticOrthogonalPoints(source.x, source.y, target.x, target.y, source.side, target.side, obstacles, reserved, sourceFrames, targetFrames);
     routes.set(edge.id, points);
     for (let index = 0; index < points.length - 1; index += 1) reserved.push({ start: points[index], end: points[index + 1] });
   }
