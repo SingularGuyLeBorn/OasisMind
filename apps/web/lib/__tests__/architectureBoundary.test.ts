@@ -66,10 +66,37 @@ describe("架构图连续边缘吸附", () => {
     expect(findBoundaryConnection(document.body, { x: 508, y: 246 })).toMatchObject({ nodeId: "matrix", anchor: { side: Position.Right, offset: .73 } });
   });
 
-  it("沿原边拖动时固定边方向，并允许滑至角落", () => {
+  it("沿原边平滑拖动，拐角附近轻微抖动保持当前边", () => {
     addFrame("matrix", 100, 100, 400, 200);
     expect(findBoundaryConnection(document.body, { x: 104, y: 103 }, undefined, { nodeId: "matrix", side: Position.Top })).toMatchObject({ anchor: { side: Position.Top, offset: .01 } });
     expect(findBoundaryConnection(document.body, { x: 95, y: 99 }, undefined, { nodeId: "matrix", side: Position.Top })).toMatchObject({ anchor: { side: Position.Top, offset: 0 } });
+    expect(findBoundaryConnection(document.body, { x: 101, y: 104 }, undefined, { nodeId: "matrix", side: Position.Top })).toMatchObject({ anchor: { side: Position.Top } });
+  });
+
+  it("同一次拖动可连续切换四条边并再次回到顶部", () => {
+    addFrame("matrix", 100, 100, 400, 200);
+    let preferred = { nodeId: "matrix", side: Position.Top };
+    for (const [x, y, side, offset] of [
+      [500, 115, Position.Right, .075],
+      [485, 300, Position.Bottom, .9625],
+      [100, 285, Position.Left, .925],
+      [115, 100, Position.Top, .0375],
+    ] as const) {
+      const connection = findBoundaryConnection(document.body, { x, y }, undefined, preferred);
+      expect(connection).toMatchObject({ nodeId: "matrix", anchor: { side, offset } });
+      preferred = { nodeId: connection!.nodeId, side: connection!.anchor.side };
+    }
+  });
+
+  it("换边后的路由按新边法向进入，箭头方向随之改变", () => {
+    for (const side of [Position.Top, Position.Right, Position.Bottom, Position.Left]) {
+      const path = automaticOrthogonalPoints(0, 0, 300, 300, Position.Bottom, side, []);
+      const end = path.at(-1)!, before = path.at(-2)!;
+      if (side === Position.Top) { expect(before.x).toBe(end.x); expect(before.y).toBeLessThan(end.y); }
+      if (side === Position.Bottom) { expect(before.x).toBe(end.x); expect(before.y).toBeGreaterThan(end.y); }
+      if (side === Position.Left) { expect(before.y).toBe(end.y); expect(before.x).toBeLessThan(end.x); }
+      if (side === Position.Right) { expect(before.y).toBe(end.y); expect(before.x).toBeGreaterThan(end.x); }
+    }
   });
 
   it("可以改连另一个框，远离所有边缘时不误连", () => {

@@ -33,6 +33,8 @@ export type BoundaryConnection = { nodeId: string; anchor: BoundaryAnchor };
 
 // [OM-FREEPLAY] 24 屏幕像素作为边缘吸附距离，缩放后仍保持相同的鼠标容差。
 const BOUNDARY_SNAP_RADIUS = 24;
+// [OM-FREEPLAY] 拐角处保留 4px 换边迟滞，避免鼠标微抖时在两条边之间反复切换。
+const BOUNDARY_SIDE_HYSTERESIS = 4;
 
 export function findBoundaryConnection(
   scope: HTMLElement,
@@ -46,15 +48,20 @@ export function findBoundaryConnection(
     if (!nodeId || nodeId === excludedNode || !element.querySelector('[data-boundary-connectable="true"]')) continue;
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) continue;
-    const sides = preferred && preferred.nodeId === nodeId ? [preferred.side] : [Position.Top, Position.Right, Position.Bottom, Position.Left];
+    const sides = [Position.Top, Position.Right, Position.Bottom, Position.Left];
+    const nodeCandidates: typeof candidates = [];
     for (const side of sides) {
       const horizontal = side === Position.Top || side === Position.Bottom;
       const offset = Math.max(0, Math.min(1, horizontal ? (pointer.x - rect.left) / rect.width : (pointer.y - rect.top) / rect.height));
       const x = horizontal ? rect.left + offset * rect.width : side === Position.Left ? rect.left : rect.right;
       const y = horizontal ? side === Position.Top ? rect.top : rect.bottom : rect.top + offset * rect.height;
       const distance = Math.hypot(pointer.x - x, pointer.y - y);
-      if (distance <= BOUNDARY_SNAP_RADIUS) candidates.push({ nodeId, anchor: { side, offset }, distance, area: rect.width * rect.height });
+      if (distance <= BOUNDARY_SNAP_RADIUS) nodeCandidates.push({ nodeId, anchor: { side, offset }, distance, area: rect.width * rect.height });
     }
+    nodeCandidates.sort((a, b) => a.distance - b.distance);
+    const nearest = nodeCandidates[0];
+    const previousSide = preferred?.nodeId === nodeId ? nodeCandidates.find(candidate => candidate.anchor.side === preferred.side) : undefined;
+    if (nearest) candidates.push(previousSide && previousSide.distance <= nearest.distance + BOUNDARY_SIDE_HYSTERESIS ? previousSide : nearest);
   }
   candidates.sort((a, b) => a.distance - b.distance || a.area - b.area);
   return candidates[0] ?? null;
@@ -275,7 +282,9 @@ function simplifyOrthogonalPoints(points: XYPosition[]) {
     const before = points[index - 1];
     const after = points[index + 1];
     if (point.x === before.x && point.y === before.y) return false;
-    return !((before.x === point.x && point.x === after.x) || (before.y === point.y && point.y === after.y));
+    // 同向共线才可合并；端口引入段发生折返时必须保留，保证箭头沿新边法向进入。
+    return !((before.x === point.x && point.x === after.x && (point.y - before.y) * (after.y - point.y) >= 0)
+      || (before.y === point.y && point.y === after.y && (point.x - before.x) * (after.x - point.x) >= 0));
   });
 }
 
@@ -713,6 +722,7 @@ function EditableOrthogonalEdgeView({
     if (!scope) return;
     const nodeId = endpoint === "source" ? source : target;
     const side = endpoint === "source" ? sourcePosition : targetPosition;
+    let preferredConnection = { nodeId, side };
     let hit: BoundaryConnection | null = null;
     let moved = false;
     let changed = false;
@@ -720,11 +730,12 @@ function EditableOrthogonalEdgeView({
     const move = (pointerEvent: PointerEvent) => {
       if (Math.hypot(pointerEvent.clientX - start.x, pointerEvent.clientY - start.y) < 3 && !moved) return;
       moved = true;
-      hit = findBoundaryConnection(scope, { x: pointerEvent.clientX, y: pointerEvent.clientY }, endpoint === "source" ? target : source, { nodeId, side });
+      hit = findBoundaryConnection(scope, { x: pointerEvent.clientX, y: pointerEvent.clientY }, endpoint === "source" ? target : source, preferredConnection);
       if (!hit) return;
       if (!changed) history?.beginHistory();
       changed = true;
       const connection = hit;
+      preferredConnection = { nodeId: connection.nodeId, side: connection.anchor.side };
       setEdges(current => current.map(edge => edge.id === id ? {
         ...edge,
         [endpoint]: connection.nodeId,
