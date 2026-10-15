@@ -206,18 +206,22 @@ function VectorStrip({
   elementTex,
   tone = "neutral",
   compact = false,
+  selected = false,
+  columns: displayedColumns,
 }: {
   name: string;
   length: string;
   elementTex: (column: string) => string;
   tone?: "neutral" | "blue" | "green" | "amber";
   compact?: boolean;
+  selected?: boolean;
+  columns?: string[];
 }) {
-  const palette = tonePalette(tone);
-  const columns = ["1", "2", "\\cdots", length];
-  return <div style={{ minWidth: 0, display: "grid", gridTemplateColumns: compact ? "74px minmax(0,1fr)" : "92px minmax(0,1fr)", gap: 5, alignItems: "center", padding: compact ? 3 : 5, border: `1.2px solid ${palette.color}`, borderRadius: 6, background: palette.background }}>
+  const palette = tonePalette(selected ? "amber" : tone);
+  const columns = displayedColumns ?? ["1", "2", "\\cdots", length];
+  return <div data-vector-elements data-vector-selected={selected || undefined} style={{ minWidth: 0, display: "grid", gridTemplateColumns: compact ? "52px minmax(0,1fr)" : "92px minmax(0,1fr)", gap: 5, alignItems: "center", padding: compact ? 2 : 5, fontSize: compact ? 9 : 10.5, lineHeight: 1.2, outline: selected ? `1px dashed ${palette.color}` : undefined, borderRadius: 4 }}>
     <div style={{ minWidth: 0, textAlign: "center", color: palette.color, fontSize: compact ? 9 : 10.5, fontWeight: 800, overflow: "hidden" }}><MathFormula tex={name} /></div>
-    <div style={{ minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>
+    <div style={{ minWidth: 0, display: "grid", gridTemplateColumns: columns.map(column => column === "\\cdots" ? ".55fr" : "minmax(0,1fr)").join(" "), gap: 3 }}>
       {columns.map((column, index) => column === "\\cdots"
         ? <span key={`${column}-${index}`} style={{ display: "grid", placeItems: "center", color: COLORS.muted }}><MathFormula tex="\cdots" /></span>
         : <span key={`${column}-${index}`} style={{ minWidth: 0, padding: compact ? "2px 3px" : "4px 3px", border: `1px solid ${palette.color}`, borderRadius: 4, background: palette.background, textAlign: "center", fontSize: compact ? 8.5 : 9.5, overflow: "hidden" }}><MathFormula tex={elementTex(column)} /></span>)}
@@ -236,17 +240,17 @@ function Matrix({ tex, shape, rowTex, elementTex, tone = "blue", vectorLength = 
       <div style={{ padding: 6, display: "grid", gap: 3, borderTop: `1px solid ${COLORS.line}`, fontSize: 9.5 }}>
         {rows.map((row, index) => row === "\\vdots"
           ? <div key={`${row}-${index}`} style={{ minHeight: 22, display: "grid", placeItems: "center" }}><MathFormula tex="\vdots" /></div>
-          : <VectorStrip key={`${row}-${index}`} name={rowTex(row)} length={vectorLength} elementTex={(column) => elementTex(row, column)} tone={tone} compact />)}
+          : <VectorStrip key={`${row}-${index}`} name={rowTex(row)} length={vectorLength} columns={["1", "2", "3", "\\cdots", vectorLength]} elementTex={(column) => elementTex(row, column)} tone={tone} compact />)}
       </div>
     </div>
   );
 }
 
-function RowMatrix({ tex, shape, rows, selected, tone = "green" }: { tex: string; shape: string; rows: string[]; selected?: number; tone?: "blue" | "green" }) {
+function RowMatrix({ tex, shape, rows, selected, tone = "green", rowLength, elementTex, elementColumns }: { tex: string; shape: string; rows: string[]; selected?: number; tone?: "blue" | "green"; rowLength?: string; elementTex?: (rowIndex: number, column: string) => string; elementColumns?: string[] }) {
   const palette = tonePalette(tone);
   return <div style={{ minWidth: 0, padding: 6, border: `1.3px solid ${palette.color}`, borderRadius: 7, background: palette.background, display: "grid", gap: 5 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 4, fontSize: 10 }}><MathFormula tex={tex} /><MathFormula tex={shape} /></div>
-    <div style={{ display: "grid", gap: 3 }}>{rows.map((row, index) => row === "\\vdots" ? <div key={index} style={{ textAlign: "center", fontSize: 9 }}><MathFormula tex={row} /></div> : <div key={index} style={{ border: `1px solid ${selected === index ? COLORS.amber : palette.color}`, borderRadius: 4, background: selected === index ? COLORS.amberSoft : palette.background, padding: "4px 2px", textAlign: "center", fontSize: 10 }}><MathFormula tex={row} /></div>)}</div>
+    <div style={{ display: "grid", gap: 3 }}>{rows.map((row, index) => row === "\\vdots" ? <div key={index} style={{ textAlign: "center", fontSize: 9 }}><MathFormula tex={row} /></div> : elementTex && rowLength ? <VectorStrip key={index} name={row} length={rowLength} columns={elementColumns} elementTex={column => elementTex(index, column)} tone={tone} selected={selected === index} compact /> : <div key={index} style={{ border: `1px solid ${selected === index ? COLORS.amber : palette.color}`, borderRadius: 4, background: selected === index ? COLORS.amberSoft : palette.background, padding: "4px 2px", textAlign: "center", fontSize: 10 }}><MathFormula tex={row} /></div>)}</div>
   </div>;
 }
 
@@ -281,7 +285,7 @@ function LocalKvProjection({ layer }: { layer: number }) {
           <RowMatrix tex={`\\widehat U_{${layer}}`} shape="N\times512" rows={[`\\widehat{\\mathbf u}_{${layer},1}`, `\\widehat{\\mathbf u}_{${layer},2}`, "\\vdots", `\\widehat{\\mathbf u}_{${layer},N}`]} />
         </div>
         <div style={{ textAlign: "center", fontSize: 13 }}><MathFormula tex={`U_{${layer}}=\\operatorname{RoPE}(\\operatorname{RMSNorm}(\\widehat U_{${layer}}))`} /></div>
-        <RowMatrix tex={`U_{${layer}}`} shape="N\times512" rows={[`\\mathbf u_{${layer},1}`, `\\mathbf u_{${layer},2}`, "\\vdots", `\\mathbf u_{${layer},N}`]} />
+        <RowMatrix tex={`U_{${layer}}`} shape="N\times512" rows={[`\\mathbf u_{${layer},1}`, `\\mathbf u_{${layer},2}`, `\\mathbf u_{${layer},3}`, "\\vdots", `\\mathbf u_{${layer},N}`]} rowLength="512" elementColumns={["1", "2", "3", "4", "\\cdots", "512"]} elementTex={(row, column) => `u_{${layer},${["1", "2", "3", "", "N"][row]},${column}}`} />
       </div>
     </div>
   );
@@ -351,7 +355,7 @@ function Head({ index, layer }: { index: number; layer: number }) {
   return (
     <div style={{ position: "relative", border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
       <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 12 }}>Layer {layer} · Head {index}</strong>
-      <div data-head-layout={index} style={{ display: "grid", gridTemplateColumns: "minmax(0,1.6fr) 24px minmax(0,1fr)", gap: 6, alignItems: "center" }}>
+      <div data-head-layout={index} style={{ display: "grid", gridTemplateColumns: "minmax(280px,1.1fr) 24px minmax(250px,1fr)", gap: 6, alignItems: "center" }}>
         <div data-head-calculation style={{ minWidth: 0, display: "grid", gap: 6 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 5 }}><Box tone="blue"><MathFormula tex={`${queryRow}\\in\\mathbb R^{1\\times512}`} /></Box><Box tone="green"><MathFormula tex={attendedKv} /></Box></div>
           <Box tone="green"><MathFormula tex={`\\mathbf z_{${layer},${index},t}=${queryRow}(${attendedKv})^{\\mathsf T}/\\sqrt{512}`} /><br /><MathFormula tex={`\\mathbf a_{${layer},${index},t}=\\operatorname{softmax}(\\mathbf z_{${layer},${index},t})`} /></Box>
@@ -363,7 +367,7 @@ function Head({ index, layer }: { index: number; layer: number }) {
           <RowMatrix tex={`O_{${layer},${index}}`} shape="N\times512" rows={[
             `\\mathbf o_{${layer},${index},1}`, `\\mathbf o_{${layer},${index},2}`, `\\mathbf o_{${layer},${index},3}`, "\\vdots",
             `\\mathbf o_{${layer},${index},t}`, "\\vdots", `\\mathbf o_{${layer},${index},N}`,
-          ]} selected={4} />
+          ]} selected={4} rowLength="512" elementTex={(row, column) => `o_{${layer},${index},${["1", "2", "3", "", "t", "", "N"][row]},${column}}`} />
         </div>
       </div>
     </div>
@@ -625,7 +629,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         <Operator tex="\times" />
         <div style={{ border: `1.2px solid ${COLORS.blue}`, borderRadius: 7, padding: 6, background: COLORS.blueSoft, textAlign: "center", display: "grid", gap: 4 }}><MathFormula tex={`W_{${layer}}^O`} /><MathFormula tex="(64\cdot512)\times5120" /></div>
         <Operator tex="=" />
-        <RowMatrix tex={`O_{${layer}}`} shape="N\times5120" rows={[`\\mathbf o_{${layer},1}`, `\\mathbf o_{${layer},2}`, "\\vdots", `\\mathbf o_{${layer},N}`]} />
+        <RowMatrix tex={`O_{${layer}}`} shape="N\times5120" rows={[`\\mathbf o_{${layer},1}`, `\\mathbf o_{${layer},2}`, "\\vdots", `\\mathbf o_{${layer},N}`]} rowLength="5120" elementTex={(row, column) => `o_{${layer},${["1", "2", "", "N"][row]},${column}}`} />
       </div>
     </div>;
   }
@@ -647,8 +651,8 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="main-in" type="target" position={Position.Top} style={handle} />
       <Handle id="main-out" type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
       <Title>Layer {layer} Router · 只选择 routed experts</Title>
-      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.1fr 26px 1.5fr 26px .8fr", alignItems: "center", gap: 7 }}>
-        <RowMatrix tex={`Y_{${layer}}`} shape="N\times5120" rows={[`\\mathbf y_{${layer},1}`, `\\mathbf y_{${layer},2}`, "\\vdots", `\\mathbf y_{${layer},N}`]} tone="blue" />
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.2fr 26px 1.4fr 26px .8fr", alignItems: "center", gap: 7 }}>
+        <RowMatrix tex={`Y_{${layer}}`} shape="N\times5120" rows={[`\\mathbf y_{${layer},1}`, `\\mathbf y_{${layer},2}`, "\\vdots", `\\mathbf y_{${layer},N}`]} tone="blue" rowLength="5120" elementTex={(row, column) => `y_{${layer},${["1", "2", "", "N"][row]},${column}}`} />
         <Operator tex="\times" />
         <div style={{ minWidth: 0, border: `1.3px solid ${COLORS.amber}`, background: COLORS.amberSoft, borderRadius: 7, padding: 7, display: "grid", gap: 6, textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}><MathFormula tex={`W_{${layer}}^R`} /><span style={{ fontSize: 10 }}><MathFormula tex="5120\times384" /></span></div>
@@ -850,7 +854,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("kv", "projection-kv", layer, mode, 920, projectionY, 500, localKvProjectionHeight),
     node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 350, swaY, hasGlobal ? 780 : 900, swaHeight),
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 400, mergeY, hasGlobal ? 1000 : 800, mergeHeight),
-    node("heads", "heads", layer, mode, 40, headsY, 1800, headsHeight),
+    node("heads", "heads", layer, mode, 40, headsY, 1900, headsHeight),
     node("concat", "concat", layer, mode, 190, concatY, 1140, concatHeight),
     node("add1", "add1", layer, mode, 765, add1Y, 70, 70),
     node("state1", "state1", layer, mode, 620, state1Y, 360, 72),
