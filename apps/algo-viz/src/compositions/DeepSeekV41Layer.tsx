@@ -627,7 +627,12 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
           </div>
         </div>
         <Operator tex="\times" />
-        <div style={{ border: `1.2px solid ${COLORS.blue}`, borderRadius: 7, padding: 6, background: COLORS.blueSoft, textAlign: "center", display: "grid", gap: 4 }}><MathFormula tex={`W_{${layer}}^O`} /><MathFormula tex="(64\cdot512)\times5120" /></div>
+        <div data-output-projection-weight style={{ minWidth: 0, border: `1.2px solid ${COLORS.blue}`, borderRadius: 7, padding: 6, background: COLORS.blueSoft, display: "grid", gap: 7 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 5 }}><MathFormula tex={`W_{${layer}}^O`} /><span style={{ fontSize: 9 }}><MathFormula tex="(64\cdot512)\times5120" /></span></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .45fr 1fr", gap: 4, alignItems: "center", textAlign: "center", fontSize: 10 }}>
+            {["1", "2", "\\cdots", "5120"].map(column => column === "\\cdots" ? <MathFormula key={column} tex={column} /> : <div key={column} data-weight-column={column} style={{ minWidth: 0, padding: "24px 2px", border: `1px solid ${COLORS.blue}`, borderRadius: 4, background: COLORS.blueSoft }}><MathFormula tex={`\\mathbf w_{${layer},${column}}^O`} /></div>)}
+          </div>
+        </div>
         <Operator tex="=" />
         <RowMatrix tex={`O_{${layer}}`} shape="N\times5120" rows={[`\\mathbf o_{${layer},1}`, `\\mathbf o_{${layer},2}`, "\\vdots", `\\mathbf o_{${layer},N}`]} rowLength="5120" elementTex={(row, column) => `o_{${layer},${["1", "2", "", "N"][row]},${column}}`} />
       </div>
