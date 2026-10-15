@@ -275,8 +275,8 @@ function QueryProjection({ layer }: { layer: number }) {
     <div style={panel}>
       <Title>Layer {layer} · Query</Title>
       <div style={{ position: "absolute", left: 28, top: 47, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>① 5120 → 1280</div>
-      <div style={{ position: "absolute", left: 28, top: 270, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>② 1280 → 64 × 512</div>
-      <div style={{ position: "absolute", left: 28, top: 560, color: COLORS.green, fontSize: 10.5, fontWeight: 800 }}>③ 高亮第 t 行，按每 512 个元素分成一个 Head</div>
+      <div style={{ position: "absolute", left: 28, top: 250, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>② 1280 → 64 × 512</div>
+      <div style={{ position: "absolute", left: 28, top: 510, color: COLORS.green, fontSize: 10.5, fontWeight: 800 }}>③ 高亮第 t 行，按每 512 个元素分成一个 Head</div>
     </div>
   );
 }
@@ -455,8 +455,8 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
     const color = tone === "green" ? COLORS.green : tone === "amber" ? COLORS.amber : tone === "blue" ? COLORS.blue : COLORS.line;
     const background = tone === "green" ? COLORS.greenSoft : tone === "amber" ? COLORS.amberSoft : tone === "blue" ? COLORS.blueSoft : COLORS.card;
     return <div style={{ ...panel, borderColor: color, borderRadius: 10, background, boxShadow: "0 3px 10px rgba(42,41,36,.06)", display: "grid", gridTemplateRows: data.title ? "auto 1fr" : "1fr" }}>
-      {data.title && <div style={{ padding: "6px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 10.5, fontWeight: 800, color }}>{data.title}</div>}
-      <div style={{ padding: 7, display: "grid", placeItems: "center", alignContent: "center", gap: 6, minWidth: 0, textAlign: "center" }}>
+      {data.title && <div style={{ padding: "6px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 10.5, fontWeight: 800, color, lineHeight: 1.2 }}>{data.title}</div>}
+      <div style={{ padding: 4, display: "grid", placeItems: "center", alignContent: "center", gap: 4, minWidth: 0, textAlign: "center", lineHeight: 1.2 }}>
         {data.matrixRows?.length ? (
           <div style={{ width: "100%", display: "grid", gap: 5 }}>
             {data.tex && <div style={{ color, fontWeight: 800 }}><MathFormula tex={data.tex} /></div>}
@@ -878,7 +878,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const tensorHeight = 270;
   const norm1Y = inputY + tensorHeight + 55;
   const projectionY = norm1Y + 72 + mainGap;
-  const queryProjectionHeight = 750;
+  const queryProjectionHeight = 670;
   const localKvProjectionHeight = 440;
   const swaHeight = 530;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
@@ -934,35 +934,35 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   ];
   nodes.push(
     { ...node("swa-result", "swa-output", layer, mode, 10, 414, ((hasGlobal ? 780 : 900) - 56) * 1.7 / 2.6, 82), parentId: "swa-window", extent: "parent" },
-    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 28, y: 70, width: 200, height: 190, title: "输入矩阵", tex: `X_{${layer}}\\in\\mathbb R^{N\\times5120}`, matrixRows: [`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`], tone: "blue" }),
-    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 236, y: 143, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
-    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 280, y: 90, width: 230, height: 140, title: "5120 × 1280 · 列向量", tex: `W_{${layer}}^{Q\\downarrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\downarrow}`, `\\mathbf w_{${layer},2}^{Q\\downarrow}`, "\\cdots", `\\mathbf w_{${layer},1280}^{Q\\downarrow}`], tone: "amber" }),
-    structureNode({ id: "q-equals-down", parentId: "q", layer, mode, x: 518, y: 143, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
-    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 562, y: 70, width: 210, height: 190, title: "低秩矩阵", tex: `Q_{${layer}}^{r}\\in\\mathbb R^{N\\times1280}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
-    structureNode({ id: "q-low-rank-up", parentId: "q", layer, mode, x: 28, y: 294, width: 200, height: 190, title: "同一低秩矩阵", tex: `Q_{${layer}}^{r}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
-    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 236, y: 360, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
-    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 280, y: 314, width: 230, height: 140, title: "1280 × (64 · 512) · 列向量", tex: `W_{${layer}}^{Q\\uparrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\uparrow}`, `\\mathbf w_{${layer},2}^{Q\\uparrow}`, "\\cdots", `\\mathbf w_{${layer},64\\cdot512}^{Q\\uparrow}`], tone: "amber" }),
-    structureNode({ id: "q-equals-up", parentId: "q", layer, mode, x: 518, y: 360, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 28, y: 68, width: 200, height: 170, title: "输入矩阵", tex: `X_{${layer}}\\in\\mathbb R^{N\\times5120}`, matrixRows: [`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`], tone: "blue" }),
+    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 236, y: 131, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 280, y: 89, width: 230, height: 128, title: "5120 × 1280 · 列向量", tex: `W_{${layer}}^{Q\\downarrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\downarrow}`, `\\mathbf w_{${layer},2}^{Q\\downarrow}`, "\\cdots", `\\mathbf w_{${layer},1280}^{Q\\downarrow}`], tone: "amber" }),
+    structureNode({ id: "q-equals-down", parentId: "q", layer, mode, x: 518, y: 131, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 562, y: 68, width: 210, height: 174, title: "低秩矩阵", tex: `Q_{${layer}}^{r}\\in\\mathbb R^{N\\times1280}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
+    structureNode({ id: "q-low-rank-up", parentId: "q", layer, mode, x: 28, y: 274, width: 200, height: 174, title: "同一低秩矩阵", tex: `Q_{${layer}}^{r}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
+    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 236, y: 337, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 280, y: 295, width: 230, height: 128, title: "1280 × (64 · 512) · 列向量", tex: `W_{${layer}}^{Q\\uparrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\uparrow}`, `\\mathbf w_{${layer},2}^{Q\\uparrow}`, "\\cdots", `\\mathbf w_{${layer},64\\cdot512}^{Q\\uparrow}`], tone: "amber" }),
+    structureNode({ id: "q-equals-up", parentId: "q", layer, mode, x: 518, y: 337, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
     structureNode({
       id: "q-wide-matrix",
       parentId: "q",
       layer,
       mode,
       x: 562,
-      y: 294,
+      y: 274,
       width: 210,
-      height: 250,
+      height: 220,
       title: "升维输出矩阵",
       tex: `\\widetilde Q_{${layer}}\\in\\mathbb R^{N\\times(64\\cdot512)}`,
       tone: "green",
       matrixRows: [`\\mathbf{\\widetilde q}_{${layer},1}`, `\\mathbf{\\widetilde q}_{${layer},2}`, "\\vdots", `t\\quad\\mathbf{\\widetilde q}_{${layer},t}`, "\\vdots", `\\mathbf{\\widetilde q}_{${layer},N}`],
       matrixSelectedRow: 3,
     }),
-    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 28, y: 590, width: 744, height: 144, kind: "structure-group", tex: `\\mathbf{\\widetilde q}_{${layer},t}`, title: "64 个连续分块 · 每块 512 维", tone: "green" }),
-    structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 12, y: 48, width: 210, height: 80, title: "Head 1 · 元素 1–512", tex: `\\mathbf q_{${layer},1,t}`, tone: "green" }),
-    structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 234, y: 48, width: 210, height: 80, title: "Head 2 · 元素 513–1024", tex: `\\mathbf q_{${layer},2,t}`, tone: "green" }),
-    structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 451, y: 60, width: 36, height: 44, kind: "structure-operator", tex: "\\cdots" }),
-    structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 496, y: 48, width: 234, height: 80, title: "Head 64 · 元素 32257–32768", tex: `\\mathbf q_{${layer},64,t}`, tone: "green" }),
+    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 28, y: 534, width: 744, height: 120, kind: "structure-group", tex: `\\mathbf{\\widetilde q}_{${layer},t}`, title: "64 个连续分块 · 每块 512 维", tone: "green" }),
+    structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 12, y: 42, width: 210, height: 64, title: "Head 1 · 元素 1–512", tex: `\\mathbf q_{${layer},1,t}`, tone: "green" }),
+    structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 234, y: 42, width: 210, height: 64, title: "Head 2 · 元素 513–1024", tex: `\\mathbf q_{${layer},2,t}`, tone: "green" }),
+    structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 451, y: 52, width: 36, height: 44, kind: "structure-operator", tex: "\\cdots" }),
+    structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 496, y: 42, width: 234, height: 64, title: "Head 64 · 元素 32257–32768", tex: `\\mathbf q_{${layer},64,t}`, tone: "green" }),
   );
   if (hasGlobal) {
     nodes.push(node("compressor", "compressor", layer, mode, 1450, projectionY, 480, compressorHeight));
