@@ -497,7 +497,17 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         </div>
         <Arrow />
         <div style={{ minWidth: 0, display: "grid", gap: 8 }}>
-          <Box tone="amber"><MathFormula tex="r=\max(1,t-127)" /><br /><MathFormula tex="r,\ldots,t" /><br /><MathFormula tex="\min(128,t)\times512" /></Box>
+          <div data-window-start style={{ minWidth: 0, border: `1.5px solid ${COLORS.amber}`, borderRadius: 8, padding: 6, background: COLORS.amberSoft, display: "grid", gap: 5, fontSize: 11 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 5 }}><strong>窗口起点 r</strong><span style={{ fontSize: 8.5 }}><MathFormula tex="\min(128,t)\times512" /></span></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, alignItems: "center", textAlign: "center" }}>
+              <MathFormula tex="t\le128" /><MathFormula tex="r=1" />
+              <MathFormula tex="t>128" /><MathFormula tex="r=t-127" />
+            </div>
+            <div style={{ borderTop: `1px solid ${COLORS.amber}`, paddingTop: 6, display: "grid", gap: 4 }}>
+              <span style={{ fontSize: 10 }}>选中第 r 行到第 t 行（含两端）</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 3 }}>{["r", "r+1", "\\ldots", "t"].map(row => <span key={row} style={{ padding: "2px 4px", border: row === "\\ldots" ? "none" : `1px solid ${COLORS.amber}`, borderRadius: 4 }}><MathFormula tex={row} /></span>)}</div>
+            </div>
+          </div>
           <RingCache layer={layer} />
         </div>
       </div>
