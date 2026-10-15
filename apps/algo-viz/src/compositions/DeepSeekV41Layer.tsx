@@ -101,18 +101,20 @@ const ROUTED_EXPERTS = [
   { id: 228, score: ".69" },
   { id: 351, score: ".64" },
 ] as const;
+const VISIBLE_ROUTED_EXPERTS = [ROUTED_EXPERTS[0], ROUTED_EXPERTS[1], ROUTED_EXPERTS[5]] as const;
+const EXPERT_GRID_COLUMNS = "minmax(0,1fr) minmax(0,1fr) 40px minmax(0,1fr)";
 
-// [OM-FREEPLAY] 按共享专家的完整单行公式预留组宽；端口位置由同一组布局参数推导。
-const EXPERTS_WIDTH = 2700;
+// [OM-FREEPLAY] 为专家内两列展开矩阵预留组宽；端口与得分列由同一组参数推导。
+const EXPERTS_WIDTH = 2800;
 const EXPERTS_PADDING = 12;
-const SHARED_GROUP_WIDTH = 360;
+const SHARED_GROUP_WIDTH = 600;
 const EXPERT_GROUP_GAP = 18;
 const EXPERT_GROUP_INSET = 11;
 const EXPERT_CARD_GAP = 8;
 const ROUTED_CONTENT_START = EXPERTS_PADDING + SHARED_GROUP_WIDTH + EXPERT_GROUP_GAP + EXPERT_GROUP_INSET;
 const ROUTED_CONTENT_WIDTH = EXPERTS_WIDTH - 2 * EXPERTS_PADDING - SHARED_GROUP_WIDTH - EXPERT_GROUP_GAP - 2 * EXPERT_GROUP_INSET;
-const EXPERT_CARD_WIDTH = (ROUTED_CONTENT_WIDTH - (ROUTED_EXPERTS.length - 1) * EXPERT_CARD_GAP) / ROUTED_EXPERTS.length;
-const ROUTED_HANDLE_LEFT = ROUTED_EXPERTS.map((_, index) => 100 * (ROUTED_CONTENT_START + index * (EXPERT_CARD_WIDTH + EXPERT_CARD_GAP) + EXPERT_CARD_WIDTH / 2) / EXPERTS_WIDTH);
+const EXPERT_CARD_WIDTH = (ROUTED_CONTENT_WIDTH - 40 - 3 * EXPERT_CARD_GAP) / VISIBLE_ROUTED_EXPERTS.length;
+const ROUTED_HANDLE_LEFT = VISIBLE_ROUTED_EXPERTS.map((_, index) => 100 * (ROUTED_CONTENT_START + index * (EXPERT_CARD_WIDTH + EXPERT_CARD_GAP) + (index === 2 ? 40 + EXPERT_CARD_GAP : 0) + EXPERT_CARD_WIDTH / 2) / EXPERTS_WIDTH);
 const SHARED_HANDLE_LEFT = 100 * (EXPERTS_PADDING + SHARED_GROUP_WIDTH / 2) / EXPERTS_WIDTH;
 const ROUTER_SCORE_COLUMNS = [1, 2, 3, null, 7, null, 31, null, 96, null, 142, null, 228, null, 351, null, 384] as const;
 
@@ -431,17 +433,51 @@ function Expert({ layer, index, score, shared = false }: { layer: number; index?
   const expertIndex = shared ? "\\mathrm{shared}" : `${index}`;
   const expertTex = `E_{${layer},${expertIndex}}`;
   const weightIndex = shared ? "\\mathrm{shared}" : `${index}`;
+  const color = shared ? COLORS.blue : COLORS.amber;
+  // [OM-FREEPLAY] 纵向按 1.35 倍留白，让带上下标的元素格和分支箭头不相互挤压。
+  const block = (top: number, left: string, width: string, height: number): CSSProperties => ({ position: "absolute", top: (top >= 300 ? top + 240 : top) * 1.35, left, width, height: height * 1.35, boxSizing: "border-box", border: `1px solid ${color}`, borderRadius: 6, background: COLORS.card, display: "grid", placeContent: "center", gap: 2, textAlign: "center", fontSize: 12, lineHeight: 1.1 });
+  const matrix = (tex: string, scalar: string, rows: string, columns: string, top: number, left = "0", width = "100%", weight = false) => <div data-expert-matrix={tex} style={{ ...block(top, left, width, 116), display: "block", padding: 5, background: weight ? COLORS.amberSoft : COLORS.greenSoft }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3, fontSize: 11 }}><MathFormula tex={weight ? `\\times ${tex}` : tex} /><span style={{ fontSize: 10 }}><MathFormula tex={`${rows}\\times ${columns}`} /></span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .35fr 1fr", gap: 1, alignItems: "center", fontSize: 10 }}>
+      {["1", "2", "3", "\\vdots", rows].flatMap((row, r) => ["1", "2", "\\cdots", columns].map((column, c) => <div key={`${r}-${c}`} style={{ minWidth: 0, height: 24, boxSizing: "border-box", display: "grid", placeItems: "center", border: row === "\\vdots" || column === "\\cdots" ? undefined : `1px solid ${color}`, borderRadius: 2 }}><MathFormula tex={row === "\\vdots" ? (c === 1 ? "\\vdots" : "") : column === "\\cdots" ? "\\cdots" : `${scalar}_{${row},${column}}`} /></div>))}
+    </div>
+  </div>;
   return (
     <div data-expert={shared ? "shared" : index} style={{ border: `1.5px solid ${shared ? COLORS.blue : COLORS.amber}`, borderRadius: 9, padding: 9, display: "grid", gap: 7, background: COLORS.card, minWidth: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", color: shared ? COLORS.blue : COLORS.amber, fontWeight: 800, fontSize: 11 }}><span>{shared ? `Layer ${layer} · Shared` : `Layer ${layer} · Expert ${index}`}</span><span>{shared ? "权重 1" : <MathFormula tex={`g_{${layer},${index}}=${score}`} />}</span></div>
-      <Box tone="blue"><MathFormula tex={`Y_{${layer}}`} /></Box>
-      <Box><MathFormula tex={`a_{${layer},${expertIndex}}=\\operatorname{SiLU}(Y_{${layer}}W_{${layer},${weightIndex}}^{\\mathrm{gate}})`} /></Box>
-      <Box><MathFormula tex={`b_{${layer},${expertIndex}}=Y_{${layer}}W_{${layer},${weightIndex}}^{\\mathrm{up}}`} /></Box>
-      <Box tone="amber"><MathFormula tex={`c_{${layer},${expertIndex}}=a_{${layer},${expertIndex}}\\odot b_{${layer},${expertIndex}}`} /></Box>
-      <div style={{ position: "relative", minWidth: 0, padding: "22px 7px 8px", border: `1.5px solid ${shared ? COLORS.blue : COLORS.amber}`, borderRadius: 8, background: shared ? COLORS.blueSoft : COLORS.amberSoft, textAlign: "center" }}>
-        <span style={{ position: "absolute", top: 4, right: 7, fontSize: 10 }}><MathFormula tex="N\times5120" /></span>
-        <MathFormula tex={`${expertTex}(Y_{${layer}})=c_{${layer},${expertIndex}}W_{${layer},${weightIndex}}^{\\mathrm{down}}`} />
+      <div data-expert-structure style={{ position: "relative", height: 1102 * 1.35 }}>
+        <svg aria-hidden viewBox="0 0 100 1102" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }}>
+          <g fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke">
+            <path vectorEffect="non-scaling-stroke" data-expert-fork d="M50 112 V118 M25 124 V118 H75 V124 M25 236 V250 M25 362 V384 M25 504 V540 M75 236 V540" />
+            <path vectorEffect="non-scaling-stroke" data-expert-merge d="M25 652 V664 H75 V652 M50 664 V676 M50 708 V730 M50 842 V858 M50 970 V990" />
+            {[{ x: 25, y: 124 }, { x: 75, y: 124 }, { x: 25, y: 250 }, { x: 25, y: 384 }, { x: 25, y: 540 }, { x: 75, y: 540 }, { x: 50, y: 676 }, { x: 50, y: 730 }, { x: 50, y: 858 }, { x: 50, y: 990 }].map(({ x, y }) => <path vectorEffect="non-scaling-stroke" key={`${x}-${y}`} d={`M${x - 1} ${y - 5} L${x} ${y} L${x + 1} ${y - 5}`} />)}
+          </g>
+        </svg>
+        {matrix(`Y_{${layer}}`, "y", "N", "5120", 0)}
+        {matrix(`W_{${layer},${weightIndex}}^{\\mathrm{gate}}`, "w^{\\mathrm{gate}}", "5120", "d_e", 124, "0", "47%", true)}
+        {matrix(`W_{${layer},${weightIndex}}^{\\mathrm{up}}`, "w^{\\mathrm{up}}", "5120", "d_e", 124, "53%", "47%", true)}
+        {matrix(`Z_{${layer},${expertIndex}}`, "z", "N", "d_e", 250, "0", "47%")}
+        <div data-expert-activation style={{ ...block(384, "0", "47%", 120), top: 384 * 1.35, display: "block", padding: 6 }}>
+          <strong style={{ fontSize: 11 }}>SiLU · 对矩阵中每个元素</strong>
+          <div style={{ position: "relative", height: 95, marginTop: 5 }}>
+            <svg aria-hidden viewBox="0 0 100 95" preserveAspectRatio="none" style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}><path vectorEffect="non-scaling-stroke" d="M50 18 V24 M25 34 V24 H75 V34 M25 56 V68 H75 V56 M50 68 V77" fill="none" stroke={color} strokeWidth="1.5" /></svg>
+            <span style={{ position: "absolute", top: 0, left: "40%", width: "20%" }}><MathFormula tex="z" /></span>
+            <span style={{ position: "absolute", top: 34, left: "10%", width: "30%", border: `1px solid ${color}`, borderRadius: 4, padding: 3, boxSizing: "border-box", background: COLORS.card }}><MathFormula tex="z" /></span>
+            <span style={{ position: "absolute", top: 34, left: "55%", width: "40%", border: `1px solid ${color}`, borderRadius: 4, padding: 3, boxSizing: "border-box", background: COLORS.card }}><MathFormula tex={"\\sigma(z)=\\frac1{1+e^{-z}}"} /></span>
+            <span style={{ position: "absolute", top: 78, left: "25%", width: "50%" }}><MathFormula tex={"z\\cdot\\sigma(z)"} /></span>
+          </div>
+          {/* [OM-FREEPLAY] 用 z=2 演示一个元素的 SiLU，数值不代表模型输出。 */}
+          <span style={{ fontSize: 11 }}><MathFormula tex={"z=2:\\quad2\\times0.8808\\approx1.7616"} /></span>
+        </div>
+        <div style={{ position: "absolute", right: "2%", top: 258 * 1.35, fontSize: 11 }}>Up 分支</div>
+        {matrix(`A_{${layer},${expertIndex}}`, "a", "N", "d_e", 300, "0", "47%")}
+        {matrix(`B_{${layer},${expertIndex}}`, "b", "N", "d_e", 300, "53%", "47%")}
+        <div data-expert-product style={{ ...block(436, "25%", "50%", 32), background: COLORS.amberSoft }}><span><MathFormula tex={"\\odot"} /> 逐元素相乘</span></div>
+        {matrix(`C_{${layer},${expertIndex}}`, "c", "N", "d_e", 490)}
+        {matrix(`W_{${layer},${weightIndex}}^{\\mathrm{down}}`, "w^{\\mathrm{down}}", "d_e", "5120", 618, "0", "100%", true)}
+        {matrix(`${expertTex}(Y_{${layer}})`, "o", "N", "5120", 750)}
       </div>
+      <span style={{ fontSize: 11, color: COLORS.muted }}><MathFormula tex="d_e" />：该专家的中间维度</span>
     </div>
   );
 }
@@ -786,10 +822,10 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 
   if (kind === "experts") {
     return <div style={panel}>
-      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      {VISIBLE_ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
       <Handle id="shared" type="target" position={Position.Left} style={{ ...handle, top: "50%", background: COLORS.blue }} />
       <Handle id="shared-out" type="source" position={Position.Bottom} style={{ ...handle, left: `${SHARED_HANDLE_LEFT}%`, background: COLORS.blue }} />
-      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-out-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      {VISIBLE_ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`expert-out-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
       <Title>Layer {layer} · 专家层 · 得分为示意</Title>
       <div style={{ padding: EXPERTS_PADDING, display: "grid", gridTemplateColumns: `${SHARED_GROUP_WIDTH}px minmax(0,1fr)`, gap: EXPERT_GROUP_GAP, alignItems: "start" }}>
         <section data-expert-group="shared" style={{ minWidth: 0, display: "grid", gap: 10 }}>
@@ -798,7 +834,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         </section>
         <section data-expert-group="routed" style={{ minWidth: 0, padding: EXPERT_GROUP_INSET - 1, border: `1px solid ${COLORS.amber}`, borderRadius: 10, display: "grid", gap: 10 }}>
           <strong style={{ color: COLORS.amber, fontSize: 14 }}>非共享专家 · Router Top-6</strong>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: EXPERT_CARD_GAP }}>{ROUTED_EXPERTS.map(expert => <Expert key={expert.id} layer={layer} index={expert.id} score={expert.score} />)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: EXPERT_GRID_COLUMNS, gap: EXPERT_CARD_GAP }}>{VISIBLE_ROUTED_EXPERTS.map((expert, index) => <React.Fragment key={expert.id}>{index === 2 && <div data-expert-ellipsis style={{ display: "grid", placeItems: "center", fontSize: 28 }}><MathFormula tex={"\\cdots"} /></div>}<Expert layer={layer} index={expert.id} score={expert.score} /></React.Fragment>)}</div>
           <div style={{ borderTop: `1px solid ${COLORS.line}`, paddingTop: 8, display: "grid", gridTemplateColumns: "260px repeat(3,minmax(0,1fr)) 50px minmax(0,1fr)", gap: 10, alignItems: "center" }}>
             <span style={{ fontSize: 12, color: COLORS.muted }}>其余 378 个专家<br />分数较低 · 本次跳过</span>
             {/* [OM-FREEPLAY] 未选专家沿用得分矩阵中的示意值，均低于本次第六名 .64。 */}
@@ -815,12 +851,12 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   if (kind === "aggregate") {
     return <div style={panel}>
       <Handle id="shared" type="target" position={Position.Top} style={{ ...handle, left: `${SHARED_HANDLE_LEFT}%`, background: COLORS.blue }} />
-      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`weighted-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
+      {VISIBLE_ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`weighted-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
       <Handle id="main-out" type="source" position={Position.Bottom} style={handle} />
       <Title>各专家输出向量分别加权</Title><div style={{ padding: EXPERTS_PADDING, display: "grid", gap: 8 }}>
       <div style={{ display: "grid", gridTemplateColumns: `${SHARED_GROUP_WIDTH}px minmax(0,1fr)`, gap: EXPERT_GROUP_GAP }}>
         <Box tone="blue"><MathFormula tex={`1\\cdot E_{${layer},\\mathrm{shared}}(Y_{${layer}})`} /></Box>
-        <div style={{ padding: `0 ${EXPERT_GROUP_INSET}px`, display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: EXPERT_CARD_GAP }}>{ROUTED_EXPERTS.map(expert => <Box key={expert.id} tone="amber"><MathFormula tex={`g_{${layer},${expert.id}}\\cdot E_{${layer},${expert.id}}(Y_{${layer}})`} /></Box>)}</div>
+        <div style={{ padding: `0 ${EXPERT_GROUP_INSET}px`, display: "grid", gridTemplateColumns: EXPERT_GRID_COLUMNS, gap: EXPERT_CARD_GAP }}>{VISIBLE_ROUTED_EXPERTS.map((expert, index) => <React.Fragment key={expert.id}>{index === 2 && <Operator tex={"\\cdots"} />}<Box tone="amber"><MathFormula tex={`g_{${layer},${expert.id}}\\cdot E_{${layer},${expert.id}}(Y_{${layer}})`} /></Box></React.Fragment>)}</div>
       </div>
     </div></div>;
   }
@@ -942,7 +978,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const scoresY = routerY + routerHeight + mainGap;
   const scoresHeight = 320;
   const expertsY = scoresY + scoresHeight + mainGap;
-  const expertsHeight = 520;
+  const expertsHeight = 1850;
   const aggregateY = expertsY + expertsHeight + mainGap;
   const moeSumY = aggregateY + 125 + mainGap;
   const moeOutputY = moeSumY + 70 + mainGap;
@@ -1057,7 +1093,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     mathEdge("state1-add2", "state1", "add2", `H_{${layer}}'`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle, data: { ...skipStyle.data, waypoints: ffnResidualWaypoints } }),
     makeEdge("add2-output", "add2", "output"),
   ];
-  for (const expert of ROUTED_EXPERTS) {
+  for (const expert of VISIBLE_ROUTED_EXPERTS) {
     edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", `g_{${layer},${expert.id}}=${expert.score}`, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
     edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
   }
