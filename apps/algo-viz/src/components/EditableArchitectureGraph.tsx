@@ -1,4 +1,4 @@
-import React, { createContext, memo, useContext, useMemo, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import katex from "katex";
 import {
   BaseEdge,
@@ -7,9 +7,11 @@ import {
   NodeResizeControl,
   Position,
   ResizeControlVariant,
+  useNodes,
   useReactFlow,
   type Edge,
   type EdgeProps,
+  type ConnectionLineComponentProps,
   type Node,
   type XYPosition,
 } from "@xyflow/react";
@@ -45,14 +47,22 @@ const RESIZE_POSITIONS = [
 ] as const;
 
 const PORTS = [
-  { id: "top-left", position: Position.Top, style: { left: "0%" } },
-  { id: "top", position: Position.Top, style: { left: "50%" } },
-  { id: "top-right", position: Position.Top, style: { left: "100%" } },
-  { id: "right", position: Position.Right, style: { top: "50%" } },
-  { id: "bottom-right", position: Position.Bottom, style: { left: "100%" } },
-  { id: "bottom", position: Position.Bottom, style: { left: "50%" } },
-  { id: "bottom-left", position: Position.Bottom, style: { left: "0%" } },
-  { id: "left", position: Position.Left, style: { top: "50%" } },
+  { id: "top-left", position: Position.Top, style: { left: "20%" } },
+  { id: "top", position: Position.Top, style: { left: "40%" } },
+  { id: "top-60", position: Position.Top, style: { left: "60%" } },
+  { id: "top-right", position: Position.Top, style: { left: "80%" } },
+  { id: "right-20", position: Position.Right, style: { top: "20%" } },
+  { id: "right", position: Position.Right, style: { top: "40%" } },
+  { id: "right-60", position: Position.Right, style: { top: "60%" } },
+  { id: "right-80", position: Position.Right, style: { top: "80%" } },
+  { id: "bottom-right", position: Position.Bottom, style: { left: "80%" } },
+  { id: "bottom", position: Position.Bottom, style: { left: "60%" } },
+  { id: "bottom-40", position: Position.Bottom, style: { left: "40%" } },
+  { id: "bottom-left", position: Position.Bottom, style: { left: "20%" } },
+  { id: "left-20", position: Position.Left, style: { top: "20%" } },
+  { id: "left-40", position: Position.Left, style: { top: "40%" } },
+  { id: "left", position: Position.Left, style: { top: "60%" } },
+  { id: "left-80", position: Position.Left, style: { top: "80%" } },
 ] as const;
 
 const resizeHandleStyle: CSSProperties = {
@@ -87,26 +97,81 @@ export function EightResizeHandles({
   </>;
 }
 
-export function EightConnectionPorts({ color = "#37685a", visible }: { color?: string; visible: boolean }) {
+function DelayedConnectionPort({ id, position, style, color }: { id: string; position: Position; style: CSSProperties; color: string }) {
+  const [ready, setReady] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelTimer = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  };
+  useEffect(() => cancelTimer, []);
+  return <Handle
+    id={`port-${id}`}
+    type="source"
+    position={position}
+    aria-label={`在 ${id} 边界位置新增连线`}
+    onPointerEnter={() => {
+      cancelTimer();
+      timerRef.current = setTimeout(() => setReady(true), 500);
+    }}
+    onPointerLeave={() => {
+      cancelTimer();
+      setReady(false);
+    }}
+    style={{
+      width: 18,
+      height: 18,
+      border: 0,
+      background: "transparent",
+      display: "grid",
+      placeItems: "center",
+      ...style,
+    }}
+  >
+    <span aria-hidden style={{
+      width: 16,
+      height: 16,
+      borderRadius: "50%",
+      border: `1.5px solid ${color}`,
+      background: "#fffefa",
+      color,
+      display: "grid",
+      placeItems: "center",
+      fontSize: 14,
+      fontWeight: 900,
+      lineHeight: 1,
+      opacity: ready ? 1 : 0,
+      transform: ready ? "scale(1)" : "scale(.7)",
+      transition: "opacity 120ms ease, transform 120ms ease",
+      pointerEvents: "none",
+      boxShadow: "0 1px 5px rgba(42,41,36,.18)",
+    }}>+</span>
+  </Handle>;
+}
+
+export function EightConnectionPorts({ color = "#37685a" }: { color?: string }) {
   return <>
     {PORTS.map((port) => (
-      <Handle
+      <DelayedConnectionPort
         key={port.id}
-        id={`port-${port.id}`}
-        type="source"
+        id={port.id}
         position={port.position}
-        style={{
-          width: 7,
-          height: 7,
-          border: "1.5px solid #fffefa",
-          background: color,
-          opacity: visible ? .78 : 0,
-          transition: "opacity 120ms ease",
-          ...port.style,
-        }}
+        style={port.style}
+        color={color}
       />
     ))}
   </>;
+}
+
+export function EditableConnectionLine({ fromX, fromY, toX, toY }: ConnectionLineComponentProps) {
+  return <g>
+    <defs>
+      <marker id="editable-connection-arrow" viewBox="0 -6 12 12" refX="11" refY="0" markerWidth="10" markerHeight="10" orient="auto">
+        <path d="M 1 -5 L 11 0 L 1 5" fill="none" stroke="#37685a" strokeWidth="1.8" strokeLinejoin="round" />
+      </marker>
+    </defs>
+    <path d={`M ${fromX} ${fromY} L ${toX} ${toY}`} fill="none" stroke="#37685a" strokeWidth="2.2" markerEnd="url(#editable-connection-arrow)" />
+  </g>;
 }
 
 function latexHtml(tex: string) {
@@ -118,6 +183,10 @@ function latexHtml(tex: string) {
 }
 
 type Obstacle = { left: number; top: number; right: number; bottom: number };
+
+// [OM-FREEPLAY] 用户要求自动线不得贴框；24px 引出段与 28px 障碍外扩可在当前最窄并列间距内同时成立。
+const EDGE_PORT_LEAD = 24;
+const EDGE_NODE_CLEARANCE = 28;
 
 function segmentCrossesObstacle(start: XYPosition, end: XYPosition, obstacle: Obstacle) {
   if (Math.abs(start.x - end.x) < .5) {
@@ -158,7 +227,7 @@ function routeScore(points: XYPosition[], obstacles: Obstacle[]) {
 function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: number, targetY: number, obstacles: Obstacle[]) {
   const middleY = sourceY + (targetY - sourceY) / 2;
   const middleX = sourceX + (targetX - sourceX) / 2;
-  const clearance = 26;
+  const clearance = EDGE_NODE_CLEARANCE;
   const nearby = obstacles.filter((obstacle) => obstacle.right >= Math.min(sourceX, targetX) - clearance
     && obstacle.left <= Math.max(sourceX, targetX) + clearance
     && obstacle.bottom >= Math.min(sourceY, targetY) - clearance
@@ -167,7 +236,9 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
   const bottom = Math.max(sourceY, targetY, ...nearby.map((item) => item.bottom)) + clearance;
   const left = Math.min(sourceX, targetX, ...nearby.map((item) => item.left)) - clearance;
   const right = Math.max(sourceX, targetX, ...nearby.map((item) => item.right)) + clearance;
-  const candidates = [
+  const horizontalChannels = [...new Set([top, bottom, ...nearby.flatMap((item) => [item.top, item.bottom])])];
+  const verticalChannels = [...new Set([left, right, ...nearby.flatMap((item) => [item.left, item.right])])];
+  const candidates: XYPosition[][] = [
     [
       { x: sourceX, y: sourceY },
       { x: sourceX, y: middleY },
@@ -180,10 +251,18 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
       { x: middleX, y: targetY },
       { x: targetX, y: targetY },
     ],
-    [{ x: sourceX, y: sourceY }, { x: sourceX, y: top }, { x: targetX, y: top }, { x: targetX, y: targetY }],
-    [{ x: sourceX, y: sourceY }, { x: sourceX, y: bottom }, { x: targetX, y: bottom }, { x: targetX, y: targetY }],
-    [{ x: sourceX, y: sourceY }, { x: left, y: sourceY }, { x: left, y: targetY }, { x: targetX, y: targetY }],
-    [{ x: sourceX, y: sourceY }, { x: right, y: sourceY }, { x: right, y: targetY }, { x: targetX, y: targetY }],
+    ...horizontalChannels.map((channelY) => [
+      { x: sourceX, y: sourceY },
+      { x: sourceX, y: channelY },
+      { x: targetX, y: channelY },
+      { x: targetX, y: targetY },
+    ]),
+    ...verticalChannels.map((channelX) => [
+      { x: sourceX, y: sourceY },
+      { x: channelX, y: sourceY },
+      { x: channelX, y: targetY },
+      { x: targetX, y: targetY },
+    ]),
   ];
   return candidates
     .map(simplifyOrthogonalPoints)
@@ -231,7 +310,7 @@ function pointsWithDirectedTarget(
   targetY: number,
   targetPosition: Position,
 ) {
-  const lead = 18;
+  const lead = EDGE_PORT_LEAD;
   const approach = targetPosition === Position.Top
     ? { x: targetX, y: targetY - lead }
     : targetPosition === Position.Bottom
@@ -254,7 +333,7 @@ function pointsWithDirectedSource(
   sourceY: number,
   sourcePosition: Position,
 ) {
-  const lead = 18;
+  const lead = EDGE_PORT_LEAD;
   const departure = sourcePosition === Position.Top
     ? { x: sourceX, y: sourceY - lead }
     : sourcePosition === Position.Bottom
@@ -269,6 +348,32 @@ function pointsWithDirectedSource(
     ? { x: next.x, y: departure.y }
     : { x: departure.x, y: next.y };
   return simplifyOrthogonalPoints([{ x: sourceX, y: sourceY }, departure, elbow, ...body]);
+}
+
+function portLeadPoint(x: number, y: number, position: Position) {
+  if (position === Position.Top) return { x, y: y - EDGE_PORT_LEAD };
+  if (position === Position.Bottom) return { x, y: y + EDGE_PORT_LEAD };
+  if (position === Position.Left) return { x: x - EDGE_PORT_LEAD, y };
+  return { x: x + EDGE_PORT_LEAD, y };
+}
+
+function automaticOrthogonalPoints(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+  sourcePosition: Position,
+  targetPosition: Position,
+  obstacles: Obstacle[],
+) {
+  const departure = portLeadPoint(sourceX, sourceY, sourcePosition);
+  const approach = portLeadPoint(targetX, targetY, targetPosition);
+  const routedBody = defaultOrthogonalPoints(departure.x, departure.y, approach.x, approach.y, obstacles);
+  return simplifyOrthogonalPoints([
+    { x: sourceX, y: sourceY },
+    ...routedBody,
+    { x: targetX, y: targetY },
+  ]);
 }
 
 function pathFromPoints(points: XYPosition[]) {
@@ -343,32 +448,34 @@ function EditableOrthogonalEdgeView({
   data,
   style,
 }: EdgeProps<EditableEdge>) {
-  const { screenToFlowPosition, setEdges, getNodes, getInternalNode } = useReactFlow<Node, EditableEdge>();
+  const { screenToFlowPosition, setEdges, getInternalNode } = useReactFlow<Node, EditableEdge>();
+  const flowNodes = useNodes<Node>();
   const history = useContext(EditHistoryContext);
   const obstacles = useMemo(() => {
     const excluded = new Set([source, target]);
     for (const nodeId of [source, target]) {
-      let current = getNodes().find((item) => item.id === nodeId);
+      let current = flowNodes.find((item) => item.id === nodeId);
       while (current?.parentId) {
         excluded.add(current.parentId);
-        current = getNodes().find((item) => item.id === current?.parentId);
+        current = flowNodes.find((item) => item.id === current?.parentId);
       }
     }
-    return getNodes().flatMap((node) => {
+    return flowNodes.flatMap((node) => {
       if (excluded.has(node.id) || node.hidden) return [];
       const internal = getInternalNode(node.id);
       const position = internal?.internals.positionAbsolute;
       const width = internal?.measured.width;
       const height = internal?.measured.height;
       if (!position || !width || !height) return [];
-      const padding = 14;
+      const padding = EDGE_NODE_CLEARANCE;
       return [{ left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding }];
     });
-  }, [getInternalNode, getNodes, source, sourceX, sourceY, target, targetX, targetY]);
+  }, [flowNodes, getInternalNode, source, target]);
   const points = useMemo(() => {
-    const rawPoints = data?.waypoints?.length
-      ? pointsWithAnchoredEndpoints(sourceX, sourceY, targetX, targetY, data.waypoints)
-      : defaultOrthogonalPoints(sourceX, sourceY, targetX, targetY, obstacles);
+    if (!data?.waypoints?.length) {
+      return automaticOrthogonalPoints(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, obstacles);
+    }
+    const rawPoints = pointsWithAnchoredEndpoints(sourceX, sourceY, targetX, targetY, data.waypoints);
     const sourceDirected = pointsWithDirectedSource(rawPoints, sourceX, sourceY, sourcePosition);
     return pointsWithDirectedTarget(sourceDirected, targetX, targetY, targetPosition);
   }, [data?.waypoints, obstacles, sourcePosition, sourceX, sourceY, targetPosition, targetX, targetY]);

@@ -18,6 +18,7 @@ import {
 } from "@xyflow/react";
 import {
   EditableOrthogonalEdge,
+  EditableConnectionLine,
   EditHistoryProvider,
   EightConnectionPorts,
   EightResizeHandles,
@@ -64,6 +65,8 @@ type DiagramData = {
   subtitle?: string;
   tone?: DiagramTone;
   matrixRows?: string[];
+  matrixRowCells?: string[][];
+  vectorCells?: string[];
 };
 type DiagramNode = Node<DiagramData>;
 type Props = { initialLayer?: number };
@@ -183,25 +186,89 @@ function Title({ children }: { children: ReactNode }) {
   return <div style={{ padding: "10px 14px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 15, fontWeight: 800 }}>{children}</div>;
 }
 
-function Matrix({ tex, shape, rowTex, tone = "blue" }: { tex: string; shape: string; rowTex: (row: string) => string; tone?: "blue" | "green" | "amber" }) {
+function tonePalette(tone: "neutral" | "blue" | "green" | "amber") {
+  return tone === "green"
+    ? { color: COLORS.green, background: COLORS.greenSoft }
+    : tone === "amber"
+      ? { color: COLORS.amber, background: COLORS.amberSoft }
+      : tone === "blue"
+        ? { color: COLORS.blue, background: COLORS.blueSoft }
+        : { color: COLORS.line, background: COLORS.card };
+}
+
+function VectorStrip({
+  name,
+  length,
+  elementTex,
+  tone = "neutral",
+  compact = false,
+}: {
+  name: string;
+  length: string;
+  elementTex: (column: string) => string;
+  tone?: "neutral" | "blue" | "green" | "amber";
+  compact?: boolean;
+}) {
+  const palette = tonePalette(tone);
+  const columns = ["1", "2", "\\cdots", length];
+  return <div style={{ minWidth: 0, display: "grid", gridTemplateColumns: compact ? "74px minmax(0,1fr)" : "92px minmax(0,1fr)", gap: 5, alignItems: "center", padding: compact ? 3 : 5, border: `1.2px solid ${palette.color}`, borderRadius: 6, background: palette.background }}>
+    <div style={{ minWidth: 0, textAlign: "center", color: palette.color, fontSize: compact ? 9 : 10.5, fontWeight: 800, overflow: "hidden" }}><MathFormula tex={name} /></div>
+    <div style={{ minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>
+      {columns.map((column, index) => column === "\\cdots"
+        ? <span key={`${column}-${index}`} style={{ display: "grid", placeItems: "center", color: COLORS.muted }}><MathFormula tex="\cdots" /></span>
+        : <span key={`${column}-${index}`} style={{ minWidth: 0, padding: compact ? "2px 3px" : "4px 3px", border: `1px solid ${palette.color}`, borderRadius: 4, background: palette.background, textAlign: "center", fontSize: compact ? 8.5 : 9.5, overflow: "hidden" }}><MathFormula tex={elementTex(column)} /></span>)}
+    </div>
+  </div>;
+}
+
+function Matrix({ tex, shape, rowTex, elementTex, tone = "blue", vectorLength = "5120" }: { tex: string; shape: string; rowTex: (row: string) => string; elementTex: (row: string, column: string) => string; tone?: "blue" | "green" | "amber"; vectorLength?: string }) {
   const rows = ["1", "2", "\\vdots", "N"];
+  const palette = tonePalette(tone);
   return (
-    <div style={{ border: `1.5px solid ${tone === "green" ? COLORS.green : tone === "amber" ? COLORS.amber : COLORS.blue}`, borderRadius: 9, overflow: "hidden" }}>
-      <div style={{ padding: "6px 9px", background: tone === "green" ? COLORS.greenSoft : tone === "amber" ? COLORS.amberSoft : COLORS.blueSoft, display: "flex", justifyContent: "space-between", gap: 8 }}>
+    <div style={{ border: `1.5px solid ${palette.color}`, borderRadius: 9, overflow: "hidden" }}>
+      <div style={{ padding: "6px 9px", background: palette.background, display: "flex", justifyContent: "space-between", gap: 8 }}>
         <MathFormula tex={tex} /><MathFormula tex={shape} />
       </div>
       <div style={{ padding: 6, display: "grid", gap: 3, borderTop: `1px solid ${COLORS.line}`, fontSize: 9.5 }}>
-        {rows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 21, display: "grid", placeItems: "center", border: row === "\\vdots" ? "none" : `1px solid ${COLORS.line}`, borderRadius: 5, background: row === "\\vdots" ? "transparent" : COLORS.card }}><MathFormula tex={row === "\\vdots" ? row : `${rowTex(row)}\\in\\mathbb{R}^{5120}`} /></div>)}
+        {rows.map((row, index) => row === "\\vdots"
+          ? <div key={`${row}-${index}`} style={{ height: 14, display: "grid", placeItems: "center" }}><MathFormula tex="\vdots" /></div>
+          : <VectorStrip key={`${row}-${index}`} name={rowTex(row)} length={vectorLength} elementTex={(column) => elementTex(row, column)} tone={tone} compact />)}
       </div>
     </div>
   );
 }
 
+function MatrixMultiplyStructure({ layer }: { layer: number }) {
+  return <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 30px 1fr", gap: 5, alignItems: "stretch" }}>
+      <div style={{ display: "grid", gap: 4 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`X_{${layer}}`} /><MathFormula tex="N\times5120" /></div>
+        <VectorStrip name={`\\mathbf x_{${layer},t}`} length="5120" elementTex={(column) => `x_{${layer},t,${column}}`} tone="blue" compact />
+      </div>
+      <Operator tex="\times" />
+      <div style={{ display: "grid", gap: 4, border: `1.2px solid ${COLORS.green}`, borderRadius: 7, padding: 5, background: COLORS.greenSoft }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><MathFormula tex="5120\times512" /></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>
+          {["1", "2", "\\cdots", "512"].map((column, index) => column === "\\cdots"
+            ? <span key={`${column}-${index}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex="\cdots" /></span>
+            : <Box key={`${column}-${index}`}><MathFormula tex={`\\mathbf w_{${layer},:,${column}}`} /></Box>)}
+        </div>
+      </div>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "68px 1fr", gap: 5, alignItems: "center" }}>
+      <Operator tex="=" />
+      <VectorStrip name={`\\mathbf u_{${layer},t}`} length="512" elementTex={(column) => `u_{${layer},t,${column}}=\\mathbf x_{${layer},t}\\mathbf w_{${layer},:,${column}}`} tone="green" compact />
+    </div>
+  </div>;
+}
+
 function QueryProjection({ layer }: { layer: number }) {
   return (
     <div style={panel}>
-      <Title>Query 两级投影 · Layer {layer}</Title>
-      <div style={{ position: "absolute", right: 14, top: 13, color: COLORS.muted, fontSize: 10.5 }}>内部矩阵、参数、运算与向量均可单独拖动、缩放和连线</div>
+      <Title>Layer {layer} · Query</Title>
+      <div style={{ position: "absolute", left: 28, top: 47, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>① 5120 → 1280</div>
+      <div style={{ position: "absolute", left: 278, top: 166, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>② 1280 → 64 × 512</div>
+      <div style={{ position: "absolute", left: 42, top: 292, color: COLORS.green, fontSize: 10.5, fontWeight: 800 }}>③ 投影输出行按 Head 分块</div>
     </div>
   );
 }
@@ -211,20 +278,13 @@ function LocalKvProjection({ layer }: { layer: number }) {
     <div style={panel}>
       <Handle type="target" position={Position.Top} style={handle} />
       <Handle id="swa" type="source" position={Position.Right} style={handle} />
-      <Title>本层独立 KV · <MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}\\in\\mathbb{R}^{5120\\times512}`} /></Title>
-      <div style={{ padding: 10, display: "grid", gap: 7 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}>
-          <Box tone="blue"><MathFormula tex={`X_{${layer}}`} /><br /><MathFormula tex="N\times5120" /></Box>
-          <Operator tex="\times" />
-          <Box tone="green"><MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><br />把每个 5120 维 token 行投影成 512 维窗口 KV 行</Box>
+      <Title><MathFormula tex={`X_{${layer}}W_{${layer}}^{KV,\\mathrm{SWA}}`} /> · 本层独立 KV</Title>
+      <div style={{ padding: 9, display: "grid", gap: 7 }}>
+        <MatrixMultiplyStructure layer={layer} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1fr", alignItems: "center", gap: 4 }}>
+          <Box tone="green"><MathFormula tex={`\\mathbf u_{${layer},t}`} /></Box><Operator tex="=" /><Box><MathFormula tex="\operatorname{RMSNorm}" /></Box><Operator tex="\circ" /><Box><MathFormula tex="\operatorname{RoPE}" /></Box>
         </div>
-        <Arrow vertical />
-        <Box tone="green"><MathFormula tex={`U_{${layer}}=\\operatorname{RoPE}(\\operatorname{RMSNorm}(X_{${layer}}W_{${layer}}^{KV,\\mathrm{SWA}}))\\in\\mathbb{R}^{N\\times512}`} /></Box>
-        <Box tone="green"><MathFormula tex={`U_{${layer}}=[\\mathbf u_{${layer},1};\\mathbf u_{${layer},2};\\ldots;\\mathbf u_{${layer},N}]`} /></Box>
-        <Arrow vertical />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 36px 1fr", gap: 5, alignItems: "center" }}>
-          <Box><MathFormula tex={`\\mathbf u_{${layer},1}`} /></Box><Box><MathFormula tex={`\\mathbf u_{${layer},2}`} /></Box><span style={{ textAlign: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf u_{${layer},N}`} /></Box>
-        </div>
+        <Matrix tex={`U_{${layer}}`} shape="N\times512" rowTex={(row) => `\\mathbf u_{${layer},${row}}`} elementTex={(row, column) => `u_{${layer},${row},${column}}`} vectorLength="512" tone="green" />
       </div>
     </div>
   );
@@ -257,7 +317,9 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
               overflow: "hidden",
             }}
           >
-            <MathFormula tex={item.ellipsis ? "\\vdots" : `\\mathbf u_{${layer},${item.row}}\\in\\mathbb{R}^{512}`} />
+            {item.ellipsis
+              ? <MathFormula tex="\vdots" />
+              : <VectorStrip name={`\\mathbf u_{${layer},${item.row}}`} length="512" elementTex={(column) => `u_{${layer},${item.row},${column}}`} tone={item.selected ? "green" : "neutral"} compact />}
           </div>
         ))}
       </div>
@@ -272,13 +334,18 @@ function Head({ index, layer }: { index: number; layer: number }) {
   return (
     <div style={{ position: "relative", border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
       <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 12 }}>Layer {layer} · Head {index}</strong>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.55fr", gap: 5 }}><Box><MathFormula tex={`${queryRow}\\in\\mathbb{R}^{512}`} /></Box><Box><MathFormula tex={attendedKv} /></Box></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.45fr .8fr", gap: 5 }}><VectorStrip name={queryRow} length="512" elementTex={(column) => `q_{${layer},${index},t,${column}}`} tone="blue" compact /><Box><MathFormula tex={attendedKv} /></Box></div>
       <Arrow vertical />
       <Box tone="green"><MathFormula tex={`A_{${layer},${index},t}=\\operatorname{softmax}(Z_{${layer},${index},t})`} /><br /><MathFormula tex={`Z_{${layer},${index},t}=${queryRow}\\left(${attendedKv}\\right)^{\\mathsf T}/\\sqrt{d_h}`} /></Box>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}><Box><MathFormula tex={`A_{${layer},${index},t}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={attendedKv} /></Box></div>
       <Arrow vertical />
-      <Box tone="green"><MathFormula tex={`\\mathbf o_{${layer},${index},t}=A_{${layer},${index},t}${attendedKv}\\in\\mathbb{R}^{512}`} /></Box>
-      <Box tone="green"><MathFormula tex={`O_{${layer},${index}}=[\\mathbf o_{${layer},${index},1};\\ldots;\\mathbf o_{${layer},${index},N}]\\in\\mathbb{R}^{N\\times512}`} /></Box>
+      <VectorStrip name={`\\mathbf o_{${layer},${index},t}`} length="512" elementTex={(column) => `o_{${layer},${index},t,${column}}`} tone="green" compact />
+      <div style={{ border: `1.2px solid ${COLORS.green}`, borderRadius: 7, padding: 5, background: COLORS.greenSoft, display: "grid", gap: 3 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5 }}><MathFormula tex={`O_{${layer},${index}}`} /><MathFormula tex="N\times512" /></div>
+        <VectorStrip name={`\\mathbf o_{${layer},${index},1}`} length="512" elementTex={(column) => `o_{${layer},${index},1,${column}}`} tone="green" compact />
+        <div style={{ height: 10, display: "grid", placeItems: "center" }}><MathFormula tex="\vdots" /></div>
+        <VectorStrip name={`\\mathbf o_{${layer},${index},N}`} length="512" elementTex={(column) => `o_{${layer},${index},N,${column}}`} tone="green" compact />
+      </div>
     </div>
   );
 }
@@ -315,7 +382,7 @@ function SelectedGlobalRows({ kvSource, indexSource }: { kvSource: number; index
     <div style={{ display: "grid", gridTemplateColumns: "44px 8px minmax(0,1fr) 8px", gap: 4, minWidth: 0 }}>
       <div style={{ display: "grid", gridTemplateRows: `repeat(${rows.length},1fr)`, gap: 3, color: COLORS.muted, fontSize: 10, textAlign: "right", alignItems: "center" }}>{rows.map((row, index) => <span key={`${row.label}-${index}`} style={{ color: row.selected ? COLORS.amber : COLORS.muted, fontWeight: row.selected ? 800 : 500 }}><MathFormula tex={row.label} /></span>)}</div>
       <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
-      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>{rows.map((row, rowIndex) => <div key={`${row.label}-values-${rowIndex}`} style={{ minHeight: 28, display: "grid", placeItems: "center", padding: "2px 4px", border: row.selected ? `1.5px solid ${COLORS.green}` : "1px solid transparent", borderRadius: 5, background: row.selected ? COLORS.greenSoft : "transparent", textAlign: "center", fontSize: 9.5 }}>{row.ellipsis ? <MathFormula tex="\\vdots" /> : <MathFormula tex={`\\mathbf g_{${kvSource},${row.label}}\\in\\mathbb{R}^{512}`} />}</div>)}</div>
+      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>{rows.map((row, rowIndex) => <div key={`${row.label}-values-${rowIndex}`} style={{ minHeight: 28, display: "grid", placeItems: "center", padding: "2px 4px", border: row.selected ? `1.5px solid ${COLORS.green}` : "1px solid transparent", borderRadius: 5, background: row.selected ? COLORS.greenSoft : "transparent", textAlign: "center", fontSize: 9.5 }}>{row.ellipsis ? <MathFormula tex="\vdots" /> : <MathFormula tex={`\\mathbf g_{${kvSource},${row.label}}\\in\\mathbb{R}^{512}`} />}</div>)}</div>
       <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
     </div>
     <div style={{ paddingLeft: 52, color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}>绿色高亮框 = 被行号选中的整条 512 维行向量</div>
@@ -350,11 +417,17 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
             {data.tex && <div style={{ color, fontWeight: 800 }}><MathFormula tex={data.tex} /></div>}
             <div style={{ display: "grid", gridTemplateColumns: "7px minmax(0,1fr) 7px", gap: 4 }}>
               <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
-              <div style={{ display: "grid", gap: 3 }}>{data.matrixRows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 22, border: `1px solid ${COLORS.line}`, borderRadius: 5, background: COLORS.card, display: "grid", placeItems: "center", fontSize: 10 }}><MathFormula tex={row} /></div>)}</div>
+              <div style={{ display: "grid", gap: 3 }}>{data.matrixRows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 24, border: `1px solid ${COLORS.line}`, borderRadius: 5, background: COLORS.card, display: "grid", gridTemplateColumns: data.matrixRowCells?.[index] ? "70px minmax(0,1fr)" : "1fr", alignItems: "center", gap: 3, padding: 3, fontSize: 9.5 }}>
+                <MathFormula tex={row} />
+                {data.matrixRowCells?.[index] && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .5fr 1fr", gap: 2 }}>{data.matrixRowCells[index].map((cell, cellIndex) => cell === "\\cdots" ? <span key={`${cell}-${cellIndex}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={`${cell}-${cellIndex}`} style={{ padding: "2px 1px", border: `1px solid ${color}`, borderRadius: 3, background, textAlign: "center", overflow: "hidden" }}><MathFormula tex={cell} /></span>)}</div>}
+              </div>)}</div>
               <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
             </div>
           </div>
-        ) : <MathFormula tex={data.tex ?? ""} />}
+        ) : data.vectorCells?.length ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "minmax(48px,.7fr) minmax(0,1.8fr)", alignItems: "center", gap: 4 }}>
+          <MathFormula tex={data.tex ?? ""} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>{data.vectorCells.map((cell, index) => cell === "\\cdots" ? <span key={`${cell}-${index}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={`${cell}-${index}`} style={{ padding: "3px 2px", border: `1px solid ${color}`, borderRadius: 4, background, fontSize: 9, overflow: "hidden" }}><MathFormula tex={cell} /></span>)}</div>
+        </div> : <MathFormula tex={data.tex ?? ""} />}
         {data.subtitle && <span style={{ color: COLORS.muted, fontSize: 10.5 }}>{data.subtitle}</span>}
       </div>
     </div>;
@@ -362,7 +435,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 
   if (kind === "tensor" || kind === "output") {
     const output = kind === "output";
-    return <div style={panel}>{output ? both : <><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /></>}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}=H_{${layer}}'+O_{${layer}}^{\\mathrm{FFN}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape="N\times5120" rowTex={(row) => output ? `\\mathbf h_{${layer},${row}}^{\\mathrm{out}}` : `\\mathbf h_{${layer},${row}}^{\\mathrm{in}}`} tone={output ? "green" : "blue"} /></div></div>;
+    return <div style={panel}>{output ? both : <><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /></>}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}=H_{${layer}}'+O_{${layer}}^{\\mathrm{FFN}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape="N\times5120" rowTex={(row) => output ? `\\mathbf h_{${layer},${row}}^{\\mathrm{out}}` : `\\mathbf h_{${layer},${row}}^{\\mathrm{in}}`} elementTex={(row, column) => output ? `h_{${layer},${row},${column}}^{\\mathrm{out}}` : `h_{${layer},${row},${column}}^{\\mathrm{in}}`} tone={output ? "green" : "blue"} /></div></div>;
   }
 
   if (kind === "norm1") {
@@ -388,7 +461,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="local-window" type="source" position={Position.Bottom} style={handle} />
       <Title>Layer {layer} 本地 SWA cache · 本层独立拥有，<MathFormula tex="t" /> 是当前 token 行号</Title>
       <div style={{ padding: 10, display: "grid", gap: 8, minWidth: 0 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 20px 1.1fr 20px 1.15fr", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 20px .9fr", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}><strong>完整 KV 潜向量矩阵</strong><MathFormula tex={`U_{${layer}}\\in\\mathbb{R}^{N\\times512}`} /></div>
           <MatrixBracket layer={layer} rows={[
@@ -402,21 +475,10 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
             { row: "t+1" },
             { row: "N" },
           ]} compact />
-          <span style={{ color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}>绿色连续行是当前窗口</span>
+          <span style={{ color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /> = 绿色连续行</span>
         </div>
         <Arrow />
-        <Box tone="amber"><strong>窗口起点</strong><br /><MathFormula tex="r=\max(1,t-127)" /><br /><br /><strong>选中连续行</strong><br /><MathFormula tex="r,r+1,\ldots,t" /><br /><br /><strong>保留全部列</strong><br /><MathFormula tex="1,2,\ldots,512" /></Box>
-        <Arrow />
-        <div style={{ minWidth: 0, display: "grid", gap: 6, padding: 8, border: `1.5px solid ${COLORS.green}`, borderRadius: 9, background: COLORS.greenSoft }}>
-          <strong style={{ textAlign: "center" }}>选中的子矩阵</strong>
-          <MatrixBracket layer={layer} rows={[
-            { row: "r", selected: true },
-            { row: "r+1", selected: true },
-            { row: "", selected: true, ellipsis: true },
-            { row: "t", selected: true },
-          ]} />
-          <div style={{ textAlign: "center", fontSize: 11 }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}\\in\\mathbb{R}^{\\min(128,t)\\times512}`} /></div>
-        </div>
+        <Box tone="amber"><strong>行号</strong><br /><MathFormula tex="r=\max(1,t-127)" /><br /><MathFormula tex="r,\ldots,t" /><br /><br /><strong>形状</strong><br /><MathFormula tex="\min(128,t)\times512" /></Box>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 8, alignItems: "center", border: `1.5px solid ${COLORS.green}`, borderRadius: 8, padding: "6px 8px", background: COLORS.greenSoft, minWidth: 0 }}>
         <strong style={{ fontSize: 11 }}>Decode 环形 cache · 128 槽</strong>
@@ -437,9 +499,17 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Title>{writesKv ? <>全局 KV 生成 · Layer {layer} Compressor</> : <>读取 Layer {kvSource} 已生成的全局 KV</>}</Title>
       <div style={{ padding: 10, display: "grid", gap: 7, fontSize: 11, minWidth: 0 }}>
         {writesKv ? <>
-          <div style={{ display: "grid", gridTemplateColumns: ratio === 2 ? "1fr 1fr" : "1fr", gap: 7 }}>
-            <div style={{ display: "grid", gap: 5 }}><Box tone="blue"><MathFormula tex={`X_{${layer}}\\in\\mathbb{R}^{N\\times5120}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^{KV,c}\\in\\mathbb{R}^{5120\\times512}`} /><br />生成待压缩 KV 行</Box><Arrow vertical /><Box tone="green"><MathFormula tex={`V_{${layer}}^c=X_{${layer}}W_{${layer}}^{KV,c}\\in\\mathbb{R}^{N\\times512}`} /></Box></div>
-            {ratio === 2 && <div style={{ display: "grid", gap: 5 }}><Box tone="blue"><MathFormula tex={`X_{${layer}}\\in\\mathbb{R}^{N\\times5120}`} /></Box><Operator tex="\times" /><Box tone="amber"><MathFormula tex={`W_{${layer}}^{\\mathrm{gate}}\\in\\mathbb{R}^{5120\\times512}`} /><br />生成两行之间的逐元素池化分数</Box><Arrow vertical /><Box tone="amber"><MathFormula tex={`A_{${layer}}^{\\mathrm{gate}}=X_{${layer}}W_{${layer}}^{\\mathrm{gate}}\\in\\mathbb{R}^{N\\times512}`} /></Box></div>}
+          <div style={{ display: "grid", gap: 7 }}>
+            <div style={{ border: `1.2px solid ${COLORS.green}`, borderRadius: 8, padding: 6, display: "grid", gap: 5, background: COLORS.greenSoft }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`W_{${layer}}^{KV,c}`} /><MathFormula tex="5120\times512" /></div>
+              <VectorStrip name={`\\mathbf x_{${layer},t}`} length="5120" elementTex={(column) => `x_{${layer},t,${column}}`} tone="blue" compact />
+              <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 28px 1.35fr", gap: 4, alignItems: "center" }}><Operator tex="\times" /><Box><MathFormula tex={`\\mathbf w_{${layer},:,j}^{KV,c}`} /></Box><Operator tex="=" /><VectorStrip name={`\\mathbf v_{${layer},t}^{c}`} length="512" elementTex={(column) => `v_{${layer},t,${column}}^c`} tone="green" compact /></div>
+            </div>
+            {ratio === 2 && <div style={{ border: `1.2px solid ${COLORS.amber}`, borderRadius: 8, padding: 6, display: "grid", gap: 5, background: COLORS.amberSoft }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`W_{${layer}}^{\\mathrm{gate}}`} /><MathFormula tex="5120\times512" /></div>
+              <VectorStrip name={`\\mathbf x_{${layer},t}`} length="5120" elementTex={(column) => `x_{${layer},t,${column}}`} tone="blue" compact />
+              <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 28px 1.35fr", gap: 4, alignItems: "center" }}><Operator tex="\times" /><Box><MathFormula tex={`\\mathbf w_{${layer},:,j}^{\\mathrm{gate}}`} /></Box><Operator tex="=" /><VectorStrip name={`\\mathbf a_{${layer},t}^{\\mathrm{gate}}`} length="512" elementTex={(column) => `a_{${layer},t,${column}}^{\\mathrm{gate}}`} tone="amber" compact /></div>
+            </div>}
           </div>
           <Arrow vertical />
           {ratio === 2 ? <div style={{ display: "grid", gap: 7 }}>
@@ -451,8 +521,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
             <Box tone="green"><MathFormula tex={`\\mathbf g_{${layer},i}=\\operatorname{RMSNorm}(\\boldsymbol\\alpha_{${layer},i,1}\\odot\\mathbf v_{${layer},2i-1}^c+\\boldsymbol\\alpha_{${layer},i,2}\\odot\\mathbf v_{${layer},2i}^c)\\in\\mathbb{R}^{512}`} /></Box>
           </div> : <Box tone="amber"><strong>压缩比为 1，不做行池化</strong><br /><MathFormula tex={`\\mathbf g_{${layer},i}=\\operatorname{RMSNorm}(\\mathbf v_{${layer},i}^c)`} /></Box>}
         </> : <Box tone="blue"><strong>本层不重新计算</strong><br />直接读取源层输出矩阵</Box>}
-        <Box tone="green"><strong>共享全局 KV 矩阵</strong><br /><MathFormula tex={`G_{${kvSource}}=[\\mathbf g_{${kvSource},1};\\mathbf g_{${kvSource},2};\\ldots;\\mathbf g_{${kvSource},M}]\\in\\mathbb{R}^{M\\times512}`} /><br /><MathFormula tex={`M=\\lfloor N/${ratio}\\rfloor`} /></Box>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 5 }}><Box><MathFormula tex={`\\mathbf g_{${kvSource},1}`} /></Box><Box><MathFormula tex={`\\mathbf g_{${kvSource},2}`} /></Box><span style={{ display: "grid", placeItems: "center" }}>⋯</span><Box><MathFormula tex={`\\mathbf g_{${kvSource},M}`} /></Box></div>
+        <Matrix tex={`G_{${kvSource}}`} shape={`M\\times512,\\;M=\\lfloor N/${ratio}\\rfloor`} rowTex={(row) => `\\mathbf g_{${kvSource},${row}}`} elementTex={(row, column) => `g_{${kvSource},${row},${column}}`} vectorLength="512" tone="green" />
       </div>
     </div>;
   }
@@ -515,11 +584,24 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "heads") {
-    return <div style={panel}><Handle id="query" type="target" position={Position.Top} style={{ ...handle, left: "30%", background: COLORS.blue }} /><Handle id="kv" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 每个 Head 直接接收自己的 <MathFormula tex={`\\mathbf q_{${layer},h,t}`} />，并读取同一个 <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
+    return <div style={panel}><Handle id="query" type="target" position={Position.Top} style={{ ...handle, left: "30%", background: COLORS.blue }} /><Handle id="kv" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 64 Heads · <MathFormula tex={`\\mathbf q_{${layer},h,t}`} /> + <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
   }
 
   if (kind === "concat") {
-    return <div style={panel}>{both}<Title>Concat：沿特征维拼接 Layer {layer} 的 64 个 Head 输出，再做本层输出投影</Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 24px 1.4fr 24px 22px .7fr 24px 1fr", alignItems: "center", gap: 5 }}><Box><MathFormula tex={`[O_{${layer},1}\\;O_{${layer},2}\\;\\cdots\\;O_{${layer},64}]`} /></Box><Arrow /><Box tone="green"><MathFormula tex={`O_{${layer},\\mathrm{cat}}\\in\\mathbb{R}^{N\\times(64\\cdot512)}`} /></Box><Arrow /><Operator tex="\times" /><Box tone="blue"><MathFormula tex={`W_{${layer}}^O`} /></Box><Arrow /><Box tone="green"><MathFormula tex={`O_{${layer}}\\in\\mathbb{R}^{N\\times5120}`} /></Box></div></div>;
+    return <div style={panel}>{both}<Title>Layer {layer} · 64 个 Head 向量块拼成一行，再投影回 5120 维</Title>
+      <div style={{ padding: 9, display: "grid", gridTemplateColumns: "2.1fr 26px .75fr 26px 1.5fr", alignItems: "center", gap: 6 }}>
+        <div style={{ border: `1.4px solid ${COLORS.green}`, borderRadius: 8, padding: 6, background: COLORS.greenSoft, display: "grid", gap: 5 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`\\mathbf o_{${layer},\\mathrm{cat},t}`} /><MathFormula tex="64\\cdot512" /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .45fr 1fr", gap: 4 }}>
+            <Box><MathFormula tex={`\\mathbf o_{${layer},1,t}`} /></Box><Box><MathFormula tex={`\\mathbf o_{${layer},2,t}`} /></Box><span style={{ display: "grid", placeItems: "center" }}><MathFormula tex="\cdots" /></span><Box><MathFormula tex={`\\mathbf o_{${layer},64,t}`} /></Box>
+          </div>
+        </div>
+        <Operator tex="\times" />
+        <div style={{ border: `1.2px solid ${COLORS.blue}`, borderRadius: 7, padding: 6, background: COLORS.blueSoft, textAlign: "center", display: "grid", gap: 4 }}><MathFormula tex={`W_{${layer}}^O`} /><MathFormula tex="(64\cdot512)\times5120" /></div>
+        <Operator tex="=" />
+        <VectorStrip name={`\\mathbf o_{${layer},t}`} length="5120" elementTex={(column) => `o_{${layer},t,${column}}`} tone="green" compact />
+      </div>
+    </div>;
   }
 
   if (kind === "add1" || kind === "add2") {
@@ -609,7 +691,7 @@ function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
           : 40;
   return <div style={{ width: "100%", height: "100%", position: "relative" }}>
     <EightResizeHandles visible={Boolean(selected)} minWidth={minimumWidth} minHeight={minimumHeight} />
-    <EightConnectionPorts color={portColor} visible={Boolean(selected)} />
+    <EightConnectionPorts color={portColor} />
     <DiagramNodeContent data={data} />
   </div>;
 }
@@ -648,6 +730,8 @@ function structureNode({
   subtitle?: string;
   tone?: DiagramTone;
   matrixRows?: string[];
+  matrixRowCells?: string[][];
+  vectorCells?: string[];
 }): DiagramNode {
   return {
     id,
@@ -667,12 +751,12 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const hasGlobal = mode !== "swa";
   const mainGap = 70;
   const inputY = 0;
-  const tensorHeight = 230;
+  const tensorHeight = 270;
   const norm1Y = inputY + tensorHeight + 55;
   const projectionY = norm1Y + 72 + mainGap;
   const queryProjectionHeight = 720;
-  const localKvProjectionHeight = 430;
-  const swaHeight = 480;
+  const localKvProjectionHeight = 470;
+  const swaHeight = 550;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
   const indexerHeight = 450;
   const globalSelectHeight = 430;
@@ -686,7 +770,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const headsY = mergeY + mergeHeight + mainGap;
   const headsHeight = 520;
   const concatY = headsY + headsHeight + mainGap;
-  const concatHeight = 130;
+  const concatHeight = 210;
   const add1Y = concatY + concatHeight + mainGap;
   const state1Y = add1Y + 70 + mainGap;
   const norm2Y = state1Y + 72 + mainGap;
@@ -722,38 +806,34 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("output", "output", layer, mode, 610, outputY, 380, tensorHeight),
   ];
   nodes.push(
-    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 42, y: 66, width: 190, height: 100, title: "本层输入矩阵", tex: `X_{${layer}}`, subtitle: "N × 5120", tone: "blue" }),
-    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 292, y: 66, width: 220, height: 100, title: "第一次投影参数", tex: `W_{${layer}}^{Q\\downarrow}`, subtitle: "5120 × 1280" }),
-    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 548, y: 82, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
-    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 628, y: 66, width: 142, height: 100, title: "低秩 Query", tex: `Q_{${layer}}^r`, subtitle: "N × 1280", tone: "green" }),
-    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 292, y: 184, width: 220, height: 100, title: "第二次投影参数", tex: `W_{${layer}}^{Q\\uparrow}`, subtitle: "1280 × (64·512)" }),
-    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 548, y: 200, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 42, y: 66, width: 190, height: 100, title: "输入行", tex: `\\mathbf x_{${layer},t}`, vectorCells: [`x_{${layer},t,1}`, `x_{${layer},t,2}`, "\\cdots", `x_{${layer},t,5120}`], tone: "blue" }),
+    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 244, y: 88, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 300, y: 66, width: 210, height: 100, title: "投影列", tex: `W_{${layer}}^{Q\\downarrow}`, vectorCells: [`\\mathbf w_{:,1}`, `\\mathbf w_{:,2}`, "\\cdots", `\\mathbf w_{:,1280}`], tone: "amber" }),
+    structureNode({ id: "q-equals-down", parentId: "q", layer, mode, x: 522, y: 88, width: 44, height: 44, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 578, y: 66, width: 192, height: 100, title: "低秩输出行", tex: `\\mathbf q_{${layer},t}^{r}`, vectorCells: [`q_{${layer},t,1}^{r}`, `q_{${layer},t,2}^{r}`, "\\cdots", `q_{${layer},t,1280}^{r}`], tone: "green" }),
+    structureNode({ id: "q-low-rank-up", parentId: "q", layer, mode, x: 42, y: 184, width: 190, height: 100, title: "同一低秩行", tex: `\\mathbf q_{${layer},t}^{r}`, vectorCells: [`q_{${layer},t,1}^{r}`, `q_{${layer},t,2}^{r}`, "\\cdots", `q_{${layer},t,1280}^{r}`], tone: "green" }),
+    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 244, y: 206, width: 44, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 300, y: 184, width: 210, height: 100, title: "投影列", tex: `W_{${layer}}^{Q\\uparrow}`, vectorCells: [`\\mathbf w_{:,1}`, `\\mathbf w_{:,2}`, "\\cdots", `\\mathbf w_{:,64\\cdot512}`], tone: "amber" }),
     structureNode({
       id: "q-wide-matrix",
       parentId: "q",
       layer,
       mode,
       x: 38,
-      y: 318,
+      y: 350,
       width: 286,
-      height: 246,
-      title: "第二次投影输出矩阵",
-      tex: `\\widetilde Q_{${layer}}\\in\\mathbb{R}^{N\\times(64\\cdot512)}`,
-      subtitle: "N × (64·512)",
-      tone: "blue",
-      matrixRows: [
-        `\\widetilde{\\mathbf q}_{${layer},1}`,
-        `\\widetilde{\\mathbf q}_{${layer},2}`,
-        "\\vdots",
-        `\\widetilde{\\mathbf q}_{${layer},N}`,
-      ],
+      height: 126,
+      title: "第二次投影输出行",
+      tex: `\\widetilde{\\mathbf q}_{${layer},t}`,
+      tone: "green",
+      vectorCells: [`\\widetilde q_{${layer},t,1}`, `\\widetilde q_{${layer},t,2}`, "\\cdots", `\\widetilde q_{${layer},t,64\\cdot512}`],
     }),
-    structureNode({ id: "q-equals", parentId: "q", layer, mode, x: 350, y: 410, width: 48, height: 48, kind: "structure-operator", tex: "=" }),
-    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 430, y: 292, width: 340, height: 370, kind: "structure-group", title: "当前 token 的 64 个 Query 向量", tex: `Q_{${layer}}[t,:,:]\\in\\mathbb{R}^{64\\times512}`, tone: "green" }),
-    structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 18, y: 64, width: 138, height: 100, title: "Head 1", tex: `\\mathbf q_{${layer},1,t}`, subtitle: "512 维向量", tone: "green" }),
-    structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 184, y: 64, width: 138, height: 100, title: "Head 2", tex: `\\mathbf q_{${layer},2,t}`, subtitle: "512 维向量", tone: "green" }),
-    structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 119, y: 184, width: 102, height: 44, kind: "structure-operator", tex: "\\vdots" }),
-    structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 101, y: 246, width: 138, height: 100, title: "Head 64", tex: `\\mathbf q_{${layer},64,t}`, subtitle: "512 维向量", tone: "green" }),
+    structureNode({ id: "q-equals", parentId: "q", layer, mode, x: 350, y: 388, width: 48, height: 48, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 430, y: 318, width: 340, height: 370, kind: "structure-group", title: "64 个 Head 向量", tone: "green" }),
+    structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 18, y: 54, width: 304, height: 80, title: "Head 1", tex: `\\mathbf q_{${layer},1,t}`, vectorCells: [`q_{${layer},1,t,1}`, `q_{${layer},1,t,2}`, "\\cdots", `q_{${layer},1,t,512}`], tone: "green" }),
+    structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 18, y: 142, width: 304, height: 80, title: "Head 2", tex: `\\mathbf q_{${layer},2,t}`, vectorCells: [`q_{${layer},2,t,1}`, `q_{${layer},2,t,2}`, "\\cdots", `q_{${layer},2,t,512}`], tone: "green" }),
+    structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 119, y: 226, width: 102, height: 56, kind: "structure-operator", tex: "\\vdots" }),
+    structureNode({ id: "q-head-64", parentId: "q-head-slice", layer, mode, x: 18, y: 274, width: 304, height: 80, title: "Head 64", tex: `\\mathbf q_{${layer},64,t}`, vectorCells: [`q_{${layer},64,t,1}`, `q_{${layer},64,t,2}`, "\\cdots", `q_{${layer},64,t,512}`], tone: "green" }),
   );
   if (hasGlobal) {
     nodes.push(node("compressor", "compressor", layer, mode, 1380, projectionY, 480, compressorHeight));
@@ -817,7 +897,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     const kvSource = globalKvSourceLayer(layer)!;
     const indexSource = globalIndexSourceLayer(layer)!;
     if (mode === "full") edges.push(mathEdge("norm-compressor", "norm1", "compressor", `X_{${layer}}`, { sourceHandle: "global-kv", targetHandle: "input" }));
-    if (mode === "full" || mode === "reindex") edges.push(mathEdge("q-low-rank-indexer", "q", "indexer", `Q_{${layer}}^r`, { sourceHandle: "port-right", targetHandle: "query" }));
+    if (mode === "full" || mode === "reindex") edges.push(mathEdge("q-low-rank-indexer", "q-low-rank", "indexer", `Q_{${layer}}^r`, { sourceHandle: "port-right", targetHandle: "query" }));
     edges.push(mathEdge("compressor-indexer", "compressor", "indexer", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "to-indexer", targetHandle: "global-matrix" }));
     edges.push(mathEdge("indexer-matrix", "indexer", "global-select", `G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`, { sourceHandle: "matrix", targetHandle: "matrix" }));
     edges.push(mathEdge("indexer-select", "indexer", "global-select", `I_{${indexSource},t}\\in\\mathbb{N}^{K_{${indexSource},t}}`, { sourceHandle: "indices", targetHandle: "indices", style: { stroke: COLORS.amber, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.amber } }));
@@ -849,7 +929,12 @@ function cloneSnapshot(nodes: DiagramNode[], edges: EditableEdge[]): DiagramSnap
       ...item,
       position: { ...item.position },
       style: item.style ? { ...item.style } : undefined,
-      data: { ...item.data, matrixRows: item.data.matrixRows ? [...item.data.matrixRows] : undefined },
+      data: {
+        ...item.data,
+        matrixRows: item.data.matrixRows ? [...item.data.matrixRows] : undefined,
+        matrixRowCells: item.data.matrixRowCells?.map((row) => [...row]),
+        vectorCells: item.data.vectorCells ? [...item.data.vectorCells] : undefined,
+      },
     })),
     edges: edges.map((item) => ({
       ...item,
@@ -917,13 +1002,15 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
   const [historyRevision, setHistoryRevision] = useState(0);
+  const [clickConnectionPreview, setClickConnectionPreview] = useState<{ fromX: number; fromY: number; toX: number; toY: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const pastRef = useRef<DiagramSnapshot[]>([]);
   const futureRef = useRef<DiagramSnapshot[]>([]);
   const pendingHistoryRef = useRef<DiagramSnapshot | null>(null);
   const resizeHistoryActiveRef = useRef(false);
-  const storageKey = `oasismind:deepseek-v41-layer-layout:v3:${layer}`;
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v6:${layer}`;
 
   nodesRef.current = nodes;
   edgesRef.current = edges;
@@ -1117,7 +1204,21 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const canRedo = historyRevision >= 0 && futureRef.current.length > 0;
   const historyContext = { beginHistory, commitHistory };
 
-  return <div style={{ width: "100%", height: "100%", position: "relative" }} onKeyDown={handleCanvasKeyDown}>
+  const pointerInCanvas = useCallback((clientX: number, clientY: number) => {
+    const bounds = canvasRef.current?.getBoundingClientRect();
+    return bounds ? { x: clientX - bounds.left, y: clientY - bounds.top } : { x: clientX, y: clientY };
+  }, []);
+
+  return <div
+    ref={canvasRef}
+    style={{ width: "100%", height: "100%", position: "relative" }}
+    onKeyDown={handleCanvasKeyDown}
+    onPointerMove={(event) => {
+      if (!clickConnectionPreview) return;
+      const point = pointerInCanvas(event.clientX, event.clientY);
+      setClickConnectionPreview((current) => current ? { ...current, toX: point.x, toY: point.y } : null);
+    }}
+  >
     <div style={{ position: "absolute", top: 12, right: 16, zIndex: 8, display: "flex", alignItems: "center", gap: 6, padding: 7, border: `1px solid ${COLORS.line}`, borderRadius: 9, background: "rgba(255,254,250,.96)", boxShadow: "0 4px 14px rgba(42,41,36,.08)" }}>
       <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
       <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z" style={{ ...editorButton, opacity: canUndo ? 1 : .45, cursor: canUndo ? "pointer" : "default" }}>撤销</button>
@@ -1136,7 +1237,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
           style={{ width: 150, border: `1px solid ${COLORS.line}`, borderRadius: 6, padding: "5px 7px", background: COLORS.card, color: COLORS.ink, fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace", fontSize: 10.5 }}
         />
       </label>}
-      <span style={{ color: COLORS.muted, fontSize: 10.5 }}>选中才显示控制点 · 端点靠近节点自动吸附 · Ctrl+Z / Ctrl+Y</span>
+      <span style={{ color: COLORS.muted, fontSize: 10.5 }}>选中节点拖缩放点 · 边界悬停 0.5 秒显示 + · 端点自动吸附 · Ctrl+Z / Ctrl+Y</span>
     </div>
     <EditHistoryProvider value={historyContext}>
     <ReactFlow
@@ -1144,9 +1245,16 @@ function DiagramCanvas({ layer }: { layer: number }) {
       edges={edges}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
+      connectionLineComponent={EditableConnectionLine}
       onNodesChange={handleNodesChange}
       onEdgesChange={handleEdgesChange}
       onConnect={onConnect}
+      onClickConnectStart={(event) => {
+        const pointer = "touches" in event ? event.touches[0] ?? event.changedTouches[0] : event;
+        const point = pointerInCanvas(pointer.clientX, pointer.clientY);
+        setClickConnectionPreview({ fromX: point.x, fromY: point.y, toX: point.x, toY: point.y });
+      }}
+      onClickConnectEnd={() => setClickConnectionPreview(null)}
       onReconnect={onReconnect}
       onReconnectStart={beginHistory}
       onReconnectEnd={commitHistory}
@@ -1161,6 +1269,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
       maxZoom={1.5}
       nodesDraggable
       nodesConnectable
+      connectOnClick
       nodesFocusable
       edgesFocusable
       edgesReconnectable
@@ -1181,6 +1290,14 @@ function DiagramCanvas({ layer }: { layer: number }) {
       <Controls showInteractive={false} position="top-left" />
     </ReactFlow>
     </EditHistoryProvider>
+    {clickConnectionPreview && <svg aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 7, pointerEvents: "none", overflow: "visible" }}>
+      <defs>
+        <marker id="click-connection-arrow" viewBox="0 -6 12 12" refX="11" refY="0" markerWidth="10" markerHeight="10" orient="auto">
+          <path d="M 1 -5 L 11 0 L 1 5" fill="none" stroke={COLORS.green} strokeWidth="1.8" strokeLinejoin="round" />
+        </marker>
+      </defs>
+      <path d={`M ${clickConnectionPreview.fromX} ${clickConnectionPreview.fromY} L ${clickConnectionPreview.toX} ${clickConnectionPreview.toY}`} fill="none" stroke={COLORS.green} strokeWidth="2.2" markerEnd="url(#click-connection-arrow)" />
+    </svg>}
   </div>;
 }
 
