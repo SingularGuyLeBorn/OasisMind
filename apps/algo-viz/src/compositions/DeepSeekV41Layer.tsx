@@ -516,18 +516,18 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         </div>
         <Arrow />
         <div style={{ minWidth: 0, display: "grid", gap: 8 }}>
-          <div data-window-start style={{ minWidth: 0, border: `1.5px solid ${COLORS.amber}`, borderRadius: 8, padding: 6, background: COLORS.amberSoft, display: "grid", gap: 5, fontSize: 11 }}>
+          <div data-window-start style={{ minWidth: 0, width: "fit-content", maxWidth: "100%", boxSizing: "border-box", justifySelf: "center", border: `1.5px solid ${COLORS.amber}`, borderRadius: 8, padding: 6, background: COLORS.amberSoft, display: "grid", gap: 4, fontSize: 11, lineHeight: 1.2 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 5 }}><strong>窗口起点 r</strong><span style={{ fontSize: 8.5 }}><MathFormula tex="\min(128,t)\times512" /></span></div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, alignItems: "center", textAlign: "center" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3px 10px", alignItems: "center", textAlign: "center" }}>
               <MathFormula tex="t\le128" /><MathFormula tex="r=1" />
               <MathFormula tex="t>128" /><MathFormula tex="r=t-127" />
             </div>
-            <div style={{ borderTop: `1px solid ${COLORS.amber}`, paddingTop: 6, display: "grid", gap: 4 }}>
+            <div style={{ borderTop: `1px solid ${COLORS.amber}`, paddingTop: 4, display: "grid", gap: 4 }}>
               <span style={{ fontSize: 10 }}>行号示例 · 含起点和终点</span>
               {/* [OM-FREEPLAY] 用 6 与 130 两个位置举例，分别展示未满窗口和滑动后的窗口。 */}
-              {[{ t: 6, r: 1, rows: ["1", "2", "3", "\\ldots", "6"] }, { t: 130, r: 3, rows: ["3", "4", "5", "\\ldots", "130"] }].map(example => <div key={example.t} data-window-example={example.t} style={{ display: "grid", gap: 2, fontSize: 9 }}>
+              {[{ t: 6, r: 1, rows: ["1", "2", "3", "\\ldots", "6"] }, { t: 130, r: 3, rows: ["3", "4", "5", "\\ldots", "130"] }].map(example => <div key={example.t} data-window-example={example.t} style={{ display: "grid", gridTemplateColumns: "max-content max-content", gap: 7, alignItems: "center", fontSize: 9 }}>
                 <MathFormula tex={`t=${example.t},\\;r=${example.r}`} />
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 2 }}>{example.rows.map(row => <span key={row} style={{ padding: "2px 3px", border: row === "\\ldots" ? "none" : `1px solid ${COLORS.amber}`, borderRadius: 3 }}><MathFormula tex={row} /></span>)}</div>
+                <div style={{ display: "flex", gap: 3 }}>{example.rows.map(row => <span key={row} style={{ padding: "1px 3px", border: row === "\\ldots" ? "none" : `1px solid ${COLORS.amber}`, borderRadius: 3 }}><MathFormula tex={row} /></span>)}</div>
               </div>)}
             </div>
           </div>
