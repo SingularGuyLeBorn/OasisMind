@@ -22,6 +22,7 @@ import {
   EightConnectionPorts,
   EightResizeHandles,
   findBoundaryConnection,
+  architectureFanoutGap,
   type BoundaryAnchor,
   type EditableEdge,
   type EditableEdgeData,
@@ -264,7 +265,7 @@ function LocalKvProjection({ layer }: { layer: number }) {
   return (
     <div style={panel}>
       <Handle id="main-in" type="target" position={Position.Top} style={handle} />
-      <Handle id="swa" type="source" position={Position.Right} style={handle} />
+      <Handle id="swa" type="source" position={Position.Bottom} style={handle} />
       <Title>Layer {layer} · 本层独立 KV</Title>
       <div style={{ padding: 9, display: "grid", gap: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 18px 1.15fr 18px 1fr", gap: 4, alignItems: "center" }}>
@@ -636,8 +637,17 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="main-in" type="target" position={Position.Top} style={handle} />
       <Handle id="main-out" type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
       <Title>Layer {layer} Router · 只选择 routed experts</Title>
-      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1.25fr 28px 1.4fr", alignItems: "center", gap: 5 }}>
-        <Box tone="blue"><MathFormula tex={`Y_{${layer}}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^R`} /></Box><Operator tex="=" /><Box tone="green"><MathFormula tex={`S_{${layer}}`} /></Box><Arrow /><Box tone="green"><MathFormula tex="N\times384" /></Box>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.1fr 26px 1.5fr 26px .8fr", alignItems: "center", gap: 7 }}>
+        <RowMatrix tex={`Y_{${layer}}`} shape="N\times5120" rows={[`\\mathbf y_{${layer},1}`, `\\mathbf y_{${layer},2}`, "\\vdots", `\\mathbf y_{${layer},N}`]} tone="blue" />
+        <Operator tex="\times" />
+        <div style={{ minWidth: 0, border: `1.3px solid ${COLORS.amber}`, background: COLORS.amberSoft, borderRadius: 7, padding: 7, display: "grid", gap: 6, textAlign: "center" }}>
+          <MathFormula tex={`W_{${layer}}^R`} /><MathFormula tex="5120\times384" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .45fr 1fr", gap: 5, fontSize: 10, alignItems: "center" }}>
+            {["1", "2", "\\cdots", "384"].map(expert => expert === "\\cdots" ? <MathFormula key={expert} tex={expert} /> : <div key={expert} style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "22px 2px" }}><MathFormula tex={`\\mathbf w_{${layer},${expert}}^R`} /></div>)}
+          </div>
+        </div>
+        <Operator tex="=" />
+        <Box tone="green"><MathFormula tex={`S_{${layer}}`} /><br /><MathFormula tex="N\times384" /></Box>
       </div>
     </div>;
   }
@@ -783,7 +793,7 @@ function structureNode({
 function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[] } {
   const mode = modeForLayer(layer);
   const hasGlobal = mode !== "swa";
-  const mainGap = 70;
+  const mainGap = architectureFanoutGap(3);
   const inputY = 0;
   const tensorHeight = 270;
   const norm1Y = inputY + tensorHeight + 55;
@@ -810,10 +820,11 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const norm2Y = state1Y + 72 + mainGap;
   const moeInputY = norm2Y + 72 + mainGap;
   const routerY = moeInputY + 80 + mainGap;
-  const scoresY = routerY + 130 + mainGap;
+  const routerHeight = 240;
+  const scoresY = routerY + routerHeight + mainGap;
   const scoresHeight = 320;
-  const expertsY = scoresY + scoresHeight + mainGap;
-  const expertsHeight = 520;
+  const expertsY = scoresY + scoresHeight + architectureFanoutGap(ROUTED_EXPERTS.length);
+  const expertsHeight = 540;
   const aggregateY = expertsY + expertsHeight + mainGap;
   const moeSumY = aggregateY + 125 + mainGap;
   const moeOutputY = moeSumY + 70 + mainGap;
@@ -832,7 +843,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("state1", "state1", layer, mode, 620, state1Y, 360, 72),
     node("norm2", "norm2", layer, mode, 620, norm2Y, 360, 72),
     node("moe-input", "moe-input", layer, mode, 715, moeInputY, 170, 80),
-    node("router", "router", layer, mode, 440, routerY, 720, 130),
+    node("router", "router", layer, mode, 380, routerY, 840, routerHeight),
     node("scores", "scores", layer, mode, 278, scoresY, 1252, scoresHeight),
     node("experts", "experts", layer, mode, 70, expertsY, 1460, expertsHeight),
     node("aggregate", "aggregate", layer, mode, 70, aggregateY, 1460, 125),

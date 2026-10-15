@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { Position } from "@xyflow/react";
-import { findBoundaryConnection, labelPointOnPath, projectLabelOntoPath } from "../../../algo-viz/src/components/EditableArchitectureGraph";
+import { architectureFanoutGap, automaticOrthogonalPoints, findBoundaryConnection, labelPointOnPath, projectLabelOntoPath, sharedRouteLength } from "../../../algo-viz/src/components/EditableArchitectureGraph";
 
 function addFrame(id: string, left: number, top: number, width: number, height: number) {
   const node = document.createElement("div");
@@ -15,6 +15,38 @@ function addFrame(id: string, left: number, top: number, width: number, height: 
 }
 
 afterEach(() => document.body.replaceChildren());
+
+describe("自动连线分配独立通道", () => {
+  it("六路扇出不共用折线段，且上下端保持垂直", () => {
+    const paths: Array<Array<{ x: number; y: number }>> = [];
+    const reserved: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }> = [];
+    for (let i = 0; i < 6; i += 1) {
+      const path = automaticOrthogonalPoints(600 + i * 90, 0, 100 + i * 180, architectureFanoutGap(6), Position.Bottom, Position.Top, [], reserved);
+      for (const previous of paths) expect(sharedRouteLength(path, previous)).toBe(0);
+      expect(path[0].x).toBe(path[1].x);
+      expect(path.at(-1)?.x).toBe(path.at(-2)?.x);
+      paths.push(path);
+      for (let j = 1; j < path.length; j += 1) reserved.push({ start: path[j - 1], end: path[j] });
+    }
+  });
+
+  it("保留起点附近的窄通道，不从并列框内部穿过", () => {
+    const obstacles = [
+      { left: 822, top: 477, right: 1378, bottom: 973 },
+      { left: 20, top: 1067, right: 820, bottom: 1267 },
+    ];
+    const path = automaticOrthogonalPoints(792, 651, 1370, 1363, Position.Right, Position.Top, obstacles);
+    for (let i = 1; i < path.length; i += 1) {
+      const a = path[i - 1], b = path[i];
+      for (const box of obstacles) {
+        const crosses = a.y === b.y
+          ? a.y > box.top && a.y < box.bottom && Math.max(a.x, b.x) > box.left && Math.min(a.x, b.x) < box.right
+          : a.x > box.left && a.x < box.right && Math.max(a.y, b.y) > box.top && Math.min(a.y, b.y) < box.bottom;
+        expect(crosses).toBe(false);
+      }
+    }
+  });
+});
 
 describe("架构图连续边缘吸附", () => {
   it("靠近边缘任意位置即可落线，不要求对准固定起线点", () => {

@@ -8,12 +8,14 @@ import {
   Position,
   ResizeControlVariant,
   useNodes,
+  useEdges,
   useReactFlow,
   useStoreApi,
   type Edge,
   type EdgeProps,
   type ConnectionLineComponentProps,
   type Node,
+  type InternalNode,
   type XYPosition,
 } from "@xyflow/react";
 
@@ -241,10 +243,17 @@ function latexHtml(tex: string) {
 }
 
 type Obstacle = { left: number; top: number; right: number; bottom: number };
+type ReservedSegment = { start: XYPosition; end: XYPosition };
 
 // [OM-FREEPLAY] 用户要求自动线不得贴框；24px 引出段与 28px 障碍外扩可在当前最窄并列间距内同时成立。
 const EDGE_PORT_LEAD = 24;
 const EDGE_NODE_CLEARANCE = 28;
+// [OM-FREEPLAY] 相邻自动线路保留 16px 的中心线间距，兼顾开放箭头和短公式标签。
+const EDGE_LANE_GAP = 16;
+
+export function architectureFanoutGap(branches: number) {
+  return 2 * EDGE_PORT_LEAD + Math.max(0, branches - 1) * EDGE_LANE_GAP + EDGE_NODE_CLEARANCE;
+}
 
 function segmentCrossesObstacle(start: XYPosition, end: XYPosition, obstacle: Obstacle) {
   if (Math.abs(start.x - end.x) < .5) {
@@ -270,19 +279,44 @@ function simplifyOrthogonalPoints(points: XYPosition[]) {
   });
 }
 
-function routeScore(points: XYPosition[], obstacles: Obstacle[]) {
+export function sharedRouteLength(first: XYPosition[], second: XYPosition[]) {
+  let total = 0;
+  for (let a = 0; a < first.length - 1; a += 1) for (let b = 0; b < second.length - 1; b += 1) {
+    const p = first[a], q = first[a + 1], r = second[b], s = second[b + 1];
+    if (p.y === q.y && r.y === s.y && Math.abs(p.y - r.y) < .5) total += Math.max(0, Math.min(Math.max(p.x, q.x), Math.max(r.x, s.x)) - Math.max(Math.min(p.x, q.x), Math.min(r.x, s.x)));
+    if (p.x === q.x && r.x === s.x && Math.abs(p.x - r.x) < .5) total += Math.max(0, Math.min(Math.max(p.y, q.y), Math.max(r.y, s.y)) - Math.max(Math.min(p.y, q.y), Math.min(r.y, s.y)));
+  }
+  return total;
+}
+
+function routeScore(points: XYPosition[], obstacles: Obstacle[], reserved: ReservedSegment[]) {
   let crossings = 0;
+  let crowding = 0;
   let length = 0;
   for (let index = 0; index < points.length - 1; index += 1) {
     const start = points[index];
     const end = points[index + 1];
     length += Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
     crossings += obstacles.filter((obstacle) => segmentCrossesObstacle(start, end, obstacle)).length;
+    const horizontal = start.y === end.y;
+    for (const segment of reserved) {
+      const otherHorizontal = segment.start.y === segment.end.y;
+      if (horizontal === otherHorizontal) {
+        const separation = Math.abs(horizontal ? start.y - segment.start.y : start.x - segment.start.x);
+        const overlap = horizontal
+          ? Math.min(Math.max(start.x, end.x), Math.max(segment.start.x, segment.end.x)) - Math.max(Math.min(start.x, end.x), Math.min(segment.start.x, segment.end.x))
+          : Math.min(Math.max(start.y, end.y), Math.max(segment.start.y, segment.end.y)) - Math.max(Math.min(start.y, end.y), Math.min(segment.start.y, segment.end.y));
+        if (overlap > 0 && separation < EDGE_LANE_GAP) crowding += overlap * (EDGE_LANE_GAP - separation) * 100;
+      } else if (segmentCrossesObstacle(start, end, {
+        left: Math.min(segment.start.x, segment.end.x) - .1, right: Math.max(segment.start.x, segment.end.x) + .1,
+        top: Math.min(segment.start.y, segment.end.y) - .1, bottom: Math.max(segment.start.y, segment.end.y) + .1,
+      })) crowding += 800;
+    }
   }
-  return crossings * 1_000_000 + length;
+  return crossings * 100_000_000 + crowding + length + points.length * 8;
 }
 
-function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: number, targetY: number, obstacles: Obstacle[]) {
+function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: number, targetY: number, obstacles: Obstacle[], reserved: ReservedSegment[]) {
   const middleY = sourceY + (targetY - sourceY) / 2;
   const middleX = sourceX + (targetX - sourceX) / 2;
   const clearance = EDGE_NODE_CLEARANCE;
@@ -294,8 +328,9 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
   const bottom = Math.max(sourceY, targetY, ...nearby.map((item) => item.bottom)) + clearance;
   const left = Math.min(sourceX, targetX, ...nearby.map((item) => item.left)) - clearance;
   const right = Math.max(sourceX, targetX, ...nearby.map((item) => item.right)) + clearance;
-  const horizontalChannels = [...new Set([top, bottom, ...nearby.flatMap((item) => [item.top, item.bottom])])];
-  const verticalChannels = [...new Set([left, right, ...nearby.flatMap((item) => [item.left, item.right])])];
+  const laneOffsets = [-4, -3, -2, -1, 0, 1, 2, 3, 4].map(value => value * EDGE_LANE_GAP);
+  const horizontalChannels = [...new Set([top, bottom, ...laneOffsets.map(offset => middleY + offset), ...nearby.flatMap((item) => [item.top, item.bottom]), ...reserved.filter(segment => segment.start.y === segment.end.y).flatMap(segment => [segment.start.y - EDGE_LANE_GAP, segment.start.y + EDGE_LANE_GAP])])];
+  const verticalChannels = [...new Set([left, right, ...laneOffsets.map(offset => middleX + offset), ...nearby.flatMap((item) => [item.left, item.right]), ...reserved.filter(segment => segment.start.x === segment.end.x).flatMap(segment => [segment.start.x - EDGE_LANE_GAP, segment.start.x + EDGE_LANE_GAP])])];
   const candidates: XYPosition[][] = [
     [
       { x: sourceX, y: sourceY },
@@ -322,9 +357,22 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
       { x: targetX, y: targetY },
     ]),
   ];
+  // 起终点附近的窄通道不能被中点附近的候选挤掉。
+  const nearChannels = (channels: number[], start: number, end: number) => [...new Set(
+    [start, (start + end) / 2, end].flatMap(center => channels
+      .filter(value => value >= Math.min(start, end) - clearance && value <= Math.max(start, end) + clearance)
+      .sort((a, b) => Math.abs(a - center) - Math.abs(b - center)).slice(0, 10)),
+  )];
+  const nearX = nearChannels(verticalChannels, sourceX, targetX);
+  const nearY = nearChannels(horizontalChannels, sourceY, targetY);
+  for (const x of nearX) for (const y of nearY) candidates.push(
+    [{ x: sourceX, y: sourceY }, { x: sourceX, y }, { x, y }, { x, y: targetY }, { x: targetX, y: targetY }],
+    [{ x: sourceX, y: sourceY }, { x, y: sourceY }, { x, y }, { x: targetX, y }, { x: targetX, y: targetY }],
+  );
   return candidates
     .map(simplifyOrthogonalPoints)
-    .sort((a, b) => routeScore(a, obstacles) - routeScore(b, obstacles))[0] ?? [
+    .map(points => ({ points, score: routeScore(points, obstacles, reserved) }))
+    .sort((a, b) => a.score - b.score)[0]?.points ?? [
     { x: sourceX, y: sourceY },
     { x: sourceX, y: middleY },
     { x: targetX, y: middleY },
@@ -415,7 +463,7 @@ function portLeadPoint(x: number, y: number, position: Position) {
   return { x: x + EDGE_PORT_LEAD, y };
 }
 
-function automaticOrthogonalPoints(
+export function automaticOrthogonalPoints(
   sourceX: number,
   sourceY: number,
   targetX: number,
@@ -423,10 +471,11 @@ function automaticOrthogonalPoints(
   sourcePosition: Position,
   targetPosition: Position,
   obstacles: Obstacle[],
+  reserved: ReservedSegment[] = [],
 ) {
   const departure = portLeadPoint(sourceX, sourceY, sourcePosition);
   const approach = portLeadPoint(targetX, targetY, targetPosition);
-  const routedBody = defaultOrthogonalPoints(departure.x, departure.y, approach.x, approach.y, obstacles);
+  const routedBody = defaultOrthogonalPoints(departure.x, departure.y, approach.x, approach.y, obstacles, reserved);
   return simplifyOrthogonalPoints([
     { x: sourceX, y: sourceY },
     ...routedBody,
@@ -522,6 +571,58 @@ function moveSegment(
   return next.slice(1, -1);
 }
 
+const routingCache = new WeakMap<Node[], { signature: string; routes: Map<string, XYPosition[]> }>();
+
+function planArchitectureRoutes(nodes: Node[], edges: EditableEdge[], getInternalNode: (id: string) => InternalNode<Node> | undefined) {
+  const signature = JSON.stringify(edges.map(edge => [edge.id, edge.source, edge.target, edge.sourceHandle, edge.targetHandle, edge.data?.sourceAnchor, edge.data?.targetAnchor, edge.data?.waypoints]));
+  const cached = routingCache.get(nodes);
+  if (cached?.signature === signature) return cached.routes;
+  const routes = new Map<string, XYPosition[]>();
+  const reserved: ReservedSegment[] = [];
+  const endpoint = (edge: EditableEdge, kind: "source" | "target") => {
+    const node = getInternalNode(edge[kind]);
+    const position = node?.internals.positionAbsolute;
+    const width = node?.measured.width, height = node?.measured.height;
+    if (!node || !position || !width || !height) return null;
+    const handleId = kind === "source" ? edge.sourceHandle : edge.targetHandle;
+    const handles = node.internals.handleBounds;
+    const handle = handles?.[kind]?.find(item => item.id === handleId) ?? handles?.source?.find(item => item.id === handleId);
+    const anchor = kind === "source" ? edge.data?.sourceAnchor : edge.data?.targetAnchor;
+    const side = anchor?.side ?? handle?.position;
+    if (!side) return null;
+    const offset = anchor?.offset ?? (side === Position.Top || side === Position.Bottom ? ((handle?.x ?? width / 2) + (handle?.width ?? 0) / 2) / width : ((handle?.y ?? height / 2) + (handle?.height ?? 0) / 2) / height);
+    return { x: position.x + (side === Position.Left ? 0 : side === Position.Right ? width : width * offset), y: position.y + (side === Position.Top ? 0 : side === Position.Bottom ? height : height * offset), side };
+  };
+  const items = edges.flatMap(edge => {
+    const source = endpoint(edge, "source"), target = endpoint(edge, "target");
+    return source && target ? [{ edge, source, target }] : [];
+  }).sort((a, b) => Number(Boolean(b.edge.data?.waypoints?.length)) - Number(Boolean(a.edge.data?.waypoints?.length)) || a.source.y - b.source.y || a.source.x - b.source.x || a.edge.id.localeCompare(b.edge.id));
+  for (const { edge, source, target } of items) {
+    const excluded = new Set([edge.source, edge.target]);
+    for (const id of [edge.source, edge.target]) {
+      let node = nodes.find(item => item.id === id);
+      while (node?.parentId) { excluded.add(node.parentId); node = nodes.find(item => item.id === node?.parentId); }
+    }
+    const obstacles = nodes.flatMap(node => {
+      const internal = getInternalNode(node.id);
+      const position = internal?.internals.positionAbsolute;
+      const width = internal?.measured.width, height = internal?.measured.height;
+      if (!position || !width || !height || node.hidden) return [];
+      if (excluded.has(node.id) && node.id !== edge.source && node.id !== edge.target) return [];
+      const padding = node.id === edge.source || node.id === edge.target ? 8 : EDGE_NODE_CLEARANCE;
+      return [{ left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding }];
+    });
+    const waypoints = edge.data?.waypoints;
+    const points = waypoints?.length
+      ? pointsWithDirectedTarget(pointsWithDirectedSource(pointsWithAnchoredEndpoints(source.x, source.y, target.x, target.y, waypoints), source.x, source.y, source.side), target.x, target.y, target.side)
+      : automaticOrthogonalPoints(source.x, source.y, target.x, target.y, source.side, target.side, obstacles, reserved);
+    routes.set(edge.id, points);
+    for (let index = 0; index < points.length - 1; index += 1) reserved.push({ start: points[index], end: points[index + 1] });
+  }
+  routingCache.set(nodes, { signature, routes });
+  return routes;
+}
+
 function EditableOrthogonalEdgeView({
   id,
   sourceX: handleSourceX,
@@ -539,6 +640,7 @@ function EditableOrthogonalEdgeView({
 }: EdgeProps<EditableEdge>) {
   const { screenToFlowPosition, getZoom, setEdges, getInternalNode } = useReactFlow<Node, EditableEdge>();
   const flowNodes = useNodes<Node>();
+  const flowEdges = useEdges<EditableEdge>();
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
   const history = useContext(EditHistoryContext);
   const anchorPoint = (nodeId: string, anchor: BoundaryAnchor | undefined, fallback: XYPosition, handleSide: Position) => {
@@ -558,34 +660,8 @@ function EditableOrthogonalEdgeView({
   const { x: targetX, y: targetY } = anchorPoint(target, data?.targetAnchor, { x: handleTargetX, y: handleTargetY }, handleTargetPosition);
   const sourcePosition = data?.sourceAnchor?.side ?? handleSourcePosition;
   const targetPosition = data?.targetAnchor?.side ?? handleTargetPosition;
-  const obstacles = useMemo(() => {
-    const excluded = new Set([source, target]);
-    for (const nodeId of [source, target]) {
-      let current = flowNodes.find((item) => item.id === nodeId);
-      while (current?.parentId) {
-        excluded.add(current.parentId);
-        current = flowNodes.find((item) => item.id === current?.parentId);
-      }
-    }
-    return flowNodes.flatMap((node) => {
-      if (excluded.has(node.id) || node.hidden) return [];
-      const internal = getInternalNode(node.id);
-      const position = internal?.internals.positionAbsolute;
-      const width = internal?.measured.width;
-      const height = internal?.measured.height;
-      if (!position || !width || !height) return [];
-      const padding = EDGE_NODE_CLEARANCE;
-      return [{ left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding }];
-    });
-  }, [flowNodes, getInternalNode, source, target]);
-  const points = useMemo(() => {
-    if (!data?.waypoints?.length) {
-      return automaticOrthogonalPoints(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, obstacles);
-    }
-    const rawPoints = pointsWithAnchoredEndpoints(sourceX, sourceY, targetX, targetY, data.waypoints);
-    const sourceDirected = pointsWithDirectedSource(rawPoints, sourceX, sourceY, sourcePosition);
-    return pointsWithDirectedTarget(sourceDirected, targetX, targetY, targetPosition);
-  }, [data?.waypoints, obstacles, sourcePosition, sourceX, sourceY, targetPosition, targetX, targetY]);
+  const routes = useMemo(() => planArchitectureRoutes(flowNodes, flowEdges, getInternalNode), [flowNodes, flowEdges, getInternalNode]);
+  const points = routes.get(id) ?? automaticOrthogonalPoints(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, []);
   const path = pathFromPoints(points);
   const labelCenter = data?.labelPosition === undefined ? longestSegmentCenter(points) : labelPointOnPath(points, data.labelPosition);
   const color = data?.color ?? String(style?.stroke ?? "#37685a");
