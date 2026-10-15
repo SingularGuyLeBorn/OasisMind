@@ -314,17 +314,17 @@ function RingCache({ layer }: { layer: number }) {
   return <div data-ring-cache style={{ width: "100%", maxWidth: 240, aspectRatio: "1", position: "relative", justifySelf: "center" }}>
     <svg aria-hidden viewBox="0 0 240 240" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
       <defs><marker id={`cache-write-${layer}`} viewBox="0 -5 10 10" refX="9" refY="0" markerWidth="8" markerHeight="8" orient="auto"><path d="M 1 -4 L 9 0 L 1 4" fill="none" stroke={COLORS.amber} strokeWidth="1.5" /></marker></defs>
-      <circle cx="120" cy="120" r="81.6" fill="none" stroke={COLORS.green} strokeWidth="2" />
+      <circle cx="120" cy="120" r="87.6" fill="none" stroke={COLORS.green} strokeWidth="2" />
       <path d="M 120 95 L 120 56" fill="none" stroke={COLORS.amber} strokeWidth="2" markerEnd={`url(#cache-write-${layer})`} />
     </svg>
     {slots.map((row, index) => {
       const angle = (-90 + index * 45) * Math.PI / 180;
       const oldest = index === 0;
-      return <div key={index} data-cache-slot={row} style={{ position: "absolute", left: `${50 + 34 * Math.cos(angle)}%`, top: `${50 + 34 * Math.sin(angle)}%`, transform: "translate(-50%,-50%)", width: 72, minHeight: 28, display: "grid", placeItems: "center", border: row === "\\cdots" ? "none" : `1.5px solid ${oldest ? COLORS.amber : COLORS.green}`, borderRadius: 6, background: oldest ? COLORS.amberSoft : COLORS.greenSoft, color: COLORS.green, fontSize: 10 }}>
+      return <div key={index} data-cache-slot={row} style={{ position: "absolute", left: `${50 + 36.5 * Math.cos(angle)}%`, top: `${50 + 36.5 * Math.sin(angle)}%`, transform: "translate(-50%,-50%)", width: "26.5%", height: "9%", boxSizing: "border-box", display: "grid", placeItems: "center", border: row === "\\cdots" ? "none" : `1.5px solid ${oldest ? COLORS.amber : COLORS.green}`, borderRadius: 6, background: row === "\\cdots" ? "transparent" : oldest ? COLORS.amberSoft : COLORS.greenSoft, color: COLORS.green, fontSize: 10, lineHeight: 1.2 }}>
         <MathFormula tex={row === "\\cdots" ? row : `\\mathbf u_{${layer},${row}}`} />
       </div>;
     })}
-    <div style={{ position: "absolute", left: "50%", top: "52%", width: 100, transform: "translate(-50%,-50%)", display: "grid", gap: 4, textAlign: "center", color: COLORS.green, fontSize: 10 }}><strong>128 槽</strong><MathFormula tex={`\\mathbf u_{${layer},t+1}`} /><span style={{ color: COLORS.amber }}>覆盖最旧槽</span></div>
+    <div data-cache-write-label style={{ position: "absolute", left: "50%", top: "52%", width: "40%", transform: "translate(-50%,-50%)", display: "grid", gap: 4, textAlign: "center", color: COLORS.green, fontSize: 10 }}><strong>128 槽</strong><MathFormula tex={`\\mathbf u_{${layer},t+1}`} /><span style={{ color: COLORS.amber }}>覆盖最旧槽</span></div>
     <strong style={{ position: "absolute", bottom: 0, width: "100%", textAlign: "center", fontSize: 11, color: COLORS.green }}>Decode 环形 cache</strong>
   </div>;
 }
