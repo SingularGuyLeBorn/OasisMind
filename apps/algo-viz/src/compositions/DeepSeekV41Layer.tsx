@@ -220,6 +220,7 @@ function VectorStrip({
   selected = false,
   columns: displayedColumns,
   nameWidth,
+  outlineSelection = true,
 }: {
   name: string;
   length: string;
@@ -229,10 +230,11 @@ function VectorStrip({
   selected?: boolean;
   columns?: string[];
   nameWidth?: number;
+  outlineSelection?: boolean;
 }) {
   const palette = tonePalette(selected ? "amber" : tone);
   const columns = displayedColumns ?? ["1", "2", "\\cdots", length];
-  return <div data-vector-elements data-vector-selected={selected || undefined} style={{ minWidth: 0, display: "grid", gridTemplateColumns: `${nameWidth ?? (compact ? 52 : 92)}px minmax(0,1fr)`, gap: 5, alignItems: "center", padding: compact ? 2 : 5, fontSize: compact ? 9 : 10.5, lineHeight: 1.2, outline: selected ? `1px dashed ${palette.color}` : undefined, borderRadius: 4 }}>
+  return <div data-vector-elements data-vector-selected={selected || undefined} style={{ minWidth: 0, display: "grid", gridTemplateColumns: `${nameWidth ?? (compact ? 52 : 92)}px minmax(0,1fr)`, gap: 5, alignItems: "center", padding: compact ? 2 : 5, fontSize: compact ? 9 : 10.5, lineHeight: 1.2, outline: selected && outlineSelection ? `1px dashed ${palette.color}` : undefined, borderRadius: 4 }}>
     <div style={{ minWidth: 0, textAlign: "center", color: palette.color, fontSize: compact ? 9 : 10.5, fontWeight: 800, overflow: "hidden" }}><MathFormula tex={name} /></div>
     <div style={{ minWidth: 0, display: "grid", gridTemplateColumns: columns.map(column => column === "\\cdots" ? ".55fr" : "minmax(0,1fr)").join(" "), gap: 3 }}>
       {columns.map((column, index) => column === "\\cdots"
@@ -327,16 +329,21 @@ function RingCache({ layer }: { layer: number }) {
 }
 
 function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: MatrixRowSpec[]; compact?: boolean }) {
+  const firstSelected = rows.findIndex(row => row.selected && !row.ellipsis);
+  const lastSelected = rows.reduce((last, row, index) => row.selected && !row.ellipsis ? index : last, -1);
   return (
     <div style={{ display: "grid", gridTemplateColumns: "8px minmax(0,1fr) 8px", gap: 4, alignItems: "stretch", minWidth: 0 }}>
       <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
       <div style={{ display: "grid", gap: compact ? 2 : 3, minWidth: 0 }}>
+        {firstSelected >= 0 && <div data-selection-window aria-hidden style={{ gridColumn: 1, gridRow: `${firstSelected + 1} / ${lastSelected + 2}`, border: `1px dashed ${COLORS.amber}`, borderRadius: 4, margin: -1, pointerEvents: "none" }} />}
         {rows.map((item, index) => (
           <div
             key={`${item.row}-${index}`}
             data-matrix-ellipsis={item.ellipsis || undefined}
             style={{
               minWidth: 0,
+              gridColumn: 1,
+              gridRow: index + 1,
               minHeight: compact ? (item.ellipsis ? 14 : 20) : 22,
               display: "grid",
               gridTemplateColumns: "1fr",
@@ -353,7 +360,7 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
           >
             {item.ellipsis
               ? <MathFormula tex="\vdots" />
-              : <VectorStrip name={`\\mathbf u_{${layer},${item.row}}`} length="512" elementTex={(column) => `u_{${layer},${item.row},${column}}`} tone="green" selected={item.selected} compact />}
+              : <VectorStrip name={`\\mathbf u_{${layer},${item.row}}`} length="512" elementTex={(column) => `u_{${layer},${item.row},${column}}`} tone="green" selected={item.selected} outlineSelection={false} compact />}
           </div>
         ))}
       </div>
