@@ -101,7 +101,7 @@ const ROUTED_EXPERTS = [
 ] as const;
 
 const ROUTED_HANDLE_LEFT = [21.43, 35.71, 50, 64.29, 78.57, 92.86] as const;
-const SCORE_HANDLE_LEFT = [8.33, 25, 41.67, 58.33, 75, 91.67] as const;
+const ROUTER_SCORE_COLUMNS = [1, 2, 3, null, 7, null, 31, null, 96, null, 142, null, 228, null, 351, null, 384] as const;
 
 const panel: CSSProperties = {
   width: "100%",
@@ -629,7 +629,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="main-out" type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
       <Title>Layer {layer} Router · 只选择 routed experts</Title>
       <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1.25fr 28px 1.4fr", alignItems: "center", gap: 5 }}>
-        <Box tone="blue"><MathFormula tex={`Y_{${layer}}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^R`} /></Box><Arrow /><Box tone="green"><MathFormula tex={`s_{${layer}}=Y_{${layer}}W_{${layer}}^R`} /></Box><Arrow /><Box tone="amber"><MathFormula tex={`I_{${layer}}=\\operatorname{TopK}(s_{${layer}},6)`} /></Box>
+        <Box tone="blue"><MathFormula tex={`Y_{${layer}}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^R`} /></Box><Operator tex="=" /><Box tone="green"><MathFormula tex={`S_{${layer}}`} /></Box><Arrow /><Box tone="green"><MathFormula tex="N\times384" /></Box>
       </div>
     </div>;
   }
@@ -637,10 +637,27 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   if (kind === "scores") {
     return <div style={{ ...panel, borderColor: COLORS.amber }}>
       <Handle id="main-in" type="target" position={Position.Top} style={{ ...handle, background: COLORS.amber }} />
-      {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`score-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${SCORE_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
-      <Title><MathFormula tex={`I_{${layer}}`} /> 对应的六个 Router 权重</Title>
-      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: 6 }}>
-        {ROUTED_EXPERTS.map((expert) => <Box key={expert.id} tone="amber"><MathFormula tex={`g_{${layer},${expert.id}}=s_{${layer},${expert.id}}=${expert.score}`} /></Box>)}
+      <Title>Router 得分矩阵 · 第 <MathFormula tex="t" /> 行 Top-6 高亮 · 数值为示意</Title>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", alignItems: "center", gap: 8 }}>
+        <MathFormula tex={`S_{${layer}}=`} />
+        <div data-router-score-matrix style={{ minWidth: 0, padding: 8, border: `1.5px solid ${COLORS.blue}`, borderRadius: 9, background: COLORS.blueSoft, display: "grid", gap: 4 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span>每列一个专家</span><MathFormula tex="N\times384" /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "32px repeat(17,minmax(0,1fr))", gap: 3, alignItems: "center", textAlign: "center", fontSize: 9 }}>
+            <span />{ROUTER_SCORE_COLUMNS.map((column, index) => <span key={index}>{column === null ? <MathFormula tex="\cdots" /> : column}</span>)}
+          </div>
+          {["1", "2", "\\vdots", "t", "\\vdots", "N"].map((row, rowIndex) => row === "\\vdots" ? <div key={rowIndex} style={{ textAlign: "center", fontSize: 9 }}><MathFormula tex="\vdots" /></div> : <div key={rowIndex} style={{ display: "grid", gridTemplateColumns: "32px repeat(17,minmax(0,1fr))", gap: 3, alignItems: "center", textAlign: "center", fontSize: 9 }}>
+            <MathFormula tex={row} />
+            {ROUTER_SCORE_COLUMNS.map((column, columnIndex) => {
+              const expert = row === "t" ? ROUTED_EXPERTS.find(item => item.id === column) : undefined;
+              // [OM-FREEPLAY] 未选中的分数也为示意，均低于第六名 .64，用于呈现 Top-6 与其余元素的对比。
+              const dimScore = [".12", ".23", ".35", ".18"][columnIndex % 4];
+              return column === null ? <MathFormula key={columnIndex} tex="\cdots" /> : <div key={columnIndex} data-topk-selected={Boolean(expert)} data-expert-column={column} data-token-row={row} style={{ position: "relative", padding: "5px 1px", minWidth: 0, border: `1px solid ${expert ? COLORS.amber : COLORS.blue}`, borderRadius: 4, background: expert ? COLORS.amberSoft : COLORS.blueSoft, color: expert ? COLORS.amber : COLORS.muted, opacity: expert ? 1 : .4, fontWeight: expert ? 800 : 400 }}>
+                <MathFormula tex={row === "t" ? expert?.score ?? dimScore : `s_{${layer},${row},${column}}`} />
+                {expert && <Handle id={`score-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, bottom: 5, background: COLORS.amber }} />}
+              </div>;
+            })}
+          </div>)}
+        </div>
       </div>
     </div>;
   }
@@ -786,7 +803,8 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const moeInputY = norm2Y + 72 + mainGap;
   const routerY = moeInputY + 80 + mainGap;
   const scoresY = routerY + 130 + mainGap;
-  const expertsY = scoresY + 115 + mainGap;
+  const scoresHeight = 320;
+  const expertsY = scoresY + scoresHeight + mainGap;
   const expertsHeight = 520;
   const aggregateY = expertsY + expertsHeight + mainGap;
   const moeSumY = aggregateY + 125 + mainGap;
@@ -807,7 +825,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("norm2", "norm2", layer, mode, 620, norm2Y, 360, 72),
     node("moe-input", "moe-input", layer, mode, 715, moeInputY, 170, 80),
     node("router", "router", layer, mode, 440, routerY, 720, 130),
-    node("scores", "scores", layer, mode, 278, scoresY, 1252, 115),
+    node("scores", "scores", layer, mode, 278, scoresY, 1252, scoresHeight),
     node("experts", "experts", layer, mode, 70, expertsY, 1460, expertsHeight),
     node("aggregate", "aggregate", layer, mode, 70, aggregateY, 1460, 125),
     node("moe-sum", "moe-sum", layer, mode, 765, moeSumY, 70, 70),
@@ -893,7 +911,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     makeEdge("state-norm2", "state1", "norm2", undefined, { sourceHandle: "main" }),
     makeEdge("norm2-moe-input", "norm2", "moe-input"),
     makeEdge("moe-input-router", "moe-input", "router", undefined, { sourceHandle: "router" }),
-    mathEdge("router-scores", "router", "scores", `I_{${layer}}`),
+    mathEdge("router-scores", "router", "scores", `S_{${layer}}`),
     makeEdge("moe-input-shared", "moe-input", "experts", undefined, { sourceHandle: "shared", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.blue } }),
     makeEdge("aggregate-sum", "aggregate", "moe-sum"),
     makeEdge("sum-moe-output", "moe-sum", "moe-output"),
@@ -902,7 +920,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     makeEdge("add2-output", "add2", "output"),
   ];
   for (const expert of ROUTED_EXPERTS) {
-    edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", undefined, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
+    edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", `g_{${layer},${expert.id}}=${expert.score}`, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
     edges.push(makeEdge(`expert-weight-${expert.id}`, "experts", "aggregate", undefined, { sourceHandle: `expert-out-${expert.id}`, targetHandle: `weighted-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
   }
   edges.push(makeEdge("shared-weight", "experts", "aggregate", undefined, { sourceHandle: "shared-out", targetHandle: "shared", style: { stroke: COLORS.blue, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.blue } }));
