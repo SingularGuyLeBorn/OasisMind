@@ -141,6 +141,10 @@ const EXPERT_OUTPUT_BRANCHES = [
   ...VISIBLE_ROUTED_EXPERTS.map((expert, index) => ({ key: String(expert.id), expertId: expert.id, center: 70 + EXPERTS_WIDTH * ROUTED_HANDLE_LEFT[index] / 100, width: EXPERT_CARD_WIDTH - 24 })),
 ];
 const ROUTER_SCORE_COLUMNS = [1, 2, 3, null, 7, null, 31, null, 96, null, 142, null, 228, null, 351, null, 384] as const;
+// [OM-FREEPLAY] 得分格按可读字号分配 72px，省略号 18px；可见专家另留 28px 出线通道。
+const ROUTER_SCORE_TRACKS = ROUTER_SCORE_COLUMNS.map(column => column === null ? 18 : 72 + (VISIBLE_ROUTED_EXPERTS.some(expert => expert.id === column) ? 28 : 0));
+const ROUTER_SCORE_GAP = 4;
+const ROUTER_SCORES_WIDTH = 4 + 20 + 28 + ROUTER_SCORE_TRACKS.reduce((sum, width) => sum + width, 0) + ROUTER_SCORE_COLUMNS.length * ROUTER_SCORE_GAP;
 
 const panel: CSSProperties = {
   width: "100%",
@@ -163,7 +167,7 @@ const handle: CSSProperties = {
 
 const FIT_VIEW_OPTIONS = { padding: .025, minZoom: .18, maxZoom: 1 } as const;
 const EDIT_DELETE_KEYS = ["Backspace", "Delete"];
-const CONTENT_SIZED_KINDS = new Set<NodeKind>(["tokenizer", "embedding", "execution-guide", "projection-kv", "heads", "concat", "compressor", "indexer", "experts", "expert-output", "expert-weighted"]);
+const CONTENT_SIZED_KINDS = new Set<NodeKind>(["tokenizer", "embedding", "execution-guide", "projection-kv", "heads", "concat", "compressor", "indexer", "router", "scores", "experts", "expert-output", "expert-weighted"]);
 
 function MathFormula({ tex, display = false }: { tex: string; display?: boolean }) {
   const html = useMemo(
@@ -939,7 +943,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "router") {
-    return <div style={panel}>
+    return <div style={{ ...panel, height: "auto" }}>
       <Handle id="main-in" type="target" position={Position.Top} style={handle} />
       <Handle id="main-out" type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
       <Title>Layer {layer} Router · 只选择 routed experts</Title>
@@ -962,32 +966,35 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "scores") {
+    const scoreRows = ["", ...tokenRows];
+    const rowTracks = scoreRows.map(row => row === "\\vdots" ? "16px" : row === "" ? "22px" : "30px").join(" ");
     const scoreCell = (column: number, row: string) => {
       const expert = row === "t" ? ROUTED_EXPERTS.find(item => item.id === column) : undefined;
       const columnIndex = ROUTER_SCORE_COLUMNS.indexOf(column as typeof ROUTER_SCORE_COLUMNS[number]);
       // [OM-FREEPLAY] 未选分数沿用原矩阵示意，均低于第六名 .64。
       const dimScore = [".12", ".23", ".35", ".18"][columnIndex % 4];
-      return <div data-topk-selected={Boolean(expert)} data-expert-column={column} data-token-row={row} style={{ position: "relative", width: "100%", maxWidth: 100, boxSizing: "border-box", padding: "5px 2px", border: `1px solid ${expert ? COLORS.amber : COLORS.blue}`, borderRadius: 4, background: expert ? COLORS.amberSoft : COLORS.blueSoft, color: expert ? COLORS.amber : COLORS.muted, opacity: expert ? 1 : .4, fontWeight: expert ? 800 : 400 }}>
+      return <div data-topk-selected={Boolean(expert)} data-expert-column={column} data-token-row={row} style={{ minWidth: 0, width: "100%", boxSizing: "border-box", padding: "5px 2px", border: `1px solid ${expert ? COLORS.amber : COLORS.blue}`, borderRadius: 4, background: expert ? COLORS.amberSoft : COLORS.blueSoft, color: expert ? COLORS.amber : COLORS.muted, opacity: expert ? 1 : .4, fontWeight: expert ? 800 : 400 }}>
         <MathFormula tex={row === "t" ? expert?.score ?? dimScore : `s_{${layer},${row},${column}}`} />
-        {expert && <Handle id={`score-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, bottom: 5, background: COLORS.amber }} />}
       </div>;
     };
-    return <div style={{ ...panel, borderColor: COLORS.amber }}>
+    return <div style={{ ...panel, height: "auto", borderColor: COLORS.amber }}>
       <Handle id="main-in" type="target" position={Position.Top} style={{ ...handle, background: COLORS.amber }} />
       <Title>Router 得分矩阵 · 第 <MathFormula tex="t" /> 行 Top-6 高亮 · 数值为示意</Title>
-      <div data-router-score-matrix style={{ padding: "7px 0", borderTop: `1px solid ${COLORS.blue}`, borderBottom: `1px solid ${COLORS.blue}`, background: COLORS.blueSoft, display: "grid", gap: 4 }}>
-        <div style={{ padding: "0 10px", display: "flex", justifyContent: "space-between", fontSize: 11 }}><MathFormula tex={`S_{${layer}}`} /><MathFormula tex={`${count}\\times384`} /></div>
-        {["", ...tokenRows].map((row, rowIndex) => row === "\\vdots" ? <div key={rowIndex} style={{ textAlign: "center", fontSize: 9 }}><MathFormula tex="\vdots" /></div> : <div key={rowIndex} style={{ padding: `0 ${EXPERTS_PADDING}px`, display: "grid", gridTemplateColumns: `${SHARED_GROUP_WIDTH}px minmax(0,1fr)`, gap: EXPERT_GROUP_GAP, alignItems: "center", textAlign: "center", fontSize: 9 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "32px repeat(3,minmax(0,1fr)) 24px", gap: 8, alignItems: "center" }}>
-            <MathFormula tex={row} />{[1, 2, 3].map(column => <React.Fragment key={column}>{row ? scoreCell(column, row) : column}</React.Fragment>)}<MathFormula tex="\cdots" />
-          </div>
-          <div style={{ padding: `0 ${EXPERT_GROUP_INSET}px`, display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: EXPERT_CARD_GAP }}>
-            {ROUTED_EXPERTS.map((expert, index) => <div key={expert.id} style={{ position: "relative", display: "grid", justifyItems: "center", minWidth: 0 }}>
-              {row ? scoreCell(expert.id, row) : expert.id}
-              {index < ROUTED_EXPERTS.length - 1 ? <span style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}><MathFormula tex="\cdots" /></span> : <div style={{ position: "absolute", right: 0, top: "50%", width: 68, transform: "translateY(-50%)" }}>{row ? scoreCell(384, row) : 384}</div>}
-            </div>)}
-          </div>
-        </div>)}
+      <div data-router-score-matrix style={{ padding: 10, background: COLORS.blueSoft, display: "grid", gap: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}><MathFormula tex={`S_{${layer}}`} /><MathFormula tex={`${count}\\times384`} /></div>
+        <div data-router-score-grid style={{ display: "grid", gridTemplateColumns: `28px ${ROUTER_SCORE_TRACKS.map(width => `minmax(0,${width}fr)`).join(" ")}`, gap: ROUTER_SCORE_GAP, textAlign: "center", fontSize: 12 }}>
+          <div style={{ display: "grid", gridTemplateRows: rowTracks, gap: 4, alignItems: "center" }}>{scoreRows.map((row, index) => <MathFormula key={index} tex={row} />)}</div>
+          {ROUTER_SCORE_COLUMNS.map((column, columnIndex) => {
+            const connected = VISIBLE_ROUTED_EXPERTS.some(expert => expert.id === column);
+            return <div key={columnIndex} data-router-score-column={column ?? "ellipsis"} style={{ position: "relative", minWidth: 0, display: "grid", gridTemplateRows: rowTracks, gridTemplateColumns: connected ? "minmax(0,1fr) 28px" : "minmax(0,1fr)", rowGap: 4, alignItems: "center" }}>
+              {scoreRows.map((row, index) => <div key={index} style={{ minWidth: 0, gridColumn: 1, gridRow: index + 1 }}>{row === "\\vdots" ? <MathFormula tex="\vdots" /> : column === null ? <MathFormula tex="\cdots" /> : row ? scoreCell(column, row) : column}</div>)}
+              {connected && <div data-router-score-exit={column} style={{ gridColumn: 2, gridRow: `${scoreRows.indexOf("t") + 1} / ${scoreRows.length + 1}`, position: "relative", alignSelf: "stretch", marginTop: 15, marginRight: 5, marginBottom: 5 }}>
+                <svg aria-hidden viewBox="0 0 24 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}><path vectorEffect="non-scaling-stroke" d="M0 0 H24 V100" fill="none" stroke={COLORS.amber} strokeWidth="1.5" /></svg>
+                <Handle id={`score-${column}`} type="source" position={Position.Bottom} style={{ ...handle, left: "100%", bottom: 0, background: COLORS.amber }} />
+              </div>}
+            </div>;
+          })}
+        </div>
       </div>
     </div>;
   }
@@ -1169,9 +1176,9 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
   const norm2Y = state1Y + 72 + mainGap;
   const moeInputY = norm2Y + 72 + mainGap;
   const routerY = moeInputY + 80 + mainGap;
-  const routerHeight = 240;
+  const routerHeight = contentHeights.get("router") ?? (phase === "prefill" ? 240 : 180);
   const scoresY = routerY + routerHeight + mainGap;
-  const scoresHeight = 320;
+  const scoresHeight = contentHeights.get("scores") ?? (phase === "prefill" ? 280 : 130);
   const expertsY = scoresY + scoresHeight + mainGap;
   const expertsHeight = contentHeights.get("experts") ?? 1300;
   const expertOutputY = expertsY + expertsHeight + mainGap;
@@ -1202,7 +1209,7 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     node("norm2", "norm2", layer, mode, 620, norm2Y, 360, 72),
     node("moe-input", "moe-input", layer, mode, 715, moeInputY, 170, 80),
     node("router", "router", layer, mode, 320, routerY, 960, routerHeight),
-    node("scores", "scores", layer, mode, 70, scoresY, EXPERTS_WIDTH, scoresHeight),
+    node("scores", "scores", layer, mode, 800 - ROUTER_SCORES_WIDTH / 2, scoresY, ROUTER_SCORES_WIDTH, scoresHeight),
     node("experts", "experts", layer, mode, 70, expertsY, EXPERTS_WIDTH, expertsHeight),
     node("moe-sum", "moe-sum", layer, mode, 70 + EXPERTS_WIDTH / 2 - 160, moeSumY, 320, 100),
     node("moe-output", "moe-output", layer, mode, 70 + EXPERTS_WIDTH / 2 - 320, moeOutputY, 640, 100),
