@@ -822,7 +822,7 @@ function EditableOrthogonalEdgeView({
         data-endpoint={endpoint}
         data-selected={Boolean(selected)}
         onPointerDown={event => startEndpointDrag(event, endpoint)}
-        style={{ position: "absolute", left: endpoint === "source" ? sourceX : targetX, top: endpoint === "source" ? sourceY : targetY, width: 24, height: 24, padding: 7, transform: "translate(-50%,-50%)", border: 0, background: "transparent", pointerEvents: "all", cursor: (endpoint === "source" ? sourcePosition : targetPosition) === Position.Top || (endpoint === "source" ? sourcePosition : targetPosition) === Position.Bottom ? "ew-resize" : "ns-resize" }}
+        style={{ position: "absolute", left: endpoint === "source" ? sourceX : targetX, top: endpoint === "source" ? sourceY : targetY, width: 24, height: 24, padding: 7, transform: "translate(-50%,-50%)", border: 0, outline: "none", boxShadow: "none", background: "transparent", pointerEvents: "all", cursor: (endpoint === "source" ? sourcePosition : targetPosition) === Position.Top || (endpoint === "source" ? sourcePosition : targetPosition) === Position.Bottom ? "ew-resize" : "ns-resize" }}
       ><span style={{ display: "block", width: 10, height: 10, borderRadius: "50%", border: "2px solid #fffefa", background: color, pointerEvents: "none" }} /></button>)}
       {data?.labelTex && (
         <div
