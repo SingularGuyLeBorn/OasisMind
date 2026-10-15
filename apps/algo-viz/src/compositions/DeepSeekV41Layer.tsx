@@ -313,20 +313,20 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "8px minmax(0,1fr) 8px", gap: 4, alignItems: "stretch", minWidth: 0 }}>
       <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
-      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>
+      <div style={{ display: "grid", gap: compact ? 2 : 3, minWidth: 0 }}>
         {rows.map((item, index) => (
           <div
             key={`${item.row}-${index}`}
             style={{
               minWidth: 0,
-              minHeight: compact ? 20 : 22,
+              minHeight: compact ? (item.ellipsis ? 14 : 20) : 22,
               display: "grid",
               gridTemplateColumns: "1fr",
               alignItems: "center",
               gap: 3,
-              padding: item.ellipsis ? "1px 4px" : "2px 4px",
+              padding: compact ? 0 : item.ellipsis ? "1px 4px" : "2px 4px",
               borderRadius: 5,
-              border: item.selected ? `1px solid ${COLORS.green}` : "1px solid transparent",
+              border: item.selected && item.ellipsis ? `1px solid ${COLORS.green}` : "none",
               background: item.selected ? COLORS.greenSoft : "transparent",
               color: item.selected ? COLORS.green : COLORS.ink,
               fontSize: compact ? 9 : 9.5,
@@ -800,7 +800,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const projectionY = norm1Y + 72 + mainGap;
   const queryProjectionHeight = 750;
   const localKvProjectionHeight = 440;
-  const swaHeight = 550;
+  const swaHeight = 500;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
   const indexerHeight = 450;
   const globalSelectHeight = 430;
@@ -835,7 +835,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("norm1", "norm1", layer, mode, 620, norm1Y, 360, 72),
     node("q", "projection-q", layer, mode, 20, projectionY, 800, queryProjectionHeight),
     node("kv", "projection-kv", layer, mode, 850, projectionY, 500, localKvProjectionHeight),
-    node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 280, swaY, hasGlobal ? 780 : 1040, swaHeight),
+    node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 350, swaY, hasGlobal ? 780 : 900, swaHeight),
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 400, mergeY, hasGlobal ? 1000 : 800, mergeHeight),
     node("heads", "heads", layer, mode, 40, headsY, 1800, headsHeight),
     node("concat", "concat", layer, mode, 190, concatY, 1140, concatHeight),
