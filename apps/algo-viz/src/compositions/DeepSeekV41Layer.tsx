@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import React, { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import katex from "katex";
 import {
   Background,
@@ -29,7 +29,22 @@ import {
 } from "../components/EditableArchitectureGraph";
 
 type LayerMode = "swa" | "full" | "reindex" | "reuse";
+type ExecutionPhase = "prefill" | "decode";
+const ExecutionContext = createContext<ExecutionPhase>("prefill");
+// 当前计算的 token 轴与缓存的历史轴分别建模，Decode 的一行仍使用全局位置 t。
+export function executionAxis(phase: ExecutionPhase) {
+  return { count: phase === "prefill" ? "N" : "1", rows: phase === "prefill" ? ["1", "2", "\\vdots", "t", "\\vdots", "N"] : ["t"] };
+}
+function useExecutionAxis() {
+  const phase = useContext(ExecutionContext);
+  return { phase, ...executionAxis(phase) };
+}
 type NodeKind =
+  | "tokenizer"
+  | "embedding"
+  | "prior-layers"
+  | "execution-guide"
+  | "query-row"
   | "tensor"
   | "norm1"
   | "projection-q"
@@ -76,6 +91,7 @@ type DiagramData = {
   columnVectors?: boolean;
   matrixSelectedRow?: number;
   expertId?: number;
+  phase?: ExecutionPhase;
 };
 type DiagramNode = Node<DiagramData>;
 type Props = { initialLayer?: number };
@@ -147,7 +163,7 @@ const handle: CSSProperties = {
 
 const FIT_VIEW_OPTIONS = { padding: .025, minZoom: .18, maxZoom: 1 } as const;
 const EDIT_DELETE_KEYS = ["Backspace", "Delete"];
-const CONTENT_SIZED_KINDS = new Set<NodeKind>(["projection-kv", "heads", "concat", "compressor", "indexer", "expert-output", "expert-weighted"]);
+const CONTENT_SIZED_KINDS = new Set<NodeKind>(["tokenizer", "embedding", "execution-guide", "projection-kv", "heads", "concat", "compressor", "indexer", "expert-output", "expert-weighted"]);
 
 function MathFormula({ tex, display = false }: { tex: string; display?: boolean }) {
   const html = useMemo(
@@ -257,8 +273,8 @@ function VectorStrip({
   </div>;
 }
 
-function Matrix({ tex, shape, rowTex, elementTex, tone = "blue", vectorLength = "5120", lastRow = "N" }: { tex: string; shape: string; rowTex: (row: string) => string; elementTex: (row: string, column: string) => string; tone?: "blue" | "green" | "amber"; vectorLength?: string; lastRow?: string }) {
-  const rows = ["1", "2", "\\vdots", lastRow];
+function Matrix({ tex, shape, rowTex, elementTex, tone = "blue", vectorLength = "5120", lastRow = "N", rowIndices }: { tex: string; shape: string; rowTex: (row: string) => string; elementTex: (row: string, column: string) => string; tone?: "blue" | "green" | "amber"; vectorLength?: string; lastRow?: string; rowIndices?: string[] }) {
+  const rows = rowIndices ?? ["1", "2", "\\vdots", lastRow];
   const palette = tonePalette(tone);
   return (
     <div style={{ border: `1.5px solid ${palette.color}`, borderRadius: 9, overflow: "hidden" }}>
@@ -268,7 +284,7 @@ function Matrix({ tex, shape, rowTex, elementTex, tone = "blue", vectorLength = 
       <div style={{ padding: 6, display: "grid", gap: 3, borderTop: `1px solid ${COLORS.line}`, fontSize: 9.5 }}>
         {rows.map((row, index) => row === "\\vdots"
           ? <div key={`${row}-${index}`} style={{ minHeight: 22, display: "grid", placeItems: "center" }}><MathFormula tex="\vdots" /></div>
-          : <VectorStrip key={`${row}-${index}`} name={rowTex(row)} length={vectorLength} columns={["1", "2", "3", "\\cdots", vectorLength]} elementTex={(column) => elementTex(row, column)} tone={tone} compact />)}
+          : <VectorStrip key={`${row}-${index}`} name={rowTex(row)} length={vectorLength} columns={["1", "2", "3", "\\cdots", vectorLength]} elementTex={(column) => elementTex(row, column)} selected={rowIndices !== undefined && row === "t"} tone={tone} compact />)}
       </div>
     </div>
   );
@@ -282,13 +298,22 @@ function RowMatrix({ tex, shape, rows, selected, tone = "green", rowLength, elem
   </div>;
 }
 
+function queryProjectionLayout(phase: ExecutionPhase) {
+  const firstY = 68;
+  const rowHeight = phase === "prefill" ? 174 : 128;
+  const secondY = firstY + rowHeight + 32;
+  const resultHeight = phase === "prefill" ? 232 : 128;
+  return { firstY, rowHeight, secondY, resultHeight, height: secondY + resultHeight + 24 };
+}
+
 function QueryProjection({ layer }: { layer: number }) {
+  const { phase } = useExecutionAxis();
+  const layout = queryProjectionLayout(phase);
   return (
     <div style={panel}>
-      <Title>Layer {layer} · Query</Title>
+      <Title>Layer {layer} · Query · {phase === "prefill" ? "Prefill 整段投影" : "Decode 当前一行投影"}</Title>
       <div style={{ position: "absolute", left: 28, top: 47, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>① 5120 → 1280 · RMSNorm</div>
-      <div style={{ position: "absolute", left: 28, top: 250, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>② 1280 → 64 × 512</div>
-      <div style={{ position: "absolute", left: 28, top: 510, color: COLORS.green, fontSize: 10.5, fontWeight: 800 }}>③ 高亮第 t 行，按每 512 个元素分成一个 Head</div>
+      <div style={{ position: "absolute", left: 28, top: layout.secondY - 24, color: COLORS.blue, fontSize: 10.5, fontWeight: 800 }}>② 1280 → 64 × 512</div>
     </div>
   );
 }
@@ -296,7 +321,8 @@ function QueryProjection({ layer }: { layer: number }) {
 // 图中的向量沿行展开；省略号不占元素格，也不着色。
 function AttentionTensor({ tex, rows, columns, scalar, tone = "green" }: { tex: string; rows: string; columns: string; scalar: (row: string, column: string) => string; tone?: DiagramTone }) {
   const palette = tonePalette(tone);
-  const rowLabels = rows === "1" ? ["1"] : ["1", "2", "3", "\\vdots", rows];
+  const { phase } = useExecutionAxis();
+  const rowLabels = rows === "1" ? [phase === "decode" ? "t" : "1"] : ["1", "2", "3", "\\vdots", rows];
   return <div data-attention-tensor={tex} style={{ minWidth: 0, padding: 8, border: `1.5px solid ${palette.color}`, borderRadius: 8, background: palette.background, display: "grid", gap: 6 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline", fontSize: 13 }}><MathFormula tex={tex} /><span style={{ fontSize: 11 }}><MathFormula tex={`${rows}\\times ${columns}`} /></span></div>
     {rowLabels.map(row => <div key={row} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr .35fr 1fr", gap: 4, textAlign: "center", alignItems: "center", fontSize: 12 }}>
@@ -342,6 +368,8 @@ function RotaryProcess({ input, output, position, layer, inverse = false, dimens
 }
 
 function LocalKvProjection({ layer }: { layer: number }) {
+  const { phase, count, rows } = useExecutionAxis();
+  const rowNames = (prefix: string) => rows.map(s => s === "\\vdots" ? s : `${prefix}_{${layer},${s}}`);
   return (
     <div style={{ ...panel, height: "auto" }}>
       <Handle id="main-in" type="target" position={Position.Top} style={handle} />
@@ -349,7 +377,7 @@ function LocalKvProjection({ layer }: { layer: number }) {
       <Title>Layer {layer} · 本层独立 KV</Title>
       <div style={{ padding: 9, display: "grid", gap: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 18px 1.15fr 18px 1fr", gap: 4, alignItems: "center" }}>
-          <RowMatrix tex={`X_{${layer}}`} shape="N\times5120" rows={[`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`]} tone="blue" />
+          <RowMatrix tex={`X_{${layer}}`} shape={`${count}\\times5120`} rows={rowNames("\\mathbf x")} tone="blue" />
           <Operator tex="\times" />
           <div style={{ padding: 5, border: `1.3px solid ${COLORS.amber}`, borderRadius: 7, background: COLORS.amberSoft, display: "grid", gap: 5, fontSize: 9, minWidth: 0, textAlign: "center" }}>
             <MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><MathFormula tex="5120\times512" />
@@ -358,12 +386,12 @@ function LocalKvProjection({ layer }: { layer: number }) {
             </div>
           </div>
           <Operator tex="=" />
-          <RowMatrix tex={`\\widehat U_{${layer}}`} shape="N\times512" rows={[`\\widehat{\\mathbf u}_{${layer},1}`, `\\widehat{\\mathbf u}_{${layer},2}`, "\\vdots", `\\widehat{\\mathbf u}_{${layer},N}`]} />
+          <RowMatrix tex={`\\widehat U_{${layer}}`} shape={`${count}\\times512`} rows={rowNames("\\widehat{\\mathbf u}")} />
         </div>
         <FlowStep>逐行 RMSNorm → 每行按自身位置旋转</FlowStep>
-        <RotaryProcess input={`\\operatorname{RMSNorm}(\\widehat{\\mathbf u}_{${layer},s})`} output={`\\mathbf u_{${layer},s}`} position="s-1" layer={layer} />
-        <FlowStep>第 s 行写回矩阵；s = 1, 2, …, N</FlowStep>
-        <RowMatrix tex={`U_{${layer}}`} shape="N\times512" rows={[`\\mathbf u_{${layer},1}`, `\\mathbf u_{${layer},2}`, `\\mathbf u_{${layer},3}`, "\\vdots", `\\mathbf u_{${layer},N}`]} rowLength="512" elementColumns={["1", "2", "3", "4", "\\cdots", "512"]} elementTex={(row, column) => `u_{${layer},${["1", "2", "3", "", "N"][row]},${column}}`} />
+        <RotaryProcess input={`\\operatorname{RMSNorm}(\\widehat{\\mathbf u}_{${layer},${phase === "prefill" ? "s" : "t"}})`} output={`\\mathbf u_{${layer},${phase === "prefill" ? "s" : "t"}}`} position={phase === "prefill" ? "s-1" : "t-1"} layer={layer} />
+        <FlowStep>{phase === "prefill" ? "s = 1, 2, …, N：每行按自己的位置生成 KV" : "仅生成当前位置 t 的新 KV；下方写入历史窗口"}</FlowStep>
+        <RowMatrix tex={`U_{${layer}}`} shape={`${count}\\times512`} rows={rowNames("\\mathbf u")} rowLength="512" elementColumns={["1", "2", "3", "4", "\\cdots", "512"]} elementTex={(row, column) => `u_{${layer},${rows[row]},${column}}`} />
       </div>
     </div>
   );
@@ -464,11 +492,13 @@ function SwaSelectionConnector({ layer }: { layer: number }) {
 }
 
 function Head({ index, layer }: { index: number; layer: number }) {
+  const { phase, count, rows } = useExecutionAxis();
   const queryRow = `\\mathbf q_{${layer},${index},t}`;
   const rotatedQuery = `\\mathbf q'_{${layer},${index},t}`;
   return (
     <div data-head-layout={index} style={{ position: "relative", minWidth: 0, border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 12, display: "grid", gap: 10, alignContent: "start", background: COLORS.card, fontSize: 13 }}>
-      <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 16 }}>Layer {layer} · Head {index} · 当前 token：第 t 行</strong>
+      <Handle id={`query-${index}`} type="target" position={Position.Top} style={{ ...handle, background: COLORS.blue }} />
+      <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 16 }}>Layer {layer} · Head {index} · {phase === "prefill" ? "放大第 t 行" : "当前唯一 Query · 位置 t"}</strong>
       <RotaryProcess input={queryRow} output={rotatedQuery} position="t-1" layer={layer} />
       <FlowStep>① 用旋转后的 Q，逐行与 K 做点积</FlowStep>
       <AttentionTensor tex={`Q=${rotatedQuery}`} rows="1" columns="512" scalar={(_, column) => `q'_{${column}}`} tone="blue" />
@@ -494,7 +524,7 @@ function Head({ index, layer }: { index: number; layer: number }) {
       <AttentionTensor tex={`\\widetilde{\\mathbf o}_{${layer},${index},t}`} rows="1" columns="512" scalar={(_, column) => `\\widetilde o_{${column}}`} tone="amber" />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr", gap: 10, alignItems: "center" }}>
         <div data-inverse-rotation style={{ minWidth: 0, display: "grid", gap: 8, fontSize: 12 }}>
-          <strong>④ 输出逆旋转，再放回第 t 行</strong>
+          <strong>④ 输出逆旋转{phase === "prefill" ? "，再放回第 t 行" : "，得到当前行"}</strong>
           <span>前 448 维原样传递；后 64 维逐对旋转：</span>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr", gap: 5, alignItems: "center" }}><Box tone="amber"><MathFormula tex="(\widetilde o_{449+2j},\widetilde o_{450+2j})" /></Box><Operator tex="\to" /><Box tone="green"><MathFormula tex="(o_{449+2j},o_{450+2j})" /></Box></div>
           <MathFormula tex="R(-(t-1)\omega_j),\quad j=0,1,\ldots,31" />
@@ -504,11 +534,8 @@ function Head({ index, layer }: { index: number; layer: number }) {
         </div>
         <Operator tex="\to" />
         <div data-head-output style={{ minWidth: 0, display: "grid", gap: 6 }}>
-          <span style={{ fontSize: 12, color: COLORS.green, textAlign: "center" }}>每个 token 的输出占一行</span>
-          <RowMatrix tex={`O_{${layer},${index}}`} shape="N\times512" rows={[
-            `\\mathbf o_{${layer},${index},1}`, `\\mathbf o_{${layer},${index},2}`, `\\mathbf o_{${layer},${index},3}`, "\\vdots",
-            `\\mathbf o_{${layer},${index},t}`, "\\vdots", `\\mathbf o_{${layer},${index},N}`,
-          ]} selected={4} rowLength="512" elementTex={(row, column) => `o_{${layer},${index},${["1", "2", "3", "", "t", "", "N"][row]},${column}}`} />
+          <span style={{ fontSize: 12, color: COLORS.green, textAlign: "center" }}>{phase === "prefill" ? "每个位置并行得到一行输出" : "本步输出 1 行；下一步位置 t+1"}</span>
+          <RowMatrix tex={`O_{${layer},${index}}`} shape={`${count}\\times512`} rows={rows.map(s => s === "\\vdots" ? s : `\\mathbf o_{${layer},${index},${s}}`)} selected={rows.indexOf("t")} rowLength="512" elementTex={(row, column) => `o_{${layer},${index},${rows[row]},${column}}`} />
         </div>
       </div>
     </div>
@@ -516,6 +543,7 @@ function Head({ index, layer }: { index: number; layer: number }) {
 }
 
 function Expert({ layer, index, score, shared = false }: { layer: number; index?: number; score?: string; shared?: boolean }) {
+  const { count, phase } = useExecutionAxis();
   const expertIndex = shared ? "\\mathrm{shared}" : `${index}`;
   const expertTex = `E_{${layer},${expertIndex}}`;
   const weightIndex = shared ? "\\mathrm{shared}" : `${index}`;
@@ -525,7 +553,7 @@ function Expert({ layer, index, score, shared = false }: { layer: number; index?
   const matrix = (tex: string, scalar: string, rows: string, columns: string, top: number, left = "0", width = "100%", weight = false) => <div data-expert-matrix={tex} style={{ ...block(top, left, width, 116), display: "block", padding: 5, background: weight ? COLORS.amberSoft : COLORS.greenSoft }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3, fontSize: 11 }}><MathFormula tex={weight ? `\\times ${tex}` : tex} /><span style={{ fontSize: 10 }}><MathFormula tex={`${rows}\\times ${columns}`} /></span></div>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .35fr 1fr", gap: 1, alignItems: "center", fontSize: 10 }}>
-      {["1", "2", "3", "\\vdots", rows].flatMap((row, r) => ["1", "2", "\\cdots", columns].map((column, c) => <div key={`${r}-${c}`} style={{ minWidth: 0, height: 24, boxSizing: "border-box", display: "grid", placeItems: "center", border: row === "\\vdots" || column === "\\cdots" ? undefined : `1px solid ${color}`, borderRadius: 2 }}><MathFormula tex={row === "\\vdots" ? (c === 1 ? "\\vdots" : "") : column === "\\cdots" ? "\\cdots" : `${scalar}_{${row},${column}}`} /></div>))}
+      {(phase === "decode" && !weight ? ["t"] : ["1", "2", "3", "\\vdots", rows]).flatMap((row, r) => ["1", "2", "\\cdots", columns].map((column, c) => <div key={`${r}-${c}`} style={{ minWidth: 0, height: 24, boxSizing: "border-box", display: "grid", placeItems: "center", border: row === "\\vdots" || column === "\\cdots" ? undefined : `1px solid ${color}`, borderRadius: 2 }}><MathFormula tex={row === "\\vdots" ? (c === 1 ? "\\vdots" : "") : column === "\\cdots" ? "\\cdots" : `${scalar}_{${row},${column}}`} /></div>))}
     </div>
   </div>;
   return (
@@ -539,10 +567,10 @@ function Expert({ layer, index, score, shared = false }: { layer: number; index?
             {[{ x: 25, y: 124 }, { x: 75, y: 124 }, { x: 25, y: 250 }, { x: 25, y: 384 }, { x: 25, y: 540 }, { x: 75, y: 540 }, { x: 50, y: 676 }, { x: 50, y: 730 }, { x: 50, y: 858 }, { x: 50, y: 990 }].map(({ x, y }) => <path vectorEffect="non-scaling-stroke" key={`${x}-${y}`} d={`M${x - 1} ${y - 5} L${x} ${y} L${x + 1} ${y - 5}`} />)}
           </g>
         </svg>
-        {matrix(`Y_{${layer}}`, "y", "N", "5120", 0)}
+        {matrix(`Y_{${layer}}`, "y", count, "5120", 0)}
         {matrix(`W_{${layer},${weightIndex}}^{\\mathrm{gate}}`, "w^{\\mathrm{gate}}", "5120", "d_e", 124, "0", "47%", true)}
         {matrix(`W_{${layer},${weightIndex}}^{\\mathrm{up}}`, "w^{\\mathrm{up}}", "5120", "d_e", 124, "53%", "47%", true)}
-        {matrix(`Z_{${layer},${expertIndex}}`, "z", "N", "d_e", 250, "0", "47%")}
+        {matrix(`Z_{${layer},${expertIndex}}`, "z", count, "d_e", 250, "0", "47%")}
         <div data-expert-activation style={{ ...block(384, "0", "47%", 120), top: 384 * 1.35, display: "block", padding: 6 }}>
           <strong style={{ fontSize: 11 }}>SiLU · 对矩阵中每个元素</strong>
           <div style={{ position: "relative", height: 95, marginTop: 5 }}>
@@ -556,12 +584,12 @@ function Expert({ layer, index, score, shared = false }: { layer: number; index?
           <span style={{ fontSize: 11 }}><MathFormula tex={"z=2:\\quad2\\times0.8808\\approx1.7616"} /></span>
         </div>
         <div style={{ position: "absolute", right: "2%", top: 258 * 1.35, fontSize: 11 }}>Up 分支</div>
-        {matrix(`A_{${layer},${expertIndex}}`, "a", "N", "d_e", 300, "0", "47%")}
-        {matrix(`B_{${layer},${expertIndex}}`, "b", "N", "d_e", 300, "53%", "47%")}
+        {matrix(`A_{${layer},${expertIndex}}`, "a", count, "d_e", 300, "0", "47%")}
+        {matrix(`B_{${layer},${expertIndex}}`, "b", count, "d_e", 300, "53%", "47%")}
         <div data-expert-product style={{ ...block(436, "25%", "50%", 32), background: COLORS.amberSoft }}><span><MathFormula tex={"\\odot"} /> 逐元素相乘</span></div>
-        {matrix(`C_{${layer},${expertIndex}}`, "c", "N", "d_e", 490)}
+        {matrix(`C_{${layer},${expertIndex}}`, "c", count, "d_e", 490)}
         {matrix(`W_{${layer},${weightIndex}}^{\\mathrm{down}}`, "w^{\\mathrm{down}}", "d_e", "5120", 618, "0", "100%", true)}
-        {matrix(`${expertTex}(Y_{${layer}})`, "o", "N", "5120", 750)}
+        {matrix(`${expertTex}(Y_{${layer}})`, "o", count, "5120", 750)}
       </div>
       <span style={{ fontSize: 11, color: COLORS.muted }}><MathFormula tex="d_e" />：该专家的中间维度</span>
     </div>
@@ -590,7 +618,35 @@ function SelectedGlobalRows({ kvSource, indexSource }: { kvSource: number; index
 
 function DiagramNodeContent({ data }: { data: DiagramData }) {
   const { kind, layer, mode } = data;
+  const { phase, count, rows: tokenRows } = useExecutionAxis();
   const both = <><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /></>;
+
+  // [OM-FREEPLAY] 用 N=6、t=3 与 P=6 对照并行行数和 Decode 的全局位置，数值仅为教学示例。
+  if (kind === "execution-guide") return <div data-execution-guide={phase} style={{ ...panel, height: "auto", borderColor: COLORS.blue }}><Title>{phase === "prefill" ? "Prefill · 整段 token 并行" : "Decode · 单个新 token"}</Title><div style={{ padding: 14, display: "grid", gap: 12, fontSize: 14 }}>
+    <MathFormula tex={phase === "prefill" ? "N=\\text{本次输入的 token 数},\\quad t\\in\\{1,2,\\ldots,N\\}" : "t=P+k,\\quad k=1,2,\\ldots"} />
+    <span>{phase === "prefill" ? "t 是序列位置。下方放大其中一行；所有位置都计算，各自只读因果可见的 KV。" : "P 是 prompt 的 token 数，k 是本次 Decode 步号。当前张量只有一行，它的全局位置仍是 t。"}</span>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr", alignItems: "center", gap: 8 }}><Box tone="blue"><MathFormula tex={phase === "prefill" ? "1,2,\\ldots,N" : "t=P+k"} /></Box><Operator tex="\to" /><Box tone="green"><MathFormula tex={`${count}\\text{ 行当前输入}`} /></Box></div>
+    <span>{phase === "prefill" ? "示例：N=6 时，t=3 展示第 3 行；第 1、2、4、5、6 行同样参与计算。" : "示例：P=6，第一步 t=7；下一步 t=8。已算过的 KV 留在缓存，旧 Query 不重算。"}</span>
+    <span style={{ color: COLORS.muted, fontSize: 12 }}>图采用单序列、5120 维单路张量视图；batch 与 Hyper-Connections 轴折叠。</span>
+  </div></div>;
+
+  if (kind === "tokenizer") return <div data-tokenizer={phase} style={{ ...panel, height: "auto" }}><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><Title>{phase === "prefill" ? "输入文本 → Tokenizer → Token IDs" : "Decode 输入来源 · 上一步生成的 Token ID"}</Title><div style={{ padding: 14, display: "grid", gap: 10 }}>
+    {phase === "prefill" ? <><Box tone="blue">输入文本（含对话模板）</Box><FlowStep>Tokenizer 按词表编码；一个 token 可对应字、子词或标点</FlowStep></> : <><Box tone="blue">Prompt 已经 Tokenizer → Prefill</Box><FlowStep>上一位置的 logits → 采样 / argmax → 当前 ID</FlowStep></>}
+    <div style={{ display: "grid", gridTemplateColumns: `76px repeat(${phase === "prefill" ? 6 : 1},minmax(0,1fr))`, alignItems: "center", gap: 8, textAlign: "center", fontSize: 13 }}>
+      <strong>位置</strong>{tokenRows.map((s, i) => <MathFormula key={`p-${i}`} tex={s === "\\vdots" ? "\\cdots" : s} />)}
+      <strong>Token ID</strong>{tokenRows.map((s, i) => s === "\\vdots" ? <MathFormula key={i} tex="\cdots" /> : <Box key={i} tone={s === "t" ? "amber" : "blue"}><MathFormula tex={`v_{${s}}`} /></Box>)}
+    </div><span style={{ fontSize: 12, color: COLORS.muted }}>位置 t 与词表 ID <MathFormula tex="v_t" /> 分开：位置决定行号，同一个 ID 可以出现在多个位置。</span>
+  </div></div>;
+
+  if (kind === "embedding") return <div data-embedding style={{ ...panel, height: "auto", borderColor: COLORS.blue }}>{both}<Title>Embedding · 每个 Token ID 查词表中的一行</Title><div style={{ padding: 14, display: "grid", gap: 10 }}>
+    <div style={{ display: "flex", justifyContent: "space-between" }}><MathFormula tex="W^{\mathrm{emb}}" /><MathFormula tex="|\mathcal V|\times5120" /></div>
+    {(phase === "prefill" ? ["1", "2", "t", "N"] : ["t"]).map(s => <div key={s} style={{ display: "grid", gridTemplateColumns: "65px 24px minmax(0,1fr) 24px 95px", gap: 6, alignItems: "center", fontSize: 12 }}><Box tone="amber"><MathFormula tex={`v_{${s}}`} /></Box><Operator tex="\to" /><VectorStrip name={`\\mathbf w^{\\mathrm{emb}}_{v_{${s}}}`} nameWidth={98} length="5120" elementTex={c => `w^{\\mathrm{emb}}_{v_{${s}},${c}}`} tone="blue" compact /><Operator tex="\to" /><MathFormula tex={`\\mathbf h_{1,${s}}^{\\mathrm{in}}`} /></div>)}
+    <span style={{ fontSize: 12, color: COLORS.muted }}>按输入位置排成 {phase === "prefill" ? "N 行" : "1 行"}；词表参数共享，行号保持不变。</span>
+  </div></div>;
+
+  if (kind === "prior-layers") return <div style={{ ...panel, padding: 12, display: "grid", gap: 8, textAlign: "center", fontSize: 14 }}>{both}<strong>进入当前层之前</strong><MathFormula tex={`H_1^{\\mathrm{in}}\\;\\xrightarrow{\\mathrm{Layer}\\;1\\ldots${layer - 1}}\\;H_{${layer - 1}}^{\\mathrm{out}}=H_{${layer}}^{\\mathrm{in}}`} /><span>每层更新向量内容，token 位置 t 沿序列轴保留。</span></div>;
+
+  if (kind === "query-row") return <div data-query-row={phase} style={{ ...panel, borderColor: COLORS.amber }}>{both}<Title>{phase === "prefill" ? "③ 展开完整矩阵中的第 t 行" : "③ 当前唯一一行 · 全局位置 t"}<span style={{ float: "right", fontSize: 11 }}><MathFormula tex="1\times(64\cdot512)" /></span></Title><div style={{ padding: 12, display: "grid", gap: 8 }}><VectorStrip name={`\\widetilde{\\mathbf q}_{${layer},t}`} length="32768" elementTex={c => `\\widetilde q_{${layer},t,${c}}`} tone="green" selected /><span style={{ fontSize: 12 }}>{phase === "prefill" ? "取行用于放大展示；并行计算仍覆盖 t=1,…,N。" : "本次没有其它 Query 行；历史 token 通过 KV 缓存参与注意力。"}</span></div></div>;
 
   if (kind === "structure-group") {
     return <div style={{ ...panel, borderColor: data.tone === "green" ? COLORS.green : COLORS.blue, boxShadow: "none", background: "rgba(255,254,250,.66)" }}>
@@ -634,7 +690,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 
   if (kind === "tensor" || kind === "output") {
     const output = kind === "output";
-    return <div style={panel}>{output ? both : <><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /></>}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}=H_{${layer}}'+O_{${layer}}^{\\mathrm{FFN}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape="N\times5120" rowTex={(row) => output ? `\\mathbf h_{${layer},${row}}^{\\mathrm{out}}` : `\\mathbf h_{${layer},${row}}^{\\mathrm{in}}`} elementTex={(row, column) => output ? `h_{${layer},${row},${column}}^{\\mathrm{out}}` : `h_{${layer},${row},${column}}^{\\mathrm{in}}`} tone={output ? "green" : "blue"} /></div></div>;
+    return <div style={panel}>{output ? both : <><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /></>}<Title><MathFormula tex={output ? `H_{${layer}}^{\\mathrm{out}}=H_{${layer}}'+O_{${layer}}^{\\mathrm{FFN}}` : `H_{${layer}}^{\\mathrm{in}}`} /></Title><div style={{ padding: 10 }}><Matrix rowIndices={tokenRows} tex={output ? `H_{${layer}}^{\\mathrm{out}}` : `H_{${layer}}^{\\mathrm{in}}`} shape={`${count}\\times5120`} rowTex={(row) => output ? `\\mathbf h_{${layer},${row}}^{\\mathrm{out}}` : `\\mathbf h_{${layer},${row}}^{\\mathrm{in}}`} elementTex={(row, column) => output ? `h_{${layer},${row},${column}}^{\\mathrm{out}}` : `h_{${layer},${row},${column}}^{\\mathrm{in}}`} tone={output ? "green" : "blue"} /></div></div>;
   }
 
   if (kind === "norm1") {
@@ -657,12 +713,12 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   if (kind === "swa-window") {
     return <div style={{ ...panel, borderColor: COLORS.green }}>
       <Handle id="projected-kv" type="target" position={Position.Top} style={{ ...handle, left: mode === "swa" ? "50%" : "90%" }} />
-      <Title>Layer {layer} 本地 SWA cache · 本层独立拥有，<MathFormula tex="t" /> 是当前 token 行号</Title>
+      <Title>Layer {layer} · {phase === "prefill" ? "Prefill：每个 Query 读取自己的因果窗口" : "Decode：新 KV 写入本层缓存，再读取当前窗口"}</Title>
       <div style={{ padding: 10, display: "grid", gap: 8, minWidth: 0 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1.7fr 20px .9fr", alignItems: "start", gap: 8, minWidth: 0 }}>
         <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}><strong>完整 KV 潜向量矩阵</strong><MathFormula tex={`U_{${layer}}\\in\\mathbb{R}^{N\\times512}`} /></div>
-          <MatrixBracket layer={layer} rows={[
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}><strong>{phase === "prefill" ? "完整 KV 潜向量矩阵" : "历史缓存 + 本步新行"}</strong><MathFormula tex={phase === "prefill" ? `U_{${layer}}\\in\\mathbb{R}^{N\\times512}` : `\\min(128,t)\\times512`} /></div>
+          <MatrixBracket layer={layer} rows={phase === "decode" ? [{ row: "r", selected: true }, { row: "r+1", selected: true }, { row: "", ellipsis: true }, { row: "t-1", selected: true }, { row: "t", selected: true }] : [
             { row: "1" },
             { row: "", ellipsis: true },
             { row: "r-1" },
@@ -691,7 +747,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
               </div>)}
             </div>
           </div>
-          <RingCache layer={layer} />
+          {phase === "decode" ? <><FlowStep><MathFormula tex={`\\mathbf u_{${layer},t}\\;\\to\\;\\text{当前槽位}`} /></FlowStep><RingCache layer={layer} /></> : <div data-prefill-causal style={{ display: "grid", gap: 6, padding: 6, fontSize: 11 }}><strong>例：N=6，各行只看自身及过去</strong><div style={{ display: "grid", gridTemplateColumns: "30px repeat(6,1fr)", gap: 3, textAlign: "center" }}><span>t ∖ KV</span>{[1, 2, 3, 4, 5, 6].map(s => <span key={`col-${s}`}>{s}</span>)}{[1, 2, 3, 4, 5, 6].map(t => <React.Fragment key={t}><span>{t}</span>{[1, 2, 3, 4, 5, 6].map(s => <span key={s} style={{ border: `1px solid ${s <= t ? COLORS.green : COLORS.line}`, background: s <= t ? COLORS.greenSoft : "transparent", color: s <= t ? COLORS.green : COLORS.faint }}>{s <= t ? "✓" : "—"}</span>)}</React.Fragment>)}</div><span>并行算各行 · 每行的可见 KV 不同</span></div>}
         </div>
       </div>
       </div>
@@ -730,6 +786,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
             </div>}
           </div>
           <Arrow vertical />
+          {phase === "decode" && ratio === 2 && <div data-compressor-pending style={{ display: "grid", gap: 7, padding: 8, border: `1px solid ${COLORS.amber}`, borderRadius: 7, fontSize: 12 }}><strong>跨步保留一组 KV 与 gate 分数</strong><div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr", alignItems: "center", gap: 5 }}><Box tone="blue"><MathFormula tex="t=2i-1" /><br />第一行暂存</Box><Operator tex="\to" /><Box tone="amber"><MathFormula tex="t=2i" /><br />第二行到达，合并本组</Box></div><span>凑齐 2 行才新增压缩行；其余历史压缩行留在 G 缓存。</span></div>}
           {ratio === 2 ? <div style={{ display: "grid", gap: 7 }}>
             <Box tone="amber"><strong>每连续 2 行生成两组逐元素权重</strong><br /><MathFormula tex={`[\\boldsymbol\\alpha_{${layer},i,1};\\boldsymbol\\alpha_{${layer},i,2}]=\\operatorname{softmax}_{\\mathrm{row}}([\\mathbf a_{${layer},2i-1};\\mathbf a_{${layer},2i}])`} /></Box>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1fr 42px 1fr", alignItems: "center", gap: 5 }}>
@@ -741,7 +798,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
           <FlowStep><MathFormula tex={`\\bar G_{${layer}}`} /> 分支送入 Indexer；缓存分支按压缩组首 token 的位置旋转</FlowStep>
           <RotaryProcess input={`\\bar{\\mathbf g}_{${layer},i}`} output={`\\mathbf g_{${layer},i}`} position={`(i-1)\\cdot ${ratio}`} layer={layer} />
         </> : <Box tone="blue"><strong>读取源层输出矩阵</strong></Box>}
-        <Matrix tex={`G_{${kvSource}}`} shape={`M\\times512,\\;M=\\lfloor N/${ratio}\\rfloor`} rowTex={(row) => `\\mathbf g_{${kvSource},${row}}`} elementTex={(row, column) => `g_{${kvSource},${row},${column}}`} vectorLength="512" lastRow="M" tone="green" />
+        <Matrix tex={`G_{${kvSource}}`} shape={`M\\times512,\\;M=\\lfloor ${phase === "prefill" ? "N" : "t"}/${ratio}\\rfloor`} rowTex={(row) => `\\mathbf g_{${kvSource},${row}}`} elementTex={(row, column) => `g_{${kvSource},${row},${column}}`} vectorLength="512" lastRow="M" tone="green" />
       </div>
     </div>;
   }
@@ -758,16 +815,16 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Title>{writesIndex ? <>Top-512 行选择 · Layer {layer} Indexer</> : <>复用 Layer {indexSource} 已算出的 Top-512 行号</>}</Title>
       <div style={{ padding: 10, display: "grid", gap: 7, fontSize: 11, minWidth: 0 }}>
         {writesIndex ? <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}><Box tone="blue"><MathFormula tex={`Q_{${layer}}^r\\in\\mathbb{R}^{N\\times1280}`} /></Box><Box tone="blue"><MathFormula tex={`X_{${layer}}\\in\\mathbb{R}^{N\\times5120}`} /></Box><Box tone="green"><MathFormula tex={`\\bar G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`} /></Box></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}><Box tone="blue"><MathFormula tex={`Q_{${layer}}^r\\in\\mathbb{R}^{${count}\\times1280}`} /></Box><Box tone="blue"><MathFormula tex={`X_{${layer}}\\in\\mathbb{R}^{${count}\\times5120}`} /></Box><Box tone="green"><MathFormula tex={`\\bar G_{${kvSource}}\\in\\mathbb{R}^{M\\times512}`} /></Box></div>
           <Arrow vertical />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}><Box><MathFormula tex={`Q_{${layer}}^I=Q_{${layer}}^rW_{${layer}}^{IQ}`} /><br /><MathFormula tex="N\times32\times128" /></Box><Box><MathFormula tex={`\\eta_{${layer}}=X_{${layer}}W_{${layer}}^{IW}/\\sqrt{32}`} /><br /><MathFormula tex="N\times32" /></Box><Box><MathFormula tex={`\\widehat K_{${kvSource}}^I=\\bar G_{${kvSource}}W_{${kvSource}}^{IK}`} /><br /><MathFormula tex="M\times128" /></Box></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}><Box><MathFormula tex={`Q_{${layer}}^I=Q_{${layer}}^rW_{${layer}}^{IQ}`} /><br /><MathFormula tex={`${count}\\times32\\times128`} /></Box><Box><MathFormula tex={`\\eta_{${layer}}=X_{${layer}}W_{${layer}}^{IW}/\\sqrt{32}`} /><br /><MathFormula tex={`${count}\\times32`} /></Box><Box><MathFormula tex={`\\widehat K_{${kvSource}}^I=\\bar G_{${kvSource}}W_{${kvSource}}^{IK}`} /><br /><MathFormula tex="M\times128" /></Box></div>
           <FlowStep>K 逐行 RMSNorm；Q 与 K 分别按各自位置旋转</FlowStep>
           <RotaryProcess input="\mathbf q^I_{h,t},\;\operatorname{RMSNorm}(\widehat{\mathbf k}^I_i)" output="\mathbf q^{I\prime}_{h,t},\;\mathbf k^{I\prime}_i" position={`t-1\\;(Q),\\quad (i-1)\\cdot ${compressionRatioForLayer(kvSource)}\\;(K)`} layer={layer} dimension={128} />
           <FlowStep>旋转后的 Q、K 计算索引得分；K 由源层缓存复用</FlowStep>
-          <Box tone="amber"><MathFormula tex={`S_{${layer}}=\\sum_{h=1}^{32}\\eta_{${layer},h}\\operatorname{ReLU}(Q_{${layer},h}^{I\\prime}(K_{${kvSource}}^{I\\prime})^{\\mathsf T}/\\sqrt{128})\\in\\mathbb{R}^{N\\times M}`} /></Box>
-        </> : <Box tone="blue"><strong>复用 Layer {indexSource} 得分矩阵</strong><br /><MathFormula tex={`S_{${indexSource}}\\in\\mathbb{R}^{N\\times M}`} /></Box>}
+          <Box tone="amber"><MathFormula tex={`S_{${layer}}=\\sum_{h=1}^{32}\\eta_{${layer},h}\\operatorname{ReLU}(Q_{${layer},h}^{I\\prime}(K_{${kvSource}}^{I\\prime})^{\\mathsf T}/\\sqrt{128})\\in\\mathbb{R}^{${count}\\times M}`} /></Box>
+        </> : <Box tone="blue"><strong>复用 Layer {indexSource} 得分矩阵</strong><br /><MathFormula tex={`S_{${indexSource}}\\in\\mathbb{R}^{${count}\\times M}`} /></Box>}
         <Arrow vertical />
-        <Box tone="amber"><MathFormula tex={`K_{${indexSource},t}=\\min(512,\\lfloor t/${compressionRatioForLayer(kvSource)}\\rfloor)`} /><br /><MathFormula tex={`I_{${indexSource},t}=\\operatorname{TopK}(S_{${indexSource}}[t,:],K_{${indexSource},t})\\in\\mathbb{N}^{K_{${indexSource},t}}`} /><br />输出：最多 512 个行号</Box>
+        <Box tone="amber"><MathFormula tex={`K_{${indexSource},t}=\\min(512,\\lfloor t/${compressionRatioForLayer(kvSource)}\\rfloor)`} /><br /><MathFormula tex={`I_{${indexSource},t}=\\operatorname{TopK}(\\mathbf s_{${indexSource},t},K_{${indexSource},t})\\in\\mathbb{N}^{K_{${indexSource},t}}`} /><br />输出：当前位置 t 的最多 512 个行号</Box>
       </div>
     </div>;
   }
@@ -819,7 +876,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "heads") {
-    return <div style={{ ...panel, height: "auto" }}><Handle id="query" type="target" position={Position.Top} style={{ ...handle, left: "30%", background: COLORS.blue }} /><Handle id="kv" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 64 Heads · 第 t 行 Q → 位置旋转 → QK 打分 → softmax → V 加权 → 逆旋转 → O</Title><div style={{ padding: 12, display: "grid", gridTemplateColumns: "1fr 1fr 40px 1fr", gap: 12 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
+    return <div style={{ ...panel, height: "auto" }}><Handle id="kv" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 64 Heads · 第 t 行 Q → 位置旋转 → QK 打分 → softmax → V 加权 → 逆旋转 → O</Title><div style={{ padding: 12, display: "grid", gridTemplateColumns: "1fr 1fr 40px 1fr", gap: 12 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
   }
 
   if (kind === "concat") {
@@ -827,17 +884,17 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <div data-output-projection-weight style={{ padding: 12, display: "grid", gap: 10 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 30px 1fr", gap: 9 }}>{[1, 2, 8].map((group, index) => <React.Fragment key={group}>{index === 2 && <Operator tex="\cdots" />}<div data-output-group={group} style={{ minWidth: 0, display: "grid", gap: 6 }}>
           <strong style={{ fontSize: 12, color: COLORS.green }}>组 {group} · Head {(group - 1) * 8 + 1}–{group * 8} 沿列拼接</strong>
-          <AttentionTensor tex={`C_{${group}}`} rows="N" columns="4096" scalar={(row, column) => `c^{(${group})}_{${row},${column}}`} />
+          <AttentionTensor tex={`C_{${group}}`} rows={count} columns="4096" scalar={(row, column) => `c^{(${group})}_{${row},${column}}`} />
           <FlowStep>每组独立投影</FlowStep>
           <AttentionTensor tex={`W^{OA}_{${layer},${group}}`} rows="4096" columns="1024" scalar={(row, column) => `w^A_{${row},${column}}`} tone="blue" />
           <FlowStep><MathFormula tex={`B_{${group}}=C_{${group}}W^{OA}_{${layer},${group}}`} /></FlowStep>
-          <AttentionTensor tex={`B_{${group}}`} rows="N" columns="1024" scalar={(row, column) => `b^{(${group})}_{${row},${column}}`} />
+          <AttentionTensor tex={`B_{${group}}`} rows={count} columns="1024" scalar={(row, column) => `b^{(${group})}_{${row},${column}}`} />
         </div></React.Fragment>)}</div>
         <FlowStep>8 组沿列拼接 → 8192 维 → 最终线性投影</FlowStep>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr 26px 1fr", gap: 8, alignItems: "center" }}>
-          <AttentionTensor tex="B=[B_1\mid B_2\mid\cdots\mid B_8]" rows="N" columns="8192" scalar={(row, column) => `b_{${row},${column}}`} />
+          <AttentionTensor tex="B=[B_1\mid B_2\mid\cdots\mid B_8]" rows={count} columns="8192" scalar={(row, column) => `b_{${row},${column}}`} />
           <Operator tex="\times" /><AttentionTensor tex={`W^{OB}_{${layer}}`} rows="8192" columns="5120" scalar={(row, column) => `w^B_{${row},${column}}`} tone="blue" />
-          <Operator tex="=" /><AttentionTensor tex={`O_{${layer}}`} rows="N" columns="5120" scalar={(row, column) => `o_{${row},${column}}`} />
+          <Operator tex="=" /><AttentionTensor tex={`O_{${layer}}`} rows={count} columns="5120" scalar={(row, column) => `o_{${row},${column}}`} />
         </div>
       </div>
     </div>;
@@ -861,7 +918,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="main-out" type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
       <Title>Layer {layer} Router · 只选择 routed experts</Title>
       <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.2fr 26px 1.4fr 26px .8fr", alignItems: "center", gap: 7 }}>
-        <RowMatrix tex={`Y_{${layer}}`} shape="N\times5120" rows={[`\\mathbf y_{${layer},1}`, `\\mathbf y_{${layer},2}`, "\\vdots", `\\mathbf y_{${layer},N}`]} tone="blue" rowLength="5120" elementTex={(row, column) => `y_{${layer},${["1", "2", "", "N"][row]},${column}}`} />
+        <RowMatrix tex={`Y_{${layer}}`} shape={`${count}\\times5120`} rows={(phase === "prefill" ? ["1", "2", "\\vdots", "N"] : tokenRows).map(s => s === "\\vdots" ? s : `\\mathbf y_{${layer},${s}}`)} tone="blue" rowLength="5120" elementTex={(row, column) => `y_{${layer},${(phase === "prefill" ? ["1", "2", "", "N"] : tokenRows)[row]},${column}}`} />
         <Operator tex="\times" />
         <div style={{ minWidth: 0, border: `1.3px solid ${COLORS.amber}`, background: COLORS.amberSoft, borderRadius: 7, padding: 7, display: "grid", gap: 6, textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}><MathFormula tex={`W_{${layer}}^R`} /><span style={{ fontSize: 10 }}><MathFormula tex="5120\times384" /></span></div>
@@ -871,7 +928,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         </div>
         <Operator tex="=" />
         <div style={{ position: "relative", minWidth: 0, minHeight: 64, display: "grid", placeItems: "center", padding: "18px 7px 7px", border: `1.3px solid ${COLORS.green}`, borderRadius: 7, background: COLORS.greenSoft }}>
-          <span style={{ position: "absolute", top: 5, right: 6, fontSize: 9 }}><MathFormula tex="N\times384" /></span>
+          <span style={{ position: "absolute", top: 5, right: 6, fontSize: 9 }}><MathFormula tex={`${count}\\times384`} /></span>
           <MathFormula tex={`S_{${layer}}`} />
         </div>
       </div>
@@ -893,8 +950,8 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="main-in" type="target" position={Position.Top} style={{ ...handle, background: COLORS.amber }} />
       <Title>Router 得分矩阵 · 第 <MathFormula tex="t" /> 行 Top-6 高亮 · 数值为示意</Title>
       <div data-router-score-matrix style={{ padding: "7px 0", borderTop: `1px solid ${COLORS.blue}`, borderBottom: `1px solid ${COLORS.blue}`, background: COLORS.blueSoft, display: "grid", gap: 4 }}>
-        <div style={{ padding: "0 10px", display: "flex", justifyContent: "space-between", fontSize: 11 }}><MathFormula tex={`S_{${layer}}`} /><MathFormula tex="N\times384" /></div>
-        {["", "1", "2", "\\vdots", "t", "\\vdots", "N"].map((row, rowIndex) => row === "\\vdots" ? <div key={rowIndex} style={{ textAlign: "center", fontSize: 9 }}><MathFormula tex="\vdots" /></div> : <div key={rowIndex} style={{ padding: `0 ${EXPERTS_PADDING}px`, display: "grid", gridTemplateColumns: `${SHARED_GROUP_WIDTH}px minmax(0,1fr)`, gap: EXPERT_GROUP_GAP, alignItems: "center", textAlign: "center", fontSize: 9 }}>
+        <div style={{ padding: "0 10px", display: "flex", justifyContent: "space-between", fontSize: 11 }}><MathFormula tex={`S_{${layer}}`} /><MathFormula tex={`${count}\\times384`} /></div>
+        {["", ...tokenRows].map((row, rowIndex) => row === "\\vdots" ? <div key={rowIndex} style={{ textAlign: "center", fontSize: 9 }}><MathFormula tex="\vdots" /></div> : <div key={rowIndex} style={{ padding: `0 ${EXPERTS_PADDING}px`, display: "grid", gridTemplateColumns: `${SHARED_GROUP_WIDTH}px minmax(0,1fr)`, gap: EXPERT_GROUP_GAP, alignItems: "center", textAlign: "center", fontSize: 9 }}>
           <div style={{ display: "grid", gridTemplateColumns: "32px repeat(3,minmax(0,1fr)) 24px", gap: 8, alignItems: "center" }}>
             <MathFormula tex={row} />{[1, 2, 3].map(column => <React.Fragment key={column}>{row ? scoreCell(column, row) : column}</React.Fragment>)}<MathFormula tex="\cdots" />
           </div>
@@ -952,9 +1009,9 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Title><MathFormula tex={`\\mathbf r_{${layer},${expert},t}=${shared ? "1" : `g_{${layer},${expert},t}`}\\,\\mathbf e_{${layer},${expert},t}`} /><span style={{ float: "right", fontSize: 11 }}><MathFormula tex="1\times5120" /></span></Title>
       <div style={{ padding: 8 }}><VectorStrip name={`\\mathbf r_{${layer},${expert},t}`} nameWidth={110} length="5120" elementTex={column => `r_{${layer},${expert},t,${column}}`} tone={shared ? "blue" : "amber"} compact /></div>
     </div>;
-    const rows = ["1", "2", "\\vdots", "t", "\\vdots", "N"];
+    const rows = tokenRows;
     return <div data-expert-output={expert} style={{ ...panel, height: "auto", borderColor: color }}>{both}
-      <Title>{shared ? "共享专家输出" : `Expert ${expert} 输出`} · <MathFormula tex={`E_{${layer},${expert}}(Y_{${layer}})`} /><span style={{ float: "right", fontSize: 11 }}><MathFormula tex="N\times5120" /></span></Title>
+      <Title>{shared ? "共享专家输出" : `Expert ${expert} 输出`} · <MathFormula tex={`E_{${layer},${expert}}(Y_{${layer}})`} /><span style={{ float: "right", fontSize: 11 }}><MathFormula tex={`${count}\\times5120`} /></span></Title>
       <div style={{ padding: 9, display: "grid", gap: 5 }}>{rows.map((row, index) => row === "\\vdots" ? <div key={index} style={{ textAlign: "center" }}><MathFormula tex={row} /></div> : <VectorStrip key={index} name={`\\mathbf e_{${layer},${expert},${row}}`} nameWidth={110} length="5120" elementTex={column => `e_{${layer},${expert},${row},${column}}`} tone={shared ? "blue" : "green"} selected={row === "t"} compact />)}</div>
     </div>;
   }
@@ -967,7 +1024,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "moe-output") {
-    return <div style={{ ...panel, display: "grid", placeContent: "center", textAlign: "center", gap: 7, borderColor: COLORS.green, background: COLORS.greenSoft, fontSize: 14 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`\\mathbf o_{${layer},t}^{\\mathrm{FFN}}=\\mathbf r_{${layer},\\mathrm{shared},t}+\\sum_{i\\in I_{${layer},t}}\\mathbf r_{${layer},i,t}`} /><span style={{ fontSize: 11 }}>各 token 的结果按行组成 <MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb R^{N\\times5120}`} /></span></div>;
+    return <div style={{ ...panel, display: "grid", placeContent: "center", textAlign: "center", gap: 7, borderColor: COLORS.green, background: COLORS.greenSoft, fontSize: 14 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`\\mathbf o_{${layer},t}^{\\mathrm{FFN}}=\\mathbf r_{${layer},\\mathrm{shared},t}+\\sum_{i\\in I_{${layer},t}}\\mathbf r_{${layer},i,t}`} /><span style={{ fontSize: 11 }}>{phase === "prefill" ? "各 token 的结果按行组成 " : "当前一步的输出矩阵 "} <MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb R^{${count}\\times5120}`} /></span></div>;
   }
 
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
@@ -990,7 +1047,7 @@ function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
   return <div data-boundary-connectable={data.kind !== "structure-operator"} data-frame-selected={Boolean(selected)} style={{ width: "100%", height: CONTENT_SIZED_KINDS.has(data.kind) ? "auto" : "100%", ...(CONTENT_SIZED_KINDS.has(data.kind) ? { minHeight: "100%", display: "grid", gridTemplateColumns: "minmax(0,1fr)" } : {}), position: "relative", borderRadius: compact ? "50%" : 12 }}>
     <EightResizeHandles minWidth={minimumWidth} minHeight={minimumHeight} />
     <EightConnectionPorts color={portColor} />
-    <DiagramNodeContent data={data} />
+    <ExecutionContext.Provider value={data.phase ?? "prefill"}><DiagramNodeContent data={data} /></ExecutionContext.Provider>
   </div>;
 }
 
@@ -1015,7 +1072,7 @@ function structureNode({
   ...data
 }: {
   id: string;
-  parentId: string;
+  parentId?: string;
   layer: number;
   mode: LayerMode;
   x: number;
@@ -1037,8 +1094,8 @@ function structureNode({
     id,
     type: "diagram",
     parentId,
-    extent: "parent",
-    expandParent: true,
+    extent: parentId ? "parent" : undefined,
+    expandParent: Boolean(parentId),
     position: { x, y },
     data: { kind, layer, mode, ...data },
     style: { width, height },
@@ -1046,15 +1103,25 @@ function structureNode({
   };
 }
 
-export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> = new Map()): { nodes: DiagramNode[]; edges: EditableEdge[] } {
+export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, number> = new Map(), phase: ExecutionPhase = "prefill"): { nodes: DiagramNode[]; edges: EditableEdge[] } {
   const mode = modeForLayer(layer);
+  const { count, rows } = executionAxis(phase);
+  const matrixRows = (prefix: string) => (phase === "prefill" ? ["1", "2", "\\vdots", "N"] : rows).map(s => s === "\\vdots" ? s : `${prefix}_{${layer},${s}}`);
   const hasGlobal = mode !== "swa";
   const mainGap = architectureFanoutGap(3);
-  const inputY = 0;
-  const tensorHeight = 270;
+  const tokenizerHeight = contentHeights.get("tokenizer") ?? 260;
+  const embeddingY = tokenizerHeight + mainGap;
+  const embeddingHeight = contentHeights.get("embedding") ?? 260;
+  const firstInputY = embeddingY + embeddingHeight + mainGap;
+  const tensorHeight = phase === "prefill" ? 300 : 170;
+  const priorLayersY = firstInputY + tensorHeight + mainGap;
+  const inputY = layer === 1 ? firstInputY : priorLayersY + 120 + mainGap;
   const norm1Y = inputY + tensorHeight + 55;
   const projectionY = norm1Y + 72 + mainGap;
-  const queryProjectionHeight = 670;
+  const queryLayout = queryProjectionLayout(phase);
+  const queryProjectionHeight = queryLayout.height;
+  const queryRowY = projectionY + queryProjectionHeight + mainGap;
+  const querySplitY = queryRowY + 160 + mainGap;
   const localKvProjectionHeight = contentHeights.get("kv") ?? 464;
   const swaHeight = 530;
   const compressorHeight = contentHeights.get("compressor") ?? (mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450);
@@ -1063,7 +1130,7 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
   const sourceRowHeight = hasGlobal
     ? Math.max(queryProjectionHeight, localKvProjectionHeight, compressorHeight)
     : Math.max(queryProjectionHeight, localKvProjectionHeight);
-  const swaY = projectionY + sourceRowHeight + mainGap;
+  const swaY = Math.max(projectionY + sourceRowHeight, querySplitY + 150) + mainGap;
   const globalSelectY = swaY + indexerHeight + mainGap;
   const mergeY = hasGlobal ? Math.max(swaY + swaHeight, globalSelectY + globalSelectHeight) + mainGap : swaY + swaHeight + mainGap;
   const mergeHeight = hasGlobal ? 200 : 220;
@@ -1091,9 +1158,13 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
   const add2Y = moeOutputY + 100 + mainGap;
   const outputY = add2Y + 70 + mainGap;
   const nodes: DiagramNode[] = [
-    node("input", "tensor", layer, mode, 610, inputY, 380, tensorHeight),
+    node("tokenizer", "tokenizer", layer, mode, 400, 0, 800, tokenizerHeight),
+    node("execution-guide", "execution-guide", layer, mode, 1300, 0, 650, contentHeights.get("execution-guide") ?? 330),
+    node("embedding", "embedding", layer, mode, 400, embeddingY, 800, embeddingHeight),
+    node("input", "tensor", layer, mode, 450, inputY, 700, tensorHeight),
     node("norm1", "norm1", layer, mode, 620, norm1Y, 360, 72),
     node("q", "projection-q", layer, mode, 20, projectionY, 800, queryProjectionHeight),
+    node("q-row", "query-row", layer, mode, 20, queryRowY, 800, 160),
     node("kv", "projection-kv", layer, mode, 920, projectionY, 500, localKvProjectionHeight),
     node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 350, swaY, hasGlobal ? 780 : 900, swaHeight),
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 480, mergeY, hasGlobal ? 1000 : 640, mergeHeight),
@@ -1110,8 +1181,12 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     node("moe-sum", "moe-sum", layer, mode, 70 + EXPERTS_WIDTH / 2 - 160, moeSumY, 320, 100),
     node("moe-output", "moe-output", layer, mode, 70 + EXPERTS_WIDTH / 2 - 320, moeOutputY, 640, 100),
     node("add2", "add2", layer, mode, 765, add2Y, 70, 70),
-    node("output", "output", layer, mode, 610, outputY, 380, tensorHeight),
+    node("output", "output", layer, mode, 450, outputY, 700, tensorHeight),
   ];
+  if (layer > 1) {
+    nodes.push(node("first-input", "tensor", 1, mode, 450, firstInputY, 700, tensorHeight));
+    nodes.push(node("prior-layers", "prior-layers", layer, mode, 450, priorLayersY, 700, 120));
+  }
   for (const branch of EXPERT_OUTPUT_BRANCHES) {
     for (const item of [
       node(`expert-output-${branch.key}`, "expert-output", layer, mode, branch.center - branch.width / 2, expertOutputY, branch.width, expertOutputHeight),
@@ -1124,31 +1199,31 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
   nodes.push({ ...node("weighted-expert-ellipsis", "structure-operator", layer, mode, omittedX - 20, weightedY + 25, 40, 40), data: { kind: "structure-operator", layer, mode, tex: "\\cdots" } });
   nodes.push(
     { ...node("swa-result", "swa-output", layer, mode, 10, 414, ((hasGlobal ? 780 : 900) - 56) * 1.7 / 2.6, 82), parentId: "swa-window", extent: "parent" },
-    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 28, y: 68, width: 200, height: 170, title: "输入矩阵", tex: `X_{${layer}}\\in\\mathbb R^{N\\times5120}`, matrixRows: [`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`], tone: "blue" }),
-    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 236, y: 131, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
-    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 280, y: 89, width: 230, height: 128, title: "5120 × 1280 · 列向量", tex: `W_{${layer}}^{Q\\downarrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\downarrow}`, `\\mathbf w_{${layer},2}^{Q\\downarrow}`, "\\cdots", `\\mathbf w_{${layer},1280}^{Q\\downarrow}`], tone: "amber" }),
-    structureNode({ id: "q-equals-down", parentId: "q", layer, mode, x: 518, y: 131, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
-    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 562, y: 68, width: 210, height: 174, title: "低秩矩阵", tex: `Q_{${layer}}^{r}\\in\\mathbb R^{N\\times1280}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
-    structureNode({ id: "q-low-rank-up", parentId: "q", layer, mode, x: 28, y: 274, width: 200, height: 174, title: "同一低秩矩阵", tex: `Q_{${layer}}^{r}`, matrixRows: [`\\mathbf q_{${layer},1}^{r}`, `\\mathbf q_{${layer},2}^{r}`, "\\vdots", `\\mathbf q_{${layer},N}^{r}`], tone: "green" }),
-    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 236, y: 337, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
-    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 280, y: 295, width: 230, height: 128, title: "1280 × (64 · 512) · 列向量", tex: `W_{${layer}}^{Q\\uparrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\uparrow}`, `\\mathbf w_{${layer},2}^{Q\\uparrow}`, "\\cdots", `\\mathbf w_{${layer},64\\cdot512}^{Q\\uparrow}`], tone: "amber" }),
-    structureNode({ id: "q-equals-up", parentId: "q", layer, mode, x: 518, y: 337, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-x", parentId: "q", layer, mode, x: 28, y: queryLayout.firstY, width: 200, height: queryLayout.rowHeight, title: "输入矩阵", tex: `X_{${layer}}\\in\\mathbb R^{${count}\\times5120}`, matrixRows: matrixRows("\\mathbf x"), tone: "blue" }),
+    structureNode({ id: "q-mul-down", parentId: "q", layer, mode, x: 236, y: queryLayout.firstY + (queryLayout.rowHeight - 44) / 2, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wdown", parentId: "q", layer, mode, x: 280, y: queryLayout.firstY + (queryLayout.rowHeight - 128) / 2, width: 230, height: 128, title: "5120 × 1280 · 列向量", tex: `W_{${layer}}^{Q\\downarrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\downarrow}`, `\\mathbf w_{${layer},2}^{Q\\downarrow}`, "\\cdots", `\\mathbf w_{${layer},1280}^{Q\\downarrow}`], tone: "amber" }),
+    structureNode({ id: "q-equals-down", parentId: "q", layer, mode, x: 518, y: queryLayout.firstY + (queryLayout.rowHeight - 44) / 2, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
+    structureNode({ id: "q-low-rank", parentId: "q", layer, mode, x: 562, y: queryLayout.firstY, width: 210, height: queryLayout.rowHeight, title: "低秩矩阵", tex: `Q_{${layer}}^{r}\\in\\mathbb R^{${count}\\times1280}`, matrixRows: matrixRows("\\mathbf q").map(s => s === "\\vdots" ? s : `${s}^{r}`), tone: "green" }),
+    structureNode({ id: "q-low-rank-up", parentId: "q", layer, mode, x: 28, y: queryLayout.secondY, width: 200, height: queryLayout.rowHeight, title: "同一低秩矩阵", tex: `Q_{${layer}}^{r}`, matrixRows: matrixRows("\\mathbf q").map(s => s === "\\vdots" ? s : `${s}^{r}`), tone: "green" }),
+    structureNode({ id: "q-mul-up", parentId: "q", layer, mode, x: 236, y: queryLayout.secondY + (queryLayout.rowHeight - 44) / 2, width: 36, height: 44, kind: "structure-operator", tex: "\\times" }),
+    structureNode({ id: "q-wup", parentId: "q", layer, mode, x: 280, y: queryLayout.secondY + (queryLayout.rowHeight - 128) / 2, width: 230, height: 128, title: "1280 × (64 · 512) · 列向量", tex: `W_{${layer}}^{Q\\uparrow}`, columnVectors: true, vectorCells: [`\\mathbf w_{${layer},1}^{Q\\uparrow}`, `\\mathbf w_{${layer},2}^{Q\\uparrow}`, "\\cdots", `\\mathbf w_{${layer},64\\cdot512}^{Q\\uparrow}`], tone: "amber" }),
+    structureNode({ id: "q-equals-up", parentId: "q", layer, mode, x: 518, y: queryLayout.secondY + (queryLayout.rowHeight - 44) / 2, width: 36, height: 44, kind: "structure-operator", tex: "=" }),
     structureNode({
       id: "q-wide-matrix",
       parentId: "q",
       layer,
       mode,
       x: 562,
-      y: 274,
+      y: queryLayout.secondY,
       width: 210,
-      height: 232,
+      height: queryLayout.resultHeight,
       title: "升维输出矩阵",
-      tex: `\\widetilde Q_{${layer}}\\in\\mathbb R^{N\\times(64\\cdot512)}`,
+      tex: `\\widetilde Q_{${layer}}\\in\\mathbb R^{${count}\\times(64\\cdot512)}`,
       tone: "green",
-      matrixRows: [`\\mathbf{\\widetilde q}_{${layer},1}`, `\\mathbf{\\widetilde q}_{${layer},2}`, "\\vdots", `t\\quad\\mathbf{\\widetilde q}_{${layer},t}`, "\\vdots", `\\mathbf{\\widetilde q}_{${layer},N}`],
-      matrixSelectedRow: 3,
+      matrixRows: rows.map(s => s === "\\vdots" ? s : `\\widetilde{\\mathbf q}_{${layer},${s}}`),
+      matrixSelectedRow: rows.indexOf("t"),
     }),
-    structureNode({ id: "q-head-slice", parentId: "q", layer, mode, x: 28, y: 534, width: 744, height: 120, kind: "structure-group", tex: `\\mathbf{\\widetilde q}_{${layer},t}`, title: "64 个连续分块 · 每块 512 维", tone: "green" }),
+    structureNode({ id: "q-head-slice", layer, mode, x: 20, y: querySplitY, width: 800, height: 150, kind: "structure-group", tex: `\\widetilde{\\mathbf q}_{${layer},t}`, title: "④ 沿特征轴分 64 块 · token 位置 t 不变", tone: "green" }),
     structureNode({ id: "q-head-1", parentId: "q-head-slice", layer, mode, x: 12, y: 42, width: 210, height: 64, title: "Head 1 · 元素 1–512", tex: `\\mathbf q_{${layer},1,t}`, tone: "green" }),
     structureNode({ id: "q-head-2", parentId: "q-head-slice", layer, mode, x: 234, y: 42, width: 210, height: 64, title: "Head 2 · 元素 513–1024", tex: `\\mathbf q_{${layer},2,t}`, tone: "green" }),
     structureNode({ id: "q-head-more", parentId: "q-head-slice", layer, mode, x: 451, y: 52, width: 36, height: 44, kind: "structure-operator", tex: "\\cdots" }),
@@ -1187,11 +1262,14 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
   const skipStyle = { style: { stroke: COLORS.amber, strokeWidth: 2.2 }, data: { color: COLORS.amber }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.amber } } as Partial<EditableEdge>;
 
   const edges: EditableEdge[] = [
+    makeEdge("tokenizer-embedding", "tokenizer", "embedding"),
+    makeEdge("embedding-first-input", "embedding", layer === 1 ? "input" : "first-input"),
     makeEdge("input-norm", "input", "norm1", undefined, { sourceHandle: "main" }),
     mathEdge("norm-q", "norm1", "q", `X_{${layer}}`, { sourceHandle: "query", targetHandle: "port-top" }),
     mathEdge("norm-kv", "norm1", "kv", `X_{${layer}}`, { sourceHandle: "local-kv" }),
-    mathEdge("q-heads", "q", "heads", `\\mathbf q_{${layer},h,t}`, { sourceHandle: "port-bottom", targetHandle: "query" }),
-    mathEdge("kv-swa", "kv", "swa-window", `U_{${layer}}\\in\\mathbb{R}^{N\\times512}`, { sourceHandle: "swa", targetHandle: "projected-kv" }),
+    makeEdge("query-matrix-row", "q-wide-matrix", "q-row", undefined, { sourceHandle: "port-bottom" }),
+    makeEdge("query-row-split", "q-row", "q-head-slice", undefined, { targetHandle: "port-top" }),
+    mathEdge("kv-swa", "kv", "swa-window", phase === "prefill" ? `U_{${layer}}\\in\\mathbb{R}^{N\\times512}` : `\\mathbf u_{${layer},t}\\in\\mathbb{R}^{1\\times512}`, { sourceHandle: "swa", targetHandle: "projected-kv" }),
     mathEdge("swa-merge", "swa-result", "kv-merge", `U_{${layer},t}^{\\mathrm{SWA}}`, { sourceHandle: "local-window", targetHandle: "local" }),
     mathEdge("merge-heads", "kv-merge", "heads", `\\mathrm{KV}_{${layer},t}`, { sourceHandle: "kv", targetHandle: "kv" }),
     makeEdge("heads-concat", "heads", "concat"),
@@ -1208,6 +1286,8 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     mathEdge("state1-add2", "state1", "add2", `H_{${layer}}'`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle, data: { ...skipStyle.data, waypoints: ffnResidualWaypoints } }),
     makeEdge("add2-output", "add2", "output"),
   ];
+  if (layer > 1) edges.push(makeEdge("first-input-prior-layers", "first-input", "prior-layers", undefined, { sourceHandle: "main" }), makeEdge("prior-layers-input", "prior-layers", "input"));
+  for (const head of [1, 2, 64]) edges.push(mathEdge(`query-head-${head}`, `q-head-${head}`, "heads", `\\mathbf q_{${layer},${head},t}`, { sourceHandle: "port-bottom", targetHandle: `query-${head}` }));
   for (const expert of VISIBLE_ROUTED_EXPERTS) {
     edges.push(makeEdge(`score-expert-${expert.id}`, "scores", "experts", `g_{${layer},${expert.id}}=${expert.score}`, { sourceHandle: `score-${expert.id}`, targetHandle: `expert-${expert.id}`, style: { stroke: COLORS.amber, strokeWidth: 2 }, markerEnd: { type: MarkerType.Arrow, width: 20, height: 20, color: COLORS.amber } }));
   }
@@ -1231,7 +1311,7 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     edges.push(mathEdge("indexer-select", "indexer", "global-select", `I_{${indexSource},t}\\in\\mathbb{N}^{K_{${indexSource},t}}`, { sourceHandle: "indices", targetHandle: "indices", style: { stroke: COLORS.amber, strokeWidth: 2.2 }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.amber } }));
     edges.push(mathEdge("select-merge", "global-select", "kv-merge", `G_{${kvSource},t}^{\\mathrm{selected}}`, { sourceHandle: "selected", targetHandle: "global" }));
   }
-  return { nodes, edges };
+  return { nodes: nodes.map(item => ({ ...item, data: { ...item.data, phase } })), edges };
 }
 
 type SavedDiagramLayout = {
@@ -1332,8 +1412,8 @@ export function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableE
   return { nodes, edges };
 }
 
-function DiagramCanvas({ layer }: { layer: number }) {
-  const initialGraph = useMemo(() => buildGraph(layer), [layer]);
+function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase }) {
+  const initialGraph = useMemo(() => buildGraph(layer, new Map(), phase), [layer, phase]);
   const measuredLayoutRef = useRef(initialGraph);
   const [nodes, setNodes, onNodesChange] = useNodesState<DiagramNode>(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<EditableEdge>(initialGraph.edges);
@@ -1351,7 +1431,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const connectionGestureRef = useRef<{ nodeId: string; handleId: string | null; x: number; y: number } | null>(null);
   const resetConnectionRef = useRef<(() => void) | null>(null);
   const completedConnectionRef = useRef(false);
-  const storageKey = `oasismind:deepseek-v41-layer-layout:v7:${layer}`;
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v8:${phase}:${layer}`;
 
   nodesRef.current = nodes;
   edgesRef.current = edges;
@@ -1373,12 +1453,12 @@ function DiagramCanvas({ layer }: { layer: number }) {
 
   const restoreSnapshot = useCallback((snapshot: DiagramSnapshot) => {
     const cloned = cloneSnapshot(snapshot.nodes, snapshot.edges);
-    measuredLayoutRef.current = buildGraph(layer, new Map(cloned.nodes.filter(item => CONTENT_SIZED_KINDS.has(item.data.kind) && item.measured?.height).map(item => [item.id, item.measured!.height!])));
+    measuredLayoutRef.current = buildGraph(layer, new Map(cloned.nodes.filter(item => CONTENT_SIZED_KINDS.has(item.data.kind) && item.measured?.height).map(item => [item.id, item.measured!.height!])), phase);
     setNodes(cloned.nodes);
     setEdges(cloned.edges);
     setSelectedEdgeIds([]);
     setSaveState("idle");
-  }, [layer, setEdges, setNodes]);
+  }, [layer, phase, setEdges, setNodes]);
 
   const undo = useCallback(() => {
     const previous = pastRef.current.at(-1);
@@ -1409,7 +1489,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
       if (raw) {
         const saved = JSON.parse(raw) as SavedDiagramLayout;
         // 保存时的实测高度也是布局基线，避免水合后再次累加同一高度差。
-        const sizedGraph = buildGraph(layer, new Map(saved.nodes.filter(item => item.height).map(item => [item.id, item.height!])));
+        const sizedGraph = buildGraph(layer, new Map(saved.nodes.filter(item => item.height).map(item => [item.id, item.height!])), phase);
         measuredLayoutRef.current = sizedGraph;
         graph = applySavedLayout(sizedGraph, saved);
       }
@@ -1429,11 +1509,11 @@ function DiagramCanvas({ layer }: { layer: number }) {
   // 内容尺寸由 React Flow 的 ResizeObserver 测量；下游位置由同一布局函数推导。
   // 只移动自动布局基线的差值，保留用户拖动产生的偏移，不清除已保存的布局。
   useEffect(() => {
-    if (nodes.some(item => item.data.layer !== layer)) return;
+    if (nodes.some(item => item.id !== "first-input" && item.data.layer !== layer)) return;
     const heights = new Map(nodes.filter(item => CONTENT_SIZED_KINDS.has(item.data.kind) && item.measured?.height).map(item => [item.id, item.measured!.height!]));
     if (!heights.size) return;
     const previous = measuredLayoutRef.current;
-    const next = buildGraph(layer, heights);
+    const next = buildGraph(layer, heights, phase);
     const oldPositions = new Map(previous.nodes.map(item => [item.id, item.position]));
     const deltas = new Map(next.nodes.map(item => [item.id, item.position.y - (oldPositions.get(item.id)?.y ?? item.position.y)]));
     if (![...deltas.values()].some(delta => Math.abs(delta) > .5)) return;
@@ -1444,7 +1524,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
     setEdges(current => current.map(item => item.data?.waypoints && JSON.stringify(item.data.waypoints) === JSON.stringify(oldEdges.get(item.id)?.data?.waypoints)
       ? { ...item, data: { ...item.data, waypoints: newEdges.get(item.id)?.data?.waypoints } }
       : item));
-  }, [layer, nodes, setEdges, setNodes]);
+  }, [layer, phase, nodes, setEdges, setNodes]);
 
   const onConnect = useCallback((connection: Connection, targetAnchor?: BoundaryAnchor) => {
     beginHistory();
@@ -1715,12 +1795,14 @@ function DiagramCanvas({ layer }: { layer: number }) {
 
 export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
   const [layer, setLayer] = useState(() => Math.min(40, Math.max(1, Math.round(initialLayer))));
+  const [phase, setPhase] = useState<ExecutionPhase>("prefill");
   const mode = modeForLayer(layer);
   return <div style={{ width: "100%", height: "100%", background: COLORS.paper, fontFamily: "Inter, PingFang SC, Microsoft YaHei, system-ui, sans-serif", position: "relative" }}>
     <div style={{ position: "absolute", inset: "0 0 auto 0", zIndex: 10, minHeight: 122, padding: "18px 22px 14px", background: "rgba(247,245,240,.97)", borderBottom: `1px solid ${COLORS.line}` }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 12 }}><div><strong style={{ fontSize: 21 }}>DeepSeek V4.1-Flash · Layer {layer}</strong><span style={{ marginLeft: 12, color: mode === "full" ? COLORS.green : mode === "reindex" ? COLORS.amber : mode === "reuse" ? COLORS.blue : COLORS.rose, fontWeight: 800 }}>{modeLabel(mode)}</span></div><span style={{ color: COLORS.muted, fontSize: 12 }}>随时平移缩放、拖框、改尺寸、增删连线；与文章编辑状态无关</span></div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>{(["prefill", "decode"] as const).map(value => <button key={value} type="button" aria-pressed={phase === value} onClick={() => setPhase(value)} style={{ ...editorButton, background: phase === value ? COLORS.green : COLORS.card, color: phase === value ? "white" : COLORS.ink }}>{value === "prefill" ? "Prefill · 整段矩阵" : "Decode · 单步一行"}</button>)}<span style={{ fontSize: 12, color: COLORS.muted }}>{phase === "prefill" ? "N 行并行 · t 是其中一个序列位置" : "当前 1 行 · t=P+k · 历史 KV 来自缓存"}</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(20,1fr)", gap: 4 }}>{Array.from({ length: 40 }, (_, i) => i + 1).map((value) => { const valueMode = modeForLayer(value); const active = value === layer; const color = valueMode === "full" ? COLORS.green : valueMode === "reindex" ? COLORS.amber : valueMode === "reuse" ? COLORS.blue : COLORS.rose; return <button key={value} type="button" onClick={() => setLayer(value)} aria-pressed={active} style={{ border: `1px solid ${active ? color : COLORS.line}`, background: active ? color : COLORS.card, color: active ? "white" : color, borderRadius: 5, padding: "4px 0", fontWeight: 750, fontSize: 10.5, cursor: "pointer" }}>{value}</button>; })}</div>
     </div>
-    <div style={{ position: "absolute", inset: "122px 0 0" }}><DiagramCanvas key={layer} layer={layer} /></div>
+    <div style={{ position: "absolute", inset: "174px 0 0" }}><DiagramCanvas key={`${phase}-${layer}`} layer={layer} phase={phase} /></div>
   </div>;
 };
