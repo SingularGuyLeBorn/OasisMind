@@ -208,6 +208,7 @@ function VectorStrip({
   compact = false,
   selected = false,
   columns: displayedColumns,
+  nameWidth,
 }: {
   name: string;
   length: string;
@@ -216,10 +217,11 @@ function VectorStrip({
   compact?: boolean;
   selected?: boolean;
   columns?: string[];
+  nameWidth?: number;
 }) {
   const palette = tonePalette(selected ? "amber" : tone);
   const columns = displayedColumns ?? ["1", "2", "\\cdots", length];
-  return <div data-vector-elements data-vector-selected={selected || undefined} style={{ minWidth: 0, display: "grid", gridTemplateColumns: compact ? "52px minmax(0,1fr)" : "92px minmax(0,1fr)", gap: 5, alignItems: "center", padding: compact ? 2 : 5, fontSize: compact ? 9 : 10.5, lineHeight: 1.2, outline: selected ? `1px dashed ${palette.color}` : undefined, borderRadius: 4 }}>
+  return <div data-vector-elements data-vector-selected={selected || undefined} style={{ minWidth: 0, display: "grid", gridTemplateColumns: `${nameWidth ?? (compact ? 52 : 92)}px minmax(0,1fr)`, gap: 5, alignItems: "center", padding: compact ? 2 : 5, fontSize: compact ? 9 : 10.5, lineHeight: 1.2, outline: selected ? `1px dashed ${palette.color}` : undefined, borderRadius: 4 }}>
     <div style={{ minWidth: 0, textAlign: "center", color: palette.color, fontSize: compact ? 9 : 10.5, fontWeight: 800, overflow: "hidden" }}><MathFormula tex={name} /></div>
     <div style={{ minWidth: 0, display: "grid", gridTemplateColumns: columns.map(column => column === "\\cdots" ? ".55fr" : "minmax(0,1fr)").join(" "), gap: 3 }}>
       {columns.map((column, index) => column === "\\cdots"
@@ -295,7 +297,7 @@ type MatrixRowSpec = { row: string; selected?: boolean; ellipsis?: boolean };
 
 function RingCache({ layer }: { layer: number }) {
   const slots = ["t-127", "t-126", "t-125", "\\cdots", "t-3", "t-2", "t-1", "t"];
-  return <div data-ring-cache style={{ width: "100%", maxWidth: 280, aspectRatio: "1", position: "relative", justifySelf: "center" }}>
+  return <div data-ring-cache style={{ width: "100%", maxWidth: 240, aspectRatio: "1", position: "relative", justifySelf: "center" }}>
     <svg aria-hidden viewBox="0 0 240 240" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
       <defs><marker id={`cache-write-${layer}`} viewBox="0 -5 10 10" refX="9" refY="0" markerWidth="8" markerHeight="8" orient="auto"><path d="M 1 -4 L 9 0 L 1 4" fill="none" stroke={COLORS.amber} strokeWidth="1.5" /></marker></defs>
       <circle cx="120" cy="120" r="81.6" fill="none" stroke={COLORS.green} strokeWidth="2" />
@@ -404,10 +406,10 @@ function SelectedGlobalRows({ kvSource, indexSource }: { kvSource: number; index
     <div style={{ display: "grid", gridTemplateColumns: "44px 8px minmax(0,1fr) 8px", gap: 4, minWidth: 0 }}>
       <div style={{ display: "grid", gridTemplateRows: `repeat(${rows.length},1fr)`, gap: 3, color: COLORS.muted, fontSize: 10, textAlign: "right", alignItems: "center" }}>{rows.map((row, index) => <span key={`${row.label}-${index}`} style={{ color: row.selected ? COLORS.amber : COLORS.muted, fontWeight: row.selected ? 800 : 500 }}><MathFormula tex={row.label} /></span>)}</div>
       <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
-      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>{rows.map((row, rowIndex) => <div key={`${row.label}-values-${rowIndex}`} style={{ minHeight: 28, display: "grid", placeItems: "center", padding: "2px 4px", border: row.selected ? `1.5px solid ${COLORS.green}` : "1px solid transparent", borderRadius: 5, background: row.selected ? COLORS.greenSoft : "transparent", textAlign: "center", fontSize: 9.5 }}>{row.ellipsis ? <MathFormula tex="\vdots" /> : <MathFormula tex={`\\mathbf g_{${kvSource},${row.label}}\\in\\mathbb{R}^{512}`} />}</div>)}</div>
+      <div style={{ display: "grid", gap: 3, minWidth: 0 }}>{rows.map((row, rowIndex) => <div key={`${row.label}-values-${rowIndex}`} style={{ minWidth: 0, minHeight: 28, padding: 2, textAlign: "center", fontSize: 9.5 }}>{row.ellipsis ? <MathFormula tex="\vdots" /> : <VectorStrip name={`\\mathbf g_{${kvSource},${row.label}}`} length="512" nameWidth={76} elementTex={column => `g_{${kvSource},${row.label},${column}}`} tone="green" selected={row.selected} compact />}</div>)}</div>
       <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
     </div>
-    <div style={{ paddingLeft: 52, color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}>绿色高亮框 = 被行号选中的整条 512 维行向量</div>
+    <div style={{ paddingLeft: 52, color: COLORS.amber, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}>虚线范围内的整行元素共同选中</div>
   </div>;
 }
 
@@ -508,8 +510,12 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
               <MathFormula tex="t>128" /><MathFormula tex="r=t-127" />
             </div>
             <div style={{ borderTop: `1px solid ${COLORS.amber}`, paddingTop: 6, display: "grid", gap: 4 }}>
-              <span style={{ fontSize: 10 }}>选中第 r 行到第 t 行（含两端）</span>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 3 }}>{["r", "r+1", "\\ldots", "t"].map(row => <span key={row} style={{ padding: "2px 4px", border: row === "\\ldots" ? "none" : `1px solid ${COLORS.amber}`, borderRadius: 4 }}><MathFormula tex={row} /></span>)}</div>
+              <span style={{ fontSize: 10 }}>行号示例 · 含起点和终点</span>
+              {/* [OM-FREEPLAY] 用 6 与 130 两个位置举例，分别展示未满窗口和滑动后的窗口。 */}
+              {[{ t: 6, r: 1, rows: ["1", "2", "3", "\\ldots", "6"] }, { t: 130, r: 3, rows: ["3", "4", "5", "\\ldots", "130"] }].map(example => <div key={example.t} data-window-example={example.t} style={{ display: "grid", gap: 2, fontSize: 9 }}>
+                <MathFormula tex={`t=${example.t},\\;r=${example.r}`} />
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 2 }}>{example.rows.map(row => <span key={row} style={{ padding: "2px 3px", border: row === "\\ldots" ? "none" : `1px solid ${COLORS.amber}`, borderRadius: 3 }}><MathFormula tex={row} /></span>)}</div>
+              </div>)}
             </div>
           </div>
           <RingCache layer={layer} />
@@ -591,7 +597,14 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1.55fr 34px .8fr", alignItems: "center", gap: 10, minWidth: 0 }}>
         <SelectedGlobalRows kvSource={kvSource} indexSource={indexSource} />
         <Arrow />
-        <Box tone="green"><strong>取出高亮的整行</strong><br /><MathFormula tex={`G_{${kvSource},t}^{\\mathrm{selected}}\\in\\mathbb{R}^{K_{${indexSource},t}\\times512}`} /><br /><br />行数最多 512<br />每行仍是 512 维 KV 向量</Box>
+        <div style={{ minWidth: 0, display: "grid", gap: 9 }}>
+          <Box tone="green"><MathFormula tex={`G_{${kvSource},t}^{\\mathrm{selected}}`} /><span style={{ display: "block", fontSize: 10 }}><MathFormula tex={`K_{${indexSource},t}\\times512`} /></span></Box>
+          {/* [OM-FREEPLAY] 3、7、12 是说明索引与行向量对应关系的示例行号。 */}
+          <div data-selection-example style={{ display: "grid", gap: 5, fontSize: 10, color: COLORS.green }}>
+            <strong>例：选中行号 3、7、12</strong>
+            {[3, 7, 12].map(row => <VectorStrip key={row} name={`\\mathbf g_{${kvSource},${row}}`} length="512" nameWidth={42} elementTex={column => `g_{${kvSource},${row},${column}}`} tone="green" selected compact />)}
+          </div>
+        </div>
       </div>
     </div>;
   }
@@ -822,10 +835,10 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const projectionY = norm1Y + 72 + mainGap;
   const queryProjectionHeight = 750;
   const localKvProjectionHeight = 440;
-  const swaHeight = 500;
+  const swaHeight = 530;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
   const indexerHeight = 450;
-  const globalSelectHeight = 430;
+  const globalSelectHeight = 330;
   const sourceRowHeight = hasGlobal
     ? Math.max(queryProjectionHeight, localKvProjectionHeight, compressorHeight)
     : Math.max(queryProjectionHeight, localKvProjectionHeight);
