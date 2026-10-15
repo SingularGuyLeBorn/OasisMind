@@ -334,6 +334,7 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
         {rows.map((item, index) => (
           <div
             key={`${item.row}-${index}`}
+            data-matrix-ellipsis={item.ellipsis || undefined}
             style={{
               minWidth: 0,
               minHeight: compact ? (item.ellipsis ? 14 : 20) : 22,
@@ -343,17 +344,16 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
               gap: 3,
               padding: compact ? 0 : item.ellipsis ? "1px 4px" : "2px 4px",
               borderRadius: 5,
-              border: item.selected && item.ellipsis ? `1px solid ${COLORS.green}` : "none",
-              background: item.selected ? COLORS.greenSoft : "transparent",
-              color: item.selected ? COLORS.green : COLORS.ink,
+              border: "none",
+              background: "transparent",
+              color: COLORS.ink,
               fontSize: compact ? 9 : 9.5,
               textAlign: "center",
-              overflow: "hidden",
             }}
           >
             {item.ellipsis
               ? <MathFormula tex="\vdots" />
-              : <VectorStrip name={`\\mathbf u_{${layer},${item.row}}`} length="512" elementTex={(column) => `u_{${layer},${item.row},${column}}`} tone={item.selected ? "green" : "neutral"} compact />}
+              : <VectorStrip name={`\\mathbf u_{${layer},${item.row}}`} length="512" elementTex={(column) => `u_{${layer},${item.row},${column}}`} tone="green" selected={item.selected} compact />}
           </div>
         ))}
       </div>
@@ -507,12 +507,12 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
             { row: "r-1" },
             { row: "r", selected: true },
             { row: "r+1", selected: true },
-            { row: "", selected: true, ellipsis: true },
+            { row: "", ellipsis: true },
             { row: "t", selected: true },
             { row: "t+1" },
             { row: "N" },
           ]} compact />
-          <span style={{ color: COLORS.green, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /> = 绿色连续行</span>
+          <span style={{ color: COLORS.amber, fontSize: 10.5, fontWeight: 800, textAlign: "center" }}><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /> = 虚线标出的连续行</span>
         </div>
         <Arrow />
         <div style={{ minWidth: 0, display: "grid", gap: 8 }}>
