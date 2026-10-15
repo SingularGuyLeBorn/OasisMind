@@ -1241,7 +1241,9 @@ function DiagramCanvas({ layer }: { layer: number }) {
       .architecture-flow .react-flow__handle-left { left: 0; }
       .architecture-flow .react-flow__handle-right { right: 0; }
       .architecture-flow .react-flow__handle { opacity: 0; }
+      .architecture-flow .react-flow__handle { z-index: 6; }
       .architecture-flow .react-flow__handle:hover { opacity: 1; }
+      .architecture-flow .architecture-resize-handle:hover { opacity: 1 !important; }
       .architecture-flow .architecture-edge-endpoint { opacity: 0; }
       .architecture-flow .architecture-edge-endpoint:hover { opacity: 1; }
       .architecture-flow .architecture-edge-endpoint[data-selected="true"] { opacity: 1; }

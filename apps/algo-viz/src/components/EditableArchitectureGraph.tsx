@@ -129,16 +129,27 @@ export function EightResizeHandles({
   minWidth: number;
   minHeight: number;
 }) {
-  if (!visible) return null;
   return <>
+    {(["top", "right", "bottom", "left"] as const).map(position => (
+      <NodeResizeControl
+        key={`edge-${position}`}
+        position={position}
+        variant={ResizeControlVariant.Line}
+        className="architecture-resize-edge"
+        minWidth={minWidth}
+        minHeight={minHeight}
+        style={{ border: 0, background: "transparent", zIndex: 3, ...(position === "top" || position === "bottom" ? { height: 8 } : { width: 8 }) }}
+      />
+    ))}
     {RESIZE_POSITIONS.map((position) => (
       <NodeResizeControl
         key={position}
         position={position}
         variant={ResizeControlVariant.Handle}
+        className="architecture-resize-handle"
         minWidth={minWidth}
         minHeight={minHeight}
-        style={resizeHandleStyle}
+        style={{ ...resizeHandleStyle, opacity: visible ? 1 : 0, zIndex: 4 }}
       />
     ))}
   </>;
