@@ -1,4 +1,4 @@
-import React, { memo, useMemo, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import React, { createContext, memo, useContext, useMemo, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import katex from "katex";
 import {
   BaseEdge,
@@ -21,6 +21,17 @@ export type EditableEdgeData = {
 };
 
 export type EditableEdge = Edge<EditableEdgeData, "editable-orthogonal">;
+
+type EditHistoryContextValue = {
+  beginHistory: () => void;
+  commitHistory: () => void;
+};
+
+const EditHistoryContext = createContext<EditHistoryContextValue | null>(null);
+
+export function EditHistoryProvider({ value, children }: { value: EditHistoryContextValue; children: ReactNode }) {
+  return <EditHistoryContext.Provider value={value}>{children}</EditHistoryContext.Provider>;
+}
 
 const RESIZE_POSITIONS = [
   "top-left",
@@ -76,7 +87,7 @@ export function EightResizeHandles({
   </>;
 }
 
-export function EightConnectionPorts({ color = "#37685a" }: { color?: string }) {
+export function EightConnectionPorts({ color = "#37685a", visible }: { color?: string; visible: boolean }) {
   return <>
     {PORTS.map((port) => (
       <Handle
@@ -89,7 +100,8 @@ export function EightConnectionPorts({ color = "#37685a" }: { color?: string }) 
           height: 7,
           border: "1.5px solid #fffefa",
           background: color,
-          opacity: .72,
+          opacity: visible ? .78 : 0,
+          transition: "opacity 120ms ease",
           ...port.style,
         }}
       />
@@ -105,9 +117,77 @@ function latexHtml(tex: string) {
   });
 }
 
-function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: number, targetY: number) {
+type Obstacle = { left: number; top: number; right: number; bottom: number };
+
+function segmentCrossesObstacle(start: XYPosition, end: XYPosition, obstacle: Obstacle) {
+  if (Math.abs(start.x - end.x) < .5) {
+    const low = Math.min(start.y, end.y);
+    const high = Math.max(start.y, end.y);
+    return start.x > obstacle.left && start.x < obstacle.right && high > obstacle.top && low < obstacle.bottom;
+  }
+  if (Math.abs(start.y - end.y) < .5) {
+    const low = Math.min(start.x, end.x);
+    const high = Math.max(start.x, end.x);
+    return start.y > obstacle.top && start.y < obstacle.bottom && high > obstacle.left && low < obstacle.right;
+  }
+  return true;
+}
+
+function simplifyOrthogonalPoints(points: XYPosition[]) {
+  return points.filter((point, index) => {
+    if (index === 0 || index === points.length - 1) return true;
+    const before = points[index - 1];
+    const after = points[index + 1];
+    if (point.x === before.x && point.y === before.y) return false;
+    return !((before.x === point.x && point.x === after.x) || (before.y === point.y && point.y === after.y));
+  });
+}
+
+function routeScore(points: XYPosition[], obstacles: Obstacle[]) {
+  let crossings = 0;
+  let length = 0;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    length += Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
+    crossings += obstacles.filter((obstacle) => segmentCrossesObstacle(start, end, obstacle)).length;
+  }
+  return crossings * 1_000_000 + length;
+}
+
+function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: number, targetY: number, obstacles: Obstacle[]) {
   const middleY = sourceY + (targetY - sourceY) / 2;
-  return [
+  const middleX = sourceX + (targetX - sourceX) / 2;
+  const clearance = 26;
+  const nearby = obstacles.filter((obstacle) => obstacle.right >= Math.min(sourceX, targetX) - clearance
+    && obstacle.left <= Math.max(sourceX, targetX) + clearance
+    && obstacle.bottom >= Math.min(sourceY, targetY) - clearance
+    && obstacle.top <= Math.max(sourceY, targetY) + clearance);
+  const top = Math.min(sourceY, targetY, ...nearby.map((item) => item.top)) - clearance;
+  const bottom = Math.max(sourceY, targetY, ...nearby.map((item) => item.bottom)) + clearance;
+  const left = Math.min(sourceX, targetX, ...nearby.map((item) => item.left)) - clearance;
+  const right = Math.max(sourceX, targetX, ...nearby.map((item) => item.right)) + clearance;
+  const candidates = [
+    [
+      { x: sourceX, y: sourceY },
+      { x: sourceX, y: middleY },
+      { x: targetX, y: middleY },
+      { x: targetX, y: targetY },
+    ],
+    [
+      { x: sourceX, y: sourceY },
+      { x: middleX, y: sourceY },
+      { x: middleX, y: targetY },
+      { x: targetX, y: targetY },
+    ],
+    [{ x: sourceX, y: sourceY }, { x: sourceX, y: top }, { x: targetX, y: top }, { x: targetX, y: targetY }],
+    [{ x: sourceX, y: sourceY }, { x: sourceX, y: bottom }, { x: targetX, y: bottom }, { x: targetX, y: targetY }],
+    [{ x: sourceX, y: sourceY }, { x: left, y: sourceY }, { x: left, y: targetY }, { x: targetX, y: targetY }],
+    [{ x: sourceX, y: sourceY }, { x: right, y: sourceY }, { x: right, y: targetY }, { x: targetX, y: targetY }],
+  ];
+  return candidates
+    .map(simplifyOrthogonalPoints)
+    .sort((a, b) => routeScore(a, obstacles) - routeScore(b, obstacles))[0] ?? [
     { x: sourceX, y: sourceY },
     { x: sourceX, y: middleY },
     { x: targetX, y: middleY },
@@ -208,17 +288,40 @@ function EditableOrthogonalEdgeView({
   sourceY,
   targetX,
   targetY,
+  source,
+  target,
   markerEnd,
   selected,
   data,
   style,
 }: EdgeProps<EditableEdge>) {
-  const { screenToFlowPosition, setEdges } = useReactFlow<Node, EditableEdge>();
+  const { screenToFlowPosition, setEdges, getNodes, getInternalNode } = useReactFlow<Node, EditableEdge>();
+  const history = useContext(EditHistoryContext);
+  const obstacles = useMemo(() => {
+    const excluded = new Set([source, target]);
+    for (const nodeId of [source, target]) {
+      let current = getNodes().find((item) => item.id === nodeId);
+      while (current?.parentId) {
+        excluded.add(current.parentId);
+        current = getNodes().find((item) => item.id === current?.parentId);
+      }
+    }
+    return getNodes().flatMap((node) => {
+      if (excluded.has(node.id) || node.hidden) return [];
+      const internal = getInternalNode(node.id);
+      const position = internal?.internals.positionAbsolute;
+      const width = internal?.measured.width;
+      const height = internal?.measured.height;
+      if (!position || !width || !height) return [];
+      const padding = 14;
+      return [{ left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding }];
+    });
+  }, [getInternalNode, getNodes, source, sourceX, sourceY, target, targetX, targetY]);
   const points = useMemo(
     () => data?.waypoints?.length
       ? pointsWithAnchoredEndpoints(sourceX, sourceY, targetX, targetY, data.waypoints)
-      : defaultOrthogonalPoints(sourceX, sourceY, targetX, targetY),
-    [data?.waypoints, sourceX, sourceY, targetX, targetY],
+      : defaultOrthogonalPoints(sourceX, sourceY, targetX, targetY, obstacles),
+    [data?.waypoints, obstacles, sourceX, sourceY, targetX, targetY],
   );
   const path = pathFromPoints(points);
   const labelCenter = longestSegmentCenter(points);
@@ -227,6 +330,7 @@ function EditableOrthogonalEdgeView({
   const startSegmentDrag = (event: ReactPointerEvent<HTMLButtonElement>, segmentIndex: number) => {
     event.preventDefault();
     event.stopPropagation();
+    history?.beginHistory();
     const move = (pointerEvent: PointerEvent) => {
       const pointer = screenToFlowPosition({ x: pointerEvent.clientX, y: pointerEvent.clientY });
       const waypoints = moveSegment(points, segmentIndex, pointer);
@@ -238,6 +342,7 @@ function EditableOrthogonalEdgeView({
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", finish);
       window.removeEventListener("pointercancel", finish);
+      history?.commitHistory();
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", finish, { once: true });

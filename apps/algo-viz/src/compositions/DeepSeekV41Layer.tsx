@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import katex from "katex";
 import {
   addEdge,
@@ -18,6 +18,7 @@ import {
 } from "@xyflow/react";
 import {
   EditableOrthogonalEdge,
+  EditHistoryProvider,
   EightConnectionPorts,
   EightResizeHandles,
   type EditableEdge,
@@ -600,7 +601,7 @@ function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
           : 40;
   return <div style={{ width: "100%", height: "100%", position: "relative" }}>
     <EightResizeHandles visible={Boolean(selected)} minWidth={minimumWidth} minHeight={minimumHeight} />
-    <EightConnectionPorts color={portColor} />
+    <EightConnectionPorts color={portColor} visible={Boolean(selected)} />
     <DiagramNodeContent data={data} />
   </div>;
 }
@@ -839,6 +840,30 @@ type SavedDiagramLayout = {
   }>;
 };
 
+type DiagramSnapshot = {
+  nodes: DiagramNode[];
+  edges: EditableEdge[];
+};
+
+function cloneSnapshot(nodes: DiagramNode[], edges: EditableEdge[]): DiagramSnapshot {
+  return {
+    nodes: nodes.map((item) => ({
+      ...item,
+      position: { ...item.position },
+      style: item.style ? { ...item.style } : undefined,
+      data: { ...item.data, matrixRows: item.data.matrixRows ? [...item.data.matrixRows] : undefined },
+    })),
+    edges: edges.map((item) => ({
+      ...item,
+      style: item.style ? { ...item.style } : undefined,
+      data: item.data ? {
+        ...item.data,
+        waypoints: item.data.waypoints?.map((point) => ({ ...point })),
+      } : undefined,
+    })),
+  };
+}
+
 const editorButton: CSSProperties = {
   border: `1px solid ${COLORS.line}`,
   borderRadius: 7,
@@ -893,7 +918,60 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<EditableEdge>(initialGraph.edges);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
+  const [historyRevision, setHistoryRevision] = useState(0);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  const pastRef = useRef<DiagramSnapshot[]>([]);
+  const futureRef = useRef<DiagramSnapshot[]>([]);
+  const pendingHistoryRef = useRef<DiagramSnapshot | null>(null);
+  const resizeHistoryActiveRef = useRef(false);
   const storageKey = `oasismind:deepseek-v41-layer-layout:v2:${layer}`;
+
+  nodesRef.current = nodes;
+  edgesRef.current = edges;
+
+  const beginHistory = useCallback(() => {
+    if (pendingHistoryRef.current) return;
+    pendingHistoryRef.current = cloneSnapshot(nodesRef.current, edgesRef.current);
+  }, []);
+
+  const commitHistory = useCallback(() => {
+    const before = pendingHistoryRef.current;
+    if (!before) return;
+    pastRef.current = [...pastRef.current.slice(-79), before];
+    futureRef.current = [];
+    pendingHistoryRef.current = null;
+    setHistoryRevision((value) => value + 1);
+    setSaveState("idle");
+  }, []);
+
+  const restoreSnapshot = useCallback((snapshot: DiagramSnapshot) => {
+    const cloned = cloneSnapshot(snapshot.nodes, snapshot.edges);
+    setNodes(cloned.nodes);
+    setEdges(cloned.edges);
+    setSelectedEdgeIds([]);
+    setSaveState("idle");
+  }, [setEdges, setNodes]);
+
+  const undo = useCallback(() => {
+    const previous = pastRef.current.at(-1);
+    if (!previous) return;
+    pastRef.current = pastRef.current.slice(0, -1);
+    futureRef.current = [...futureRef.current.slice(-79), cloneSnapshot(nodesRef.current, edgesRef.current)];
+    pendingHistoryRef.current = null;
+    restoreSnapshot(previous);
+    setHistoryRevision((value) => value + 1);
+  }, [restoreSnapshot]);
+
+  const redo = useCallback(() => {
+    const next = futureRef.current.at(-1);
+    if (!next) return;
+    futureRef.current = futureRef.current.slice(0, -1);
+    pastRef.current = [...pastRef.current.slice(-79), cloneSnapshot(nodesRef.current, edgesRef.current)];
+    pendingHistoryRef.current = null;
+    restoreSnapshot(next);
+    setHistoryRevision((value) => value + 1);
+  }, [restoreSnapshot]);
 
   useEffect(() => {
     let graph = initialGraph;
@@ -908,9 +986,14 @@ function DiagramCanvas({ layer }: { layer: number }) {
     setEdges(graph.edges);
     setSelectedEdgeIds([]);
     setSaveState("idle");
+    pastRef.current = [];
+    futureRef.current = [];
+    pendingHistoryRef.current = null;
+    setHistoryRevision((value) => value + 1);
   }, [initialGraph, storageKey]);
 
   const onConnect = useCallback((connection: Connection) => {
+    beginHistory();
     setEdges((current) => addEdge({
       ...connection,
       id: `manual-${Date.now()}`,
@@ -920,8 +1003,8 @@ function DiagramCanvas({ layer }: { layer: number }) {
       style: { stroke: COLORS.green, strokeWidth: 2.2 },
       data: { labelTex: "" },
     }, current));
-    setSaveState("idle");
-  }, [setEdges]);
+    commitHistory();
+  }, [beginHistory, commitHistory, setEdges]);
 
   const onReconnect = useCallback((oldEdge: EditableEdge, connection: Connection) => {
     setEdges((current) => reconnectEdge(oldEdge, connection, current));
@@ -955,29 +1038,46 @@ function DiagramCanvas({ layer }: { layer: number }) {
   }, [edges, nodes, storageKey]);
 
   const resetLayout = useCallback(() => {
+    beginHistory();
     window.localStorage.removeItem(storageKey);
     setNodes(initialGraph.nodes);
     setEdges(initialGraph.edges);
     setSelectedEdgeIds([]);
-    setSaveState("idle");
-  }, [initialGraph, setEdges, setNodes, storageKey]);
+    commitHistory();
+  }, [beginHistory, commitHistory, initialGraph, setEdges, setNodes, storageKey]);
 
   const deleteSelectedEdges = useCallback(() => {
+    if (selectedEdgeIds.length === 0) return;
+    beginHistory();
     const selected = new Set(selectedEdgeIds);
     setEdges((current) => current.filter((item) => !selected.has(item.id)));
     setSelectedEdgeIds([]);
-    setSaveState("idle");
-  }, [selectedEdgeIds, setEdges]);
+    commitHistory();
+  }, [beginHistory, commitHistory, selectedEdgeIds, setEdges]);
 
   const handleNodesChange = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
+    const resizeChanges = changes.filter((change) => change.type === "dimensions");
+    const resizing = resizeChanges.some((change) => "resizing" in change && change.resizing === true);
+    const resizeFinished = resizeChanges.some((change) => "resizing" in change && change.resizing === false);
+    if (resizing && !resizeHistoryActiveRef.current) {
+      resizeHistoryActiveRef.current = true;
+      beginHistory();
+    }
     onNodesChange(changes);
+    if (resizeFinished && resizeHistoryActiveRef.current) {
+      resizeHistoryActiveRef.current = false;
+      commitHistory();
+    }
     setSaveState("idle");
-  }, [onNodesChange]);
+  }, [beginHistory, commitHistory, onNodesChange]);
 
   const handleEdgesChange = useCallback((changes: Parameters<typeof onEdgesChange>[0]) => {
+    const removesEdge = changes.some((change) => change.type === "remove");
+    if (removesEdge) beginHistory();
     onEdgesChange(changes);
+    if (removesEdge) commitHistory();
     setSaveState("idle");
-  }, [onEdgesChange]);
+  }, [beginHistory, commitHistory, onEdgesChange]);
 
   const handleSelectionChange = useCallback(({ edges: selectedEdges }: { edges: EditableEdge[] }) => {
     setSelectedEdgeIds(selectedEdges.map((item) => item.id));
@@ -994,13 +1094,36 @@ function DiagramCanvas({ layer }: { layer: number }) {
       : item));
   }, [selectedEdge, setEdges]);
 
+  const handleCanvasKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.matches("input, textarea, [contenteditable='true']")) return;
+    if (!event.ctrlKey && !event.metaKey) return;
+    if (event.key.toLowerCase() === "z" && !event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      undo();
+      return;
+    }
+    if (event.key.toLowerCase() === "y" || (event.key.toLowerCase() === "z" && event.shiftKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+      redo();
+    }
+  }, [redo, undo]);
+
   useEffect(() => {
     setSaveState("idle");
   }, [edges]);
 
-  return <>
+  const canUndo = historyRevision >= 0 && pastRef.current.length > 0;
+  const canRedo = historyRevision >= 0 && futureRef.current.length > 0;
+  const historyContext = { beginHistory, commitHistory };
+
+  return <div style={{ width: "100%", height: "100%", position: "relative" }} onKeyDown={handleCanvasKeyDown}>
     <div style={{ position: "absolute", top: 12, right: 16, zIndex: 8, display: "flex", alignItems: "center", gap: 6, padding: 7, border: `1px solid ${COLORS.line}`, borderRadius: 9, background: "rgba(255,254,250,.96)", boxShadow: "0 4px 14px rgba(42,41,36,.08)" }}>
       <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
+      <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z" style={{ ...editorButton, opacity: canUndo ? 1 : .45, cursor: canUndo ? "pointer" : "default" }}>撤销</button>
+      <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y" style={{ ...editorButton, opacity: canRedo ? 1 : .45, cursor: canRedo ? "pointer" : "default" }}>重做</button>
       <button type="button" onClick={deleteSelectedEdges} disabled={selectedEdgeIds.length === 0} style={{ ...editorButton, opacity: selectedEdgeIds.length ? 1 : .45, cursor: selectedEdgeIds.length ? "pointer" : "default" }}>删除选中连线</button>
       <button type="button" onClick={resetLayout} style={editorButton}>恢复自动布局</button>
       {selectedEdge && <label style={{ display: "flex", alignItems: "center", gap: 5, color: COLORS.muted, fontSize: 10.5 }}>
@@ -1008,13 +1131,16 @@ function DiagramCanvas({ layer }: { layer: number }) {
         <input
           className="nodrag nopan"
           value={selectedEdge.data?.labelTex ?? ""}
+          onFocus={beginHistory}
           onChange={(event) => updateSelectedEdgeLabel(event.target.value)}
+          onBlur={commitHistory}
           placeholder="例如 Q_{3,1}"
           style={{ width: 150, border: `1px solid ${COLORS.line}`, borderRadius: 6, padding: "5px 7px", background: COLORS.card, color: COLORS.ink, fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace", fontSize: 10.5 }}
         />
       </label>}
-      <span style={{ color: COLORS.muted, fontSize: 10.5 }}>点线后拖方块改每一段 · 拖线端点改连接 · 八点缩放</span>
+      <span style={{ color: COLORS.muted, fontSize: 10.5 }}>选中才显示控制点 · 端点靠近节点自动吸附 · Ctrl+Z / Ctrl+Y</span>
     </div>
+    <EditHistoryProvider value={historyContext}>
     <ReactFlow
       nodes={nodes}
       edges={edges}
@@ -1024,6 +1150,12 @@ function DiagramCanvas({ layer }: { layer: number }) {
       onEdgesChange={handleEdgesChange}
       onConnect={onConnect}
       onReconnect={onReconnect}
+      onReconnectStart={beginHistory}
+      onReconnectEnd={commitHistory}
+      onNodeDragStart={beginHistory}
+      onNodeDragStop={commitHistory}
+      onSelectionDragStart={beginHistory}
+      onSelectionDragStop={commitHistory}
       onSelectionChange={handleSelectionChange}
       fitView
       fitViewOptions={FIT_VIEW_OPTIONS}
@@ -1034,6 +1166,9 @@ function DiagramCanvas({ layer }: { layer: number }) {
       nodesFocusable
       edgesFocusable
       edgesReconnectable
+      // [OM-FREEPLAY] 44px 是吸附容差的保守值：足够靠近即吸附，同时避免跨过相邻小框误连。
+      connectionRadius={44}
+      reconnectRadius={44}
       connectionMode={ConnectionMode.Loose}
       elementsSelectable
       deleteKeyCode={EDIT_DELETE_KEYS}
@@ -1047,7 +1182,8 @@ function DiagramCanvas({ layer }: { layer: number }) {
       <Background color="#d7d2c7" gap={28} size={1} />
       <Controls showInteractive={false} position="top-left" />
     </ReactFlow>
-  </>;
+    </EditHistoryProvider>
+  </div>;
 }
 
 export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
