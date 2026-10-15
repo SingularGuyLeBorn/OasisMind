@@ -1,7 +1,6 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import katex from "katex";
 import {
-  addEdge,
   Background,
   ConnectionMode,
   Controls,
@@ -9,7 +8,6 @@ import {
   MarkerType,
   Position,
   ReactFlow,
-  reconnectEdge,
   useEdgesState,
   useNodesState,
   type Connection,
@@ -19,9 +17,12 @@ import {
 import {
   EditableOrthogonalEdge,
   EditableConnectionLine,
+  ConnectionGestureControl,
   EditHistoryProvider,
   EightConnectionPorts,
   EightResizeHandles,
+  findBoundaryConnection,
+  type BoundaryAnchor,
   type EditableEdge,
   type EditableEdgeData,
 } from "../components/EditableArchitectureGraph";
@@ -233,34 +234,18 @@ function Matrix({ tex, shape, rowTex, elementTex, tone = "blue", vectorLength = 
       </div>
       <div style={{ padding: 6, display: "grid", gap: 3, borderTop: `1px solid ${COLORS.line}`, fontSize: 9.5 }}>
         {rows.map((row, index) => row === "\\vdots"
-          ? <div key={`${row}-${index}`} style={{ height: 14, display: "grid", placeItems: "center" }}><MathFormula tex="\vdots" /></div>
+          ? <div key={`${row}-${index}`} style={{ minHeight: 22, display: "grid", placeItems: "center" }}><MathFormula tex="\vdots" /></div>
           : <VectorStrip key={`${row}-${index}`} name={rowTex(row)} length={vectorLength} elementTex={(column) => elementTex(row, column)} tone={tone} compact />)}
       </div>
     </div>
   );
 }
 
-function MatrixMultiplyStructure({ layer }: { layer: number }) {
-  return <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 30px 1fr", gap: 5, alignItems: "stretch" }}>
-      <div style={{ display: "grid", gap: 4 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`X_{${layer}}`} /><MathFormula tex="N\times5120" /></div>
-        <VectorStrip name={`\\mathbf x_{${layer},t}`} length="5120" elementTex={(column) => `x_{${layer},t,${column}}`} tone="blue" compact />
-      </div>
-      <Operator tex="\times" />
-      <div style={{ display: "grid", gap: 4, border: `1.2px solid ${COLORS.green}`, borderRadius: 7, padding: 5, background: COLORS.greenSoft }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><MathFormula tex="5120\times512" /></div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>
-          {["1", "2", "\\cdots", "512"].map((column, index) => column === "\\cdots"
-            ? <span key={`${column}-${index}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex="\cdots" /></span>
-            : <Box key={`${column}-${index}`}><MathFormula tex={`\\mathbf w_{${layer},:,${column}}`} /></Box>)}
-        </div>
-      </div>
-    </div>
-    <div style={{ display: "grid", gridTemplateColumns: "68px 1fr", gap: 5, alignItems: "center" }}>
-      <Operator tex="=" />
-      <VectorStrip name={`\\mathbf u_{${layer},t}`} length="512" elementTex={(column) => `u_{${layer},t,${column}}=\\mathbf x_{${layer},t}\\mathbf w_{${layer},:,${column}}`} tone="green" compact />
-    </div>
+function RowMatrix({ tex, shape, rows, selected, tone = "green" }: { tex: string; shape: string; rows: string[]; selected?: number; tone?: "blue" | "green" }) {
+  const palette = tonePalette(tone);
+  return <div style={{ minWidth: 0, padding: 6, border: `1.3px solid ${palette.color}`, borderRadius: 7, background: palette.background, display: "grid", gap: 5 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 4, fontSize: 10 }}><MathFormula tex={tex} /><MathFormula tex={shape} /></div>
+    <div style={{ display: "grid", gap: 3 }}>{rows.map((row, index) => row === "\\vdots" ? <div key={index} style={{ textAlign: "center", fontSize: 9 }}><MathFormula tex={row} /></div> : <div key={index} style={{ border: `1px solid ${selected === index ? COLORS.amber : palette.color}`, borderRadius: 4, background: selected === index ? COLORS.amberSoft : palette.background, padding: "4px 2px", textAlign: "center", fontSize: 10 }}><MathFormula tex={row} /></div>)}</div>
   </div>;
 }
 
@@ -278,15 +263,24 @@ function QueryProjection({ layer }: { layer: number }) {
 function LocalKvProjection({ layer }: { layer: number }) {
   return (
     <div style={panel}>
-      <Handle type="target" position={Position.Top} style={handle} />
+      <Handle id="main-in" type="target" position={Position.Top} style={handle} />
       <Handle id="swa" type="source" position={Position.Right} style={handle} />
-      <Title><MathFormula tex={`X_{${layer}}W_{${layer}}^{KV,\\mathrm{SWA}}`} /> · 本层独立 KV</Title>
-      <div style={{ padding: 9, display: "grid", gap: 7 }}>
-        <MatrixMultiplyStructure layer={layer} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1fr", alignItems: "center", gap: 4 }}>
-          <Box tone="green"><MathFormula tex={`\\mathbf u_{${layer},t}`} /></Box><Operator tex="=" /><Box><MathFormula tex="\operatorname{RMSNorm}" /></Box><Operator tex="\circ" /><Box><MathFormula tex="\operatorname{RoPE}" /></Box>
+      <Title>Layer {layer} · 本层独立 KV</Title>
+      <div style={{ padding: 9, display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 18px 1.15fr 18px 1fr", gap: 4, alignItems: "center" }}>
+          <RowMatrix tex={`X_{${layer}}`} shape="N\times5120" rows={[`\\mathbf x_{${layer},1}`, "\\vdots", `\\mathbf x_{${layer},N}`]} tone="blue" />
+          <Operator tex="\times" />
+          <div style={{ padding: 5, border: `1.3px solid ${COLORS.amber}`, borderRadius: 7, background: COLORS.amberSoft, display: "grid", gap: 5, fontSize: 9, minWidth: 0, textAlign: "center" }}>
+            <MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><MathFormula tex="5120\times512" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr .4fr 1fr", gap: 3, alignItems: "center" }}>
+              <div style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "20px 0" }}><MathFormula tex={`\\mathbf w_{${layer},1}`} /></div><MathFormula tex="\cdots" /><div style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "20px 0" }}><MathFormula tex={`\\mathbf w_{${layer},512}`} /></div>
+            </div>
+          </div>
+          <Operator tex="=" />
+          <RowMatrix tex={`\\widehat U_{${layer}}`} shape="N\times512" rows={[`\\widehat{\\mathbf u}_{${layer},1}`, "\\vdots", `\\widehat{\\mathbf u}_{${layer},N}`]} />
         </div>
-        <Matrix tex={`U_{${layer}}`} shape="N\times512" rowTex={(row) => `\\mathbf u_{${layer},${row}}`} elementTex={(row, column) => `u_{${layer},${row},${column}}`} vectorLength="512" tone="green" />
+        <div style={{ textAlign: "center", fontSize: 13 }}><MathFormula tex={`U_{${layer}}=\\operatorname{RoPE}(\\operatorname{RMSNorm}(\\widehat U_{${layer}}))`} /></div>
+        <RowMatrix tex={`U_{${layer}}`} shape="N\times512" rows={[`\\mathbf u_{${layer},1}`, "\\vdots", `\\mathbf u_{${layer},t}`, "\\vdots", `\\mathbf u_{${layer},N}`]} selected={2} />
       </div>
     </div>
   );
@@ -336,18 +330,13 @@ function Head({ index, layer }: { index: number; layer: number }) {
   return (
     <div style={{ position: "relative", border: `1.5px solid ${COLORS.green}`, borderRadius: 10, padding: 8, display: "grid", gap: 5, background: COLORS.card }}>
       <strong style={{ color: COLORS.green, textAlign: "center", fontSize: 12 }}>Layer {layer} · Head {index}</strong>
-      <div style={{ display: "grid", gridTemplateColumns: "1.45fr .8fr", gap: 5 }}><VectorStrip name={queryRow} length="512" elementTex={(column) => `q_{${layer},${index},t,${column}}`} tone="blue" compact /><Box><MathFormula tex={attendedKv} /></Box></div>
-      <Arrow vertical />
-      <Box tone="green"><MathFormula tex={`A_{${layer},${index},t}=\\operatorname{softmax}(Z_{${layer},${index},t})`} /><br /><MathFormula tex={`Z_{${layer},${index},t}=${queryRow}\\left(${attendedKv}\\right)^{\\mathsf T}/\\sqrt{d_h}`} /></Box>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 26px 1fr", alignItems: "center", gap: 5 }}><Box><MathFormula tex={`A_{${layer},${index},t}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={attendedKv} /></Box></div>
-      <Arrow vertical />
-      <VectorStrip name={`\\mathbf o_{${layer},${index},t}`} length="512" elementTex={(column) => `o_{${layer},${index},t,${column}}`} tone="green" compact />
-      <div style={{ border: `1.2px solid ${COLORS.green}`, borderRadius: 7, padding: 5, background: COLORS.greenSoft, display: "grid", gap: 3 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5 }}><MathFormula tex={`O_{${layer},${index}}`} /><MathFormula tex="N\times512" /></div>
-        <VectorStrip name={`\\mathbf o_{${layer},${index},1}`} length="512" elementTex={(column) => `o_{${layer},${index},1,${column}}`} tone="green" compact />
-        <div style={{ height: 10, display: "grid", placeItems: "center" }}><MathFormula tex="\vdots" /></div>
-        <VectorStrip name={`\\mathbf o_{${layer},${index},N}`} length="512" elementTex={(column) => `o_{${layer},${index},N,${column}}`} tone="green" compact />
-      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 5 }}><Box tone="blue"><MathFormula tex={`${queryRow}\\in\\mathbb R^{512}`} /></Box><Box tone="green"><MathFormula tex={attendedKv} /></Box></div>
+      <Box tone="green"><MathFormula tex={`\\mathbf z_{${layer},${index},t}=${queryRow}(${attendedKv})^{\\mathsf T}/\\sqrt{512}`} /><br /><MathFormula tex={`\\mathbf a_{${layer},${index},t}=\\operatorname{softmax}(\\mathbf z_{${layer},${index},t})`} /></Box>
+      <RowMatrix tex={`O_{${layer},${index}}`} shape="N\times512" rows={[
+        `\\mathbf o_{${layer},${index},1}`, "\\vdots",
+        `\\mathbf o_{${layer},${index},t}=\\mathbf a_{${layer},${index},t}\\,${attendedKv}`,
+        "\\vdots", `\\mathbf o_{${layer},${index},N}`,
+      ]} selected={2} />
     </div>
   );
 }
@@ -361,12 +350,10 @@ function Expert({ layer, index, score, shared = false }: { layer: number; index?
       <div style={{ display: "flex", justifyContent: "space-between", color: shared ? COLORS.blue : COLORS.amber, fontWeight: 800, fontSize: 11 }}><span>{shared ? `Layer ${layer} · Shared` : `Layer ${layer} · Expert ${index}`}</span><span>{shared ? "权重 1" : <MathFormula tex={`g_{${layer},${index}}=${score}`} />}</span></div>
       <Box tone="blue"><MathFormula tex={`Y_{${layer}}`} /></Box>
       <Arrow vertical />
-      <Box><MathFormula tex={`a_{${layer},${expertIndex}}=\\operatorname{SiLU}(Y_{${layer}}W_{${layer},${weightIndex}}^{\\mathrm{gate}})`} /></Box>
-      <Box><MathFormula tex={`b_{${layer},${expertIndex}}=Y_{${layer}}W_{${layer},${weightIndex}}^{\\mathrm{up}}`} /></Box>
-      <Box tone="amber"><MathFormula tex={`c_{${layer},${expertIndex}}=a_{${layer},${expertIndex}}\\odot b_{${layer},${expertIndex}}`} /></Box>
-      <Box><MathFormula tex={`${expertTex}(Y_{${layer}})=c_{${layer},${expertIndex}}W_{${layer},${weightIndex}}^{\\mathrm{down}}`} /></Box>
-      <Arrow vertical />
-      <Box tone={shared ? "blue" : "amber"}><MathFormula tex={`${expertTex}(Y_{${layer}})\\in\\mathbb{R}^{N\\times5120}`} /></Box>
+      <Box><MathFormula tex={`a_{${layer},${expertIndex}}=`} /><br /><MathFormula tex={`\\operatorname{SiLU}(Y_{${layer}}W_{${layer},${weightIndex}}^{\\mathrm{gate}})`} /></Box>
+      <Box><MathFormula tex={`b_{${layer},${expertIndex}}=`} /><br /><MathFormula tex={`Y_{${layer}}W_{${layer},${weightIndex}}^{\\mathrm{up}}`} /></Box>
+      <Box tone="amber"><MathFormula tex={`c_{${layer},${expertIndex}}=`} /><br /><MathFormula tex={`a_{${layer},${expertIndex}}\\odot b_{${layer},${expertIndex}}`} /></Box>
+      <Box tone={shared ? "blue" : "amber"}><MathFormula tex={`${expertTex}(Y_{${layer}})=`} /><br /><MathFormula tex={`c_{${layer},${expertIndex}}W_{${layer},${weightIndex}}^{\\mathrm{down}}`} /><br /><MathFormula tex="N\times5120" /></Box>
     </div>
   );
 }
@@ -393,7 +380,7 @@ function SelectedGlobalRows({ kvSource, indexSource }: { kvSource: number; index
 
 function DiagramNodeContent({ data }: { data: DiagramData }) {
   const { kind, layer, mode } = data;
-  const both = <><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /></>;
+  const both = <><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /></>;
 
   if (kind === "structure-group") {
     return <div style={{ ...panel, borderColor: data.tone === "green" ? COLORS.green : COLORS.blue, boxShadow: "none", background: "rgba(255,254,250,.66)" }}>
@@ -442,7 +429,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 
   if (kind === "norm1") {
     return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 17, fontWeight: 750 }}>
-      <Handle type="target" position={Position.Top} style={handle} />
+      <Handle id="main-in" type="target" position={Position.Top} style={handle} />
       <Handle id="query" type="source" position={Position.Bottom} style={{ ...handle, left: "25%", background: COLORS.blue }} />
       <Handle id="local-kv" type="source" position={Position.Bottom} style={{ ...handle, left: "60%" }} />
       <Handle id="global-kv" type="source" position={Position.Bottom} style={{ ...handle, left: "85%", background: COLORS.amber }} />
@@ -586,14 +573,14 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "heads") {
-    return <div style={panel}><Handle id="query" type="target" position={Position.Top} style={{ ...handle, left: "30%", background: COLORS.blue }} /><Handle id="kv" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} /><Handle type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 64 Heads · <MathFormula tex={`\\mathbf q_{${layer},h,t}`} /> + <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
+    return <div style={panel}><Handle id="query" type="target" position={Position.Top} style={{ ...handle, left: "30%", background: COLORS.blue }} /><Handle id="kv" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><Title>Layer {layer} · 64 Heads · <MathFormula tex={`\\mathbf q_{${layer},h,t}`} /> + <MathFormula tex={`\\mathrm{KV}_{${layer},t}`} /></Title><div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr 64px 1fr", gap: 8 }}><Head index={1} layer={layer} /><Head index={2} layer={layer} /><div style={{ display: "grid", placeItems: "center", color: COLORS.faint, fontSize: 26 }}>⋯</div><Head index={64} layer={layer} /></div></div>;
   }
 
   if (kind === "concat") {
     return <div style={panel}>{both}<Title>Layer {layer} · 64 个 Head 向量块拼成一行，再投影回 5120 维</Title>
       <div style={{ padding: 9, display: "grid", gridTemplateColumns: "2.1fr 26px .75fr 26px 1.5fr", alignItems: "center", gap: 6 }}>
         <div style={{ border: `1.4px solid ${COLORS.green}`, borderRadius: 8, padding: 6, background: COLORS.greenSoft, display: "grid", gap: 5 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`\\mathbf o_{${layer},\\mathrm{cat},t}`} /><MathFormula tex="64\\cdot512" /></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}><MathFormula tex={`\\mathbf o_{${layer},\\mathrm{cat},t}`} /><MathFormula tex="64\cdot512" /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .45fr 1fr", gap: 4 }}>
             <Box><MathFormula tex={`\\mathbf o_{${layer},1,t}`} /></Box><Box><MathFormula tex={`\\mathbf o_{${layer},2,t}`} /></Box><span style={{ display: "grid", placeItems: "center" }}><MathFormula tex="\cdots" /></span><Box><MathFormula tex={`\\mathbf o_{${layer},64,t}`} /></Box>
           </div>
@@ -607,23 +594,23 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "add1" || kind === "add2") {
-    return <div style={{ width: "100%", height: "100%", borderRadius: "50%", border: `3px solid ${COLORS.amber}`, background: COLORS.amberSoft, display: "grid", placeItems: "center", fontSize: 28, color: COLORS.amber, fontWeight: 900 }}><Handle type="target" position={Position.Top} style={handle} /><Handle id="skip" type="target" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /><Handle type="source" position={Position.Bottom} style={handle} />+</div>;
+    return <div style={{ width: "100%", height: "100%", borderRadius: "50%", border: `3px solid ${COLORS.amber}`, background: COLORS.amberSoft, display: "grid", placeItems: "center", fontSize: 28, color: COLORS.amber, fontWeight: 900 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="skip" type="target" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} />+</div>;
   }
 
   if (kind === "state1") {
-    return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 18, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /><MathFormula tex={`H_{${layer}}'=H_{${layer}}^{\\mathrm{in}}+O_{${layer}}`} /></div>;
+    return <div style={{ ...panel, display: "grid", placeItems: "center", fontSize: 18, fontWeight: 800 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main" type="source" position={Position.Bottom} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={{ ...handle, background: COLORS.amber }} /><MathFormula tex={`H_{${layer}}'=H_{${layer}}^{\\mathrm{in}}+O_{${layer}}`} /></div>;
   }
 
   if (kind === "moe-input") {
-    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.blue, background: COLORS.blueSoft, fontSize: 20, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle id="router" type="source" position={Position.Bottom} style={handle} /><Handle id="shared" type="source" position={Position.Left} style={{ ...handle, background: COLORS.blue }} /><MathFormula tex={`Y_{${layer}}`} /></div>;
+    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.blue, background: COLORS.blueSoft, fontSize: 20, fontWeight: 800 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="router" type="source" position={Position.Bottom} style={handle} /><Handle id="shared" type="source" position={Position.Left} style={{ ...handle, background: COLORS.blue }} /><MathFormula tex={`Y_{${layer}}`} /></div>;
   }
 
   if (kind === "router") {
     return <div style={panel}>
-      <Handle type="target" position={Position.Top} style={handle} />
-      <Handle type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
+      <Handle id="main-in" type="target" position={Position.Top} style={handle} />
+      <Handle id="main-out" type="source" position={Position.Bottom} style={{ ...handle, background: COLORS.amber }} />
       <Title>Layer {layer} Router · 只选择 routed experts</Title>
-      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1.25fr 28px 1.1fr", alignItems: "center", gap: 5 }}>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 28px 1fr 28px 1.25fr 28px 1.4fr", alignItems: "center", gap: 5 }}>
         <Box tone="blue"><MathFormula tex={`Y_{${layer}}`} /></Box><Operator tex="\times" /><Box><MathFormula tex={`W_{${layer}}^R`} /></Box><Arrow /><Box tone="green"><MathFormula tex={`s_{${layer}}=Y_{${layer}}W_{${layer}}^R`} /></Box><Arrow /><Box tone="amber"><MathFormula tex={`I_{${layer}}=\\operatorname{TopK}(s_{${layer}},6)`} /></Box>
       </div>
     </div>;
@@ -631,7 +618,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 
   if (kind === "scores") {
     return <div style={{ ...panel, borderColor: COLORS.amber }}>
-      <Handle type="target" position={Position.Top} style={{ ...handle, background: COLORS.amber }} />
+      <Handle id="main-in" type="target" position={Position.Top} style={{ ...handle, background: COLORS.amber }} />
       {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`score-${expert.id}`} type="source" position={Position.Bottom} style={{ ...handle, left: `${SCORE_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
       <Title><MathFormula tex={`I_{${layer}}`} /> 对应的六个 Router 权重</Title>
       <div style={{ padding: 10, display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: 6 }}>
@@ -658,7 +645,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
     return <div style={panel}>
       <Handle id="shared" type="target" position={Position.Top} style={{ ...handle, left: "7.14%", background: COLORS.blue }} />
       {ROUTED_EXPERTS.map((expert, index) => <Handle key={expert.id} id={`weighted-${expert.id}`} type="target" position={Position.Top} style={{ ...handle, left: `${ROUTED_HANDLE_LEFT[index]}%`, background: COLORS.amber }} />)}
-      <Handle type="source" position={Position.Bottom} style={handle} />
+      <Handle id="main-out" type="source" position={Position.Bottom} style={handle} />
       <Title>各专家输出向量分别加权</Title><div style={{ padding: 9, display: "grid", gap: 8 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 5 }}>
         <Box tone="blue"><MathFormula tex={`1\\cdot E_{${layer},\\mathrm{shared}}(Y_{${layer}})`} /></Box>
@@ -668,11 +655,11 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "moe-sum") {
-    return <div style={{ width: "100%", height: "100%", borderRadius: "50%", border: `3px solid ${COLORS.green}`, background: COLORS.greenSoft, display: "grid", placeItems: "center", fontSize: 22, color: COLORS.green, fontWeight: 900 }}><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><MathFormula tex="\sum" /></div>;
+    return <div style={{ width: "100%", height: "100%", borderRadius: "50%", border: `3px solid ${COLORS.green}`, background: COLORS.greenSoft, display: "grid", placeItems: "center", fontSize: 22, color: COLORS.green, fontWeight: 900 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MathFormula tex="\sum" /></div>;
   }
 
   if (kind === "moe-output") {
-    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.green, background: COLORS.greenSoft, fontSize: 16, fontWeight: 800 }}><Handle type="target" position={Position.Top} style={handle} /><Handle type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb{R}^{N\\times5120}`} /></div>;
+    return <div style={{ ...panel, display: "grid", placeItems: "center", borderColor: COLORS.green, background: COLORS.greenSoft, fontSize: 16, fontWeight: 800 }}><Handle id="main-in" type="target" position={Position.Top} style={handle} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MathFormula tex={`O_{${layer}}^{\\mathrm{FFN}}\\in\\mathbb{R}^{N\\times5120}`} /></div>;
   }
 
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
@@ -691,7 +678,7 @@ function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
         : data.title
           ? 96
           : 40;
-  return <div style={{ width: "100%", height: "100%", position: "relative" }}>
+  return <div data-boundary-connectable={data.kind !== "structure-operator"} style={{ width: "100%", height: "100%", position: "relative" }}>
     <EightResizeHandles visible={Boolean(selected)} minWidth={minimumWidth} minHeight={minimumHeight} />
     <EightConnectionPorts color={portColor} />
     <DiagramNodeContent data={data} />
@@ -759,7 +746,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const norm1Y = inputY + tensorHeight + 55;
   const projectionY = norm1Y + 72 + mainGap;
   const queryProjectionHeight = 750;
-  const localKvProjectionHeight = 470;
+  const localKvProjectionHeight = 440;
   const swaHeight = 550;
   const compressorHeight = mode === "full" && compressionRatioForLayer(layer) === 2 ? 720 : 450;
   const indexerHeight = 450;
@@ -772,9 +759,9 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const mergeY = hasGlobal ? Math.max(swaY + swaHeight, globalSelectY + globalSelectHeight) + mainGap : swaY + swaHeight + mainGap;
   const mergeHeight = 200;
   const headsY = mergeY + mergeHeight + mainGap;
-  const headsHeight = 520;
+  const headsHeight = 424;
   const concatY = headsY + headsHeight + mainGap;
-  const concatHeight = 210;
+  const concatHeight = 170;
   const add1Y = concatY + concatHeight + mainGap;
   const state1Y = add1Y + 70 + mainGap;
   const norm2Y = state1Y + 72 + mainGap;
@@ -782,7 +769,8 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const routerY = moeInputY + 80 + mainGap;
   const scoresY = routerY + 130 + mainGap;
   const expertsY = scoresY + 115 + mainGap;
-  const aggregateY = expertsY + 480 + mainGap;
+  const expertsHeight = 520;
+  const aggregateY = expertsY + expertsHeight + mainGap;
   const moeSumY = aggregateY + 125 + mainGap;
   const moeOutputY = moeSumY + 70 + mainGap;
   const add2Y = moeOutputY + 72 + mainGap;
@@ -802,7 +790,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("moe-input", "moe-input", layer, mode, 715, moeInputY, 170, 80),
     node("router", "router", layer, mode, 440, routerY, 720, 130),
     node("scores", "scores", layer, mode, 278, scoresY, 1252, 115),
-    node("experts", "experts", layer, mode, 70, expertsY, 1460, 480),
+    node("experts", "experts", layer, mode, 70, expertsY, 1460, expertsHeight),
     node("aggregate", "aggregate", layer, mode, 70, aggregateY, 1460, 125),
     node("moe-sum", "moe-sum", layer, mode, 765, moeSumY, 70, 70),
     node("moe-output", "moe-output", layer, mode, 620, moeOutputY, 360, 72),
@@ -851,6 +839,8 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
       id,
       source,
       target,
+      sourceHandle: "main-out",
+      targetHandle: "main-in",
       type: "editable-orthogonal",
       reconnectable: true,
       markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.green },
@@ -994,6 +984,8 @@ function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }
         }),
         ...item,
         type: "editable-orthogonal" as const,
+        sourceHandle: item.sourceHandle ?? baseline?.sourceHandle ?? "main-out",
+        targetHandle: item.targetHandle ?? baseline?.targetHandle ?? "main-in",
         data: { ...baseline?.data, ...item.data },
       } satisfies EditableEdge;
     });
@@ -1015,6 +1007,9 @@ function DiagramCanvas({ layer }: { layer: number }) {
   const futureRef = useRef<DiagramSnapshot[]>([]);
   const pendingHistoryRef = useRef<DiagramSnapshot | null>(null);
   const resizeHistoryActiveRef = useRef(false);
+  const connectionGestureRef = useRef<{ nodeId: string; handleId: string | null; x: number; y: number } | null>(null);
+  const resetConnectionRef = useRef<(() => void) | null>(null);
+  const completedConnectionRef = useRef(false);
   const storageKey = `oasismind:deepseek-v41-layer-layout:v7:${layer}`;
 
   nodesRef.current = nodes;
@@ -1082,24 +1077,34 @@ function DiagramCanvas({ layer }: { layer: number }) {
     setHistoryRevision((value) => value + 1);
   }, [initialGraph, storageKey]);
 
-  const onConnect = useCallback((connection: Connection) => {
+  const onConnect = useCallback((connection: Connection, targetAnchor?: BoundaryAnchor) => {
     beginHistory();
-    setEdges((current) => addEdge({
+    setEdges((current) => [...current, {
       ...connection,
       id: `manual-${Date.now()}`,
       type: "editable-orthogonal",
       reconnectable: true,
       markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.green },
       style: { stroke: COLORS.green, strokeWidth: 2.2 },
-      data: { labelTex: "" },
-    }, current));
+      data: { labelTex: "", targetAnchor },
+    }]);
     commitHistory();
   }, [beginHistory, commitHistory, setEdges]);
 
-  const onReconnect = useCallback((oldEdge: EditableEdge, connection: Connection) => {
-    setEdges((current) => reconnectEdge(oldEdge, connection, current));
-    setSaveState("idle");
-  }, [setEdges]);
+  const finishConnection = useCallback((event: MouseEvent | TouchEvent) => {
+    const gesture = connectionGestureRef.current;
+    const scope = canvasRef.current;
+    if (!gesture || !scope) return;
+    const pointer = "touches" in event ? event.changedTouches[0] : event;
+    if (!pointer) return;
+    const hit = findBoundaryConnection(scope, { x: pointer.clientX, y: pointer.clientY }, gesture.nodeId);
+    if (!hit) return;
+    connectionGestureRef.current = null;
+    completedConnectionRef.current = true;
+    resetConnectionRef.current?.();
+    setClickConnectionPreview(null);
+    onConnect({ source: gesture.nodeId, sourceHandle: gesture.handleId, target: hit.nodeId, targetHandle: `port-${hit.anchor.side}` }, hit.anchor);
+  }, [onConnect]);
 
   const saveLayout = useCallback(() => {
     const payload: SavedDiagramLayout = {
@@ -1218,12 +1223,30 @@ function DiagramCanvas({ layer }: { layer: number }) {
     ref={canvasRef}
     style={{ width: "100%", height: "100%", position: "relative" }}
     onKeyDown={handleCanvasKeyDown}
+    onClickCapture={event => {
+      if (!completedConnectionRef.current) return;
+      completedConnectionRef.current = false;
+      event.stopPropagation();
+    }}
+    onPointerUp={event => finishConnection(event.nativeEvent)}
     onPointerMove={(event) => {
       if (!clickConnectionPreview) return;
       const point = pointerInCanvas(event.clientX, event.clientY);
       setClickConnectionPreview((current) => current ? { ...current, toX: point.x, toY: point.y } : null);
     }}
   >
+    <style>{`
+      .architecture-flow .react-flow__handle-top { top: 0; }
+      .architecture-flow .react-flow__handle-bottom { bottom: 0; }
+      .architecture-flow .react-flow__handle-left { left: 0; }
+      .architecture-flow .react-flow__handle-right { right: 0; }
+      .architecture-flow .react-flow__handle { opacity: 0; }
+      .architecture-flow .react-flow__handle:hover { opacity: 1; }
+      .architecture-flow .architecture-edge-endpoint { opacity: 0; }
+      .architecture-flow .architecture-edge-endpoint:hover { opacity: 1; }
+      .architecture-flow .architecture-edge-endpoint[data-selected="true"] { opacity: 1; }
+      .architecture-flow .architecture-edge-endpoint { z-index: 1001; }
+    `}</style>
     <div style={{ position: "absolute", top: 12, right: 16, zIndex: 8, display: "flex", alignItems: "center", gap: 6, padding: 7, border: `1px solid ${COLORS.line}`, borderRadius: 9, background: "rgba(255,254,250,.96)", boxShadow: "0 4px 14px rgba(42,41,36,.08)" }}>
       <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
       <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z" style={{ ...editorButton, opacity: canUndo ? 1 : .45, cursor: canUndo ? "pointer" : "default" }}>撤销</button>
@@ -1246,6 +1269,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
     </div>
     <EditHistoryProvider value={historyContext}>
     <ReactFlow
+      className="architecture-flow"
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -1253,16 +1277,25 @@ function DiagramCanvas({ layer }: { layer: number }) {
       connectionLineComponent={EditableConnectionLine}
       onNodesChange={handleNodesChange}
       onEdgesChange={handleEdgesChange}
-      onConnect={onConnect}
-      onClickConnectStart={(event) => {
+      onConnectStart={(event, params) => {
+        if (!params.nodeId) return;
         const pointer = "touches" in event ? event.touches[0] ?? event.changedTouches[0] : event;
+        connectionGestureRef.current = { nodeId: params.nodeId, handleId: params.handleId, x: pointer.clientX, y: pointer.clientY };
+      }}
+      onConnectEnd={event => {
+        finishConnection(event);
+        const gesture = connectionGestureRef.current;
+        const pointer = "touches" in event ? event.changedTouches[0] : event;
+        if (gesture && pointer && Math.hypot(pointer.clientX - gesture.x, pointer.clientY - gesture.y) > 4) connectionGestureRef.current = null;
+      }}
+      onClickConnectStart={(event, params) => {
+        if (!params.nodeId) return;
+        const pointer = "touches" in event ? event.touches[0] ?? event.changedTouches[0] : event;
+        connectionGestureRef.current = { nodeId: params.nodeId, handleId: params.handleId, x: pointer.clientX, y: pointer.clientY };
         const point = pointerInCanvas(pointer.clientX, pointer.clientY);
         setClickConnectionPreview({ fromX: point.x, fromY: point.y, toX: point.x, toY: point.y });
       }}
-      onClickConnectEnd={() => setClickConnectionPreview(null)}
-      onReconnect={onReconnect}
-      onReconnectStart={beginHistory}
-      onReconnectEnd={commitHistory}
+      onClickConnectEnd={event => { finishConnection(event); setClickConnectionPreview(null); }}
       onNodeDragStart={beginHistory}
       onNodeDragStop={commitHistory}
       onSelectionDragStart={beginHistory}
@@ -1274,13 +1307,13 @@ function DiagramCanvas({ layer }: { layer: number }) {
       maxZoom={1.5}
       nodesDraggable
       nodesConnectable
+      // [OM-FREEPLAY] 吸附时保持目标边框静止，避免靠近画布边缘时自动平移使落点漂移。
+      autoPanOnConnect={false}
       connectOnClick
       nodesFocusable
       edgesFocusable
-      edgesReconnectable
-      // [OM-FREEPLAY] 44px 是吸附容差的保守值：足够靠近即吸附，同时避免跨过相邻小框误连。
-      connectionRadius={44}
-      reconnectRadius={44}
+      edgesReconnectable={false}
+      connectionRadius={1}
       connectionMode={ConnectionMode.Loose}
       elementsSelectable
       deleteKeyCode={EDIT_DELETE_KEYS}
@@ -1291,6 +1324,7 @@ function DiagramCanvas({ layer }: { layer: number }) {
       preventScrolling={false}
       proOptions={{ hideAttribution: true }}
     >
+      <ConnectionGestureControl resetRef={resetConnectionRef} />
       <Background color="#d7d2c7" gap={28} size={1} />
       <Controls showInteractive={false} position="top-left" />
     </ReactFlow>

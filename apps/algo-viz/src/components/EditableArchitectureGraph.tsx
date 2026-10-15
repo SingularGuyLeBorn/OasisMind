@@ -1,4 +1,4 @@
-import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import katex from "katex";
 import {
   BaseEdge,
@@ -9,6 +9,7 @@ import {
   ResizeControlVariant,
   useNodes,
   useReactFlow,
+  useStoreApi,
   type Edge,
   type EdgeProps,
   type ConnectionLineComponentProps,
@@ -20,7 +21,41 @@ export type EditableEdgeData = {
   labelTex?: string;
   waypoints?: XYPosition[];
   color?: string;
+  sourceAnchor?: BoundaryAnchor;
+  targetAnchor?: BoundaryAnchor;
 };
+
+export type BoundaryAnchor = { side: Position; offset: number };
+export type BoundaryConnection = { nodeId: string; anchor: BoundaryAnchor };
+
+// [OM-FREEPLAY] 24 屏幕像素作为边缘吸附距离，缩放后仍保持相同的鼠标容差。
+const BOUNDARY_SNAP_RADIUS = 24;
+
+export function findBoundaryConnection(
+  scope: HTMLElement,
+  pointer: XYPosition,
+  excludedNode?: string,
+  preferred?: { nodeId: string; side: Position },
+): BoundaryConnection | null {
+  const candidates: Array<BoundaryConnection & { distance: number; area: number }> = [];
+  for (const element of Array.from(scope.querySelectorAll<HTMLElement>('.react-flow__node'))) {
+    const nodeId = element.dataset.id;
+    if (!nodeId || nodeId === excludedNode || !element.querySelector('[data-boundary-connectable="true"]')) continue;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) continue;
+    const sides = preferred && preferred.nodeId === nodeId ? [preferred.side] : [Position.Top, Position.Right, Position.Bottom, Position.Left];
+    for (const side of sides) {
+      const horizontal = side === Position.Top || side === Position.Bottom;
+      const offset = Math.max(0, Math.min(1, horizontal ? (pointer.x - rect.left) / rect.width : (pointer.y - rect.top) / rect.height));
+      const x = horizontal ? rect.left + offset * rect.width : side === Position.Left ? rect.left : rect.right;
+      const y = horizontal ? side === Position.Top ? rect.top : rect.bottom : rect.top + offset * rect.height;
+      const distance = Math.hypot(pointer.x - x, pointer.y - y);
+      if (distance <= BOUNDARY_SNAP_RADIUS) candidates.push({ nodeId, anchor: { side, offset }, distance, area: rect.width * rect.height });
+    }
+  }
+  candidates.sort((a, b) => a.distance - b.distance || a.area - b.area);
+  return candidates[0] ?? null;
+}
 
 export type EditableEdge = Edge<EditableEdgeData, "editable-orthogonal">;
 
@@ -33,6 +68,18 @@ const EditHistoryContext = createContext<EditHistoryContextValue | null>(null);
 
 export function EditHistoryProvider({ value, children }: { value: EditHistoryContextValue; children: ReactNode }) {
   return <EditHistoryContext.Provider value={value}>{children}</EditHistoryContext.Provider>;
+}
+
+export function ConnectionGestureControl({ resetRef }: { resetRef: RefObject<(() => void) | null> }) {
+  const store = useStoreApi();
+  useEffect(() => {
+    resetRef.current = () => {
+      store.setState({ connectionClickStartHandle: null });
+      store.getState().cancelConnection();
+    };
+    return () => { resetRef.current = null; };
+  }, [resetRef, store]);
+  return null;
 }
 
 const RESIZE_POSITIONS = [
@@ -126,6 +173,7 @@ function DelayedConnectionPort({ id, position, style, color }: { id: string; pos
       display: "grid",
       placeItems: "center",
       ...style,
+      [position]: 0,
     }}
   >
     <span aria-hidden style={{
@@ -435,12 +483,12 @@ function moveSegment(
 
 function EditableOrthogonalEdgeView({
   id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  targetPosition,
-  sourcePosition,
+  sourceX: handleSourceX,
+  sourceY: handleSourceY,
+  targetX: handleTargetX,
+  targetY: handleTargetY,
+  targetPosition: handleTargetPosition,
+  sourcePosition: handleSourcePosition,
   source,
   target,
   markerEnd,
@@ -448,9 +496,27 @@ function EditableOrthogonalEdgeView({
   data,
   style,
 }: EdgeProps<EditableEdge>) {
-  const { screenToFlowPosition, setEdges, getInternalNode } = useReactFlow<Node, EditableEdge>();
+  const { screenToFlowPosition, getZoom, setEdges, getInternalNode } = useReactFlow<Node, EditableEdge>();
   const flowNodes = useNodes<Node>();
+  const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
   const history = useContext(EditHistoryContext);
+  const anchorPoint = (nodeId: string, anchor: BoundaryAnchor | undefined, fallback: XYPosition, handleSide: Position) => {
+    const node = getInternalNode(nodeId);
+    const absolute = node?.internals.positionAbsolute;
+    const width = node?.measured.width;
+    const height = node?.measured.height;
+    if (!absolute || !width || !height) return fallback;
+    const side = anchor?.side ?? handleSide;
+    const offset = anchor?.offset ?? Math.max(0, Math.min(1, side === Position.Top || side === Position.Bottom ? (fallback.x - absolute.x) / width : (fallback.y - absolute.y) / height));
+    return {
+      x: absolute.x + (side === Position.Left ? 0 : side === Position.Right ? width : width * offset),
+      y: absolute.y + (side === Position.Top ? 0 : side === Position.Bottom ? height : height * offset),
+    };
+  };
+  const { x: sourceX, y: sourceY } = anchorPoint(source, data?.sourceAnchor, { x: handleSourceX, y: handleSourceY }, handleSourcePosition);
+  const { x: targetX, y: targetY } = anchorPoint(target, data?.targetAnchor, { x: handleTargetX, y: handleTargetY }, handleTargetPosition);
+  const sourcePosition = data?.sourceAnchor?.side ?? handleSourcePosition;
+  const targetPosition = data?.targetAnchor?.side ?? handleTargetPosition;
   const obstacles = useMemo(() => {
     const excluded = new Set([source, target]);
     for (const nodeId of [source, target]) {
@@ -482,6 +548,64 @@ function EditableOrthogonalEdgeView({
   const path = pathFromPoints(points);
   const labelCenter = longestSegmentCenter(points);
   const color = data?.color ?? String(style?.stroke ?? "#37685a");
+  useEffect(() => {
+    if (!selected) return;
+    const hover = (event: PointerEvent) => {
+      const pointer = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      const radius = 14 / getZoom();
+      let nearest: number | null = null;
+      let distance = radius;
+      for (let index = 0; index < points.length - 1; index += 1) {
+        const start = points[index];
+        const end = points[index + 1];
+        const x = Math.max(Math.min(start.x, end.x), Math.min(Math.max(start.x, end.x), pointer.x));
+        const y = Math.max(Math.min(start.y, end.y), Math.min(Math.max(start.y, end.y), pointer.y));
+        const nextDistance = Math.hypot(pointer.x - x, pointer.y - y);
+        if (nextDistance < distance) { distance = nextDistance; nearest = index; }
+      }
+      setHoveredSegment(nearest);
+    };
+    window.addEventListener("pointermove", hover);
+    return () => window.removeEventListener("pointermove", hover);
+  }, [getZoom, points, screenToFlowPosition, selected]);
+
+  const startEndpointDrag = (event: ReactPointerEvent<HTMLButtonElement>, endpoint: "source" | "target") => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.focus({ preventScroll: true });
+    const scope = event.currentTarget.closest<HTMLElement>('.react-flow');
+    if (!scope) return;
+    const nodeId = endpoint === "source" ? source : target;
+    const side = endpoint === "source" ? sourcePosition : targetPosition;
+    let hit: BoundaryConnection | null = null;
+    let moved = false;
+    let changed = false;
+    const start = { x: event.clientX, y: event.clientY };
+    const move = (pointerEvent: PointerEvent) => {
+      if (Math.hypot(pointerEvent.clientX - start.x, pointerEvent.clientY - start.y) < 3 && !moved) return;
+      moved = true;
+      hit = findBoundaryConnection(scope, { x: pointerEvent.clientX, y: pointerEvent.clientY }, endpoint === "source" ? target : source, { nodeId, side });
+      if (!hit) return;
+      if (!changed) history?.beginHistory();
+      changed = true;
+      const connection = hit;
+      setEdges(current => current.map(edge => edge.id === id ? {
+        ...edge,
+        [endpoint]: connection.nodeId,
+        [`${endpoint}Handle`]: `port-${connection.anchor.side}`,
+        data: { ...edge.data, [`${endpoint}Anchor`]: connection.anchor, waypoints: undefined },
+      } : edge));
+    };
+    const finish = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      if (changed) history?.commitHistory();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", finish, { once: true });
+    window.addEventListener("pointercancel", finish, { once: true });
+  };
 
   const startSegmentDrag = (event: ReactPointerEvent<HTMLButtonElement>, segmentIndex: number) => {
     event.preventDefault();
@@ -518,6 +642,17 @@ function EditableOrthogonalEdgeView({
       }}
     />
     <EdgeLabelRenderer>
+      {(["source", "target"] as const).map(endpoint => <button
+        key={endpoint}
+        type="button"
+        className="nodrag nopan architecture-edge-endpoint"
+        aria-label={`拖动连线${endpoint === "source" ? "起点" : "箭头"}`}
+        data-edge-id={id}
+        data-endpoint={endpoint}
+        data-selected={Boolean(selected)}
+        onPointerDown={event => startEndpointDrag(event, endpoint)}
+        style={{ position: "absolute", left: endpoint === "source" ? sourceX : targetX, top: endpoint === "source" ? sourceY : targetY, width: 24, height: 24, padding: 7, transform: "translate(-50%,-50%)", border: 0, background: "transparent", pointerEvents: "all", cursor: (endpoint === "source" ? sourcePosition : targetPosition) === Position.Top || (endpoint === "source" ? sourcePosition : targetPosition) === Position.Bottom ? "ew-resize" : "ns-resize" }}
+      ><span style={{ display: "block", width: 10, height: 10, borderRadius: "50%", border: "2px solid #fffefa", background: color, pointerEvents: "none" }} /></button>)}
       {data?.labelTex && (
         <div
           className="nodrag nopan"
@@ -537,6 +672,7 @@ function EditableOrthogonalEdgeView({
         />
       )}
       {selected && points.slice(0, -1).map((point, index) => {
+        if (index !== hoveredSegment) return null;
         const end = points[index + 1];
         const horizontal = Math.abs(end.x - point.x) >= Math.abs(end.y - point.y);
         return (
