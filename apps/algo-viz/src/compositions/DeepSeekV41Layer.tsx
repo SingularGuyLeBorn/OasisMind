@@ -370,6 +370,37 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
   );
 }
 
+function SwaSelectionConnector({ layer }: { layer: number }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [path, setPath] = useState("");
+  useEffect(() => {
+    const svg = svgRef.current;
+    const frame = svg?.closest('.react-flow__node');
+    const source = frame?.querySelector('[data-selection-window]');
+    const target = frame?.closest('.react-flow')?.querySelector('[data-swa-result]');
+    if (!svg || !source || !target) return;
+    const measure = () => {
+      const root = svg.getBoundingClientRect(), from = source.getBoundingClientRect(), to = target.getBoundingClientRect();
+      if (!root.width || !root.height) return;
+      const sx = svg.clientWidth / root.width, sy = svg.clientHeight / root.height;
+      const x1 = (from.right - root.left) * sx, y1 = (from.top + from.height / 2 - root.top) * sy;
+      const x2 = (to.left + to.width / 2 - root.left) * sx, y2 = (to.top - root.top) * sy;
+      const channelX = Math.max(x1 + 24, x2 + 24), channelY = y2 - 18;
+      setPath(`M ${x1} ${y1} H ${channelX} V ${channelY} H ${x2} V ${y2}`);
+    };
+    measure();
+    const resize = new ResizeObserver(measure);
+    [svg, source, target].forEach(element => resize.observe(element));
+    const move = new MutationObserver(measure);
+    for (const node of [frame, target.closest('.react-flow__node')]) if (node) move.observe(node, { attributes: true, attributeFilter: ["style"] });
+    return () => { resize.disconnect(); move.disconnect(); };
+  }, [layer]);
+  return <svg ref={svgRef} data-swa-selection-connector aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+    <defs><marker id={`swa-pick-${layer}`} viewBox="0 -5 10 10" refX="9" refY="0" markerWidth="8" markerHeight="8" orient="auto"><path d="M 1 -4 L 9 0 L 1 4" fill="none" stroke={COLORS.amber} strokeWidth="1.5" /></marker></defs>
+    <path d={path} fill="none" stroke={COLORS.amber} strokeWidth="1.5" markerEnd={`url(#swa-pick-${layer})`} />
+  </svg>;
+}
+
 function Head({ index, layer }: { index: number; layer: number }) {
   const attendedKv = `\\mathrm{KV}_{${layer},t}`;
   const queryRow = `\\mathbf q_{${layer},${index},t}`;
@@ -541,7 +572,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
         </div>
       </div>
       </div>
-      <div data-window-extraction style={{ position: "absolute", left: 10, top: 371, width: "calc((100% - 56px) * .653846)", display: "grid", justifyItems: "center", gap: 1, color: COLORS.amber, fontSize: 11 }}><span>取出虚线内第 r～t 行 · 保留全部 512 列</span><Operator tex="\downarrow" /></div>
+      <SwaSelectionConnector layer={layer} />
     </div>;
   }
 
@@ -641,15 +672,21 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
     const kvSource = globalKvSourceLayer(layer);
     const indexSource = globalIndexSourceLayer(layer);
     const hasGlobal = kvSource !== null && indexSource !== null;
-    return <div style={{ ...panel, borderColor: COLORS.green }}>
-      <Handle id="local" type="target" position={Position.Top} style={{ ...handle, left: hasGlobal ? "30%" : "50%" }} />
-      {hasGlobal && <Handle id="global" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} />}
+    if (!hasGlobal) return <div data-swa-only-kv style={{ ...panel, borderColor: COLORS.green }}>
+      <Handle id="local" type="target" position={Position.Top} style={handle} />
       <Handle id="kv" type="source" position={Position.Bottom} style={handle} />
-      <Title>{hasGlobal ? "沿 KV 行维拼接：本地窗口 + 选中的全局行" : "SWA-only：Head 只读取本地窗口"}</Title>
-      <div style={{ padding: 10, display: "grid", gridTemplateColumns: hasGlobal ? "1fr 30px 1fr 30px 1.3fr" : "1fr 30px 1.3fr", alignItems: "center", gap: 6, minWidth: 0 }}>
+      <Title>SWA-only · 窗口 KV</Title>
+      <div style={{ padding: 8 }}><RowMatrix tex={`\\mathrm{KV}_{${layer},t}=U_{${layer},t}^{\\mathrm{SWA}}`} shape="\min(128,t)\times512" rows={[`\\mathbf u_{${layer},r}`, `\\mathbf u_{${layer},r+1}`, "\\vdots", `\\mathbf u_{${layer},t}`]} rowLength="512" elementTex={(row, column) => `u_{${layer},${["r", "r+1", "", "t"][row]},${column}}`} /></div>
+    </div>;
+    return <div style={{ ...panel, borderColor: COLORS.green }}>
+      <Handle id="local" type="target" position={Position.Top} style={{ ...handle, left: "30%" }} />
+      <Handle id="global" type="target" position={Position.Top} style={{ ...handle, left: "70%" }} />
+      <Handle id="kv" type="source" position={Position.Bottom} style={handle} />
+      <Title>沿 KV 行维拼接：本地窗口 + 选中的全局行</Title>
+      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 30px 1fr 30px 1.3fr", alignItems: "center", gap: 6, minWidth: 0 }}>
         <Box tone="green"><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /><br /><MathFormula tex="\min(128,t)\times512" /></Box><Arrow />
-        {hasGlobal && <><Box tone="green"><MathFormula tex={`G_{${kvSource},t}^{\\mathrm{selected}}`} /><br /><MathFormula tex={`K_{${indexSource},t}\\times512`} /></Box><Arrow /></>}
-        <Box tone="green"><MathFormula tex={hasGlobal ? `\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};G_{${kvSource},t}^{\\mathrm{selected}}]` : `\\mathrm{KV}_{${layer},t}=U_{${layer},t}^{\\mathrm{SWA}}`} /><br />{hasGlobal && <MathFormula tex={`(\\min(128,t)+K_{${indexSource},t})\\times512`} />}</Box>
+        <Box tone="green"><MathFormula tex={`G_{${kvSource},t}^{\\mathrm{selected}}`} /><br /><MathFormula tex={`K_{${indexSource},t}\\times512`} /></Box><Arrow />
+        <Box tone="green"><MathFormula tex={`\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};G_{${kvSource},t}^{\\mathrm{selected}}]`} /><br /><MathFormula tex={`(\\min(128,t)+K_{${indexSource},t})\\times512`} /></Box>
       </div>
     </div>;
   }
@@ -916,7 +953,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
     node("q", "projection-q", layer, mode, 20, projectionY, 800, queryProjectionHeight),
     node("kv", "projection-kv", layer, mode, 920, projectionY, 500, localKvProjectionHeight),
     node("swa-window", "swa-window", layer, mode, hasGlobal ? 40 : 350, swaY, hasGlobal ? 780 : 900, swaHeight),
-    node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 400, mergeY, hasGlobal ? 1000 : 800, mergeHeight),
+    node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 480, mergeY, hasGlobal ? 1000 : 640, mergeHeight),
     node("heads", "heads", layer, mode, 40, headsY, 1900, headsHeight),
     node("concat", "concat", layer, mode, 190, concatY, 1140, concatHeight),
     node("add1", "add1", layer, mode, 765, add1Y, 70, 70),
