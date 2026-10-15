@@ -361,9 +361,9 @@ function Head({ index, layer }: { index: number; layer: number }) {
         <div data-head-output style={{ minWidth: 0, display: "grid", gap: 4 }}>
           <span style={{ fontSize: 10, color: COLORS.green, textAlign: "center" }}>每个 token 的输出占一行</span>
           <RowMatrix tex={`O_{${layer},${index}}`} shape="N\times512" rows={[
-            `\\mathbf o_{${layer},${index},1}`, `\\mathbf o_{${layer},${index},2}`, "\\vdots",
+            `\\mathbf o_{${layer},${index},1}`, `\\mathbf o_{${layer},${index},2}`, `\\mathbf o_{${layer},${index},3}`, "\\vdots",
             `\\mathbf o_{${layer},${index},t}`, "\\vdots", `\\mathbf o_{${layer},${index},N}`,
-          ]} selected={3} />
+          ]} selected={4} />
         </div>
       </div>
     </div>
@@ -812,7 +812,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const mergeY = hasGlobal ? Math.max(swaY + swaHeight, globalSelectY + globalSelectHeight) + mainGap : swaY + swaHeight + mainGap;
   const mergeHeight = 200;
   const headsY = mergeY + mergeHeight + mainGap;
-  const headsHeight = 342;
+  const headsHeight = 374;
   const concatY = headsY + headsHeight + mainGap;
   const concatHeight = 260;
   const add1Y = concatY + concatHeight + mainGap;
