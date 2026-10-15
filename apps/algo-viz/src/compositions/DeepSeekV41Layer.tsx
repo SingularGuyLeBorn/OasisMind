@@ -268,19 +268,19 @@ function LocalKvProjection({ layer }: { layer: number }) {
       <Title>Layer {layer} · 本层独立 KV</Title>
       <div style={{ padding: 9, display: "grid", gap: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 18px 1.15fr 18px 1fr", gap: 4, alignItems: "center" }}>
-          <RowMatrix tex={`X_{${layer}}`} shape="N\times5120" rows={[`\\mathbf x_{${layer},1}`, "\\vdots", `\\mathbf x_{${layer},N}`]} tone="blue" />
+          <RowMatrix tex={`X_{${layer}}`} shape="N\times5120" rows={[`\\mathbf x_{${layer},1}`, `\\mathbf x_{${layer},2}`, "\\vdots", `\\mathbf x_{${layer},N}`]} tone="blue" />
           <Operator tex="\times" />
           <div style={{ padding: 5, border: `1.3px solid ${COLORS.amber}`, borderRadius: 7, background: COLORS.amberSoft, display: "grid", gap: 5, fontSize: 9, minWidth: 0, textAlign: "center" }}>
             <MathFormula tex={`W_{${layer}}^{KV,\\mathrm{SWA}}`} /><MathFormula tex="5120\times512" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr .4fr 1fr", gap: 3, alignItems: "center" }}>
-              <div style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "20px 0" }}><MathFormula tex={`\\mathbf w_{${layer},1}`} /></div><MathFormula tex="\cdots" /><div style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "20px 0" }}><MathFormula tex={`\\mathbf w_{${layer},512}`} /></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .4fr 1fr", gap: 3, alignItems: "center" }}>
+              {["1", "2", "\\cdots", "512"].map(column => column === "\\cdots" ? <MathFormula key={column} tex={column} /> : <div key={column} style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "20px 0" }}><MathFormula tex={`\\mathbf w_{${layer},${column}}`} /></div>)}
             </div>
           </div>
           <Operator tex="=" />
-          <RowMatrix tex={`\\widehat U_{${layer}}`} shape="N\times512" rows={[`\\widehat{\\mathbf u}_{${layer},1}`, "\\vdots", `\\widehat{\\mathbf u}_{${layer},N}`]} />
+          <RowMatrix tex={`\\widehat U_{${layer}}`} shape="N\times512" rows={[`\\widehat{\\mathbf u}_{${layer},1}`, `\\widehat{\\mathbf u}_{${layer},2}`, "\\vdots", `\\widehat{\\mathbf u}_{${layer},N}`]} />
         </div>
         <div style={{ textAlign: "center", fontSize: 13 }}><MathFormula tex={`U_{${layer}}=\\operatorname{RoPE}(\\operatorname{RMSNorm}(\\widehat U_{${layer}}))`} /></div>
-        <RowMatrix tex={`U_{${layer}}`} shape="N\times512" rows={[`\\mathbf u_{${layer},1}`, "\\vdots", `\\mathbf u_{${layer},t}`, "\\vdots", `\\mathbf u_{${layer},N}`]} selected={2} />
+        <RowMatrix tex={`U_{${layer}}`} shape="N\times512" rows={[`\\mathbf u_{${layer},1}`, `\\mathbf u_{${layer},2}`, "\\vdots", `\\mathbf u_{${layer},N}`]} />
       </div>
     </div>
   );
@@ -333,10 +333,10 @@ function Head({ index, layer }: { index: number; layer: number }) {
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 5 }}><Box tone="blue"><MathFormula tex={`${queryRow}\\in\\mathbb R^{512}`} /></Box><Box tone="green"><MathFormula tex={attendedKv} /></Box></div>
       <Box tone="green"><MathFormula tex={`\\mathbf z_{${layer},${index},t}=${queryRow}(${attendedKv})^{\\mathsf T}/\\sqrt{512}`} /><br /><MathFormula tex={`\\mathbf a_{${layer},${index},t}=\\operatorname{softmax}(\\mathbf z_{${layer},${index},t})`} /></Box>
       <RowMatrix tex={`O_{${layer},${index}}`} shape="N\times512" rows={[
-        `\\mathbf o_{${layer},${index},1}`, "\\vdots",
+        `\\mathbf o_{${layer},${index},1}`, `\\mathbf o_{${layer},${index},2}`, "\\vdots",
         `\\mathbf o_{${layer},${index},t}=\\mathbf a_{${layer},${index},t}\\,${attendedKv}`,
         "\\vdots", `\\mathbf o_{${layer},${index},N}`,
-      ]} selected={2} />
+      ]} selected={3} />
     </div>
   );
 }
@@ -759,7 +759,7 @@ function buildGraph(layer: number): { nodes: DiagramNode[]; edges: EditableEdge[
   const mergeY = hasGlobal ? Math.max(swaY + swaHeight, globalSelectY + globalSelectHeight) + mainGap : swaY + swaHeight + mainGap;
   const mergeHeight = 200;
   const headsY = mergeY + mergeHeight + mainGap;
-  const headsHeight = 424;
+  const headsHeight = 456;
   const concatY = headsY + headsHeight + mainGap;
   const concatHeight = 170;
   const add1Y = concatY + concatHeight + mainGap;
