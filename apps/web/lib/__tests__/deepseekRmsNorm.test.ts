@@ -4,6 +4,16 @@ import { describe, expect, it } from "vitest";
 import { applySavedLayout, buildGraph, RmsNormProcess } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
 
 describe("RMSNorm 的逐行结构与来源", () => {
+  it("横向紧凑排布仍保留平方、归约、缩放和输出矩阵", () => {
+    const root=document.createElement('div');
+    root.innerHTML=renderToStaticMarkup(createElement(RmsNormProcess,{input:'K',output:'Y',dimension:128,rowCount:'M',gamma:'g',label:'Indexer',horizontal:true}));
+    expect(root.querySelector('[data-rmsnorm-layout="horizontal"]')).not.toBeNull();
+    expect(root.querySelector('[data-rmsnorm-square]')).not.toBeNull();
+    expect(root.querySelector('[data-rmsnorm-reduction]')).not.toBeNull();
+    expect(root.querySelectorAll('[data-rmsnorm-product-arrows]')).toHaveLength(3);
+    expect(root.querySelector('[aria-label="Y"]')).not.toBeNull();
+    expect(root.querySelector('.katex-error')).toBeNull();
+  });
   it.each([128, 512, 1280, 5120])("展开 %s 维的平方、均值、广播除法和独立缩放参数", dimension => {
     const root = document.createElement("div");
     root.innerHTML = renderToStaticMarkup(createElement(RmsNormProcess, {

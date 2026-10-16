@@ -17,6 +17,21 @@ function addFrame(id: string, left: number, top: number, width: number, height: 
 afterEach(() => document.body.replaceChildren());
 
 describe("自动连线分配独立通道", () => {
+  it("起终点位于宽分组投影内时，经外侧多折通道绕开全部分组", () => {
+    const obstacles = [
+      {left:422,right:1178,top:72,bottom:328},
+      {left:272,right:1928,top:372,bottom:578},
+      {left:2072,right:3128,top:372,bottom:678},
+      {left:272,right:2328,top:672,bottom:928},
+      {left:272,right:1328,top:972,bottom:1528},
+    ];
+    const path=automaticOrthogonalPoints(1150,200,1050,1000,Position.Right,Position.Top,obstacles,[],[obstacles[0]],[obstacles[4]]);
+    for (let i=1;i<path.length;i++) for(const box of obstacles.slice(1,4)) {
+      const a=path[i-1],b=path[i];
+      const crosses=a.x===b.x ? a.x>box.left&&a.x<box.right&&Math.max(a.y,b.y)>box.top&&Math.min(a.y,b.y)<box.bottom : a.y>box.top&&a.y<box.bottom&&Math.max(a.x,b.x)>box.left&&Math.min(a.x,b.x)<box.right;
+      expect(crosses).toBe(false);
+    }
+  });
   it("内部小框出线先离开父框安全区，再转弯", () => {
     const parent = { left: -8, top: 477, right: 848, bottom: 1283 };
     const neighbor = { left: 892, top: 477, right: 1448, bottom: 973 };

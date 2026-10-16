@@ -390,8 +390,10 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
       .filter(value => value >= Math.min(start, end) - clearance && value <= Math.max(start, end) + clearance)
       .sort((a, b) => Math.abs(a - center) - Math.abs(b - center)).slice(0, 10)),
   )];
-  const nearX = nearChannels(verticalChannels, sourceX, targetX);
-  const nearY = nearChannels(horizontalChannels, sourceY, targetY);
+  // 宽分组可能包住起终点之间的所有通道；多折路线必须保留外侧绕行候选。
+  // 只在起终点坐标区间内组合，会迫使跨越 Engram 的残差权重线穿框。
+  const nearX = [...new Set([left, right, ...nearChannels(verticalChannels, sourceX, targetX)])];
+  const nearY = [...new Set([top, bottom, ...nearChannels(horizontalChannels, sourceY, targetY)])];
   for (const x of nearX) for (const y of nearY) candidates.push(
     [{ x: sourceX, y: sourceY }, { x: sourceX, y }, { x, y }, { x, y: targetY }, { x: targetX, y: targetY }],
     [{ x: sourceX, y: sourceY }, { x, y: sourceY }, { x, y }, { x: targetX, y }, { x: targetX, y: targetY }],

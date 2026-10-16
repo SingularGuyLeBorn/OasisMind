@@ -1,7 +1,7 @@
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { applySavedLayout, buildGraph, EngramInject, EngramLookup, hasEngram, MhcMix, MhcPost, MhcPre, RmsNormProcess } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
+import { applySavedLayout, buildGraph, EngramInject, EngramLookup, hasEngram, IndexScoreProcess, MhcMix, MhcPost, MhcPre, RmsNormProcess } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
 
 function render(element: ReactElement) {
   const root = document.createElement("div");
@@ -52,7 +52,9 @@ describe("mHC 与 Engram 的真实主路径", () => {
     const injected = render(createElement(EngramInject,{layer:15,phase:"decode"}));
     expect(injected.root.querySelectorAll('[data-rmsnorm-dimension="5120"]')).toHaveLength(2);
     expect(injected.root.querySelectorAll("[data-engram-copy]")).toHaveLength(4);
-    expect(injected.root.querySelectorAll('[data-engram-copy] [data-merge-arrows="2"]')).toHaveLength(4);
+    expect(injected.root.querySelectorAll('[data-engram-copy] [data-merge-arrows="2"]')).toHaveLength(8);
+    expect(injected.root.querySelectorAll('[data-engram-value-product] [data-feature-vector]')).toHaveLength(4);
+    expect((injected.root.querySelector('[data-four-stream-row]') as HTMLElement).style.gridTemplateColumns).toBe('repeat(4,minmax(0,1fr))');
     expect(injected.formulas).toContain("s_c=\\operatorname{copysign}(\\sqrt{a_c},d_c)");
     expect(injected.formulas).toContain("a_c=\\max(|d_c|,10^{-6})");
   });
@@ -84,10 +86,51 @@ describe("mHC 与 Engram 的真实主路径", () => {
     }
   });
 
+  it("q 与 C 分别进入回写数据框，四个目标路同排，C 的列对应目标路", () => {
+    const graph = buildGraph(15);
+    for (const sub of ["a", "f"]) {
+      expect(graph.edges.find(e => e.id === `mix-${sub}-post`)).toMatchObject({sourceHandle:"post",targetHandle:"post"});
+      expect(graph.edges.find(e => e.id === `mix-${sub}-comb`)).toMatchObject({sourceHandle:"comb",targetHandle:"comb"});
+    }
+    const {root}=render(createElement(MhcPost,{layer:15,sublayer:"A"}));
+    expect(root.querySelectorAll('[data-mhc-residual-product]')).toHaveLength(16);
+    expect(root.querySelectorAll('[data-mhc-post-product]')).toHaveLength(4);
+    for (const group of root.querySelectorAll<HTMLElement>('[data-four-stream-row]')) expect(group.style.gridTemplateColumns).toBe('repeat(4,minmax(0,1fr))');
+    for (let target=1;target<=4;target++) for(let source=1;source<=4;source++) {
+      const product=root.querySelector(`[data-mhc-residual-product="${target}-${source}"]`)!;
+      expect([...product.querySelectorAll('[aria-label]')].map(e=>e.getAttribute('aria-label'))).toContain(`c_{${source}${target}}`);
+    }
+    expect(root.querySelector('[data-mhc-q-input]')).not.toBeNull();
+    expect(root.querySelector('[data-mhc-comb-input]')).not.toBeNull();
+    const input = root.querySelector('[data-mhc-sublayer-input]')!;
+    expect(input.querySelector('[aria-label="O_{15}"]')).not.toBeNull();
+    expect(input.textContent).toContain('展开第 t 行');
+  });
+
+  it("Indexer 展示代表 Head 的两个操作数、独立权重与得分矩阵", () => {
+    const {root,formulas}=render(createElement(IndexScoreProcess,{layer:15,kvSource:15}));
+    expect([...root.querySelectorAll('[data-index-head]')].map(e=>e.getAttribute('data-index-head'))).toEqual(['1','2','32']);
+    expect(root.querySelectorAll('[data-index-head-weight]')).toHaveLength(3);
+    expect(formulas).toContain('\\sum_{h=1}^{32}');
+    expect(formulas).toContain('S_{15}');
+    expect(formulas).toContain('128\\times M');
+    expect(formulas).toContain('\\eta_{15,t,32}');
+  });
+
+  it("复用索引的层直接读行号，不把 K 缓存画成重新打分输入", () => {
+    const reused=buildGraph(16);
+    expect(reused.edges.some(e=>e.id==='compressor-indexer')).toBe(false);
+    expect(reused.edges.some(e=>e.id==='q-low-rank-indexer')).toBe(false);
+    expect(reused.edges.find(e=>e.id==='indexer-select')?.data?.labelTex).toContain('I_{15,t}');
+    expect(buildGraph(29).edges.some(e=>e.id==='compressor-indexer')).toBe(true);
+  });
+
   it("展开高度由测量推动后续主路径；旧普通残差边不再从保存布局回来", () => {
     const graph=buildGraph(15);
     const expanded=buildGraph(15,new Map([["engram-inject",2300],["hc-mix-a",1200]]));
-    expect(expanded.nodes.find(n=>n.id==="norm1")!.position.y-graph.nodes.find(n=>n.id==="norm1")!.position.y).toBe(600);
+    expect(expanded.nodes.find(n=>n.id==="norm1")!.position.y-graph.nodes.find(n=>n.id==="norm1")!.position.y).toBe(300);
+    const coefficientOnly=buildGraph(15,new Map([["hc-mix-a",2500]]));
+    expect(coefficientOnly.nodes.find(n=>n.id==="norm1")!.position.y).toBe(graph.nodes.find(n=>n.id==="norm1")!.position.y);
     const saved={version:8,nodes:graph.nodes.map(n=>({id:n.id,x:n.position.x,y:n.position.y})),edges:[...graph.edges,{id:"input-norm",source:"input",target:"norm1"},{id:"manual-test",source:"input",target:"norm1"}]};
     const restored=applySavedLayout(graph,saved);
     expect(restored.edges.some(e=>e.id==="input-norm")).toBe(false);

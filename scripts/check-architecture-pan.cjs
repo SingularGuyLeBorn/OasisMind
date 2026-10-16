@@ -20,8 +20,30 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
             for (let x = 50; x < innerWidth - 40; x += 35)
                 if (document.elementFromPoint(x, y)?.classList.contains('react-flow__pane'))
                     return { x, y }; });
-        const pan = async (dx, dy) => { const a = await anchor(); assert.ok(a, '真实空白画布起点'); await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(a.x + dx, a.y + dy, { steps: 3 }); await page.mouse.up(); await page.waitForTimeout(350); };
-        const focus = async (id) => { const r = await page.locator(`.react-flow__node[data-id="${id}"]`).boundingBox(); await pan(180 - r.x, 550 - r.y); };
+        const pan = async (dx, dy) => {
+            const a = await anchor(); assert.ok(a, '真实空白画布起点');
+            await page.mouse.move(a.x, a.y); await page.mouse.down();
+            await page.mouse.move(a.x + dx, a.y + dy, { steps: 3 }); await page.mouse.up();
+            await page.waitForTimeout(350);
+        };
+        // 定位时大框可能铺满视口：先用真实缩放按钮露出空白，平移后恢复原比例。
+        // 正式测量不改缩放比例，也不通过脚本直接修改画布变换。
+        const focus = async (id) => {
+            const zoom = () => page.evaluate(() => new DOMMatrix(getComputedStyle(document.querySelector('.react-flow__viewport')).transform).a);
+            const originalZoom = await zoom(); let steps = 0;
+            while (!(await anchor()) && steps < 12) {
+                await page.locator('.react-flow__controls-zoomout').click({ force: true });
+                await page.waitForTimeout(120); steps++;
+            }
+            const factor = originalZoom / await zoom();
+            const center = await page.locator('.react-flow').evaluate(e => { const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; });
+            const r = await page.locator(`.react-flow__node[data-id="${id}"]`).boundingBox();
+            await pan(center.x+(180-center.x)/factor-r.x, center.y+(550-center.y)/factor-r.y);
+            for(let i=0;i<steps;i++) await page.locator('.react-flow__controls-zoomin').click({force:true});
+            await page.waitForTimeout(500);
+            const focused=await page.locator(`.react-flow__node[data-id="${id}"]`).boundingBox();
+            assert.ok(Math.abs(focused.x-180)<5 && Math.abs(focused.y-550)<5, '目标区域在原缩放比例下进入视口');
+        };
         const results = [];
         async function measure(name) {
             const a = await anchor();
@@ -39,6 +61,7 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
             await page.waitForTimeout(100);
             const result = await page.evaluate(() => { document.removeEventListener('pointerdown', window.__record, true); document.removeEventListener('pointermove', window.__record, true); const values = window.__latencies.map(x => x.ms).sort((a, b) => a - b); return { latencies: window.__latencies, p95: values[Math.floor(values.length * .95)], max: values.at(-1), elements: document.querySelectorAll('*').length, suspended: document.querySelectorAll('[data-detail-suspended]').length, transform: document.querySelector('.react-flow__viewport').style.transform }; });
             results.push({ name, downMs, ...result });
+            fs.writeFileSync('work/architecture-pan-acceptance.json', JSON.stringify({ errors, results }, null, 2));
             console.log(JSON.stringify({ name, downMs, p95: result.p95, max: result.max, elements: result.elements }));
         }
         for (const layer of [1, 15]) {
