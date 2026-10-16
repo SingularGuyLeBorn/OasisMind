@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import katex from "katex";
 import { Position, type InternalNode, type Node } from "@xyflow/react";
-import { latexHtml, pathWithLabelGap, planArchitectureRoutes, routesForStore, type EditableEdge } from "../../../algo-viz/src/components/EditableArchitectureGraph";
+import { createOrthogonalRouteScorer, latexHtml, pathWithLabelGap, planArchitectureRoutes, routesForStore, type EditableEdge } from "../../../algo-viz/src/components/EditableArchitectureGraph";
 import { applySavedLayout, buildGraph, buildMeasuredGraph, captureDiagramLayout, isArchitectureDetailVisible, restoreMeasuredGeometry } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
 
 it("移出再移入屏幕不重复排版同一公式，行间与行内缓存分开", () => {
@@ -67,6 +67,44 @@ function fixture() {
 }
 
 describe("架构图增量路由", () => {
+  it("切回已访问的完整几何时复用原方案，标签内容不影响路线", () => {
+    const f = fixture();
+    const first = planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    f.internals.get("a")!.internals.positionAbsolute.x = 120;
+    const moved = planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    expect(moved).not.toBe(first);
+    f.internals.get("a")!.internals.positionAbsolute.x = 0;
+    expect(planArchitectureRoutes(f.owner, f.nodes, f.edges.map(e => ({ ...e, data: { labelTex: "新层变量" } })), f.getNode)).toBe(first);
+    f.internals.get("a")!.internals.positionAbsolute.x = 120;
+    expect(planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode)).toBe(moved);
+  });
+  it("回访几何时若新增障碍或修改人工线，不命中旧方案", () => {
+    const f = fixture();
+    const first = planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    f.internals.get("a")!.internals.positionAbsolute.x = 120;
+    planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    f.internals.get("a")!.internals.positionAbsolute.x = 0;
+    f.internals.get("c")!.internals.positionAbsolute = { x: 10, y: 180 };
+    expect(planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode)).not.toBe(first);
+    f.internals.get("c")!.internals.positionAbsolute = { x: 600, y: 0 };
+    const changed = f.edges.map(e => e.id === "ab" ? { ...e, data: { waypoints: [{ x: -80, y: 180 }] } } : e);
+    expect(planArchitectureRoutes(f.owner, f.nodes, changed, f.getNode)).not.toBe(first);
+  });
+  it("连续拖动超出历史上限时淘汰旧方案，最近访问的方案仍复用", () => {
+    const f = fixture();
+    const first = planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    let recent = first;
+    for (let x = 1; x <= 81; x++) {
+      f.internals.get("a")!.internals.positionAbsolute.x = x;
+      recent = planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    }
+    f.internals.get("a")!.internals.positionAbsolute.x = 80;
+    planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    f.internals.get("a")!.internals.positionAbsolute.x = 81;
+    expect(planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode)).toBe(recent);
+    f.internals.get("a")!.internals.positionAbsolute.x = 0;
+    expect(planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode)).not.toBe(first);
+  });
   it("内部具名端口连接小框本身，人工锚点仍连接外框", () => {
     const f=fixture();
     const a=f.internals.get('a')!, b=f.internals.get('b')!;
@@ -161,6 +199,63 @@ describe("架构图增量路由", () => {
     expect(next.size).toBe(1);
     expect(next.get("ab")!.at(-1)).toEqual({ x: 650, y: 400 });
     expect(next.has("cd")).toBe(false);
+  });
+});
+
+describe("候选折线的分段评分", () => {
+  it("多段折返、负坐标与小数坐标和逐项直接计算一致", () => {
+    const obstacles = Array.from({ length: 15 }, (_, i) => ({ left: i * 17.25 - 90, right: i * 17.25 - 70, top: i * 9.5 - 80, bottom: i * 9.5 - 60 }));
+    const reserved = Array.from({ length: 20 }, (_, i) => ({
+      start: { x: i * 8.25 - 90, y: i * 7.5 - 80 },
+      end: { x: i * 8.25 - 90 + (i % 2 ? 0 : 100), y: i * 7.5 - 80 + (i % 2 ? 100 : 0) },
+    }));
+    const score = createOrthogonalRouteScorer(obstacles, reserved);
+    for (let i = 0; i < 100; i++) {
+      const points = [{ x: -100 + i / 4, y: -80 }, { x: 150 - i / 2, y: -80 }, { x: 150 - i / 2, y: 120.25 }, { x: -25, y: 120.25 }, { x: -25, y: -10.5 }];
+      let expected = points.length * 8;
+      for (let j = 1; j < points.length; j++) {
+        const a = points[j - 1], b = points[j], horizontal = a.y === b.y;
+        const intersects = (r: typeof obstacles[number]) => horizontal
+          ? a.y > r.top && a.y < r.bottom && Math.max(a.x, b.x) > r.left && Math.min(a.x, b.x) < r.right
+          : a.x > r.left && a.x < r.right && Math.max(a.y, b.y) > r.top && Math.min(a.y, b.y) < r.bottom;
+        expected += Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        expected += obstacles.filter(intersects).length * 100_000_000;
+        for (const { start: c, end: d } of reserved) {
+          if (horizontal === (c.y === d.y)) {
+            const separation = Math.abs(horizontal ? a.y - c.y : a.x - c.x);
+            const overlap = horizontal
+              ? Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x))
+              : Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y));
+            if (overlap > 0 && separation < 16) expected += overlap * (16 - separation) * 100;
+          } else if (intersects({ left: Math.min(c.x, d.x) - .1, right: Math.max(c.x, d.x) + .1, top: Math.min(c.y, d.y) - .1, bottom: Math.max(c.y, d.y) + .1 })) expected += 800;
+        }
+      }
+      expect(score(points)).toBeCloseTo(expected, 5);
+      expect(score(points, expected - 1)).toBe(Infinity);
+      expect(score(points)).toBeCloseTo(expected, 5);
+    }
+  });
+  it("重复段复用完整代价，剪枝不把不完整结果写进缓存", () => {
+    let reads = 0;
+    const obstacle = { get left() { reads++; return 40; }, right: 60, top: -10, bottom: 10 };
+    const score = createOrthogonalRouteScorer([obstacle], []);
+    const path = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+    expect(score(path, 1)).toBe(Infinity);
+    const initialReads = reads;
+    expect(score(path)).toBe(100_000_116);
+    expect(score(path)).toBe(100_000_116);
+    expect(reads).toBe(initialReads);
+  });
+  it("保持相交、平行拥挤、长度和转折点数的评分权重", () => {
+    const reserved = [
+      { start: { x: 20, y: 4 }, end: { x: 80, y: 4 } },
+      { start: { x: 50, y: -20 }, end: { x: 50, y: 20 } },
+    ];
+    const path = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+    const score = createOrthogonalRouteScorer([], reserved);
+    expect(score(path)).toBe(60 * 12 * 100 + 800 + 100 + 16);
+    expect(score([...path].reverse())).toBe(score(path));
+    expect(createOrthogonalRouteScorer([], [])(path)).toBe(116);
   });
 });
 

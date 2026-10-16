@@ -313,36 +313,53 @@ export function sharedRouteLength(first: XYPosition[], second: XYPosition[]) {
   return total;
 }
 
-function routeScore(points: XYPosition[], obstacles: Obstacle[], reserved: ReservedSegment[], upperBound = Infinity) {
-  let crossings = 0;
-  let crowding = 0;
-  let length = 0;
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const start = points[index];
-    const end = points[index + 1];
-    length += Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
-    // 所有代价非负：一旦不可能优于已有路线，停止检查剩余障碍和线段；评分规则不变。
-    for (const obstacle of obstacles) {
-      if (segmentCrossesObstacle(start, end, obstacle)) crossings += 1;
-      if (crossings * 100_000_000 + crowding + length + points.length * 8 >= upperBound) return Infinity;
-    }
+// 一次路线搜索内，候选折线会反复使用同一段。障碍和预留线不变时，段代价也不变。
+// 缓存只属于本次搜索，下一条边新增预留线、移动框体或重连后都会重新建立。
+export function createOrthogonalRouteScorer(obstacles: Obstacle[], reserved: ReservedSegment[]) {
+  const segments = new Map<string, { crossings: number; crowding: number; length: number }>();
+  const prepared = reserved.map(segment => ({
+    horizontal: segment.start.y === segment.end.y,
+    x: segment.start.x, y: segment.start.y,
+    left: Math.min(segment.start.x, segment.end.x), right: Math.max(segment.start.x, segment.end.x),
+    top: Math.min(segment.start.y, segment.end.y), bottom: Math.max(segment.start.y, segment.end.y),
+  }));
+  const segmentScore = (start: XYPosition, end: XYPosition) => {
+    const key = `${start.x},${start.y}:${end.x},${end.y}`;
+    const cached = segments.get(key);
+    if (cached) return cached;
+    let crossings = 0, crowding = 0;
+    for (const obstacle of obstacles) if (segmentCrossesObstacle(start, end, obstacle)) crossings++;
     const horizontal = start.y === end.y;
-    for (const segment of reserved) {
-      const otherHorizontal = segment.start.y === segment.end.y;
-      if (horizontal === otherHorizontal) {
-        const separation = Math.abs(horizontal ? start.y - segment.start.y : start.x - segment.start.x);
-        const overlap = horizontal
-          ? Math.min(Math.max(start.x, end.x), Math.max(segment.start.x, segment.end.x)) - Math.max(Math.min(start.x, end.x), Math.min(segment.start.x, segment.end.x))
-          : Math.min(Math.max(start.y, end.y), Math.max(segment.start.y, segment.end.y)) - Math.max(Math.min(start.y, end.y), Math.min(segment.start.y, segment.end.y));
-        if (overlap > 0 && separation < EDGE_LANE_GAP) crowding += overlap * (EDGE_LANE_GAP - separation) * 100;
+    const low = horizontal ? Math.min(start.x, end.x) : Math.min(start.y, end.y);
+    const high = horizontal ? Math.max(start.x, end.x) : Math.max(start.y, end.y);
+    for (const segment of prepared) {
+      if (horizontal === segment.horizontal) {
+        const separation = Math.abs(horizontal ? start.y - segment.y : start.x - segment.x);
+        if (separation >= EDGE_LANE_GAP) continue;
+        const overlap = Math.min(high, horizontal ? segment.right : segment.bottom) - Math.max(low, horizontal ? segment.left : segment.top);
+        if (overlap > 0) crowding += overlap * (EDGE_LANE_GAP - separation) * 100;
       } else if (segmentCrossesObstacle(start, end, {
-        left: Math.min(segment.start.x, segment.end.x) - .1, right: Math.max(segment.start.x, segment.end.x) + .1,
-        top: Math.min(segment.start.y, segment.end.y) - .1, bottom: Math.max(segment.start.y, segment.end.y) + .1,
+        left: segment.left - .1, right: segment.right + .1, top: segment.top - .1, bottom: segment.bottom + .1,
       })) crowding += 800;
+    }
+    const result = { crossings, crowding, length: Math.abs(end.x - start.x) + Math.abs(end.y - start.y) };
+    segments.set(key, result);
+    return result;
+  };
+  return (points: XYPosition[], upperBound = Infinity) => {
+    let crossings = 0;
+    let crowding = 0;
+    let length = 0;
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const cost = segmentScore(points[index], points[index + 1]);
+      crossings += cost.crossings;
+      crowding += cost.crowding;
+      length += cost.length;
+      // 所有代价非负：一旦不可能优于已有路线，停止检查剩余线段；评分规则不变。
       if (crossings * 100_000_000 + crowding + length + points.length * 8 >= upperBound) return Infinity;
     }
-  }
-  return crossings * 100_000_000 + crowding + length + points.length * 8;
+    return crossings * 100_000_000 + crowding + length + points.length * 8;
+  };
 }
 
 function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: number, targetY: number, obstacles: Obstacle[], reserved: ReservedSegment[]) {
@@ -402,9 +419,10 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
   );
   let best = candidates[0];
   let bestScore = Infinity;
+  const scoreRoute = createOrthogonalRouteScorer(obstacles, reserved);
   for (const candidate of candidates) {
     const points = simplifyOrthogonalPoints(candidate);
-    const score = routeScore(points, obstacles, reserved, bestScore);
+    const score = scoreRoute(points, bestScore);
     if (score < bestScore) { best = points; bestScore = score; }
   }
   return best;
@@ -657,6 +675,9 @@ function moveSegment(
 type RouteFrame = { bounds: Obstacle; parentId?: string };
 type RoutePlan = { signature: string; routes: Map<string, XYPosition[]>; frames: Map<string, RouteFrame>; edgeKeys: Map<string, string> };
 const routingCache = new WeakMap<object, RoutePlan>();
+// [OM-FREEPLAY] 每张画布最多保留 80 份几何方案；切回原层可直接复用，连续拖动不会无限积累。
+const ROUTE_HISTORY_LIMIT = 80;
+const routingHistory = new WeakMap<object, Map<string, RoutePlan>>();
 // 同一次 React Flow 状态更新只规划一次；各边只订阅自己的点列，不订阅整张节点/边数组。
 const routingSnapshots = new WeakMap<object, Map<string, XYPosition[]>>();
 type RoutingInput = { nodes: Node[]; edges: EditableEdge[]; geometry: { node: InternalNode<Node>; x: number; y: number; width?: number; height?: number; handles: InternalNode<Node>["internals"]["handleBounds"] }[]; routes: Map<string, XYPosition[]> };
@@ -713,6 +734,14 @@ export function planArchitectureRoutes(owner: object, nodes: Node[], edges: Edit
   // 仅几何与端口影响路由；选中、拖标签、视口变化不能触发全图重算。内部端口变化也纳入失效键。
   const signature = JSON.stringify([[...frames], [...edgeKeys]]);
   if (cached?.signature === signature) return cached.routes;
+  const history = routingHistory.get(owner) ?? new Map<string, RoutePlan>();
+  const previousVisit = history.get(signature);
+  if (previousVisit) {
+    history.delete(signature);
+    history.set(signature, previousVisit);
+    routingCache.set(owner, previousVisit);
+    return previousVisit.routes;
+  }
   const inflate = (bounds: Obstacle, padding: number): Obstacle => ({ left: bounds.left - padding, top: bounds.top - padding, right: bounds.right + padding, bottom: bounds.bottom + padding });
   const changedFrames = [...frames].filter(([id, frame]) => JSON.stringify(frame) !== JSON.stringify(cached?.frames.get(id)));
   const topologyChanged = changedFrames.some(([id, frame]) => cached?.frames.has(id) && cached.frames.get(id)?.parentId !== frame.parentId);
@@ -756,7 +785,11 @@ export function planArchitectureRoutes(owner: object, nodes: Node[], edges: Edit
     });
     reserve(edge.id, automaticOrthogonalPoints(source.x, source.y, target.x, target.y, source.side, target.side, obstacles, reserved, sourceFrames, targetFrames));
   }
-  routingCache.set(owner, { signature, routes, frames, edgeKeys });
+  const plan = { signature, routes, frames, edgeKeys };
+  routingCache.set(owner, plan);
+  history.set(signature, plan);
+  if (history.size > ROUTE_HISTORY_LIMIT) history.delete(history.keys().next().value!);
+  routingHistory.set(owner, history);
   return routes;
 }
 function EditableOrthogonalEdgeView({
