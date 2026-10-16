@@ -1,4 +1,4 @@
-import React, { createContext, memo, useContext, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
+import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import katex from "katex";
 import {
   BaseEdge,
@@ -7,8 +7,7 @@ import {
   NodeResizeControl,
   Position,
   ResizeControlVariant,
-  useNodes,
-  useEdges,
+  useStore,
   useReactFlow,
   useStoreApi,
   type Edge,
@@ -241,12 +240,24 @@ export function EditableConnectionLine({ fromX, fromY, toX, toY }: ConnectionLin
   </g>;
 }
 
-function latexHtml(tex: string) {
-  return katex.renderToString(tex, {
-    displayMode: false,
+// [OM-FREEPLAY] 4096 条 LRU 覆盖当前层公式，限制跨层浏览的缓存增长。
+const formulaHtmlCache = new Map<string, string>();
+export function latexHtml(tex: string, display = false) {
+  const key = `${display ? "display" : "inline"}:${tex}`;
+  const cached = formulaHtmlCache.get(key);
+  if (cached !== undefined) {
+    formulaHtmlCache.delete(key);
+    formulaHtmlCache.set(key, cached);
+    return cached;
+  }
+  const html = katex.renderToString(tex, {
+    displayMode: display,
     throwOnError: false,
     strict: false,
   });
+  formulaHtmlCache.set(key, html);
+  if (formulaHtmlCache.size > 4096) formulaHtmlCache.delete(formulaHtmlCache.keys().next().value!);
+  return html;
 }
 
 type Obstacle = { left: number; top: number; right: number; bottom: number };
@@ -298,7 +309,7 @@ export function sharedRouteLength(first: XYPosition[], second: XYPosition[]) {
   return total;
 }
 
-function routeScore(points: XYPosition[], obstacles: Obstacle[], reserved: ReservedSegment[]) {
+function routeScore(points: XYPosition[], obstacles: Obstacle[], reserved: ReservedSegment[], upperBound = Infinity) {
   let crossings = 0;
   let crowding = 0;
   let length = 0;
@@ -306,7 +317,11 @@ function routeScore(points: XYPosition[], obstacles: Obstacle[], reserved: Reser
     const start = points[index];
     const end = points[index + 1];
     length += Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
-    crossings += obstacles.filter((obstacle) => segmentCrossesObstacle(start, end, obstacle)).length;
+    // 所有代价非负：一旦不可能优于已有路线，停止检查剩余障碍和线段；评分规则不变。
+    for (const obstacle of obstacles) {
+      if (segmentCrossesObstacle(start, end, obstacle)) crossings += 1;
+      if (crossings * 100_000_000 + crowding + length + points.length * 8 >= upperBound) return Infinity;
+    }
     const horizontal = start.y === end.y;
     for (const segment of reserved) {
       const otherHorizontal = segment.start.y === segment.end.y;
@@ -320,6 +335,7 @@ function routeScore(points: XYPosition[], obstacles: Obstacle[], reserved: Reser
         left: Math.min(segment.start.x, segment.end.x) - .1, right: Math.max(segment.start.x, segment.end.x) + .1,
         top: Math.min(segment.start.y, segment.end.y) - .1, bottom: Math.max(segment.start.y, segment.end.y) + .1,
       })) crowding += 800;
+      if (crossings * 100_000_000 + crowding + length + points.length * 8 >= upperBound) return Infinity;
     }
   }
   return crossings * 100_000_000 + crowding + length + points.length * 8;
@@ -378,15 +394,14 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
     [{ x: sourceX, y: sourceY }, { x: sourceX, y }, { x, y }, { x, y: targetY }, { x: targetX, y: targetY }],
     [{ x: sourceX, y: sourceY }, { x, y: sourceY }, { x, y }, { x: targetX, y }, { x: targetX, y: targetY }],
   );
-  return candidates
-    .map(simplifyOrthogonalPoints)
-    .map(points => ({ points, score: routeScore(points, obstacles, reserved) }))
-    .sort((a, b) => a.score - b.score)[0]?.points ?? [
-    { x: sourceX, y: sourceY },
-    { x: sourceX, y: middleY },
-    { x: targetX, y: middleY },
-    { x: targetX, y: targetY },
-  ];
+  let best = candidates[0];
+  let bestScore = Infinity;
+  for (const candidate of candidates) {
+    const points = simplifyOrthogonalPoints(candidate);
+    const score = routeScore(points, obstacles, reserved, bestScore);
+    if (score < bestScore) { best = points; bestScore = score; }
+  }
+  return best;
 }
 
 function pointsWithAnchoredEndpoints(
@@ -509,6 +524,26 @@ function pathFromPoints(points: XYPosition[]) {
   return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 }
 
+// 直接在标签矩形内断开描边，保留透明标签；不为跨越整张图的长边分配巨大 SVG mask。
+export function pathWithLabelGap(points: XYPosition[], gap?: Obstacle) {
+  if (!gap) return pathFromPoints(points);
+  const pieces: string[] = [];
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1], b = points[i];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    let enter = 0, leave = 1;
+    let intersects = true;
+    for (const [start, delta, low, high] of [[a.x, dx, gap.left, gap.right], [a.y, dy, gap.top, gap.bottom]]) {
+      if (!delta) { if (start < low || start > high) intersects = false; }
+      else { const first = (low - start) / delta, last = (high - start) / delta; enter = Math.max(enter, Math.min(first, last)); leave = Math.min(leave, Math.max(first, last)); }
+    }
+    const segment = (from: number, to: number) => pieces.push(`M ${a.x + dx * from} ${a.y + dy * from} L ${a.x + dx * to} ${a.y + dy * to}`);
+    if (!intersects || enter >= leave) segment(0, 1);
+    else { if (enter > 0) segment(0, enter); if (leave < 1) segment(leave, 1); }
+  }
+  return pieces.join(" ");
+}
+
 function longestSegmentCenter(points: XYPosition[]) {
   let best = { x: points[0].x, y: points[0].y, length: -1 };
   for (let index = 0; index < points.length - 1; index += 1) {
@@ -593,14 +628,20 @@ function moveSegment(
   return next.slice(1, -1);
 }
 
-const routingCache = new WeakMap<Node[], { signature: string; routes: Map<string, XYPosition[]> }>();
+type RouteFrame = { bounds: Obstacle; parentId?: string };
+type RoutePlan = { signature: string; routes: Map<string, XYPosition[]>; frames: Map<string, RouteFrame>; edgeKeys: Map<string, string> };
+const routingCache = new WeakMap<object, RoutePlan>();
+// 同一次 React Flow 状态更新只规划一次；各边只订阅自己的点列，不订阅整张节点/边数组。
+const routingSnapshots = new WeakMap<object, Map<string, XYPosition[]>>();
 
-function planArchitectureRoutes(nodes: Node[], edges: EditableEdge[], getInternalNode: (id: string) => InternalNode<Node> | undefined) {
-  const signature = JSON.stringify(edges.map(edge => [edge.id, edge.source, edge.target, edge.sourceHandle, edge.targetHandle, edge.data?.sourceAnchor, edge.data?.targetAnchor, edge.data?.waypoints]));
-  const cached = routingCache.get(nodes);
-  if (cached?.signature === signature) return cached.routes;
-  const routes = new Map<string, XYPosition[]>();
-  const reserved: ReservedSegment[] = [];
+export function planArchitectureRoutes(owner: object, nodes: Node[], edges: EditableEdge[], getInternalNode: (id: string) => InternalNode<Node> | undefined) {
+  const cached = routingCache.get(owner);
+  const frames = new Map<string, RouteFrame>();
+  for (const node of nodes) {
+    const internal = getInternalNode(node.id), position = internal?.internals.positionAbsolute;
+    const width = internal?.measured.width, height = internal?.measured.height;
+    if (position && width && height && !node.hidden) frames.set(node.id, { parentId: node.parentId, bounds: { left: position.x, top: position.y, right: position.x + width, bottom: position.y + height } });
+  }
   const endpoint = (edge: EditableEdge, kind: "source" | "target") => {
     const node = getInternalNode(edge[kind]);
     const position = node?.internals.positionAbsolute;
@@ -619,38 +660,56 @@ function planArchitectureRoutes(nodes: Node[], edges: EditableEdge[], getInterna
     const source = endpoint(edge, "source"), target = endpoint(edge, "target");
     return source && target ? [{ edge, source, target }] : [];
   }).sort((a, b) => Number(Boolean(b.edge.data?.waypoints?.length)) - Number(Boolean(a.edge.data?.waypoints?.length)) || a.source.y - b.source.y || a.source.x - b.source.x || a.edge.id.localeCompare(b.edge.id));
+  const edgeKeys = new Map(items.map(({ edge, source, target }) => [edge.id, JSON.stringify([edge.source, edge.target, source, target, edge.data?.waypoints])]));
+  // 仅几何与端口影响路由；选中、拖标签、视口变化不能触发全图重算。内部端口变化也纳入失效键。
+  const signature = JSON.stringify([[...frames], [...edgeKeys]]);
+  if (cached?.signature === signature) return cached.routes;
+  const inflate = (bounds: Obstacle, padding: number): Obstacle => ({ left: bounds.left - padding, top: bounds.top - padding, right: bounds.right + padding, bottom: bounds.bottom + padding });
+  const changedFrames = [...frames].filter(([id, frame]) => JSON.stringify(frame) !== JSON.stringify(cached?.frames.get(id)));
+  const topologyChanged = changedFrames.some(([id, frame]) => cached?.frames.has(id) && cached.frames.get(id)?.parentId !== frame.parentId);
+  const ancestors = (id: string) => {
+    const ids = new Set<string>();
+    let parent = frames.get(id)?.parentId;
+    while (parent && !ids.has(parent)) { ids.add(parent); parent = frames.get(parent)?.parentId; }
+    return ids;
+  };
+  const routes = new Map<string, XYPosition[]>();
+  const reserved: ReservedSegment[] = [];
+  const reserve = (id: string, points: XYPosition[]) => {
+    routes.set(id, points);
+    for (let i = 1; i < points.length; i++) reserved.push({ start: points[i - 1], end: points[i] });
+  };
+  // 固定人工线与仍然合法的自动线先占通道；移动一个框只使相连边和被新障碍挡住的边失效。
   for (const { edge, source, target } of items) {
-    const ancestors = (id: string) => {
-      const ids = new Set<string>();
-      let node = nodes.find(item => item.id === id);
-      while (node?.parentId) { ids.add(node.parentId); node = nodes.find(item => item.id === node?.parentId); }
-      return ids;
-    };
+    const previous = cached?.routes.get(edge.id);
+    const waypoints = edge.data?.waypoints;
+    if (waypoints?.length) {
+      reserve(edge.id, cached?.edgeKeys.get(edge.id) === edgeKeys.get(edge.id) && previous ? previous
+        : pointsWithDirectedTarget(pointsWithDirectedSource(pointsWithAnchoredEndpoints(source.x, source.y, target.x, target.y, waypoints), source.x, source.y, source.side), target.x, target.y, target.side));
+    } else if (previous && !topologyChanged && cached?.edgeKeys.get(edge.id) === edgeKeys.get(edge.id)) {
+      const parentIds = new Set([...ancestors(edge.source), ...ancestors(edge.target)]);
+      if (changedFrames.some(([id]) => parentIds.has(id))) continue;
+      const excluded = new Set([edge.source, edge.target, ...parentIds]);
+      const blocked = changedFrames.some(([id, frame]) => !excluded.has(id) && previous.slice(1).some((point, i) => segmentCrossesObstacle(previous[i], point, inflate(frame.bounds, EDGE_NODE_CLEARANCE))));
+      if (!blocked) reserve(edge.id, previous);
+    }
+  }
+  for (const { edge, source, target } of items) {
+    if (routes.has(edge.id)) continue;
     const sourceAncestors = ancestors(edge.source), targetAncestors = ancestors(edge.target);
     const sourceFrames: Obstacle[] = [], targetFrames: Obstacle[] = [];
-    const obstacles = nodes.flatMap(node => {
-      const internal = getInternalNode(node.id);
-      const position = internal?.internals.positionAbsolute;
-      const width = internal?.measured.width, height = internal?.measured.height;
-      if (!position || !width || !height || node.hidden) return [];
-      if (sourceAncestors.has(node.id) && targetAncestors.has(node.id)) return [];
-      const padding = node.id === edge.source || node.id === edge.target ? 8 : EDGE_NODE_CLEARANCE;
-      const bounds = { left: position.x - padding, top: position.y - padding, right: position.x + width + padding, bottom: position.y + height + padding };
-      if (sourceAncestors.has(node.id)) sourceFrames.push(bounds);
-      if (targetAncestors.has(node.id)) targetFrames.push(bounds);
+    const obstacles = [...frames].flatMap(([id, frame]) => {
+      if (sourceAncestors.has(id) && targetAncestors.has(id)) return [];
+      const bounds = inflate(frame.bounds, id === edge.source || id === edge.target ? 8 : EDGE_NODE_CLEARANCE);
+      if (sourceAncestors.has(id)) sourceFrames.push(bounds);
+      if (targetAncestors.has(id)) targetFrames.push(bounds);
       return [bounds];
     });
-    const waypoints = edge.data?.waypoints;
-    const points = waypoints?.length
-      ? pointsWithDirectedTarget(pointsWithDirectedSource(pointsWithAnchoredEndpoints(source.x, source.y, target.x, target.y, waypoints), source.x, source.y, source.side), target.x, target.y, target.side)
-      : automaticOrthogonalPoints(source.x, source.y, target.x, target.y, source.side, target.side, obstacles, reserved, sourceFrames, targetFrames);
-    routes.set(edge.id, points);
-    for (let index = 0; index < points.length - 1; index += 1) reserved.push({ start: points[index], end: points[index + 1] });
+    reserve(edge.id, automaticOrthogonalPoints(source.x, source.y, target.x, target.y, source.side, target.side, obstacles, reserved, sourceFrames, targetFrames));
   }
-  routingCache.set(nodes, { signature, routes });
+  routingCache.set(owner, { signature, routes, frames, edgeKeys });
   return routes;
 }
-
 function EditableOrthogonalEdgeView({
   id,
   sourceX: handleSourceX,
@@ -667,21 +726,28 @@ function EditableOrthogonalEdgeView({
   style,
 }: EdgeProps<EditableEdge>) {
   const { screenToFlowPosition, getZoom, setEdges, getInternalNode } = useReactFlow<Node, EditableEdge>();
-  const flowNodes = useNodes<Node>();
-  const flowEdges = useEdges<EditableEdge>();
+  const store = useStoreApi();
+  const route = useStore(state => {
+    let routes = routingSnapshots.get(state);
+    if (!routes) {
+      // 各 hook 的包装对象不同，getState 才是同一画布的共享身份。
+      routes = planArchitectureRoutes(store.getState, state.nodes, state.edges as EditableEdge[], id => state.nodeLookup.get(id));
+      routingSnapshots.set(state, routes);
+    }
+    return routes.get(id);
+  });
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
   const labelRef = useRef<HTMLDivElement>(null);
   const [labelSize, setLabelSize] = useState({ width: 0, height: 0 });
-  const labelMaskId = `edge-label-${useId().replace(/:/g, "")}`;
   useEffect(() => {
     const label = labelRef.current;
     if (!label) return;
-    const measure = () => setLabelSize(current => {
-      const width = label.offsetWidth, height = label.offsetHeight;
+    const observer = new ResizeObserver(entries => setLabelSize(current => {
+      const box = entries[0]?.borderBoxSize[0];
+      if (!box) return current;
+      const width = box.inlineSize, height = box.blockSize;
       return current.width === width && current.height === height ? current : { width, height };
-    });
-    measure();
-    const observer = new ResizeObserver(measure);
+    }));
     observer.observe(label);
     return () => observer.disconnect();
   }, [data?.labelTex]);
@@ -703,16 +769,13 @@ function EditableOrthogonalEdgeView({
   const { x: targetX, y: targetY } = anchorPoint(target, data?.targetAnchor, { x: handleTargetX, y: handleTargetY }, handleTargetPosition);
   const sourcePosition = data?.sourceAnchor?.side ?? handleSourcePosition;
   const targetPosition = data?.targetAnchor?.side ?? handleTargetPosition;
-  const routes = useMemo(() => planArchitectureRoutes(flowNodes, flowEdges, getInternalNode), [flowNodes, flowEdges, getInternalNode]);
-  const points = routes.get(id) ?? automaticOrthogonalPoints(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, []);
-  const path = pathFromPoints(points);
+  const points = route ?? automaticOrthogonalPoints(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, []);
   const labelCenter = data?.labelPosition === undefined ? longestSegmentCenter(points) : labelPointOnPath(points, data.labelPosition);
-  const maskBounds = {
-    x: Math.min(...points.map(point => point.x)) - labelSize.width,
-    y: Math.min(...points.map(point => point.y)) - labelSize.height,
-    width: Math.max(...points.map(point => point.x)) - Math.min(...points.map(point => point.x)) + labelSize.width * 2,
-    height: Math.max(...points.map(point => point.y)) - Math.min(...points.map(point => point.y)) + labelSize.height * 2,
-  };
+  const path = pathWithLabelGap(points, data?.labelTex && labelSize.width ? {
+    left: labelCenter.x - labelSize.width / 2, right: labelCenter.x + labelSize.width / 2,
+    top: labelCenter.y - labelSize.height / 2, bottom: labelCenter.y + labelSize.height / 2,
+  } : undefined);
+  const labelHtml = useMemo(() => data?.labelTex ? latexHtml(data.labelTex) : "", [data?.labelTex]);
   const color = data?.color ?? String(style?.stroke ?? "#37685a");
   useEffect(() => {
     if (!selected) return;
@@ -822,12 +885,6 @@ function EditableOrthogonalEdgeView({
   };
 
   return <>
-    {data?.labelTex && <defs>
-      <mask id={labelMaskId} maskUnits="userSpaceOnUse" {...maskBounds}>
-        <rect {...maskBounds} fill="white" />
-        <rect data-edge-label-gap={id} x={labelCenter.x - labelSize.width / 2} y={labelCenter.y - labelSize.height / 2} width={labelSize.width} height={labelSize.height} fill="black" />
-      </mask>
-    </defs>}
     <BaseEdge
       id={id}
       path={path}
@@ -836,7 +893,6 @@ function EditableOrthogonalEdgeView({
       style={{
         ...style,
         stroke: color,
-        mask: data?.labelTex && labelSize.width ? `url(#${labelMaskId})` : undefined,
         strokeWidth: selected ? 3.4 : Number(style?.strokeWidth ?? 2.2),
       }}
     />
@@ -876,7 +932,7 @@ function EditableOrthogonalEdgeView({
             cursor: "grab",
             userSelect: "none",
           }}
-          dangerouslySetInnerHTML={{ __html: latexHtml(data.labelTex) }}
+          dangerouslySetInnerHTML={{ __html: labelHtml }}
         />
       )}
       {selected && points.slice(0, -1).map((point, index) => {

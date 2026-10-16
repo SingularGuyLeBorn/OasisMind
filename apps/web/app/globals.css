@@ -153,7 +153,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@plugin "@tailwindcss/typography";
+@plugin "../typography.mjs";
 
 :root {
   /*
@@ -1055,7 +1055,8 @@ html.dark .om-card,
 }
 
 /* 行内代码：轻量自然高亮，消除突兀笨重的黑灰圆角矩形边框 */
-.prose :where(code):not(:where([class~="not-prose"] *, pre *)),
+/* 精确类选择器让拖动画布的 class 切换不会使整棵公式子树样式失效。 */
+.prose :where(code):not(:where(.not-prose *, pre *)),
 code.om-inline-code {
   display: inline;
   padding: 0.15em 0.35em !important;
@@ -1070,8 +1071,8 @@ code.om-inline-code {
   box-shadow: none !important;
 }
 
-.prose :where(code):not(:where([class~="not-prose"] *, pre *))::before,
-.prose :where(code):not(:where([class~="not-prose"] *, pre *))::after,
+.prose :where(code):not(:where(.not-prose *, pre *))::before,
+.prose :where(code):not(:where(.not-prose *, pre *))::after,
 code.om-inline-code::before,
 code.om-inline-code::after {
   content: "" !important;
@@ -1086,7 +1087,7 @@ code.om-inline-code::after {
   color: var(--om-text-1);
   text-decoration-color: var(--om-text-2);
 }
-.prose.om-tool-result-md :where(code):not(:where([class~="not-prose"] *, pre *)),
+.prose.om-tool-result-md :where(code):not(:where(.not-prose *, pre *)),
 .prose.om-tool-result-md code.om-inline-code {
   color: var(--om-text-1) !important;
   background: color-mix(in srgb, var(--om-text-1) 5%, var(--om-bg-alt)) !important;

@@ -1,5 +1,4 @@
 import React, { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import katex from "katex";
 import {
   Background,
   ConnectionMode,
@@ -10,11 +9,14 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
+  useReactFlow,
+  useStore,
   type Connection,
   type Node,
   type NodeProps,
 } from "@xyflow/react";
 import {
+  latexHtml,
   EditableOrthogonalEdge,
   EditableConnectionLine,
   ConnectionGestureControl,
@@ -186,7 +188,7 @@ const HC_COPIES = [1, 2, 3, 4] as const;
 
 function MathFormula({ tex, display = false }: { tex: string; display?: boolean }) {
   const html = useMemo(
-    () => katex.renderToString(tex, { displayMode: display, throwOnError: false, strict: false }),
+    () => latexHtml(tex, display),
     [display, tex],
   );
   // [OM-FREEPLAY] 小字号下限取 10.5px，放大矩阵元素而不缩小已有的大公式。
@@ -652,28 +654,31 @@ function MatrixBracket({ layer, rows, compact = false }: { layer: number; rows: 
 function SwaSelectionConnector({ layer }: { layer: number }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [path, setPath] = useState("");
+  // 结果框是同一父节点下的子节点，直接订阅其局部几何；不依赖屏幕外详情 DOM。
+  const targetGeometry = useStore(state => {
+    const node = state.nodeLookup.get("swa-result");
+    return node ? `${node.position.x},${node.position.y},${node.measured.width ?? node.width ?? 0}` : "";
+  });
   useEffect(() => {
     const svg = svgRef.current;
     const frame = svg?.closest('.react-flow__node');
     const source = frame?.querySelector('[data-selection-window]');
-    const target = frame?.closest('.react-flow')?.querySelector('[data-swa-result]');
-    if (!svg || !source || !target) return;
+    if (!svg || !source || !targetGeometry) return;
+    const [targetX, targetY, targetWidth] = targetGeometry.split(",").map(Number);
     const measure = () => {
-      const root = svg.getBoundingClientRect(), from = source.getBoundingClientRect(), to = target.getBoundingClientRect();
+      const root = svg.getBoundingClientRect(), from = source.getBoundingClientRect();
       if (!root.width || !root.height) return;
       const sx = svg.clientWidth / root.width, sy = svg.clientHeight / root.height;
       const x1 = (from.right - root.left) * sx, y1 = (from.top + from.height / 2 - root.top) * sy;
-      const x2 = (to.left + to.width / 2 - root.left) * sx, y2 = (to.top - root.top) * sy;
+      const x2 = targetX + targetWidth / 2, y2 = targetY;
       const channelX = Math.max(x1 + 24, x2 + 24), channelY = y2 - 18;
       setPath(`M ${x1} ${y1} H ${channelX} V ${channelY} H ${x2} V ${y2}`);
     };
-    measure();
+    // 在浏览器完成布局后的尺寸通知中读几何；挂载阶段同步读取会让整图反复强制排版。
     const resize = new ResizeObserver(measure);
-    [svg, source, target].forEach(element => resize.observe(element));
-    const move = new MutationObserver(measure);
-    for (const node of [frame, target.closest('.react-flow__node')]) if (node) move.observe(node, { attributes: true, attributeFilter: ["style"] });
-    return () => { resize.disconnect(); move.disconnect(); };
-  }, [layer]);
+    [svg, source].forEach(element => resize.observe(element));
+    return () => resize.disconnect();
+  }, [layer, targetGeometry]);
   return <svg ref={svgRef} data-swa-selection-connector aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
     <defs><marker id={`swa-pick-${layer}`} viewBox="0 -5 10 10" refX="9" refY="0" markerWidth="8" markerHeight="8" orient="auto"><path d="M 1 -4 L 9 0 L 1 4" fill="none" stroke={COLORS.amber} strokeWidth="1.5" /></marker></defs>
     <path d={path} fill="none" stroke={COLORS.amber} strokeWidth="1.5" markerEnd={`url(#swa-pick-${layer})`} />
@@ -1260,7 +1265,65 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   return <div style={panel}>{both}<Title><MathFormula tex={`H_{${layer}}^{\\mathrm{out}}`} /></Title></div>;
 }
 
-function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
+const MemoDiagramNodeContent = memo(DiagramNodeContent);
+
+type MeasuredDiagramGeometry = { width: number; height: number; handles: NonNullable<DiagramNode["handles"]> };
+type DiagramGeometryCache = Map<string, MeasuredDiagramGeometry>;
+const GeometryCacheContext = createContext<DiagramGeometryCache | null>(null);
+const geometryKey = (data: DiagramData, width: number, height: CSSProperties["height"]) => JSON.stringify([data, width, height]);
+
+export function restoreMeasuredGeometry(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }, cache: DiagramGeometryCache) {
+  let complete = true;
+  const nodes = graph.nodes.map(node => {
+    const cached = cache.get(geometryKey(node.data, Number(node.style?.width), node.style?.height ?? node.style?.minHeight));
+    // 精确匹配内容和宽度；人工改高度、字体换行或未知内容继续走完整实测。
+    const requestedHeight = storedDimension(node.style?.height) ?? storedDimension(node.style?.minHeight);
+    if (!cached || (requestedHeight && (CONTENT_SIZED_KINDS.has(node.data.kind) ? requestedHeight > cached.height : requestedHeight !== cached.height))) { complete = false; return node; }
+    return { ...node, measured: { width: cached.width, height: cached.height }, handles: cached.handles };
+  });
+  // 初次适配视口必须基于完整图，不能只把缓存命中的局部节点当成全部边界。
+  return complete ? { ...graph, nodes } : graph;
+}
+
+// [OM-FREEPLAY] 屏幕外预留 240px 提前恢复详情；只卸载已实测内容，节点、端口和编辑数据保留。
+const DETAIL_OVERSCAN = 240;
+type CanvasClip = { left: number; top: number; right: number; bottom: number };
+const CanvasClipContext = createContext<CanvasClip | undefined>(undefined);
+export function isArchitectureDetailVisible(rect: { x: number; y: number; width: number; height: number }, viewport: { x: number; y: number; zoom: number; width: number; height: number; clip?: CanvasClip }) {
+  const clip = viewport.clip ?? { left: 0, top: 0, right: viewport.width, bottom: viewport.height };
+  return rect.x * viewport.zoom + viewport.x <= clip.right + DETAIL_OVERSCAN
+    && (rect.x + rect.width) * viewport.zoom + viewport.x >= clip.left - DETAIL_OVERSCAN
+    && rect.y * viewport.zoom + viewport.y <= clip.bottom + DETAIL_OVERSCAN
+    && (rect.y + rect.height) * viewport.zoom + viewport.y >= clip.top - DETAIL_OVERSCAN;
+}
+
+function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
+  const clip = useContext(CanvasClipContext);
+  const geometryCache = useContext(GeometryCacheContext);
+  const { getInternalNode } = useReactFlow<DiagramNode>();
+  const handleBounds = useStore(state => state.nodeLookup.get(id)?.internals.handleBounds);
+  const showDetails = useStore(state => {
+    const node = state.nodeLookup.get(id);
+    // 首次必须完整测量，不用猜测高度替代真实布局；选择中的节点也保持交互内容。
+    if (selected || !node?.measured.width || !node.measured.height || !node.internals.handleBounds) return true;
+    if (!state.width || !state.height) return false;
+    return isArchitectureDetailVisible({ ...node.internals.positionAbsolute, width: node.measured.width, height: node.measured.height }, { x: state.transform[0], y: state.transform[1], zoom: state.transform[2], width: state.width, height: state.height, clip });
+  });
+  const internal = getInternalNode(id);
+  const measuredWidth = internal?.measured.width, measuredHeight = internal?.measured.height;
+  const declaredWidth = storedDimension(internal?.width) ?? storedDimension(internal?.style?.width) ?? measuredWidth;
+  const declaredHeight = internal?.height ?? internal?.style?.height ?? internal?.style?.minHeight;
+  useEffect(() => {
+    if (!geometryCache || !declaredWidth || !measuredWidth || !measuredHeight || !handleBounds) return;
+    const key = geometryKey(data, declaredWidth, declaredHeight);
+    geometryCache.delete(key);
+    geometryCache.set(key, { width: measuredWidth, height: measuredHeight, handles: [...(handleBounds.source ?? []), ...(handleBounds.target ?? [])].map(port => ({ ...port })) });
+    // [OM-FREEPLAY] 最多保留 512 份实测几何，避免浏览多层或反复拉宽时缓存无限增长。
+    if (geometryCache.size > 512) geometryCache.delete(geometryCache.keys().next().value!);
+  }, [data, declaredWidth, declaredHeight, geometryCache, handleBounds, measuredWidth, measuredHeight]);
+  if (!showDetails && internal?.measured.height) return <div data-boundary-connectable={data.kind !== "structure-operator"} data-detail-suspended style={{ width: "100%", height: internal.measured.height, position: "relative" }}>
+    {(["source", "target"] as const).flatMap(type => (internal.internals.handleBounds?.[type] ?? []).map(port => <Handle key={`${type}-${port.id}`} id={port.id ?? undefined} type={type} position={port.position} style={{ ...handle, left: port.x + port.width / 2, top: port.y + port.height / 2, right: "auto", bottom: "auto", transform: "translate(-50%,-50%)" }} />))}
+  </div>;
   const compact = data.kind === "moe-sum" || data.kind === "expert-scale";
   const portColor = data.tone === "amber" ? COLORS.amber : data.tone === "blue" ? COLORS.blue : COLORS.green;
   // [OM-FREEPLAY] 求和器保留 320px 最小宽度，让四个入口之间有独立走线净空。
@@ -1277,7 +1340,7 @@ function DiagramNodeView({ data, selected }: NodeProps<DiagramNode>) {
   return <div data-boundary-connectable={data.kind !== "structure-operator"} data-frame-selected={Boolean(selected)} style={{ width: "100%", height: CONTENT_SIZED_KINDS.has(data.kind) ? "auto" : "100%", ...(CONTENT_SIZED_KINDS.has(data.kind) ? { minHeight: "100%", display: "grid", gridTemplateColumns: "minmax(0,1fr)" } : {}), position: "relative", borderRadius: compact ? "50%" : 12 }}>
     <EightResizeHandles minWidth={minimumWidth} minHeight={minimumHeight} />
     <EightConnectionPorts color={portColor} />
-    <ExecutionContext.Provider value={data.phase ?? "prefill"}><DiagramNodeContent data={data} /></ExecutionContext.Provider>
+    <ExecutionContext.Provider value={data.phase ?? "prefill"}><MemoDiagramNodeContent data={data} /></ExecutionContext.Provider>
   </div>;
 }
 
@@ -1634,6 +1697,18 @@ function storedDimension(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+export function captureDiagramLayout(nodes: DiagramNode[], edges: EditableEdge[]): SavedDiagramLayout {
+  return {
+    nodes: nodes.map(item => ({
+      id: item.id, x: item.position.x, y: item.position.y,
+      // React Flow 缩放写入节点 width/height；style 中可能仍是初始尺寸，不能覆盖编辑结果。
+      width: storedDimension(item.width) ?? storedDimension(item.measured?.width) ?? storedDimension(item.style?.width),
+      height: storedDimension(item.height) ?? storedDimension(item.measured?.height) ?? storedDimension(item.style?.height),
+    })),
+    edges: edges.map(item => ({ id: item.id, source: item.source, target: item.target, sourceHandle: item.sourceHandle, targetHandle: item.targetHandle, data: item.data })),
+  };
+}
+
 export function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }, saved: SavedDiagramLayout) {
   const nodeLayouts = new Map(saved.nodes.map((item) => [item.id, item]));
   // 插入子阶段时，其父组也参与重新排布，避免旧的组高盖住新增结构。
@@ -1682,7 +1757,12 @@ export function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableE
 }
 
 function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase }) {
-  const initialGraph = useMemo(() => buildGraph(layer, new Map(), phase), [layer, phase]);
+  const geometryCache = useContext(GeometryCacheContext)!;
+  const initialGraph = useMemo(() => {
+    const measured = restoreMeasuredGeometry(buildGraph(layer, new Map(), phase), geometryCache);
+    const heights = new Map(measured.nodes.filter(node => node.measured?.height).map(node => [node.id, node.measured!.height!]));
+    return restoreMeasuredGeometry(buildGraph(layer, heights, phase), geometryCache);
+  }, [layer, phase, geometryCache]);
   const measuredLayoutRef = useRef(initialGraph);
   const [nodes, setNodes, onNodesChange] = useNodesState<DiagramNode>(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<EditableEdge>(initialGraph.edges);
@@ -1691,6 +1771,30 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
   const [historyRevision, setHistoryRevision] = useState(0);
   const [clickConnectionPreview, setClickConnectionPreview] = useState<{ fromX: number; fromY: number; toX: number; toY: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [canvasClip, setCanvasClip] = useState<CanvasClip>();
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      // 文章内的画布可能比屏幕高，并可能被播放器缩放；使用真实屏幕交集。
+      const sx = canvas.clientWidth / rect.width, sy = canvas.clientHeight / rect.height;
+      const next = { left: Math.max(0, -rect.left) * sx, top: Math.max(0, -rect.top) * sy,
+        right: Math.min(rect.width, window.innerWidth - rect.left) * sx,
+        bottom: Math.min(rect.height, window.innerHeight - rect.top) * sy };
+      setCanvasClip(old => old && old.left === next.left && old.top === next.top && old.right === next.right && old.bottom === next.bottom ? old : next);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(canvas);
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule);
+    schedule();
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener("scroll", schedule, true); window.removeEventListener("resize", schedule); };
+  }, []);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const pastRef = useRef<DiagramSnapshot[]>([]);
@@ -1760,7 +1864,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
         // 保存时的实测高度也是布局基线，避免水合后再次累加同一高度差。
         const sizedGraph = buildGraph(layer, new Map(saved.nodes.filter(item => item.height).map(item => [item.id, item.height!])), phase);
         measuredLayoutRef.current = sizedGraph;
-        graph = applySavedLayout(sizedGraph, saved);
+        graph = restoreMeasuredGeometry(applySavedLayout(sizedGraph, saved), geometryCache);
       }
     } catch {
       window.localStorage.removeItem(storageKey);
@@ -1773,11 +1877,13 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
     futureRef.current = [];
     pendingHistoryRef.current = null;
     setHistoryRevision((value) => value + 1);
-  }, [initialGraph, storageKey]);
+  }, [initialGraph, storageKey, geometryCache]);
 
   // 内容尺寸由 React Flow 的 ResizeObserver 测量；下游位置由同一布局函数推导。
   // 只移动自动布局基线的差值，保留用户拖动产生的偏移，不清除已保存的布局。
+  const measuredHeightKey = nodes.filter(item => CONTENT_SIZED_KINDS.has(item.data.kind)).map(item => `${item.id}:${item.measured?.height ?? 0}`).join("|");
   useEffect(() => {
+    const nodes = nodesRef.current;
     if (nodes.some(item => item.id !== "first-input" && item.data.layer !== layer)) return;
     const heights = new Map(nodes.filter(item => CONTENT_SIZED_KINDS.has(item.data.kind) && item.measured?.height).map(item => [item.id, item.measured!.height!]));
     if (!heights.size) return;
@@ -1806,7 +1912,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
     setEdges(current => current.map(item => item.data?.waypoints && JSON.stringify(item.data.waypoints) === JSON.stringify(oldEdges.get(item.id)?.data?.waypoints)
       ? { ...item, data: { ...item.data, waypoints: newEdges.get(item.id)?.data?.waypoints } }
       : item));
-  }, [layer, phase, nodes, setEdges, setNodes]);
+  }, [layer, phase, measuredHeightKey, setEdges, setNodes]);
 
   const onConnect = useCallback((connection: Connection, targetAnchor?: BoundaryAnchor) => {
     beginHistory();
@@ -1838,23 +1944,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
   }, [onConnect]);
 
   const saveLayout = useCallback(() => {
-    const payload: SavedDiagramLayout = {
-      nodes: nodes.map((item) => ({
-        id: item.id,
-        x: item.position.x,
-        y: item.position.y,
-        width: storedDimension(item.style?.width) ?? storedDimension(item.measured?.width),
-        height: storedDimension(item.style?.height) ?? storedDimension(item.measured?.height),
-      })),
-      edges: edges.map((item) => ({
-        id: item.id,
-        source: item.source,
-        target: item.target,
-        sourceHandle: item.sourceHandle,
-        targetHandle: item.targetHandle,
-        data: item.data,
-      })),
-    };
+    const payload = captureDiagramLayout(nodes, edges);
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(payload));
       setSaveState("saved");
@@ -1944,7 +2034,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
 
   const canUndo = historyRevision >= 0 && pastRef.current.length > 0;
   const canRedo = historyRevision >= 0 && futureRef.current.length > 0;
-  const historyContext = { beginHistory, commitHistory };
+  const historyContext = useMemo(() => ({ beginHistory, commitHistory }), [beginHistory, commitHistory]);
 
   const pointerInCanvas = useCallback((clientX: number, clientY: number) => {
     const bounds = canvasRef.current?.getBoundingClientRect();
@@ -2003,6 +2093,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
       <span style={{ color: COLORS.muted, fontSize: 10.5 }}>选中节点拖缩放点 · 边界悬停 0.5 秒显示 + · 端点自动吸附 · Ctrl+Z / Ctrl+Y</span>
     </div>
     <EditHistoryProvider value={historyContext}>
+    <CanvasClipContext.Provider value={canvasClip}>
     <ReactFlow
       className="architecture-flow"
       nodes={nodes}
@@ -2063,6 +2154,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
       <Background color="#d7d2c7" gap={28} size={1} />
       <Controls showInteractive={false} position="top-left" />
     </ReactFlow>
+    </CanvasClipContext.Provider>
     </EditHistoryProvider>
     {clickConnectionPreview && <svg aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 7, pointerEvents: "none", overflow: "visible" }}>
       <defs>
@@ -2076,6 +2168,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
 }
 
 export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
+  const geometryCache = useMemo<DiagramGeometryCache>(() => new Map(), []);
   const [layer, setLayer] = useState(() => Math.min(40, Math.max(1, Math.round(initialLayer))));
   const [phase, setPhase] = useState<ExecutionPhase>("prefill");
   const mode = modeForLayer(layer);
@@ -2085,6 +2178,6 @@ export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>{(["prefill", "decode"] as const).map(value => <button key={value} type="button" aria-pressed={phase === value} onClick={() => setPhase(value)} style={{ ...editorButton, background: phase === value ? COLORS.green : COLORS.card, color: phase === value ? "white" : COLORS.ink }}>{value === "prefill" ? "Prefill · 整段矩阵" : "Decode · 单步一行"}</button>)}<span style={{ fontSize: 12, color: COLORS.muted }}>{phase === "prefill" ? "N 行并行 · t 是其中一个序列位置" : "当前 1 行 · t=P+k · 历史 KV 来自缓存"}</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(20,1fr)", gap: 4 }}>{Array.from({ length: 40 }, (_, i) => i + 1).map((value) => { const valueMode = modeForLayer(value); const active = value === layer; const color = valueMode === "full" ? COLORS.green : valueMode === "reindex" ? COLORS.amber : valueMode === "reuse" ? COLORS.blue : COLORS.rose; return <button key={value} type="button" onClick={() => setLayer(value)} title={`Layer ${value} · mHC${hasEngram(value) ? " · Engram 查表与注入" : ""}`} aria-pressed={active} style={{ border: `1px solid ${active ? color : COLORS.line}`, background: active ? color : COLORS.card, color: active ? "white" : color, borderRadius: 5, padding: "4px 0", fontWeight: 750, fontSize: 10.5, cursor: "pointer" }}>{value}</button>; })}</div>
     </div>
-    <div style={{ position: "absolute", inset: "174px 0 0" }}><DiagramCanvas key={`${phase}-${layer}`} layer={layer} phase={phase} /></div>
+    <div style={{ position: "absolute", inset: "174px 0 0" }}><GeometryCacheContext.Provider value={geometryCache}><DiagramCanvas key={`${phase}-${layer}`} layer={layer} phase={phase} /></GeometryCacheContext.Provider></div>
   </div>;
 };
