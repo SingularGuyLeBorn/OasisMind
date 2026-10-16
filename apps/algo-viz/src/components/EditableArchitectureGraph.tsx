@@ -129,7 +129,8 @@ const resizeHandleStyle: CSSProperties = {
   background: "#37685a",
 };
 
-export function EightResizeHandles({
+// 控件不依赖层号；复用未变的边界配置，内部 React Flow 订阅仍响应拖动与缩放。
+export const EightResizeHandles = memo(function EightResizeHandles({
   minWidth,
   minHeight,
 }: {
@@ -160,7 +161,7 @@ export function EightResizeHandles({
       />
     ))}
   </>;
-}
+});
 
 function DelayedConnectionPort({ id, position, style, color }: { id: string; position: Position; style: CSSProperties; color: string }) {
   const [ready, setReady] = useState(false);
@@ -215,7 +216,7 @@ function DelayedConnectionPort({ id, position, style, color }: { id: string; pos
   </Handle>;
 }
 
-export function EightConnectionPorts({ color = "#37685a" }: { color?: string }) {
+export const EightConnectionPorts = memo(function EightConnectionPorts({ color = "#37685a" }: { color?: string }) {
   return <>
     {PORTS.map((port) => (
       <DelayedConnectionPort
@@ -227,7 +228,7 @@ export function EightConnectionPorts({ color = "#37685a" }: { color?: string }) 
       />
     ))}
   </>;
-}
+});
 
 export function EditableConnectionLine({ fromX, fromY, toX, toY }: ConnectionLineComponentProps) {
   return <g>

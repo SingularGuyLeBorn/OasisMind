@@ -1,9 +1,11 @@
 // 原文章切层回归；不重启服务，不改用户布局，不把按钮变色当作内容完成。
-// node scripts/check-architecture-switch.cjs [--assert-30ms] [--profile]
+// node scripts/check-architecture-switch.cjs [--assert-30ms] [--profile] [--base-url=http://localhost:3000]
 const { chromium } = require('../apps/web/node_modules/@playwright/test');
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
-const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓存/1.1-CSA2与逐层数据流/1.1.1-矩阵视角的一层数据流') + '?garden=DeepSeekV41Flash';
+const baseUrl = new URL(process.argv.find(arg => arg.startsWith('--base-url='))?.slice('--base-url='.length) ?? 'http://localhost:3000');
+const url = baseUrl.origin + '/posts/' + encodeURIComponent('1-架构与缓存/1.1-CSA2与逐层数据流/1.1.1-矩阵视角的一层数据流') + '?garden=DeepSeekV41Flash';
+const artifactSuffix = baseUrl.port === '3000' ? '' : `-${baseUrl.port || 'default'}`;
 
 (async () => {
     const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -74,7 +76,7 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
                 const after = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m => [m.name, m.value]));
                 result.cost = Object.fromEntries(['TaskDuration', 'ScriptDuration', 'LayoutDuration', 'RecalcStyleDuration'].map(name => [name, 1000 * (after[name] - before[name])]));
                 fs.mkdirSync('work', { recursive: true });
-                fs.writeFileSync(`work/architecture-switch-${results.length}-${layer}.cpuprofile`, JSON.stringify(cpuProfile));
+                fs.writeFileSync(`work/architecture-switch${artifactSuffix}-${results.length}-${layer}.cpuprofile`, JSON.stringify(cpuProfile));
             }
             results.push(result);
             console.log(JSON.stringify(result));
@@ -83,8 +85,8 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
             assert.equal(result.staleFormulas, 0, '换层后的可访问标签与公式源码应一致');
         }
         fs.mkdirSync('work', { recursive: true });
-        fs.writeFileSync('work/architecture-switch-acceptance.json', JSON.stringify({ errors, results }, null, 2));
-        await page.screenshot({ path: 'work/architecture-switch-acceptance.png' });
+        fs.writeFileSync(`work/architecture-switch-acceptance${artifactSuffix}.json`, JSON.stringify({ url, errors, results }, null, 2));
+        await page.screenshot({ path: `work/architecture-switch-acceptance${artifactSuffix}.png` });
         assert.deepEqual(errors, []);
         if (process.argv.includes('--assert-30ms')) {
             assert.ok(results.every(result => result.contentFrameMs < 30), '切层内容显示尚未达到 30ms');
