@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, PenLine, FileText } from "lucide-react";
@@ -8,9 +8,7 @@ import { keepPreviousData } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc";
 import { PostContent } from "@/components/post/PostContent";
 import {
-  buildTocItems,
   TableOfContents,
-  usePostTocVisible,
 } from "@/components/post/TableOfContents";
 import { ContinueReadingCard } from "@/components/post/ContinueReading";
 import { HomeAmbientBackground } from "@/components/home/HomeAmbientBackground";
@@ -26,7 +24,6 @@ export default function GardenHomePage() {
   const params = useParams();
   const id = decodeURIComponent(params.id as string);
   const articleRef = useRef<HTMLElement>(null);
-  const tocVisible = usePostTocVisible();
   const hydrated = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -45,16 +42,13 @@ export default function GardenHomePage() {
     order: "desc",
   });
   const homeContent = garden?.homeContent ?? "";
-  const hasToc = useMemo(() => buildTocItems(homeContent).length > 0, [homeContent]);
-  const showToc = hydrated && hasToc && tocVisible;
 
   return (
     <div className="om-force-light om-home-surface relative w-full overflow-x-hidden">
       <HomeAmbientBackground density="lite" />
       <div
         className={cn(
-          "relative w-full px-6 py-8 pb-16 lg:px-10 lg:py-12",
-          showToc && "xl:pr-[20rem] 2xl:pr-[22rem]",
+          "om-reading-layout relative w-full px-6 py-8 pb-16 lg:px-10 lg:py-12",
         )}
       >
         <div className="mx-auto w-full max-w-6xl">

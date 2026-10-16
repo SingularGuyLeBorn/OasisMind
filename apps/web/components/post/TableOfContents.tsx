@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ReadingOutlineLink } from "@oasismind/markdown/ReadingOutlineLink";
+import { useRailIntent } from "@/components/layout/useRailIntent";
 
 const TOC_VISIBLE_KEY = "om-post-toc-visible";
 const tocListeners = new Set<() => void>();
@@ -270,7 +271,18 @@ export function TableOfContents({
   active?: boolean;
 }) {
   const visible = usePostTocVisible();
-  const [preview, setPreview] = useState(false);
+  const [previewState, setPreviewState] = useState({ active, content, open: false });
+  if (previewState.active !== active || previewState.content !== content) {
+    setPreviewState({ active, content, open: false });
+  }
+  const preview = previewState.active === active && previewState.content === content && previewState.open;
+  const setPreview = (open: boolean) => setPreviewState({ active, content, open });
+  const intent = useRailIntent(() => setPreview(true), () => setPreview(false), active && !visible);
+  const dismissPreview = intent.dismiss;
+  const cancelPreviewIntent = intent.cancel;
+  useEffect(() => cancelPreviewIntent(), [active, content, cancelPreviewIntent]);
+  const desktopTriggerRef = useRef<HTMLButtonElement>(null);
+  const desktopPanelId = useId();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [manuallyExpanded, setManuallyExpanded] = useState<Set<string>>(new Set());
   const [mobileState, setMobileState] = useState({ active, open: false });
@@ -339,10 +351,10 @@ export function TableOfContents({
 
   const selectHeading = useCallback((id: string, fromMobile: boolean) => {
     setActiveId(id);
-    setPreview(false);
+    dismissPreview();
     if (fromMobile) setMobileOpen(false);
     scrollToId(id, containerRef?.current ?? null, fromMobile);
-  }, [containerRef, setMobileOpen]);
+  }, [containerRef, setMobileOpen, dismissPreview]);
 
   useEffect(() => {
     if (!mobileOpen || !active) return;
@@ -452,30 +464,35 @@ export function TableOfContents({
         </div>
       )}
 
-      {active && <div className="fixed top-[5.5rem] right-4 z-30 hidden flex-col items-end xl:flex"
-        onMouseLeave={() => setPreview(false)}>
-      {!visible && (
+      {active && <div className="om-toc-rail fixed top-[5.5rem] right-4 z-30 hidden flex-col items-end xl:flex"
+        data-expanded={visible || preview}
+        onMouseEnter={intent.cancel} onMouseLeave={intent.leave} onBlur={intent.blur}
+        onKeyDown={(event) => { if (event.key === "Escape") { setTocVisiblePersist(false); desktopTriggerRef.current?.focus(); dismissPreview(); } }}>
         <button
+          ref={desktopTriggerRef}
           type="button"
-          onMouseEnter={() => setPreview(true)}
-          onFocus={() => setPreview(true)}
-          onClick={() => { setPreview(false); setTocVisiblePersist(true); }}
+          onMouseEnter={intent.enter}
+          onMouseLeave={intent.cancelOpening}
+          onFocus={intent.focus}
+          onClick={() => { dismissPreview(); setTocVisiblePersist(!visible); }}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-xs font-medium text-[var(--om-text-2)] shadow-sm transition hover:border-[var(--om-brand)] hover:text-[var(--om-brand-deep)]",
             className,
           )}
-          aria-label="显示本页目录"
-          title="显示目录"
+          aria-label={visible ? "收起目录栏" : "显示本页目录"}
+          aria-expanded={visible || preview}
+          aria-controls={desktopPanelId}
+          title={visible ? "收起目录" : "固定展开目录"}
         >
           <ListTree className="h-4 w-4" />
           目录
         </button>
-      )}
-      {(visible || preview) && (
         <aside
+          id={desktopPanelId}
+          inert={!visible && !preview}
           data-toc-preview={!visible && preview}
           className={cn(
-            "flex w-72 flex-col overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] text-[var(--om-text-1)] shadow-[0_20px_50px_-30px_rgba(0,60,120,0.28)]",
+            "om-toc-body mt-2 flex w-72 flex-col overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] text-[var(--om-text-1)] shadow-[0_20px_50px_-30px_rgba(0,60,120,0.28)]",
             className,
           )}
         >
@@ -490,7 +507,7 @@ export function TableOfContents({
               </span>
               <button
                 type="button"
-                onClick={() => { setPreview(false); setTocVisiblePersist(false); }}
+                onClick={() => { setTocVisiblePersist(false); desktopTriggerRef.current?.focus(); dismissPreview(); }}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
                 aria-label="隐藏本页目录"
                 title="隐藏目录"
@@ -506,10 +523,9 @@ export function TableOfContents({
             activeId={activeId}
             onToggleGroup={toggleGroup}
             onSelect={(id) => selectHeading(id, false)}
-            className="max-h-[calc(100vh-9rem)]"
+            className="max-h-[calc(100dvh-14rem)]"
           />
         </aside>
-      )}
       </div>}
     </>
   );

@@ -45,6 +45,7 @@ describe("TableOfContents 阅读导航", () => {
     article?.remove();
     HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("入口只打开侧栏，选择章节后才滚动并把焦点交给标题", async () => {
@@ -74,6 +75,7 @@ describe("TableOfContents 阅读导航", () => {
     expect(container.querySelector('button[aria-label="打开本页目录"]')).toBeNull();
   });
   it("桌面隐藏目录悬停可预览，选择章节后继续隐藏", async () => {
+    vi.useFakeTimers();
     article = document.createElement("article");
     article.innerHTML = '<h1 id="om-h-0">标题</h1><h2 id="om-h-1">第一节</h2>';
     document.body.appendChild(article);
@@ -81,9 +83,12 @@ describe("TableOfContents 阅读导航", () => {
     await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="隐藏本页目录"]')!.click());
     const trigger = container.querySelector<HTMLButtonElement>('[aria-label="显示本页目录"]')!;
     await act(async () => trigger.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+    expect(container.querySelector('[data-toc-preview="true"]')).toBeNull();
+    await act(async () => vi.advanceTimersByTime(500));
     expect(container.querySelector('[data-toc-preview="true"]')).not.toBeNull();
     await act(async () => container.querySelector<HTMLAnchorElement>('[data-toc-preview] a')!.click());
-    expect(container.querySelector('[data-toc-preview]')).toBeNull();
+    expect(container.querySelector('[data-toc-preview="true"]')).toBeNull();
+    expect(container.querySelector('[data-toc-preview]')!.hasAttribute("inert")).toBe(true);
     expect(localStorage.getItem("om-post-toc-visible")).toBe("0");
     expect(location.hash).toBe("#om-h-0");
   });

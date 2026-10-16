@@ -1,6 +1,40 @@
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
 
+/* [OM-FREEPLAY] 500ms 停留由交互控制器管理；位移与占位统一采用 240ms 缓出。 */
+.om-collapsible-rail {
+  width: 44px;
+  overflow: clip;
+  transition: width 240ms cubic-bezier(.2, 0, 0, 1);
+}
+.om-collapsible-rail[data-expanded="true"] { width: var(--rail-width); }
+.om-rail-body {
+  width: max-content;
+  transition: transform 240ms cubic-bezier(.2, 0, 0, 1), visibility 240ms;
+}
+.om-collapsible-rail[data-expanded="false"] .om-rail-body { visibility: hidden; transform: translateX(-100%); }
+.om-collapsible-rail[data-expanded="false"][data-collapsible-rail="right"] .om-rail-body { transform: translateX(100%); }
+@media (max-width: 767px) {
+  .om-collapsible-rail { width: 0; overflow: visible; }
+  .om-collapsible-rail[data-expanded="true"] { width: 0; }
+  .om-collapsible-rail[data-collapsible-rail="right"][data-expanded="true"] { width: min(var(--rail-width), 100vw); }
+  .om-rail-body { max-width: 100vw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .om-collapsible-rail, .om-rail-body { transition: none; }
+}
+/* 目录与正文同步让位，预览和固定展开使用相同布局；保活的非活动文章不占目录空间。 */
+@media (min-width: 1280px) {
+  /* [OM-FREEPLAY] 收起保留 96px 供目录入口，展开保留 320px（288px 目录及间距）。 */
+  .om-reading-layout:has(.om-toc-rail) { padding-right: 96px; transition: padding-right 240ms cubic-bezier(.2, 0, 0, 1); }
+  .om-reading-layout:has(.om-toc-rail[data-expanded="true"]) { padding-right: 320px; }
+}
+.om-toc-body { transition: transform 240ms cubic-bezier(.2, 0, 0, 1), visibility 240ms; }
+.om-toc-rail[data-expanded="false"] .om-toc-body { transform: translateX(calc(100% + 16px)); visibility: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .om-toc-body, .om-reading-layout:has(.om-toc-rail) { transition: none; }
+}
+
 /* [OM-FREEPLAY] 全站沿用主题变量，用接缝、倒角、高光和薄阴影增加材质；不改调色板。 */
 .om-workbench [data-slot="card"], .om-raised-panel {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--om-bg-alt) 85%, transparent), 0 3px 0 color-mix(in srgb, var(--om-divider) 55%, transparent), 0 12px 30px -22px var(--om-brand);

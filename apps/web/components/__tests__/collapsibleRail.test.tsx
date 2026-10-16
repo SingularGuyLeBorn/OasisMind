@@ -1,9 +1,13 @@
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { CollapsibleRail } from "../layout/CollapsibleRail";
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 it("收起栏预览真实内容，导航后隐藏且固定偏好不变", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
+  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
@@ -17,9 +21,12 @@ it("收起栏预览真实内容，导航后隐藏且固定偏好不变", async (
   const rail = host.querySelector("[data-collapsible-rail]")!;
   const trigger = host.querySelector("button")!;
   await act(async () => trigger.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+  expect(rail.getAttribute("data-preview")).toBe("false");
+  await act(async () => vi.advanceTimersByTime(500));
   expect(rail.getAttribute("data-preview")).toBe("true");
   await act(async () => host.querySelector<HTMLButtonElement>("[data-destination]")!.click());
   expect(rail.getAttribute("data-expanded")).toBe("false");
+  expect(host.querySelector("[inert]")).not.toBeNull();
   await act(async () => trigger.click());
   await act(async () => host.querySelector<HTMLButtonElement>("[data-destination]")!.click());
   expect(rail.getAttribute("data-expanded")).toBe("true");

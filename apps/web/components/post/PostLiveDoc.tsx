@@ -16,7 +16,7 @@ import {
   type EditorViewMode,
 } from "@/components/editor/MilkdownEditor";
 import { PostContent } from "@/components/post/PostContent";
-import { TableOfContents, usePostTocVisible, buildTocItems } from "@/components/post/TableOfContents";
+import { TableOfContents, buildTocItems } from "@/components/post/TableOfContents";
 import { SpatialNavigator } from "@oasismind/brand";
 import { PageSearch } from "@/components/post/PageSearch";
 import { SelectionExplain } from "@/components/post/SelectionExplain";
@@ -52,7 +52,6 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
   const articleRef = useRef<HTMLElement>(null);
   const readContentRef = useRef<HTMLDivElement>(null);
   const annotationDraftCounter = useRef(0);
-  const tocVisible = usePostTocVisible();
 
   const [title, setTitle] = useState(post.title);
   const [content, setContent] = useState(post.content);
@@ -101,8 +100,7 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
   return (
     <div
       className={cn(
-        "w-full px-4 py-6 sm:px-5 lg:px-6",
-        tocVisible && "xl:pr-[20rem] 2xl:pr-[22rem]",
+        "om-reading-layout w-full px-4 py-6 sm:px-5 lg:px-6",
       )}
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

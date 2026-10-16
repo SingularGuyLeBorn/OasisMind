@@ -1,0 +1,107 @@
+import { test, expect } from "@playwright/test";
+// 本组检查用户正在使用的 DeepSeek 知识库；通用离线种子不含该内容。
+test.skip(process.env.OM_SIDEBAR_LIVE !== "1", "通过 playwright.sidebar.config.ts 连接现有本地服务");
+
+test("左右阅读栏延迟预览、完整导航及正文避让", async ({ page }, testInfo) => {
+  await page.goto("/gardens/DeepSeekV41Flash");
+  const leftRail = page.locator('[data-collapsible-rail="left"]');
+  await expect(leftRail).toBeVisible();
+  // 动态文章树与正文均已就绪，再测试侧栏；Shell 骨架先出现时仍在加载路由。
+  await expect(leftRail.locator("input").first()).toBeVisible();
+  await expect(page.locator(".om-reading-layout")).toBeVisible();
+  await page.getByRole("button", { name: "收起左侧导航", exact: true }).click();
+  const left = page.getByRole("button", { name: "固定展开左侧导航", exact: true });
+  await page.mouse.move(700, 70);
+  await left.hover();
+  await page.waitForTimeout(250);
+  await expect(leftRail).toHaveAttribute("data-expanded", "false");
+  await page.mouse.move(700, 70);
+  await page.waitForTimeout(600);
+  await expect(leftRail).toHaveAttribute("data-expanded", "false");
+  await left.hover();
+  await expect(leftRail).toHaveAttribute("data-preview", "true");
+  await leftRail.locator('input').first().fill("架构");
+  await leftRail.locator('a[href^="/posts/"]').first().click();
+  await expect(leftRail).toHaveAttribute("data-expanded", "false");
+  await expect(page.locator(".om-post-content")).toBeVisible();
+  await page.getByRole("button", { name: "隐藏本页目录", exact: true }).click();
+  const toc = page.locator(".om-toc-rail");
+  const tocTrigger = page.getByRole("button", { name: "显示本页目录", exact: true });
+  await page.mouse.move(700, 70);
+  await tocTrigger.hover();
+  await page.waitForTimeout(250);
+  await expect(toc).toHaveAttribute("data-expanded", "false");
+  await page.evaluate(() => {
+    const samples: number[] = [];
+    (window as unknown as { tocGaps: number[] }).tocGaps = samples;
+    const start = performance.now();
+    const sample = () => {
+      const text = document.querySelector(".om-post-content")!.getBoundingClientRect();
+      const panel = document.querySelector(".om-toc-body")!.getBoundingClientRect();
+      samples.push(panel.left - text.right);
+      if (performance.now() - start < 1100) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await expect(toc).toHaveAttribute("data-expanded", "true");
+  await page.locator(".om-toc-body").hover();
+  await page.waitForTimeout(300);
+  const geometry = await page.evaluate(() => {
+    const text = document.querySelector(".om-post-content")!.getBoundingClientRect();
+    const panel = document.querySelector(".om-toc-body")!.getBoundingClientRect();
+    return { textRight: text.right, panelLeft: panel.left };
+  });
+  expect(geometry.textRight).toBeLessThanOrEqual(geometry.panelLeft);
+  expect(await page.evaluate(() => Math.min(...(window as unknown as { tocGaps: number[] }).tocGaps))).toBeGreaterThanOrEqual(0);
+  await page.screenshot({ path: testInfo.outputPath("oasis-toc-slide-preview.png") });
+  await toc.locator("a").last().click();
+  await expect(toc).toHaveAttribute("data-expanded", "false");
+  await page.waitForTimeout(800);
+  await expect(toc).toHaveAttribute("data-expanded", "false");
+  const headingId = await page.evaluate(() => location.hash.slice(1));
+  await expect(page.locator(".om-post-content").locator(`[id="${headingId}"]`)).toBeInViewport();
+  await tocTrigger.click();
+  await toc.locator("a").first().click();
+  await expect(toc).toHaveAttribute("data-expanded", "true");
+  await left.hover();
+  await expect(leftRail).toHaveAttribute("data-preview", "true");
+  await expect(toc).toHaveAttribute("data-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(leftRail).toHaveAttribute("data-expanded", "false");
+  await expect(left).toBeFocused();
+});
+
+test("会话预览支持下拉菜单和工作栏切换，减少动态效果与手机入口可用", async ({ page }, testInfo) => {
+  await page.goto("/chat");
+  const leftRail = page.locator('[data-collapsible-rail="left"]');
+  await page.getByRole("button", { name: "收起会话栏", exact: true }).click();
+  const left = page.getByRole("button", { name: "固定展开会话栏", exact: true });
+  await page.mouse.move(700, 70);
+  await left.hover();
+  await expect(leftRail).toHaveAttribute("data-preview", "true");
+  await page.getByTestId("workspace-select").click();
+  const menu = page.getByTestId("workspace-select-menu");
+  await expect(menu).toBeVisible();
+  await menu.hover();
+  await page.waitForTimeout(350);
+  await expect(leftRail).toHaveAttribute("data-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(leftRail).toHaveAttribute("data-expanded", "false");
+  const right = page.getByRole("button", { name: "固定展开工作栏", exact: true });
+  await right.hover();
+  const rightRail = page.locator('[data-collapsible-rail="right"]');
+  await expect(rightRail).toHaveAttribute("data-preview", "true");
+  await rightRail.getByRole("button", { name: "阶段工件", exact: true }).click();
+  await expect(page.getByTestId("chat-stages-panel")).toBeVisible();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: testInfo.outputPath("oasis-chat-slide-preview.png") });
+  await page.mouse.move(700, 70);
+  await expect(rightRail).toHaveAttribute("data-expanded", "false");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await rightRail.evaluate(el => parseFloat(getComputedStyle(el).transitionDuration))).toBeLessThan(.001);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByTestId("chat-left-panel-toggle").click();
+  await expect(page.getByTestId("chat-left-panel-collapse")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("oasis-chat-slide-mobile.png") });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
