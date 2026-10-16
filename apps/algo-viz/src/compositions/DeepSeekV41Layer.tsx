@@ -18,6 +18,7 @@ import {
 } from "@xyflow/react";
 import {
   latexHtml,
+  MathMarkup,
   EditableOrthogonalEdge,
   EditableConnectionLine,
   ConnectionGestureControl,
@@ -198,7 +199,7 @@ function MathFormula({ tex, display = false }: { tex: string; display?: boolean 
     [display, tex],
   );
   // [OM-FREEPLAY] 小字号下限取 10.5px，放大矩阵元素而不缩小已有的大公式。
-  return <span aria-label={tex} style={{ fontSize: "max(1em, 10.5px)" }} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <MathMarkup html={html} tex={tex} style={{ fontSize: "max(1em, 10.5px)" }} />;
 }
 
 function Box({ children, tone = "neutral" }: { children: ReactNode; tone?: DiagramTone }) {
@@ -1070,6 +1071,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "structure") {
+    // 行、列的身份是矩阵中的位置；层号改变只更新公式，不能用公式文本作 key 整行重建。
     const tone = data.tone ?? "neutral";
     const { color, background } = tonePalette(tone);
     return <div style={{ ...panel, borderColor: color, borderRadius: 10, background, boxShadow: "0 3px 10px rgba(42,41,36,.06)", display: "grid", gridTemplateRows: data.title ? "auto 1fr" : "1fr" }}>
@@ -1080,16 +1082,16 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
             {data.tex && <div style={{ color, fontWeight: 800 }}><MathFormula tex={data.tex} /></div>}
             <div style={{ display: "grid", gridTemplateColumns: "7px minmax(0,1fr) 7px", gap: 4 }}>
               <span aria-hidden style={{ borderLeft: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
-              <div style={{ display: "grid", gap: 3 }}>{data.matrixRows.map((row, index) => <div key={`${row}-${index}`} style={{ minHeight: 18, border: `1px solid ${data.matrixSelectedRow === index ? COLORS.amber : color}`, borderRadius: 5, background: data.matrixSelectedRow === index ? COLORS.amberSoft : background, display: "grid", gridTemplateColumns: data.matrixRowCells?.[index] ? "70px minmax(0,1fr)" : "1fr", alignItems: "center", gap: 3, padding: 2, fontSize: 9.5 }}>
+              <div style={{ display: "grid", gap: 3 }}>{data.matrixRows.map((row, index) => <div key={index} style={{ minHeight: 18, border: `1px solid ${data.matrixSelectedRow === index ? COLORS.amber : color}`, borderRadius: 5, background: data.matrixSelectedRow === index ? COLORS.amberSoft : background, display: "grid", gridTemplateColumns: data.matrixRowCells?.[index] ? "70px minmax(0,1fr)" : "1fr", alignItems: "center", gap: 3, padding: 2, fontSize: 9.5 }}>
                 <MathFormula tex={row} />
-                {data.matrixRowCells?.[index] && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .5fr 1fr", gap: 2 }}>{data.matrixRowCells[index].map((cell, cellIndex) => cell === "\\cdots" ? <span key={`${cell}-${cellIndex}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={`${cell}-${cellIndex}`} style={{ padding: "2px 1px", border: `1px solid ${color}`, borderRadius: 3, background, textAlign: "center", overflow: "hidden" }}><MathFormula tex={cell} /></span>)}</div>}
+                {data.matrixRowCells?.[index] && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .5fr 1fr", gap: 2 }}>{data.matrixRowCells[index].map((cell, cellIndex) => cell === "\\cdots" ? <span key={cellIndex} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={cellIndex} style={{ padding: "2px 1px", border: `1px solid ${color}`, borderRadius: 3, background, textAlign: "center", overflow: "hidden" }}><MathFormula tex={cell} /></span>)}</div>}
               </div>)}</div>
               <span aria-hidden style={{ borderRight: `2px solid ${COLORS.ink}`, borderTop: `2px solid ${COLORS.ink}`, borderBottom: `2px solid ${COLORS.ink}` }} />
             </div>
           </div>
         ) : data.vectorCells?.length ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: data.columnVectors ? "1fr" : "minmax(48px,.7fr) minmax(0,1.8fr)", alignItems: "center", gap: 4 }}>
           <MathFormula tex={data.tex ?? ""} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>{data.vectorCells.map((cell, index) => cell === "\\cdots" ? <span key={`${cell}-${index}`} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={`${cell}-${index}`} style={{ minHeight: data.columnVectors ? 60 : undefined, display: "grid", placeItems: "center", padding: "3px 2px", border: `1px solid ${color}`, borderRadius: 4, background, fontSize: 9 }}><MathFormula tex={cell} /></span>)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr .55fr 1fr", gap: 3 }}>{data.vectorCells.map((cell, index) => cell === "\\cdots" ? <span key={index} style={{ display: "grid", placeItems: "center" }}><MathFormula tex={cell} /></span> : <span key={index} style={{ minHeight: data.columnVectors ? 60 : undefined, display: "grid", placeItems: "center", padding: "3px 2px", border: `1px solid ${color}`, borderRadius: 4, background, fontSize: 9 }}><MathFormula tex={cell} /></span>)}</div>
         </div> : <MathFormula tex={data.tex ?? ""} />}
         {data.subtitle && <span style={{ color: COLORS.muted, fontSize: 10.5 }}>{data.subtitle}</span>}
       </div>
@@ -1467,12 +1469,16 @@ const MemoDiagramNodeContent = memo(DiagramNodeContent);
 type MeasuredDiagramGeometry = { width: number; height: number; handles: NonNullable<DiagramNode["handles"]> };
 type DiagramGeometryCache = Map<string, MeasuredDiagramGeometry>;
 const GeometryCacheContext = createContext<DiagramGeometryCache | null>(null);
-const geometryKey = (data: DiagramData, width: number, height: CSSProperties["height"]) => JSON.stringify([data, width, height]);
+// 这些固定尺寸框只有 EightConnectionPorts，没有内容内的语义端口。
+// 同类、同尺寸的框共享实测边界；内容撑高或包含内部端口的模块仍逐内容匹配。
+const FRAME_ONLY_GEOMETRY_KINDS = new Set<NodeKind>(["structure", "structure-group", "structure-operator", "projection-q"]);
+export const diagramGeometryKey = (data: DiagramData, width: number, height: CSSProperties["height"]) =>
+  JSON.stringify([FRAME_ONLY_GEOMETRY_KINDS.has(data.kind) ? { kind: data.kind } : data, width, height]);
 
 export function restoreMeasuredGeometry(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }, cache: DiagramGeometryCache) {
   let restored = false;
   const nodes = graph.nodes.map(node => {
-    const cached = cache.get(geometryKey(node.data, Number(node.style?.width), node.style?.height ?? node.style?.minHeight));
+    const cached = cache.get(diagramGeometryKey(node.data, Number(node.style?.width), node.style?.height ?? node.style?.minHeight));
     // 精确匹配内容和宽度；人工改高度、字体换行或未知内容继续走完整实测。
     const requestedHeight = storedDimension(node.style?.height) ?? storedDimension(node.style?.minHeight);
     if (!cached || (requestedHeight && (CONTENT_SIZED_KINDS.has(node.data.kind) ? requestedHeight > cached.height : requestedHeight !== cached.height))) return node;
@@ -1491,7 +1497,7 @@ export function buildMeasuredGraph(layer: number, phase: ExecutionPhase, cache: 
   const heights = new Map<string, number>();
   for (const node of graph.nodes) {
     if (!CONTENT_SIZED_KINDS.has(node.data.kind)) continue;
-    const measured = cache.get(geometryKey(node.data, Number(node.style?.width), node.style?.height ?? node.style?.minHeight));
+    const measured = cache.get(diagramGeometryKey(node.data, Number(node.style?.width), node.style?.height ?? node.style?.minHeight));
     if (measured) heights.set(node.id, measured.height);
   }
   return restoreMeasuredGeometry(buildGraph(layer, heights, phase), cache);
@@ -1532,9 +1538,9 @@ function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
   const declaredHeight = internal?.height ?? internal?.style?.height ?? internal?.style?.minHeight;
   useEffect(() => {
     if (!geometryCache || !declaredWidth || !measuredWidth || !measuredHeight || !handleBounds) return;
-    const key = geometryKey(data, declaredWidth, declaredHeight);
+    const key = diagramGeometryKey(data, declaredWidth, declaredHeight);
     geometryCache.delete(key);
-    geometryCache.set(key, { width: measuredWidth, height: measuredHeight, handles: [...(handleBounds.source ?? []), ...(handleBounds.target ?? [])].map(port => ({ ...port })) });
+    geometryCache.set(key, { width: measuredWidth, height: measuredHeight, handles: [...(handleBounds.source ?? []), ...(handleBounds.target ?? [])].map(({ id, type, position, x, y, width, height }) => ({ id, type, position, x, y, width, height })) });
     // [OM-FREEPLAY] 最多保留 512 份实测几何，避免浏览多层或反复拉宽时缓存无限增长。
     if (geometryCache.size > 512) geometryCache.delete(geometryCache.keys().next().value!);
   }, [data, declaredWidth, declaredHeight, geometryCache, handleBounds, measuredWidth, measuredHeight]);

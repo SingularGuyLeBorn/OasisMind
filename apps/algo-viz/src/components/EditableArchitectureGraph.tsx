@@ -1,4 +1,4 @@
-import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
+import React, { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import katex from "katex";
 import {
   BaseEdge,
@@ -262,6 +262,52 @@ export function latexHtml(tex: string, display = false) {
   return html;
 }
 
+// KaTeX 产生的 MathML 由这个边界独占管理。层号变化通常只改变文本，不能让
+// dangerouslySetInnerHTML 把整棵公式树销毁再建立，触发所有新元素的样式计算。
+export function updateMathMarkup(root: HTMLElement, html: string) {
+  const template = root.ownerDocument.createElement("template");
+  template.innerHTML = html;
+  const updates: Array<{ node: ChildNode; value: string | null }> = [];
+  const sameStructure = (current: globalThis.Node, next: globalThis.Node): boolean => {
+    if (current.nodeType !== next.nodeType || current.nodeName !== next.nodeName) return false;
+    if (current.nodeType === 3) {
+      if (current.nodeValue !== next.nodeValue) updates.push({ node: current as ChildNode, value: next.nodeValue });
+      return true;
+    }
+    if (current.nodeType === 1) {
+      const a = current as Element, b = next as Element;
+      if (a.namespaceURI !== b.namespaceURI || a.attributes.length !== b.attributes.length) return false;
+      for (const attribute of Array.from(a.attributes)) {
+        if (b.getAttributeNS(attribute.namespaceURI, attribute.localName) !== attribute.value) return false;
+      }
+    } else if (current.nodeType !== 11) return false;
+    if (current.childNodes.length !== next.childNodes.length) return false;
+    for (let i = 0; i < current.childNodes.length; i++) {
+      if (!sameStructure(current.childNodes[i], next.childNodes[i])) return false;
+    }
+    return true;
+  };
+  // 外层 span 不属于 KaTeX；比较其子树，先完整验证再修改，避免半更新。
+  const compatible = root.childNodes.length === template.content.childNodes.length
+    && Array.from(root.childNodes).every((node, i) => sameStructure(node, template.content.childNodes[i]));
+  if (compatible) for (const update of updates) update.node.nodeValue = update.value;
+  else root.replaceChildren(template.content);
+}
+
+export function MathMarkup({ html, tex, style }: { html: string; tex: string; style?: CSSProperties }) {
+  const element = useRef<HTMLSpanElement>(null);
+  const initialMarkup = useRef({ __html: html });
+  const renderedHtml = useRef(html);
+  // 在 React 提交后同步更新同一个公式边界；没有异步等待，也不依赖浏览器测量时序。
+  useLayoutEffect(() => {
+    if (!element.current || renderedHtml.current === html) return;
+    updateMathMarkup(element.current, html);
+    renderedHtml.current = html;
+  }, [html]);
+  // 初次/服务端渲染仍输出完整公式。后续 DOM 只由上面的同步提交维护。
+  return <span ref={element} aria-label={tex} style={style} dangerouslySetInnerHTML={initialMarkup.current} />;
+}
+
 type Obstacle = { left: number; top: number; right: number; bottom: number };
 type ReservedSegment = { start: XYPosition; end: XYPosition };
 
@@ -347,6 +393,12 @@ export function createOrthogonalRouteScorer(obstacles: Obstacle[], reserved: Res
     return result;
   };
   return (points: XYPosition[], upperBound = Infinity) => {
+    // 碰撞与拥挤代价非负。仅长度和折点数已不可能获胜时，无需查询障碍或线段缓存。
+    let lowerBound = points.length * 8;
+    for (let index = 1; index < points.length; index++) {
+      lowerBound += Math.abs(points[index].x - points[index - 1].x) + Math.abs(points[index].y - points[index - 1].y);
+    }
+    if (lowerBound >= upperBound) return Infinity;
     let crossings = 0;
     let crowding = 0;
     let length = 0;
@@ -413,17 +465,19 @@ function defaultOrthogonalPoints(sourceX: number, sourceY: number, targetX: numb
   // 只在起终点坐标区间内组合，会迫使跨越 Engram 的残差权重线穿框。
   const nearX = [...new Set([left, right, ...nearChannels(verticalChannels, sourceX, targetX)])];
   const nearY = [...new Set([top, bottom, ...nearChannels(horizontalChannels, sourceY, targetY)])];
-  for (const x of nearX) for (const y of nearY) candidates.push(
-    [{ x: sourceX, y: sourceY }, { x: sourceX, y }, { x, y }, { x, y: targetY }, { x: targetX, y: targetY }],
-    [{ x: sourceX, y: sourceY }, { x, y: sourceY }, { x, y }, { x: targetX, y }, { x: targetX, y: targetY }],
-  );
   let best = candidates[0];
   let bestScore = Infinity;
   const scoreRoute = createOrthogonalRouteScorer(obstacles, reserved);
-  for (const candidate of candidates) {
+  const consider = (candidate: XYPosition[]) => {
     const points = simplifyOrthogonalPoints(candidate);
     const score = scoreRoute(points, bestScore);
     if (score < bestScore) { best = points; bestScore = score; }
+  };
+  for (const candidate of candidates) consider(candidate);
+  // 保持原来的候选顺序与同分选择；逐个消费，不同时持有成千上万个折线路径。
+  for (const x of nearX) for (const y of nearY) {
+    consider([{ x: sourceX, y: sourceY }, { x: sourceX, y }, { x, y }, { x, y: targetY }, { x: targetX, y: targetY }]);
+    consider([{ x: sourceX, y: sourceY }, { x, y: sourceY }, { x, y }, { x: targetX, y }, { x: targetX, y: targetY }]);
   }
   return best;
 }
@@ -982,7 +1036,7 @@ function EditableOrthogonalEdgeView({
       }}
     />
     <EdgeLabelRenderer>
-      {data?.labelTex && terminalCenter && <div data-edge-terminal-label={id} aria-label={data.labelTex} style={{position:"absolute",transform:`translate(-50%,-50%) translate(${terminalCenter.x}px,${terminalCenter.y}px)`,zIndex:1002,padding:"3px 7px",background:"transparent",color:"#716d63",fontSize:EDGE_LABEL_FONT_SIZE,fontWeight:700,pointerEvents:"none",whiteSpace:"nowrap"}} dangerouslySetInnerHTML={{__html:labelHtml}} />}
+      {data?.labelTex && terminalCenter && <div data-edge-terminal-label={id} aria-label={data.labelTex} style={{position:"absolute",transform:`translate(-50%,-50%) translate(${terminalCenter.x}px,${terminalCenter.y}px)`,zIndex:1002,padding:"3px 7px",background:"transparent",color:"#716d63",fontSize:EDGE_LABEL_FONT_SIZE,fontWeight:700,pointerEvents:"none",whiteSpace:"nowrap"}}><MathMarkup html={labelHtml} tex={data.labelTex} /></div>}
       {(["source", "target"] as const).map(endpoint => <button
         key={endpoint}
         type="button"
@@ -1018,8 +1072,7 @@ function EditableOrthogonalEdgeView({
             cursor: "grab",
             userSelect: "none",
           }}
-          dangerouslySetInnerHTML={{ __html: labelHtml }}
-        />
+        ><MathMarkup html={labelHtml} tex={data.labelTex} /></div>
       )}
       {selected && points.slice(0, -1).map((point, index) => {
         if (index !== hoveredSegment) return null;

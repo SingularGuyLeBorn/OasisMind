@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import katex from "katex";
 import { Position, type InternalNode, type Node } from "@xyflow/react";
 import { createOrthogonalRouteScorer, latexHtml, pathWithLabelGap, planArchitectureRoutes, routesForStore, type EditableEdge } from "../../../algo-viz/src/components/EditableArchitectureGraph";
-import { applySavedLayout, buildGraph, buildMeasuredGraph, captureDiagramLayout, isArchitectureDetailVisible, restoreMeasuredGeometry } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
+import { applySavedLayout, buildGraph, buildMeasuredGraph, captureDiagramLayout, diagramGeometryKey, isArchitectureDetailVisible, restoreMeasuredGeometry } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
 
 it("移出再移入屏幕不重复排版同一公式，行间与行内缓存分开", () => {
   const render = vi.spyOn(katex, "renderToString");
@@ -241,10 +241,22 @@ describe("候选折线的分段评分", () => {
     const score = createOrthogonalRouteScorer([obstacle], []);
     const path = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
     expect(score(path, 1)).toBe(Infinity);
+    expect(reads).toBe(0);
+    expect(score(path)).toBe(100_000_116);
     const initialReads = reads;
     expect(score(path)).toBe(100_000_116);
-    expect(score(path)).toBe(100_000_116);
     expect(reads).toBe(initialReads);
+  });
+  it("长度下界只剪掉不可能更优的路线，不漏掉短但穿框的真实代价", () => {
+    const obstacles = [{ left: 40, right: 60, top: -10, bottom: 10 }];
+    const score = createOrthogonalRouteScorer(obstacles, []);
+    const detour = [{ x: 0, y: 0 }, { x: 0, y: 20 }, { x: 100, y: 20 }, { x: 100, y: 0 }];
+    expect(score(detour)).toBe(172);
+    expect(score(detour, 172)).toBe(Infinity);
+    expect(score(detour, 172.5)).toBe(172);
+    const direct = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+    expect(score(direct, 172)).toBe(Infinity);
+    expect(score(direct)).toBe(100_000_116);
   });
   it("保持相交、平行拥挤、长度和转折点数的评分权重", () => {
     const reserved = [
@@ -292,7 +304,7 @@ describe("详情可见性以世界坐标和缩放计算", () => {
 it("回到已测量层时，先恢复子节点高度再匹配父框几何，避免缓存循环依赖", () => {
   const graph = buildGraph(15, new Map([["q-rmsnorm", 777], ["norm1", 880]]));
   const cache = new Map(graph.nodes.map(node => [
-    JSON.stringify([node.data, Number(node.style!.width), node.style!.height ?? node.style!.minHeight]),
+    diagramGeometryKey(node.data, Number(node.style!.width), node.style!.height ?? node.style!.minHeight),
     { width: Math.round(Number(node.style!.width)), height: node.id === "q-rmsnorm" ? 777 : node.id === "norm1" ? 880 : Number(node.style!.height ?? 300), handles: [] },
   ]));
   const result = buildMeasuredGraph(15, "prefill", cache);
@@ -319,7 +331,7 @@ describe("切层按节点复用实测几何", () => {
   function measuredFixture() {
     const original = buildGraph(15);
     const graph = { nodes: original.nodes.filter(n => ["q", "expert-output-7"].includes(n.id)), edges: [] };
-    const cache = new Map(graph.nodes.map(n => [JSON.stringify([n.data, Number(n.style!.width), n.style!.height ?? n.style!.minHeight]), {
+    const cache = new Map(graph.nodes.map(n => [diagramGeometryKey(n.data, Number(n.style!.width), n.style!.height ?? n.style!.minHeight), {
       width: Math.round(Number(n.style!.width)), height: Number(n.style!.height ?? 300),
       handles: [{ id: "main-out", type: "source" as const, position: Position.Bottom, x: 40, y: 290, width: 10, height: 10 }],
     }]));
@@ -348,17 +360,41 @@ describe("切层按节点复用实测几何", () => {
   it("未保存的人工拉高不能污染默认内容高度", () => {
     const { graph, cache } = measuredFixture();
     const node = graph.nodes.find(n => n.id === "expert-output-7")!;
-    const naturalKey = JSON.stringify([node.data, Number(node.style!.width), node.style!.minHeight]);
+    const naturalKey = diagramGeometryKey(node.data, Number(node.style!.width), node.style!.minHeight);
     const measured = cache.get(naturalKey)!;
     cache.delete(naturalKey);
-    cache.set(JSON.stringify([node.data, Number(node.style!.width), 900]), { ...measured, height: 900 });
+    cache.set(diagramGeometryKey(node.data, Number(node.style!.width), 900), { ...measured, height: 900 });
     expect(restoreMeasuredGeometry(graph, cache).nodes.find(n => n.id === node.id)).toBe(node);
   });
-  it.each(["width", "height", "phase"])("%s 变化不能沿用旧几何", field => {
+  it.each(["width", "height"])("%s 变化不能沿用旧几何", field => {
     const { graph, cache } = measuredFixture();
     const node = graph.nodes[0];
-    if (field === "phase") node.data = { ...node.data, phase: "decode" };
-    else node.style = { ...node.style, [field]: 2000 };
+    node.style = { ...node.style, [field]: 2000 };
     expect(restoreMeasuredGeometry(graph, cache).nodes[0]).toBe(node);
+  });
+  it("内容高度和内部端口仍按完整内容隔离，换层和换视角必须重新测量", () => {
+    const { graph, cache } = measuredFixture();
+    const original = graph.nodes[1];
+    for (const data of [{ ...original.data, phase: "decode" as const }, { ...original.data, layer: 29 }]) {
+      const node = { ...original, data };
+      expect(restoreMeasuredGeometry({ nodes: [node], edges: [] }, cache).nodes[0]).toBe(node);
+    }
+  });
+  it("只有固定框边界可跨层复用，公式变化不丢失数据，也不伪造未测量几何", () => {
+    const first = buildGraph(15);
+    const frameKinds = new Set(["structure", "structure-group", "structure-operator", "projection-q"]);
+    const cache = new Map(first.nodes.filter(node => frameKinds.has(node.data.kind)).map(node => [
+      diagramGeometryKey(node.data, Number(node.style!.width), node.style!.height),
+      { width: Number(node.style!.width), height: Number(node.style!.height), handles: [] },
+    ]));
+    const next = buildGraph(29);
+    const restored = restoreMeasuredGeometry(next, cache);
+    let hits = 0;
+    for (const [index, node] of restored.nodes.entries()) {
+      expect(node.data).toBe(next.nodes[index].data);
+      if (node.measured) { expect(frameKinds.has(node.data.kind)).toBe(true); hits++; }
+      else expect(node).toBe(next.nodes[index]);
+    }
+    expect(hits).toBeGreaterThan(10);
   });
 });

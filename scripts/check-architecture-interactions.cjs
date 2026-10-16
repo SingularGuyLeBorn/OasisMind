@@ -74,14 +74,15 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
      for(let d=10;d<len-10;d+=10){const v=at(d);for(const n of obstacles)if(inside(v,n.r,3)){hits.push({edge:e.dataset.id,node:n.id});break;}if(hits.at(-1)?.edge===e.dataset.id)break;}
    }
    const portGaps=['mix-a-post','mix-a-comb','mix-a-pre-f'].map(id=>{const edge=document.querySelector(`.react-flow__edge[data-id="${id}"]`),p=edge.querySelector('.react-flow__edge-path'),s=p.getPointAtLength(0).matrixTransform(p.getScreenCTM()),handleId=id==='mix-a-post'?'post':id==='mix-a-comb'?'comb':'pre',r=document.querySelector(`.react-flow__node[data-id="hc-mix-a"] [data-handleid="${handleId}"]`).getBoundingClientRect();return {id,gap:Math.hypot(s.x-r.left-r.width/2,s.y-r.top-r.height/2)};});
-   return {nodes:nodes.length,edges:document.querySelectorAll('.react-flow__edge').length,suspended:document.querySelectorAll('[data-detail-suspended]').length,katexErrors:document.querySelectorAll('.katex-error').length,hits,portGaps,terminalLabels:document.querySelectorAll('[data-edge-terminal-label]').length};
+   const staleFormulas=[...document.querySelectorAll('.architecture-flow span[aria-label]')].filter(span=>{const source=span.querySelector('annotation[encoding="application/x-tex"]');return source&&source.textContent!==span.getAttribute('aria-label');}).length;
+   return {nodes:nodes.length,edges:document.querySelectorAll('.react-flow__edge').length,suspended:document.querySelectorAll('[data-detail-suspended]').length,katexErrors:document.querySelectorAll('.katex-error').length,staleFormulas,hits,portGaps,terminalLabels:document.querySelectorAll('[data-edge-terminal-label]').length};
  });
  const reports=[{mode:'15-prefill',...await check()}];
  await page.setViewportSize({width:1100,height:850});
  await page.locator('button').filter({hasText:/^Decode · 单步一行$/}).click();await page.waitForTimeout(1500);
  for(const n of [2,4,29]){await layer(n);await focus('input',80,260);await page.screenshot({path:`work/architecture-qa-${n}-decode.png`});reports.push({mode:`${n}-decode`,...await check()});}
  console.log(JSON.stringify({errors,reports}));
- assert.equal(errors.length,0,errors.join('\n'));assert.ok(reports.every(r=>!r.katexErrors));assert.ok(reports.every(r=>!r.hits.length),'连线避开无关框体');assert.ok(reports.every(r=>r.portGaps.every(p=>p.gap<2)&&r.terminalLabels>0));
+ assert.equal(errors.length,0,errors.join('\n'));assert.ok(reports.every(r=>!r.katexErrors));assert.ok(reports.every(r=>!r.staleFormulas),'公式内容不能落后于当前层');assert.ok(reports.every(r=>!r.hits.length),'连线避开无关框体');assert.ok(reports.every(r=>r.portGaps.every(p=>p.gap<2)&&r.terminalLabels>0));
  console.log(JSON.stringify({errors,drift,reports,savedKeys:Object.keys(saved)},null,2));fs.writeFileSync('work/architecture-qa.json',JSON.stringify({errors,drift,reports},null,2));
  } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

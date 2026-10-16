@@ -1,5 +1,5 @@
 // 原文章切层回归；不重启服务，不改用户布局，不把按钮变色当作内容完成。
-// node scripts/check-architecture-switch.cjs [--assert-30ms]
+// node scripts/check-architecture-switch.cjs [--assert-30ms] [--profile]
 const { chromium } = require('../apps/web/node_modules/@playwright/test');
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
@@ -9,6 +9,9 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
     const browser = await chromium.launch({ channel: 'chrome', headless: true });
     try {
         const page = await browser.newPage({ viewport: { width: 1022, height: 1100 } });
+        const profile = process.argv.includes('--profile');
+        const cdp = profile ? await page.context().newCDPSession(page) : null;
+        if (cdp) { await cdp.send('Performance.enable'); await cdp.send('Profiler.enable'); }
         page.setDefaultTimeout(60000);
         const errors = [];
         page.on('pageerror', error => errors.push(error.message));
@@ -17,6 +20,8 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
         await page.waitForTimeout(1800);
         const results = [];
         for (const layer of [15, 29, 15, 29]) {
+            const before = cdp ? Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m => [m.name, m.value])) : null;
+            if (cdp) await cdp.send('Profiler.start');
             await page.evaluate(layer => {
                 const flow = document.querySelector('.architecture-flow');
                 const button = document.querySelector(`button[title^="Layer ${layer} "]`);
@@ -50,6 +55,10 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
                                 longTasks, nodes: nodes.length,
                                 elements: flow.querySelectorAll('*').length,
                                 formulaErrors: flow.querySelectorAll('.katex-error').length,
+                                staleFormulas: [...flow.querySelectorAll('span[aria-label]')].filter(span => {
+                                    const source = span.querySelector('annotation[encoding="application/x-tex"]');
+                                    return source && source.textContent !== span.getAttribute('aria-label');
+                                }).length,
                                 transform: flow.querySelector('.react-flow__viewport').style.transform,
                             };
                         } else requestAnimationFrame(tick);
@@ -60,10 +69,18 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
             await page.locator(`button[title^="Layer ${layer} "]`).click();
             await page.waitForFunction(() => window.__switchResult !== null);
             const result = await page.evaluate(() => window.__switchResult);
+            if (cdp) {
+                const { profile: cpuProfile } = await cdp.send('Profiler.stop');
+                const after = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m => [m.name, m.value]));
+                result.cost = Object.fromEntries(['TaskDuration', 'ScriptDuration', 'LayoutDuration', 'RecalcStyleDuration'].map(name => [name, 1000 * (after[name] - before[name])]));
+                fs.mkdirSync('work', { recursive: true });
+                fs.writeFileSync(`work/architecture-switch-${results.length}-${layer}.cpuprofile`, JSON.stringify(cpuProfile));
+            }
             results.push(result);
             console.log(JSON.stringify(result));
             assert.equal(result.settled, true, '目标层全部节点应完成更新并稳定');
             assert.equal(result.formulaErrors, 0);
+            assert.equal(result.staleFormulas, 0, '换层后的可访问标签与公式源码应一致');
         }
         fs.mkdirSync('work', { recursive: true });
         fs.writeFileSync('work/architecture-switch-acceptance.json', JSON.stringify({ errors, results }, null, 2));
