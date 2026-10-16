@@ -35,6 +35,7 @@ import type { ChatLeftTab } from "@/lib/useChatUiPrefs";
 export interface ChatSidebarProps {
   leftOpen: boolean;
   setLeftOpen: (open: boolean | ((v: boolean) => boolean)) => void;
+  onNavigate?: () => void;
   leftTab: ChatLeftTab;
   setLeftTab: (tab: ChatLeftTab) => void;
   historySubTab: "main" | "sub";
@@ -79,6 +80,7 @@ export interface ChatSidebarProps {
 export const ChatSidebar = memo(function ChatSidebar({
   leftOpen,
   setLeftOpen,
+  onNavigate,
   leftTab,
   setLeftTab,
   historySubTab,
@@ -119,10 +121,11 @@ export const ChatSidebar = memo(function ChatSidebar({
   runtimeConsumedItems,
 }: ChatSidebarProps) {
   const closeLeftOnMobile = useCallback(() => {
+    onNavigate?.();
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
       setLeftOpen(false);
     }
-  }, [setLeftOpen]);
+  }, [setLeftOpen, onNavigate]);
 
   // 与 ChatView 相同 key 的查询订阅：React Query 按 key 共享缓存并去重请求，无额外网络开销
   const { useList: useAgentList } = useAgent();
@@ -347,6 +350,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                 syncChatUiToUrl({ view: "main" });
                 if (isSubagentSession && parentSessionId) {
                   selectSession(parentSessionId);
+                  closeLeftOnMobile();
                 }
               }}
               data-testid="history-subtab-main"
@@ -387,7 +391,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           <WorkspaceSelect
             value={selectedWorkspaceId}
             workspaces={workspacesQuery.data?.items ?? []}
-            onChange={selectWorkspace}
+            onChange={(id) => { selectWorkspace(id); closeLeftOnMobile(); }}
             disabled={workspacesQuery.isLoading}
           />
         </div>
@@ -573,7 +577,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           type="button"
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] md:hidden"
           aria-label="关闭会话面板"
-          onClick={() => setLeftOpen(false)}
+          onClick={() => { onNavigate?.(); setLeftOpen(false); }}
         />
       )}
       <aside
@@ -602,7 +606,7 @@ export const ChatSidebar = memo(function ChatSidebar({
             </div>
             <button
               type="button"
-              onClick={() => setLeftOpen(false)}
+              onClick={() => { onNavigate?.(); setLeftOpen(false); }}
               data-testid="chat-left-panel-collapse"
               title="折叠左侧栏"
               aria-label="折叠左侧栏"

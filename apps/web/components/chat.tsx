@@ -18,6 +18,7 @@ import { ChatSidebar } from "@/components/chatSidebar";
 import { ChatSessionPane } from "@/components/chatSessionPane";
 import { ChatFilesPanel } from "@/components/chatFilesPanel";
 import { ChatStagesPanel } from "@/components/chatStagesPanel";
+import { CollapsibleRail } from "@/components/layout/CollapsibleRail";
 import {
   useSessionMessages,
   sessionMessagesStore,
@@ -109,9 +110,10 @@ export function ChatView() {
     newTitle: string;
   } | null>(null);
   /** 右侧文件 Panel：展示本 session 上传图片 + Agent 创建文件 */
-  const [rightFilesOpen, setRightFilesOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
+  // [OM-FREEPLAY] 工作栏初次预览显示会话文件，之后保留用户最后选择的页签。
+  const [rightPanel, setRightPanel] = useState<"files" | "stages">("files");
   /** W6 右侧阶段工件 Panel：当前 Agent Workspace 的 stage 文件 */
-  const [rightStagesOpen, setRightStagesOpen] = useState(false);
   /** 可指定 session：流结束后应消费该 session，而不是当前视图 */
   const consumeRef = useRef<(preferredSessionId?: string) => void>(() => {});
 
@@ -777,10 +779,10 @@ export function ChatView() {
     showToast,
     selectSession,
     onOpenPromptEditor: handleOpenPromptEditor,
-    onOpenFilesPanel: () => setRightFilesOpen(true),
-    filesPanelOpen: rightFilesOpen,
-    onOpenStagesPanel: () => setRightStagesOpen(true),
-    stagesPanelOpen: rightStagesOpen,
+    onOpenFilesPanel: () => { setRightPanel("files"); setRightOpen(true); },
+    filesPanelOpen: rightOpen && rightPanel === "files",
+    onOpenStagesPanel: () => { setRightPanel("stages"); setRightOpen(true); },
+    stagesPanelOpen: rightOpen && rightPanel === "stages",
     onOpenRuntimePanel: openRuntimePanel,
     onFocusSwarm: openSwarmPanel,
     onWarmSkills: () => setSkillsQueryReady(true),
@@ -793,9 +795,12 @@ export function ChatView() {
 
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden">
-      <ChatSidebar
-        leftOpen={leftOpen}
+      <CollapsibleRail side="left" label="会话栏" pinned={leftOpen} onPinnedChange={setLeftOpen}
+        className="max-md:[&>button]:hidden">
+      {({ visible, onNavigate }) => <ChatSidebar
+        leftOpen={visible}
         setLeftOpen={setLeftOpen}
+        onNavigate={onNavigate}
         leftTab={leftTab}
         setLeftTab={setLeftTab}
         historySubTab={historySubTab}
@@ -834,7 +839,8 @@ export function ChatView() {
         runtimeActiveItems={runtimeActiveItems}
         runtimeToConsumeItems={runtimeToConsumeItems}
         runtimeConsumedItems={runtimeConsumedItems}
-      />
+      />}
+      </CollapsibleRail>
 
       {sessionHoverPreviewEnabled && (
         <ChatHoverMonitor
@@ -855,16 +861,25 @@ export function ChatView() {
             onFocus={() => {}}
             {...paneShared}
           />
-          <ChatFilesPanel
+          <CollapsibleRail side="right" label="工作栏" pinned={rightOpen} onPinnedChange={setRightOpen}
+            className="max-md:absolute max-md:inset-y-0 max-md:right-0 max-md:z-30 max-md:[&>button]:hidden">
+          {({ visible, onNavigate }) => <div className="flex min-h-0 flex-col">
+            {visible && <div className="flex gap-2 border-b border-[var(--om-divider)] p-2" role="group" aria-label="工作栏内容">
+              <button type="button" aria-pressed={rightPanel === "files"} onClick={() => setRightPanel("files")}>会话文件</button>
+              <button type="button" aria-pressed={rightPanel === "stages"} onClick={() => setRightPanel("stages")}>阶段工件</button>
+            </div>}
+            <div className="flex min-h-0 flex-1">
+            <ChatFilesPanel
             sessionId={effectiveSessionId}
-            open={rightFilesOpen}
-            onClose={() => setRightFilesOpen(false)}
+            open={visible && rightPanel === "files"}
+            onClose={() => { onNavigate(); setRightOpen(false); }}
           />
           <ChatStagesPanel
             workspaceId={selectedWorkspaceId}
-            open={rightStagesOpen}
-            onClose={() => setRightStagesOpen(false)}
-          />
+            open={visible && rightPanel === "stages"}
+            onClose={() => { onNavigate(); setRightOpen(false); }}
+          /></div></div>}
+          </CollapsibleRail>
         </div>
       </div>
 

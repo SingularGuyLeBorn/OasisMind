@@ -270,6 +270,7 @@ export function TableOfContents({
   active?: boolean;
 }) {
   const visible = usePostTocVisible();
+  const [preview, setPreview] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [manuallyExpanded, setManuallyExpanded] = useState<Set<string>>(new Set());
   const [mobileState, setMobileState] = useState({ active, open: false });
@@ -338,6 +339,7 @@ export function TableOfContents({
 
   const selectHeading = useCallback((id: string, fromMobile: boolean) => {
     setActiveId(id);
+    setPreview(false);
     if (fromMobile) setMobileOpen(false);
     scrollToId(id, containerRef?.current ?? null, fromMobile);
   }, [containerRef, setMobileOpen]);
@@ -450,12 +452,16 @@ export function TableOfContents({
         </div>
       )}
 
-      {!visible ? (
+      {active && <div className="fixed top-[5.5rem] right-4 z-30 hidden flex-col items-end xl:flex"
+        onMouseLeave={() => setPreview(false)}>
+      {!visible && (
         <button
           type="button"
-          onClick={() => setTocVisiblePersist(true)}
+          onMouseEnter={() => setPreview(true)}
+          onFocus={() => setPreview(true)}
+          onClick={() => { setPreview(false); setTocVisiblePersist(true); }}
           className={cn(
-            "fixed top-[5.5rem] right-4 z-30 hidden items-center gap-1.5 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-xs font-medium text-[var(--om-text-2)] shadow-sm transition hover:border-[var(--om-brand)] hover:text-[var(--om-brand-deep)] xl:inline-flex",
+            "inline-flex items-center gap-1.5 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-xs font-medium text-[var(--om-text-2)] shadow-sm transition hover:border-[var(--om-brand)] hover:text-[var(--om-brand-deep)]",
             className,
           )}
           aria-label="显示本页目录"
@@ -464,10 +470,12 @@ export function TableOfContents({
           <ListTree className="h-4 w-4" />
           目录
         </button>
-      ) : (
+      )}
+      {(visible || preview) && (
         <aside
+          data-toc-preview={!visible && preview}
           className={cn(
-            "fixed top-[5.5rem] right-4 z-30 hidden w-72 flex-col overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] text-[var(--om-text-1)] shadow-[0_20px_50px_-30px_rgba(0,60,120,0.28)] xl:flex",
+            "flex w-72 flex-col overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] text-[var(--om-text-1)] shadow-[0_20px_50px_-30px_rgba(0,60,120,0.28)]",
             className,
           )}
         >
@@ -482,7 +490,7 @@ export function TableOfContents({
               </span>
               <button
                 type="button"
-                onClick={() => setTocVisiblePersist(false)}
+                onClick={() => { setPreview(false); setTocVisiblePersist(false); }}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
                 aria-label="隐藏本页目录"
                 title="隐藏目录"
@@ -502,6 +510,7 @@ export function TableOfContents({
           />
         </aside>
       )}
+      </div>}
     </>
   );
 }

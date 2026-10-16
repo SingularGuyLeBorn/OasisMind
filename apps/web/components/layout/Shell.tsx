@@ -8,6 +8,7 @@ import { MobileBottomNav } from "./mobileNav";
 import { getLayoutMode, showPostSidebar, showSystemSidebar } from "./layoutMode";
 import { cn } from "@/lib/utils";
 import { MainScrollProvider } from "./MainScrollContext";
+import { CollapsibleRail } from "./CollapsibleRail";
 
 /**
  * 侧栏按模式动态加载，避免根布局静态吞进 PostTreeNav → shared → hooks 整图。
@@ -30,6 +31,7 @@ interface ShellProps {
 export function Shell({ children, className }: ShellProps) {
   const pathname = usePathname();
   const [menuState, setMenuState] = useState({ path: pathname, open: false });
+  const [navigationPinned, setNavigationPinned] = useState(true);
 
   if (menuState.path !== pathname) {
     setMenuState({ path: pathname, open: false });
@@ -54,9 +56,10 @@ export function Shell({ children, className }: ShellProps) {
       <Navbar mode={mode} onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {systemSidebar && <Sidebar className="hidden lg:flex" />}
-
-        {postSidebar && <PostSidebar className="hidden lg:flex" />}
+        {(systemSidebar || postSidebar) && <CollapsibleRail side="left" label="左侧导航" pinned={navigationPinned}
+          onPinnedChange={setNavigationPinned} className="hidden lg:flex">
+          {() => systemSidebar ? <Sidebar /> : <PostSidebar />}
+        </CollapsibleRail>}
 
         {showDrawer && (
           <>

@@ -73,4 +73,18 @@ describe("TableOfContents 阅读导航", () => {
     await act(async () => root.render(<TableOfContents content="# 标题" active={false} />));
     expect(container.querySelector('button[aria-label="打开本页目录"]')).toBeNull();
   });
+  it("桌面隐藏目录悬停可预览，选择章节后继续隐藏", async () => {
+    article = document.createElement("article");
+    article.innerHTML = '<h1 id="om-h-0">标题</h1><h2 id="om-h-1">第一节</h2>';
+    document.body.appendChild(article);
+    await act(async () => root.render(<TableOfContents content={"# 标题\n\n## 第一节"} containerRef={{ current: article }} />));
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="隐藏本页目录"]')!.click());
+    const trigger = container.querySelector<HTMLButtonElement>('[aria-label="显示本页目录"]')!;
+    await act(async () => trigger.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+    expect(container.querySelector('[data-toc-preview="true"]')).not.toBeNull();
+    await act(async () => container.querySelector<HTMLAnchorElement>('[data-toc-preview] a')!.click());
+    expect(container.querySelector('[data-toc-preview]')).toBeNull();
+    expect(localStorage.getItem("om-post-toc-visible")).toBe("0");
+    expect(location.hash).toBe("#om-h-0");
+  });
 });
