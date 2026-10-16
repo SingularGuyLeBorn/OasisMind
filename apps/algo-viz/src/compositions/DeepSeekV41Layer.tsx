@@ -1,4 +1,4 @@
-import React, { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import React, { createContext, memo, useCallback, useContext, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import {
   Background,
   ConnectionMode,
@@ -14,6 +14,7 @@ import {
   type Connection,
   type Node,
   type NodeProps,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import {
   latexHtml,
@@ -1285,16 +1286,29 @@ export function restoreMeasuredGeometry(graph: { nodes: DiagramNode[]; edges: Ed
   return complete ? { ...graph, nodes } : graph;
 }
 
+export function buildMeasuredGraph(layer: number, phase: ExecutionPhase, cache: DiagramGeometryCache) {
+  const graph = buildGraph(layer, new Map(), phase);
+  // 先读取内容节点的自然高度，再计算依赖它们的父框和坐标。
+  // 不能先要求整图缓存命中：Query 父框的 key 本身就依赖尚未恢复的 RMSNorm 高度。
+  const heights = new Map<string, number>();
+  for (const node of graph.nodes) {
+    if (!CONTENT_SIZED_KINDS.has(node.data.kind)) continue;
+    const measured = cache.get(geometryKey(node.data, Number(node.style?.width), node.style?.height ?? node.style?.minHeight));
+    if (measured) heights.set(node.id, measured.height);
+  }
+  return restoreMeasuredGeometry(buildGraph(layer, heights, phase), cache);
+}
+
 // [OM-FREEPLAY] 屏幕外预留 240px 提前恢复详情；只卸载已实测内容，节点、端口和编辑数据保留。
 const DETAIL_OVERSCAN = 240;
 type CanvasClip = { left: number; top: number; right: number; bottom: number };
 const CanvasClipContext = createContext<CanvasClip | undefined>(undefined);
-export function isArchitectureDetailVisible(rect: { x: number; y: number; width: number; height: number }, viewport: { x: number; y: number; zoom: number; width: number; height: number; clip?: CanvasClip }) {
+export function isArchitectureDetailVisible(rect: { x: number; y: number; width: number; height: number }, viewport: { x: number; y: number; zoom: number; width: number; height: number; clip?: CanvasClip }, overscan = DETAIL_OVERSCAN) {
   const clip = viewport.clip ?? { left: 0, top: 0, right: viewport.width, bottom: viewport.height };
-  return rect.x * viewport.zoom + viewport.x <= clip.right + DETAIL_OVERSCAN
-    && (rect.x + rect.width) * viewport.zoom + viewport.x >= clip.left - DETAIL_OVERSCAN
-    && rect.y * viewport.zoom + viewport.y <= clip.bottom + DETAIL_OVERSCAN
-    && (rect.y + rect.height) * viewport.zoom + viewport.y >= clip.top - DETAIL_OVERSCAN;
+  return rect.x * viewport.zoom + viewport.x <= clip.right + overscan
+    && (rect.x + rect.width) * viewport.zoom + viewport.x >= clip.left - overscan
+    && rect.y * viewport.zoom + viewport.y <= clip.bottom + overscan
+    && (rect.y + rect.height) * viewport.zoom + viewport.y >= clip.top - overscan;
 }
 
 function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
@@ -1302,13 +1316,18 @@ function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
   const geometryCache = useContext(GeometryCacheContext);
   const { getInternalNode } = useReactFlow<DiagramNode>();
   const handleBounds = useStore(state => state.nodeLookup.get(id)?.internals.handleBounds);
-  const showDetails = useStore(state => {
+  const detailVisibility = useStore(state => {
     const node = state.nodeLookup.get(id);
     // 首次必须完整测量，不用猜测高度替代真实布局；选择中的节点也保持交互内容。
-    if (selected || !node?.measured.width || !node.measured.height || !node.internals.handleBounds) return true;
-    if (!state.width || !state.height) return false;
-    return isArchitectureDetailVisible({ ...node.internals.positionAbsolute, width: node.measured.width, height: node.measured.height }, { x: state.transform[0], y: state.transform[1], zoom: state.transform[2], width: state.width, height: state.height, clip });
+    if (selected || !node?.measured.width || !node.measured.height || !node.internals.handleBounds) return 2;
+    if (!state.width || !state.height) return 0;
+    const rect = { ...node.internals.positionAbsolute, width: node.measured.width, height: node.measured.height };
+    const viewport = { x: state.transform[0], y: state.transform[1], zoom: state.transform[2], width: state.width, height: state.height, clip };
+    return isArchitectureDetailVisible(rect, viewport, 0) ? 2 : isArchitectureDetailVisible(rect, viewport) ? 1 : 0;
   });
+  // 预加载区仍在屏幕外，交给可中断渲染；已经可见或正在编辑的内容必须同步显示。
+  const preparedDetails = useDeferredValue(detailVisibility > 0);
+  const showDetails = detailVisibility === 2 || preparedDetails;
   const internal = getInternalNode(id);
   const measuredWidth = internal?.measured.width, measuredHeight = internal?.measured.height;
   const declaredWidth = storedDimension(internal?.width) ?? storedDimension(internal?.style?.width) ?? measuredWidth;
@@ -1322,7 +1341,8 @@ function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
     if (geometryCache.size > 512) geometryCache.delete(geometryCache.keys().next().value!);
   }, [data, declaredWidth, declaredHeight, geometryCache, handleBounds, measuredWidth, measuredHeight]);
   if (!showDetails && internal?.measured.height) return <div data-boundary-connectable={data.kind !== "structure-operator"} data-detail-suspended style={{ width: "100%", height: internal.measured.height, position: "relative" }}>
-    {(["source", "target"] as const).flatMap(type => (internal.internals.handleBounds?.[type] ?? []).map(port => <Handle key={`${type}-${port.id}`} id={port.id ?? undefined} type={type} position={port.position} style={{ ...handle, left: port.x + port.width / 2, top: port.y + port.height / 2, right: "auto", bottom: "auto", transform: "translate(-50%,-50%)" }} />))}
+    {/* 离屏端口只供几何测量，不订阅连接手势状态；回到屏幕时恢复真实 Handle。 */}
+    {(["source", "target"] as const).flatMap(type => (internal.internals.handleBounds?.[type] ?? []).map(port => <div key={`${type}-${port.id}`} className={`react-flow__handle react-flow__handle-${port.position} ${type}`} data-nodeid={id} data-handleid={port.id ?? undefined} data-handlepos={port.position} style={{ ...handle, position: "absolute", pointerEvents: "none", left: port.x + port.width / 2, top: port.y + port.height / 2, right: "auto", bottom: "auto", transform: "translate(-50%,-50%)" }} />))}
   </div>;
   const compact = data.kind === "moe-sum" || data.kind === "expert-scale";
   const portColor = data.tone === "amber" ? COLORS.amber : data.tone === "blue" ? COLORS.blue : COLORS.green;
@@ -1758,11 +1778,7 @@ export function applySavedLayout(graph: { nodes: DiagramNode[]; edges: EditableE
 
 function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase }) {
   const geometryCache = useContext(GeometryCacheContext)!;
-  const initialGraph = useMemo(() => {
-    const measured = restoreMeasuredGeometry(buildGraph(layer, new Map(), phase), geometryCache);
-    const heights = new Map(measured.nodes.filter(node => node.measured?.height).map(node => [node.id, node.measured!.height!]));
-    return restoreMeasuredGeometry(buildGraph(layer, heights, phase), geometryCache);
-  }, [layer, phase, geometryCache]);
+  const initialGraph = useMemo(() => buildMeasuredGraph(layer, phase, geometryCache), [layer, phase, geometryCache]);
   const measuredLayoutRef = useRef(initialGraph);
   const [nodes, setNodes, onNodesChange] = useNodesState<DiagramNode>(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<EditableEdge>(initialGraph.edges);
@@ -1771,6 +1787,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
   const [historyRevision, setHistoryRevision] = useState(0);
   const [clickConnectionPreview, setClickConnectionPreview] = useState<{ fromX: number; fromY: number; toX: number; toY: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const flowRef = useRef<ReactFlowInstance<DiagramNode, EditableEdge> | null>(null);
   const [canvasClip, setCanvasClip] = useState<CanvasClip>();
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1869,13 +1886,26 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
     } catch {
       window.localStorage.removeItem(storageKey);
     }
-    setNodes(graph.nodes);
-    setEdges(graph.edges);
+    const flow = flowRef.current;
+    if (flow) {
+      // 同一批队列内先替换图，再请求完整图适配；复用画布、观察器和节点 DOM。
+      flow.setNodes(graph.nodes);
+      flow.setEdges(graph.edges);
+      flow.fitView(FIT_VIEW_OPTIONS).catch(() => {});
+    } else {
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+    }
     setSelectedEdgeIds([]);
     setSaveState("idle");
     pastRef.current = [];
     futureRef.current = [];
     pendingHistoryRef.current = null;
+    resizeHistoryActiveRef.current = false;
+    connectionGestureRef.current = null;
+    completedConnectionRef.current = false;
+    resetConnectionRef.current?.();
+    setClickConnectionPreview(null);
     setHistoryRevision((value) => value + 1);
   }, [initialGraph, storageKey, geometryCache]);
 
@@ -2057,21 +2087,6 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
       setClickConnectionPreview((current) => current ? { ...current, toX: point.x, toY: point.y } : null);
     }}
   >
-    <style>{`
-      .architecture-flow [data-boundary-connectable="true"][data-frame-selected="true"] > :last-child { border-color: ${COLORS.blue} !important; box-shadow: inset 0 0 0 1px ${COLORS.blue} !important; }
-      .architecture-flow .react-flow__handle-top { top: 0; }
-      .architecture-flow .react-flow__handle-bottom { bottom: 0; }
-      .architecture-flow .react-flow__handle-left { left: 0; }
-      .architecture-flow .react-flow__handle-right { right: 0; }
-      .architecture-flow .react-flow__handle { opacity: 0; }
-      .architecture-flow .react-flow__handle { z-index: 6; }
-      .architecture-flow .react-flow__handle:hover { opacity: 1; }
-      .architecture-flow .architecture-resize-handle:hover { opacity: 1 !important; }
-      .architecture-flow .architecture-edge-endpoint { opacity: 0; }
-      .architecture-flow .architecture-edge-endpoint:hover { opacity: 1; }
-      .architecture-flow .architecture-edge-endpoint[data-selected="true"] { opacity: 1; }
-      .architecture-flow .architecture-edge-endpoint { z-index: 1001; }
-    `}</style>
     <div style={{ position: "absolute", top: 12, right: 16, zIndex: 8, display: "flex", alignItems: "center", gap: 6, padding: 7, border: `1px solid ${COLORS.line}`, borderRadius: 9, background: "rgba(255,254,250,.96)", boxShadow: "0 4px 14px rgba(42,41,36,.08)" }}>
       <button type="button" onClick={saveLayout} style={{ ...editorButton, color: saveState === "error" ? COLORS.rose : COLORS.ink }}>{saveState === "saved" ? "已保存到本机" : saveState === "error" ? "保存失败，请重试" : "保存到本机"}</button>
       <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z" style={{ ...editorButton, opacity: canUndo ? 1 : .45, cursor: canUndo ? "pointer" : "default" }}>撤销</button>
@@ -2096,6 +2111,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
     <CanvasClipContext.Provider value={canvasClip}>
     <ReactFlow
       className="architecture-flow"
+      onInit={instance => { flowRef.current = instance; }}
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -2173,11 +2189,25 @@ export const DeepSeekV41Layer: React.FC<Props> = ({ initialLayer = 1 }) => {
   const [phase, setPhase] = useState<ExecutionPhase>("prefill");
   const mode = modeForLayer(layer);
   return <div style={{ width: "100%", height: "100%", background: COLORS.paper, fontFamily: "Inter, PingFang SC, Microsoft YaHei, system-ui, sans-serif", position: "relative" }}>
+    {/* 样式属于整个图组件，切层不能销毁再插入样式表，使整页公式样式全部失效。 */}
+    <style>{`
+      .architecture-flow [data-boundary-connectable="true"][data-frame-selected="true"] > :last-child { border-color: ${COLORS.blue} !important; box-shadow: inset 0 0 0 1px ${COLORS.blue} !important; }
+      .architecture-flow .react-flow__handle-top { top: 0; }
+      .architecture-flow .react-flow__handle-bottom { bottom: 0; }
+      .architecture-flow .react-flow__handle-left { left: 0; }
+      .architecture-flow .react-flow__handle-right { right: 0; }
+      .architecture-flow .react-flow__handle { opacity: 0; z-index: 6; }
+      .architecture-flow .react-flow__handle:hover { opacity: 1; }
+      .architecture-flow .architecture-resize-handle:hover { opacity: 1 !important; }
+      .architecture-flow .architecture-edge-endpoint { opacity: 0; z-index: 1001; }
+      .architecture-flow .architecture-edge-endpoint:hover { opacity: 1; }
+      .architecture-flow .architecture-edge-endpoint[data-selected="true"] { opacity: 1; }
+    `}</style>
     <div style={{ position: "absolute", inset: "0 0 auto 0", zIndex: 10, minHeight: 122, padding: "18px 22px 14px", background: "rgba(247,245,240,.97)", borderBottom: `1px solid ${COLORS.line}` }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 12 }}><div><strong style={{ fontSize: 21 }}>DeepSeek V4.1-Flash · Layer {layer}</strong><span style={{ marginLeft: 12, color: mode === "full" ? COLORS.green : mode === "reindex" ? COLORS.amber : mode === "reuse" ? COLORS.blue : COLORS.rose, fontWeight: 800 }}>{modeLabel(mode)}</span><span style={{ marginLeft: 12, fontSize: 13, color: COLORS.blue }}>mHC · 4 路{hasEngram(layer) ? " ＋ Engram" : ""}</span></div><span style={{ color: COLORS.muted, fontSize: 12 }}>随时平移缩放、拖框、改尺寸、增删连线；与文章编辑状态无关</span></div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>{(["prefill", "decode"] as const).map(value => <button key={value} type="button" aria-pressed={phase === value} onClick={() => setPhase(value)} style={{ ...editorButton, background: phase === value ? COLORS.green : COLORS.card, color: phase === value ? "white" : COLORS.ink }}>{value === "prefill" ? "Prefill · 整段矩阵" : "Decode · 单步一行"}</button>)}<span style={{ fontSize: 12, color: COLORS.muted }}>{phase === "prefill" ? "N 行并行 · t 是其中一个序列位置" : "当前 1 行 · t=P+k · 历史 KV 来自缓存"}</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(20,1fr)", gap: 4 }}>{Array.from({ length: 40 }, (_, i) => i + 1).map((value) => { const valueMode = modeForLayer(value); const active = value === layer; const color = valueMode === "full" ? COLORS.green : valueMode === "reindex" ? COLORS.amber : valueMode === "reuse" ? COLORS.blue : COLORS.rose; return <button key={value} type="button" onClick={() => setLayer(value)} title={`Layer ${value} · mHC${hasEngram(value) ? " · Engram 查表与注入" : ""}`} aria-pressed={active} style={{ border: `1px solid ${active ? color : COLORS.line}`, background: active ? color : COLORS.card, color: active ? "white" : color, borderRadius: 5, padding: "4px 0", fontWeight: 750, fontSize: 10.5, cursor: "pointer" }}>{value}</button>; })}</div>
     </div>
-    <div style={{ position: "absolute", inset: "174px 0 0" }}><GeometryCacheContext.Provider value={geometryCache}><DiagramCanvas key={`${phase}-${layer}`} layer={layer} phase={phase} /></GeometryCacheContext.Provider></div>
+    <div style={{ position: "absolute", inset: "174px 0 0" }}><GeometryCacheContext.Provider value={geometryCache}><DiagramCanvas layer={layer} phase={phase} /></GeometryCacheContext.Provider></div>
   </div>;
 };

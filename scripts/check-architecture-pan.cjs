@@ -61,7 +61,7 @@ const url = 'http://localhost:3000/posts/' + encodeURIComponent('1-架构与缓�
         console.log(JSON.stringify({ errors }));
         fs.writeFileSync('work/architecture-pan-acceptance.json', JSON.stringify({ errors, results }, null, 2));
         assert.deepEqual(errors, []);
-        assert.ok(results.every(r => r.downMs < 100 && r.max < 100), '每次按下及移动到下一帧均低于 100ms');
+        assert.ok(results.every(r => r.downMs < 30 && r.max < 30), '每次按下及移动到下一帧均低于 30ms');
     }
     finally {
         await browser.close();

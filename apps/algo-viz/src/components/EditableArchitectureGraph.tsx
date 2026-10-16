@@ -250,7 +250,9 @@ export function latexHtml(tex: string, display = false) {
     formulaHtmlCache.set(key, cached);
     return cached;
   }
+  // 交互图使用浏览器原生 MathML，保留公式语义与 TeX 注释，避免每个字形生成多层 HTML 排版盒。
   const html = katex.renderToString(tex, {
+    output: "mathml",
     displayMode: display,
     throwOnError: false,
     strict: false,
@@ -633,6 +635,27 @@ type RoutePlan = { signature: string; routes: Map<string, XYPosition[]>; frames:
 const routingCache = new WeakMap<object, RoutePlan>();
 // 同一次 React Flow 状态更新只规划一次；各边只订阅自己的点列，不订阅整张节点/边数组。
 const routingSnapshots = new WeakMap<object, Map<string, XYPosition[]>>();
+type RoutingInput = { nodes: Node[]; edges: EditableEdge[]; geometry: { node: InternalNode<Node>; x: number; y: number; width?: number; height?: number; handles: InternalNode<Node>["internals"]["handleBounds"] }[]; routes: Map<string, XYPosition[]> };
+const routingInputs = new WeakMap<object, RoutingInput>();
+
+export function routesForStore(owner: object, nodes: Node[], edges: EditableEdge[], lookup: ReadonlyMap<string, InternalNode<Node>>) {
+  const previous = routingInputs.get(owner);
+  // 平移/缩放只改变视口，连世界坐标的签名字符串也不应重新构造。
+  // 同时核对可变内部表的数值与端口引用，不能仅凭 nodes 数组引用漏掉 ResizeObserver 更新。
+  if (previous?.nodes === nodes && previous.edges === edges && previous.geometry.length === lookup.size
+    && previous.geometry.every(g => {
+      const n = lookup.get(g.node.id);
+      return n === g.node && n.internals.positionAbsolute.x === g.x && n.internals.positionAbsolute.y === g.y
+        && n.measured.width === g.width && n.measured.height === g.height && n.internals.handleBounds === g.handles;
+    })) return previous.routes;
+  const routes = planArchitectureRoutes(owner, nodes, edges, id => lookup.get(id));
+  const geometry = [...lookup.values()].map(node => ({ node, x: node.internals.positionAbsolute.x, y: node.internals.positionAbsolute.y, width: node.measured.width, height: node.measured.height, handles: node.internals.handleBounds }));
+  routingInputs.set(owner, { nodes, edges, geometry, routes });
+  return routes;
+}
+
+// [OM-FREEPLAY] 签名按 1/1024 世界像素归一，滤掉缩放后 DOM 测量的浮点尾差；绘制坐标保持原精度。
+const endpointKey = (point: XYPosition & { side: Position }) => [Math.round(point.x * 1024), Math.round(point.y * 1024), point.side];
 
 export function planArchitectureRoutes(owner: object, nodes: Node[], edges: EditableEdge[], getInternalNode: (id: string) => InternalNode<Node> | undefined) {
   const cached = routingCache.get(owner);
@@ -660,7 +683,7 @@ export function planArchitectureRoutes(owner: object, nodes: Node[], edges: Edit
     const source = endpoint(edge, "source"), target = endpoint(edge, "target");
     return source && target ? [{ edge, source, target }] : [];
   }).sort((a, b) => Number(Boolean(b.edge.data?.waypoints?.length)) - Number(Boolean(a.edge.data?.waypoints?.length)) || a.source.y - b.source.y || a.source.x - b.source.x || a.edge.id.localeCompare(b.edge.id));
-  const edgeKeys = new Map(items.map(({ edge, source, target }) => [edge.id, JSON.stringify([edge.source, edge.target, source, target, edge.data?.waypoints])]));
+  const edgeKeys = new Map(items.map(({ edge, source, target }) => [edge.id, JSON.stringify([edge.source, edge.target, endpointKey(source), endpointKey(target), edge.data?.waypoints])]));
   // 仅几何与端口影响路由；选中、拖标签、视口变化不能触发全图重算。内部端口变化也纳入失效键。
   const signature = JSON.stringify([[...frames], [...edgeKeys]]);
   if (cached?.signature === signature) return cached.routes;
@@ -731,7 +754,7 @@ function EditableOrthogonalEdgeView({
     let routes = routingSnapshots.get(state);
     if (!routes) {
       // 各 hook 的包装对象不同，getState 才是同一画布的共享身份。
-      routes = planArchitectureRoutes(store.getState, state.nodes, state.edges as EditableEdge[], id => state.nodeLookup.get(id));
+      routes = routesForStore(store.getState, state.nodes, state.edges as EditableEdge[], state.nodeLookup);
       routingSnapshots.set(state, routes);
     }
     return routes.get(id);

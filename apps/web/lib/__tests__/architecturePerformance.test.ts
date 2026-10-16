@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import katex from "katex";
 import { Position, type InternalNode, type Node } from "@xyflow/react";
-import { latexHtml, pathWithLabelGap, planArchitectureRoutes, type EditableEdge } from "../../../algo-viz/src/components/EditableArchitectureGraph";
-import { applySavedLayout, buildGraph, captureDiagramLayout, isArchitectureDetailVisible, restoreMeasuredGeometry } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
+import { latexHtml, pathWithLabelGap, planArchitectureRoutes, routesForStore, type EditableEdge } from "../../../algo-viz/src/components/EditableArchitectureGraph";
+import { applySavedLayout, buildGraph, buildMeasuredGraph, captureDiagramLayout, isArchitectureDetailVisible, restoreMeasuredGeometry } from "../../../algo-viz/src/compositions/DeepSeekV41Layer";
 
 it("移出再移入屏幕不重复排版同一公式，行间与行内缓存分开", () => {
   const render = vi.spyOn(katex, "renderToString");
@@ -10,9 +10,20 @@ it("移出再移入屏幕不重复排版同一公式，行间与行内缓存分�
     const tex = "x_{\\mathrm{panCacheRegression}}";
     expect(latexHtml(tex)).toBe(latexHtml(tex));
     expect(render).toHaveBeenCalledTimes(1);
-    expect(latexHtml(tex, true)).toContain("katex-display");
+    expect(latexHtml(tex, true)).toContain('display="block"');
     expect(render).toHaveBeenCalledTimes(2);
   } finally { render.mockRestore(); }
+});
+
+it("原生公式保留分数、上下标和 TeX 语义，不生成逐字形 HTML 盒", () => {
+  const root = document.createElement("div");
+  root.innerHTML = latexHtml("\\frac{q_{1,t}K^{\\mathsf T}}{\\sqrt{512}}", true);
+  expect(root.querySelector('math[display="block"]')).not.toBeNull();
+  expect(root.querySelector("mfrac")).not.toBeNull();
+  expect(root.querySelector("msub")).not.toBeNull();
+  expect(root.querySelector("msqrt")).not.toBeNull();
+  expect(root.querySelector('annotation[encoding="application/x-tex"]')?.textContent).toContain("q_{1,t}");
+  expect(root.querySelector(".katex-html")).toBeNull();
 });
 
 describe("文章内画布按实际屏幕裁剪", () => {
@@ -20,6 +31,12 @@ describe("文章内画布按实际屏幕裁剪", () => {
   it("屏幕下方内容不因为画布很高而保持渲染", () => {
     expect(isArchitectureDetailVisible({ x: 100, y: 1200, width: 600, height: 400 }, viewport)).toBe(false);
     expect(isArchitectureDetailVisible({ x: 100, y: 600, width: 600, height: 400 }, viewport)).toBe(true);
+  });
+  it("区分屏幕内立即显示与屏幕外的可中断预加载", () => {
+    const rect = { x: 100, y: 800, width: 600, height: 400 };
+    expect(isArchitectureDetailVisible(rect, viewport)).toBe(true);
+    expect(isArchitectureDetailVisible(rect, viewport, 0)).toBe(false);
+    expect(isArchitectureDetailVisible(rect, { ...viewport, y: -200 }, 0)).toBe(true);
   });
   it("页面滚动或画布平移后显示进入屏幕的内容", () => {
     const rect = { x: 100, y: 1200, width: 600, height: 400 };
@@ -50,6 +67,21 @@ function fixture() {
 }
 
 describe("架构图增量路由", () => {
+  it("视口更新复用路由，内部尺寸单独改变仍会失效", () => {
+    const f = fixture();
+    const first = routesForStore(f.owner, f.nodes, f.edges, f.internals);
+    expect(routesForStore(f.owner, f.nodes, f.edges, f.internals)).toBe(first);
+    f.internals.get("a")!.measured.width = 200;
+    expect(routesForStore(f.owner, f.nodes, f.edges, f.internals)).not.toBe(first);
+  });
+  it("缩放测量浮点尾差不重排通道，真正移动端口仍更新", () => {
+    const f = fixture();
+    const first = planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode);
+    f.internals.get("a")!.internals.handleBounds!.source![0].x += 1e-8;
+    expect(planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode)).toBe(first);
+    f.internals.get("a")!.internals.handleBounds!.source![0].x += 1;
+    expect(planArchitectureRoutes(f.owner, f.nodes, f.edges, f.getNode)).not.toBe(first);
+  });
   it("选择或改标签不改变几何，不重算路线", () => {
     const { owner, nodes, edges, getNode } = fixture();
     const first = planArchitectureRoutes(owner, nodes, edges, getNode);
@@ -148,6 +180,19 @@ describe("详情可见性以世界坐标和缩放计算", () => {
     expect(isArchitectureDetailVisible(rect, viewport)).toBe(false);
     expect(isArchitectureDetailVisible(rect, { ...viewport, zoom: .5, x: -2500, y: -2500 })).toBe(true);
   });
+});
+
+it("回到已测量层时，先恢复子节点高度再匹配父框几何，避免缓存循环依赖", () => {
+  const graph = buildGraph(15, new Map([["q-rmsnorm", 777], ["norm1", 880]]));
+  const cache = new Map(graph.nodes.map(node => [
+    JSON.stringify([node.data, Number(node.style!.width), node.style!.height ?? node.style!.minHeight]),
+    { width: Math.round(Number(node.style!.width)), height: node.id === "q-rmsnorm" ? 777 : node.id === "norm1" ? 880 : Number(node.style!.height ?? 300), handles: [] },
+  ]));
+  const result = buildMeasuredGraph(15, "prefill", cache);
+  expect(result.nodes.every(node => node.measured)).toBe(true);
+  expect(result.nodes.find(node => node.id === "q")!.data.queryNormHeight).toBe(777);
+  const expected = buildGraph(15, new Map(result.nodes.map(node => [node.id, node.measured!.height!])));
+  expect(result.nodes.find(node => node.id === "q")!.position).toEqual(expected.nodes.find(node => node.id === "q")!.position);
 });
 
 it("保存恢复使用编辑后的实际尺寸，不被初始 style 覆盖", () => {
