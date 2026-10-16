@@ -270,6 +270,8 @@ const EDGE_PORT_LEAD = 24;
 const EDGE_NODE_CLEARANCE = 28;
 // [OM-FREEPLAY] 相邻自动线路保留 16px 的中心线间距，兼顾开放箭头和短公式标签。
 const EDGE_LANE_GAP = 16;
+// 连线变量显著大于图内普通说明文字（13–16px）；主标签与箭头处复述共用字号。
+const EDGE_LABEL_FONT_SIZE = 20;
 
 export function architectureFanoutGap(branches: number) {
   return 2 * EDGE_PORT_LEAD + Math.max(0, branches - 1) * EDGE_LANE_GAP + EDGE_NODE_CLEARANCE;
@@ -947,7 +949,7 @@ function EditableOrthogonalEdgeView({
       }}
     />
     <EdgeLabelRenderer>
-      {data?.labelTex && terminalCenter && <div data-edge-terminal-label={id} aria-label={data.labelTex} style={{position:"absolute",transform:`translate(-50%,-50%) translate(${terminalCenter.x}px,${terminalCenter.y}px)`,zIndex:1002,padding:"3px 7px",background:"transparent",color:"#716d63",fontSize:14,fontWeight:700,pointerEvents:"none",whiteSpace:"nowrap"}} dangerouslySetInnerHTML={{__html:labelHtml}} />}
+      {data?.labelTex && terminalCenter && <div data-edge-terminal-label={id} aria-label={data.labelTex} style={{position:"absolute",transform:`translate(-50%,-50%) translate(${terminalCenter.x}px,${terminalCenter.y}px)`,zIndex:1002,padding:"3px 7px",background:"transparent",color:"#716d63",fontSize:EDGE_LABEL_FONT_SIZE,fontWeight:700,pointerEvents:"none",whiteSpace:"nowrap"}} dangerouslySetInnerHTML={{__html:labelHtml}} />}
       {(["source", "target"] as const).map(endpoint => <button
         key={endpoint}
         type="button"
@@ -977,7 +979,7 @@ function EditableOrthogonalEdgeView({
             borderRadius: 5,
             background: "transparent",
             color: "#716d63",
-            fontSize: 14,
+            fontSize: EDGE_LABEL_FONT_SIZE,
             fontWeight: 700,
             pointerEvents: "all",
             cursor: "grab",
