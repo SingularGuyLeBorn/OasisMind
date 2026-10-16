@@ -112,6 +112,31 @@ describe("mHC 与 Engram 的真实主路径", () => {
     expect(input.querySelectorAll('[data-vector-elements]').length).toBeGreaterThan(3);
   });
 
+  it.each(["A", "F"] as const)("%s 回写保留 C 的二维矩阵，每路的残差混合与输出广播左右并行汇入加法", sublayer => {
+    const {root,formulas}=render(createElement(MhcPost,{layer:15,sublayer}));
+    const matrix=root.querySelector<HTMLElement>('[data-mhc-comb-matrix]')!;
+    expect(matrix.style.gridTemplateColumns).toBe('42px repeat(4,minmax(0,1fr))');
+    expect([...matrix.querySelectorAll('[aria-label]')].map(e=>e.getAttribute('aria-label'))).toEqual([1,2,3,4].flatMap(k=>[1,2,3,4].map(j=>`c_{${k}${j}}`)));
+    for (const group of root.querySelectorAll<HTMLElement>('[data-mhc-output-copy]')) {
+      const branches=group.querySelector<HTMLElement>('[data-mhc-parallel-branches]')!;
+      expect(branches.style.gridTemplateColumns).toBe('repeat(2,minmax(0,1fr))');
+      expect(branches.children[0].hasAttribute('data-mhc-residual-mix')).toBe(true);
+      expect(branches.children[1].hasAttribute('data-mhc-broadcast')).toBe(true);
+      expect(branches.children[0].querySelectorAll('[data-mhc-residual-product]')).toHaveLength(4);
+      expect(branches.children[1].querySelectorAll('[data-mhc-post-product]')).toHaveLength(1);
+      expect(branches.nextElementSibling?.hasAttribute('data-mhc-final-sum')).toBe(true);
+      expect(branches.children[0].lastElementChild?.hasAttribute('data-mhc-residual-result')).toBe(true);
+      expect(branches.children[1].lastElementChild?.hasAttribute('data-mhc-broadcast-result')).toBe(true);
+    }
+    for (const product of root.querySelectorAll('[data-mhc-residual-product], [data-mhc-post-product]')) {
+      expect((product.children[0] as HTMLElement).style.backgroundColor).toBe((root.querySelector('[data-mhc-comb-input]') as HTMLElement).style.backgroundColor);
+    }
+    expect(root.querySelector('[data-mhc-q-input]')?.textContent).toContain('来自本子层 mHC 系数分支');
+    expect(root.querySelector('[data-mhc-sublayer-input]')?.textContent).toContain(sublayer==='A'?'Attention 输出投影':'FFN 专家加权汇总');
+    expect(formulas).toContain('\\mathbf r=(2.5,2.5,2.5,2.5)');
+    expect(formulas).toContain('\\mathbf q\\,o=(1,2,3,4)');
+  });
+
   it("Indexer 展示代表 Head 的两个操作数、独立权重与得分矩阵", () => {
     const {root,formulas}=render(createElement(IndexScoreProcess,{layer:15,kvSource:15}));
     expect([...root.querySelectorAll('[data-index-head]')].map(e=>e.getAttribute('data-index-head'))).toEqual(['1','2','32']);
