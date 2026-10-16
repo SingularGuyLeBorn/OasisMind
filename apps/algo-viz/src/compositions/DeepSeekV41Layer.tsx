@@ -85,7 +85,7 @@ type NodeKind =
   | "structure-group"
   | "structure-operator";
 
-type DiagramTone = "neutral" | "green" | "amber" | "blue";
+type DiagramTone = "neutral" | "green" | "amber" | "blue" | "violet" | "rose" | "cyan";
 type DiagramData = {
   kind: NodeKind;
   layer: number;
@@ -121,6 +121,11 @@ const COLORS = {
   blue: "#667c96",
   blueSoft: "#e9edf2",
   rose: "#9a625d",
+  roseSoft: "#f4e7e5",
+  violet: "#795a97",
+  violetSoft: "#eee7f5",
+  cyan: "#287e87",
+  cyanSoft: "#e1f0f2",
 };
 
 // [OM-FREEPLAY] 数值仅展示 Router 排序、选择与加权关系，不代表真实 token 的输出。
@@ -196,9 +201,8 @@ function MathFormula({ tex, display = false }: { tex: string; display?: boolean 
   return <span aria-label={tex} style={{ fontSize: "max(1em, 10.5px)" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-function Box({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "green" | "amber" | "blue" }) {
-  const color = tone === "green" ? COLORS.green : tone === "amber" ? COLORS.amber : tone === "blue" ? COLORS.blue : COLORS.line;
-  const background = tone === "green" ? COLORS.greenSoft : tone === "amber" ? COLORS.amberSoft : tone === "blue" ? COLORS.blueSoft : COLORS.card;
+function Box({ children, tone = "neutral" }: { children: ReactNode; tone?: DiagramTone }) {
+  const { color, background } = tonePalette(tone);
   return <div style={{ minWidth: 0, border: `1.5px solid ${color}`, borderRadius: 8, padding: "7px 8px", background, textAlign: "center", overflow: "hidden" }}>{children}</div>;
 }
 
@@ -252,14 +256,9 @@ function Title({ children }: { children: ReactNode }) {
   return <div style={{ padding: "10px 14px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 15, fontWeight: 800 }}>{children}</div>;
 }
 
-function tonePalette(tone: "neutral" | "blue" | "green" | "amber") {
-  return tone === "green"
-    ? { color: COLORS.green, background: COLORS.greenSoft }
-    : tone === "amber"
-      ? { color: COLORS.amber, background: COLORS.amberSoft }
-      : tone === "blue"
-        ? { color: COLORS.blue, background: COLORS.blueSoft }
-        : { color: COLORS.line, background: COLORS.card };
+function tonePalette(tone: DiagramTone) {
+  return tone === "neutral" ? { color: COLORS.line, background: COLORS.card }
+    : { color: COLORS[tone], background: COLORS[`${tone}Soft`] };
 }
 
 function VectorStrip({
@@ -277,7 +276,7 @@ function VectorStrip({
   name: string;
   length: string;
   elementTex: (column: string) => string;
-  tone?: "neutral" | "blue" | "green" | "amber";
+  tone?: DiagramTone;
   compact?: boolean;
   selected?: boolean;
   columns?: string[];
@@ -416,6 +415,41 @@ function MergeArrows({ count, target = .5 }: { count: number; target?: number })
   </svg>;
 }
 
+// 求和输入线与圆形算子分开布局，圆不会随 SVG 的宽高缩放变形。
+function SumCircle({ tone = "cyan" }: { tone?: DiagramTone }) {
+  const palette = tonePalette(tone);
+  return <div data-sum-circle style={{ width: 36, height: 36, boxSizing: "border-box", border: `2px solid ${palette.color}`, borderRadius: "50%", background: palette.background, display: "grid", placeItems: "center", fontSize: 20, flexShrink: 0 }}><MathFormula tex="\Sigma" /></div>;
+}
+
+function SumJunction({ count }: { count: number }) {
+  return <div data-sum-junction={count} style={{ display: "grid", justifyItems: "center", gap: 0, width: "100%" }}>
+    <svg data-merge-arrows={count} aria-hidden viewBox="0 0 400 24" preserveAspectRatio="none" style={{ width: "100%", height: 24 }}>
+      {Array.from({ length: count }, (_, i) => <path key={i} data-sum-input={i} d={`M${(i+.5)*400/count} 0 V10 L200 24`} fill="none" stroke={COLORS.cyan} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />)}
+    </svg>
+    <SumCircle />
+    <svg data-sum-output aria-hidden width="20" height="18" viewBox="0 0 20 18"><path d="M10 0 V17 M5 12 L10 17 L15 12" fill="none" stroke={COLORS.cyan} strokeWidth="1.5" /></svg>
+  </div>;
+}
+
+// 四个乘积共用等高网格，连线起点跟随各行中心；右侧圆形 Σ 接收每一行。
+function StackedSum({ children }: { children: ReactNode[] }) {
+  return <div data-stacked-sum style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 64px", gridTemplateRows: "1fr 22px", minWidth: 0, flex: 1 }}>
+    <div style={{ display: "grid", gridTemplateRows: `repeat(${children.length},minmax(0,1fr))` }}>{children.map((child, i) => <div key={i} style={{ padding: "4px 0", display: "grid", alignItems: "center" }}>{child}</div>)}</div>
+    <div style={{ position: "relative" }}>
+      <svg aria-hidden viewBox="0 0 64 100" preserveAspectRatio="none" style={{ position: "absolute", width: "100%", height: "100%" }}>
+        {children.map((_, i) => <path key={i} data-sum-input={i} d={`M0 ${(i+.5)*100/children.length} L32 50`} fill="none" stroke={COLORS.cyan} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />)}
+        <path data-sum-output d="M32 50 V100" fill="none" stroke={COLORS.cyan} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <div style={{ position: "absolute", left: 14, top: "calc(50% - 18px)" }}><SumCircle /></div>
+    </div>
+    <div data-sum-result-line style={{ gridColumn: "1 / -1", position: "relative", height: 22 }}>
+      <span style={{ position: "absolute", right: 32, top: 0, height: 9, borderLeft: `1.5px solid ${COLORS.cyan}` }} />
+      <span style={{ position: "absolute", left: "50%", right: 32, top: 9, borderTop: `1.5px solid ${COLORS.cyan}` }} />
+      <svg aria-hidden width="20" height="13" viewBox="0 0 20 13" style={{ position: "absolute", left: "calc(50% - 10px)", top: 9 }}><path d="M10 0 V12 M5 7 L10 12 L15 7" fill="none" stroke={COLORS.cyan} strokeWidth="1.5" /></svg>
+    </div>
+  </div>;
+}
+
 // 官方实现：四路残差、跨子层传递 pre 系数、20 轮 Sinkhorn。
 // https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/inference/model.py
 // https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/inference/kernel.py
@@ -447,7 +481,7 @@ export function MhcMix({ layer, sublayer, connected = false }: { layer: number; 
         <Operator tex="\downarrow" /><VectorStrip name="" nameWidth={0} length="4" columns={["1","2","3","4"]} elementTex={j => `a_${j}`} tone="green" />
         <FlowStep>逐元素 <MathFormula tex={index ? "2\\sigma(a_j)" : "\\sigma(a_j)+\\epsilon_{HC}"} /></FlowStep>
         <MathFormula tex="\sigma(a)=\frac{1}{1+e^{-a}}" />
-        <div data-mhc-coefficient-output={symbol} style={{ position: "relative", border: `1px solid ${COLORS.green}`, borderRadius: 7, padding: 8, background: COLORS.greenSoft }}>{connected && <Handle id={index ? "post" : "pre"} type="source" position={index ? Position.Right : Position.Left} style={handle} />}<div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><strong>输出 <MathFormula tex={`\\mathbf ${symbol}_{${tag}}^{${sublayer}}`} /></strong><MathFormula tex="1\times4" /></div><VectorStrip name="" nameWidth={0} length="4" columns={["1", "2", "3", "4"]} elementTex={j => `${symbol}_${j}`} tone="green" /></div>
+        <div data-mhc-coefficient-output={symbol} style={{ position: "relative", border: `1px solid ${(index ? COLORS.rose : COLORS.green)}`, borderRadius: 7, padding: 8, background: (index ? COLORS.roseSoft : COLORS.greenSoft) }}>{connected && <Handle id={index ? "post" : "pre"} type="source" position={index ? Position.Right : Position.Left} style={handle} />}<div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><strong>输出 <MathFormula tex={`\\mathbf ${symbol}_{${tag}}^{${sublayer}}`} /></strong><MathFormula tex="1\times4" /></div><VectorStrip name="" nameWidth={0} length="4" columns={["1", "2", "3", "4"]} elementTex={j => `${symbol}_${j}`} tone={index ? "rose" : "green"} /></div>
         <span>{index ? "回写当前子层的 4 路权重" : sublayer === "A" ? "供本层 FFN 汇合使用" : "传给下一层 Attention 汇合"}</span>
       </div>)}
     </div>
@@ -455,7 +489,7 @@ export function MhcMix({ layer, sublayer, connected = false }: { layer: number; 
       <strong>其余 16 个元素 → 4 × 4 残差混合矩阵</strong>
       <MathFormula tex="A_{jk}=s_3u_{8+4(j-1)+k}+b_{8+4(j-1)+k}" />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1fr 22px 1fr", alignItems: "center", gap: 5 }}><Box tone="amber">逐行 Softmax<br /><MathFormula tex="e^{A_{jk}}/\sum_v e^{A_{jv}}+\epsilon_{HC}" /></Box><Operator tex="\to" /><Box tone="green">逐列归一化<br /><MathFormula tex="C_{jk}/(\sum_v C_{vk}+\epsilon_{HC})" /></Box><Operator tex="\to" /><Box tone="green">再交替行、列归一化<br />19 轮 · 共 20 轮</Box></div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", gap: 12 }}><div data-mhc-coefficient-output="C" style={{ position: "relative", border: `1px solid ${COLORS.green}`, borderRadius: 7, padding: 8, background: COLORS.greenSoft }}>{connected && <Handle id="comb" type="source" position={Position.Left} style={handle} />}<div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><strong>输出 <MathFormula tex={`C_{${tag}}^{${sublayer}}`} /></strong><MathFormula tex="4\times4" /></div><div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 3 }}>{HC_COPIES.flatMap(j => HC_COPIES.map(k => <Box key={`${j}-${k}`} tone="green"><MathFormula tex={`c_{${j}${k}}`} /></Box>))}</div></div><div style={{ display: "grid", gap: 10 }}><MathFormula tex="\sum_k c_{jk}\approx1,\quad\sum_j c_{jk}\approx1" /><span>行 k 为来源路，列 j 为目标路。</span><MathFormula tex="\epsilon_{HC}=10^{-6},\quad\varepsilon=10^{-20}" /><span>缩放参数 s 有 3 个，偏置 b 有 24 个。</span></div></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", gap: 12 }}><div data-mhc-coefficient-output="C" style={{ position: "relative", border: `1px solid ${COLORS.violet}`, borderRadius: 7, padding: 8, background: COLORS.violetSoft }}>{connected && <Handle id="comb" type="source" position={Position.Left} style={handle} />}<div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><strong>输出 <MathFormula tex={`C_{${tag}}^{${sublayer}}`} /></strong><MathFormula tex="4\times4" /></div><div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 3 }}>{HC_COPIES.flatMap(j => HC_COPIES.map(k => <Box key={`${j}-${k}`} tone="violet"><MathFormula tex={`c_{${j}${k}}`} /></Box>))}</div></div><div style={{ display: "grid", gap: 10 }}><MathFormula tex="\sum_k c_{jk}\approx1,\quad\sum_j c_{jk}\approx1" /><span>行 k 为来源路，列 j 为目标路。</span><MathFormula tex="\epsilon_{HC}=10^{-6},\quad\varepsilon=10^{-20}" /><span>缩放参数 s 有 3 个，偏置 b 有 24 个。</span></div></div>
     </div>
   </div>;
 }
@@ -467,15 +501,16 @@ export function MhcPre({ layer, sublayer, count, connected = false }: { layer: n
     <strong>mHC 汇合 · 4 路 → {sublayer === "A" ? "Attention" : "FFN"} 的一路输入</strong>
     <div style={{ position: "relative", maxWidth: 560, width: "100%", justifySelf: "end" }}>{connected && <Handle id="weights" type="target" position={Position.Top} style={handle} />}<Box tone="amber"><MathFormula tex={`\\mathbf p=${p}`} /> · {sublayer === "F" ? "来自本层 Attention 的系数分支" : layer === 1 ? "首层初始化" : "来自前一层 FFN 的系数分支"}</Box></div>
     <div data-four-stream-row style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 7 }}>{HC_COPIES.map(c => <div key={c} style={{ display: "grid", gap: 6 }}><FeatureVector name={`\\mathbf h_{${layer},${c},t}^{${stage}}`} scalar={d => `h_{${c},${d}}`} /><Operator tex={`\\downarrow\\;\\times p_${c}`} /><FeatureVector name={`p_${c}\\mathbf h_{${layer},${c},t}^{${stage}}`} scalar={d => `p_${c}h_{${c},${d}}`} tone="green" /></div>)}</div>
-    <MergeArrows count={4} /><div style={{ textAlign: "center" }}><MathFormula tex="\sum_{c=1}^{4}" /> 四路逐元素求和，每个 token 独立</div><Operator tex="\downarrow" />
+    <SumJunction count={4} />
     <RowMatrix tex={sublayer === "A" ? `H_{${layer}}^{\\mathrm{in}}` : `H_{${layer}}'`} shape={`${count}\\times5120`} rows={count === "1" ? ["\\mathbf h_t"] : ["\\mathbf h_1", "\\mathbf h_2", "\\vdots", "\\mathbf h_N"]} rowLength="5120" elementTex={(i, j) => `h_{${count === "1" ? "t" : ["1", "2", "", "N"][i]},${j}}`} />
     {/* [OM-FREEPLAY] 单个特征的数值例子说明加权汇合，不代表真实激活。 */}
     <span>单元素例：<MathFormula tex={layer === 1 && sublayer === "A" ? "(1,0,0,0)\\cdot(2,2,2,2)=2" : "(0.25,0.25,0.25,0.25)\\cdot(1,2,3,4)=2.5"} /></span>
   </div>;
 }
 
-function FeatureVector({ name, scalar, tone = "blue" }: { name: string; scalar: (column: string) => string; tone?: "blue" | "green" }) {
-  return <div data-feature-vector={name} style={{ border: `1px solid ${COLORS[tone]}`, background: tone === "blue" ? COLORS.blueSoft : COLORS.greenSoft, borderRadius: 7, padding: 6, minWidth: 0, display: "grid", gap: 5 }}>
+function FeatureVector({ name, scalar, tone = "blue" }: { name: string; scalar: (column: string) => string; tone?: DiagramTone }) {
+  const palette = tonePalette(tone);
+  return <div data-feature-vector={name} style={{ border: `1px solid ${palette.color}`, background: palette.background, borderRadius: 7, padding: 6, minWidth: 0, display: "grid", gap: 5 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 6, fontSize: 12 }}><MathFormula tex={name} /><MathFormula tex="1\times5120" /></div>
     <VectorStrip name="" nameWidth={0} length="5120" elementTex={scalar} tone={tone} compact />
   </div>;
@@ -502,14 +537,16 @@ export function MhcPost({ layer, sublayer, connected = false }: { layer: number;
   const result = (j: number) => `\\mathbf h_{${layer},${j},t}^{${sublayer === "A" ? "A" : "\\mathrm{out}"}}`;
   return <div data-mhc-post={sublayer} style={{ display: "grid", gap: 14, fontSize: 13 }}>
     <strong>mHC 回写 · 残差混合与子层输出广播并行，再按目标路相加</strong>
+    {/* [OM-FREEPLAY] 扩展为角色配色：紫色 C、玫瑰色 q、青色乘积；沿途保持同色。 */}
+    <div data-mhc-color-legend style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>{([["blue","旧残差 h"],["violet","混合系数 C"],["rose","广播权重 q"],["green","子层输出 o"],["cyan","加权结果"]] as const).map(([tone,label]) => <span key={tone} style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: tonePalette(tone).background, border: `1.5px solid ${COLORS[tone]}` }} />{label}</span>)}</div>
     <div data-mhc-parallel-inputs style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 24, alignItems: "start" }}>
       <section style={{ display: "grid", gridTemplateColumns: "minmax(0,320px) minmax(0,1fr)", gap: 16, alignItems: "start" }}>
-        <div data-mhc-comb-input style={{ position: "relative", border: `1px solid ${COLORS.green}`, background: COLORS.greenSoft, borderRadius: 8, padding: 8 }}>
+        <div data-mhc-comb-input style={{ position: "relative", border: `1px solid ${COLORS.violet}`, background: COLORS.violetSoft, borderRadius: 8, padding: 8 }}>
           {connected && <Handle id="comb" type="target" position={Position.Left} style={handle} />}
           <TensorHeading name={`C_{${layer},t}^{${sublayer}}`} shape="4\times4" />
           <div data-mhc-comb-matrix style={{ display: "grid", gridTemplateColumns: "42px repeat(4,minmax(0,1fr))", gap: 4, marginTop: 8, alignItems: "center", textAlign: "center" }}>
             <span>源↓ / 目标→</span>{HC_COPIES.map(j => <strong key={j}>路 {j}</strong>)}
-            {HC_COPIES.map(k => <React.Fragment key={k}><strong>路 {k}</strong>{HC_COPIES.map(j => <Box key={j} tone="green"><MathFormula tex={`c_{${k}${j}}`} /></Box>)}</React.Fragment>)}
+            {HC_COPIES.map(k => <React.Fragment key={k}><strong>路 {k}</strong>{HC_COPIES.map(j => <Box key={j} tone="violet"><MathFormula tex={`c_{${k}${j}}`} /></Box>)}</React.Fragment>)}
           </div>
           <div style={{ marginTop: 8 }}>来自本子层 mHC 系数分支 · 每列供一个目标路使用</div>
         </div>
@@ -519,7 +556,7 @@ export function MhcPost({ layer, sublayer, connected = false }: { layer: number;
           <span>旁路保留的四路旧残差 · 每行一路、同一 token t</span>
         </div>
       </section>
-      <section style={{ display: "grid", gridTemplateColumns: "minmax(0,420px) minmax(0,420px)", justifyContent: "space-between", gap: 20, alignItems: "start" }}>
+      <section style={{ display: "grid", gridTemplateColumns: "minmax(0,420px) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
         <div data-mhc-sublayer-input style={{ position: "relative", width: "100%", maxWidth: 420, display: "grid", gap: 6 }}>
           {connected && <Handle id="main-in" type="target" position={Position.Top} style={handle} />}
           <RowMatrix tex={sublayer === "A" ? `O_{${layer}}` : `O_{${layer}}^{\\mathrm{FFN}}`} shape={`${count}\\times5120`} rows={rows.map(t => t === "\\vdots" ? t : `\\mathbf o_{${layer},${t}}${sublayer === "F" ? "^{\\mathrm{FFN}}" : ""}`)} selected={rows.indexOf("t")} rowLength="5120" elementTex={(i,d) => `o_{${layer},${rows[i]},${d}}${sublayer === "F" ? "^{\\mathrm{FFN}}" : ""}`} />
@@ -527,40 +564,49 @@ export function MhcPost({ layer, sublayer, connected = false }: { layer: number;
           <FlowStep>展开第 t 行 · 同一个 o 广播到四路</FlowStep>
           <FeatureVector name={output} scalar={outputScalar} tone="green" />
         </div>
-        <div data-mhc-q-input style={{ position: "relative", width: "100%", maxWidth: 420, border: `1px solid ${COLORS.green}`, background: COLORS.greenSoft, borderRadius: 8, padding: 8, display: "grid", gap: 8 }}>
+        <div style={{ display: "grid", gap: 12 }}><div data-mhc-q-input style={{ position: "relative", width: "100%", maxWidth: 420, border: `1px solid ${COLORS.rose}`, background: COLORS.roseSoft, borderRadius: 8, padding: 8, display: "grid", gap: 8 }}>
           {connected && <Handle id="post" type="target" position={Position.Right} style={handle} />}
           <TensorHeading name={`\\mathbf q_{${layer},t}^{${sublayer}}`} shape="1\times4" />
-          <VectorStrip name="" nameWidth={0} length="4" columns={["1","2","3","4"]} elementTex={j => `q_${j}`} tone="green" />
+          <VectorStrip name="" nameWidth={0} length="4" columns={["1","2","3","4"]} elementTex={j => `q_${j}`} tone="rose" />
           <span>来自本子层 mHC 系数分支 · 第 j 个权重供目标路 j 使用</span>
+        </div>
+          <div data-mhc-broadcast-map style={{ display: "grid", gap: 6 }}>
+            <strong>同一个 o，按目标路分发；每路使用自己的 q</strong>
+            <Box tone="green"><MathFormula tex={output} /></Box><SplitArrows count={4} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>{HC_COPIES.map(j => <div key={j} style={{ display: "grid", gap: 5, textAlign: "center" }}><Box tone="green"><MathFormula tex="\mathbf o" /></Box><Operator tex="\times" /><Box tone="rose"><MathFormula tex={`q_${j}`} /></Box><span>目标路 {j}</span></div>)}</div>
+          </div>
         </div>
       </section>
     </div>
     <div data-four-stream-row style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 16 }}>
-      {HC_COPIES.map(j => <section key={j} data-mhc-output-copy={j} style={{ border: `1px solid ${COLORS.green}`, borderRadius: 9, padding: 10, display: "grid", gap: 10 }}>
-        <strong>目标路 {j} · 两个并行分支</strong>
+      {HC_COPIES.map(j => <section key={j} data-mhc-output-copy={j} style={{ border: `1px solid ${COLORS.green}`, borderRadius: 9, padding: 10, display: "grid", gap: 0 }}>
+        <strong style={{ marginBottom: 10 }}>目标路 {j} · 两个并行分支</strong>
         <div data-mhc-parallel-branches style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14 }}>
-          <div data-mhc-residual-mix={j} style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
-            <strong style={{ color: COLORS.blue }}>残差混合 · C 的第 {j} 列</strong>
-            {HC_COPIES.map(k => <div key={k} data-mhc-residual-product={`${j}-${k}`} style={{ display: "grid", gridTemplateColumns: "38px 18px minmax(0,1fr)", gap: 4, alignItems: "center" }}>
-              <Box tone="green"><MathFormula tex={`c_{${k}${j}}`} /></Box><Operator tex="\times" /><FeatureVector name={old(k)} scalar={d => `h_{${k},${d}}`} />
-            </div>)}
-            <FlowStep>四个乘积逐元素相加</FlowStep><Operator tex="\sum" />
-            <div data-mhc-residual-result style={{ marginTop: "auto" }}><FeatureVector name={residual(j)} scalar={d => `r_{${j},${d}}`} /></div>
+          <div data-mhc-residual-mix={j} style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0 }}>
+            <strong style={{ color: COLORS.blue, marginBottom: 7 }}>残差混合 · C 的第 {j} 列</strong>
+            <StackedSum>{HC_COPIES.map(k => <div key={k} data-mhc-residual-product={`${j}-${k}`} style={{ display: "grid", gridTemplateColumns: "38px 18px minmax(0,1fr)", gap: 4, alignItems: "center" }}>
+              <Box tone="violet"><MathFormula tex={`c_{${k}${j}}`} /></Box><Operator tex="\times" /><FeatureVector name={old(k)} scalar={d => `h_{${k},${d}}`} />
+            </div>)}</StackedSum>
+            <div data-mhc-residual-result style={{ marginTop: "auto" }}><FeatureVector name={residual(j)} scalar={d => `r_{${j},${d}}`} tone="cyan" /></div>
           </div>
           <div data-mhc-broadcast={j} style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
             <strong style={{ color: COLORS.green }}>子层输出广播 · 权重 q{j}</strong>
             <div data-mhc-post-product={j} style={{ display: "grid", gridTemplateColumns: "38px 18px minmax(0,1fr)", gap: 4, alignItems: "center" }}>
-              <Box tone="green"><MathFormula tex={`q_${j}`} /></Box><Operator tex="\times" /><FeatureVector name={output} scalar={outputScalar} tone="green" />
+              <Box tone="rose"><MathFormula tex={`q_${j}`} /></Box><Operator tex="\times" /><FeatureVector name={output} scalar={outputScalar} tone="green" />
             </div>
-            <div data-mhc-broadcast-arrow style={{ flex: 1, minHeight: 28, position: "relative" }}>
-              <svg aria-hidden viewBox="0 0 24 100" preserveAspectRatio="none" style={{ position: "absolute", left: "calc(50% - 12px)", width: 24, height: "100%" }}><path d="M12 0 V98 M7 94 L12 98 L17 94" fill="none" stroke={COLORS.green} strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></svg>
+            <div data-mhc-elementwise-broadcast style={{ display: "grid", gap: 8, padding: "8px 0", flex: 1, alignContent: "center" }}>
+              <span>同一权重乘遍 5120 个元素</span>
+              {["1","2","\\cdots","5120"].map(d => d === "\\cdots" ? <div key={d} style={{ textAlign: "center" }}><MathFormula tex="\vdots" /></div> : <div key={d} data-mhc-broadcast-element={d} style={{ display: "grid", gridTemplateColumns: "38px 18px minmax(0,1fr) 18px minmax(0,1fr)", gap: 4, alignItems: "center" }}>
+                <Box tone="rose"><MathFormula tex={`q_${j}`} /></Box><Operator tex="\times" /><Box tone="green"><MathFormula tex={`o_{${d}}`} /></Box><Operator tex="\to" /><Box tone="cyan"><MathFormula tex={`q_${j}o_{${d}}`} /></Box>
+              </div>)}
+              <span>元素索引 d 对齐；此处省略共同的层号与 t</span>
             </div>
-            <div data-mhc-broadcast-result><FeatureVector name={`q_${j}${output}`} scalar={d => `q_${j}${outputScalar(d)}`} tone="green" /></div>
+            <div data-mhc-broadcast-result><FeatureVector name={`q_${j}${output}`} scalar={d => `q_${j}${outputScalar(d)}`} tone="cyan" /></div>
           </div>
         </div>
-        <div data-mhc-final-sum={j} style={{ display: "grid", justifyItems: "center" }}><MergeArrows count={2} /><Operator tex="+" /></div>
+        <div data-mhc-final-sum={j}><SumJunction count={2} /></div>
         <FeatureVector name={result(j)} scalar={d => `h'_{${j},${d}}`} tone="green" />
-        <div style={{ textAlign: "center", fontSize: 12 }}><MathFormula tex={`${result(j)}=${residual(j)}+q_${j}${output}`} /></div>
+        <div style={{ textAlign: "center", fontSize: 12, marginTop: 10 }}><MathFormula tex={`${result(j)}=${residual(j)}+q_${j}${output}`} /></div>
       </section>)}
     </div>
     {/* [OM-FREEPLAY] 用同一个特征的四路值说明两个并行结果如何相加，不代表真实激活。 */}
@@ -1025,8 +1071,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
 
   if (kind === "structure") {
     const tone = data.tone ?? "neutral";
-    const color = tone === "green" ? COLORS.green : tone === "amber" ? COLORS.amber : tone === "blue" ? COLORS.blue : COLORS.line;
-    const background = tone === "green" ? COLORS.greenSoft : tone === "amber" ? COLORS.amberSoft : tone === "blue" ? COLORS.blueSoft : COLORS.card;
+    const { color, background } = tonePalette(tone);
     return <div style={{ ...panel, borderColor: color, borderRadius: 10, background, boxShadow: "0 3px 10px rgba(42,41,36,.06)", display: "grid", gridTemplateRows: data.title ? "auto 1fr" : "1fr" }}>
       {data.title && <div style={{ padding: "6px 9px", borderBottom: `1px solid ${COLORS.line}`, fontSize: 10.5, fontWeight: 800, color, lineHeight: 1.2 }}>{data.title}</div>}
       <div style={{ padding: 4, display: "grid", placeItems: "center", alignContent: "center", gap: 4, minWidth: 0, textAlign: "center", lineHeight: 1.2 }}>
@@ -1496,7 +1541,7 @@ function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
     {(["source", "target"] as const).flatMap(type => (internal.internals.handleBounds?.[type] ?? []).map(port => <div key={`${type}-${port.id}`} className={`react-flow__handle react-flow__handle-${port.position} ${type}`} data-nodeid={id} data-handleid={port.id ?? undefined} data-handlepos={port.position} style={{ ...handle, position: "absolute", pointerEvents: "none", left: port.x + port.width / 2, top: port.y + port.height / 2, right: "auto", bottom: "auto", transform: "translate(-50%,-50%)" }} />))}
   </div>;
   const compact = data.kind === "moe-sum" || data.kind === "expert-scale";
-  const portColor = data.tone === "amber" ? COLORS.amber : data.tone === "blue" ? COLORS.blue : COLORS.green;
+  const portColor = tonePalette(data.tone ?? "green").color;
   // [OM-FREEPLAY] 求和器保留 320px 最小宽度，让四个入口之间有独立走线净空。
   const minimumWidth = data.kind === "moe-sum" ? 320 : compact ? 60 : data.kind === "structure-operator" ? 36 : 100;
   const minimumHeight = data.kind === "moe-sum" ? 100 : compact
@@ -1652,7 +1697,8 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     // [OM-FREEPLAY] 三个 Head 展开后采用与专家区一致的 2800px 画布宽度。
     node("heads", "heads", layer, mode, 40, headsY, 2800, headsHeight),
     node("concat", "concat", layer, mode, 150, concatY, 1470, concatHeight),
-    node("add1", "add1", layer, mode, 300, add1Y, 2400, add1Height),
+    // [OM-FREEPLAY] 四路各含两个并行过程与求和通道，2600px 保留长下标的可读宽度。
+    node("add1", "add1", layer, mode, 300, add1Y, 2600, add1Height),
     node("state1", "state1", layer, mode, 300, state1Y, 1600, state1Height),
     { ...node("hc-pre-f", "hc-pre", layer, mode, 300, preFY, 1000, 420), data: { kind: "hc-pre", layer, mode, sublayer: "F" } },
     { ...node("hc-mix-f", "hc-mix", layer, mode, HC_COEFFICIENT_X, preFY, 1000, mixFHeight), data: { kind: "hc-mix", layer, mode, sublayer: "F" } },
@@ -1663,7 +1709,7 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     node("experts", "experts", layer, mode, 70, expertsY, EXPERTS_WIDTH, expertsHeight),
     node("moe-sum", "moe-sum", layer, mode, 70 + EXPERTS_WIDTH / 2 - 160, moeSumY, 320, 100),
     node("moe-output", "moe-output", layer, mode, 70 + EXPERTS_WIDTH / 2 - 320, moeOutputY, 640, 100),
-    node("add2", "add2", layer, mode, 300, add2Y, 2400, add2Height),
+    node("add2", "add2", layer, mode, 300, add2Y, 2600, add2Height),
     node("output", "output", layer, mode, 300, outputY, 1600, tensorHeight),
   ];
   if (layer > 1) {
@@ -1747,6 +1793,7 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
   const mathEdge = (id: string, source: string, target: string, tex: string, extra?: Partial<EditableEdge>) => makeEdge(id, source, target, tex, extra);
   // 旧残差沿用蓝色；具名内部入口由统一避障器处理，不再沿外框中点预置折线。
   const skipStyle = { style: { stroke: COLORS.blue, strokeWidth: 2.2 }, data: { color: COLORS.blue }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS.blue } } as Partial<EditableEdge>;
+  const coefficientStyle = (tone: "violet" | "rose"): Partial<EditableEdge> => ({ style: { stroke: COLORS[tone], strokeWidth: 2.2 }, data: { color: COLORS[tone] }, markerEnd: { type: MarkerType.Arrow, width: 22, height: 22, color: COLORS[tone] } });
 
   const edges: EditableEdge[] = [
     makeEdge("tokenizer-embedding", "tokenizer", "embedding"),
@@ -1765,15 +1812,15 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     makeEdge("heads-concat", "heads", "concat"),
     mathEdge("concat-add1", "concat", "add1", `O_{${layer}}`),
     mathEdge("residual-post-a", hasEngram(layer) ? "engram-inject" : "input", "add1", `\\mathcal H_{${layer}}^{${hasEngram(layer) ? "E" : "\\mathrm{in}"}}`, { sourceHandle: "residual", targetHandle: "skip", ...skipStyle }),
-    mathEdge("mix-a-post", "hc-mix-a", "add1", `\\mathbf q_{${layer},t}^{A}`, { sourceHandle: "post", targetHandle: "post" }),
-    mathEdge("mix-a-comb", "hc-mix-a", "add1", `C_{${layer},t}^{A}`, { sourceHandle: "comb", targetHandle: "comb" }),
+    mathEdge("mix-a-post", "hc-mix-a", "add1", `\\mathbf q_{${layer},t}^{A}`, { ...coefficientStyle("rose"), sourceHandle: "post", targetHandle: "post" }),
+    mathEdge("mix-a-comb", "hc-mix-a", "add1", `C_{${layer},t}^{A}`, { ...coefficientStyle("violet"), sourceHandle: "comb", targetHandle: "comb" }),
     mathEdge("mix-a-pre-f", "hc-mix-a", "hc-pre-f", `\\mathbf p_{${layer},t}^{A}`, { sourceHandle: "pre", targetHandle: "weights" }),
     makeEdge("add1-state", "add1", "state1"),
     makeEdge("state-pre-f", "state1", "hc-pre-f", undefined, { sourceHandle: "main" }),
     makeEdge("state-mix-f", "state1", "hc-mix-f", undefined, { sourceHandle: "coefficients" }),
     makeEdge("pre-f-norm", "hc-pre-f", "norm2"),
-    mathEdge("mix-f-post", "hc-mix-f", "add2", `\\mathbf q_{${layer},t}^{F}`, { sourceHandle: "post", targetHandle: "post" }),
-    mathEdge("mix-f-comb", "hc-mix-f", "add2", `C_{${layer},t}^{F}`, { sourceHandle: "comb", targetHandle: "comb" }),
+    mathEdge("mix-f-post", "hc-mix-f", "add2", `\\mathbf q_{${layer},t}^{F}`, { ...coefficientStyle("rose"), sourceHandle: "post", targetHandle: "post" }),
+    mathEdge("mix-f-comb", "hc-mix-f", "add2", `C_{${layer},t}^{F}`, { ...coefficientStyle("violet"), sourceHandle: "comb", targetHandle: "comb" }),
     mathEdge("mix-f-next-pre", "hc-mix-f", "output", `\\mathbf p_{${layer},t}^{F}`, { sourceHandle: "pre", targetHandle: "coefficients" }),
     makeEdge("norm2-moe-input", "norm2", "moe-input"),
     makeEdge("moe-input-router", "moe-input", "router", undefined, { sourceHandle: "router" }),
@@ -1975,7 +2022,7 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
   const resetConnectionRef = useRef<(() => void) | null>(null);
   const completedConnectionRef = useRef(false);
   // 并行回写改变了框宽与内部端口位置；新布局独立保存，旧手调记录不覆盖、不删除。
-  const storageKey = `oasismind:deepseek-v41-layer-layout:v11:${phase}:${layer}`;
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v12:${phase}:${layer}`;
 
   nodesRef.current = nodes;
   edgesRef.current = edges;

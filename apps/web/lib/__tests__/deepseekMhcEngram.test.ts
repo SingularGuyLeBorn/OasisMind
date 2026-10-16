@@ -128,13 +128,47 @@ describe("mHC 与 Engram 的真实主路径", () => {
       expect(branches.children[0].lastElementChild?.hasAttribute('data-mhc-residual-result')).toBe(true);
       expect(branches.children[1].lastElementChild?.hasAttribute('data-mhc-broadcast-result')).toBe(true);
     }
-    for (const product of root.querySelectorAll('[data-mhc-residual-product], [data-mhc-post-product]')) {
-      expect((product.children[0] as HTMLElement).style.backgroundColor).toBe((root.querySelector('[data-mhc-comb-input]') as HTMLElement).style.backgroundColor);
+    for (const [productSelector,inputSelector] of [['[data-mhc-residual-product]','[data-mhc-comb-input]'],['[data-mhc-post-product]','[data-mhc-q-input]']]) {
+      for (const product of root.querySelectorAll(productSelector)) expect((product.children[0] as HTMLElement).style.backgroundColor).toBe((root.querySelector(inputSelector) as HTMLElement).style.backgroundColor);
     }
     expect(root.querySelector('[data-mhc-q-input]')?.textContent).toContain('来自本子层 mHC 系数分支');
     expect(root.querySelector('[data-mhc-sublayer-input]')?.textContent).toContain(sublayer==='A'?'Attention 输出投影':'FFN 专家加权汇总');
     expect(formulas).toContain('\\mathbf r=(2.5,2.5,2.5,2.5)');
     expect(formulas).toContain('\\mathbf q\\,o=(1,2,3,4)');
+  });
+
+  it.each(["A", "F"] as const)("%s 的各项实际接入圆形求和器，短支路展开逐元素广播而非长空箭头", sublayer => {
+    const {root}=render(createElement(MhcPost,{layer:15,sublayer}));
+    for (const route of root.querySelectorAll('[data-mhc-output-copy]')) {
+      const mixed=route.querySelector('[data-stacked-sum]')!;
+      expect(mixed.querySelectorAll('[data-sum-input]')).toHaveLength(4);
+      expect(mixed.querySelectorAll('[data-sum-circle]')).toHaveLength(1);
+      expect(mixed.querySelector('[data-sum-output]')).not.toBeNull();
+      const final=route.querySelector('[data-mhc-final-sum]')!;
+      expect(final.querySelectorAll('[data-sum-input]')).toHaveLength(2);
+      expect(final.querySelector('[data-sum-output]')).not.toBeNull();
+      expect([...route.querySelectorAll('[data-mhc-broadcast-element]')].map(e=>e.getAttribute('data-mhc-broadcast-element'))).toEqual(['1','2','5120']);
+      expect(route.querySelector('[data-mhc-broadcast-arrow]')).toBeNull();
+    }
+    for(const circle of root.querySelectorAll<HTMLElement>('[data-sum-circle]')) {
+      expect(circle.style.width).toBe(circle.style.height);
+      expect(circle.style.borderRadius).toBe('50%');
+      expect(circle.querySelector('[aria-label]')?.getAttribute('aria-label')).toBe('\\Sigma');
+    }
+    const producer=render(createElement(MhcMix,{layer:15,sublayer})).root;
+    const graph=buildGraph(15);
+    const colors=[];
+    for (const [symbol,input,edge] of [['C','comb','comb'],['q','q','post']]) {
+      const source=producer.querySelector<HTMLElement>(`[data-mhc-coefficient-output="${symbol}"]`)!;
+      const target=root.querySelector<HTMLElement>(`[data-mhc-${input}-input]`)!;
+      expect(source.style.backgroundColor).toBe(target.style.backgroundColor);
+      const edgeColor=graph.edges.find(e=>e.id===`mix-${sublayer.toLowerCase()}-${edge}`)?.style?.stroke;
+      const colorProbe=document.createElement('div');colorProbe.style.borderColor=String(edgeColor);
+      expect(colorProbe.style.borderColor).toBe(source.style.borderColor);
+      colors.push(source.style.backgroundColor);
+    }
+    expect(new Set(colors).size).toBe(2);
+    expect(root.querySelector('[data-mhc-broadcast-map] [data-split-arrows="4"]')).not.toBeNull();
   });
 
   it("Indexer 展示代表 Head 的两个操作数、独立权重与得分矩阵", () => {
