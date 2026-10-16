@@ -44,6 +44,8 @@ describe("mHC 与 Engram 的真实主路径", () => {
     expect(root.textContent).toContain("供本层 FFN 汇合使用");
     expect(formulas).toContain("20480\\times24");
     expect(root.querySelector('[data-rmsnorm-dimension="20480"]')).not.toBeNull();
+    expect([...root.querySelectorAll('[data-mhc-coefficient-output]')].map(e=>e.getAttribute('data-mhc-coefficient-output'))).toEqual(['p','q','C']);
+    for (const output of root.querySelectorAll('[data-mhc-coefficient-output]')) expect(output.textContent).toContain('输出');
   });
 
   it("mHC 的联合均方根没有虚构 gamma；Engram 的两侧则分别有 gamma", () => {
@@ -105,6 +107,9 @@ describe("mHC 与 Engram 的真实主路径", () => {
     const input = root.querySelector('[data-mhc-sublayer-input]')!;
     expect(input.querySelector('[aria-label="O_{15}"]')).not.toBeNull();
     expect(input.textContent).toContain('展开第 t 行');
+    expect((input as HTMLElement).style.maxWidth).toBe('420px');
+    expect((root.querySelector('[data-mhc-q-input]') as HTMLElement).style.maxWidth).toBe('420px');
+    expect(input.querySelectorAll('[data-vector-elements]').length).toBeGreaterThan(3);
   });
 
   it("Indexer 展示代表 Head 的两个操作数、独立权重与得分矩阵", () => {

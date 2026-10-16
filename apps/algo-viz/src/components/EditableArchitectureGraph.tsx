@@ -529,23 +529,43 @@ function pathFromPoints(points: XYPosition[]) {
 }
 
 // 直接在标签矩形内断开描边，保留透明标签；不为跨越整张图的长边分配巨大 SVG mask。
-export function pathWithLabelGap(points: XYPosition[], gap?: Obstacle) {
+export function pathWithLabelGap(points: XYPosition[], gap?: Obstacle | Obstacle[]) {
   if (!gap) return pathFromPoints(points);
+  const gaps = Array.isArray(gap) ? gap : [gap];
   const pieces: string[] = [];
   for (let i = 1; i < points.length; i += 1) {
     const a = points[i - 1], b = points[i];
     const dx = b.x - a.x, dy = b.y - a.y;
-    let enter = 0, leave = 1;
-    let intersects = true;
-    for (const [start, delta, low, high] of [[a.x, dx, gap.left, gap.right], [a.y, dy, gap.top, gap.bottom]]) {
-      if (!delta) { if (start < low || start > high) intersects = false; }
-      else { const first = (low - start) / delta, last = (high - start) / delta; enter = Math.max(enter, Math.min(first, last)); leave = Math.min(leave, Math.max(first, last)); }
-    }
+    const cuts = gaps.flatMap(rect => {
+      let enter = 0, leave = 1;
+      for (const [start, delta, low, high] of [[a.x, dx, rect.left, rect.right], [a.y, dy, rect.top, rect.bottom]]) {
+        if (!delta) { if (start < low || start > high) return []; }
+        else { const first = (low - start) / delta, last = (high - start) / delta; enter = Math.max(enter, Math.min(first, last)); leave = Math.min(leave, Math.max(first, last)); }
+      }
+      return enter < leave ? [{enter, leave}] : [];
+    }).sort((a,b) => a.enter-b.enter);
     const segment = (from: number, to: number) => pieces.push(`M ${a.x + dx * from} ${a.y + dy * from} L ${a.x + dx * to} ${a.y + dy * to}`);
-    if (!intersects || enter >= leave) segment(0, 1);
-    else { if (enter > 0) segment(0, enter); if (leave < 1) segment(leave, 1); }
+    let cursor = 0;
+    for (const cut of cuts) { if (cut.enter > cursor) segment(cursor, cut.enter); cursor = Math.max(cursor, cut.leave); }
+    if (cursor < 1) segment(cursor, 1);
   }
   return pieces.join(" ");
+}
+
+// [OM-FREEPLAY] 超过 600 世界像素视为长线；在目标外侧保留 36px 净空复述变量。
+// 内部端口的引入段不放标签，避免标签盖住目标容器的内部结构。
+export function terminalLabelPoint(points: XYPosition[], target: Obstacle | undefined, side: Position, size: {width:number;height:number}, primary: XYPosition) {
+  const end = points.at(-1);
+  if (!end || !target) return null;
+  const length = points.slice(1).reduce((sum,p,i)=>sum+Math.hypot(p.x-points[i].x,p.y-points[i].y),0);
+  if (length < 600) return null;
+  const vertical = side === Position.Top || side === Position.Bottom;
+  const internal = side === Position.Top ? end.y-target.top : side === Position.Bottom ? target.bottom-end.y : side === Position.Left ? end.x-target.left : target.right-end.x;
+  const distance = Math.max(0,internal)+36+(vertical ? size.height : size.width)/2;
+  const point = labelPointOnPath(points, Math.max(0,1-distance/length));
+  if (Math.abs(point.x-primary.x)<size.width+20 && Math.abs(point.y-primary.y)<size.height+20) return null;
+  if (point.x>target.left && point.x<target.right && point.y>target.top && point.y<target.bottom) return null;
+  return point;
 }
 
 function longestSegmentCenter(points: XYPosition[]) {
@@ -678,6 +698,8 @@ export function planArchitectureRoutes(owner: object, nodes: Node[], edges: Edit
     const anchor = kind === "source" ? edge.data?.sourceAnchor : edge.data?.targetAnchor;
     const side = anchor?.side ?? handle?.position;
     if (!side) return null;
+    // 具名端口属于内部数据框；只有人工边界吸附才使用外框归一化锚点。
+    if (!anchor && handle) return { x: position.x + handle.x + handle.width / 2, y: position.y + handle.y + handle.height / 2, side };
     const offset = anchor?.offset ?? (side === Position.Top || side === Position.Bottom ? ((handle?.x ?? width / 2) + (handle?.width ?? 0) / 2) / width : ((handle?.y ?? height / 2) + (handle?.height ?? 0) / 2) / height);
     return { x: position.x + (side === Position.Left ? 0 : side === Position.Right ? width : width * offset), y: position.y + (side === Position.Top ? 0 : side === Position.Bottom ? height : height * offset), side };
   };
@@ -726,8 +748,8 @@ export function planArchitectureRoutes(owner: object, nodes: Node[], edges: Edit
     const obstacles = [...frames].flatMap(([id, frame]) => {
       if (sourceAncestors.has(id) && targetAncestors.has(id)) return [];
       const bounds = inflate(frame.bounds, id === edge.source || id === edge.target ? 8 : EDGE_NODE_CLEARANCE);
-      if (sourceAncestors.has(id)) sourceFrames.push(bounds);
-      if (targetAncestors.has(id)) targetFrames.push(bounds);
+      if (id === edge.source || sourceAncestors.has(id)) sourceFrames.push(bounds);
+      if (id === edge.target || targetAncestors.has(id)) targetFrames.push(bounds);
       return [bounds];
     });
     reserve(edge.id, automaticOrthogonalPoints(source.x, source.y, target.x, target.y, source.side, target.side, obstacles, reserved, sourceFrames, targetFrames));
@@ -782,7 +804,7 @@ function EditableOrthogonalEdgeView({
     const absolute = node?.internals.positionAbsolute;
     const width = node?.measured.width;
     const height = node?.measured.height;
-    if (!absolute || !width || !height) return fallback;
+    if (!anchor || !absolute || !width || !height) return fallback;
     const side = anchor?.side ?? handleSide;
     const offset = anchor?.offset ?? Math.max(0, Math.min(1, side === Position.Top || side === Position.Bottom ? (fallback.x - absolute.x) / width : (fallback.y - absolute.y) / height));
     return {
@@ -796,10 +818,13 @@ function EditableOrthogonalEdgeView({
   const targetPosition = data?.targetAnchor?.side ?? handleTargetPosition;
   const points = route ?? automaticOrthogonalPoints(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, []);
   const labelCenter = data?.labelPosition === undefined ? longestSegmentCenter(points) : labelPointOnPath(points, data.labelPosition);
-  const path = pathWithLabelGap(points, data?.labelTex && labelSize.width ? {
-    left: labelCenter.x - labelSize.width / 2, right: labelCenter.x + labelSize.width / 2,
-    top: labelCenter.y - labelSize.height / 2, bottom: labelCenter.y + labelSize.height / 2,
-  } : undefined);
+  const targetNode = getInternalNode(target), targetAbsolute = targetNode?.internals.positionAbsolute;
+  const targetBounds = targetAbsolute && targetNode?.measured.width && targetNode.measured.height ? {left:targetAbsolute.x,top:targetAbsolute.y,right:targetAbsolute.x+targetNode.measured.width,bottom:targetAbsolute.y+targetNode.measured.height} : undefined;
+  const terminalCenter = terminalLabelPoint(points, targetBounds, targetPosition, labelSize, labelCenter);
+  const path = pathWithLabelGap(points, data?.labelTex && labelSize.width ? [labelCenter, ...(terminalCenter ? [terminalCenter] : [])].map(center => ({
+    left: center.x - labelSize.width / 2, right: center.x + labelSize.width / 2,
+    top: center.y - labelSize.height / 2, bottom: center.y + labelSize.height / 2,
+  })) : undefined);
   const labelHtml = useMemo(() => data?.labelTex ? latexHtml(data.labelTex) : "", [data?.labelTex]);
   const color = data?.color ?? String(style?.stroke ?? "#37685a");
   useEffect(() => {
@@ -922,6 +947,7 @@ function EditableOrthogonalEdgeView({
       }}
     />
     <EdgeLabelRenderer>
+      {data?.labelTex && terminalCenter && <div data-edge-terminal-label={id} aria-label={data.labelTex} style={{position:"absolute",transform:`translate(-50%,-50%) translate(${terminalCenter.x}px,${terminalCenter.y}px)`,zIndex:1002,padding:"3px 7px",background:"transparent",color:"#716d63",fontSize:14,fontWeight:700,pointerEvents:"none",whiteSpace:"nowrap"}} dangerouslySetInnerHTML={{__html:labelHtml}} />}
       {(["source", "target"] as const).map(endpoint => <button
         key={endpoint}
         type="button"

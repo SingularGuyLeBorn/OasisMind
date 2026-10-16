@@ -67,6 +67,18 @@ function fixture() {
 }
 
 describe("架构图增量路由", () => {
+  it("内部具名端口连接小框本身，人工锚点仍连接外框", () => {
+    const f=fixture();
+    const a=f.internals.get('a')!, b=f.internals.get('b')!;
+    a.internals.handleBounds!.source![0]={id:'out',nodeId:'a',type:'source',position:Position.Right,x:55,y:35,width:10,height:10};
+    b.internals.handleBounds!.target![0]={id:'in',nodeId:'b',type:'target',position:Position.Left,x:25,y:35,width:10,height:10};
+    const route=planArchitectureRoutes(f.owner,f.nodes,f.edges,f.getNode).get('ab')!;
+    expect(route[0]).toEqual({x:60,y:40});
+    expect(route.at(-1)).toEqual({x:30,y:440});
+    expect(route[1].x).toBeGreaterThanOrEqual(108);
+    const edges=f.edges.map(e=>e.id==='ab'?{...e,data:{sourceAnchor:{side:Position.Right,offset:.5}}}:e);
+    expect(planArchitectureRoutes(f.owner,f.nodes,edges,f.getNode).get('ab')![0]).toEqual({x:100,y:40});
+  });
   it("视口更新复用路由，内部尺寸单独改变仍会失效", () => {
     const f = fixture();
     const first = routesForStore(f.owner, f.nodes, f.edges, f.internals);

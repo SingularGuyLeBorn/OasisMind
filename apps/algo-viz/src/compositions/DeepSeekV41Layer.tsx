@@ -437,7 +437,7 @@ export function MhcMix({ layer, sublayer, connected = false }: { layer: number; 
     <FlowStep>同一个 token 的 4 路沿特征轴拼接</FlowStep>
     <VectorStrip name="\mathbf f_t" length="20480" elementTex={j => `f_{t,${j}}`} tone="blue" />
     <RmsNormProcess input="\mathbf f_t" output="\bar{\mathbf f}_t" dimension={20480} rowCount="1" rowIndex="t" label="mHC 系数输入 · 四路联合" horizontal />
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr 24px 1fr", alignItems: "center", gap: 6 }}><Box tone="blue"><MathFormula tex="\bar{\mathbf f}_t" /></Box><Operator tex="\times" /><Box tone="amber"><MathFormula tex={`W_{${layer}}^{HC,${sublayer}}`} /><br /><MathFormula tex="20480\times24" /><div style={{ display: "flex", justifyContent: "space-around", gap: 4, marginTop: 5 }}>{["1", "2", "\\cdots", "24"].map(j => j === "\\cdots" ? <MathFormula key={j} tex={j} /> : <span key={j} style={{ border: `1px solid ${COLORS.amber}`, padding: "9px 3px", borderRadius: 4 }}><MathFormula tex={`\\mathbf w_{${j}}`} /></span>)}</div></Box><Operator tex="=" /><Box tone="green"><MathFormula tex={`\\mathbf u_{${tag}}^{${sublayer}}`} /><br /><MathFormula tex="1\times24" /></Box></div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr 24px 1fr", alignItems: "center", gap: 6 }}><Box tone="blue"><MathFormula tex="\bar{\mathbf f}_t" /></Box><Operator tex="\times" /><Box tone="amber"><div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><MathFormula tex={`W_{${layer}}^{HC,${sublayer}}`} /><span style={{ fontSize: 11 }}><MathFormula tex="20480\times24" /></span></div><div style={{ display: "flex", justifyContent: "space-around", gap: 4, marginTop: 5 }}>{["1", "2", "\\cdots", "24"].map(j => j === "\\cdots" ? <MathFormula key={j} tex={j} /> : <span key={j} style={{ border: `1px solid ${COLORS.amber}`, padding: "9px 3px", borderRadius: 4 }}><MathFormula tex={`\\mathbf w_{${j}}`} /></span>)}</div></Box><Operator tex="=" /><Box tone="green"><div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><MathFormula tex={`\\mathbf u_{${tag}}^{${sublayer}}`} /><span style={{ fontSize: 11 }}><MathFormula tex="1\times24" /></span></div><VectorStrip name="" nameWidth={0} length="24" elementTex={j => `u_${j}`} tone="green" /></Box></div>
     <FlowStep>24 个元素分成 4 + 4 + 16；各组独立缩放并加偏置</FlowStep>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
       {["p", "q"].map((symbol, index) => <div key={symbol} style={{ display: "grid", gap: 7 }}>
@@ -447,7 +447,7 @@ export function MhcMix({ layer, sublayer, connected = false }: { layer: number; 
         <Operator tex="\downarrow" /><VectorStrip name="" nameWidth={0} length="4" columns={["1","2","3","4"]} elementTex={j => `a_${j}`} tone="green" />
         <FlowStep>逐元素 <MathFormula tex={index ? "2\\sigma(a_j)" : "\\sigma(a_j)+\\epsilon_{HC}"} /></FlowStep>
         <MathFormula tex="\sigma(a)=\frac{1}{1+e^{-a}}" />
-        <div style={{ position: "relative" }}>{connected && <Handle id={index ? "post" : "pre"} type="source" position={index ? Position.Right : Position.Left} style={handle} />}<VectorStrip name={`\\mathbf ${symbol}_{${tag}}^{${sublayer}}`} nameWidth={85} length="4" columns={["1", "2", "3", "4"]} elementTex={j => `${symbol}_${j}`} tone="green" /></div>
+        <div data-mhc-coefficient-output={symbol} style={{ position: "relative", border: `1px solid ${COLORS.green}`, borderRadius: 7, padding: 8, background: COLORS.greenSoft }}>{connected && <Handle id={index ? "post" : "pre"} type="source" position={index ? Position.Right : Position.Left} style={handle} />}<div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><strong>输出 <MathFormula tex={`\\mathbf ${symbol}_{${tag}}^{${sublayer}}`} /></strong><MathFormula tex="1\times4" /></div><VectorStrip name="" nameWidth={0} length="4" columns={["1", "2", "3", "4"]} elementTex={j => `${symbol}_${j}`} tone="green" /></div>
         <span>{index ? "回写当前子层的 4 路权重" : sublayer === "A" ? "供本层 FFN 汇合使用" : "传给下一层 Attention 汇合"}</span>
       </div>)}
     </div>
@@ -455,18 +455,18 @@ export function MhcMix({ layer, sublayer, connected = false }: { layer: number; 
       <strong>其余 16 个元素 → 4 × 4 残差混合矩阵</strong>
       <MathFormula tex="A_{jk}=s_3u_{8+4(j-1)+k}+b_{8+4(j-1)+k}" />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 22px 1fr 22px 1fr", alignItems: "center", gap: 5 }}><Box tone="amber">逐行 Softmax<br /><MathFormula tex="e^{A_{jk}}/\sum_v e^{A_{jv}}+\epsilon_{HC}" /></Box><Operator tex="\to" /><Box tone="green">逐列归一化<br /><MathFormula tex="C_{jk}/(\sum_v C_{vk}+\epsilon_{HC})" /></Box><Operator tex="\to" /><Box tone="green">再交替行、列归一化<br />19 轮 · 共 20 轮</Box></div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", gap: 12 }}><div style={{ position: "relative" }}>{connected && <Handle id="comb" type="source" position={Position.Left} style={handle} />}<strong><MathFormula tex={`C_{${tag}}^{${sublayer}}`} /></strong><div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 3 }}>{HC_COPIES.flatMap(j => HC_COPIES.map(k => <Box key={`${j}-${k}`} tone="green"><MathFormula tex={`c_{${j}${k}}`} /></Box>))}</div></div><div style={{ display: "grid", gap: 10 }}><MathFormula tex="\sum_k c_{jk}\approx1,\quad\sum_j c_{jk}\approx1" /><span>行 k 为来源路，列 j 为目标路。</span><MathFormula tex="\epsilon_{HC}=10^{-6},\quad\varepsilon=10^{-20}" /><span>缩放参数 s 有 3 个，偏置 b 有 24 个。</span></div></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", gap: 12 }}><div data-mhc-coefficient-output="C" style={{ position: "relative", border: `1px solid ${COLORS.green}`, borderRadius: 7, padding: 8, background: COLORS.greenSoft }}>{connected && <Handle id="comb" type="source" position={Position.Left} style={handle} />}<div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><strong>输出 <MathFormula tex={`C_{${tag}}^{${sublayer}}`} /></strong><MathFormula tex="4\times4" /></div><div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 3 }}>{HC_COPIES.flatMap(j => HC_COPIES.map(k => <Box key={`${j}-${k}`} tone="green"><MathFormula tex={`c_{${j}${k}}`} /></Box>))}</div></div><div style={{ display: "grid", gap: 10 }}><MathFormula tex="\sum_k c_{jk}\approx1,\quad\sum_j c_{jk}\approx1" /><span>行 k 为来源路，列 j 为目标路。</span><MathFormula tex="\epsilon_{HC}=10^{-6},\quad\varepsilon=10^{-20}" /><span>缩放参数 s 有 3 个，偏置 b 有 24 个。</span></div></div>
     </div>
   </div>;
 }
 
-export function MhcPre({ layer, sublayer, count }: { layer: number; sublayer: "A" | "F"; count: string }) {
+export function MhcPre({ layer, sublayer, count, connected = false }: { layer: number; sublayer: "A" | "F"; count: string; connected?: boolean }) {
   const p = sublayer === "A" ? (layer === 1 ? "(1,0,0,0)" : `\\mathbf p_{${layer - 1},t}^{F}`) : `\\mathbf p_{${layer},t}^{A}`;
   const stage = sublayer === "F" ? "A" : hasEngram(layer) ? "E" : "\\mathrm{in}";
   return <div data-mhc-pre={sublayer} style={{ display: "grid", gap: 8, fontSize: 13, lineHeight: 2.2 }}>
     <strong>mHC 汇合 · 4 路 → {sublayer === "A" ? "Attention" : "FFN"} 的一路输入</strong>
-    <Box tone="amber"><MathFormula tex={`\\mathbf p=${p}`} /> · {sublayer === "F" ? "来自本层 Attention 的系数分支" : layer === 1 ? "首层初始化" : "来自前一层 FFN 的系数分支"}</Box>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 7 }}>{HC_COPIES.map(c => <div key={c} style={{ display: "grid", gap: 6 }}><Box tone="blue"><MathFormula tex={`\\mathbf h_{${layer},${c},t}^{${stage}}`} /><br /><MathFormula tex="1\times5120" /></Box><Operator tex={`\\downarrow\\;\\times p_${c}`} /><Box tone="green"><MathFormula tex={`p_${c}\\mathbf h_{${layer},${c},t}^{${stage}}`} /></Box></div>)}</div>
+    <div style={{ position: "relative", maxWidth: 560, width: "100%", justifySelf: "end" }}>{connected && <Handle id="weights" type="target" position={Position.Top} style={handle} />}<Box tone="amber"><MathFormula tex={`\\mathbf p=${p}`} /> · {sublayer === "F" ? "来自本层 Attention 的系数分支" : layer === 1 ? "首层初始化" : "来自前一层 FFN 的系数分支"}</Box></div>
+    <div data-four-stream-row style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 7 }}>{HC_COPIES.map(c => <div key={c} style={{ display: "grid", gap: 6 }}><FeatureVector name={`\\mathbf h_{${layer},${c},t}^{${stage}}`} scalar={d => `h_{${c},${d}}`} /><Operator tex={`\\downarrow\\;\\times p_${c}`} /><FeatureVector name={`p_${c}\\mathbf h_{${layer},${c},t}^{${stage}}`} scalar={d => `p_${c}h_{${c},${d}}`} tone="green" /></div>)}</div>
     <MergeArrows count={4} /><div style={{ textAlign: "center" }}><MathFormula tex="\sum_{c=1}^{4}" /> 四路逐元素求和，每个 token 独立</div><Operator tex="\downarrow" />
     <RowMatrix tex={sublayer === "A" ? `H_{${layer}}^{\\mathrm{in}}` : `H_{${layer}}'`} shape={`${count}\\times5120`} rows={count === "1" ? ["\\mathbf h_t"] : ["\\mathbf h_1", "\\mathbf h_2", "\\vdots", "\\mathbf h_N"]} rowLength="5120" elementTex={(i, j) => `h_{${count === "1" ? "t" : ["1", "2", "", "N"][i]},${j}}`} />
     {/* [OM-FREEPLAY] 单个特征的数值例子说明加权汇合，不代表真实激活。 */}
@@ -479,6 +479,10 @@ function FeatureVector({ name, scalar, tone = "blue" }: { name: string; scalar: 
     <div style={{ display: "flex", justifyContent: "space-between", gap: 6, fontSize: 12 }}><MathFormula tex={name} /><MathFormula tex="1\times5120" /></div>
     <VectorStrip name="" nameWidth={0} length="5120" elementTex={scalar} tone={tone} compact />
   </div>;
+}
+
+function TensorHeading({ name, shape }: { name: string; shape: string }) {
+  return <div data-tensor-heading style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}><MathFormula tex={name} /><span style={{ fontSize: 11 }}><MathFormula tex={shape} /></span></div>;
 }
 
 // 每个外部操作数进入自己的数据框，随后按列分配到四条平等的残差路。
@@ -494,7 +498,7 @@ export function MhcPost({ layer, sublayer, connected = false }: { layer: number;
   const output = sublayer === "A" ? `\\mathbf o_{${layer},t}` : `\\mathbf o_{${layer},t}^{\\mathrm{FFN}}`;
   return <div data-mhc-post={sublayer} style={{ display: "grid", gap: 9, fontSize: 13 }}>
     <strong>mHC 回写 · 子层输出广播到 4 路，与混合后的残差相加</strong>
-    <div data-mhc-sublayer-input style={{ position: "relative", width: "40%", justifySelf: "center", display: "grid", gap: 6 }}>{connected && <Handle id="main-in" type="target" position={Position.Top} style={handle} />}<RowMatrix tex={sublayer === "A" ? `O_{${layer}}` : `O_{${layer}}^{\\mathrm{FFN}}`} shape={`${count}\\times5120`} rows={rows.map(t => t === "\\vdots" ? t : `\\mathbf o_{${layer},${t}}${sublayer === "F" ? "^{\\mathrm{FFN}}" : ""}`)} selected={rows.indexOf("t")} /><FlowStep>展开第 t 行 · 每个位置独立回写</FlowStep><FeatureVector name={output} scalar={d => `o_{${layer},t,${d}}^{${sublayer}}`} tone="green" /></div>
+    <div data-mhc-sublayer-input style={{ position: "relative", width: "100%", maxWidth: 420, justifySelf: "center", display: "grid", gap: 6 }}>{connected && <Handle id="main-in" type="target" position={Position.Top} style={handle} />}<RowMatrix tex={sublayer === "A" ? `O_{${layer}}` : `O_{${layer}}^{\\mathrm{FFN}}`} shape={`${count}\\times5120`} rows={rows.map(t => t === "\\vdots" ? t : `\\mathbf o_{${layer},${t}}${sublayer === "F" ? "^{\\mathrm{FFN}}" : ""}`)} selected={rows.indexOf("t")} rowLength="5120" elementTex={(i,d) => `o_{${layer},${rows[i]},${d}}`} /><FlowStep>展开第 t 行 · 每个位置独立回写</FlowStep><FeatureVector name={output} scalar={d => `o_{${layer},t,${d}}^{${sublayer}}`} tone="green" /></div>
     <div data-mhc-residual-input style={{ position: "relative", padding: 8, border: `1px solid ${COLORS.blue}`, borderRadius: 8 }}>
       {connected && <Handle id="skip" type="target" position={Position.Left} style={handle} />}
       <strong>旁路保留的四路旧残差 · 同一 token t</strong>
@@ -512,9 +516,9 @@ export function MhcPost({ layer, sublayer, connected = false }: { layer: number;
       <FeatureVector name={`\\mathbf r_{${layer},${j},t}^{${sublayer}}`} scalar={d => `r_{${j},${d}}`} />
     </div>)}</div>
     <div style={{ display: "grid", gap: 8 }}>
-      <div data-mhc-q-input style={{ position: "relative", border: `1px solid ${COLORS.amber}`, borderRadius: 8, padding: 8 }}>{connected && <Handle id="post" type="target" position={Position.Right} style={handle} />}<strong>子层输出的四个广播权重</strong><VectorStrip name={`\\mathbf q_{${layer},t}^{${sublayer}}`} length="4" columns={["1","2","3","4"]} elementTex={j => `q_${j}`} tone="green" /></div>
+      <div data-mhc-q-input style={{ position: "relative", width: "100%", maxWidth: 420, justifySelf: "end", border: `1px solid ${COLORS.amber}`, borderRadius: 8, padding: 8 }}>{connected && <Handle id="post" type="target" position={Position.Right} style={handle} />}<strong>子层输出的四个广播权重</strong><VectorStrip name={`\\mathbf q_{${layer},t}^{${sublayer}}`} length="4" columns={["1","2","3","4"]} elementTex={j => `q_${j}`} tone="green" /></div>
     </div>
-    <SplitArrows count={4} />
+    <div style={{ textAlign: "center" }}>各路读取下方同名权重 <MathFormula tex="q_j" /></div>
     <div data-four-stream-row style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 10 }}>{HC_COPIES.map(j => <div key={j} data-mhc-output-copy={j} style={{ border: `1px solid ${COLORS.green}`, borderRadius: 8, padding: 8, display: "grid", gap: 7 }}><strong>目标路 {j}</strong>
       <div data-mhc-post-product={j} style={{ display: "grid", gridTemplateColumns: "50px 20px 1fr", gap: 5, alignItems: "center" }}><Box tone="amber"><MathFormula tex={`q_${j}`} /></Box><Operator tex="\times" /><FeatureVector name={output} scalar={d => `o_{${layer},t,${d}}^{${sublayer}}`} tone="green" /></div>
       <Operator tex="\downarrow" />
@@ -545,7 +549,7 @@ export function EngramLookup({ layer, phase }: { layer: number; phase: Execution
     <FlowStep>所选 24 行反量化，再沿特征轴拼接</FlowStep>
     <RowMatrix tex={`\\mathcal E_{${layer},t}`} shape="3\times8\times256" rows={["2\\text{-gram}", "3\\text{-gram}", "4\\text{-gram}"]} rowLength="8" elementTex={(i, h) => `\\mathbf e_{${i + 2},${h}}^{(256)}`} elementColumns={["1", "2", "\\cdots", "8"]} headerLineHeight={2.4} />
     <FlowStep><MathFormula tex={`\\mathbf e_{${layer},t}\\in\\mathbb R^{1\\times6144}`} /> · 24 个向量沿特征轴拼接</FlowStep>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr 24px 1fr", alignItems: "center", gap: 5 }}><Box tone="blue"><MathFormula tex={`\\mathbf e_{${layer},t}`} /><VectorStrip name="" nameWidth={0} length="6144" elementTex={j => `e_${j}`} tone="blue" compact /></Box><Operator tex="\times" /><Box tone="amber"><MathFormula tex={`W_{${layer}}^{E,KV}`} /><br /><MathFormula tex="6144\times25600" /><div style={{ display: "flex", justifyContent: "space-around", gap: 4, marginTop: 5 }}>{["1", "2", "\\cdots", "25600"].map(j => j === "\\cdots" ? <MathFormula key={j} tex={j} /> : <span key={j} style={{ border: `1px solid ${COLORS.amber}`, padding: "9px 3px", borderRadius: 4 }}><MathFormula tex={`\\mathbf w_${j}`} /></span>)}</div></Box><Operator tex="=" /><Box tone="green"><MathFormula tex="[\mathbf k_1\mid\mathbf k_2\mid\mathbf k_3\mid\mathbf k_4\mid\mathbf v]" /></Box></div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr 24px 1fr", alignItems: "center", gap: 5 }}><Box tone="blue"><MathFormula tex={`\\mathbf e_{${layer},t}`} /><VectorStrip name="" nameWidth={0} length="6144" elementTex={j => `e_${j}`} tone="blue" compact /></Box><Operator tex="\times" /><Box tone="amber"><TensorHeading name={`W_{${layer}}^{E,KV}`} shape="6144\times25600" /><div style={{ display: "flex", justifyContent: "space-around", gap: 4, marginTop: 5 }}>{["1", "2", "\\cdots", "25600"].map(j => j === "\\cdots" ? <MathFormula key={j} tex={j} /> : <span key={j} style={{ border: `1px solid ${COLORS.amber}`, padding: "9px 3px", borderRadius: 4 }}><MathFormula tex={`\\mathbf w_${j}`} /></span>)}</div></Box><Operator tex="=" /><Box tone="green"><MathFormula tex="[\mathbf k_1\mid\mathbf k_2\mid\mathbf k_3\mid\mathbf k_4\mid\mathbf v]" /></Box></div>
     <SplitArrows count={5} />
     <div data-engram-memory-slices style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 6 }}>{HC_COPIES.map(c => <FeatureVector key={c} name={`\\mathbf k_{${layer},${c},t}^{E}`} scalar={d => `k_{${c},${d}}`} tone="green" />)}<FeatureVector name={`\\mathbf v_{${layer},t}^{E}`} scalar={d => `v_${d}`} tone="green" /></div>
     {/* [OM-FREEPLAY] 缩小桶大小的算例展示 XOR 与取模；不是模型的真实地址。 */}
@@ -621,7 +625,7 @@ function IndexProjection({ title, input, inputWidth, weight, output, outputWidth
     <div style={{ display: "grid", gridTemplateColumns: "1fr 24px 1fr 24px 1fr", alignItems: "center", gap: 7 }}>
     <RowMatrix tex={input} shape={`${rows}\\times${inputWidth}`} rows={indices.map(i => i === "\\vdots" ? i : `\\boldsymbol{${inputSymbol}}_{${layer},${i}}`)} tone="blue" />
     <Operator tex="\times" />
-      <div style={{ padding: 6, border: `1px solid ${COLORS.amber}`, background: COLORS.amberSoft, borderRadius: 7, display: "grid", gap: 5 }}><MathFormula tex={weight} /><MathFormula tex={`${inputWidth}\\times${outputWidth}`} /><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 20px 1fr", gap: 3 }}>{["1","2","\\cdots",outputWidth].map(j => j === "\\cdots" ? <Operator key={j} tex={j} /> : <div key={j} style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: 3 }}><MathFormula tex={`\\mathbf w_{${j}}`} /><br /><MathFormula tex={`${inputWidth}\\times1`} /></div>)}</div></div>
+      <div style={{ padding: 6, border: `1px solid ${COLORS.amber}`, background: COLORS.amberSoft, borderRadius: 7, display: "grid", gap: 5 }}><TensorHeading name={weight} shape={`${inputWidth}\\times${outputWidth}`} /><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 20px 1fr", gap: 3 }}>{["1","2","\\cdots",outputWidth].map(j => j === "\\cdots" ? <Operator key={j} tex={j} /> : <div key={j} style={{ border: `1px solid ${COLORS.amber}`, borderRadius: 4, padding: "8px 3px" }}><MathFormula tex={`\\mathbf w_{${j}}`} /></div>)}</div></div>
       <Operator tex="=" /><RowMatrix tex={output} shape={`${rows}\\times${outputWidth}`} rows={indices.map(i => i === "\\vdots" ? i : `\\boldsymbol{${outputSymbol}}_{${layer},${i}}`)} />
     </div>{scale && <FlowStep><MathFormula tex={scale} /></FlowStep>}
   </div>;
@@ -959,7 +963,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   if (kind === "hc-expand") return <div style={{ ...panel, height: "auto", padding: 12, display: "grid", gap: 9 }}>{both}<strong>Embedding → mHC 四路初始化</strong><Box tone="blue"><MathFormula tex={`E\\in\\mathbb R^{${count}\\times5120}`} /></Box><FlowStep>复制到 4 路；此时每路数值相同</FlowStep><div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 6 }}>{HC_COPIES.map(c => <Box key={c} tone="blue"><MathFormula tex={`H_{1,${c}}^{\\mathrm{in}}=E`} /></Box>)}</div><MathFormula tex="\mathbf p_t^{\mathrm{init}}=(1,0,0,0)" /></div>;
   if (kind === "hc-pre" || kind === "hc-mix") return <div style={{ ...panel, height: "auto", padding: 12 }}>
     <Handle id="main-in" type="target" position={Position.Top} style={{ ...handle, left: kind === "hc-pre" ? "25%" : "50%" }} />
-    {kind === "hc-pre" ? <><Handle id="weights" type="target" position={Position.Top} style={{ ...handle, left: "75%", background: COLORS.amber }} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MhcPre layer={layer} sublayer={data.sublayer!} count={count} /></> : <><MhcMix layer={layer} sublayer={data.sublayer!} connected /></>}
+    {kind === "hc-pre" ? <><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><MhcPre layer={layer} sublayer={data.sublayer!} count={count} connected /></> : <><MhcMix layer={layer} sublayer={data.sublayer!} connected /></>}
   </div>;
   if (kind === "engram-lookup") return <div style={{ ...panel, height: "auto", padding: 12 }}>{both}<EngramLookup layer={layer} phase={phase} /></div>;
   if (kind === "engram-inject") return <div style={{ ...panel, height: "auto", padding: 12 }}><Handle id="main-in" type="target" position={Position.Top} style={{ ...handle, left: "25%" }} /><Handle id="memory" type="target" position={Position.Top} style={{ ...handle, left: "75%" }} /><Handle id="main-out" type="source" position={Position.Bottom} style={handle} /><Handle id="coefficients" type="source" position={Position.Right} style={handle} /><Handle id="residual" type="source" position={Position.Left} style={handle} /><EngramInject layer={layer} phase={phase} /></div>;
@@ -1206,9 +1210,10 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
       <Handle id="kv" type="source" position={Position.Bottom} style={handle} />
       <Title>沿 KV 行维拼接：本地窗口 + 选中的全局行</Title>
       <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 30px 1fr 30px 1.3fr", alignItems: "center", gap: 6, minWidth: 0 }}>
-        <Box tone="green"><MathFormula tex={`U_{${layer},t}^{\\mathrm{SWA}}`} /><br /><MathFormula tex="\min(128,t)\times512" /></Box><Arrow />
-        <Box tone="green"><MathFormula tex={`G_{${kvSource},t}^{\\mathrm{selected}}`} /><br /><MathFormula tex={`K_{${indexSource},t}\\times512`} /></Box><Arrow />
-        <Box tone="green"><MathFormula tex={`\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};G_{${kvSource},t}^{\\mathrm{selected}}]`} /><br /><MathFormula tex={`(\\min(128,t)+K_{${indexSource},t})\\times512`} /></Box>
+        <Box tone="green"><TensorHeading name={`U_{${layer},t}^{\\mathrm{SWA}}`} shape="\min(128,t)\times512" /></Box><Arrow />
+        <Box tone="green"><TensorHeading name={`G_{${kvSource},t}^{\\mathrm{selected}}`} shape={`K_{${indexSource},t}\\times512`} /></Box><Arrow />
+        <Box tone="green"><TensorHeading name={`\\mathrm{KV}_{${layer},t}`} shape={`(\\min(128,t)+K_{${indexSource},t})\\times512`} /></Box>
+        <div style={{ gridColumn: "1 / -1", textAlign: "right", fontSize: 12 }}><MathFormula tex={`\\mathrm{KV}_{${layer},t}=[U_{${layer},t}^{\\mathrm{SWA}};G_{${kvSource},t}^{\\mathrm{selected}}]`} /></div>
       </div>
     </div>;
   }
@@ -1218,14 +1223,14 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
   }
 
   if (kind === "concat") {
-    return <div style={{ ...panel, height: "auto" }}>{both}<Title>Layer {layer} · 输出投影：64 Heads → 8 组低秩投影 → 5120 维</Title>
+    return <div data-output-projection style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 230px", gap: 20, alignItems: "center" }}><div style={{ ...panel, position: "relative", height: "auto" }}>{both}<Title>Layer {layer} · 输出投影：64 Heads → 8 组低秩投影 → 5120 维</Title>
       <div data-output-projection-weight style={{ padding: 12, display: "grid", gap: 10 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 30px 1fr", gap: 9 }}>{[1, 2, 8].map((group, index) => <React.Fragment key={group}>{index === 2 && <Operator tex="\cdots" />}<div data-output-group={group} style={{ minWidth: 0, display: "grid", gap: 6 }}>
           <strong style={{ fontSize: 12, color: COLORS.green }}>组 {group} · Head {(group - 1) * 8 + 1}–{group * 8} 沿列拼接</strong>
           <AttentionTensor tex={`C_{${group}}`} rows={count} columns="4096" scalar={(row, column) => `c^{(${group})}_{${row},${column}}`} />
-          <FlowStep>每组独立投影</FlowStep>
+          <Operator tex="\times" />
           <AttentionTensor tex={`W^{OA}_{${layer},${group}}`} rows="4096" columns="1024" scalar={(row, column) => `w^A_{${row},${column}}`} tone="blue" />
-          <FlowStep><MathFormula tex={`B_{${group}}=C_{${group}}W^{OA}_{${layer},${group}}`} /></FlowStep>
+          <Operator tex="=" />
           <AttentionTensor tex={`B_{${group}}`} rows={count} columns="1024" scalar={(row, column) => `b^{(${group})}_{${row},${column}}`} />
         </div></React.Fragment>)}</div>
         <FlowStep>8 组沿列拼接 → 8192 维 → 最终线性投影</FlowStep>
@@ -1235,7 +1240,7 @@ function DiagramNodeContent({ data }: { data: DiagramData }) {
           <Operator tex="=" /><AttentionTensor tex={`O_{${layer}}`} rows={count} columns="5120" scalar={(row, column) => `o_{${row},${column}}`} />
         </div>
       </div>
-    </div>;
+    </div><aside data-projection-formulas style={{ display: "grid", gap: 20, color: COLORS.green, fontSize: 16 }}><strong>对应公式</strong>{[1,2,8].map(group => <MathFormula key={group} tex={`B_{${group}}=C_{${group}}W^{OA}_{${layer},${group}}`} />)}<MathFormula tex={`O_{${layer}}=BW^{OB}_{${layer}}`} /></aside></div>;
   }
 
   if (kind === "add1" || kind === "add2") {
@@ -1605,8 +1610,8 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     node("kv-merge", "kv-merge", layer, mode, hasGlobal ? 300 : 480, mergeY, hasGlobal ? 1000 : 640, mergeHeight),
     // [OM-FREEPLAY] 三个 Head 展开后采用与专家区一致的 2800px 画布宽度。
     node("heads", "heads", layer, mode, 40, headsY, 2800, headsHeight),
-    node("concat", "concat", layer, mode, 150, concatY, 1220, concatHeight),
-    node("add1", "add1", layer, mode, 300, add1Y, 2000, add1Height),
+    node("concat", "concat", layer, mode, 150, concatY, 1470, concatHeight),
+    node("add1", "add1", layer, mode, 300, add1Y, 1600, add1Height),
     node("state1", "state1", layer, mode, 300, state1Y, 1600, state1Height),
     { ...node("hc-pre-f", "hc-pre", layer, mode, 300, preFY, 1000, 420), data: { kind: "hc-pre", layer, mode, sublayer: "F" } },
     { ...node("hc-mix-f", "hc-mix", layer, mode, HC_COEFFICIENT_X, preFY, 1000, mixFHeight), data: { kind: "hc-mix", layer, mode, sublayer: "F" } },
@@ -1617,7 +1622,7 @@ export function buildGraph(layer: number, contentHeights: ReadonlyMap<string, nu
     node("experts", "experts", layer, mode, 70, expertsY, EXPERTS_WIDTH, expertsHeight),
     node("moe-sum", "moe-sum", layer, mode, 70 + EXPERTS_WIDTH / 2 - 160, moeSumY, 320, 100),
     node("moe-output", "moe-output", layer, mode, 70 + EXPERTS_WIDTH / 2 - 320, moeOutputY, 640, 100),
-    node("add2", "add2", layer, mode, 300, add2Y, 2000, add2Height),
+    node("add2", "add2", layer, mode, 300, add2Y, 1600, add2Height),
     node("output", "output", layer, mode, 300, outputY, 1600, tensorHeight),
   ];
   if (layer > 1) {
@@ -1929,8 +1934,8 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
   const connectionGestureRef = useRef<{ nodeId: string; handleId: string | null; x: number; y: number } | null>(null);
   const resetConnectionRef = useRef<(() => void) | null>(null);
   const completedConnectionRef = useRef(false);
-  // 四路同排与 q/C 独立端口改变了布局契约；新布局独立保存，旧的手调记录不覆盖、不删除。
-  const storageKey = `oasismind:deepseek-v41-layer-layout:v9:${phase}:${layer}`;
+  // 内部端口与紧凑投影改变了布局契约；新布局独立保存，旧的手调记录不覆盖、不删除。
+  const storageKey = `oasismind:deepseek-v41-layer-layout:v10:${phase}:${layer}`;
 
   nodesRef.current = nodes;
   edgesRef.current = edges;
@@ -2223,6 +2228,8 @@ function DiagramCanvas({ layer, phase }: { layer: number; phase: ExecutionPhase 
       onInit={instance => { flowRef.current = instance; }}
       nodes={nodes}
       edges={edges}
+      // 内部数据框的连接必须画在分组背景上方，不能被父框遮掉引入段及箭头。
+      defaultEdgeOptions={{ zIndex: 1001 }}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       connectionLineComponent={EditableConnectionLine}
