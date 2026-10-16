@@ -220,7 +220,7 @@ it("保存恢复使用编辑后的实际尺寸，不被初始 style 覆盖", () 
   expect(restored.style!.minHeight ?? restored.style!.height).toBe(600);
 });
 
-describe("切层复用完整的实测几何", () => {
+describe("切层按节点复用实测几何", () => {
   function measuredFixture() {
     const original = buildGraph(15);
     const graph = { nodes: original.nodes.filter(n => ["q", "expert-output-7"].includes(n.id)), edges: [] };
@@ -236,10 +236,19 @@ describe("切层复用完整的实测几何", () => {
     expect(result.nodes.every(n => n.measured && n.handles?.length === 1)).toBe(true);
     expect(result.nodes.find(n => n.id === "expert-output-7")!.measured!.width).toBe(667);
   });
-  it("缺一项时整体重新测量，不能让适配视口只使用局部边界", () => {
+  it("缺一项只重测缺失节点，其他实测尺寸和端口继续复用，节点集合保持完整", () => {
     const { graph, cache } = measuredFixture();
     cache.delete(cache.keys().next().value!);
-    expect(restoreMeasuredGeometry(graph, cache)).toBe(graph);
+    const result = restoreMeasuredGeometry(graph, cache);
+    expect(result.nodes.map(n => n.id)).toEqual(graph.nodes.map(n => n.id));
+    expect(result.nodes[0]).toBe(graph.nodes[0]);
+    expect(result.nodes[1].measured).toBeDefined();
+    expect(result.nodes[1].handles).toHaveLength(1);
+  });
+  it("全部未命中时保持原始图，不凭声明尺寸伪造实测端口", () => {
+    const { graph } = measuredFixture();
+    expect(restoreMeasuredGeometry(graph, new Map())).toBe(graph);
+    expect(graph.nodes.every(node => !node.measured && !node.handles)).toBe(true);
   });
   it("未保存的人工拉高不能污染默认内容高度", () => {
     const { graph, cache } = measuredFixture();
@@ -248,13 +257,13 @@ describe("切层复用完整的实测几何", () => {
     const measured = cache.get(naturalKey)!;
     cache.delete(naturalKey);
     cache.set(JSON.stringify([node.data, Number(node.style!.width), 900]), { ...measured, height: 900 });
-    expect(restoreMeasuredGeometry(graph, cache)).toBe(graph);
+    expect(restoreMeasuredGeometry(graph, cache).nodes.find(n => n.id === node.id)).toBe(node);
   });
   it.each(["width", "height", "phase"])("%s 变化不能沿用旧几何", field => {
     const { graph, cache } = measuredFixture();
     const node = graph.nodes[0];
     if (field === "phase") node.data = { ...node.data, phase: "decode" };
     else node.style = { ...node.style, [field]: 2000 };
-    expect(restoreMeasuredGeometry(graph, cache)).toBe(graph);
+    expect(restoreMeasuredGeometry(graph, cache).nodes[0]).toBe(node);
   });
 });

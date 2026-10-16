@@ -1470,16 +1470,18 @@ const GeometryCacheContext = createContext<DiagramGeometryCache | null>(null);
 const geometryKey = (data: DiagramData, width: number, height: CSSProperties["height"]) => JSON.stringify([data, width, height]);
 
 export function restoreMeasuredGeometry(graph: { nodes: DiagramNode[]; edges: EditableEdge[] }, cache: DiagramGeometryCache) {
-  let complete = true;
+  let restored = false;
   const nodes = graph.nodes.map(node => {
     const cached = cache.get(geometryKey(node.data, Number(node.style?.width), node.style?.height ?? node.style?.minHeight));
     // 精确匹配内容和宽度；人工改高度、字体换行或未知内容继续走完整实测。
     const requestedHeight = storedDimension(node.style?.height) ?? storedDimension(node.style?.minHeight);
-    if (!cached || (requestedHeight && (CONTENT_SIZED_KINDS.has(node.data.kind) ? requestedHeight > cached.height : requestedHeight !== cached.height))) { complete = false; return node; }
+    if (!cached || (requestedHeight && (CONTENT_SIZED_KINDS.has(node.data.kind) ? requestedHeight > cached.height : requestedHeight !== cached.height))) return node;
+    restored = true;
     return { ...node, measured: { width: cached.width, height: cached.height }, handles: cached.handles };
   });
-  // 初次适配视口必须基于完整图，不能只把缓存命中的局部节点当成全部边界。
-  return complete ? { ...graph, nodes } : graph;
+  // 缓存是节点级不变量：一个框失效只重测该框，不能让其他已知尺寸一起失效。
+  // 未命中的节点仍保留在图中，由 React Flow 的测量通道补齐，并非过滤成局部图。
+  return restored ? { ...graph, nodes } : graph;
 }
 
 export function buildMeasuredGraph(layer: number, phase: ExecutionPhase, cache: DiagramGeometryCache) {
@@ -1536,7 +1538,7 @@ function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
     // [OM-FREEPLAY] 最多保留 512 份实测几何，避免浏览多层或反复拉宽时缓存无限增长。
     if (geometryCache.size > 512) geometryCache.delete(geometryCache.keys().next().value!);
   }, [data, declaredWidth, declaredHeight, geometryCache, handleBounds, measuredWidth, measuredHeight]);
-  if (!showDetails && internal?.measured.height) return <div data-boundary-connectable={data.kind !== "structure-operator"} data-detail-suspended style={{ width: "100%", height: internal.measured.height, position: "relative" }}>
+  if (!showDetails && internal?.measured.height) return <div data-diagram-layer={data.layer} data-diagram-phase={data.phase ?? "prefill"} data-boundary-connectable={data.kind !== "structure-operator"} data-detail-suspended style={{ width: "100%", height: internal.measured.height, position: "relative" }}>
     {/* 离屏端口只供几何测量，不订阅连接手势状态；回到屏幕时恢复真实 Handle。 */}
     {(["source", "target"] as const).flatMap(type => (internal.internals.handleBounds?.[type] ?? []).map(port => <div key={`${type}-${port.id}`} className={`react-flow__handle react-flow__handle-${port.position} ${type}`} data-nodeid={id} data-handleid={port.id ?? undefined} data-handlepos={port.position} style={{ ...handle, position: "absolute", pointerEvents: "none", left: port.x + port.width / 2, top: port.y + port.height / 2, right: "auto", bottom: "auto", transform: "translate(-50%,-50%)" }} />))}
   </div>;
@@ -1553,7 +1555,7 @@ function DiagramNodeView({ id, data, selected }: NodeProps<DiagramNode>) {
         : data.title
           ? 96
           : 40;
-  return <div data-boundary-connectable={data.kind !== "structure-operator"} data-frame-selected={Boolean(selected)} style={{ width: "100%", height: CONTENT_SIZED_KINDS.has(data.kind) ? "auto" : "100%", ...(CONTENT_SIZED_KINDS.has(data.kind) ? { minHeight: "100%", display: "grid", gridTemplateColumns: "minmax(0,1fr)" } : {}), position: "relative", borderRadius: compact ? "50%" : 12 }}>
+  return <div data-diagram-layer={data.layer} data-diagram-phase={data.phase ?? "prefill"} data-boundary-connectable={data.kind !== "structure-operator"} data-frame-selected={Boolean(selected)} style={{ width: "100%", height: CONTENT_SIZED_KINDS.has(data.kind) ? "auto" : "100%", ...(CONTENT_SIZED_KINDS.has(data.kind) ? { minHeight: "100%", display: "grid", gridTemplateColumns: "minmax(0,1fr)" } : {}), position: "relative", borderRadius: compact ? "50%" : 12 }}>
     <EightResizeHandles minWidth={minimumWidth} minHeight={minimumHeight} />
     <EightConnectionPorts color={portColor} />
     <ExecutionContext.Provider value={data.phase ?? "prefill"}><MemoDiagramNodeContent data={data} /></ExecutionContext.Provider>
