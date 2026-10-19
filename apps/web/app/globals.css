@@ -41,7 +41,7 @@
 }
 .om-console-heading { position: relative; border-left: 3px solid color-mix(in srgb, var(--om-brand) 55%, transparent); }
 .om-console-heading::after { content: ""; position: absolute; right: 16px; bottom: -4px; width: 48px; height: 3px; background: var(--om-brand); opacity: .2; border-radius: 0 0 3px 3px; pointer-events: none; }
-.om-console-heading .om-header-icon { box-shadow: inset 0 1px 0 var(--om-bg-alt), 0 3px 0 color-mix(in srgb, var(--om-brand) 14%, transparent); transform: perspective(400px) rotateY(-9deg); }
+.om-console-heading .om-header-icon { box-shadow: inset 0 1px 0 var(--om-bg-alt), 0 3px 0 color-mix(in srgb, var(--om-brand) 14%, transparent); transform: none; }
 .om-workbench > header { box-shadow: 0 1px 0 color-mix(in srgb, var(--om-bg-alt) 60%, transparent), 0 5px 16px -15px var(--om-brand); }
 .om-office-workshop { isolation: isolate; }
 .om-office-frame { position: absolute; inset: 84px 24px 105px; pointer-events: none; }
@@ -2527,3 +2527,19 @@ html.dark .om-shadow-vivid,
   --sidebar-border: var(--om-divider);
   --sidebar-ring: var(--om-brand);
 }
+
+/* [OM-FREEPLAY] ThreeUI 材质适配：统一已有表面的边框与层次，不改变状态颜色和操作布局。 */
+.om-workbench [data-slot="card"], .om-raised-panel {
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--om-bg-alt) 90%, transparent), 0 4px 18px -12px color-mix(in srgb, var(--om-text-1) 20%, transparent);
+}
+.om-console-heading { border-left-width: 1px; background: var(--om-bg-alt); box-shadow: 0 4px 20px -16px var(--om-brand); }
+.om-console-heading::after { display: none; }
+.om-workbench > header { box-shadow: 0 1px 0 var(--om-divider-light), 0 8px 24px -22px var(--om-brand); }
+.om-shell-rail { background: color-mix(in srgb, var(--om-bg-alt) 96%, var(--om-brand-soft)); }
+.om-nav-pill-active, .om-nav-rail-active { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--om-brand) 20%, transparent), 0 2px 6px -4px var(--om-brand); }
+.om-chat-surface { background: var(--om-bg); }
+.om-chat-composer { box-shadow: 0 8px 28px -20px var(--om-brand); }
+.om-chat-composer:focus-within { box-shadow: 0 0 0 3px var(--om-brand-soft), 0 12px 28px -20px var(--om-brand); }
+.om-workbench [data-slot="input"] { background: var(--om-bg); }
+.om-workshop-home, .om-workshop-views, .om-office-instruments { box-shadow: inset 0 1px 0 var(--om-bg-alt), 0 10px 28px -20px var(--om-brand); }

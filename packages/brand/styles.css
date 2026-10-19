@@ -359,3 +359,49 @@
   .om-spatial-turn input { width: 100px; }
 }
 @media (prefers-reduced-motion: reduce) { .om-spatial-world, .om-spatial-volume, .om-spatial-orb { transition: none; } }
+
+/* ThreeUI Community gradient-pill-button 的遮罩渐变边框适配。
+ * 来源：threeui-main/src/shaders/neuform-isolated/sources/gradient-pill-button.html
+ * MIT 许可见 THREEUI-LICENSE.txt；链接语义与业务事件由原组件保留。
+ * [OM-FREEPLAY] 使用现有品牌色与薄阴影；首页静态网格参考 particle-network，避免叠加现有 3D 动效。
+ */
+a.om-three-pill {
+  position: relative;
+  isolation: isolate;
+  border-radius: 999px;
+  background-image: linear-gradient(180deg, #ffffff18, #00000012);
+  box-shadow: inset 0 1px 0 #ffffff30, 0 4px 8px -4px #00000020, 0 14px 28px -16px var(--om-brand);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+.om-three-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #ffffffb3, #00000020, #ffffff40);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.om-three-pill:focus-visible { outline: 2px solid var(--om-brand); outline-offset: 4px; }
+.om-three-pill:active { transform: translateY(1px); }
+.om-three-hero { position: relative; isolation: isolate; }
+.om-three-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(to right, var(--om-divider-light) 1px, transparent 1px), linear-gradient(to bottom, var(--om-divider-light) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: radial-gradient(ellipse at 80% 20%, #0008, transparent 68%);
+}
+@media (hover: hover) {
+  .om-three-pill:hover { box-shadow: inset 0 1px 0 #ffffff45, 0 6px 12px -6px #00000020, 0 18px 32px -16px var(--om-brand); }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.om-three-pill { transition: none; }
+  .om-three-pill:active { transform: none; }
+}

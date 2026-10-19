@@ -45,14 +45,14 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="hero">
+      <section className="hero om-three-hero">
         <div className="site-shell hero-inner">
           <div className="hero-editorial">
             <p className="eyebrow">见微 · 大模型学习笔记</p>
             <h1>把大模型，<br /><span>读明白。</span></h1>
             <p className="hero-copy">读论文，推公式，理解方法为什么出现、又在哪里失效。从基础概念走进研究细节。</p>
             <div className="hero-actions">
-              <Link href="/knowledge" className="primary-button"><BookOpen size={18} />浏览知识库</Link>
+              <Link href="/knowledge" className="primary-button om-three-pill"><BookOpen size={18} />浏览知识库</Link>
               {featured[0] && <Link href={articleHref(featured[0])} className="text-link">读一篇完整解析 <ArrowRight size={16} /></Link>}
             </div>
             <Link href="/search" className="home-search"><Search size={20} /><span>搜索论文、算法与模型</span><ArrowRight size={18} /></Link>

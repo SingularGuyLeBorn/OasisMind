@@ -403,3 +403,25 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
   .article-api-note div { flex-basis: calc(100% - 35px); }
   .footer-inner { padding-block: 28px; display: grid; }
 }
+
+/* [OM-FREEPLAY] ThreeUI 视觉适配：沿用青色品牌，材质集中在导航与入口，正文不加动态背景。 */
+.site-header { background: color-mix(in srgb, #fcfcf9 92%, transparent); backdrop-filter: blur(18px); box-shadow: 0 4px 24px -20px #1b303340; }
+.header-inner nav a { border-radius: 10px; transition: background-color 180ms, color 180ms; }
+.header-inner nav a:hover { background: var(--om-brand-soft); color: var(--om-brand-deep); }
+.hero-stats { padding-top: 24px; border-top: 1px solid var(--om-divider-light); }
+.home-search { box-shadow: inset 0 1px 0 #fff, 0 8px 24px -20px #1b303340; }
+.post-card, .garden-card { border-radius: 20px; border-color: var(--om-divider-light); box-shadow: inset 0 1px 0 #fff, 0 4px 18px -12px #1b303330; }
+.post-card h3 { line-height: 1.5; letter-spacing: -.015em; }
+.post-card-meta { letter-spacing: .035em; }
+.home-path { border-radius: 16px; }
+.post-card:focus-within, .garden-card:focus-within, .home-path:focus-visible { outline: 2px solid var(--om-brand); outline-offset: 4px; }
+.article-header { border-bottom-color: var(--om-divider-light); }
+.article-toc { border-left-color: var(--om-divider-light); }
+.public-office-toolbar nav, .public-office-home, .public-office-objects { border-radius: 16px; box-shadow: inset 0 1px 0 #ffffffa0, 0 12px 32px -22px #1b303360; }
+@media (hover: hover) {
+  .post-card:hover, .garden-card:hover { border-color: color-mix(in srgb, var(--om-brand) 32%, transparent); box-shadow: 0 14px 32px -20px #1b303350; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .post-card, .garden-card, .home-path, .header-inner nav a { transition: none; }
+  .post-card:hover, .garden-card:hover { transform: none; }
+}
